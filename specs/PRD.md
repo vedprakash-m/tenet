@@ -1,6 +1,6 @@
 # Tenet - Product Requirements Document
 
-> v0.14 | October 14, 2026 | Approval candidate (owner sign-off pending, Section 8.4)
+> v0.16 | October 15, 2026 | Approved for design (owner sign-off recorded, Section 8.4); implementation design in [`specs/tech-spec.md`](tech-spec.md)
 
 ## 0. About this document
 
@@ -40,7 +40,7 @@ The Tech Spec and UX Spec decide *how*; they may not redefine what "checked", "a
 
 - **Priority:** **Must** (release blocks without it), **Should** (expected; omission needs owner sign-off), **Could** (include if cheap).
 - **Release (cumulative):** **M0** walking skeleton ⊂ **A** core alpha ⊂ **B** beta ⊂ **R1** public release; then **R1.1** and **Later**.
-- **Annotations:** [Validated: owner, date] for owner decisions; [Proposed: sign-off pending, Section 8.4] for recommendations awaiting the owner; [Assumed: verify - owner, gate] for unverified beliefs; [Unknown: TBD] for open items.
+- **Annotations:** [Validated: owner, date] for owner decisions; [Proposed: sign-off pending, Section 8.4] for recommendations awaiting the owner (none outstanding as of October 15); [Assumed: verify - owner, gate] for unverified beliefs; [Unknown: TBD] for open items.
 - **Numbers** carry a class: **Invariant** (never relaxed), **Provisional** (alpha default, calibrated and frozen under Section 6.12) or **Frozen** (fixed for a qualification cycle). Numbers live only in Sections 1.6, 4.4 and 5.16.
 - **Control claims** carry a mechanism class from Section 5.4; "shall enforce" is used only for preventive or deterministic mechanisms.
 
@@ -101,7 +101,7 @@ Five pillars define the ambition. [Validated: owner's five pillars, October 14.]
 
 ### 1.4 Users and personas
 
-**R1 primary user:** a technical builder or maintainer who runs local projects, uses Git, can read a change brief and make product decisions, and has no orchestration expertise. [Proposed: sign-off pending, Section 8.4.]
+**R1 primary user:** a technical builder or maintainer who runs local projects, uses Git, can read a change brief and make product decisions, and has no orchestration expertise. [Validated: owner sign-off, October 15.]
 
 **Less-technical builders move to R1.1** (D-22), together with the delivery recipe, a guided prerequisite journey and the teaching style. In R1 they are not a qualified audience: R1 needs Node.js, Git and terminal commands, and their realistic alternatives deploy hosted apps instantly (Section 1.5).
 
@@ -158,11 +158,11 @@ Comparison is a set of hypotheses from public descriptions; capabilities change 
 | Credible completion | Missing or failed evidence always surfaced | 0 false checked-local verdicts on all seeded fixtures across all runs | Invariant | AC-07, AC-27 |
 | Easier next change | Intent survives sessions and human edits | Resume ≤ 2 min; 0 unnecessary repeated questions | Provisional | AC-08 |
 | Effective review | Independent review finds material defects without noise | Recall ≥ 80% of seeded material defects; each critical seeded defect found in ≥ 4 of 5 runs; precision ≥ 70% | Provisional | AC-06 |
-| Low false friction | Clean tasks are not over-processed | On clean fixtures: unnecessary Deep ≤ 10%, wrongly blocked work ≤ 5%, duplicate approvals 0 | Provisional (duplicate approvals: Invariant) | AC-21 |
+| Low false friction | Clean tasks are not over-processed | On clean fixtures: unnecessary Deep ≤ 10%, wrongly blocked work ≤ 5%, duplicate approvals 0; Tenet-caused host approval prompts ≤ 3 per Standard task (SP-12) | Provisional (duplicate approvals: Invariant) | AC-21 |
 | Operational governance | Intent traced through actions and checks | 100% of contracts linked to intent IDs; seeded drift detected | Invariant | AC-13a |
 | Engineering quality | Charter and TDD applied without needless abstraction | Starter passes its fitness functions and applicable ASVS 5.0 Level 1 requirements | Provisional | AC-05, AC-20 |
 | Measured learning | One evaluated maintainer improvement cycle | One documented keep, discard or inconclusive decision | Invariant | AC-14 |
-| Efficient resource use | Overhead bounded and visible | Evaluated overhead vs matched native baseline: Quick ≤ 1.3x, Standard ≤ 2x premium requests | Provisional | AC-12, AC-19 |
+| Efficient resource use | Overhead bounded and visible | Evaluated AI credits per accepted outcome vs a matched native baseline, with failed and cancelled runs included: Quick ≤ 1.3x, Standard ≤ 2x (premium requests instead, for accounts still billed by request) | Provisional | AC-12, AC-19 |
 
 [Assumed: verify - owner; provisional targets per D-13, calibrated under Section 6.12.] Instruction length, test count, agent count, tokens and lines of code are diagnostics, never objectives. Saving time by skipping required checks is not success. Zero observed failures on fixtures is a release condition, not proof of zero real-world risk.
 
@@ -202,7 +202,7 @@ Comparison is a set of hypotheses from public descriptions; capabilities change 
 
 ### 2.1 IN scope for R1
 
-[Proposed: sign-off pending, Section 8.4.]
+[Validated: owner sign-off, October 15.]
 
 | ID | Capability | R1 boundary | Requirements |
 |---|---|---|---|
@@ -234,7 +234,7 @@ Capability descriptors (Section 3.8.2) describe mechanisms; only passing qualifi
 | Host application | VS Code stable desktop, exact versions listed at qualification | VS Code Insiders | Browser VS Code, Codespaces web |
 | Harness | VS Code **Local** agent harness (execution tied to the editor window) with custom agents, subagents and skills | Copilot harness (Agent Host); Copilot CLI | Copilot cloud coding agent |
 | Install path | One qualified path (source or marketplace, chosen under SP-01) | The other path | Manual file copying |
-| Plan and policy | Copilot plans and organization policies that allow agent mode, plugins, custom agents and subagents | Plans with low premium-request allowances (Conserve recommended) | Policies disabling required features (reported as blocked by policy) |
+| Plan and policy | Copilot plans and organization policies that allow agent mode, plugins, custom agents and subagents | Plans with small AI-credit allowances, or low premium-request allowances on legacy request billing (Conserve recommended) | Policies disabling required features (reported as blocked by policy) |
 | OS / architecture | macOS arm64 | Linux x64, Windows x64 | WSL, other architectures |
 | Execution target | Local machine | Dev containers | SSH remote, cloud sessions |
 | Workspace | Single-folder workspace, single Git repository, ≤ 10,000 tracked files | Monorepo with one declared module root; linked Git worktrees | Multi-root workspaces; multi-repository work |
@@ -246,13 +246,13 @@ Each combination is supported, experimental, unsupported or blocked by policy. T
 
 ### 2.3 Software support and assistance levels
 
-**Starter recipe:** TypeScript web/API application: Node.js server with an HTTP API, React with Vite, SQLite persistence, Vitest for unit and integration tests, Playwright for end-to-end journeys, ESLint and the TypeScript compiler for static checks. It matches the stack the owner uses most and needs no external accounts. Its identity, exposure, data and workload model is in Section 5.16. [Assumed: verify - owner under Q-12.]
+**Starter recipe:** TypeScript web/API application: a Fastify 5 HTTP API with Zod schemas, better-sqlite3 persistence with plain numbered SQL migrations, React with Vite, Vitest for unit and integration tests, Playwright for end-to-end journeys, ESLint and the TypeScript compiler for static checks. It matches the stack the owner uses most and needs no external accounts. Its identity, exposure, data and workload model is in Section 5.16. [Validated: owner, October 15 (Q-12).]
 
 **Brownfield capability profile (R1):**
 
 | Dimension | Supported | Experimental | Investigation or review only |
 |---|---|---|---|
-| Runtime | Node.js active and maintenance LTS lines at qualification | Current (non-LTS) Node | Other runtimes |
+| Runtime | Node.js active and maintenance LTS lines at qualification (currently 22 and 24) | Current (non-LTS) Node | Other runtimes, end-of-life Node lines |
 | Language | TypeScript (strict or not) | JavaScript without TypeScript | Mixed-language repositories outside the module root |
 | Package manager | npm, pnpm, Yarn 1 with committed lockfile | Yarn 2+ without Plug'n'Play | Yarn Plug'n'Play; no lockfile (readiness proposal instead) |
 | Module system | ESM and CommonJS | TypeScript project references | Custom loaders |
@@ -322,7 +322,7 @@ Later items carry no dates and cannot introduce a required service without revis
 
 ### 2.7 Owner-intent reconciliation
 
-The owner's original decisions (decision log and owner interview, held privately) are reconciled here; this table, not the archive, is binding. [Proposed: sign-off pending, Section 8.4.]
+The owner's original decisions (decision log and owner interview, held privately) are reconciled here; this table, not the archive, is binding. [Validated: owner sign-off, October 15.]
 
 | Original owner decision | R1 disposition | Returns when | Reason |
 |---|---|---|---|
@@ -679,7 +679,7 @@ A recipe, adapter or host binding becomes supported only through **extension con
 
 #### 3.8.7 Repository map and context selection
 
-The repository map indexes module exports, imports, entry points, routes and tests, and refreshes incrementally. When an assignment changes a non-private interface or symbol, selected context prioritizes direct importers and callers and the linked acceptance tests before unrelated files (AGT-12). Large raw search and log output stays outside the main context where host tools allow.
+The repository map indexes module exports, imports, entry points, routes and tests, and refreshes incrementally. A qualified host language service and search tools may provide it (Section 7.9); Tenet then adds the links to acceptance tests and reports which callers and routes a review actually inspected. When an assignment changes a non-private interface or symbol, selected context prioritizes direct importers and callers and the linked acceptance tests before unrelated files (AGT-12). Large raw search and log output stays outside the main context where host tools allow.
 
 #### 3.8.8 Interoperability formats
 
@@ -819,7 +819,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 | EVD-01 | Tenet shall bind every check result to the candidate (base commit, digest of relevant uncommitted and untracked files, lockfile, configuration, toolchain, execution envelope) without hashing or storing secret values. | Must | M0 | AC-18 |
 | EVD-02 | Tenet shall record each check's verdict, qualifiers, freshness and source as defined in Section 3.7.2; zero tests executed shall be inconclusive. | Must | M0 | AC-07 |
 | EVD-03 | When an input changes, Tenet shall mark dependent evidence stale; an input of unknown relevance shall invalidate conservatively or make the result inconclusive. | Must | A | AC-18 |
-| EVD-04 | Tenet shall run the distinguishing reproduction and targeted checks on the baseline before changing code; when a broader check fails on the candidate and is not already recorded as a baseline failure, Tenet shall rerun it on the baseline in an isolated worktree to classify it as pre-existing or introduced. | Must | B | AC-18, AC-19 |
+| EVD-04 | Tenet shall run the distinguishing reproduction and targeted checks on the baseline before changing code; when a broader check fails on the candidate and is not already recorded as a baseline failure, Tenet shall rerun it on the baseline in a sealed checkout outside the workspace (Section 5.13) to classify it as pre-existing or introduced. | Must | B | AC-18, AC-19 |
 | EVD-05 | Tenet shall normalize evidence through ecosystem adapters under the contract of Section 3.8.3. | Must | A | AC-18, AC-20 |
 | EVD-06 | Owner acceptance shall never convert a failed or missing check into pass. | Must | M0 | AC-07, AC-27 |
 | EVD-07 | Tenet shall state each consequential control's mechanism class (Section 5.4) and assurance level (Section 5.3.4). | Must | M0 | AC-07, AC-13a |
@@ -891,7 +891,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 | CON-06 | Copied, imported, relocated or pre-populated records shall confer no authority and no behavior until reviewed (Section 5.6). | Must | A | AC-08, AC-16 |
 | CON-07 | If `.tenet/` is lost, Tenet shall reconstruct from repository memory and Git history, ask only consequential unknowns and never fabricate evidence. | Must | B | AC-08 |
 | CON-08 | Tenet shall keep `.tenet/` within the storage budget using the eviction order of Section 5.15. | Must | B | AC-19 |
-| CON-09 | Review-only and readiness requests shall create no files in the project, including `.tenet/`; they use ephemeral state or host storage outside the workspace, and durable export happens only on request. | Must | M0 | AC-04 |
+| CON-09 | Review-only and readiness requests shall create no files in the project, including `.tenet/`; by default they run as a single stateless kernel call, may use host plugin storage outside the workspace where available, and export durable results only on request. | Must | M0 | AC-04 |
 | CON-10 | Reset a preference, forget a lesson, delete records, abandon work, undo and uninstall shall be separate actions, each previewing its consequences. | Must | B | AC-09, AC-10 |
 | CON-11 | When the project moves, is cloned, or changes branch or machine, Tenet shall reconcile scope instead of transferring authority by path. | Must | B | AC-17 |
 | CON-12 | Tenet shall record intended, dispatched and observed effects so a crash between an effect and its record is detected and reconciled before any retry. | Must | B | AC-17 |
@@ -906,7 +906,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 | SEC-04 | Before first execution, Tenet shall classify each command by its declared execution envelope (Section 5.8), not by its name. | Must | A | AC-04, AC-16 |
 | SEC-05 | For new dependencies, Tenet shall verify identity and existence, license, install scripts including transitive lifecycle scripts, and lock resolution, and seek native consent for executable changes. | Must | A | AC-16 |
 | SEC-06 | Bundled helpers shall accept only validated structured input, resolve workspace boundaries including symlinks, and expose no generic execution endpoint. | Must | A | AC-16 |
-| SEC-07 | R1 shall bundle no MCP server or MCP configuration. | Must | A | AC-11 |
+| SEC-07 | R1 shall bundle no MCP server or MCP configuration, except the Tenet kernel front-end of Section 5.7.1 when SP-12 selects it. | Must | A | AC-11 |
 | SEC-08 | Tenet shall honor declared exclusions (no-model-send, no-read, no-edit, no-export, no-routine-scan) before affected reads where controllable, disclose host limits and block incompatible work. | Must | B | AC-16, AC-23 |
 | SEC-09 | Review shall flag new network destinations, telemetry calls, credential handling and permission changes introduced in generated code. | Must | B | AC-16, AC-20 |
 | SEC-10 | Tenet shall never weaken tests or CI, bypass hooks, or alter permissions to make a task pass. | Must | A | AC-07 |
@@ -937,7 +937,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 
 | ID | Requirement | Pri | Rel | AC |
 |---|---|---|---|---|
-| RSC-01 | Tenet shall use the active model without asking the user to switch models per phase. | Must | A | AC-15b |
+| RSC-01 | Tenet shall use the active model without asking the user to switch models per phase. A disclosed economy-tier model preference for the read-only researcher role is permitted once release qualification shows it meets that role's thresholds, and the user can decline it in words; the Reviewer and authority-bearing roles always inherit the active model. | Must | A | AC-15b |
 | RSC-02 | Tenet shall record the requested and observed model per assignment where observable; unknown stays unknown. | Must | A | AC-15b |
 | RSC-03 | Tenet shall respect native limits and never fund, purchase, enable overage or switch to a paid route without explicit authority. | Must | A | AC-15c |
 | RSC-04 | Tenet shall report per-contract counts of attempts, review rounds, delegations, Tenet-launched checks and active work time; comparative overhead is an evaluation metric (Section 6.6). | Must | B | AC-15c, AC-19 |
@@ -1059,10 +1059,12 @@ Limits are checked by the coordinator through a helper counter before each new a
 
 | Budget | Target | Mechanism class | Value class |
 |---|---|---|---|
-| Always-loaded Tenet context | ≤ 2,000 tokens | Deterministic (Tenet CI lint) | Provisional |
+| Always-loaded Tenet context: every Tenet-owned item the host includes on every request (skill, agent and command descriptions, MCP tool schemas and the charter section) | ≤ 2,000 tokens | Deterministic (Tenet CI lint) | Provisional |
+| Coordinator agent instructions, present on every request of a Tenet session | ≤ 1,000 tokens | Deterministic (Tenet CI lint) | Provisional |
 | Single skill loaded on demand | ≤ 5,000 tokens | Deterministic (Tenet CI lint) | Provisional |
 | Peak Tenet-injected context per assignment (excludes code read by tools) | ≤ 20,000 tokens | Observed (qualification measurement) | Provisional |
-| Helper latency | p95 ≤ 300 ms warm, ≤ 1 s cold; 5 s timeout with a defined outcome | Observed; timeout deterministic | Provisional |
+| Kernel bookkeeping call latency (all calls except check execution) | p95 ≤ 300 ms warm, ≤ 1 s cold; 5 s timeout with a defined outcome | Observed; timeout deterministic | Provisional |
+| Check execution | Bounded by each check obligation's declared timeout (recipe default 10 min); expiry yields inconclusive | Deterministic | Provisional |
 | Repository map for ≤ 10,000 tracked files | ≤ 30 s without reading all file contents; incremental refresh | Observed | Provisional |
 | `.tenet/` storage, including archives and artifacts | ≤ 50 MB, managed by Section 5.15 | Boundary-checked | Provisional |
 | Resume reconstruction | ≤ 2 min | Observed | Provisional |
@@ -1107,6 +1109,8 @@ Examples illustrate and disambiguate the basis; they never replace it. Review ch
 | The user declined a mandatory step | implemented-unverified (or prototype if requested) |
 | A prototype was requested | prototype, whatever incidentally passes |
 | A required control or capability is unavailable | blocked, or the highest endpoint the assistance level allows |
+| The checked candidate included relevant uncommitted human edits that the Tenet commit excludes | checked-local applies to the working-tree candidate only, and the result says so, unless the committed tree is also validated in a sealed checkout (Section 5.13) |
+| Work was integrated into a base branch that had moved | The integrated tree is a new candidate; affected obligations are rerun before it is described as checked |
 | Review-only request | findings-only |
 
 **Owner acceptance** can accept residual risk on non-blocking items. It cannot waive an integrity rule, a blocker finding or missing mandatory evidence, and it never converts a verdict.
@@ -1138,10 +1142,10 @@ Section 6.2 owns the campaign protocol, Section 6.3 the fixtures, and Section 6.
 | AC-08 | Continuity and resume | Planned, abrupt and host-limit pauses resume within the Section 4.4.3 time with 0 unnecessary repeated questions; budgets not reset; copied records confer no grants; human edits preserved |
 | AC-09 | Learning scope | Corrections apply immediately; lessons stay in their project; forget and reset leave no duplicate in derived indexes; contradicted lessons retire |
 | AC-10 | Lifecycle | Upgrade preview, declined migration, interrupted update, mid-contract update (pause and reconcile), disable and uninstall preserve source and instructions; known-good recovery rehearsed |
-| AC-11 | Release supply chain and privacy | Inclusion list and separate history audit find no private material or credentials; the Section 5.9.2 chain verifies from source to installed artifact; telemetry off by default; no bundled MCP |
+| AC-11 | Release supply chain and privacy | Inclusion list and separate history audit find no private material or credentials; the Section 5.9.2 chain verifies from source to installed artifact; telemetry off by default; no bundled MCP beyond the Section 5.7.1 kernel front-end |
 | AC-12 | Value pilot | Formative: ≥ 10 eligible tasks across 2 repositories plus one sequence of 3 successive changes. Qualification: Section 6.6.4 decision rule passes |
 | AC-13a | Intent traceability and drift | Every contract links to intent IDs; fixtures separate expected edits, in-scope refinement, authorized addition and unexplained drift; seeded drift is detected and escalated |
-| AC-13b | Guarded gates (optional, Later) | Each advertised gated action is actually prevented under mismatch, disable, timeout, crash and schema failure; otherwise the capability is unavailable |
+| AC-13b | Guarded gates (optional, Later) and observer hooks | Each advertised gated action is actually prevented under mismatch, disable, timeout, crash and schema failure; otherwise the capability is unavailable. Observer hooks only record; a missing, failed or incomplete observation downgrades the control to its cooperative label |
 | AC-14 | Maintainer improvement cycle | One frozen baseline-versus-candidate evaluation with holdout; documented decision; evaluator changes cannot self-authorize promotion |
 | AC-15a | Charter and personalization | Existing guidance preserved; shared charter only after preview and only in the loaded instruction file; personal preferences never in shared files; style and checkpoints never weaken checks |
 | AC-15b | Model selection | Active model used without manual switching; requested and observed model recorded; unobserved stays unknown; unqualified model warning appears before Deep work |
@@ -1375,6 +1379,7 @@ A local audit trail is not tamper-proof.
 | Elevation of privilege | Helper path traversal or symlink escape, including a symlinked `.tenet/` | Validated input and boundary resolution (SEC-06, Section 5.11) | AC-16 |
 | Elevation of privilege | Hooks, signing programs or `init.templateDir` hooks run unexpectedly | Hook inspection under consent (GIT-12) | AC-16, AC-25 |
 | Elevation of privilege | Auto-approved tools perform remote or destructive actions | Chat gate (SEC-13) | AC-03, AC-16 |
+| Elevation of privilege | A bundled MCP front-end is trusted implicitly at install | Kernel-only typed tools, no network, no generic execution, disclosure (Section 5.7.1) | AC-11, AC-16 |
 | Elevation of privilege | Benign-named command reads credentials or reaches the network | Execution envelope rule (Section 5.8) | AC-16 |
 
 Residual risk: helpers run the `node` binary resolved from the user's PATH; Tenet documents this and does not resolve its own helper scripts through PATH.
@@ -1407,6 +1412,7 @@ Residual risk: helpers run the `node` binary resolved from the user's PATH; Tene
 - They resolve workspace boundaries, including traversal, symlinks and case-insensitive volumes, on the actual execution machine.
 - They use argument arrays, not dynamic shell strings, and limit filesystem, network and executable access to declared need.
 - Helpers reuse the project's Node.js (INS-07); helper scripts are resolved from the plugin's install path, not from PATH.
+- Helpers never import or execute repository code in their own process; repository tools run only as checks inside execution envelopes (Section 5.8).
 
 **Fault matrix for every required gate:**
 - missing runtime;
@@ -1419,6 +1425,17 @@ Residual risk: helpers run the `node` binary resolved from the user's PATH; Tene
 - conflicting host or plugin configuration.
 
 Host-specific results decide whether action dispatch really stops. A nonzero helper exit is not assumed to fail closed. If required prevention cannot be established, Tenet blocks that operation. A human removing a guard leaves no stronger assurance label active.
+
+#### 5.7.1 Kernel front-ends
+
+The deterministic helper ("kernel") has one implementation and up to two R1 front-ends; both call the same verbs and produce the same records. [Validated: owner, October 15 (D-29).]
+
+| Front-end | Status | Constraints |
+|---|---|---|
+| Command-line, invoked through the host terminal tool | Built and qualified in R1; default unless SP-12 selects the MCP front-end | No shell strings; registered verbs only |
+| Local stdio MCP server bundled with the plugin | Built in R1; becomes the default only if SP-12 shows the command-line front-end exceeds the approval-prompt target (Section 1.6), or that the MCP front-end uses at least 15% fewer AI credits per Standard task with no safety difference; when neither applies, the owner decides from the measured review-result retyping and approval-preview legibility for Guided users | Local stdio transport only; exposes only kernel verbs as typed tools; makes no network connections; offers no generic execution; tool inputs schema-validated; plugin install-time trust disclosed in the README |
+
+A hooks front-end that prevents or forces behavior is added only after SP-03 qualifies hook prevention. Observer hooks, which only record events (edited paths, subagent dispatch, turn end, session start), may ship once SP-03 qualifies their observations; they may raise a control's mechanism class to observed, never to preventive, and a missing or failed observation leaves the control at its cooperative label. Choosing a front-end never changes verdict, evidence or authority semantics.
 
 ### 5.8 Execution envelopes and host approval modes
 
@@ -1521,6 +1538,7 @@ Before public GitHub publication, review the source tree and reachable history s
   - credential stores known to the adapter.
 
   Diagnosis uses presence, never content. Users may add exclusions; removing a default needs an explicit, scoped decision.
+- **Tenet state is kernel-only:** a default no-edit exclusion covers `.tenet/`, so agents change Tenet state only through kernel verbs; where a machine key is available the kernel authenticates its state and reports any out-of-band change as an integrity finding; without one, detection is advisory and the exclusion is the control.
 - Redact likely secrets and sensitive paths before display, trace and export, and state that detection is incomplete.
 - Never hash secret values into fingerprints.
 - No production data in starter examples, evaluations or diagnostic bundles. Agent-created fixtures and `.env` examples contain placeholders only.
@@ -1543,6 +1561,7 @@ Tenet applies exclusions before affected reads where controllable. Coverage incl
 A nested `.gitignore` keeps `.tenet/` out of Git, not out of backups, file sync, workspace indexing or other agents' searches.
 - **Permissions:** Tenet creates `.tenet/` with user-only permissions where supported, plus an ownership marker.
 - **Safe creation:** it refuses to use a `.tenet/` that is a symlink or pre-exists without its marker.
+- **Marker identity:** the marker binds to the directory's filesystem identity (device, inode and creation time) and, where host plugin storage is available, to a key held there. A copied or cloned `.tenet/` therefore fails verification and is quarantined (Section 5.6), while a same-filesystem move keeps it.
 - **Exports:** `.tenet/` is excluded from Tenet-controlled exports unless explicitly included.
 - **Indexing:** where the host allows, Tenet asks the host to exclude `.tenet/` from workspace indexing.
 - **No raw captures:** traces store metadata and references, not raw transcripts.
@@ -1553,6 +1572,7 @@ A nested `.gitignore` keeps `.tenet/` out of Git, not out of backups, file sync,
 - **Atomic ownership:** a write workflow first acquires an ownership claim for its resource scope (workspace source, and separately each shared mutable resource such as a test database, generated output or package cache) through an atomic mechanism. Revision checks and replacements happen inside that ownership boundary. Atomic rename alone prevents torn files, not lost updates.
 - **Multi-record transitions** (for example contract plus evidence index plus handoff) are recoverable: a crash between related writes is detected on restart and reconciled.
 - **Effect records** distinguish intended, dispatched and observed. After a crash, dispatched-but-unobserved effects are inspected before any retry (CON-12).
+- **Leases:** an ownership claim is a lease held by the work contract (plus any host session identity the host exposes), renewed by every mutating kernel call and protected by a fencing counter. Helper process IDs never identify owners, because helpers exit after each call. A result awaiting acceptance releases the write lease at a safe boundary and revalidates on resume.
 - **Liveness:** a stale timestamp is not abandonment. Tenet corroborates owner liveness where observable, reconciles source and obtains a safe takeover when uncertain. Takeover never relies on a timestamp alone.
 - **Scope:** locks coordinate Tenet instances (including several VS Code windows on one checkout, and linked worktrees sharing Git metadata). They do not control unrelated editors or unmediated native tool calls; Tenet detects conflicting source changes and stops affected writes.
 - **Faults:** unknown or malformed schemas, deleted records, read-only storage and conflicting edits trigger diagnosis and reconciliation, never invented authority or silent reset. Unsupported authority fields are never reinterpreted.
@@ -1571,7 +1591,9 @@ On a dirty tree it asks the user (GIT-10) to:
 
 **Staging and commits:**
 - Tenet preserves the user's index (for example by staging through a temporary index) and stages only paths and hunks it authored in scope; it never uses broad staging as a substitute for attribution.
+- **Touched set:** the coordinator declares the files it edited; the kernel cross-checks content changes since its last boundary, and changes that no declared edit explains are treated as possible human edits that need a decision.
 - If a file contains both human and Tenet hunks, Tenet stops and asks.
+- After committing, Tenet updates the user's real index only for committed paths whose index entry still matched the previous HEAD; any other overlap stops for a decision.
 - Commits follow the project's detected message convention; trailers are configurable.
 - Commit-time hooks that modify files trigger re-running affected checks before any claim.
 - If a commit cannot be made (hook failure, unavailable signing, missing author identity), Tenet keeps the candidate uncommitted and reports the recovery limitation (GIT-15). It never bypasses hooks or disables signing.
@@ -1617,6 +1639,7 @@ On a dirty tree it asks the user (GIT-10) to:
   - Before end-to-end checks, it confirms the server is the one it started for this candidate (for example through a per-run token on the health endpoint).
   - Tenet stops only the processes it started.
 - **Determinism:** tests run with a declared time zone and clock where the recipe supports it.
+- **Where run artifacts and sealed checkouts live:** reports, test databases, scratch directories and sealed checkouts (for baseline classification and committed-tree validation) live in the OS temporary directory or host plugin storage, never under `.tenet/` or the workspace; only normalized results are stored in `.tenet/`. If the host forbids writing there, the dependent classification is inconclusive; Tenet never stashes or resets user work to test a baseline.
 - **Database backup and restore:**
   - Before a migration touches real user data, Tenet takes a consistent backup through a supported mechanism (for SQLite, the online backup API or an equivalent consistent copy, never a raw copy of an active file).
   - Restoration is exercised on a fixture (AC-20).
@@ -1829,7 +1852,7 @@ Contamination is tracked: repeated tuning against the public set is disclosed, a
   - forbidden behaviors;
   - findings versus seeded truth;
   - attempts, rounds, delegations, Tenet-launched checks and active time;
-  - premium requests where observable;
+  - AI credits (or premium requests for legacy-billed accounts) where observable, with the model mix;
   - friction events.
 
 #### 6.4.3 Evaluation tiers in CI
@@ -2286,49 +2309,52 @@ Between gates 2 and 3: Tech Spec, UX Spec and phased plan are written and approv
 |---|---|---|---|
 | D-01 | First deliverable is an open-source Copilot plugin with native installation | Plug-and-play adoption | [Validated: owner] |
 | D-02 | Reuse host hooks, agents, permissions, models and UI before building infrastructure | Owner rejected rebuilding a harness | [Validated: owner] |
-| D-03 | No standalone engine, SDK worker manager or daemon in R1 | Follows from D-01 and D-02 | [Proposed: sign-off pending] |
-| D-04 | Govern through active intent, traces, mechanism classes, guardrails and fresh-context review; cross-family review is an optional later capability | Strong critique without unobservable claims | [Proposed: sign-off pending] |
+| D-03 | No standalone engine, SDK worker manager or daemon in R1 | Follows from D-01 and D-02 | [Validated: owner sign-off, October 15] |
+| D-04 | Govern through active intent, traces, mechanism classes, guardrails and fresh-context review; cross-family review is an optional later capability | Strong critique without unobservable claims | [Validated: owner sign-off, October 15] |
 | D-05 | Support new and existing applications without copying a factory into each repository | Shared distribution, project ownership | [Validated: owner] |
-| D-06 | R1 tuple: VS Code desktop, Local agent harness, macOS arm64; other harnesses and Copilot CLI qualify separately | Narrow first qualification; harness semantics differ | [Proposed: sign-off pending; Assumed: verify under Q-01] |
-| D-07 | Improve through outcome-driven experiments, scoped lessons and evaluated releases; R1 promotion is human-reviewed | Owner's autoresearch-like direction; automatic promotion needs evidence | [Validated: direction] [Proposed: R1 mechanism] |
+| D-06 | R1 tuple: VS Code desktop, Local agent harness, macOS arm64; other harnesses and Copilot CLI qualify separately | Narrow first qualification; harness semantics differ | [Validated: owner sign-off, October 15; Assumed: verify under Q-01] |
+| D-07 | Improve through outcome-driven experiments, scoped lessons and evaluated releases; R1 promotion is human-reviewed | Owner's autoresearch-like direction; automatic promotion needs evidence | [Validated: direction; R1 mechanism signed off October 15] |
 | D-08 | A plugin does not inherit autonomous-platform guarantees | Claims must match host boundaries | [Validated: owner] |
-| D-09 | R1 ends at checked-local; R1.1 adds a user-triggered CI delivery recipe | Owner deploys often; production needs external controls | [Proposed: sign-off pending] |
-| D-10 | Shared project memory lives in the repository after one-time adoption; operational state stays local in `.tenet/` | Continuity across machines and sessions | [Proposed: sign-off pending] |
-| D-11 | Checked implementation requires Git; non-Git folders get init (by choice), read-only help or a snapshot-backed prototype | Reliable recovery at low cost | [Proposed: sign-off pending] |
-| D-12 | Starter stack: TypeScript (Node API, React and Vite, SQLite, Vitest, Playwright) | Owner's most-used stack; no external accounts | [Assumed: verify under Q-12] |
-| D-13 | Provisional targets and limits in Sections 1.6, 4.4 and 5.16 are alpha defaults | Alpha needs bounds; calibration under Section 6.12 | [Proposed: sign-off pending] |
-| D-14 | The acceptance oracle is the acceptance basis (Section 4.5.1); confirmed examples become change-controlled tests | Examples alone are not a complete oracle | [Proposed: sign-off pending] |
-| D-15 | CLI/library is the second family (R1.1); a TypeScript CLI/library brownfield fixture exercises it in R1 | Cheapest to verify; proves non-web core early | [Proposed: sign-off pending] |
+| D-09 | R1 ends at checked-local; R1.1 adds a user-triggered CI delivery recipe | Owner deploys often; production needs external controls | [Validated: owner sign-off, October 15] |
+| D-10 | Shared project memory lives in the repository after one-time adoption; operational state stays local in `.tenet/` | Continuity across machines and sessions | [Validated: owner sign-off, October 15] |
+| D-11 | Checked implementation requires Git; non-Git folders get init (by choice), read-only help or a snapshot-backed prototype | Reliable recovery at low cost | [Validated: owner sign-off, October 15] |
+| D-12 | Starter stack: TypeScript with Fastify 5 and Zod, better-sqlite3 with plain numbered SQL migrations, React and Vite, Vitest, Playwright | Owner's most-used stack; mature and explicit; synchronous transactions and a built-in online backup API; no external accounts | [Validated: owner, October 15] |
+| D-13 | Provisional targets and limits in Sections 1.6, 4.4 and 5.16 are alpha defaults | Alpha needs bounds; calibration under Section 6.12 | [Validated: owner sign-off, October 15] |
+| D-14 | The acceptance oracle is the acceptance basis (Section 4.5.1); confirmed examples become change-controlled tests | Examples alone are not a complete oracle | [Validated: owner sign-off, October 15] |
+| D-15 | CLI/library is the second family (R1.1); a TypeScript CLI/library brownfield fixture exercises it in R1 | Cheapest to verify; proves non-web core early | [Validated: owner sign-off, October 15] |
 | D-16 | Keep one specification: this PRD holds every binding product, assurance, evaluation and configuration contract; archives are informative only | Separate files and archives fragment knowledge and drift | [Validated: owner instruction, October 14] |
-| D-17 | Extension architecture: portable Agent Skills core, host capability model, ecosystem adapters, trait composition, extension conformance | Growth without rewrites, proven per extension | [Proposed: sign-off pending] |
-| D-18 | R1 configuration is the twelve-setting catalog of Section 7.3 | Smallest sufficient configuration | [Proposed: sign-off pending] |
-| D-19 | One endpoint verdict policy and finding-severity model (Section 4.5) | Removes ambiguity about "checked" | [Proposed: sign-off pending] |
-| D-20 | Git attribution and local-integration model, with branch-safe IDs (Sections 3.7.3, 5.12) | Never surprise the user's working tree | [Proposed: sign-off pending] |
-| D-21 | Shared-artifact trust model: restrictions only, adoption by content hash, quarantine of unattested state (Section 5.6) | Reconciles repository-held intent with untrusted repository content | [Proposed: sign-off pending] |
-| D-22 | Less-technical builders become a qualified audience in R1.1, not R1 | R1 prerequisites and local-only delivery do not fit them | [Proposed: sign-off pending] |
-| D-23 | Release staging M0 ⊂ A ⊂ B ⊂ R1 with the M0 walking skeleton defined by tags | A shippable alpha | [Proposed: sign-off pending] |
-| D-24 | R1.1 adds a Python adapter to test the extension architecture in a second ecosystem | A second TypeScript family does not prove the seams | [Proposed: sign-off pending] |
-| D-25 | Solo-maintainer review rule until a second maintainer exists (Section 5.9.2) | Two-maintainer review is impossible solo | [Proposed: sign-off pending] |
-| D-26 | SemVer against the public compatibility contract (Section 6.5) | Stable versions; evaluation gates eligibility | [Proposed: sign-off pending] |
-| D-27 | Evaluation uses evidence tiers and reliability-first metrics; pass@k is diagnostic only (Sections 6.1–6.2) | Users experience single bounded runs | [Proposed: sign-off pending] |
-| D-28 | Every consequential control states a mechanism class (Section 5.4) | Honest enforcement claims | [Proposed: sign-off pending] |
+| D-17 | Extension architecture: portable Agent Skills core, host capability model, ecosystem adapters, trait composition, extension conformance | Growth without rewrites, proven per extension | [Validated: owner sign-off, October 15] |
+| D-18 | R1 configuration is the twelve-setting catalog of Section 7.3 | Smallest sufficient configuration | [Validated: owner sign-off, October 15] |
+| D-19 | One endpoint verdict policy and finding-severity model (Section 4.5) | Removes ambiguity about "checked" | [Validated: owner sign-off, October 15] |
+| D-20 | Git attribution and local-integration model, with branch-safe IDs (Sections 3.7.3, 5.12) | Never surprise the user's working tree | [Validated: owner sign-off, October 15] |
+| D-21 | Shared-artifact trust model: restrictions only, adoption by content hash, quarantine of unattested state (Section 5.6) | Reconciles repository-held intent with untrusted repository content | [Validated: owner sign-off, October 15] |
+| D-22 | Less-technical builders become a qualified audience in R1.1, not R1 | R1 prerequisites and local-only delivery do not fit them | [Validated: owner sign-off, October 15] |
+| D-23 | Release staging M0 ⊂ A ⊂ B ⊂ R1 with the M0 walking skeleton defined by tags | A shippable alpha | [Validated: owner sign-off, October 15] |
+| D-24 | R1.1 adds a Python adapter to test the extension architecture in a second ecosystem | A second TypeScript family does not prove the seams | [Validated: owner sign-off, October 15] |
+| D-25 | Solo-maintainer review rule until a second maintainer exists (Section 5.9.2) | Two-maintainer review is impossible solo | [Validated: owner sign-off, October 15] |
+| D-26 | SemVer against the public compatibility contract (Section 6.5) | Stable versions; evaluation gates eligibility | [Validated: owner sign-off, October 15] |
+| D-27 | Evaluation uses evidence tiers and reliability-first metrics; pass@k is diagnostic only (Sections 6.1–6.2) | Users experience single bounded runs | [Validated: owner sign-off, October 15] |
+| D-28 | Every consequential control states a mechanism class (Section 5.4) | Honest enforcement claims | [Validated: owner sign-off, October 15] |
+| D-29 | One kernel with a command-line front-end and a local stdio MCP front-end; SP-12 selects the default under the narrow SEC-07 exception of Section 5.7.1 | Terminal approvals may be too frequent; MCP tools get session-level approval; semantics stay identical | [Validated: owner, October 15] |
+| D-30 | Adapt to token-based Copilot billing and to host capabilities: observer hooks before prevention (Section 5.7.1, AC-13b); front-end selection weighs AI credits (Section 5.7.1); a host-provided repository map (Section 3.8.7); efficiency targets in AI credits per accepted outcome (Sections 1.6, 2.2); an always-loaded budget that counts tool schemas and the charter (Section 4.4.3); a qualified economy model for the researcher role (RSC-01) | Since June 1, 2026 most plans bill by tokens; the host already provides references and observation events | [Validated: owner, October 15] |
 
 Historical platform requirement IDs (v0.2–v0.4) remain retired. v0.12 F-IDs map to current IDs in Appendix B.
 
 ### 8.4 Owner sign-off register
 
-The owner asked on October 14 to incorporate the review recommendations. Each item below still needs an explicit one-line sign-off, because a governance product should not ratify a dozen decisions from one sentence.
+The owner asked on October 14 to incorporate the review recommendations and, on October 15, explicitly signed off every item below after reviewing them as one register.
 
 | Item | Summary | Status | Signed |
 |---|---|---|---|
-| Section 1.4 | R1 primary user: technical builder | Pending | — |
-| Section 2.1, 2.6 | R1 scope and release staging (D-23) | Pending | — |
-| Section 2.7 | Owner-intent reconciliation | Pending | — |
-| D-03, D-04, D-06 | No engine; governance mechanisms; R1 tuple | Pending | — |
-| D-07 (R1 mechanism) | Human-reviewed promotion in R1 | Pending | — |
-| D-09 to D-11 | Checked-local endpoint; repository memory; Git requirement | Pending | — |
-| D-13 to D-15 | Provisional numbers; acceptance basis; second family | Pending | — |
-| D-17 to D-28 | Extension architecture; catalog; verdict policy; Git model; shared-artifact trust; persona move; staging; Python adapter; solo rule; versioning; evaluation metrics; mechanism classes | Pending | — |
+| Section 1.4 | R1 primary user: technical builder | Signed | October 15, 2026 |
+| Section 2.1, 2.6 | R1 scope and release staging (D-23) | Signed | October 15, 2026 |
+| Section 2.7 | Owner-intent reconciliation | Signed | October 15, 2026 |
+| D-03, D-04, D-06 | No engine; governance mechanisms; R1 tuple | Signed | October 15, 2026 |
+| D-07 (R1 mechanism) | Human-reviewed promotion in R1 | Signed | October 15, 2026 |
+| D-09 to D-11 | Checked-local endpoint; repository memory; Git requirement | Signed | October 15, 2026 |
+| D-13 to D-15 | Provisional numbers; acceptance basis; second family | Signed | October 15, 2026 |
+| D-17 to D-28 | Extension architecture; catalog; verdict policy; Git model; shared-artifact trust; persona move; staging; Python adapter; solo rule; versioning; evaluation metrics; mechanism classes | Signed | October 15, 2026 |
+| D-29, D-30 | Kernel front-ends; token-billing and host-capability amendments (v0.16) | Signed | October 15, 2026 |
 
 ### 8.5 Dependencies
 
@@ -2337,6 +2363,7 @@ The owner asked on October 14 to incorporate the review recommendations. Each it
 | Native plugin installation on one qualified path | Documented; enable and disable semantics differ by path | Release maintainer (SP-01, AC-01) | Every supported tuple |
 | Skills, custom agents, subagents on the chosen harness | Documented with harness differences | Technical maintainer (SP-02, SP-08) | Core workflow |
 | Host approval-mode visibility and native questions | Unverified | Technical maintainer (SP-12) | SEC-13 labeling |
+| Kernel front-end selection (terminal command versus local MCP) | Both to be built; selection by measured prompts per task | Technical maintainer (SP-12) | Default front-end (Section 5.7.1) |
 | Hooks and permission decisions | Preview and harness-dependent | Technical maintainer (SP-03) | Guarded capability only |
 | Helper execution via the project's Node.js | Likely for R1 projects | Technical maintainer (SP-01) | Helper-dependent requirements |
 | Node/TypeScript adapter and fixtures | Not built | Technical maintainer (SP-10) | Starter and brownfield |
@@ -2417,12 +2444,13 @@ AC-03, AC-07, AC-08, AC-10, AC-24, AC-25 and AC-27 reject these readings.
 
 ### 10.1 Open product decisions
 
-All entries are [Unknown: TBD] until resolved. Q-02, Q-05, Q-07, Q-08 and Q-10 from earlier drafts are resolved:
+All entries are [Unknown: TBD] until resolved. Q-02, Q-05, Q-07, Q-08, Q-10 and Q-12 are resolved:
 - Q-02 → D-12, D-15 and Section 2.3;
 - Q-05 → D-23 and Section 2.6;
 - Q-07 → D-13 and Section 4.4;
 - Q-08 → D-18 and Section 7;
-- Q-10 → NFR-06 and Section 6.8.
+- Q-10 → NFR-06 and Section 6.8;
+- Q-12 → D-12 (owner decision, October 15).
 
 | ID | Open decision | Proposed resolution | Owner and gate |
 |---|---|---|---|
@@ -2432,7 +2460,6 @@ All entries are [Unknown: TBD] until resolved. Q-02, Q-05, Q-07, Q-08 and Q-10 f
 | Q-06 | Retention defaults | Freeze Sections 4.4.3 and 5.15 values | Product owner before Tech Spec approval |
 | Q-09 | Release stewardship owners | Name release and security owners for the Section 5.9.2 policy | Product owner before public beta |
 | Q-11 | Meaning of "100% utilization ceiling" | A spending ceiling (never exceed the authorized allowance), not a target to consume allowance; Tenet never creates work to use credits | Product owner before quota-aware accounting (Later) |
-| Q-12 | Confirm starter stack | D-12 | Product owner before Tech Spec approval |
 | Q-13 | Name and namespace availability | Check "Tenet" against marketplace, npm, GitHub and trademark conflicts; keep a fallback name | Product owner before publication |
 | Q-14 | Staffing | Assign Section 8.6 roles to named people; seek a second maintainer | Product owner before phased plan |
 | Q-15 | Publish discovery aggregates (Section 1.2) | Publish only the two aggregate counts, with owner consent; otherwise remove from the public version | Product owner before publication |
@@ -2446,7 +2473,7 @@ All spikes are unexecuted and each needs separate authorization (Section 8.1). T
 |---|---|---|---|---|
 | SP-01 | Which install path qualifies? Does enabling plugins need a settings toggle? Can helpers run via the project's Node.js without user setup? Prove packaging, cold start, denied execution and enable, disable and uninstall semantics | Before Tech Spec | 2 days | Remove the helper need or revise scope |
 | SP-02 | Where do skills, instruction files, user settings and workspace state load and persist on the chosen harness? Can `.tenet/` be excluded from host indexing? | Before Tech Spec | 2 days | Narrow claims or revise storage design |
-| SP-03 | Which tool actions can hooks actually prevent, including on crash, timeout and disable? | Guarded capability only | 3 days | Keep guarded capability unavailable |
+| SP-03 | Which tool actions can hooks actually prevent, including on crash, timeout and disable? Which events can observer hooks reliably record, with what payloads? | Guarded capability; observer hooks | 3 days | Keep guarded capability unavailable; controls stay cooperative |
 | SP-04 | Can native roles resolve eligible models and expose the actual model and family? | Portfolios and cross-family review | 2 days | Active model only; unknown stays unknown |
 | SP-05 | Which counters, usage and cancellation signals are observable for the Section 4.4 limits? | Before Tech Spec (M0 limits depend on it) | 1 day | Use only Tenet-observed counts; narrow claims |
 | SP-06 | Candidate identity and Git attribution: digest of uncommitted state; staging only Tenet hunks through a temporary index while preserving the user's index; hooks that modify files; undo as inverse with later human commits; edits during a running check; two racing writers | Before Tech Spec | 3 days | Narrow evidence or recovery claims |
@@ -2455,14 +2482,14 @@ All spikes are unexecuted and each needs separate authorization (Section 8.1). T
 | SP-09 | Do the same skills load and run in Copilot CLI? | R1.1 | 1 day | Defer CLI support |
 | SP-10 | Can the Node/TypeScript adapter normalize Vitest, Jest, Playwright, ESLint and tsc output under the Section 3.8.3 contract on the starter and both brownfield fixtures, including malformed and stale reports? | Before Tech Spec | 3 days | Narrow brownfield eligibility |
 | SP-11 | Can the native-host suite run unattended on the exact tuple, within terms of service, with secrets isolated and a known cost? | Before alpha | 3 days | Scheduled manual T3 runs with published traces; proxies labeled |
-| SP-12 | Is the host's tool approval mode observable, and are native questions available for choices? | Before Tech Spec | 1 day | Treat approval mode as unknown (SEC-13 gate always on) |
+| SP-12 | Is the host's tool approval mode observable, and are native questions available for choices? How many Tenet-caused approval prompts, and how many AI credits, does a Standard task use through the command-line front-end versus the MCP front-end, and how often does the coordinator retype review results? | Before Tech Spec | 2 days | Treat approval mode as unknown (SEC-13 gate always on); choose the front-end by the Section 5.7.1 rule, or keep the command-line front-end and narrow the friction claim |
 
 ### 10.3 Readiness definition
 
 | State | Conditions | Current |
 |---|---|---|
-| Approval-ready | Section 8.4 register signed; Q-01 and Q-12 have owners and dates | **Approval candidate**: register pending |
-| Design-ready (Tech Spec may be approved) | SP-01, SP-02, SP-05, SP-06, SP-08, SP-10, SP-11 and SP-12 dispositioned and reflected in a PRD revision; Q-01, Q-06, Q-12 and Q-14 resolved | Not started |
+| Approval-ready | Section 8.4 register signed; Q-01 owned with its gate; Q-12 resolved | **Met October 15, 2026** |
+| Design-ready (Tech Spec may be approved) | SP-01, SP-02, SP-05, SP-06, SP-08, SP-10, SP-11 and SP-12 dispositioned and reflected in a PRD revision; Q-01, Q-06 and Q-14 resolved; Tech Spec drafted | Tech Spec v0.1 drafted; spikes not started |
 | Implementation-ready | Tech Spec, UX Spec and phased plan approved | Not started |
 
 Optional-capability spikes (SP-03, SP-04, SP-09) do not block core design.
@@ -2474,7 +2501,7 @@ Optional-capability spikes (SP-03, SP-04, SP-09) do not block core design.
 ### 11.1 Approach
 
 - Build the portable core as Agent Skills: a main workflow skill, role skills, recipe and trait resources, rubrics.
-- Host bindings for VS Code: one coordinator custom agent, Reviewer and Researcher custom agents, slash-command prompts, a capability descriptor, and hooks only where SP-03 proves value.
+- Host bindings for VS Code: one coordinator custom agent, Reviewer and Researcher custom agents, slash-command prompts, a capability descriptor, observer hooks where SP-03 qualifies their observations, and preventive hooks only where SP-03 proves prevention.
 - Reuse native progress, questions, diffs, permissions, model selection and delegation.
 - Put everything countable or checkable into small deterministic helpers:
   - counters and ownership claims;
@@ -2482,7 +2509,7 @@ Optional-capability spikes (SP-03, SP-04, SP-09) do not block core design.
   - record validation;
   - adapter normalization;
   - Git staging through a temporary index.
-- Never add an SDK, custom extension, MCP server, database or background service.
+- Never add an SDK, custom extension, MCP server, database or background service, except the kernel front-end of Section 5.7.1.
 - When a capability cannot be detected, probe explicitly or mark it unknown; never infer it from a version number.
 
 ### 11.2 Sequencing
@@ -2511,7 +2538,7 @@ The next review assesses spike evidence and complete user-session traces, not pr
 
 ### 11.4 Tech Spec and UX Spec obligations
 
-The Tech Spec and UX Spec must answer each item with a design and a verification method.
+The Tech Spec and UX Spec must answer each item with a design and a verification method. The Tech Spec answers are indexed in [`specs/tech-spec.md`](tech-spec.md) Appendix B.
 
 | Area | Required decision or check | Spec |
 |---|---|---|
@@ -2759,3 +2786,25 @@ This appendix records where review input went. It is not binding: every adopted 
     - M0 and beta release staging, an owner sign-off register, and spikes SP-11 and SP-12.
   - Moves less-technical builders to R1.1.
   - Feasibility remains unexecuted; no implementation is authorized.
+- **v0.15:** records the owner's October 15 sign-off of the Section 8.4 register and the decisions taken while drafting the Tech Spec.
+  - Resolves Q-12: the starter uses Fastify 5 and Zod, better-sqlite3 and plain SQL migrations (D-12).
+  - Adds D-29 and Section 5.7.1: one kernel with command-line and local stdio MCP front-ends, the default chosen by SP-12 under a narrow SEC-07 exception, carried into Section 11.1 and AC-11.
+  - Clarifies:
+    - kernel latency budgets exclude check execution, which has its own timeouts;
+    - review-only runs as one stateless call;
+    - sealed checkouts and run artifacts live outside the workspace;
+    - ownership is a work-contract lease, never a helper process ID;
+    - `.tenet/` is in the default no-edit exclusions, with tamper detection authenticated where a machine key exists and advisory otherwise;
+    - the `.tenet/` marker binds to directory identity;
+    - Git staging uses a declared touched set and syncs the user's index only where safe;
+    - committed trees and integrated trees are distinct candidates;
+    - helpers never run repository code in their own process;
+    - the Node baseline is the current LTS lines (22 and 24);
+    - the friction targets include Tenet-caused approval prompts.
+- **v0.16:** applies the six amendments the owner approved on October 15 while drafting Tech Spec v0.4 (D-30).
+  - Observer hooks may ship before hook prevention is qualified; they only record, and may raise a control's mechanism class to observed (Section 5.7.1, AC-13b, SP-03, Section 11.1).
+  - Front-end selection also weighs AI credits per Standard task, and the owner decides from retyping and legibility measurements when prompts and credits do not (Section 5.7.1, SP-12).
+  - A qualified host language service may provide the repository map (Section 3.8.7).
+  - Efficiency targets and plan guidance move from premium requests to AI credits per accepted outcome, with failed and cancelled runs included (Sections 1.6, 2.2, 6.4).
+  - The always-loaded budget counts tool schemas and the charter, and coordinator instructions get their own budget (Section 4.4.3).
+  - RSC-01 permits a disclosed, declinable economy model for the read-only researcher role once qualified.
