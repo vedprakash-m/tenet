@@ -1,6 +1,6 @@
 # Tenet - Technical Specification
 
-> v0.4 | October 15, 2026 | Draft for technical review | Implements [PRD v0.16](PRD.md)
+> v0.5 | October 16, 2026 | Draft for technical review | Implements [PRD v0.16](PRD.md)
 
 ## 0. About this document
 
@@ -12,9 +12,9 @@ This specification defines **how** Tenet for Copilot delivers [`specs/PRD.md`](P
 
 ### 0.2 Status
 
-This is a **pre-spike design**. Elements that depend on host behavior are marked **[SPIKE: SP-xx]** with a fallback; spike protocols are in Section 19.1. v0.5 records the spike results and becomes the approval candidate (PRD Section 10.3).
+This is a **pre-spike design**. Elements that depend on host behavior are marked **[SPIKE: SP-xx]** with a fallback; spike protocols are in Section 19.1. v0.6 records the spike results and becomes the approval candidate (PRD Section 10.3).
 
-v0.4 incorporates five reviews of v0.3. Its main change is cost. Since June 1, 2026, Copilot bills by tokens (AI credits) rather than premium requests, so round trips, re-sent responses, tool schemas, retyped bodies and the choice of model now cost money. v0.4 makes routine kernel traffic small, keeps model choice with the host, reports usage honestly, and fixes correctness gaps the reviews found. Section 20.2 lists what was removed; Appendix E records the review points that were adapted or rejected.
+v0.5 incorporates five final reviews of v0.4. It changes no architecture. It makes the correctness contracts compose: what counts as accepted intent versus checked input, how a recheck extends a full review, how stale callers and concurrent results are fenced, how Git stays safe around hooks and the index, and how intent survives archival and branches. It also removes mechanisms that did not earn their keep. Section 20.2 lists the removals; the history of earlier revisions lives in Git.
 
 ### 0.3 Reading guide
 
@@ -22,7 +22,7 @@ v0.4 incorporates five reviews of v0.3. Its main change is cost. Since June 1, 2
 |---|---|
 | Owner and reviewers | 1, 2, 4.4, 4.8, 14.4, 20, 22 |
 | Kernel implementer | 6–10, 15 |
-| Skill and prompt author | 4, 5, 8.7, Appendix F |
+| Skill and prompt author | 4, 5, 8.7, Appendix E |
 | Starter and recipe author | 12, 13 |
 | Security reviewer | 2.3, 7, 9.3, 10, 11 |
 | QA and evaluation | 17, 19, Appendix A |
@@ -42,7 +42,7 @@ Every mechanism in this document must meet four conditions:
 3. it is the simplest mechanism found that meets the requirement;
 4. it states the simpler alternative it beat, or the requirement that ruled that alternative out.
 
-Mechanisms that only make an edge case more elegant are deferred until a fixture or measurement shows a real cost; the PRD allows such cases to be handled with a question or a narrower claim instead. Reviewers should reject additions that cannot meet the rule.
+Mechanisms that only make an edge case more elegant are deferred until a fixture or measurement shows a real cost; the PRD allows such cases to be handled with a question or a narrower claim instead. Claimed savings (tokens, calls, lines of code) are hypotheses until SP-12 and Section 17.5 measure them. Reviewers should reject additions that cannot meet the rule.
 
 ### 0.6 Native-first rule
 
@@ -108,7 +108,7 @@ User ──chat──▶ VS Code (Local harness) ─── Copilot models (host-
                  ▼
    Project workspace (Git or not)        User config dir       OS temp or plugin storage
    ├─ source, tests, INTENT.md …         ├─ prefs              ├─ check run directories
-   └─ .tenet/ (state, log, blobs, git)   └─ key (optional)     └─ sealed baselines (Beta)
+   └─ .tenet/ (state, log, blobs, git)                         └─ sealed baselines (Beta)
    Project toolchain: node, package manager, vitest/jest, playwright, eslint, tsc
                  │ only on explicit request
                  ▼
@@ -141,7 +141,7 @@ Tenet has no server, account or network endpoint. Remote traffic comes only from
 | Identifiers | `decide` | Use | Deterministic | INT-10 |
 | Locks on acceptance tests | `check` | — | Detected | EVD-10 |
 | Attribution of edits | `check`, `commit`, `finish` | Declare edited files | Detected plus cooperative; observed for agent-tool edits where observer hooks qualify (10.2, 4.7) | GIT-03, GIT-08 |
-| Review independence and result integrity | `findings` | Dispatch the Reviewer | Observed where the host exposes dispatch (hooks) or the Reviewer submits directly (MCP); otherwise cooperative and disclosed | REV-06 |
+| Review independence and result integrity | `findings` | Dispatch the Reviewer | Two separate labels. *Capture:* `reported` when the coordinator relays the result, `tool-scoped` when the Reviewer submits through its own MCP tool, `observed` when a hook records it. *Independence:* observed only from a dispatch signal (hooks); otherwise cooperative and disclosed | REV-06 |
 
 **Rules that make the boundary bite:**
 - Every status, result and review manifest is rendered from kernel output. A skipped kernel call leaves nothing to render, so it shows up as missing data rather than invented success.
@@ -179,7 +179,7 @@ About 6 kernel calls (`open`, `decide`, two `check` calls, `findings`, `finish`)
 
 #### 2.4.3 Review only
 
-`review` is one stateless call. It returns the review manifest, the rubric and a finding scaffold, and writes nothing in the project: no `.tenet/`, no trace, no Git objects (CON-09). It runs no project tools; if the user wants checks, the coordinator offers an `investigate` contract, which runs them with normal state. "Fix findings 2 and 4" uses the Reviewer's handoff button, which carries the review context into `open fix` with the manifest hash and the chosen finding numbers (RES-06).
+`review` is one stateless call. It writes the review manifest to a run directory in OS temp and returns its path, and writes nothing in the project: no `.tenet/`, no trace, no Git objects (CON-09). It runs no project tools; if the user wants checks, the coordinator offers an `investigate` contract, which runs them with normal state. "Fix findings 2 and 4" in the same chat calls `open fix` with the manifest hash and the chosen finding numbers, so the review context carries over without any extra mechanism (RES-06).
 
 #### 2.4.4 Resume after an abrupt stop
 
@@ -241,6 +241,7 @@ tenet/
 │  ├─ com.github.copilot/commands/ tenet.md · tenet-review.md
 │  ├─ kernel/tenet.mjs        the kernel bundle (command line; --mcp)
 │  ├─ kernel/hook.mjs         the hook entry, a few KB with no dependencies (4.7)
+│  ├─ skills/tenet-starter-ts-web-api/upgrades/   one template patch per recipe release (12.10)
 │  ├─ descriptors/vscode-local.json
 │  ├─ mcp.json                only if SP-12 selects MCP (4.5)
 │  └─ hooks/hooks.json        only once SP-03 qualifies observation (4.7)
@@ -256,7 +257,7 @@ tenet/
 | Language | TypeScript, strict; `tsc --noEmit` in CI, separate from bundling | One language for kernel, adapters, tests and tools; a successful bundle is not a successful type check |
 | Runtime | The project's Node: 22.12 or later 22.x, or 24.x (exact minimum patches pinned at approval), the same LTS lines as the brownfield support matrix (PRD Section 2.3) | Every R1 project already needs Node (INS-07); no second runtime |
 | Bundle | esbuild to two unminified ESM files: `kernel/tenet.mjs` (command line and MCP) and `kernel/hook.mjs` (hook entry, no dependencies) | One build and one source tree; the hook entry stays tiny because it runs on every edit |
-| Startup | `module.enableCompileCache()` with the cache in OS temp; flags parsed with `node:util` `parseArgs` | Keeps the 1-second cold budget without a CLI library |
+| Startup | Flags parsed with `node:util` `parseArgs`. `module.enableCompileCache()` only if the cold-start benchmark (14.1) needs it; its cache is then listed as Tenet residue (18) | Keeps the 1-second cold budget without a CLI library |
 | Tests | `node:test` with `fast-check` (development only) | No test framework shipped |
 | Reproducibility | Pinned lockfile; CI rebuilds and compares every payload hash | PRD Section 5.9.2 |
 
@@ -291,8 +292,8 @@ Each library is pinned, license-checked (both MIT), listed in `NOTICE` and scann
 
 | Agent | Role | Tool scope | Notes |
 |---|---|---|---|
-| `tenet` | Coordinator | A fixed, minimal list: edit, read (including `problems`), search (including `usages` and `changes`), execute (terminal, tasks, `testFailure`), `todos`, `askQuestions`, and subagent dispatch restricted to the two agents below; the Tenet MCP tools if selected. The browser toolset is added only if golden tasks show it pays for its schema tokens | Its body holds the core loop (5.2), so the loop survives context compaction; skills hold the detail |
-| `tenet-reviewer` | Fresh-context Reviewer | Read and search (including `usages` and `changes`); the `tenet_findings` tool if MCP is selected | `user-invocable: false`; loads `tenet-review`; a `handoffs` entry "Fix selected findings" returns to `tenet` |
+| `tenet` | Coordinator | A fixed, minimal list: edit, read (including `problems`), search (including `usages` and `changes`), execute (terminal, tasks, `testFailure`), `todos`, `askQuestions`, and subagent dispatch restricted to the two agents below; the Tenet MCP tools if selected, never `tenet_findings`. The browser toolset is added only if golden tasks show it pays for its schema tokens | Its body holds the core loop (5.2), so the loop survives context compaction; skills hold the detail |
+| `tenet-reviewer` | Fresh-context Reviewer | Read and search (including `usages` and `changes`); the `tenet_findings` tool if MCP is selected | `user-invocable: false`; loads `tenet-review`. No handoff: a subagent's handoff buttons never appear, and the user's reply in the `tenet` chat already carries the review context |
 | `tenet-analyst` | Read-only Researcher, Architect or Security analyst, chosen by its packet | Read and search | `user-invocable: false`; dispatched only when a question remains after the coordinator's own search, and natively for Architect and Security in Deep work (PRD Section 3.9) |
 
 One read-only analyst agent covers three roles because their boundaries are identical; the packet carries the role contract. A role gets its own agent only when golden tasks show the shared instructions misroute. Every tool schema is paid on every request, so the tool lists change only through a release, never mid-session (14.4).
@@ -300,7 +301,7 @@ One read-only analyst agent covers three roles because their boundaries are iden
 **Host facts relied on** (documented; confirmed by SP-08):
 - Local subagents have isolated, stateless contexts and cannot use the questions or todo tools.
 - Nested subagents are off by default (`chat.subagents.allowInvocationsFromSubagents`), which makes AGT-06 preventive while that setting stays off; the descriptor records the observed value.
-- Custom agents restrict tools and allowed subagents, and `handoffs` carry the conversation into another agent.
+- Custom agents restrict tools and allowed subagents.
 - A subagent's model is, in order: a model passed to `runSubagent`; the custom agent's `model`; Auto, if the experimental `chat.subagents.defaultToAuto` is on (default off; not limited to the main model's cost tier); otherwise the main model. An explicit model above the main model's cost tier does not run. Section 4.8 sets Tenet's policy.
 
 **Small work** uses focused same-session passes, never described as separate agents (AGT-09).
@@ -310,10 +311,10 @@ One read-only analyst agent covers three roles because their boundaries are iden
 | Working name | Pinned agent | Kernel call | Writes state? |
 |---|---|---|---|
 | `/tenet <task>` | `tenet` | `open <profile>` (the coordinator picks `feature`, `bug`, `refactor`, `investigate`, `prototype`, `plan`, `continue`, `fix`, `promote` or `recipe-upgrade`) | Yes |
-| `/tenet status`, `why`, `help`, `setup`, `feedback` | `tenet` | `inspect`, `decide` or `export` | Only `setup` (preferences) and `feedback` (to a chosen path) |
+| `/tenet status`, `why`, `help`, `setup`, `feedback` | `tenet` | `inspect` (including the export preview) or `decide` | Only `setup` (preferences) and `feedback` (a previewed export to a chosen path, 6.5) |
 | `/tenet-review [scope]` | `tenet` | `review` | No (stateless) |
 
-Each command file names its agent, so Tenet's tool restrictions and subagent allowlist always apply. Only review-only gets its own command, because its zero-write guarantee is worth a visible entry point; everything else is an argument, which keeps the ambient budget small. If another agent loads a Tenet skill, the skill tells the user to use `/tenet` instead. Final names belong to the UX Spec.
+Each command file names its agent, so Tenet's tool restrictions and subagent allowlist always apply. `status`, `help` and readiness work before `.tenet/` exists, as stateless calls. Only review-only gets its own command, because its zero-write guarantee is worth a visible entry point; everything else is an argument, which keeps the ambient budget small. If another agent loads a Tenet skill, the skill tells the user to use `/tenet` instead. Final names belong to the UX Spec.
 
 ### 4.4 Capability descriptor and native capabilities
 
@@ -324,7 +325,7 @@ The descriptor (PRD Section 3.8.2) holds one key per capability, each with a sou
 | `harness` | `local` | Static |
 | `subagents` (dispatch, parallel, nested, freshContext, modelRule) | yes, yes, no by default, yes, `inherited` (or `auto` when `chat.subagents.defaultToAuto` is on) | SP-08, then observed |
 | `hooks` (observe, prevent) | observe: unknown until SP-03; prevent: unused | SP-03 |
-| `approval.mode` | `unknown`; `allow-all (inferred)` in a linked worktree, where the host always uses Allow all (11.4) | Probe |
+| `approval.mode` | `unknown` (no host signal is documented; a Git linked worktree is not evidence of a host worktree session) | SP-12 |
 | `containment` | `none-observed`; a denied kernel write outside the workspace is recorded literally as `outside-write-denied`, not as a named sandbox (11.4) | Probe |
 | `questions.native` | `askQuestions` available to the coordinator; answers reach the agent, not the kernel | SP-12 |
 | `todos`, `checkpoints`, `usages`, `diagnostics`, `browser` | available to the coordinator | Static, confirmed by SP-08 |
@@ -368,24 +369,24 @@ env -u NODE_OPTIONS node "<plugin>/kernel/tenet.mjs" <verb> [--flag value …] [
 TENET_INPUT
 ```
 
-- **Input:** flags carry short scalar inputs (including answers, `--answer q2=1`), so the host's approval preview shows what the call does and the agent writes few output tokens. Larger bodies (a proposed basis or plan) arrive as JSON on stdin through a quoted heredoc. A quoted heredoc never interpolates, and the delimiter `TENET_INPUT` is rejected if it appears inside the body. Bodies are limited to 256 KB. [SPIKE: SP-12] confirms the terminal tool passes heredocs intact and that auto-approve rules can match them. *Fallback:* the body goes to a file the kernel itself creates in OS temp through a preceding `inspect --new-input` call.
+- **Input:** flags carry short scalar inputs (including option answers, `--answer q2=1`), so the host's approval preview shows what the call does and the agent writes few output tokens. Larger bodies (a proposed basis or plan, free-text answers) arrive as JSON on stdin through a quoted heredoc. A quoted heredoc never interpolates, and the delimiter `TENET_INPUT` is rejected if it appears inside the body. Bodies are limited to 256 KB. [SPIKE: SP-12] confirms the terminal tool passes heredocs intact and that auto-approve rules can match them. *Fallback:* the body goes to a file the kernel itself creates in OS temp through a preceding `inspect --new-input` call.
 - **Launch environment:** the command clears `NODE_OPTIONS` before Node starts, because a preloaded module would run before any kernel code. The kernel still reports `preload-present` (exit 4) if a preload flag reaches it by another launch path; that check detects accidents and cannot prevent a deliberate preload (PRD Section 5.5).
-- **Locating the kernel:** the `tenet` agent runs the kernel by its path relative to the skill folder. The kernel verifies its location and the payload hashes at start. **The kernel never runs from the workspace.** If SP-01 shows skill-relative paths fail, setup installs a pinned copy in the user configuration directory (`<userDir>/kernel/<version>/tenet.mjs`), verified against the hash written in the skill text (TQ-01).
+- **Locating the kernel:** the `tenet` agent body cannot use `${PLUGIN_ROOT}` (it expands only in hooks and MCP configuration), so it finds the kernel relative to the `tenet` skill's file path, which the host lists with the available skills. [SPIKE: SP-01] confirms that path is visible before any skill loads (TQ-01). *Fallback:* setup installs a pinned copy at a fixed user-directory path (`<userDir>/kernel/<version>/tenet.mjs`), verified against the hash written in the skill text; the approval snippet (4.6) uses the same path. The kernel verifies its location and the payload hashes at start. **The kernel never runs from the workspace.**
 - **Workspace:** `git rev-parse --show-toplevel` from the current directory, or the current directory for non-Git folders.
 
 **MCP** (`node tenet.mjs --mcp`, declared in `mcp.json` only when selected):
 - built on the bundled official SDK, so lifecycle, version negotiation, cancellation and message limits follow the specification without custom code; application-level permissions, input bounds and cleanup are still Tenet's and are tested;
-- **three tools, not one per verb,** because every schema is paid on every request (14.4): `tenet_read` (`review`, `inspect`, `packet handoff`, `packet resume`; annotated `readOnlyHint`), `tenet` (every other verb, selected by a `verb` field; never annotated read-only) and `tenet_findings` (for the Reviewer only);
+- **four tools, grouped by the verb risk classes of 6.5,** so host approval works exactly as the command-line snippet does: `tenet_read` (read-only and stateless verbs; `readOnlyHint`), `tenet` (routine verbs), `tenet_act` (consequential verbs; `destructiveHint`) and `tenet_findings` (the Reviewer only). Each tool selects its verb with a `verb` field. Four small schemas cost fewer tokens than one per verb, and SP-12 measures the actual serialized size;
+- `tenet` and `tenet_act` reject a review result marked `subagent-fresh`; only `tenet_findings`, which the coordinator does not have, accepts one. The tool used therefore identifies the caller class, and review capture becomes `tool-scoped`. Independence still needs a dispatch signal (2.3);
 - `mcp.json` clears `NODE_OPTIONS` in the server environment, and uses `${PLUGIN_DATA}` as the user directory where the host provides it;
 - the workspace comes from MCP roots; without roots, mutating calls are refused until the user confirms the workspace once, which is recorded with a workspace ID;
-- the Reviewer gets only `tenet_findings`, so its result reaches the kernel without the coordinator retyping it;
 - user decisions use elicitation when the client supports it and the kernel receives the answer;
 - time spent waiting for the user never counts toward the 5-second bookkeeping budget;
 - cancellation stops owned processes (9.3) and records uncertain effects (7.4).
 
 **Selection (SP-12):**
 1. **Safety gate.** Each candidate front-end must show, on the tuple: the kernel's and its children's effective containment; access to the workspace, user directory and OS temp; network behavior; cancellation and disconnect behavior; and behavior when policy denies the server. A front-end that fails the gate is not eligible.
-2. **Measurement.** Run 3 representative golden tasks (feature, bug, review-then-fix), 5 times each, through each eligible front-end. Report the distribution of Tenet-caused approval prompts per Standard task, plus: tokens and credits per task, the tool-schema tokens each front-end adds to every request, review results retyped by the coordinator, malformed calls, elapsed time, and approval-preview legibility rated in formative sessions.
+2. **Measurement.** Run 3 representative golden tasks (feature, bug, review-then-fix), 5 times each, through each eligible front-end. Report the distribution of Tenet-caused approval prompts per Standard task, plus: credits per task (attributed by the protocol of 17.5), the tool-schema tokens each front-end adds to every request, review results retyped by the coordinator, malformed calls, elapsed time, and approval-preview legibility rated in formative sessions.
 3. **Rule (PRD Section 5.7.1).** MCP ships if the command line's 90th percentile exceeds 3 prompts, or if MCP uses at least 15% fewer AI credits per Standard task (median) with no safety difference. Otherwise the command line ships, unless the owner, shown the retyping and legibility measurements, chooses MCP.
 
 Only the selected front-end ships to users. The command-line front-end stays in the repository as the test harness for the deterministic tier and for CI, because it is the same pipeline minus about 100 lines of protocol code.
@@ -394,16 +395,16 @@ Only the selected front-end ships to users. The command-line front-end stays in 
 
 - **Coarse verbs:** about 6 calls per Standard task (2.4.1).
 - **Readable, compact command lines** for flag-only verbs.
-- **A per-verb approval snippet.** Setup shows, and never writes, a terminal auto-approve rule that approves low-risk verbs and leaves consequential verbs to the host's own approval. Setup fills in the **exact absolute path** of the installed kernel, so a workspace file that happens to be named `kernel/tenet.mjs` can never match:
+- **A per-verb approval snippet,** generated from the verb risk classes of 6.5 (one table drives both this snippet and the MCP tool grouping). Setup shows, and never writes, a terminal auto-approve rule that approves routine verbs and leaves consequential verbs to the host's own approval. Setup fills in the **exact absolute kernel path**, so a workspace file that happens to be named `kernel/tenet.mjs` can never match, and anchors the end of the rule so redirections and shell metacharacters never match:
 
 ```json
 "chat.tools.terminal.autoApprove": {
-  "/^env -u NODE_OPTIONS node \"<exact plugin path>/kernel/tenet\\.mjs\" (open|review|inspect|packet|check|findings|stop)\\b/": true,
-  "/^env -u NODE_OPTIONS node \"<exact plugin path>/kernel/tenet\\.mjs\" (decide|commit|finish|integrate|undo|publish|export)\\b/": false
+  "/^env -u NODE_OPTIONS node \"<exact kernel path>\" (open|review|inspect|packet|check|findings|stop)( [^;&|<>`$()\\n]*)?$/": true,
+  "/^env -u NODE_OPTIONS node \"<exact kernel path>\" (decide|commit|finish|integrate|undo|publish)\\b/": false
 }
 ```
 
-  In Manual mode the host then asks before every decision, commit, integration, undo and remote action. This is a host-enforced gate rather than an advisory chat question. A typical Standard task still needs about 3 approvals (one or two `decide` calls and `finish`). With MCP, the equivalent is approving `tenet_read` for the session.
+  The host matches each subcommand of a compound command separately, and a compound command is auto-approved only if every subcommand matches, so chaining cannot ride on the rule. Calls that carry a heredoc body do not match the routine rule and are approved by the host. [SPIKE: SP-12] runs negative tests (`&&`, `;`, `|`, `>`, command substitution). In Manual mode the host then asks before every decision, commit, integration, undo and remote action, a host-enforced gate rather than an advisory chat question. A typical Standard task still needs about 3 approvals. With MCP, the equivalent is approving `tenet_read` and `tenet` for the session.
 - **Consent remembered:** hook, filter and envelope consent is remembered per project and per configuration hash (Section 7.2), so it is never asked again until the configuration changes.
 - **Grouped questions:** the kernel returns all decisions due at one boundary as one grouped `questions[]` (6.6).
 
@@ -411,20 +412,19 @@ Only the selected front-end ships to users. The command-line front-end stays in 
 
 **No prevention hooks in R1** (TD-14). PreToolUse denial is unqualified, and the Local parser ignores matchers.
 
-**Observer hooks (Beta; PRD Section 5.7.1, shipped once SP-03 qualifies the observations).** Several of R1's largest disclosed residuals are observation problems, not prevention problems. Hooks scoped to the `tenet` agent run only while that agent is active, and they only record:
+**Observer hooks (Beta; PRD Section 5.7.1, shipped once SP-03 qualifies the observations and shows their latency is not noticeable).** Several of R1's largest disclosed residuals are observation problems, not prevention problems. Hooks scoped to the `tenet` agent run only while that agent is active, and they only record:
 
 | Event | Observation | Control upgraded |
 |---|---|---|
 | `PostToolUse` on edit tools | Edited paths and session ID | Attribution of agent-tool edits becomes observed: a changed file the hook never saw is a possible human edit (10.2) |
-| `SubagentStart`, `SubagentStop` | Which agent ran, its model if the payload carries it, and when; the result, if the payload carries it | Review independence becomes observed (REV-06); if the result is carried, `findings --from-observed` records it, so nobody retypes it |
+| `SubagentStart`, `SubagentStop` | Which agent ran, its model if the payload carries it, and when; the result, if the payload carries it | Review independence becomes observed (REV-06); if the result is carried, `findings --from-observed` records it and capture becomes `observed` |
 | `Stop` | The turn ended; whether a `finish` preceded it | The next response reports `ended-without-finish`. Hooks never force a turn to continue: that would be prevention, which waits for SP-03 |
-| `SessionStart` | The session began | Adds the `inspect status` summary as context (CON-03), and marks the session's observations as complete-able |
+| `SessionStart` | The session began | Adds the `inspect status` summary as context (CON-03) |
 
 **Mechanics:**
-- `kernel/hook.mjs` (a few KB, no dependencies) reads the hook payload from stdin, filters it in the script (matchers are ignored), and appends one JSON line to `.tenet/observed`. It never takes the transaction lock and **never creates `.tenet/`**: if the directory does not exist (for example during stateless review, CON-09), it writes nothing.
-- The next kernel call merges the lines: it renames `.tenet/observed` to `.tenet/observed.merging`, reads it and deletes it, so a hook appending meanwhile writes to a fresh file and no line is lost.
-- **Completeness:** observations for a session count only if that session's `SessionStart` line exists and every edit the coordinator declared has a matching `PostToolUse` line. Otherwise the session's controls keep their cooperative labels. A hook that stops reporting therefore downgrades labels instead of silently upgrading them.
-- An observed edit to a path does not prove every change to that path was the agent's; the last-check rule still applies (10.2). Terminal-made edits are not observed by edit hooks and stay cooperative.
+- `kernel/hook.mjs` (a few KB, no dependencies) reads the hook payload from stdin, filters it in the script (matchers are ignored), keeps only an allowlist of bounded fields (event, session, agent, paths, model; never raw payloads or file contents), redacts them, and writes **one event file** atomically: `.tenet/observed/<time>-<random>.json`, written to a temporary name and renamed. It never takes the transaction lock and **never creates `.tenet/`**: if the directory does not exist (for example during stateless review, CON-09), it writes nothing.
+- The next mutating call reads the event files, publishes the state that includes them, and only then deletes them. Each event has an ID, so a crash before deletion only causes an idempotent re-read. No descriptor can write into a renamed or deleted file, so no observation is lost.
+- **Observed coverage, not completeness:** each result reports which edits and dispatches were observed. Anything not observed keeps its cooperative label. A matching path proves the agent edited the file, not that every change to it was the agent's; the last-check rule still applies (10.2). Terminal-made edits are not observed by edit hooks.
 
 The README discloses the hooks and what they record. Plugins with hooks run code on the user's machine, so the hooks file ships only after SP-03 qualifies the observations.
 
@@ -440,10 +440,10 @@ The PRD constrains model choice: use the active model without asking the user to
 | Analyst, Architect and Security roles (Deep) | Inherit the main model | Consequential judgment |
 
 **Rules:**
-- **The researcher model is data, not configuration.** The qualification table (below) may name an economy model for research. `packet analyst` with the researcher role then returns it, and the coordinator passes it to `runSubagent`; that is the only explicit model the coordinator ever passes. An economy model is never above the main model's cost tier, so the host's tier check never blocks it. The result discloses it once ("research ran on <model>"), and the user can decline it in words for the task, which the contract records.
-- The coordinator never changes reasoning effort.
-- If the user has enabled `chat.subagents.defaultToAuto`, subagents without an explicit model follow Auto, which may be more or less expensive than the main model. Tenet records `requested: auto (host setting)` and says so once.
-- **Qualification table.** Release qualification ships `{ model or configuration → qualified | unqualified | not-evaluated; researcherEconomy?: model; evaluatedAt }` in the descriptor, refreshed with the monthly T3 run. Auto is qualified as a **configuration** (its observed model mix on the golden suite), not as every model it might pick.
+- **The researcher model is data, not configuration.** `packet analyst` with the researcher role returns the model the qualification table names, and the coordinator passes it to `runSubagent`; that is the only explicit model the coordinator ever passes, and `packet analyst` is the only code that reads it. The loop card discloses it **before the first research dispatch** of a contract, so declining it ("use my model for research", recorded by `decide`) happens before any credits are spent. If the host rejects it (not allowed, unavailable, or above the main model's cost tier), the coordinator dispatches once more without a model, and the result says research inherited. Tenet keeps no price table.
+- **Inheritance on the supported tuple** assumes the host default `chat.subagents.defaultToAuto` = off. If a user turns it on, subagents without an explicit model follow Auto, which may be more or less expensive and does not satisfy "always inherit". Tenet records `requested: auto (host setting)`, says so once, labels the Reviewer's model `unknown` unless observed, and never changes the user's settings.
+- **Reasoning effort** is never changed by Tenet.
+- **Qualification table.** Release qualification ships `{ model or configuration → qualified | unqualified | not-evaluated; researcherEconomy?: model; evaluatedAt }` in the descriptor, refreshed with the monthly T3 run. An entry older than the last scheduled run reads as `not-evaluated`. Auto is qualified only as the **configuration that was measured** (its observed model mix); a run whose observed model falls outside that mix is `unknown`. If no economy model qualifies in 3 consecutive monthly evaluations, re-testing stops until a new model family appears.
 - **Recording.** `open` and `findings` accept the requested model the coordinator reports (`--model`); a hook payload may supply the resolved model. Each assignment records `requested`, `resolved` (or `unknown`), `source` and the qualification label. Unknown stays unknown.
 - **Deep warning (RSC-08).** When the lane becomes Deep and the active model or configuration is unqualified or unknown, the kernel returns one `model-unqualified-for-deep` question: continue or stop. There is no model menu; the user may change the model themselves before continuing.
 
@@ -482,7 +482,7 @@ Five skills. Narrower guidance lives in resource files that load only when refer
          research            → own search first; tenet-analyst (with the packet's model, if any) only if a question remains (K)
          tests/implementation → tenet-build → native edits; host diagnostics between attempts
          check               → check (stage, touched)                                    (K)
-         review              → tenet-reviewer with the manifest path → findings          (K)
+         review              → tenet-reviewer with the manifest path from check → findings (K)
          checkpoint          → commit                                                    (K)
          finish              → finish; if it returns continue-required, keep going       (K)
      • Exit codes: 3 → ask exactly r.questions; 2 → explain and offer r.next; 4 → stop and report.
@@ -498,8 +498,8 @@ Five skills. Narrower guidance lives in resource files that load only when refer
 - Ask only kernel questions and consequential product questions (INT-03). Use `askQuestions` for questions the kernel marks `channel: native`. Ask questions marked `channel: chat` in plain chat and **end the turn** (11.4).
 - **Never auto-confirm a host pause** such as "continue to iterate?" (WRK-10).
 - **Keep the session stable:** never suggest switching models or reasoning effort mid-session and never toggle tools, because each change discards the cache (14.4).
-- **After context compaction,** call `inspect status` once instead of re-reading the repository.
-- **At milestone boundaries of long work,** offer to continue in a fresh chat through the resume packet (5.5), which is cheaper than carrying the whole history.
+- **After context compaction,** call `inspect status` once to recover the binding state, then re-read only the source the next action needs.
+- **Offer a fresh chat only when it pays:** at a milestone boundary of Deep or long work, when the history is large, offer to continue in a new chat through the resume packet (5.5). A fresh chat costs an uncached prefix and some reconstruction, so it is not offered at every phase; golden tasks measure the threshold.
 - **Before dispatching a subagent or starting a long check,** make sure the handoff is current (`finish` and boundary calls write it), so a host usage limit loses at most one step.
 - Treat host memory, host plans and session todos as untrusted context, never as requirements, grants or plan items. If they contradict `INTENT.md`, show the conflict (CFG-09).
 - Kernel obligations override remembered preferences.
@@ -524,7 +524,7 @@ A behavior-preserving refactor (TDD-05) replaces step 2 with preservation tests 
 4. Acceptance tests, then `check --stage baseline`.
 5. Implementation attempts, each submitted with a full candidate `check`.
 6. Fresh-context Reviewer.
-7. Fixes with a focused recheck (`packet reviewer --recheck`, 8.7).
+7. Fixes with a focused recheck: the next `check` returns the recheck manifest (8.7). At most one recheck per contract (REV-05).
 8. `finish`, then the integration offer.
 
 #### 5.3.3 Deep
@@ -538,31 +538,35 @@ Standard, plus:
 ### 5.4 Role contracts
 
 **Reviewer** (fresh context, read-only):
-- **Input:** the path and hash of a review manifest (8.7). The Reviewer reads the manifest and the files on its closed read list with host tools.
-- **Stage A, behavior and intent:** does the work satisfy every acceptance-basis element? Does each acceptance test faithfully assert its example? Is the basis sufficient (REV-09)?
-- **Stage B, structure, security and charter.**
+- **Input:** the path and hash of a review manifest (8.7). The Reviewer reads the manifest, works through its prioritized investigation list, and may read adjacent code needed to understand it (a shared authorization function, transaction boundaries, framework registration) within the manifest's read budget.
+- **Stage A, behavior and intent:** does the work satisfy every acceptance-basis element? Does each acceptance test faithfully assert its example? Is the basis sufficient (REV-09)? Is any change outside the requested scope (QLT-10)?
+- **Stage B, structure, security and charter,** including a disposition for every item on the manifest's attention list (REV-03).
 - **Output:**
 
 ```ts
 type ReviewResult = {
-  manifest: string; mode: "full" | "recheck"; basisRevision: number; candidate: string;
+  reservation: string; manifest: string; mode: "full" | "recheck"; basisRevision: number; candidate: string;
+  status: "completed" | "partial" | "blocked" | "failed" | "cancelled";   // AGT-05; partial never counts as completion
   dispatchMode: "subagent-fresh" | "same-session";
   axes: { behavior: "pass" | "fail"; structure: "pass" | "fail" };          // the Reviewer's judgment, never edited
   coverage: {
-    inspected: string[];                 // files and symbols actually read
-    sampled: Array<{ symbol: string; callers: number; opened: number }>;   // broad callers reviewed by category
-    uncovered: string[];                 // basis items with no check; parts of the read list not reached
+    inspected: string[];                 // files and symbols actually read, including adjacent reads
+    sampled: Array<{ symbol: string; callers: number; opened: number; why: string }>;
+    uncovered: string[];                 // basis items with no check; list items not reached
     crossCutting: string;                // one statement on interactions across modules
   };
+  attention: Array<{ id: string; disposition: "accepted" | "finding"; reason: string }>;   // REV-03 items
+  rechecked?: Array<{ finding: string; outcome: "verified" | "still-open"; evidence: string }>;
   findings: Array<{ severity: "blocker" | "major" | "minor" | "note"; axis: "behavior" | "structure";
     location: { path: string; line?: number }; claim: string; evidence: string; fix?: string }>;
-  basisGaps: Array<{ kind: "missing-requirement" | "missing-invariant" | "weak-test"; detail: string }>;
+  basisGaps: Array<{ kind: "missing-requirement" | "missing-invariant" | "weak-test" | "out-of-scope-change"; detail: string }>;
+  openDependencies?: string[];
 };
 ```
 
 Findings carry evidence and locations, not a narrative of every search.
 
-**Analyst** (read-only): takes a role (researcher, architect or security), a question and a revision; returns findings with file and line references and the revision observed. The coordinator reconciles findings against the current revision (AGT-11). An Architect returns a decision-record draft, which the coordinator writes.
+**Analyst** (read-only): takes a role (researcher, architect or security), a question and a revision; returns the same `status` and `openDependencies` fields, findings with file and line references, the artifacts inspected and the revision observed. The coordinator reconciles findings against the current revision (AGT-11). An Architect returns a decision-record draft, which the coordinator writes.
 
 ### 5.5 Manifests and handoffs
 
@@ -572,16 +576,18 @@ Roles exchange kernel-built packets, never summaries of each other's chats:
 - `handoff` (contract, state, receipts, open findings, next actions, budget);
 - `resume` (handoff plus reconciliation).
 
-**Transport:** reviewer and analyst packets are written to a file in the run directory, and the response returns only the path, the hash and a three-line summary, so neither the coordinator's context nor its output carries the packet. The coordinator dispatches with "read the manifest at `<path>` (hash `<hash>`)". [SPIKE: SP-08] confirms subagents can read that path (TQ-21). *Fallback:* the packet is returned inline, under its own 20,000-token cap (6.6).
+**Transport:** reviewer and analyst packets are files, and the response returns only the path, the hash and a three-line summary, so neither the coordinator's context nor its output carries the packet. The coordinator dispatches with "read the manifest at `<path>` (hash `<hash>`)".
+- **Location:** a run directory in OS temp, also for stateless review. If SP-08 shows the host asks for approval to read outside the workspace, mutating flows use `.tenet/manifests/<hash>` instead (removed when the delegation settles); stateless review then returns its manifest inline (TQ-21).
+- **Inline is a fallback, not a mode:** an inline packet exists only when the spike shows a subagent cannot read either location, capped at 20,000 tokens (6.6).
 
-Packets are rebuilt on demand and not kept beyond their run directory, so forgetting or redaction never leaves stale copies. The handoff holds only facts the harness cannot guarantee: branch, candidate, decisions, outstanding obligations, findings, effects and counters. Conversation history stays with the host.
+Packets are rebuilt on demand. `decide forget` deletes every packet file Tenet still holds, so forgotten text never survives in a manifest. The handoff holds only facts the harness cannot guarantee: branch, candidate, decisions, outstanding obligations, findings, effects and counters. Conversation history stays with the host.
 
 ### 5.6 Skill standards
 
 - **Content:** imperative and short. Each instruction names the kernel verb and what to do on each exit code. Requirement IDs appear in comments for maintainers.
 - **Lint** (`tools/lint-skills`): token budgets, broken links, unknown verbs, phrases that claim enforcement the mechanism class does not support, and secrets.
 - **Change control:** every skill change runs the deterministic tier and needs a live smoke run before release (17.6).
-- **Skeletons:** the `tenet` agent body and the `tenet-review` skill are drafted in Appendix F, so the spikes test real text.
+- **Skeletons:** the `tenet` agent body and the `tenet-review` skill are drafted in Appendix E, so the spikes test real text.
 
 ---
 
@@ -605,15 +611,26 @@ runVerb(verb, rawInput, frontEnd):
   state = store.read()                                      # read-only and mutating
   if class == read-only: return render(verb.run(ports, state, input))
   with store.transaction() as tx:                           # lock (7.3)
-    tx.mergeObserved(); tx.recover()                        # hook lines (4.7); uncertain effects (7.4)
+    tx.consumeObserved(); tx.recover()                      # hook events (4.7); uncertain effects (7.4)
     checkEnvelope(tx.state, input)                          # 6.4
     plan = verb.run(ports, tx.state, input)                 # pure: next state, effects, response
-    for e in plan.effects: effects.perform(tx, e)           # intent → act → result (7.4)
+    for e in plan.effects: effects.perform(tx, e)           # short effects: intent → act → result (7.4)
     tx.publish(plan.state)
+  if plan.longRun:                                          # checks, installs: outside the lock
+    result = runner.execute(plan.longRun)
+    with store.transaction() as tx:                         # finalize, guarded (7.3)
+      tx.finalize(plan.longRun.id, result)                  # discarded if cancelled or superseded
   log.call(...); return render(plan.response)
 ```
 
 Verb modules contain only their own logic. A front-end is a translation from its transport to `runVerb`, so front-ends cannot diverge.
+
+**Dependency rules** (checked by lint, so the module map stays honest):
+- `core/` imports no adapter and does no I/O.
+- Front-ends contain no verdict, authority or budget logic.
+- Adapters normalize observations; they never decide acceptance.
+- Recipes and traits declare obligations; they never bypass kernel rules.
+- Only `core/verdict` produces an endpoint, and only `core/budget` changes a counter.
 
 ### 6.2 Module map
 
@@ -636,7 +653,7 @@ Verb modules contain only their own logic. A front-end is a translation from its
 | `verbs/*` | One module per verb | — |
 | `decisions/*` | One module per decision kind (6.5) | INT-07 |
 | `adapters/store-fs` | State document, lock, log, observations, blobs, marker | Section 7 |
-| `adapters/git-cli` | Git with argument arrays and temporary indexes; the shadow repository for non-Git folders | Section 10 |
+| `adapters/git-cli` | Git with argument arrays; one temporary-index helper shared by commit, undo, sealed baselines and committed-tree checks; the inspection profile; the shadow repository for non-Git folders | Section 10 |
 | `adapters/runner` | Envelopes, environment, process groups, run directories, ports | Section 9.3 |
 | `adapters/node-ts` | Detection, invocation and normalization for Node/TypeScript | Section 9.5 |
 | `adapters/host-vscode` | Descriptor, user directory, plugin paths | Section 4.4 |
@@ -647,65 +664,64 @@ Each verb call has one class, decided **before** any storage is opened:
 
 | Class | Calls | May write | Behavior |
 |---|---|---|---|
-| Stateless | `review`; `inspect doctor` before setup | Nothing in the project, including Git objects and traces | No lock, no recovery, no trace; output only |
-| Read-only | `inspect` (`status`, `why`, `impact`, `residue`); `packet handoff` and `packet resume` | Nothing | Reads the current state document; reports any needed repair instead of performing it |
+| Stateless | `review`; `inspect` (`status`, `doctor`, `help`) before `.tenet/` exists | Nothing in the project, including Git objects and traces | No lock, no recovery, no trace; output only |
+| Read-only | `inspect` (`status`, `why`, `impact`, `residue`, `export`); `packet handoff` and `packet resume` | Nothing | Reads the current state document (upcast in memory, never migrated); reports any needed repair instead of performing it |
 | Mutating | All others, including `packet reviewer` and `packet analyst` (they reserve a delegation, 8.6) | `.tenet/`; workspace and Git effects per verb | The full pipeline (6.1) |
-
-`export` reads state and writes only to a path the user chose; it takes no lock and is never annotated read-only.
 
 **Ownership by profile:** `plan`, `investigate` and review-only work never acquire source ownership, because they do not edit source. Only implementation profiles take ownership (7.3).
 
 ### 6.4 Mutation envelope and idempotency
 
-Every mutating call except the first `open` carries:
+Every mutating call except `open` carries two short flags:
 
 ```ts
 type MutationEnvelope = {
-  request: number;            // increments per call within a generation; a repeat returns the stored response
-  generation?: number;        // ownership generation returned by open; stale → refused
-  workspaceId?: string;       // defaults to .tenet/marker; if given, must match it
-  work?: string;              // defaults to the owned contract; required only when several are active
+  handle: string;             // "3.k7q": generation 3 of the workspace whose marker tag is k7q; issued by open
+  request: number;            // increments per call within the generation
+  work?: string;              // only when several contracts are active
   expectedRevision?: number;  // optional optimistic check on the state document
 };
 ```
 
-- **Bootstrap:** the first `open` in a workspace needs no envelope; it creates the marker and returns `workspaceId` and `generation`.
-- **Few tokens:** defaults keep the envelope to two short flags on most calls (`--req 7 --gen 3`), which also removes copy errors in long IDs.
-- **Idempotency (bounded and explicit):** the last 64 responses are kept with an input hash, and the highest request number per generation is recorded. A repeat with the same input returns the stored response and never creates a second contract, consumes another attempt or repeats an effect. A repeat with different input fails with `request-mismatch` (exit 1). A number at or below the highest seen but no longer cached fails with `request-expired` (exit 1), so an old request can never run again as if it were new.
-- **Generations:** each `open --resume` returns a new generation. Calls carrying an older generation fail with `stale-session` and write nothing, so a stale chat cannot overwrite newer records. Generations fence kernel calls, not native edits; edits from an older chat surface as unexplained changes (10.2).
+- **The handle is mandatory.** It binds every mutation to its workspace (the tag must match `.tenet/marker`, so a command run in the wrong repository fails) and its generation (an older one fails with `stale-session`). Generations come from a durable sequence in the state (`generationSeq`), so they are never reused after a contract parks, finishes or is archived.
+- **Every `open` bootstraps.** `open` needs no envelope; it issues the next generation and its handle. A repeated `open` with the same profile and request text, while that proposed contract still exists, returns it instead of creating a second one.
+- **Idempotency:** the generation's last response is kept inline with its input hash (`owner.lastResponse`). Repeating the last request with the same input returns that response, marked `historical`, so it is never mistaken for a fresh observation; it never creates a second contract, consumes another attempt or repeats an effect. Repeating it with different input fails with `request-mismatch`; a lower number fails with `request-expired` (both exit 1). An agent only ever retries its most recent call, so one cached response is enough.
+- **Results are bound to reservations, not to the sequence.** `findings` carries the reservation ID from its manifest (8.6) and is idempotent per reservation, so parallel Reviewer and Analyst results can arrive in any order and each settles exactly once.
+- **Generations fence kernel calls, not native edits;** edits from an older chat surface as unexplained changes (10.2).
 
 ### 6.5 Verbs
 
-Class M is mutating, R read-only, S stateless; C marks verbs that may run checks (obligation timeouts apply instead of the bookkeeping budget).
+Class M is mutating, R read-only, S stateless; C marks verbs that may run checks (obligation timeouts apply instead of the bookkeeping budget). **Risk** is the one table that drives both the approval snippet (4.6) and the MCP tool grouping (4.5): routine verbs may be auto-approved, consequential verbs always meet the host's approval.
 
-| Verb | Class | Purpose |
-|---|---|---|
-| `open <profile>` | M | Create or resume a contract: readiness, assistance level, floors, dirty-tree inventory, routine grant from the request, reconciliation, ownership, generation; a shadow snapshot for non-Git prototypes |
-| `review` | S | Review-only manifest, rubric and finding scaffold |
-| `decide` | M | Record user decisions and content proposals (below) |
-| `check [--stage baseline\|candidate\|integrated] [--targeted] [--touched …]` | M, C | Inventory, obligation runs, receipt validation, counters, automatic locking of verified acceptance tests; writes the review manifest when review is the next action (8.7) |
-| `packet <role> [--recheck <findings>]` | M or R | Reviewer (full or recheck) or analyst packet, written to the run directory (reserves a delegation); handoff or resume packet (read-only) |
-| `findings [--from-observed]` | M | Record a `ReviewResult` or analyst result (directly, or from a hook observation, 4.7); finding transitions; settle the delegation |
-| `commit` | M, C | A checkpoint commit mid-contract (10.3) |
-| `finish` | M, C | Final commit if needed (10.3), verdict, handoff, integration offer; refuses while policy requires more work |
-| `integrate` | M, C | Local integration through normal Git operations; revalidation |
-| `undo` | M, C | Inverse plan, preview, apply through the commit protocol, revalidation |
-| `publish <push\|pr>` | M | Remote effects on explicit request only (GIT-05) |
-| `stop <pause\|cancel\|abandon>` | M | Pause (release ownership at a safe boundary), cancel (stop owned processes), abandon (close the contract); allowed while a check runs |
-| `inspect <view>` | R or S | `status`, `why`, `impact`, `doctor`, `residue` |
-| `export <feedback\|diagnostics\|evidence>` | Writes outside the project only | Previewed redacted bundle, or JUnit and SARIF export, to a user-chosen path |
+| Verb | Class | Risk | Purpose |
+|---|---|---|---|
+| `open <profile>` | M | Routine | Create or resume a contract: readiness, assistance level, floors, dirty-tree inventory, routine grant from the request, reconciliation, ownership, a new generation and handle; a shadow snapshot for non-Git prototypes |
+| `review` | S | Routine | Review-only manifest, rubric and finding scaffold |
+| `decide` | M | Consequential | Record user decisions and content proposals (below) |
+| `check [--stage baseline\|candidate\|integrated\|committed] [--targeted] [--touched …]` | M, C | Routine | Inventory, obligation runs, receipt validation, counters, automatic locking of verified acceptance tests; when a review or recheck is the next action, it builds that manifest and reserves its delegation (8.7) |
+| `packet <role>` | M or R | Routine | An analyst packet, or a reviewer packet for split coverage or after a run directory expired (reserves a delegation); handoff or resume packet (read-only) |
+| `findings [--from-observed]` | M | Routine | Record a `ReviewResult` or analyst result (directly, or from a hook observation, 4.7); finding transitions; settle the reservation |
+| `commit` | M, C | Consequential | A checkpoint commit mid-contract (10.3) |
+| `finish` | M, C | Consequential | Final commit if needed (10.3), verdict, handoff, the one-time adoption offer (7.8), integration offer; refuses while policy requires more work |
+| `integrate` | M, C | Consequential | Local integration through normal Git operations; revalidation |
+| `undo` | M, C | Consequential | Inverse plan, preview, apply, check, commit (10.5) |
+| `publish <push\|pr>` | M | Consequential | Remote effects on explicit request only (GIT-05) |
+| `stop <pause\|cancel\|abandon>` | M | Routine | Pause (release ownership at a safe boundary), cancel (stop owned processes), abandon (close the contract); allowed while a check runs |
+| `inspect <view>` | R or S | Routine | `status`, `why`, `impact`, `doctor`, `residue`, `export` (a redacted preview of a feedback, diagnostics or evidence bundle) |
 
-`gc` and `migrate` are internal steps of `open` and `finish`, not verbs.
+`gc` and `migrate` are internal steps of `open` and `finish`, not verbs. Writing an export to a user-chosen path is a `decide {request: export, path}` effect after its preview, so no verb writes outside the project without a decision.
+
+**Finished and archived work** stays addressable by its label for `decide` (acceptance), `integrate`, `undo`, `publish` and `inspect`. These never reset budgets, never revive expired grants (a remote action needs a new `decide`), and never re-acquire ownership unless the action edits source.
 
 **`decide` has three input forms** over one registry of decision kinds:
 
 | Form | Use | Example |
 |---|---|---|
 | `{answers: {<questionId>: value}}` | Answer questions the kernel asked; each answer is checked against the pending question and its binding | Dirty-tree choice, consent, risk acceptance, takeover |
-| `{propose: kind, content}` | Record content the coordinator drafted with the user | `basis`, `plan`, `decision-record`, `config`, `lesson` |
-| `{request: kind, target}` | A user-initiated action; returns a preview question (exit 3), answered with the first form | `forget`, `delete-records`, `cleanup`, `remote`, `acceptance`, `adopt`, `disposition`, `grant`, `dependency` (9.11) |
+| `{propose: kind, content}` | Record content the coordinator drafted with the user | `basis`, `plan`, `decision-record`, `config`, `lesson`, `overview` |
+| `{request: kind, target, quote?}` | A user-initiated action | `forget`, `delete-records`, `cleanup`, `remote`, `acceptance`, `adopt`, `disposition`, `grant`, `dependency` (9.11), `export`, `repair-lock` (7.3) |
 
-Each kind is a module in `decisions/` with three functions: `validate(input)`, `preview(state, input) → Question`, and `apply(state, answer) → next state and effects`, registered explicitly in one list. A new decision kind adds a file. Destructive kinds always preview before they apply (CON-10). On the command line, answers are flags (`decide --answer q2=1`); only proposals carry a JSON body.
+A request carrying the user's own words (`quote`) applies in one step when the user's request already names the action and its target, recorded as `reported`. A preview question (exit 3) is mandatory only for destructive kinds (CON-10) and for actions under the SEC-13 gate (11.4), so an explicit request is never confirmed twice. Each kind is a module in `decisions/` with three functions, `validate(input)`, `preview(state, input) → Question` and `apply(state, answer) → next state and effects`, registered explicitly in one list. On the command line, option answers are flags (`decide --answer q2=1`); proposals and free text carry a JSON body.
 
 ### 6.6 Response envelope
 
@@ -716,7 +732,7 @@ type KernelResponse<T> = {
   verb: string; exit: 0 | 1 | 2 | 3 | 4 | 5;   // ok · usage · blocked · decision needed · integrity · internal
   revision: number; generation?: number;
   reasons: Array<{ code: string; message: string; refs?: string[] }>;     // Appendix C
-  next: Array<{ action: string; why: string }>;                          // at most 3 permitted actions, not a script
+  next: Array<{ action: string; why: string; required?: boolean }>;     // the required action first, plus at most 3 alternatives
   questions?: Question[];                                                // grouped, one boundary
   progress?: { phase: string; boundary?: "phase" | "milestone" };        // drives check-in cadence
   budget: { attempts: string; rounds: string; delegations: string };     // "1/3"; detail via inspect
@@ -727,6 +743,7 @@ type KernelResponse<T> = {
     model?: ModelRecord;                         // 4.8
   };
   data?: T;                                      // verb-specific; references rather than copies
+  historical?: true;                             // a replayed response (6.4), not a fresh observation
   kernel?: { version: string; payloadHash: string; schemaVersion: 1 };   // on open and inspect doctor only
 };
 
@@ -758,13 +775,14 @@ Verb names, schemas, exit codes and reason codes are part of the public compatib
 ```text
 .tenet/                 mode 0700; no file uses a source, test or build-configuration extension
 ├─ .gitignore           "*"
-├─ marker               workspace ID, nonce, schema, directory identity
+├─ marker               workspace ID and tag, nonce, schema, directory identity
 ├─ state                the single state document (7.2), replaced atomically
 ├─ state.prev           the previous revision (corruption fallback)
-├─ lock                 present only while a mutating call runs (7.3)
-├─ log                  append-only JSON lines: effect intents and results, call summaries (7.4, 16)
-├─ observed             hook observations, appended by `hook.mjs` (4.7; once SP-03 qualifies observation)
-├─ blobs/<sha256>       archived contracts and cached responses
+├─ lock, lock.break     present only while a mutating call runs, or while a stale lock is broken (7.3)
+├─ log                  append-only JSON lines: effect intents and results, call records (7.4, 16)
+├─ observed/            hook event files, consumed by the next mutating call (4.7)
+├─ manifests/           packet files, only if SP-08 rules out OS temp (5.5)
+├─ blobs/<sha256>       archived contracts
 └─ git/                 the shadow repository for non-Git prototypes (10.9)
 ```
 
@@ -776,36 +794,50 @@ Verb names, schemas, exit codes and reason codes are part of the public compatib
 
 ```ts
 type State = {
-  schema: 1; revision: number; workspaceId: string;
-  owner?: { work: WorkId; generation: number; highestRequest: number; lastCall: { at: string; left: "parked" | "finished" | "awaiting-answer" | "working" };
+  schema: 1; revision: number; workspaceId: string; generationSeq: number;
+  owner?: { work: WorkId; generation: number; highestRequest: number;
+            lastCall: { at: string; left: "parked" | "finished" | "awaiting-answer" | "working" };
+            lastResponse?: { request: number; inputHash: string; response: KernelResponse<unknown> };
             inCall?: { runId: string; pid?: number; procStart?: string; verb: string; since: string } };
-  project: {                                    // the project record, kept even when adoption is declined
+  project: {                                    // kept even when adoption is declined
+    intent: ProjectIntent;                      // the one canonical intent; INTENT.md is its projection (7.8)
     recipe?: { id: string; version: string }; moduleRoot: string; traits: string[];
     adoption: { intent: AdoptionState; policy: AdoptionState; charter: AdoptionState };
-    planItems: PlanItem[];                      // the local copy when INTENT.md is not adopted
-    records: Array<{ id: string; kind: "decision" | "constraint" | "assumption"; text: string }>;  // likewise
   };
   capabilities: Capability[];                   // observed values with provenance (INS-05)
   config: { local: Record<string, unknown>; revision: number };
   trust: Array<{ file: string; hash: string; adoptedAt: string; restrictions: object }>;
   consents: Array<{ kind: "hooks" | "filters" | "envelope" | "remote-read"; configHash: string; at: string }>;
-  locks: Array<{ path: string; hash: string; obligation: string; work: WorkId }>;  // the project lock manifest: acceptance test files (9.7)
+  locks: Array<{ path: string; hash: string; obligation: string; verifiedAt: string;   // commit; branch-aware (9.7)
+                 supportInputs: string[] }>;    // the project lock manifest
   pending: Question[];                          // questions awaiting answers
   work: Record<WorkId, WorkContract>;           // active and parked contracts only
   archive: Array<{ id: WorkId; label: string; endpoint: Endpoint; blob: string; finishedAt: string }>;
   lessons: Lesson[];                            // the only live copy of lesson text (8.9)
-  responses: Array<{ generation: number; request: number; inputHash: string; verb: string; blob: string }>;  // last 64 (6.4)
   recovered?: { from: "state.prev"; at: string }; // set after a fallback; authority suspended (15.2)
-  mac?: string;                                 // HMAC when a user key exists (Beta, 7.5)
+};
+
+type ProjectIntent = {
+  revision: number;                             // increments on every accepted change
+  overview: { purpose: string; users: string; preferences: string[]; nonGoals: string[] };   // INT-02
+  elements: BasisElement[];                     // requirements, examples, invariants, constraints, assumptions, decisions, deferred choices
+  plan: PlanItem[];
+};
+
+type BasisElement = {
+  id: string;                                   // REQ-…, EX-…, CNS-…, ASM-…, DEC-…, DEF-…
+  kind: "requirement" | "example" | "invariant" | "constraint" | "assumption" | "decision" | "deferred";
+  text: string; expiresAt?: string;             // assumptions may expire
+  verifiedBy: Array<{ method: "obligation" | "review" | "manual"; ref: string }> | { notApplicable: string };
 };
 
 type WorkContract = {
   id: WorkId /* wk_8f3a91c2d4 */; label: string /* W-0007 */; profile: Profile;
   lane: Lane; floor: Lane; state: WorkState; lastValidPhase?: WorkState; stopReason?: StopReason;
   outcome: string; planItem?: string; scope: { paths: string[]; protected: string[]; exceptions: Exception[] };
-  basis: { revision: number; elements: BasisElement[]; traits: string[] };
+  basis: { intentRevision: number; elementIds: string[]; snapshotHash: string; traits: string[] };   // references, not copies
   grants: Grant[]; obligations: Obligation[];   // includes acceptance obligations (9.2)
-  receipts: Receipt[]; findings: Finding[]; declined: string[];
+  receipts: Receipt[]; findings: Finding[]; reviews: ReviewLink[]; declined: string[];
   git: { base: string; branch: string; start: StartSnapshot; stacked?: string; commits: string[] };
   touched: Array<{ path: string; hashAtLastCheck?: string; observed?: boolean }>;
   budget: BudgetState; model: ModelRecord; pinned: { tenet: string; schema: number; recipe?: string; adapter: string };
@@ -813,11 +845,10 @@ type WorkContract = {
   handoff?: string; createdAt: string; updatedAt: string;
 };
 
-type BasisElement = {
-  id: string;                                   // REQ-…, EX-…, CNS-…, ASM-…, DEC-…
-  kind: "requirement" | "example" | "invariant" | "constraint" | "assumption" | "decision";
-  text?: string;                                // kept locally only when INTENT.md is not adopted
-  verifiedBy: Array<{ method: "obligation" | "review" | "manual"; ref: string }> | { notApplicable: string };
+type ReviewLink = {                             // the review chain (8.7)
+  reservation: string; mode: "full" | "recheck"; candidate: string; intentRevision: number;
+  basedOn?: string;                             // the full review a recheck extends
+  coverage: { uncovered: string[] }; verified: string[];   // findings the recheck verified
 };
 
 type StartSnapshot = {                          // small: no full index listing
@@ -828,8 +859,9 @@ type StartSnapshot = {                          // small: no full index listing
 
 type BudgetState = {                            // counters of PRD Section 4.4 and RSC-04 (8.6)
   attempts: number; reviewRounds: number; rechecks: number;
-  delegations: { reserved: number; dispatched: number; settled: number; byRole: Record<Role, number> };
-  checksLaunched: number; kernelCalls: number; tenetTokens: number;   // tenetTokens is an estimate
+  reservations: Array<{ id: string; role: Role; manifest: string; candidate: string }>;   // live, not yet settled
+  delegationsSettled: number; delegationsByRole: Record<Role, number>;
+  checksLaunched: number; tenetTokens: number;  // tenetTokens is an estimate
   activeMinutesSinceCheckIn: number; activeMinutesTotal: number;
 };
 
@@ -838,6 +870,8 @@ type ModelRecord = {                            // per assignment, in the log; t
   source: "reported" | "observed" | "unknown"; qualification: "qualified" | "unqualified" | "not-evaluated" | "unknown";
 };
 ```
+
+**One canonical intent.** `project.intent` holds the accepted meaning of the project whether or not `INTENT.md` is adopted; work contracts refer to its element IDs and record the intent revision and a snapshot hash they were authorized against, so archiving a contract never erases accepted meaning. Unadopted intent is per workspace, not per branch, and the result says so; adopted intent lives in the repository and follows branches through Git.
 
 A finished contract moves out of `work` into `archive` as a compacted blob, which keeps the document small. The start snapshot records only what differs from HEAD, so its size depends on the dirty set, not the repository. Expected document size is under 200 KB with several active contracts (Section 14.3).
 
@@ -850,30 +884,32 @@ A finished contract moves out of `work` into `archive` as a compacted blob, whic
 | Transaction lock (`.tenet/lock`) | One invocation publishing the next revision | Exclusive create, holding `{pid, procStart, nonce, verb}`; held only for the call's bookkeeping, never across long runs |
 | Work ownership (`state.owner`) | Which contract may coordinate source changes | Work ID plus generation; checked inside every transaction |
 
+**Liveness** is the process ID plus its start time (`ps -o lstart= -p <pid>`), read only when a lock already exists, so it costs nothing on the normal path. Elapsed time never decides liveness, because a paused process is still alive.
+
 **Acquiring the lock:**
 1. Create `lock` with exclusive-create semantics. On success, the lock is held.
-2. If it exists and its holder is alive (the process ID exists and its start time matches), report `kernel-busy` (exit 2, retryable).
-3. If the holder is dead, break the lock under a guard: create `lock.break` exclusively (holding the breaker's own `{pid, procStart, nonce}`), re-read `lock`, unlink it only if it still holds the same dead holder's nonce, then remove `lock.break` and retry step 1. Only the guard holder may unlink a stale lock, and no fresh lock can exist while the stale one does, so two live breakers can never remove a live lock. A `lock.break` is itself stale only when its holder is dead by the same process-ID and start-time test; elapsed time never decides it, because a paused process is still alive.
-4. **Backstop:** before the final rename of a publish, the kernel re-reads `state`'s revision; if it moved, the publish aborts with `revision-conflict`. Even a lock failure therefore cannot silently lose an update. Real-OS race tests cover both steps (17.2).
+2. If it exists and its holder is alive, report `kernel-busy` (exit 2, retryable).
+3. If the holder is dead, break the lock under a guard: create `lock.break` exclusively (holding the breaker's own identity), re-read `lock`, unlink it only if it still holds the same dead holder's nonce, then remove `lock.break` and retry step 1. Only the guard holder may unlink a stale lock, and no fresh lock can exist while the stale one does, so two live breakers can never remove a live lock.
+4. **A dead guard is not broken automatically.** If `lock.break` itself belongs to a dead process (a crash inside a millisecond window), the call stops with `lock-recovery-needed`; `decide {request: repair-lock}` removes both files after confirming both holders are dead. A rare diagnostic stop is cheaper than a recursive locking protocol.
 
 *Rejected simpler-looking alternative:* renaming a fresh lock over a stale one and re-reading the nonce is not race-free: two breakers can each see their own nonce at different moments.
 
 **Publishing a revision:**
-1. Read `state` and verify the MAC if a key exists (7.5).
-2. Merge observations; recover (7.4); validate the envelope (6.4).
+1. Read `state`.
+2. Consume hook events; recover (7.4); validate the envelope (6.4).
 3. Compute and act.
-4. Write `state.tmp` and fsync it; hard-link the current `state` to `state.prev.tmp` and rename that over `state.prev`; rename `state.tmp` over `state`; fsync the directory. The canonical path always exists, so readers always see one revision.
+4. Write `state.tmp` and fsync it; hard-link the current `state` to `state.prev.tmp` and rename that over `state.prev`; re-read `state`'s revision and abort with `revision-conflict` if it moved; rename `state.tmp` over `state`; fsync the directory. The canonical path always exists, so readers always see one revision. The revision re-read is a diagnostic for lock failures, not a compare-and-swap; the lock is the guarantee.
 5. Remove `lock`.
 
-**Long check runs** are split into two transactions:
-- *transaction A* records the run intent with a `runId`, sets `owner.inCall`, then releases the lock;
-- the runner spawns the process group and records its process ID and start time in the run directory's `run.json` immediately after spawn; until that record exists, the run counts as busy, never as absent;
-- *transaction B* records the receipts and clears `inCall`.
+**Long runs** (checks, installs) use three steps around the lock:
+- *prepare:* a transaction records the run intent with a `runId`, sets `owner.inCall`, then releases the lock;
+- *execute:* the runner spawns the process group and records its process ID and start time in the run directory's `run.json` immediately after spawn; until that record exists, the run counts as busy, never as absent;
+- *finalize:* a second transaction records the result **only if** `owner.inCall.runId` still names this run and no cancellation was recorded; otherwise the result is discarded with `run-superseded`, so a check that finishes just after `stop cancel` can never publish passing receipts or move the work forward.
 
 While `inCall` names a live process, other mutating calls on that work get `work-busy`, except `stop`, which is always allowed, and recovery, which only reads. Calls from other contracts are blocked by ownership. Because liveness comes from the running process itself, ownership needs no expiry timer and no takeover prompt while a check runs.
 
 **Ownership rules:**
-- **Same contract, new chat:** `open --resume` increments the generation. Unless the previous generation's last call left the work parked, finished or waiting for an answer, one `takeover-check` question asks whether the earlier chat has stopped, because generations cannot stop native edits from a chat that is still running. Elapsed time alone never decides this. With observer hooks, a session's `Stop` line answers the question without asking.
+- **Same contract, new chat:** `open --resume` issues the next generation. Unless the previous generation's last call left the work parked, finished or waiting for an answer, one `takeover-check` question asks whether the earlier chat has stopped, because generations cannot stop native edits from a chat that is still running. Elapsed time alone never decides this. With observer hooks, a session's `Stop` event answers the question without asking.
 - **Different contract:** blocked while the owner is active. A parked, blocked or finished owner releases ownership.
 - **Owner unknown,** for example an `inCall` whose process is dead: `open` reconciles (7.4) and continues; the user is asked only if the inventory shows changes the kernel cannot attribute (10.2).
 
@@ -885,10 +921,10 @@ Effects are classified by whether repeating them is safe:
 
 | Class | Effects | Protocol |
 |---|---|---|
-| Not repeatable | Git commits, integration and undo; dependency installs; the scaffold write; prototype restores; remote actions | Intent, act, result, publish |
+| Not repeatable | Git commits, integration and undo; dependency installs; the scaffold write; prototype restores; writes to accepted-fact files (managed blocks in `INTENT.md`, decision records); exports; remote actions | Intent, act, result, publish |
 | Repeatable by envelope | Checks whose envelope declares no network beyond localhost, no data targets and no writes outside the run directory | Run intent only; a crashed run is discarded and rerun |
 | Unknown | Checks with any other envelope | Run intent; after a crash the run is uncertain, and rerunning needs the user's confirmation |
-| Re-renderable | Projections (managed blocks, decision records, docs) | No effect records; on recovery, re-rendered only where the file still has the hash Tenet last wrote; otherwise a question, so user edits are never overwritten |
+| Re-renderable | Derived records (`docs/a11y-checks.md`, rendered status) | No effect records; on recovery, re-rendered only where the file still has the hash Tenet last wrote; otherwise a question, so user edits are never overwritten |
 
 1. **Intent:** append `{effect, id, op, expected}` to `log` and fsync. `expected` holds what reconciliation needs, for example the old HEAD, the expected tree and the commit message.
 2. **Act.**
@@ -900,62 +936,75 @@ Effects are classified by whether repeating them is safe:
 | Operation | Completed when | Not performed when |
 |---|---|---|
 | Commit, integration, undo | Exactly one reflog move on the intent's branch from the old HEAD to a commit whose parent is the old HEAD, whose message starts with the intent's subject, and whose changed paths are within the intent's paths (later commits or hook reformatting do not hide it) | HEAD equals the old HEAD and the reflog shows no such move |
-| Install | The lockfile and manifests equal the expected state **and** a readiness re-probe passes; side effects of install scripts remain disclosed as uncertain | They equal the prior state |
+| Install | The lockfile, the manifests and npm's installed-tree record (`node_modules/.package-lock.json`) equal the expected state **and** a readiness re-probe passes | All three equal the prior state. Side effects of install scripts are reported separately and always as uncertain |
 | Scaffold, prototype restore | File hashes equal the expected hashes | File hashes equal the prior hashes |
 | Push or PR | `git ls-remote` shows the expected commit, or `gh pr list --head` shows the PR (a consented remote read) | The remote shows the prior state |
 | Check run | — | The recorded process group is stopped if its process ID and start time match; the receipt is discarded. If the process was never recorded (a crash between spawn and record), the result says an orphan may exist |
 
-Anything else, including several candidate commits or missing reflog history, is unresolved and becomes a question. Every response lists completed and uncertain effects separately (6.6). The kernel never promises that nothing partial happened. **Log compaction never removes an intent that has no result** (PRD Section 5.15).
+Anything else, including several candidate commits or missing reflog history, is unresolved and becomes a question. Reconciliation reports the local artifact, process termination and external side effects as separate facts, and evidence from an interrupted run is never eligible. After a fallback to `state.prev` (15.2), effects recorded in the log after that revision are reconciled before anything is retried. Every response lists completed and uncertain effects separately (6.6). The kernel never promises that nothing partial happened. **Log compaction never removes an intent that has no result** (PRD Section 5.15).
 
 ### 7.5 Marker, user directory and quarantine
 
-- **User directory:** `~/Library/Application Support/tenet/` on macOS (`$XDG_CONFIG_HOME/tenet/` elsewhere), or `${PLUGIN_DATA}` for the MCP and hook front-ends where the host provides it. It holds only user preferences (`prefs`, replaced atomically) and the optional machine key (`key`, created with exclusive create so concurrent projects cannot race). Nothing in it is needed for correctness. [SPIKE: SP-02] confirms writability per front-end (TQ-04).
-- **Marker:** `{workspaceId, nonce, schema, dev, ino}`, written when an implementation profile first creates `.tenet/`; `dev` and `ino` identify the `.tenet/` directory itself.
-- **Copy and clone detection:** a copied `.tenet/` has a new inode, so its device and inode no longer match the marker, and it is **quarantined**:
+- **User directory:** `~/Library/Application Support/tenet/` on macOS (`$XDG_CONFIG_HOME/tenet/` elsewhere), or `${PLUGIN_DATA}` for the MCP and hook front-ends where the host provides it. It holds only user preferences (`prefs`), updated under the same exclusive-create lock primitive as `.tenet/lock`, so two projects saving preferences at once cannot lose an update. Nothing in it is needed for correctness. [SPIKE: SP-02] confirms writability per front-end (TQ-04).
+- **Marker:** `{workspaceId, tag, nonce, schema, dev, ino}`, written when an implementation profile first creates `.tenet/`; `dev` and `ino` identify the `.tenet/` directory itself, and `tag` (4 characters) appears in every handle (6.4).
+- **Copy, clone and untrusted state:** a copied `.tenet/` has a new inode, so its device and inode no longer match the marker; a `.tenet/` with no valid marker is treated the same way. Either is **quarantined**:
   - its lessons, commands, settings and contracts are ignored;
-  - its entries are moved into `.tenet/quarantine-<date>/` as inert data, and a fresh state starts beside them;
+  - its entries are moved into `.tenet/quarantine-<date>/` as inert data, with a `quarantine-in-progress` record written first, so an interrupted move is diagnosed and resumed on the next call and never half-imported;
   - `open` returns a question offering to review the quarantined state through `decide {request: adopt}` or to keep the fresh start.
 
   A same-filesystem move keeps the inode and only triggers scope reconciliation (CON-11). A Git clone never carries `.tenet/`, because it is ignored.
-- **MAC (Beta):** with a key, `state` carries an HMAC, and a mismatch is reported as `state-modified-outside-kernel` (exit 4). The key is readable by any process running as the user, so the MAC catches accidental and naive edits only. Without a key the control is labeled unavailable, and the default `.tenet/` no-edit exclusion, schema validation and the revision check are the protection (PRD Section 5.10.2).
+- **Read-only storage:** if `.tenet/` cannot be written, inspection still works and every mutation is refused with the reason.
+- **Tamper detection** relies on the default `.tenet/` no-edit exclusion, schema validation and the revision check (PRD Section 5.10.2). A state MAC is deferred: any process running as the user could read its key, so it would catch only naive edits that validation already catches.
 
 ### 7.6 Retention and admission
 
 - **Budgets:** `.tenet/` at most 50 MB (PRD Section 4.4.3). Run directories at most 200 MB per project and 1 GB per machine.
-- **What fills `.tenet/`:** the state document, archived contracts, cached responses and prototype snapshots. Raw output and screenshots are not stored there, so admission control is simple:
+- **What fills `.tenet/`:** the state document, archived contracts and prototype snapshots. Raw output and screenshots are not stored there, so admission control is simple:
   - prototype snapshots larger than 20 MB are refused with `snapshot-too-large`, offering `git init` instead;
   - state writes are always admitted, with a 5 MB reserve kept for them.
 - **Eviction**, run inside `open` and `finish` within 300 ms, in PRD Section 5.15 order:
-  1. cached responses older than the last 64;
-  2. shadow snapshots of finished prototypes older than 30 days;
-  3. `log` entries older than 90 days, replaced by monthly summaries (unresolved intents are kept);
-  4. archived contracts compacted to their summary lines.
+  1. shadow snapshots of finished prototypes older than 30 days;
+  2. `log` entries older than 90 days, replaced by monthly summaries (unresolved intents are kept);
+  3. archived contracts compacted to their summary lines.
 - **Protected:** active contracts and grants, unresolved effects, open findings, the lock manifest and ownership records are never evicted. If protected data alone exceeds the ceiling, mutating calls that would add data stop with `storage-protected-full`.
-- **Run directories** past their caps or 24 hours old are removed at the next kernel call, except those of live runs, whose processes are reconciled first; there is no background cleanup. When raw output has expired, later claims say "historical; raw output unavailable" and never imply a new failure.
+- **Run directories** past their caps or 24 hours old are removed at the next kernel call, except those of live runs (reconciled first) and those still holding a manifest for a live reservation; there is no background cleanup. When raw output has expired, later claims say "historical; raw output unavailable" and never imply a new failure.
 
 ### 7.7 Schema migration
 
-- `state.schema` is upcast by pure functions on read, and the latest version is written.
-- **Before a schema-changing write,** the old document is kept as `state.v<N>.bak`.
+- `state.schema` is upcast by pure functions on read. Read-only and stateless calls upcast in memory only and never write.
+- **Previewed (LFC-04):** the first mutating call that would write a newer schema returns a `migration-needs-approval` question describing the change; on acceptance the old document is kept as `state.v<N>.bak` and the new one is written. If the user declines, the state stays as it is and the kernel runs read-only.
 - **Rolling back the plugin** restores the backup only if no mutation happened since; otherwise the older kernel runs read-only and explains how to update. Work done after the migration is never discarded silently.
 - **Unknown fields** are preserved under `_ext`, except in grants, restrictions and consents, where they make the record unsupported (exit 4).
-- **Forgetting reaches every copy Tenet controls:** `decide forget` publishes twice (so `state.prev` also lacks the text), removes the text from schema backups, and clears the response cache (CON-10, PRD Section 5.15).
+- **Forgetting reaches every copy Tenet controls:** `decide forget` publishes twice (so `state.prev` also lacks the text), removes the text from schema backups and the cached last response, and deletes packet files (5.5) (CON-10, PRD Section 5.15). Copies already sent to the host's model are outside Tenet's control, and the result says so.
 
-### 7.8 Projections and the policy file
+### 7.8 Intent, projections and the policy file
 
-**`INTENT.md` managed blocks:** `<!-- tenet:begin REQ-012-q7k -->` … `<!-- tenet:end REQ-012-q7k -->` around each requirement (with its examples and invariants), constraint, assumption, deferred choice and plan item. Prose outside the blocks belongs to the user.
-- **Duplicate, nested, unbalanced or malformed markers** stop with `intent-markers-invalid` and show the region; the kernel never guesses which copy is canonical.
-- **Changes outside Tenet:** any block whose content changed since adoption needs acceptance through a diff. The kernel does not classify prose changes as tightening (PRD Section 5.6).
-- **Size:** past about 8,000 tokens, Tenet proposes splitting into `docs/intent/<area>.md` with an index.
-- **Adoption declined:** accepted intent and plan items stay in the project record (7.2) and are lost with `.tenet/`, which the result says (PRD Section 5.14).
+**Three kinds of project files** decide how a change invalidates what:
+
+| Kind | Files | A change invalidates |
+|---|---|---|
+| Accepted facts | Managed blocks in `INTENT.md`, decision records, `tenet.policy.json` | Judgments bound to the intent or policy revision: verification links, reviews and grants. Not executable receipts, unless an obligation declares the file as an input |
+| Checked inputs | Source, tests, runner configuration, declared fixtures, deliverable documents (`docs/hardening.md`, `docs/architecture.md`, README) | Receipts and reviews of the candidate (8.8) |
+| Derived records | `docs/a11y-checks.md`, rendered status | Nothing |
+
+Accepted facts are versioned by `project.intent.revision` and the policy's adoption hash, so a changed requirement invalidates exactly the judgments that relied on it, and recording a manual check never reruns the unit suite. Deliverable documents are written by the agent as part of the work, so they are ordinary inputs.
+
+**`INTENT.md` is the projection of `project.intent`** (7.2) when adopted:
+- an `OVERVIEW` block holds purpose and value, users, preferences and non-goals; managed blocks `<!-- tenet:begin REQ-012-q7k -->` … `<!-- tenet:end REQ-012-q7k -->` hold each requirement (with its examples and invariants), constraint, assumption, decision summary, deferred choice and plan item (INT-02). Prose outside the blocks belongs to the user;
+- **duplicate, nested, unbalanced or malformed markers** stop with `intent-markers-invalid` and show the region; the kernel never guesses which copy is canonical;
+- **changes outside Tenet:** any block whose content changed since the last accepted revision needs acceptance through a diff, which then increments the intent revision. The kernel does not classify prose changes as tightening (PRD Section 5.6);
+- **files the kernel writes** (managed blocks, decision records) join the contract's Tenet file set and are committed with the work. If `INTENT.md` was human-dirty at the start, one question per contract settles whether Tenet may write its blocks into it;
+- **size:** past about 8,000 tokens, Tenet proposes splitting into `docs/intent/<area>.md` with an index.
+
+**Impact of an intent change** (INT-08): `inspect impact <ids>` and the preview of any `decide {propose: basis | plan}` that amends existing IDs call one pure function, `impact(state, ids)`. It follows the links that already exist (element IDs in plan items, `verifiedBy` references, decision links, `@tenet` test tags and active contracts' `elementIds`) and returns the affected requirements, examples, plan items, tests, decisions and in-flight work before anything proceeds.
+
+**Adoption offer** (CON-01): the first `finish` that reaches checked-local while `adoption.intent` is undecided adds one offer to `next`: preview the shared files, then `decide {request: adopt}`. The preview reads `git remote -v` locally. If a remote exists, it warns that shared intent and decisions become visible to anyone who can read that remote; it says "public" only when a consented remote read has shown it. The answer is remembered.
 
 **Designated existing documents** (INT-13): `config.intent.sources` points to an existing document and section. The kernel records the path and its hash, the agent reads it, managed blocks go only into the designated section after a preview, and a hash change triggers a re-read and diff.
 
 **Decision records:** `docs/decisions/NNNN-<id>-<slug>.md` in MADR format, with front matter `id`, `status`, `date` and `links`.
 
-**Tenet's record files are declared outputs.** Files the kernel itself writes (managed blocks in `INTENT.md`, decision records, `docs/hardening.md`, `docs/a11y-checks.md`) are declared outputs of Tenet under EVD-09: they are excluded from check-input identities, so recording a decision or a manual check never makes receipts stale. Their hashes are still tracked, so any change by someone else is detected through adoption (above) and attribution. Agent-written documents such as `docs/architecture.md` remain ordinary inputs.
-
-**Charter:** a section of **at most 300 tokens**, counted in the always-loaded budget because instruction files load into every chat on the project (PA-5), between `<!-- tenet:charter:begin -->` markers in **one** instruction file, the one the host is observed to load (`instructionFiles`, SP-02):
+**Charter:** a section of **at most 300 tokens**, counted in the always-loaded budget because instruction files load into every chat on the project (PRD Section 4.4.3), between `<!-- tenet:charter:begin -->` markers in **one** instruction file, the one the host is observed to load (`instructionFiles`, SP-02):
 - if the host loads only one of `AGENTS.md` and `.github/copilot-instructions.md`, use it;
 - if it loads both, use the one that exists, preferring `AGENTS.md`;
 - if neither exists, propose the file the host loads by default;
@@ -966,7 +1015,7 @@ Anything else, including several candidate commits or missing reflog history, is
 ### 7.9 Identifiers
 
 - **Work:** an opaque ID `wk_<10 random base32 characters>` for correlation, plus a friendly label `W-####` for people. Labels may repeat after state loss; IDs never do.
-- **Shared IDs:** `<PREFIX>-<sequence>-<3-character suffix>`, for example `REQ-012-q7k`. The sequence is the highest seen on the current branch plus one. Prefixes: `REQ`, `EX-<req>.<n>`, `CNS`, `ASM`, `DEC`, `PLN`.
+- **Shared IDs:** `<PREFIX>-<sequence>-<3-character suffix>`, for example `REQ-012-q7k`. The sequence is the highest seen on the current branch plus one. Prefixes: `REQ`, `EX-<req>.<n>`, `CNS`, `ASM`, `DEC`, `DEF` (deferred choices), `PLN`.
 - **Integration reconciliation (GIT-09):**
   - same ID with different content, *and the block existed at the merge base* → a content conflict; the user decides from a three-way view;
   - the block did not exist at the merge base (both branches created it) → re-suffix the newer one and update its links and test tags in one proposed patch.
@@ -996,7 +1045,7 @@ Anything else, including several candidate commits or missing reflog history, is
 
 **Acceptance obligation** (one per accepted example, 9.2):
 - `registered` (when the basis is recorded, *before* any run);
-- → `verified`, once the baseline run matched the declared baseline expectation and the candidate run passed;
+- → `verified`, once the baseline run matched the declared baseline expectation and the candidate run passed **with the same test definition**: the baseline run records the hash of the acceptance test file and its support inputs, and if either changed before the candidate run, the red is void (`red-invalidated`) until a Reviewer disposition for a test defect or a sealed re-verification (9.8) restores it;
 - → `locked` (an entry in the project lock manifest, 9.7);
 - `locked → revised` needs a disposition (a user confirmation for a behavior change, or a Reviewer disposition for a test defect; one disposition may cover a batch of mechanical edits); then `revised → verified → locked`.
 
@@ -1007,6 +1056,7 @@ Declared baseline expectations by kind:
 | Distinguishing | Behavioral failure |
 | Preservation | Pass |
 | Boundary or negative | Declared per case (pass or behavioral failure) |
+| Alongside (TDD-03) | Allowed only when a behavioral red is infeasible and the reason is recorded; needs a negative-control receipt (a seeded fault the test catches), and the result discloses it (`test-alongside`) |
 
 **Basis elements:** every requirement, example, invariant, constraint, assumption and decision in the basis names how it is verified (an obligation, the review, or a manual check) or why verification does not apply (`BasisElement.verifiedBy`, 7.2).
 
@@ -1024,7 +1074,7 @@ The coordinator submits a structured assessment of the **change**: six dimension
 | Edits in `protected_paths` | Compatibility; needs a per-task exception grant | Deterministic |
 | Change traits `external-effects` or `personal-data` | External effects; sensitive data | Deterministic |
 | No test discovered for the changed modules | Uncertainty (after inspection) | Deterministic |
-| Changed exports with more than 10 callers, counted by the coordinator with `usages` | Blast radius | Reported |
+| Changed exports with more than 10 callers, counted by the coordinator with `usages` | Blast radius | Reported; if `usages` is unavailable, Uncertainty is raised instead of trusting a count of zero |
 
 At least one High dimension sets the floor to Standard; two or more, or an irreversible effect, set it to Deep. The user may lower the lane to the floor and never below it; declining a floor step is recorded and handled by the verdict (WRK-13).
 
@@ -1042,8 +1092,8 @@ function verdict(i: VerdictInput): Verdict {
   // 3. Behavioral evidence
   if (i.behavioralChange) r.push(...judgeRed(i));        // distinguishing red, or a declared alternative with a negative-control receipt
   else r.push(...judgeAlternativeCheck(i));               // nonbehavioral work: its declared alternative check
-  // 4. Review: required independence, current basis and candidate, full coverage
-  if (i.reviewRequired) r.push(...judgeReview(i.review, i.basis.revision, i.candidate));
+  // 4. Review: a completed review chain reaching the current candidate and intent revision, independence, coverage
+  if (i.reviewRequired) r.push(...judgeReview(i.reviews, i.intentRevision, i.candidate, i.receipts));
   // 5. Findings by disposition, assumptions, declined steps, integration
   r.push(...openBlockers(i), ...undisposedMajors(i), ...unresolvedAssumptions(i), ...i.declined.map(code("declined-step")));
   if (i.integratedAfterMovedBase && !i.integratedReceiptsFresh) r.push(code("integration-unvalidated"));
@@ -1056,7 +1106,7 @@ function verdict(i: VerdictInput): Verdict {
     i.implementationExists ? "implemented-unverified" : "blocked";
   endpoint = min(endpoint, ceilingFor(i.assistanceLevel));          // ceiling applied last, never a shortcut
   const scope = endpoint !== "checked-local" ? undefined
-    : i.commitExists && i.commitTree === i.checkedTree ? "committed"
+    : i.commitExists && (i.commitTree === i.checkedTree || i.committedTreeChecked) ? "committed"   // committed: check --stage committed (9.8)
     : i.checkedIncludesHumanEdits ? "working-tree-with-your-edits" : "working-tree-uncommitted";
   return { endpoint, scope, reasons: r, coverage: i.review?.coverage, acceptance: i.acceptance,
            integration: i.integrationState, stopReason: i.stopReason };
@@ -1067,8 +1117,11 @@ function verdict(i: VerdictInput): Verdict {
 - **Everything is evaluated first.** The prototype, review-only and assistance-level outcomes never skip the checks, so every reason that prevented a stronger endpoint is listed (RES-02).
 - **Ceiling:** L3 caps at `implemented-unverified`; L0 to L2 cap at `findings-only`, or `blocked` when nothing exists.
 - **Review eligibility comes from evidence and dispositions,** not from the Reviewer's axis labels:
-  - blocking: missing required review, reduced independence where independence is required, partial coverage, a review older than the current basis revision or candidate (`review-stale`), an open blocker, an undisposed major finding, an open basis gap;
+  - blocking: missing required review, a review whose `status` is not `completed`, reduced independence where independence is required, partial coverage, a review chain that does not reach the current candidate and intent revision (`review-stale`, 8.7), an open blocker, an undisposed major finding, an undisposed attention item, an open basis gap;
+  - **sampled callers** count as covered only when a passing full `types` receipt exists for the candidate, because that proves every caller still compiles against the changed signature; otherwise the unopened callers are uncovered. The kernel compares `callers` with `opened` itself;
   - not blocking: a major finding the user accepted as a risk. The Reviewer's `fail` stays visible in the result and is never edited to make room for risk acceptance.
+- **Limitations, not blockers,** unless a required check makes them blocking: an unverified screen-reader journey narrows the accessibility claim to the journeys verified (`accessibility-claim-narrowed`; QLT-03 asks claims to name what they cover); unavailable audit data is reported as such (`audit-unavailable`, 9.1).
+- **Review capture is disclosed** in `controls` (`reported`, `tool-scoped` or `observed`, 2.3); a retyped result is labeled `reported`, and a golden-task trap that drops a blocker while retyping measures the residual (17.3).
 - **Separate dimensions:** endpoint, scope, coverage, controls (with their mechanisms), owner acceptance and integration are separate result fields; none is folded into "done".
 - **Scope is part of the label:** when the scope is not `committed`, it is rendered in the endpoint label itself, for example "checked-local (working tree, includes your uncommitted edits)", not as a footnote.
 - **`finish` refuses to close** (exit 2 `continue-required`) while an introduced failure remains, attempts remain, and no stop reason is set (PRD Section 4.5.2). With a stop reason, `finish` closes with the honest endpoint and the diagnosis.
@@ -1094,7 +1147,7 @@ function verdict(i: VerdictInput): Verdict {
   - commands are chosen per check name, and a command never discharges an obligation it is not equivalent to;
   - floors and integrity rules always apply.
 - **Output:** `{value, sources, adoptionState, overridden, limits, effectsOnActiveWork}`, rendered directly by `inspect why`.
-- **Validation:** unknown or malformed keys in restriction-bearing sources block dependent work (CFG-11). A mixed update yields a restriction-only revision plus a rejection (PRD Section 7.5).
+- **Validation (CFG-11, PRD Section 7.7):** an unknown key is compared with the restriction vocabulary (`protected_paths`, `exclusions`, `required_checks`, `dependency_policy` and their fields). A key inside a restriction object, or within edit distance 2 of a restriction key, blocks dependent work with `restriction-key-unknown` and names the likely intended key; any other unknown key is a preference, reported once and ignored. A mixed update yields a restriction-only revision plus a rejection (PRD Section 7.5).
 - **Trust comparison:** applied automatically **only** to structurally comparable fields of `tenet.policy.json`:
   - `protected_paths` and `exclusions`: superset or not;
   - `required_checks`: obligations added or removed, identified by ID;
@@ -1127,59 +1180,65 @@ function verdict(i: VerdictInput): Verdict {
 
 ### 8.6 Budgets and usage reporting
 
-**Counters** (PRD Section 4.4; RSC-04), all in `BudgetState` (7.2):
+**Counters** (PRD Section 4.4; RSC-04), all in `BudgetState` (7.2) and changed only by `core/budget`:
 
 | Counter | Incremented when | Notes |
 |---|---|---|
-| Attempt | A full candidate check (`check --stage candidate` without `--targeted`) after edits | Targeted inner-loop checks are compile and test iterations inside a pass, so they never count (PRD Section 4.4.1). Baseline runs never count |
-| Review round | `findings` records a full review | A follow-up dispatch for uncovered parts (8.7) belongs to the same round; rechecks are counted separately |
-| Delegation | **Reserved** by `packet reviewer` or `packet analyst`; **dispatched** when the coordinator reports the dispatch (observed with hooks); **settled** by `findings` | A reservation stays pending until a result, `stop cancel`, abandonment or reconciliation, so parallel dispatches never expire each other. Dispatch beyond the lane limit is refused at reservation |
-| Tenet-launched check | Each obligation execution, including flaky reruns and sealed-baseline runs | Not the number of `check` calls |
-| Kernel call | Each verb call | Diagnostic only |
+| Attempt | A full candidate check (`check --stage candidate` without `--targeted`) after edits | Targeted inner-loop checks are iterations inside a pass, so they never count (PRD Section 4.4.1); they are bounded by the active-time limit below. Baseline runs never count |
+| Review round | `findings` settles a full review | A follow-up dispatch for uncovered parts (8.7) belongs to the same round |
+| Recheck | `findings` settles a recheck | **At most one per contract** (REV-05); a second is refused with `recheck-exhausted`, which leaves the open items to the verdict |
+| Delegation | **Reserved** when a manifest is built (by `check` or `packet`); **settled** by `findings` | A reservation lives exactly as long as its manifest is valid: when the candidate or intent revision changes, an unsettled reservation is released and not counted, because its manifest can no longer be used. Parallel dispatches keep their reservations, and a forgotten packet never exhausts the limit. The limit counts settled delegations plus live reservations, so dispatch beyond it is refused before it happens |
+| Tenet-launched check | Each obligation execution, including flaky reruns and sealed runs | Not the number of `check` calls |
 | Tenet tokens (estimate) | Each response and packet, by its token estimate | What Tenet injected; never presented as total usage |
-| Active time | Kernel call durations plus gaps between consecutive calls, each capped at 3 minutes; gaps after exit 2 or 3 and waits for native dispatches excluded | Measured **between check-ins** and reset at each one (PRD Section 4.4.2); labeled an estimate. Human active minutes for the pilot come from the PRD Section 6.6 consented observation, not from logs |
+| Active time | Kernel call durations plus the gaps after calls that returned exit 0 (agent work); gaps after exit 2 or 3 are waits and do not count | Measured **between check-ins** and reset at each one (PRD Section 4.4.2). At the lane's limit, the next response asks for a check-in. Labeled an estimate, because host approval waits inside a gap cannot be separated. Human active minutes for the pilot come from the PRD Section 6.6 consented observation, not from logs |
 
 **Failures that are not attempts:** configuration and execution failures (`not-executed`, `report-invalid`, `adapter-unsupported-config`) stop for diagnosis at once instead of consuming attempts, and the planned red of a baseline run never enters failure signatures. Repeated-failure signatures (the obligation, the sorted failing tests and the first normalized error line) set `stopReason: repeated-failure` when the same signature appears twice in a row or in an A-B-A-B pattern (WRK-09). At 80% of any counter, the handoff is written proactively (WRK-12).
 
 **Budget preview before Deep work** (RES-09): the response to the lane change lists the expected native sessions (Reviewer, Architect, Security, and Analysts if any), review rounds, full-suite and workload runs, and the main cost drivers in plain words ("about 4 subagent sessions; the full suite twice"). It shows no currency, because prices change monthly and the resolved model may be unknown.
 
-**Usage reporting** (RSC-04 now; RSC-07 later). `inspect status` and the result show, with source and freshness:
+**Usage reporting** (RSC-04 now; RSC-07 later). `inspect status` and the result show, labeled "as of" their last reconciliation:
 - attempts, review rounds and rechecks, delegations by role, Tenet-launched checks, active time;
 - Tenet tokens (estimate), labeled as Tenet-injected context only;
 - the model record (4.8);
 - `usage: unknown` with the reason ("account usage is not visible to plugins") and where to look: the Copilot usage dashboard, the per-subagent credit display (`chat.subagents.showCreditUsage`) and GitHub's usage report and budgets.
 
-Tenet never converts tokens into credits, requests or money, and never shows an allowance it does not know; a false usage number is worse than `unknown`. When a host or permitted read-only source later supplies usage, it is recorded as a `UsageObservation` (16) with scope, source and freshness, never enforced and never used to switch accounts or buy capacity (RSC-03, 11.4).
+Tenet never converts tokens into credits, requests or money, and never shows an allowance it does not know; a false usage number is worse than `unknown`. If a host later supplies usage figures, they are shown with their source, scope and freshness, never estimated, never summed with estimates, never enforced and never used to switch accounts or buy capacity (RSC-03, 11.4).
 
 ### 8.7 Review manifest and context
 
-The Reviewer has a fresh context and the host's read, search and `usages` tools, so the manifest is a small **index of what to examine**, not a copy of the repository. The host's language services provide the repository map that PRD Section 3.8.7 describes (exports, imports, entry points, routes and tests), refreshed incrementally by the host; this is adoption of an equivalent host capability under PRD Section 7.9.
+The Reviewer has a fresh context and the host's read, search and `usages` tools, so the manifest is a small **index of what to examine**, not a copy of the repository. The host's language services provide the repository map that PRD Section 3.8.7 describes (exports, imports, entry points, routes and tests), refreshed incrementally by the host (PRD Section 3.8.7 permits this).
+
+**One builder.** `buildManifest(state, mode)` is the only code that makes a review manifest and the only code that reserves its delegation. `check` calls it when a full review or a recheck is the next action and returns the path; `packet reviewer` calls it only for a split-coverage follow-up or after a run directory expired.
 
 | Part | Content |
 |---|---|
-| Identity | Work, candidate source digest, basis revision, manifest hash, mode (`full` or `recheck`) |
+| Identity | Work, candidate source digest, intent revision, manifest hash, reservation ID, mode (`full` or `recheck`) |
 | Basis | Outcome; every basis element with its verification link; obligations and floors. **Never truncated.** If these alone exceed the budget, `packet` returns `narrow-increment` (exit 2) |
 | Evidence | Receipt summaries and open findings |
 | Changes | Every changed path with its kind (test, configuration, locked, source) and line counts. Test, configuration and source diffs inline with function context (`git diff --function-context`) within the budget, otherwise paths only. Lockfiles and generated snapshots are never inlined; the structured dependency diff from 9.11 replaces them |
-| Closed read list | The changed files, their linked acceptance tests, and for each changed exported symbol (taken from the diff's changed lines; context only) its callers to locate with `usages`; changed routes and entry points to locate with search |
+| Attention (REV-03) | Changed lines matching the adapter's pattern table: skip and focus markers, mocks, assertion removals, snapshot updates, lint and type suppressions, test-discovery configuration, CI files and dependency changes. Each needs a disposition in the result |
+| Investigation list | In priority order: the changed files, their linked acceptance tests, for each changed exported symbol its callers to locate with `usages`, and changed routes and entry points to locate with search |
 | Rubric | Required axes, trait rubric items, the charter excerpt and active lessons (at most 1,500 tokens) |
 
-- **Stopping rule:** the Reviewer works through the closed read list and stops. Where a symbol has more than 10 callers, it opens a sample across distinct modules and records the count in `coverage.sampled`. Anything not reached goes into `coverage.uncovered`. Open-ended exploration beyond the list is a Deep choice, not the Standard default.
-- **Recheck mode** (`--recheck <findings>`): only the named findings, their locations, the diff since the last reviewed candidate, the basis elements those findings touch, and the previous coverage summary. A focused recheck costs a fraction of a full review (PRD Section 4.4.1).
+- **Stopping rule:** the Reviewer covers the investigation list, may read adjacent code it needs within the **read budget** (Standard about 40 additional files, Deep about 100; provisional, measured in SP-12), and reports everything it read in `inspected`. Where a symbol has more than 10 callers it may open a sample across distinct modules and say why in `coverage.sampled`; the kernel decides whether the sample counts (8.3). Anything not reached goes into `coverage.uncovered`.
+- **Recheck mode:** the manifest carries the named findings and **the complete diff since the last reviewed candidate**. The Reviewer must cover the whole delta, not only the finding locations, and returns `rechecked` outcomes. If the delta touches files outside the findings' locations or adds or changes exported symbols, `buildManifest` produces a full review instead. Earlier uncovered parts stay uncovered.
+- **Review chain:** each settled review is a `ReviewLink` (7.2). A recheck extends the full review it is `basedOn`. The chain reaches a candidate only if every delta since the full review is covered by a link, and the intent revision has not changed since. Otherwise the review is `review-stale`.
+- **Hooks that reformat after review:** if a commit hook changes Tenet files after the last review and the change is whitespace-only (`git diff -w` is empty), the review stays valid with the note `hook-reformatted-after-review`. Otherwise the hook's delta gets a recheck, which does not count against the one-recheck limit because the hook, not the work, caused it.
 - **Budget:** at most 20,000 tokens of Tenet-injected context per assignment, **including** role instructions and rubric (PRD Section 4.4.3). Token estimate: bytes ÷ 3.5 for code, ÷ 4 for prose, plus 10%; calibrated in SP-02 (TQ-13). Packet limits constrain Tenet's injection; they do not bound what the Reviewer reads, total usage, or spending (14.4).
 - **Coverage instead of pre-chunking (REV-08):** if `uncovered` is not empty, the verdict has `review-partial-coverage`, and the coordinator either dispatches a follow-up review with the manifest plus the uncovered list (split coverage; same round, one more delegation), or narrows the increment. There is no whole-change verdict from partial coverage. Every full review includes one cross-module statement.
-- **Binding:** `findings` rejects a result whose candidate digest or basis revision differs from the current one (`review-stale`).
+- **Binding:** `findings` rejects a result whose candidate digest or intent revision differs from the manifest's (`review-stale`).
 - **Exclusions** are applied before selection, so excluded content never enters a manifest, and the Reviewer's instructions repeat the exclusions for its own reads (cooperative where the host does not enforce them, SEC-08).
 - **Fallback:** where `usages` is unavailable to a subagent (SP-08), the Reviewer uses text search for the symbol names and says so in coverage.
 
 ### 8.8 Evidence freshness
 
 - **Identities:**
-  - **Source candidate:** the inventory digest (9.4) of all non-excluded workspace inputs (content identity and file mode), plus the stat of excluded inputs and of declared ignored inputs.
-  - **Check-input identity:** `sha256(source candidate, obligation definition, toolchain fingerprint, envelope)` for one obligation.
+  - **Source candidate:** the inventory digest (9.4) of all checked inputs (content identity and file mode), plus the stat of excluded inputs and of declared ignored inputs.
+  - **Check-input identity:** `sha256(source candidate, obligation definition, toolchain fingerprint, envelope)` for one obligation. The envelope includes the names **and hashes of the values** of declared non-secret environment variables; secret-dependent inputs can only be compared by their stat, and the result says equality of their values cannot be established.
 - **Canonical content identity:** every file's content is identified by its Git blob ID (in the repository's object format), whether it is clean, staged, dirty or untracked; dirty and untracked files are hashed in Node in the same format, so committing an unchanged candidate never changes its identity. Files with clean filters or end-of-line conversion may differ after commit and are then conservatively stale.
-- **Reuse rule:** a receipt is valid for the current state when its check-input identity equals the current one. Any change to any inventory input therefore makes every receipt stale. This is the PRD's conservative rule (EVD-03); a dependency index waits for measurements showing reruns are a real cost (TD-08).
-- **Kept outside identities** so they cause no false invalidation: presentation settings, lock timestamps, declared outputs of a check (EVD-09), Tenet's own record files (7.8) and `.tenet/`.
+- **Reuse rule:** a receipt is valid for the current state when its check-input identity equals the current one. Any change to any checked input therefore makes every receipt stale. This is the PRD's conservative rule (EVD-03); a dependency index waits for measurements showing reruns are a real cost (TD-08).
+- **Kept outside identities** so they cause no false invalidation: presentation settings, lock timestamps, declared outputs of a check (EVD-09), accepted-fact files (versioned by the intent and policy revisions instead, 7.8), derived records and `.tenet/`.
+- **Adapter changes:** the adapter's normalization version is part of the toolchain fingerprint, so a change in how results are read invalidates old receipts.
 - **Receipts keep their original identity.** When the verdict reuses one, the reuse decision is recorded beside it; the receipt is never rewritten to imply a new run.
 - **Speed in inner loops:** runner-native affected selection (`vitest related`, Jest `--findRelatedTests`) yields `scope: targeted` receipts, which never discharge full-suite obligations at the checked boundary. Host diagnostics give feedback between attempts without running anything.
 
@@ -1192,6 +1251,7 @@ The Reviewer has a fresh context and the host's read, search and `usages` tools,
   - inferred lessons stay proposals (LRN-01, LRN-02, LRN-04).
 - **Single live copy:** lesson text lives only in `state.lessons`. Packets are rebuilt and archives reference IDs; `decide forget` also purges backups and caches (7.7), so forgetting is complete for every copy Tenet controls (CON-10, AC-09).
 - **Not host memory:** Tenet never writes lessons into host memory, because host memory offers no per-item provenance or previewed forgetting (retirement row, 4.4).
+- **Retirement (AC-09):** when a correction or decision contradicts an active lesson, `decide` retires the older lesson, and retired lessons never enter a packet.
 - **Constraints:**
   - lessons cannot carry obligations, permissions, evaluators or floors (LRN-05);
   - an anchor that disappears flags the lesson for review;
@@ -1221,7 +1281,7 @@ Each kind is a module with its own validation in a registry, so a new kind adds 
   - adopted `required_checks`;
   - trait contributions;
   - **acceptance obligations**, registered when the basis is recorded, before any run: one per accepted example, naming the acceptance test file, the example tag, the declared baseline expectation (8.1) and any declared support inputs (9.7).
-- **Applicability:** each obligation has one category, so routine changes never trigger release-level work:
+- **Applicability:** each obligation has one category, which says **when it is required**; how it runs (targeted during iteration, full at the boundary) is the receipt's scope. Routine changes never trigger release-level work:
 
 | Category | Runs | Examples |
 |---|---|---|
@@ -1229,9 +1289,9 @@ Each kind is a module with its own validation in a registry, so a new kind adds 
 | `boundary` | Before `finish` claims checked-local | The full required suite; whole-project lint and types |
 | `affected` | When a trait or path pattern matches the change | End-to-end and automated accessibility checks for changed journeys |
 | `release` | In Deep work and release qualification | Workload |
-| `manual-affected` | Once per changed critical journey, at the boundary; asked as one question | Screen-reader check |
+| `manual-affected` | Once per changed critical journey, at the boundary; asked as one question. A journey has changed when a file its `journeys.json` entry lists (its end-to-end spec, routes and components) changed | Screen-reader check |
 
-  Adopted project commitments keep their category; a required manual check is never silently skipped. Recipe defaults and their categories are shown in the contract preview. A manual receipt's identity is the candidate it observed, so it goes stale on any later change like every other receipt; the coordinator therefore asks for it last, after the final candidate check. One Playwright run produces both the `e2e` and the automated `a11y` receipts when the axe checks run inside the journeys.
+  Adopted project commitments keep their category; a required manual check is never silently skipped, and a declined or unavailable one yields the honest narrower claim without repeated asking (8.3). Recipe defaults and their categories are shown in the contract preview. A manual receipt's identity is the candidate it observed, so it goes stale on any later change like every other receipt; the coordinator therefore asks for it last, after the final candidate check. One Playwright run produces both the `e2e` and the automated `a11y` receipts when the axe checks run inside the journeys.
 - **Acceptance test files:** acceptance tests live in dedicated files, `<module>/<req-id>.acceptance.test.ts` by default, following project conventions for location. New examples added after a file is locked go into a new file (`<req-id>.<n>.acceptance.test.ts`), so amending the basis never edits a locked file.
 - **Discharge:** an obligation is discharged only by a receipt of its kind that passes the kind's validation and matches its declared population. A renamed or filtered command never discharges it.
 
@@ -1260,7 +1320,7 @@ Each kind is a module with its own validation in a registry, so a new kind adds 
   - on timeout or `stop cancel`: SIGTERM to the group, 5 seconds' grace, then SIGKILL;
   - after a kernel crash, the next call stops a recorded group whose process ID and start time still match (7.4).
 - **Servers and ports** (EVD-13, PRD Section 5.13):
-  1. For the starter, the runner allocates a free loopback port (bind port 0 on `127.0.0.1`, read it, release it) and passes it as `PORT`, so an occupied default port never blocks a check.
+  1. For the starter, the runner allocates a free loopback port (bind port 0 on `127.0.0.1`, read it, release it) and passes it as `PORT`, so an occupied default port never blocks a check. If the server loses the port to another process before binding, the run is retried up to 3 times with a new port.
   2. Playwright's `webServer` starts the server under the runner's process tree with `reuseExistingServer: false`, its readiness URL and a timeout, plus `DATABASE_URL` pointing at a fresh database in the run directory.
   3. The health endpoint must echo `TENET_RUN_TOKEN`. A brownfield project with a fixed port gets a pre-check bind instead: if the port is in use, the receipt is `inconclusive` with `port-in-use`. A brownfield server without a token is identified only by the pre-check plus process ancestry, and the result records that weaker identity (`server-identity-weak`).
 - **Envelope record:**
@@ -1276,30 +1336,33 @@ Each kind is a module with its own validation in a registry, so a new kind adds 
 
 ### 9.4 Inventory and identities
 
-The inventory must be exclusion-aware **before** any content-capable operation, must never write to Git, and must never read prohibited content:
+The inventory must be exclusion-aware **before** any content-capable operation, must never write to Git, must never read prohibited content, and must never run configured programs:
 
 ```text
 inventory():
   require consent for executable Git filters, if any are configured   (git config --get-regexp '^filter\..*\.(clean|process|smudge)$', .gitattributes filter=)
+  git = inspection profile: -c core.fsmonitor=false -c diff.external= --no-ext-diff --no-textconv, GIT_OPTIONAL_LOCKS=0
   xs = exclusion patterns as Git pathspecs  (':(exclude,glob)<pattern>' …)
-  with GIT_OPTIONAL_LOCKS=0 (no index refresh writes):
-    tracked   = git ls-files -s -z -- . xs                     # mode, blob ID, path; no content read
+    tracked   = git ls-files -s -v -z -- . xs                  # mode, blob ID, path, assume-unchanged/skip-worktree flags
     status    = git status --porcelain=v2 -z --untracked-files=all -- . xs   # excluded paths never examined
-  for each path in tracked ∪ untracked ∪ declared ignored inputs, excluding .tenet/, declared outputs and Tenet record files:
+  for each path in tracked ∪ untracked ∪ declared ignored inputs, excluding .tenet/, declared outputs, accepted-fact files and derived records:
     if symlink                                   → {path, mode, link target string}            # never followed
-    elif tracked and clean                       → {path, mode, blob ID from index}            # no read
-    else (dirty, untracked or declared ignored)  → {path, mode, blob ID computed in Node}       # "blob <len>\0" + content; never git add
+    elif tracked, clean and not flagged          → {path, mode, blob ID from index}            # no read
+    else (dirty, untracked, flagged or declared ignored) → {path, mode, blob ID computed in Node}   # "blob <len>\0" + content
   for each excluded path that exists (lstat only) → {path, size, mtime, mode}                   # a stat change counts as a change
   guard: more than 20,000 untracked files or 500 MB of untracked bytes → inventory-too-large (exit 2), suggesting .gitignore
   return sha256(sorted entries) plus the per-file map
 ```
 
 - **Writes nothing to Git**, stores no secret content, and passes excluded paths to no Git command (EVD-01, SEC-14, CON-09).
+- **Inspection profile:** every read-only Git call disables filesystem monitors, external diff and text conversion, so inspection (including stateless review) never runs project-configured programs. Commands that legitimately run them (commit hooks, filters, signing) use the authorized profile under the recorded consent (10.3).
+- **Literal paths:** concrete paths (touched files, staged files) are passed as `:(literal)<path>`, so a specially named file can never act as a pattern; only exclusions use glob pathspecs.
+- **Flagged index entries:** files marked assume-unchanged or skip-worktree, or outside a sparse checkout, are hashed directly, because Git deliberately skips their working-tree check.
 - **One identity per content:** clean, staged, dirty and untracked files all use the Git blob ID, so a commit of unchanged content keeps every identity (8.8).
 - **Declared ignored inputs:** an obligation may declare ignored files it depends on (for example `.env.test` or a local runner configuration); they enter the inventory, or their stat if they are excluded.
 - **Excluded inputs still count:** a changed `.env` changes its stat entry, which makes dependent receipts stale. Presence alone is never proof that a secret-dependent input is unchanged.
 - **Filters:** Git clean filters can still run inside `git status` for stat-dirty files, which is why filter configuration needs consent first. [SPIKE: SP-06, TQ-14]
-- **Toolchain fingerprint:** `node --version`, the package-manager version, the `NODE_OPTIONS` hash, and the versions of runner tools read from `node_modules/<tool>/package.json` (reading files only, never executing). This detects version changes, not arbitrary edits inside `node_modules`, and the result says so.
+- **Toolchain fingerprint:** `node --version`, the package-manager version, the `NODE_OPTIONS` hash, the adapter's normalization version, and the versions of runner tools read from `node_modules/<tool>/package.json` (reading files only, never executing). This detects version changes, not arbitrary edits inside `node_modules`, and the result says so.
 - **Drift during a run:** the inventory is taken before and after every check, excluding declared outputs. A difference makes the receipt `inconclusive` with `concurrent-edit` (EVD-11).
 - **Non-Git folders:** the same commands run against the shadow repository (10.9), so there is one inventory algorithm.
 
@@ -1308,7 +1371,7 @@ inventory():
 The adapter is mostly data: a manifest of detection rules and invocations per tool, plus one pure `normalize(kind, rawReport)` function per reporter format.
 
 - **Detection:**
-  - package manager from the lockfile (npm, pnpm, Yarn 1; Yarn Plug'n'Play is unsupported);
+  - package manager from the lockfile (npm, pnpm, Yarn 1; Yarn Plug'n'Play is unsupported). Operation support differs: checks run on all three; governed dependency changes (9.11) need npm or pnpm, and on Yarn 1 dependencies are verified only after the user installs them;
   - `moduleRoot` from the project record (default `.`; one module root in monorepos, experimental);
   - runners from configuration files and `devDependencies`.
 - **Supported tool versions** are listed in the support matrix and confirmed by SP-10. Other versions yield `adapter-unsupported-version`.
@@ -1332,7 +1395,7 @@ The adapter is mostly data: a manifest of detection rules and invocations per to
 
 ```ts
 type Receipt = {
-  id: string; obligation: string; kind: CheckKind; stage: "baseline" | "candidate" | "integrated" | "sealed";
+  id: string; obligation: string; kind: CheckKind; stage: "baseline" | "candidate" | "integrated" | "sealed" | "committed";
   source: "kernel-run" | "manual" | "ci-external";
   checkInputId: string; scope: "targeted" | "full";
   argv: string[]; cwd: string; exit?: number; signal?: string; durationMs: number;
@@ -1340,7 +1403,9 @@ type Receipt = {
   failures?: Array<{ test: string; kind: FailureKind; message: string }>;   // bounded
   versions: { tool: string; reporter: string; adapter: string };
   rawOutput?: string;                    // run-directory reference; may expire
-  status: "pass" | "fail" | "inconclusive" | "flaky"; reasons: string[]; limitations: string[];
+  status: "pass" | "fail" | "inconclusive" | "skipped";                        // PRD Section 3.7.2 verdicts
+  qualifiers: Array<"flaky" | "simulated" | "partial" | "history-unavailable">;   // EVD-02, EVD-08
+  reasons: string[]; limitations: string[];
 };
 ```
 
@@ -1356,33 +1421,33 @@ Reports are untrusted. Paths in them must resolve inside the workspace or the ru
 
 ### 9.7 Locks
 
-- **Lock manifest:** project-level (`state.locks`, 7.2) for **acceptance test files**, so those locks outlive the contract that created them and are never evicted (PRD Section 5.15).
-- **Support inputs** (helpers, fixtures, snapshots, runner configuration and environment files an acceptance test depends on) are locked **during the contract** that declared them. After it finishes, a change to a support input is not a blocker for later work; instead, every acceptance obligation that depends on it reruns at the next boundary, and the review manifest lists the support-file diff for the Reviewer. This keeps later contracts free to extend shared helpers while still catching a weakened setup.
-- **Changes:** any change to a locked file without a disposition is a **blocker** (a weakened setup can disable a test as effectively as a weakened assertion). Dispositions can cover a batch of mechanical edits (INT-06). The review manifest lists changed locked files for the Reviewer.
+- **Lock manifest:** project-level (`state.locks`, 7.2) for **acceptance test files**, so those locks outlive the contract that created them and are never evicted (PRD Section 5.15). Each entry records the commit it was verified at and its support inputs.
+- **Branch-aware:** a lock applies only when its verification commit is an ancestor of HEAD (`git merge-base --is-ancestor`, batched once per check). After switching to a branch that never had the test, the lock is inactive there, and it returns when the branches meet. Git ancestry does the work; there is no separate version graph.
+- **Support inputs** (helpers, fixtures, snapshots, runner configuration and environment files an acceptance test depends on) are locked **during the contract** that declared them. After it finishes, a change to a support input is not a blocker for later work; instead, every acceptance obligation that lists it reruns at the next boundary, and the review manifest's attention list includes the support-file diff. Because the lock manifest keeps the support-input lists, this survives archival.
+- **Changes:** any change to a locked file without a disposition is a **blocker** (a weakened setup can disable a test as effectively as a weakened assertion). Dispositions can cover a batch of mechanical edits (INT-06).
 - **Why not test blocks or "additions only":** a block-level lock needs a JavaScript-aware lexer, which would be an integrity risk if it misread syntax. An "additions are always safe" rule fails because an added `vi.mock` or `beforeEach` can disable every existing test. Whole files plus new files for new examples (9.2) avoid both. Finer granularity waits until false lock violations are measured (TD-11).
 
-### 9.8 Baselines
+### 9.8 Baselines and committed-tree checks
 
 - **In place (the normal path, EVD-04):** acceptance tests are written before production changes. `check --stage baseline` verifies that the only changes since the start snapshot are test files and declared scaffolding, then runs **the acceptance obligations and the targeted checks of the modules in scope**, and compares the results with their declared baseline expectations. Broader obligations are not run on the baseline, so baseline cost stays proportional to the change (PRD Section 4.4.2). Human edits present at the start are part of the baseline, by definition.
-- **Sealed baseline (Beta, EVD-04):** when a broader check fails on the candidate and no baseline record exists, the failing obligation is rerun on the start HEAD outside the workspace:
-  1. Materialize the start tree through a temporary index: `GIT_INDEX_FILE=$tmp git read-tree <start HEAD>`, then `git rm --cached` of excluded paths in that index, then `git checkout-index -a --prefix=<run dir>/sealed/`. This writes nothing into the user's Git directory, honors no `export-ignore` or `export-subst` rewriting, and never materializes excluded content, even content committed in history.
-  2. Overlay the declared test files and scaffolding.
-  3. When the lockfile is identical, link `node_modules` with one directory symlink and point the known cache locations (`TMPDIR`, the Vite cache directory, the Playwright output directory) into the run directory. Otherwise `sealed-deps-unavailable`.
-  4. Run only the failing obligation; compare test populations between baseline and candidate before classifying.
-  5. Remove the directory (or leave it to the run-directory cap if the kernel crashes).
-- **Classification:**
+- **One materialization helper** in `git-cli` (shared with commit and undo) builds a tree outside the workspace:
+  1. `GIT_INDEX_FILE=$tmp git read-tree <tree>`, then `git update-index --force-remove` of excluded paths (metadata only, so no excluded content is ever read), then `git checkout-index -a --prefix=<run dir>/sealed/`. This writes nothing into the user's Git directory and honors no `export-ignore` or `export-subst` rewriting. Smudge filters run only under the filter consent (9.4).
+  2. Link `node_modules` with one directory symlink when the lockfile is identical, and point the known cache locations (`TMPDIR`, the Vite cache directory, the Playwright output directory) into the run directory. Otherwise `sealed-deps-unavailable`. The shared dependency tree is disclosed: it is source isolation, not an isolated install.
+- **Sealed baseline (Beta, EVD-04):** when a broader check fails on the candidate and no baseline record exists, the failing obligation is rerun on the **actual starting candidate**: the start HEAD, plus the start's dirty files copied from the workspace when their current content still equals the recorded start blob, plus the declared test files and scaffolding.
 
-| Sealed result at start HEAD | Start tree | Classification |
+| Sealed result | Start candidate reproduced? | Classification |
 |---|---|---|
-| Fails the same way | Any | Pre-existing |
-| Passes | Clean | Introduced |
-| Passes | Dirty | `classification-unknown`: the user's uncommitted start edits may be the cause; the user can exclude it or treat it as introduced |
+| Fails the same way | Yes (HEAD plus unchanged start edits) | Pre-existing |
+| Passes | Yes | Introduced |
+| Either | No: a start-dirty file has changed since, or the populations differ | `classification-unknown`; the user can exclude it or treat it as introduced |
 
-  The sealed tree is source isolation, not a sandbox, and the shared `node_modules` is disclosed as a limitation. When the populations differ, or anything else makes the two runs incomparable, the classification is `classification-unknown`. If OS temp is not writable, the classification is unknown (TQ-04).
+  A failure at HEAD alone is never called pre-existing when the start tree was dirty, because the user's uncommitted edits may have fixed it.
+- **Committed-tree check (Beta, `check --stage committed`):** when the checked candidate included human edits that the Tenet commit excludes, the same helper materializes the commit's tree and runs the boundary obligations there. A pass lets the verdict report scope `committed` instead of "working tree, includes your edits" (PRD Section 4.5.2).
+- If OS temp is not writable, sealed classification is unknown and committed-tree checks are unavailable (TQ-04).
 
 ### 9.9 Flaky classification
 
-When a required test fails, the **whole obligation** is rerun with the same inputs, up to 2 times, counted as Tenet-launched checks. A pass after a failure marks the receipt `flaky` (PRD Section 4.4.1). Isolated reruns of single failing tests are diagnostic only and never evidence.
+When a required test fails, the **whole obligation** is rerun with the same inputs, up to 2 times, counted as Tenet-launched checks. A pass after a failure adds the `flaky` qualifier to the receipt (PRD Section 4.4.1). Isolated reruns of single failing tests are diagnostic only and never evidence.
 
 ### 9.10 UI evidence
 
@@ -1392,7 +1457,7 @@ The starter's Playwright helper writes a screenshot per confirmed example journe
 
 A dependency change is one governed flow, started by `decide {request: dependency, specs}`, and verification happens **before** anything installs:
 1. **Snapshot** `package.json` and the lockfile.
-2. **Resolve without installing:** `npm install --package-lock-only --ignore-scripts <specs>` (or `pnpm install --lockfile-only`), a consented remote read that writes only those two files. The lockfile diff gives the population: new or changed direct dependencies and the transitive packages the diff adds.
+2. **Resolve without installing:** `npm install --package-lock-only --ignore-scripts <specs>` (or `pnpm add --lockfile-only <specs>`), a consented remote read that writes only those two files. The lockfile diff gives the population: new or changed direct dependencies and the transitive packages the diff adds.
 3. **Check each package:**
    - it exists and resolved (implied by the lockfile entry and its integrity hash);
    - publish age against `dependency_policy`, including `unknown_age` and `urgent_exception`, using `npm view <pkg>@<ver> time --json`, cached per package version for the contract;
@@ -1400,13 +1465,13 @@ A dependency change is one governed flow, started by `decide {request: dependenc
    - install scripts, from the lockfile's `hasInstallScript`, need consent.
 
    There is no name-similarity heuristic and no age floor beyond the configured policy.
-4. **Preview** the result as the decision's question. If the user rejects it, or any check fails, both files are restored from the snapshot (`dependency-rejected`).
+4. **Preview** the result as the decision's question. If the user rejects it, or any check fails, both files are restored from the snapshot (`dependency-rejected`), but only if they still equal what the resolution wrote; if someone edited them meanwhile, the kernel asks instead of overwriting.
 5. **Install** after acceptance with `npm ci --ignore-scripts` (or the pnpm equivalent), run approved scripts with `npm rebuild <pkg>`, then re-probe readiness. Installs are effects (7.4).
 6. **Installs that bypassed Tenet:** a lockfile or `node_modules` change that no verification explains yields `dependency-unverified`. The packages are verified after the fact, and the result says that install scripts may already have run.
 
 ### 9.12 CI evidence (EVD-14, Should, R1)
 
-- **Import:** when the user asks and `gh` is available, `check --import-ci` reads the run for the candidate's commit through `gh run list` and `gh run view --json` (a consented remote read) and downloads its JSON reports.
+- **Import:** when the user asks and `gh` is available, `check --import-ci` reads the run for the candidate's commit through `gh run list` and `gh run view --json` (a consented remote read) and downloads its JSON reports into the run directory, bounded (50 MB, 1,000 files), with every extracted path validated to stay inside it. The receipt keeps the run and commit identity.
 - **Classification:** R1 records imported results as `ci-external` only. The `ci-protected` label needs verification of branch protection and workflow integrity (PRD Section 5.3.5), which is deferred until a protected-branch fixture exists, because interpreting protection settings the plugin does not own would be the first thing to break.
 - **Without `gh`,** the capability is reported unavailable.
 
@@ -1414,7 +1479,7 @@ A dependency change is one governed flow, started by `decide {request: dependenc
 
 ## 10. Git
 
-All Git calls go through `git-cli` with argument arrays, `GIT_TERMINAL_PROMPT=0` and `--no-pager`; read-only calls also set `GIT_OPTIONAL_LOCKS=0`. Unborn repositories use the empty tree wherever HEAD would be used.
+All Git calls go through `git-cli` with argument arrays, `GIT_TERMINAL_PROMPT=0` and `--no-pager`. Read-only calls use the inspection profile (9.4), and concrete paths are always literal pathspecs. Unborn repositories use the empty tree wherever HEAD would be used.
 
 ### 10.1 Start snapshot
 
@@ -1422,13 +1487,13 @@ All Git calls go through `git-cli` with argument arrays, `GIT_TERMINAL_PROMPT=0`
 - HEAD (or unborn) and the branch;
 - the index, as only the entries that differ from HEAD (`git diff --cached --raw -z`), so the record's size depends on what is staged, not on the repository;
 - `status --porcelain=v2 -z --untracked-files=all`, with exclusions as pathspecs (9.4);
-- each dirty file's content hash, computed in Node (excluded paths record their stat only).
+- each dirty file's Git blob ID, computed in Node (excluded paths record their stat only).
 
 ### 10.2 Attribution (file level)
 
 | File at start | Changed since? | Explained by a declaration or a hook observation? | Attribution |
 |---|---|---|---|
-| Clean or absent | Yes | Yes | Tenet's |
+| Clean or absent | Yes | Yes, or the kernel wrote it (7.8) | Tenet's |
 | Clean or absent | Yes | No | Unexplained: a question at the next boundary (possible human edit) |
 | Dirty | — | — | Human's. Never staged unless the user chose "include in scope", which commits the whole file with consent. If Tenet must edit it, the user decides first: the file contains both human and Tenet changes, so Tenet stops and asks (PRD Section 5.12) |
 | Untracked | — | — | Human's |
@@ -1448,10 +1513,10 @@ This catches human edits made after the last check. Without observer hooks, a hu
    - the receipts are fresh;
    - the Tenet file set is non-empty;
    - **consent** exists for the current hook, filter and signing configuration hash (one question per project per configuration, 7.2). The hook list is inspected first: `core.hooksPath`, the hooks directory, and husky, lefthook, simple-git-hooks and lint-staged configuration.
-2. **Stash-using hook manager** (for example lint-staged) present *and* human-dirty files present: ask **before** step 4, or proceed under a project-level consent that covers this case.
+2. **Hooks and human-dirty files together:** a hook can stage files by itself, and consent to run a hook is not consent to commit whatever it stages. When hooks exist and human-dirty files are present, one question per contract (or a project-level consent covering this case) offers: commit with hooks (a foreign path is detected and reported, step 6), keep the work uncommitted, or commit after the user commits or sets aside their own changes. Hooks are never bypassed.
 3. **Build:**
-   1. `GIT_INDEX_FILE=$tmp git read-tree HEAD` (or `read-tree --empty`);
-   2. `GIT_INDEX_FILE=$tmp git add -- <tenet files>` (and `git rm --cached` for deletions);
+   1. `GIT_INDEX_FILE=$tmp git read-tree HEAD` (or `read-tree --empty`), through the shared temporary-index helper (9.8);
+   2. `GIT_INDEX_FILE=$tmp git add -- <tenet files as literal pathspecs>` (and `git update-index --force-remove` for deletions);
    3. record `expectedTree = GIT_INDEX_FILE=$tmp git write-tree`.
 
    Mutating flows may write Git objects; stateless ones never get here.
@@ -1462,8 +1527,8 @@ This catches human edits made after the last check. Without observer hooks, a hu
    - its changed paths are a subset of the Tenet files;
    - no non-Tenet path changed in the working tree during the commit (inventory before and after).
 
-   If a hook committed a foreign path or changed a non-Tenet file, the commit is **kept and reported** with `hook-staged-foreign-path` (exit 3). Moving the branch back would not undo the hook's other side effects, so the question offers: keep the commit as it is, or move the branch back to the old HEAD (`git update-ref`, working tree untouched) after the user reviews the diff. If the commit tree differs from `expectedTree` only on Tenet files (hooks reformatted them), the dependent evidence is stale and the affected obligations rerun before any claim.
-7. **Index sync:** for each committed path whose user index entry still equals the old HEAD's entry, update it to the new blob (`git update-index --index-info`). Any other entry was already excluded by step 1, because staged human content makes a file dirty at start. Before writing, the kernel re-reads the index and stops if it changed during the commit.
+   If a hook committed a foreign path or changed a non-Tenet file, the commit is **kept and reported** with `hook-staged-foreign-path` (exit 3). Moving the branch back would not undo the hook's other side effects, so the question offers: keep the commit as it is, or move the branch back to the old HEAD (`git update-ref`, working tree untouched) after the user reviews the diff. If the commit tree differs from `expectedTree` only on Tenet files (hooks reformatted them), the dependent evidence is stale and the affected obligations rerun before any claim; the review follows the reformatting rule of 8.7.
+7. **Index sync:** for each committed path whose user index entry still equals the old HEAD's entry, update it to the new blob (`git update-index --index-info`, which takes Git's own `index.lock`). The kernel re-reads those entries just before the update and again after it. Git offers no compare-and-swap for index entries, so if another tool staged one of those paths in between, the kernel keeps the commit, leaves that entry alone where it can, and reports "index needs attention" with the path; it never overwrites concurrent staging to make the workflow look complete.
 8. **Effect result;** publish the state.
 
 **Failures:** hook failure, unavailable signing and missing identity leave the candidate uncommitted, with `hook-failed`, `signing-unavailable` or `git-identity-missing` (GIT-15). Hooks are never bypassed and signing is never disabled. The endpoint then says "working tree, uncommitted".
@@ -1477,7 +1542,7 @@ Integration uses normal Git operations, never direct reference edits on a checke
 
 ### 10.5 Undo
 
-Undo is the **inverse of the work's commits, applied against current state**, so later human changes survive (GIT-04):
+Undo is the **inverse of the work's commits, applied against current state**, so later human changes survive (GIT-04). It uses the shared temporary-index helper:
 1. **Locate** the work's commits by the `Tenet-Work` trailer (or by patch identity after a squash or rebase; ask if uncertain). Merge commits, and history that is not available (shallow clones), stop with an explanation.
 2. **Plan progressively:** in a temporary index seeded from HEAD, apply each commit's inverse (`git diff --binary -M <commit> <commit>^ -- <paths>`), newest first, with `git apply --cached`. Each step applies to the result of the previous one, so several commits touching the same lines are handled. Renames, modes and binary files come with Git's own patch format. Every affected path must be clean in the working tree, otherwise ask.
 3. **Preview** the combined inverse (HEAD versus the temporary index's tree). A step that does not apply means a later change overlaps Tenet's, so undo stops with `undo-conflict` and shows the overlap; it never falls back to restoring old file contents.
@@ -1495,7 +1560,8 @@ After integration, undo applies to the base branch. Database and external effect
 
 ### 10.7 Branches, trailers and cleanup
 
-- **Branch names:** `tenet/w-0007-<slug>`, from the current HEAD; stacking on an unintegrated work branch is stated.
+- **Branch names** (`branching: per-work`, the default): `tenet/w-0007-<slug>`, from the current HEAD; stacking on an unintegrated work branch is stated.
+- **`branching: current`** (GIT-02): commits land on the current branch; there is no work branch, so integration is a no-op and the offer is skipped; undo works the same way (10.5).
 - **Trailers:** `Tenet-Work` and `Tenet-Req`; configurable, and can be turned off.
 - **Cleanup:** after integration or abandonment, Tenet offers `git branch -d`; deleting unmerged branches needs explicit consent (GIT-14).
 
@@ -1510,12 +1576,12 @@ After integration, undo applies to the base branch. Database and external effect
 | Shallow clone | `rev-parse --is-shallow-repository` | Allowed; undo limited to available history |
 | Submodules | `.gitmodules` | Edits inside submodules unsupported |
 | LFS | `filter=lfs` in attributes | Needs LFS installed and filter consent (9.4) |
-| Linked worktree | `--git-common-dir` differs from `--git-dir` | Experimental; ownership scoped to the worktree; approval mode inferred as Allow all (11.4) |
+| Linked worktree | `--git-common-dir` differs from `--git-dir` | Experimental; ownership scoped to the worktree |
 
 ### 10.9 Prototypes without Git
 
 A non-Git folder gets a **shadow repository** in `.tenet/git`, used as `git --git-dir=.tenet/git --work-tree=<folder>` (GIT-01, PRD Section 5.12). The same `git-cli` adapter serves both cases, so inventory, attribution and undo have one implementation.
-- **Snapshot:** `open prototype` commits the folder's starting content, and every `check` commits again. The shadow repository's `info/exclude` holds the exclusion patterns plus `node_modules/`, build outputs and the folder's own `.gitignore` rules, so secrets and dependencies are never copied. Snapshots are content-addressed, count against the `.tenet/` budget, and larger than 20 MB are refused with `snapshot-too-large`, offering `git init` instead (PRD Section 5.15).
+- **Snapshot:** `open prototype` commits the folder's starting content, and every `check` commits again. The shadow repository's `info/exclude` holds the exclusion patterns plus `node_modules/` and build outputs (Git already honors the folder's own `.gitignore`), so secrets and dependencies are never copied. Snapshots are content-addressed, count against the `.tenet/` budget, and larger than 20 MB are refused with `snapshot-too-large`, offering `git init` instead (PRD Section 5.15).
 - **No pre-edit step:** because each check snapshots, no verb has to be called before an edit. Edits since the last check are also covered by the host's edit checkpoints within the chat.
 - **Undo:** for each path, restore the snapshot content only if the current content equals what the last snapshot recorded; delete created files only on the same condition. Otherwise ask, so later human edits are preserved. Snapshots are never presented as checked recovery.
 - **Promotion** to checked work requires a real repository (`decide` with the init choice), and then follows the promote profile (12.10). The shadow repository is then removed.
@@ -1554,6 +1620,7 @@ A non-Git folder gets a **shadow repository** in `.tenet/git`, used as `git --gi
 - **Where the kernel enforces them** (deterministic): inventory and Git pathspecs, manifests, exports and check environments.
 - **Agent file tools:** where the host honors exclusions they follow them; otherwise the exclusions are cooperative and disclosed, and the Reviewer's instructions repeat them (SEC-08, TQ-08).
 - **Redaction:** token patterns (cloud keys, `ghp_`, `gho_`, `github_pat_`, Slack tokens, private-key headers, `Authorization:` and `Cookie:` values, `password=` pairs) are removed from everything displayed, logged or exported. The output states that detection is incomplete.
+- **Suspected exposure** (PRD Section 5.17): when redaction or an exclusion check finds sensitive content already in a manifest, export or log, the kernel stops the affected action, reports where the content went and which recipients are known (for example the host's model), deletes the Tenet-owned copies, and points to the PRD's incident procedure. It never claims copies outside its control were removed.
 
 ### 11.4 Authority, approval modes and containment
 
@@ -1565,14 +1632,14 @@ A non-Git folder gets a **shadow repository** in `.tenet/git`, used as `git --gi
 
   A golden-task trap calls `decide` with a quote that never appeared in the conversation, to measure this residual.
 - **Authority questions go to chat.** Questions about widening scope, remote actions, destructive actions, risk acceptance and owner acceptance have `channel: chat`: the coordinator asks in plain chat and ends its turn. Autopilot answers the host's blocking questions automatically, so a native question cannot show that a person answered. [SPIKE: SP-12] observes what Autopilot does with an ended turn and with elicitation (TQ-17).
-- **Approval mode:** recorded only from a reliable host signal, never inferred from prompts appearing or not. The host documents none today, so the mode stays `unknown`, with one deterministic exception: in a linked worktree the host always uses Allow all, so the mode is recorded as `allow-all (inferred)`. When the mode is auto-approve or unknown, remote mutation, project-content egress and destructive actions get a chat question first (SEC-13). The per-verb approval snippet (4.6) makes the host's own approval apply to those verbs in Manual mode.
+- **Approval mode:** recorded only from a reliable host signal, never inferred from prompts appearing or not, and never from a Git linked worktree, which is not evidence of a host worktree session. The host documents no signal today, so the mode stays `unknown`. When the mode is auto-approve or unknown, remote mutation, project-content egress and destructive actions get a chat question first (SEC-13). The per-verb approval snippet (4.6) and the MCP tool grouping make the host's own approval apply to consequential verbs in Manual mode.
 - **Autopilot:** it cannot be detected. The README states that under Autopilot every Tenet decision record is unverifiable, and `controls[]` labels authority capture accordingly.
 - **Containment** is recorded separately and never inferred from the approval mode. The Local harness has no host sandbox. A denied kernel write outside the workspace is recorded literally (`outside-write-denied`); it could be an ordinary permission failure, so it is never reported as a named sandbox.
 - **Spending (RSC-03):** the kernel never calls billing, purchase or model-routing interfaces, and never changes the host's model, reasoning effort or billing route. When the host stops responding or reports a usage limit, the coordinator records `stop pause` with `host-limit`, the handoff is already current (5.2), and Tenet never suggests overage, another account or another paid route.
 
 ### 11.5 MCP front-end (if selected)
 
-- **Surface:** three tools (`tenet_read`, `tenet`, `tenet_findings`) with schemas derived from zod and honest annotations (4.5); no resources, prompts or sampling; stdio transport only.
+- **Surface:** four tools grouped by verb risk (`tenet_read`, `tenet`, `tenet_act`, `tenet_findings`) with schemas derived from zod and honest annotations (4.5); no resources, prompts or sampling; stdio transport only.
 - **Behavior:** the same pipeline and checks as the command line, with no extra permissions. Protocol conformance comes from the official SDK.
 - **Disclosure:** the README states that plugin MCP servers are trusted at install, lists the tools, and states that none runs arbitrary commands or opens network connections of its own (PRD Section 5.7.1).
 
@@ -1596,7 +1663,7 @@ A non-Git folder gets a **shadow repository** in `.tenet/git`, used as `git --gi
 | Retry loops | Budgets and failure signatures (8.6) |
 | Hostile reports | JSON limits; untrusted text (9.6) |
 | Path traversal, symlinked `.tenet/` | Path hardening (11.2) |
-| Hooks and filters | Inspection and consent; foreign-path detection with a reviewed recovery (10.3, 9.4) |
+| Hooks and filters | Inspection and consent; a question before committing beside human-dirty files; foreign-path detection with a reviewed recovery; an inspection profile that runs no configured programs (10.3, 9.4) |
 | Auto-approved remote actions; Autopilot | Chat questions; per-verb host approval; disclosure (11.4) |
 | Benign-named command with network or credential access | Envelope disclosure and question (9.3) |
 | Typosquatted or scripted dependencies | Verification before install (9.11) |
@@ -1615,7 +1682,7 @@ Versions are pinned in the recipe lockfile at Tech Spec approval and refreshed m
 |---|---|
 | API | Fastify 5 with `fastify-type-provider-zod` |
 | Validation | Zod schemas in `shared/`, a runtime module with no server code: the server validates requests and serializes responses with them, and the client reuses them for forms |
-| API contract | `@fastify/swagger` generates OpenAPI from the same schemas, which the `public-api` trait's compatibility checks compare across changes |
+| API contract | `@fastify/swagger` generates OpenAPI from the same schemas. The `public-api` trait's compatibility check compares it across changes: a removed path, operation or response field, a new required request field, or a narrowed type is breaking and becomes a finding |
 | Security plugins | `@fastify/helmet`, `@fastify/cookie`, `@fastify/csrf-protection`, `@fastify/rate-limit` |
 | Persistence | `better-sqlite3`; WAL mode; `foreign_keys = ON`; plain numbered SQL migrations with a small runner |
 | Passwords | Asynchronous `crypto.scrypt` (N=2¹⁵, r=8, p=1, maxmem 64 MB; never the synchronous form) with `timingSafeEqual`; concurrency bounded by the sign-in rate limit and the libuv thread pool |
@@ -1664,7 +1731,7 @@ The starter must demonstrate persistence, validation, and server-side object and
 | Sessions | `sessions` table with 256-bit random IDs; signed `HttpOnly`, `SameSite=Lax` cookie; rotated on sign-in; **all sessions revoked on password change**; 8-hour idle and 7-day absolute expiry; sign-out deletes the row; an invalid session returns 401 and clears the cookie |
 | CSRF | The token is bound to the session row; anonymous pages get a pre-session token cookie for sign-in; required on every state-changing request |
 | Authorization | `policy.ts` exports `can<Action>(actor, resource)`; route `preHandler` enforces it; repositories scope by owner where the domain requires; object-level denial tests |
-| Abuse | Sign-in limited to 5 attempts per minute per IP and account; scrypt work bounded by the rate limit; body and pagination limits; a 5-second request deadline |
+| Abuse | Sign-in limited to 5 attempts per minute per IP and account; password hashing bounded by a semaphore (4 concurrent, 16 queued, then 429), because a thread pool limits execution, not queued work; body and pagination limits; a 5-second request deadline |
 | Errors and logs | Problem-style JSON without stacks or SQL; pino redaction of cookies, `authorization` and password fields |
 | Exposure | API on `127.0.0.1`; Vite dev server on `127.0.0.1:5173`, proxying `/api` to the API, so the browser stays same-origin. The user opens `http://127.0.0.1:5173`. Any other binding is a consequential change recorded in `docs/hardening.md` |
 
@@ -1676,18 +1743,18 @@ The starter must demonstrate persistence, validation, and server-side object and
   - on `SQLITE_BUSY`, retry with jitter up to a total of 1 second, then return HTTP 503 "try again".
 
   The workload measures event-loop delay with `perf_hooks.monitorEventLoopDelay`, including an external writer holding the lock, against the PRD Section 5.16 latency target of p95 ≤ 200 ms (12.7). A 250 ms busy wait can exceed that target for affected requests, so the measurement decides whether the value stands. Workers or another persistence layer are considered only if it fails, through the repository seam in `platform/db`.
-- **Invariant test (no double booking):** **separate processes**, each with its own connection, race 5 reservations on one item against the same database file; exactly one must succeed. This exercises the transaction, unlike concurrent HTTP calls into one synchronous connection, which would pass even without it.
+- **Invariant in the database:** a unique partial index allows at most one active reservation per item, so the invariant holds even if application code is wrong. A conflicting reservation returns 409, which the workload counts as an expected conflict, not an error.
+- **Invariant test (no double booking):** **separate processes**, each with its own connection, race 5 reservations on one item against the same database file; exactly one must succeed. This exercises the transaction and the index, unlike concurrent HTTP calls into one synchronous connection, which would pass even without them.
 - **Migrations:** forward-only, each in its own transaction, recorded in `schema_migrations` with its checksum (a changed checksum for an applied migration stops startup); a failed migration rolls back and stops. Each has a prior-version fixture builder; tests migrate the fixture and assert the data is preserved and `PRAGMA foreign_key_check` is clean (QLT-07).
 - **Backup:** before migrating a database that contains data, `db.backup(<path>)`, then `PRAGMA integrity_check` and a schema-version check on the copy.
 - **Restore** (`npm run db:restore -- <file>`):
-  1. take exclusive ownership: the server holds `<db>.server.lock` (its process ID and start time) while running and refuses to start while `<db>.restore.lock` exists; restore creates `<db>.restore.lock` and refuses while a live server lock exists. A database transaction cannot prove this in WAL mode, because a server can keep connections open;
+  1. **One ownership gate:** the server and the restore tool both acquire `<db>.owner` with exclusive create (process ID and start time; a dead holder's file is removed under the same liveness rule as Tenet's lock). Whoever holds it owns the database; the other refuses. A database transaction cannot prove ownership in WAL mode, because a server can keep connections open;
   2. validate the backup (integrity, schema version compatible with this code);
-  3. move the current database and its `-wal` and `-shm` files aside;
-  4. copy the backup into place;
-  5. open it and verify;
-  6. on any failure, put the original back.
+  3. write `<db>.restore-in-progress` naming the original files' new location, then move the current database and its `-wal` and `-shm` files aside;
+  4. copy the backup into place, open it and verify;
+  5. remove the marker; only then may the originals be deleted.
 
-  A restore test exercises every step.
+  While `<db>.restore-in-progress` exists, the server refuses to start and the restore tool offers to finish or roll back, so a kill at any step leaves a recoverable state. A restore test kills the process at every step.
 
 ### 12.6 UI
 
@@ -1718,7 +1785,8 @@ The starter must demonstrate persistence, validation, and server-side object and
   - 30 seconds of warm-up, then 2 minutes;
   - 20 concurrent clients running a 70/20/10 mix of list, reserve and return;
   - a 5-way same-item reservation burst every 10 seconds;
-  - at least 5,000 samples.
+  - at least 5,000 samples;
+  - the data is reset to the seed before every run, so later requests still find items to reserve and return.
 
   It reports p50, p95 and p99, error rates, peak RSS and event-loop delay, and passes when the PRD Section 5.16 targets hold with zero double bookings. Trends are reported across changes (QLT-05).
 
@@ -1749,7 +1817,7 @@ The starter must demonstrate persistence, validation, and server-side object and
   2. characterize existing behavior with preservation tests (TDD-04);
   3. add distinguishing tests for each missing safeguard;
   4. require a fresh-context review before checked-local.
-- **Recipe upgrade** (`open recipe-upgrade`, QLT-15): the project record holds the recipe version used. The kernel computes the template diff between that version and the current one and tests it per file with `git apply --check`; files where it applies cleanly are proposed, and files where it conflicts with project-owned changes are listed for the user. Changed obligations and their categories are shown. Accepted parts become an ordinary Standard contract.
+- **Recipe upgrade** (`open recipe-upgrade`, QLT-15): the project record holds the recipe version used. Each recipe release ships the template patch from the previous version (`upgrades/<from>-<to>.patch`), so the kernel needs no old templates; upgrades are supported across the last 6 recipe versions, and an older project gets a clear "upgrade not supported, start from the current template" message. The kernel tests the chained patch per file with `git apply --check`; files where it applies cleanly are proposed, and files where it conflicts with project-owned changes are listed for the user. Changed obligations and their categories are shown. Accepted parts become an ordinary Standard contract.
 
 ---
 
@@ -1829,7 +1897,7 @@ The Python adapter (D-24) tests the seams:
 - `pip-audit --format json`;
 - acceptance test files `test_<req>_acceptance.py`.
 
-It needs no reference analysis, because the host's language services serve Python too. Python projects may not have Node, so the R1.1 qualification documents Node as a Tenet prerequisite there. Any change it forces in core modules is recorded as an architecture finding.
+It needs no reference analysis, because the host's language services serve Python too. Python projects may not have Node, so the R1.1 qualification documents Node as a Tenet prerequisite there. A change it forces in core modules is evidence about the abstraction: a small generalization is preferred to forcing Node assumptions on another ecosystem.
 
 ---
 
@@ -1843,7 +1911,7 @@ It needs no reference analysis, because the host's language services serve Pytho
 | Agent body ≤ 1,000 tokens; ≤ 12,000 Tenet tokens loaded per Standard task | Loop in the agent body; one phase skill at a time (5.1) | Lint; golden tasks |
 | Skill ≤ 5,000 tokens | Resources split out; lint | Every CI run |
 | Assignment ≤ 20,000 tokens, instructions included | Manifests that index instead of copying (8.7) | Manifest token estimates in the log; AC-19 |
-| Bookkeeping p95 ≤ 300 ms warm, ≤ 1 s cold | Small state document; `git status` without lock writes; no full scans on read-only paths | Benchmarks of `open`, `decide`, `findings` and `finish` on the 10,000-file fixture |
+| Bookkeeping p95 ≤ 300 ms warm, ≤ 1 s cold | Small state document; `git status` without lock writes; no full scans on read-only paths; the compile cache only if the cold benchmark needs it | Benchmarks of `open`, `decide`, `findings` and `finish` on the 10,000-file fixture, plus a 100,000-file run in SP-06 |
 | Check execution | Obligation timeouts; applicability categories (9.2); baseline limited to acceptance and targeted checks (9.8); targeted runs in inner loops; obligations run serially unless the recipe declares them independent (no shared database, port, output or cache), then up to min(3, cores ÷ 2) in parallel | Receipt durations; PRD Section 4.4.2 overhead |
 | `.tenet/` ≤ 50 MB | No raw output or screenshots inside; snapshot cap; eviction (7.6) | Long-history fixture |
 | Resume ≤ 2 min | Handoff at 80% and at boundaries; reconciliation reads one document plus the log tail | AC-08 |
@@ -1876,12 +1944,14 @@ Since June 1, 2026, most Copilot plans bill model use in AI credits by input, ou
 | Responses re-sent with every later request | A loop card of about 400 tokens; disclosure on change; detail on demand | 6.6 |
 | Output tokens spent retyping | Answers as flags; manifests passed by path; review results submitted directly (MCP) or captured by hooks | 4.5, 4.7, 5.5 |
 | Round trips | About 6 kernel calls per Standard task; `check` writes the review manifest; `finish` commits | 2.4.1, 6.5 |
-| Tool schemas on every request | A minimal fixed tool list; three MCP tools, not fourteen | 4.2, 4.5 |
+| Tool schemas on every request | A minimal fixed tool list; four small MCP tools, not one per verb | 4.2, 4.5 |
 | Always-loaded instructions | Descriptions, agent body and charter within budget; one phase skill at a time | 5.1, 7.8 |
 | Cache invalidation | The tool list, model and reasoning effort never change mid-session because of Tenet | 4.8, 5.2 |
 | Fresh subagent sessions | Analysts only when a question remains; Reviewer reads a closed list; rechecks use the recheck manifest | 5.2, 8.7 |
 | Long histories | Fresh chats at milestone boundaries through the resume packet | 5.2, 5.5 |
 | Repeated failure | Diagnostic stops instead of further attempts | 8.6 |
+
+**Each saving above is a hypothesis** until SP-12 and Section 17.5 measure it; a control that does not pay is removed. The fixed floor Tenet adds to a Standard task (agent body, always-loaded items, about 6 loop cards) is about 5,000–6,000 tokens, mostly cached, and SP-12 reports it.
 
 **What the limits do and do not bound:** packet and response limits bound Tenet's own injection. They do not bound what agents read with host tools, total usage, or spending; account budgets and spending controls belong to GitHub and the host (11.4).
 
@@ -1898,7 +1968,8 @@ Since June 1, 2026, most Copilot plans bill model use in AI credits by input, ou
 | Writing `state.tmp` | Old `state` intact | Temporary file removed |
 | After the `state.prev` link, before the final rename | `state` intact (old revision); `state.prev` equals it | Nothing to repair |
 | Holding `lock` | `lock` with a dead process ID | Stale lock broken under the guard (7.3) |
-| Holding `lock.break` | `lock.break` whose holder is dead | Removed under the same liveness test; the break is retried |
+| Holding `lock.break` | `lock.break` whose holder is dead | `lock-recovery-needed`; `decide {request: repair-lock}` (7.3) |
+| After writing a hook event file | Event file present, not yet consumed | Consumed by the next mutating call; idempotent by event ID |
 | After effect intent, before result | Intent only | Effect reconciled to completed, not performed or unresolved (7.4) |
 | Between run intent and process record | Run intent without a process ID | Run uncertain; the result says an orphan may exist |
 | During a check run | `owner.inCall` with a dead process ID | Recorded process group stopped; run discarded or confirmed per its replay class; `inCall` cleared |
@@ -1912,8 +1983,7 @@ Since June 1, 2026, most Copilot plans bill model use in AI credits by input, ou
 | Disk full | `disk-full` (exit 2); effects already completed are listed |
 | Node missing or unsupported | Skills-only advisory review (2.4.7) |
 | Preloaded module | `preload-present` (exit 4) |
-| State MAC mismatch | `state-modified-outside-kernel` (exit 4); `inspect doctor` explains |
-| Corrupt `state` | Fall back to `state.prev` in **diagnostic mode** (`state-recovered-from-backup`): grants are suspended until reconfirmed, receipts are revalidated, and restrictions are re-read from their sources, because an older revision can hold superseded authority |
+| Corrupt `state` | Fall back to `state.prev` in **diagnostic mode** (`state-recovered-from-backup`): effects logged after that revision are reconciled first, grants are suspended until reconfirmed, receipts are revalidated, and restrictions are re-read from their sources, because an older revision can hold superseded authority |
 | Malformed review result | `review-result-invalid` (exit 2); one fresh retry within the delegation budget |
 | Hook front-end failure | Observations stop; controls fall back to cooperative labels (4.7) |
 | Host usage limit or the model stops responding | `stop pause` with `host-limit`; the current handoff allows resuming later without resetting counters (8.1, 11.4) |
@@ -1939,21 +2009,17 @@ Each `log` line is one JSON object of one of two record types:
 
 ```ts
 type CallRecord = { t: "call"; ts: string; verb: string; frontEnd: "cli" | "mcp"; work?: string; label?: string; generation?: number;
-  role?: "coordinator" | "reviewer" | "analyst"; model?: ModelRecord;                  // requested and resolved separately (4.8)
-  basisRevision?: number; tenetTokens: number;
+  role?: "coordinator" | "reviewer" | "analyst"; assignment?: string; model?: ModelRecord;   // requested and resolved separately (4.8)
+  intentRevision?: number; tenetTokens: number;
+  permission?: "approved" | "auto-approved" | "denied" | "unknown";                   // host approval outcome, where observable
+  checkOutcome?: string; termination?: "completed" | "cancelled" | "timeout" | "crashed";   // ENG-09
   exit: number; reasons: string[]; durationMs: number; userWaitBeforeMs?: number;   // gap since the previous call, if it followed exit 2 or 3
   outcomeId?: string;                                                                 // pre-declared pilot outcome (PRD Section 6.6.1)
   promptCaused?: boolean | "unknown"; visibilityGaps?: string[]; observedHooks?: number };
 type EffectRecord = { t: "effect"; ts: string; id: string; op: string; phase: "intent" | "result"; expected?: object; outcome?: string };
-type UsageObservation = {   // Later (RSC-07): only when a host or permitted read-only source supplies it
-  scope: "contract" | "session" | "personal-account" | "organization"; regime: "ai-credits" | "premium-requests" | "unknown";
-  used: number; unit: string; allowance?: number;                 // absent unless actually known
-  source: "host" | "official-report" | "user-reported"; observedAt: string; coversUntil: string;
-  attribution: "direct" | "aggregate" | "uncertain";
-};
 ```
 
-Usage observations are personal data: they stay in `.tenet/` and the log, never in shared files, manifests or exports without preview. Estimated and reported amounts are never summed together.
+Host-supplied usage figures, if any appear later (RSC-07), are personal data: they stay in `.tenet/` and the log, never in shared files, manifests or exports without preview.
 
 - **Contents:** records never contain file contents, prompts, secrets or command output.
 - **Field names:** plain names. `export diagnostics` maps them to the pinned OpenTelemetry GenAI subset (ENG-06), so the log itself needs no external naming scheme.
@@ -1986,18 +2052,21 @@ Usage observations are personal data: they stay in `.tenet/` and the log, never 
   - repeating a request number never repeats an effect;
   - an answer is accepted only while its question's facts are unchanged;
   - committing an unchanged candidate keeps every check-input identity;
-  - an expired request number never runs again.
+  - an expired request number never runs again;
+  - an unsettled reservation is released exactly when its manifest becomes invalid, and never counted;
+  - a review chain reaches a candidate only if every delta since its full review is covered.
 - **Real-OS tests** (in-memory adapters cannot establish these):
-  - two processes racing for `lock`, and two racing to break a stale one, including a breaker paused mid-break;
-  - a hook appending to `.tenet/observed` while a call merges it;
+  - two processes racing for `lock`, and two racing to break a stale one, including a breaker paused mid-break; a dead `lock.break` yields `lock-recovery-needed`, never two publishers;
+  - a hook writing an event file while a call consumes events, and a crash between consuming and publishing;
+  - `stop cancel` racing a check that completes successfully: the result is discarded (`run-superseded`);
   - readers never observe a missing `state` during publication;
   - a kill at every crash point of Sections 7.3, 7.4, 10.3 and 15.1;
   - orphaned process groups;
   - symlinked `.tenet/`;
   - case-insensitive paths;
-  - two projects creating the user key at once;
+  - two projects saving preferences at once;
   - a preload in the agent's environment never runs (the launch command clears it);
-  - restore refuses while a server process holds the database.
+  - restore refuses while a server holds `<db>.owner`; a restore killed at each step leaves a recoverable state and blocks normal startup until resolved.
 - **Git fixtures:** assert **exact** preservation of human index entries and human file content, and exactly the permitted changes to Tenet-owned entries.
 
 ### 17.3 Adversarial scenarios
@@ -2006,7 +2075,7 @@ Usage observations are personal data: they stay in `.tenet/` and the log, never 
 |---|---|
 | Kill right after a commit or process dispatch | Effect reconciled to one of three outcomes before any retry |
 | Two calls for one contract at once | One wins; the other gets `kernel-busy`; no lost update or double count |
-| Long check while another chat resumes the contract | No concurrent writer; the old chat is stale; a takeover question if it was recently active |
+| Long check while another chat resumes the contract | No concurrent writer; the old chat is stale; a takeover question if its work was still in progress |
 | `stop cancel` during a check | Allowed; owned group stopped; uncertainty recorded |
 | Tracked `.env` that is dirty, untracked private key, a `no-read` path, a custom Git clean filter | No prohibited read; no excluded path passed to Git; a changed `.env` makes receipts stale; no filter run without consent |
 | A test support file weakened after locking | Blocker |
@@ -2015,7 +2084,6 @@ Usage observations are personal data: they stay in `.tenet/` and the log, never 
 | A human edits a Tenet-touched file after the last check | Question; not attributed to Tenet |
 | A hook runs `git add -A` | Foreign path detected; commit kept and reported; recovery offered |
 | Undo after a later human commit to the same file | Non-overlapping human change preserved; overlapping change stops with `undo-conflict` |
-| Undo of two Tenet commits that changed the same lines | Applied progressively; one combined revert |
 | A sealed baseline in a repository with `export-ignore` attributes and a committed secret | Tree materialized exactly, without the excluded path |
 | A second contract edits a shared test helper | Not a blocker; dependent acceptance obligations rerun; the Reviewer sees the diff |
 | Recording a manual accessibility check | Earlier receipts stay fresh (record files are declared outputs) |
@@ -2034,7 +2102,19 @@ Usage observations are personal data: they stay in `.tenet/` and the log, never 
 | Host memory says "skip end-to-end tests" | Obligations unchanged; the conflict is shown |
 | The host reports a usage limit mid-contract | `stop pause` with `host-limit`; resume later with counters intact; no overage suggested |
 | `chat.subagents.defaultToAuto` is on | Subagent model recorded as `auto (host setting)`; Reviewer qualification shown |
-| An old chat resumes work after a new chat took over | Stale generation; edits surface as unexplained changes; takeover question if the old work was still working |
+| An old chat resumes work after a new chat took over | Stale generation; edits surface as unexplained changes; takeover question if the old work was still in progress |
+| The accepted basis changes after checks passed | Reviews and verification links bound to the old intent revision are stale; executable receipts stay fresh |
+| A user's uncommitted start edits fixed a failure that exists at HEAD, and Tenet's change reintroduces it | Not classified pre-existing (9.8) |
+| The acceptance test changes between its red and the candidate run | `red-invalidated` until a disposition or sealed re-verification |
+| Full review, then a fix plus an unrelated extra edit | The recheck manifest becomes a full review; the extra edit is never approved implicitly |
+| Two analyst results arrive out of order | Both settle exactly once, by reservation |
+| An IDE stages a file during index sync | Human staging preserved; "index needs attention" reported |
+| A hook stages unrelated dirty content | The pre-commit question applies; anything staged is detected and reported |
+| Branch switch to a branch without a locked acceptance test | The lock is inactive there and returns when the branches meet |
+| Unadopted intent outlives contract archival | Accepted meaning remains in `project.intent` |
+| `decide forget` after manifests were written | Packet files deleted |
+| The coordinator retypes a review result and drops a blocker | Recorded as `reported`; the trap is scored as a residual (8.3) |
+| Two Tenet commits changed the same lines; undo | Applied progressively; one combined revert |
 
 ### 17.4 Replay
 
@@ -2049,7 +2129,8 @@ Usage observations are personal data: they stay in `.tenet/` and the log, never 
 - **Runs:** [SPIKE: SP-11] determines whether native-host runs can be unattended. *Fallback:* scripted manual runs on a dedicated Mac with published traces.
 - **Native-first comparison:** the same representative tasks run with native capabilities on and with the fallbacks forced, measuring active human effort, reruns, prompts, elapsed time and safety outcomes, so each retained fallback shows a necessary capability or a measurable benefit.
 - **Metrics** (PRD Section 6.2): first-run success within budget, repeated-run success, safety pass^k, review recall, precision and per-severity recall, and prompts per task.
-- **Cost** (PA-4): AI credits per accepted outcome versus a matched native baseline, from the evaluation account's usage report (per-model token breakdown), with failed and cancelled runs in the numerator. Tokens, calls, retries and context size are explanatory diagnostics. Auto runs report their observed model mix. Legacy premium requests are reported only for accounts billed that way.
+- **Cost** (PRD Section 1.6): AI credits per accepted outcome versus a matched native baseline, with failed and cancelled runs in the numerator. Tokens, calls, retries and context size are explanatory diagnostics. Auto runs report their observed model mix. Legacy premium requests are reported only for accounts billed that way.
+- **Credit attribution protocol:** the usage report aggregates by model and period and can arrive late, so per-task credits need isolation. Each measured run uses the dedicated evaluation account alone, in its own report period (or a separate evaluation account per arm), and nothing else runs on that account meanwhile. Where the report cannot isolate a run, the evaluation harness, which is not the product, may read session totals through the Copilot SDK in a Copilot-harness proxy run, labeled as a proxy. Comparisons report their attribution uncertainty.
 - **Model qualification:** the qualification table (4.8) is produced here, per model and for the Auto configuration, refreshed with each monthly T3 run.
 - **Billing visibility cases:** denied usage access, stale reports, unknown allowance, organization billing and model changes within Auto are fixtures for the reporting rules of Section 8.6.
 
@@ -2075,7 +2156,7 @@ Actions are pinned by SHA, and no cache flows from the untrusted tier into the o
 | AC-06 | T3 | Seeded defects plus clean controls; follow-up dispatch for uncovered parts |
 | AC-07 | T1, T3 | Misleading-success set |
 | AC-08 | T1, T3 | Kill at each crash point; resume generations; takeover question |
-| AC-09 | T1 | Forget purges every controlled copy |
+| AC-09 | T1 | Forget purges every controlled copy, including packet files; contradicted lessons retire |
 | AC-10 | T1, T3 | Schema backups; mid-contract update |
 | AC-11 | T1 (release) | Inclusion list, history scan, provenance, NOTICE |
 | AC-12 | T4 | Pilot with consented observation; `outcomeId` and wait fields as support |
@@ -2084,14 +2165,14 @@ Actions are pinned by SHA, and no cache flows from the untrusted tier into the o
 | AC-14 | T3 | Experiment manifest (17.8) |
 | AC-15a | T1, T3 | One instruction file; personal versus shared; style and checkpoints never weaken checks |
 | AC-15b | T1, T3 | Unknown model labels; qualification table; Deep warning (`model-unqualified-for-deep`) |
-| AC-15c | T1 | Attempt counting (targeted checks excluded); failure signatures; pending delegation reservations; launched-check counts; Deep budget preview |
+| AC-15c | T1 | Attempt counting (targeted checks excluded); failure signatures; reservations released with their manifest; one recheck; launched-check counts; Deep budget preview |
 | AC-16 | T1, T3 | Injection, canary, quarantine, filters, kernel location, preloads, host-memory instructions |
 | AC-17 | T1 | Racing processes; crash points; undo with later commits |
 | AC-18 | T1 | Drift during a run; declared outputs; forged reports; excluded-file changes |
 | AC-19 | T1, T3 | Benchmarks; long-history storage fixture; always-loaded token lint; credits per task (17.5) |
 | AC-20 | T1 (recipe CI), T3 | Process-race invariant, restore, accessibility (automated and manual), workload |
 | AC-21 | T3, T4 | Prompt distribution; grouped questions; checkpoint cadence |
-| AC-22 | T3 | Blocked, failed, partial, stale and disagreeing children |
+| AC-22 | T3 | Blocked, failed, partial, stale and disagreeing children; result `status` (AGT-05) |
 | AC-23 | T1 | PRD Section 7.8 cases |
 | AC-24 | T3, T4 | Seeded misinterpretations; `decide` trap |
 | AC-25 | T1, T3 | Dirty-tree and hook fixtures |
@@ -2114,7 +2195,7 @@ An experiment is a manifest in `eval/experiments/`:
 
 ## 18. Build, release and operations
 
-1. **Build:** compile TypeScript; bundle `kernel/tenet.mjs`; copy skills, agents, commands, the descriptor and recipes into `plugin/`; write `SHA256SUMS` over **every payload file** and `NOTICE`; check the inclusion list.
+1. **Build:** type-check; bundle `kernel/tenet.mjs` and `kernel/hook.mjs`; copy skills, agents, commands, the descriptor and recipes into `plugin/`; write `SHA256SUMS` over **every payload file** and `NOTICE`; check the inclusion list.
 2. **Verify:** a second clean build must produce identical hashes. `inspect doctor` verifies the installed payload against `SHA256SUMS`, not only the bundle.
 3. **Version:** SemVer against the compatibility contract (verbs, schemas, reason codes, record schemas, recipe compatibility, permissions); `plugin.json` is bumped every release.
 4. **Release:**
@@ -2122,7 +2203,7 @@ An experiment is a manifest in `eval/experiments/`:
    - provenance attestation;
    - release notes covering changed permissions, destinations, executables, schemas and evaluated behavior (LFC-02);
    - support matrix generated from descriptors plus T3 records.
-5. **Solo-maintainer rule:** changes to kernel effects, helpers or permissions wait a 72-hour public review window, with an external reviewer when available, and are disclosed (PRD Section 5.9.2).
+5. **Solo-maintainer rule:** changes to kernel effects, helpers, hooks, permissions, destinations or evaluators wait a 72-hour public review window, with an external reviewer when available, and are disclosed (PRD Section 5.9.2).
 6. **Operations:**
    - monthly T3 rerun and starter dependency refresh;
    - each minor release reviews the retirement rows (4.4) against the current host, so equivalent host capabilities are adopted (PRD Section 15);
@@ -2135,7 +2216,7 @@ An experiment is a manifest in `eval/experiments/`:
    - user-owned adopted files (`INTENT.md`, `docs/decisions/`, `docs/architecture.md`, `docs/hardening.md`, `tenet.policy.json`, the charter section);
    - test tags and commit trailers (kept);
    - the user directory (shared by all projects);
-   - run directories.
+   - run directories, and the compile cache if one is used.
 
    Cleanup has two separate scopes, each previewed: **this project** (`.tenet/` and this project's run directories) and **this machine** (the user directory and all run directories), which affects every project and is offered only on uninstall.
 8. **Provisional identity:** the license (Apache-2.0 for Tenet, MIT-0 for the starter) and the name are provisional until Q-03 and Q-13 are decided.
@@ -2151,29 +2232,31 @@ Each spike needs separate authorization (PRD Section 8.1).
 
 | Spike | Procedure | Pass criteria | If it fails |
 |---|---|---|---|
-| SP-01 Install and invocation | Install through each path; run the kernel by a skill-relative path; a 15-minute command through the terminal tool; enable, disable and uninstall; a portability smoke run on the Copilot harness (informative) | Kernel runs with no user setup; long commands complete; lifecycle recorded | Pinned copy in the user directory; split long checks |
-| SP-02 Storage and loading | From the terminal and from an MCP process: write the user directory, `${PLUGIN_DATA}` and OS temp; which instruction files load when one or both exist; host exclusions and indexing for `.tenet/`; token estimator against the host tokenizer | Locations known; estimator error ≤ 15% | No key; cooperative exclusions disclosed |
-| SP-03 Hooks | Prevention (the PRD question) is not needed in R1. The observation part (PRD Section 5.7.1): agent-scoped `PostToolUse`, `SubagentStart`, `SubagentStop`, `Stop` and `SessionStart` payloads (paths, session ID, subagent result), ordering, timeouts, failure behavior | Observations reliable on the tuple | Controls stay cooperative; PA-1 withdrawn |
+| SP-01 Install and invocation | Install through each path; whether the agent sees the `tenet` skill's file path before any skill loads, and runs the kernel by it; a 15-minute command through the terminal tool; enable, disable and uninstall; a portability smoke run on the Copilot harness (informative) | Kernel runs with no user setup; long commands complete; lifecycle recorded | Pinned copy in the user directory; split long checks |
+| SP-02 Storage and loading | From the terminal and from an MCP process: write the user directory, `${PLUGIN_DATA}` and OS temp; which instruction files load when one or both exist; host exclusions and indexing for `.tenet/`; token estimator against the host tokenizer | Locations known; estimator error ≤ 15% | Preferences not kept; cooperative exclusions disclosed |
+| SP-03 Hooks | Prevention (the PRD question) is not needed in R1. The observation part (PRD Section 5.7.1): agent-scoped `PostToolUse`, `SubagentStart`, `SubagentStop`, `Stop` and `SessionStart` payloads (paths, session ID, subagent result, model), ordering, timeouts, failure behavior, and the latency a hook adds to each edit | Observations reliable on the tuple; no noticeable edit latency | Observer hooks do not ship; controls stay cooperative |
 | SP-04 Models | Whether native roles and hook payloads expose the resolved model and family; whether `Auto` is accepted as an agent `model` value; how the cost-tier check treats agent model lists; what `chat.subagents.defaultToAuto` does to each Tenet agent | Observable resolution; known routing rules | Model labels stay `unknown`; subagents inherit (4.8) |
 | SP-05 Usage signals | What the host exposes about requests, credits, usage and cancellation to a plugin, a hook or the agent; the subagent credit display; whether a permitted read-only usage source exists for the user | List of signals with scope and freshness | Tenet-only counters; `usage: unknown` |
-| SP-06 Inventory and Git | Inventory on 10,000 files with exclusion pathspecs; filters; `GIT_OPTIONAL_LOCKS`; temporary-index commits with husky and lint-staged; index sync; host edit review; racing processes | Human content and index entries exactly preserved; inventory p95 ≤ 1 s | Narrow attribution claims; questions before stash-using hooks |
+| SP-06 Inventory and Git | Inventory on 10,000 and 100,000 files with exclusion pathspecs and the inspection profile; assume-unchanged, skip-worktree and sparse entries; filters; `GIT_OPTIONAL_LOCKS`; temporary-index commits with husky and lint-staged; index sync; host edit review; racing processes | Human content and index entries exactly preserved; inventory p95 ≤ 1 s | Narrow attribution claims; questions before stash-using hooks |
 | SP-07 Update and removal | Native update, disable and uninstall with active state, pinned versions and overrides; known-good recovery | State and overrides preserved | Fix recovery before public release |
-| SP-08 Delegation and native tools | Reviewer and Analyst agents: fresh context, tool restriction, `usages` and search inside subagents, parallel dispatch, nested default, handoffs, dispatch visibility; blocked, failed and cancelled children; `askQuestions` and `todos` in the coordinator; subagents reading a manifest in the run directory outside the workspace | Usable on the tuple | Reopen Q-01; text-search fallback for references |
+| SP-08 Delegation and native tools | Reviewer and Analyst agents: fresh context, tool restriction, `usages` and search inside subagents, parallel dispatch, nested default, handoffs, dispatch visibility; blocked, failed and cancelled children; `askQuestions` and `todos` in the coordinator; subagents reading a manifest in the run directory outside the workspace, and whether that read asks for approval | Usable on the tuple | Reopen Q-01; text-search fallback for references |
 | SP-09 Copilot CLI | Whether the same skills and kernel calls run in the Copilot CLI (R1.1) | Skills load; kernel calls work | Defer CLI support |
 | SP-10 Adapter | JSON reporters on the starter, web and CLI/library brownfield fixtures; failure kinds; version ranges | Correct normalization; unsupported cases reported | Narrow brownfield eligibility |
 | SP-11 Native-host evaluation | Unattended runs; terms of service; cost; secret isolation | Repeatable runs or a documented manual procedure | Manual T3 |
-| SP-12 Approvals and front-end | The safety gate of Section 4.5; approval-mode signal; Autopilot behavior with ended turns, native questions and elicitation; heredoc input and auto-approve rule matching; a thin MCP entry over the same verbs; prompt distribution over 3 tasks × 5 runs per front-end; tokens and credits per task, tool-schema tokens, transcription and legibility observations; elicitation and roots | Front-end selected by the Section 4.5 rule | Command line stays; friction claim narrowed |
+| SP-12 Approvals and front-end | The safety gate of Section 4.5; approval-mode signal; Autopilot behavior with ended turns, native questions and elicitation; heredoc input and auto-approve rule matching, with negative tests for chaining, redirection and command substitution; the serialized size of the MCP tool schemas; a thin MCP entry over the same verbs; prompt distribution over 3 tasks × 5 runs per front-end; tokens and credits per task, tool-schema tokens, transcription and legibility observations; elicitation and roots | Front-end selected by the Section 4.5 rule | Command line stays; friction claim narrowed |
 
 ### 19.2 Milestone coverage (derived from PRD tags)
 
 | Milestone | PRD requirements (Must) | Minimal mechanisms required |
 |---|---|---|
 | M0 | 34 | Verb pipeline; loop-card responses; command line; state document; lock with guarded breaking; ownership generations; effect protocol and reconciliation for commits; inventory with exclusion pathspecs; conservative freshness; runner with Vitest; receipts; verdict; acceptance obligations with whole-file locks; start snapshot, file attribution, commit protocol, index sync; shadow snapshots for non-Git prototypes; stateless review with manifests; `tenet`, `tenet-intake`, `tenet-build`, `tenet-review` skills; Reviewer agent; skill lint; starter scaffold flow; approval-mode question |
-| A | 66 | Front-end selected by SP-12 (MCP if chosen); Analyst agent; decision registry; plan and decision records; managed blocks and IDs; trust comparison; configuration core and catalog consumers; quarantine; undo by inverse patch; integration; dependency verification before install; deterministic CI tier and 10 golden tasks |
+| A | 66 | Front-end selected by SP-12 (MCP if chosen); Analyst agent; decision registry with one-step explicit requests; plan and decision records; managed blocks and IDs; trust comparison; configuration core and catalog consumers; quarantine; undo by inverse patch; integration; dependency verification before install; deterministic CI tier and 10 golden tasks |
 | B | 58 | Sealed baselines; continuity paths; eviction; migrations; `inspect why` and `impact`; Jest, Playwright, ESLint, tsc and audit normalization; trait detection; complete counters, usage reporting and the Deep budget preview; observer hooks (once SP-03 qualifies them); fault, privacy and update suites; calibration |
 | R1 | 23 (plus 16 Should) | Model qualification table and Deep warning; starter quality harness (ASVS list, accessibility manual procedure, workload); docs; release chain; CI evidence import (`ci-external`); 30 public and 10 reserved golden tasks; maintainer experiment; pilot |
 
-`tools/coverage` recomputes this table from PRD tags and the Appendix A mapping, and fails CI when a milestone's requirements map to mechanisms scheduled later. Mentions are not proof of delivery, so it also requires every Must requirement to map to at least one acceptance fixture (17.7) that exercises the behavior.
+`tools/coverage` recomputes this table from PRD tags and the Appendix A mapping, and fails CI when a milestone's requirements map to mechanisms scheduled later. Every PRD row already names its acceptance criteria, so it also fails when an AC that a Must requirement cites has no fixture (17.7); it never checks for mere mentions.
+
+**Alpha entry condition:** a UX Spec draft covering the main journeys, decision cards, result and endpoint labels, the budget preview, error recovery and accessibility of Tenet's own messages, because most of what users perceive lives there (PRD Section 11.4).
 
 ### 19.3 Work breakdown for M0
 
@@ -2184,7 +2267,7 @@ Each spike needs separate authorization (PRD Section 8.1).
 | WP-03 | Git: snapshot, inventory, file attribution, commit protocol, index sync, shadow repository |
 | WP-04 | Runner and the Vitest adapter; receipts; acceptance obligations; whole-file locks |
 | WP-05 | Rules: lifecycle, risk, budget, verdict truth table |
-| WP-06 | Agent bodies and skills (with real text, Appendix F) and the Reviewer agent |
+| WP-06 | Agent bodies and skills (with real text, Appendix E) and the Reviewer agent |
 | WP-07 | Starter template and scaffold flow |
 | WP-08 | T1 tests, including real-OS and adversarial cases |
 | WP-09 | Walking-skeleton demonstration with one injected kill during `check` |
@@ -2199,7 +2282,7 @@ Each spike needs separate authorization (PRD Section 8.1).
 | Beta | 5–6 weeks |
 | R1 | 5–7 weeks |
 
-The kernel is estimated at **3,500–4,500 lines** (about 60% pure core), with tests of similar size, plus about 15 agent, skill and command files and a starter of about 3,500 lines. These estimates are for planning only.
+The kernel is estimated at **3,300–4,300 lines** (about 60% pure core), with tests of similar size, plus about 15 agent, skill and command files and a starter of about 3,500 lines. These estimates are for planning only.
 
 ---
 
@@ -2211,70 +2294,70 @@ The kernel is estimated at **3,500–4,500 lines** (about 60% pure core), with t
 |---|---|---|---|
 | TD-01 | Deterministic ledger kernel behind portable skills | Prompt-only skills; hook-first; MCP-first; event sourcing; repository-only state; rule engines | The only shape that gives the PRD's integrity rules deterministic mechanisms inside a plugin |
 | TD-02 | No user-installed dependencies; small reviewed bundled libraries allowed (zod; MCP SDK if selected) | Zero third-party code | Hand-written schema and protocol code would cost more code and risk than two pinned libraries |
-| TD-03 | One source tree and one verb pipeline with thin front-ends (command line, MCP with three tools, hook); SP-12 selects the single user-facing front-end; the command line stays as the test harness | Two code bases; ship both; MCP first; one MCP tool per verb | Front-ends cannot diverge; the PRD's selection rule is kept; tool schemas are paid on every request |
+| TD-03 | One source tree and one verb pipeline with thin front-ends (command line, MCP with four tools grouped by verb risk, hook); SP-12 selects the single user-facing front-end; the command line stays as the test harness | Two code bases; ship both; MCP first; one MCP tool per verb; one tool for everything | Front-ends cannot diverge; host approval keeps the same routine/consequential split on both front-ends; tool schemas stay small |
 | TD-04 | One state document replaced atomically, one log, hash-named blobs | Content-addressed objects, refs, journal and reflog; a native SQLite store | One writer and a small budget make multi-record transactions unnecessary; kept while the real-OS fixtures pass, and reconsidered only if its protocols come to dominate the kernel |
-| TD-05 | Transaction lock with guarded stale-lock breaking (liveness by process ID and start time, never elapsed time) and a revision re-check before publish; ownership with generations | Leases with expiry; timed stale rules; rename-over-and-verify | Liveness is known while a process runs; a paused process is never mistaken for a dead one; the backstop prevents lost updates |
-| TD-06 | Effect protocol for non-repeatable effects; checks classified by envelope; three reconciliation outcomes | Effect records for everything; none; assuming checks repeatable | Closes the crash window without logging repeatable work, and never treats an unknown check as safe to rerun |
-| TD-07 | Exclusion-aware inventory: exclusions as Git pathspecs, stat for excluded files, Git blob IDs for every file's content (computed in Node for dirty files); no Git writes | `git add -A` plus `write-tree`; SHA-256 for dirty files only | Privacy, zero-write review, and identities that survive a commit of unchanged content |
+| TD-05 | Transaction lock with guarded stale-lock breaking (liveness by process ID and start time, never elapsed time); a dead guard stops for a confirmed repair; ownership with durable generations | Leases with expiry; timed stale rules; rename-over-and-verify; recursive guard breaking | Liveness is known while a process runs; a paused process is never mistaken for a dead one; the rare dead guard costs a question, not a protocol |
+| TD-06 | Effect protocol for non-repeatable effects; checks classified by envelope; long runs prepared, executed outside the lock and finalized under a guard; three reconciliation outcomes | Effect records for everything; none; assuming checks repeatable; publishing results without a finalization guard | Closes the crash window without logging repeatable work; a cancelled run can never publish receipts |
+| TD-07 | Exclusion-aware inventory through an inspection profile: exclusions as Git pathspecs, literal paths, stat for excluded files, Git blob IDs for every file's content; no Git writes and no configured programs | `git add -A` plus `write-tree`; SHA-256 for dirty files only; plain `git status` | Privacy, zero-write and zero-execution review, and identities that survive a commit of unchanged content |
 | TD-08 | Conservative freshness; runner-native affected selection; host diagnostics between attempts | Dependency index | PRD-compliant with far less code; revisit when reruns are measured to cost |
 | TD-09 | Kernel-run checks; direct `node_modules/.bin` binaries; JSON reporters; reduced environment | `npx` or `npm exec`; XML parsing; host test views as evidence | No implicit downloads; host views lack run-bound receipts today (retirement row, 4.4) |
 | TD-10 | Six check kinds and five applicability categories, as registries | Test counts for everything; every obligation at every check | Removes special cases; routine changes never trigger release work |
-| TD-11 | Project-level whole-file locks on acceptance test files; support inputs locked during their contract and rechecked afterwards; new examples in new files | Test-block lexer; "additions are safe"; permanent locks on shared helpers | No syntax-aware integrity code; later contracts can extend shared helpers without losing protection |
+| TD-11 | Project-level whole-file locks on acceptance test files, branch-aware by verification commit; support inputs locked during their contract and rechecked afterwards; new examples in new files | Test-block lexer; "additions are safe"; permanent locks on shared helpers; branch-blind locks | No syntax-aware integrity code; later contracts can extend shared helpers; branch switches never falsely block |
 | TD-12 | File-level attribution plus the last-check rule; stop and ask on mixed files | Hunk attribution with patch application | Matches PRD Section 5.12, which asks on mixed files; no patch construction |
 | TD-13 | Commits through a temporary index, then verification and index sync; foreign paths kept and reported; undo as progressively validated inverse patches applied to the working tree, then checks, then the commit protocol | Automatic ref rollback; restoring old file contents; per-commit checks against the original tree; `git revert` (touches the index) | Preserves later human work and the user's index; handles overlapping Tenet commits |
 | TD-14 | No prevention hooks in R1; observer hooks in Beta once SP-03 qualifies them (PA-1), recording only (no forced continuation), from a tiny separate entry | No hooks at all; guard hooks from the start; a `Stop` hook that forces continuation | Prevention is unqualified; observation upgrades three cooperative controls cheaply |
-| TD-15 | Sealed baselines by temporary-index checkout without excluded paths, with a symlinked `node_modules` and redirected caches (Beta), only for broader candidate failures | `git worktree`; `git archive` (honors `export-ignore`); APFS clones; eager baseline of every obligation | No writes into the user's Git directory; an exact tree; portable; baseline cost proportional to the change |
-| TD-16 | Review manifests that index, passed by path, with a closed read list, sampling for broad callers and a recheck mode; the host's language services as the repository map | Bucketed packets from an import scanner; inline manifests; open-ended exploration; full reviews for rechecks | Less code and far fewer tokens; reference resolution improves with the host |
-| TD-17 | 5 skills, 3 agents, 2 commands, 14 verbs; one phase skill loaded at a time | 13 skills, 25 verbs; one agent per role | Fewer descriptions, calls, tokens and misroutes |
+| TD-15 | One temporary-index materialization helper for sealed baselines (on the actual starting candidate), committed-tree checks, commits and undo, with a symlinked `node_modules` and redirected caches | `git worktree`; `git archive` (honors `export-ignore`); APFS clones; classifying from HEAD alone; eager baseline of every obligation | No writes into the user's Git directory; an exact tree; one code path; no false "pre-existing" |
+| TD-16 | Review manifests that index, built by one function and passed by path, with a prioritized investigation list and read budget, an attention list, and a recheck mode that covers the whole delta; the review chain decides coverage; the host's language services as the repository map | Bucketed packets from an import scanner; inline manifests; a strict closed list; open-ended exploration; rechecks of finding locations only | Fewer tokens without forbidding necessary context; a recheck can never approve an unrelated change |
+| TD-17 | 5 skills, 3 agents, 2 commands, 13 verbs; one phase skill loaded at a time | 13 skills, 25 verbs; one agent per role; a separate `export` verb | Fewer descriptions, calls, tokens and misroutes; exports are a preview plus a decision |
 | TD-18 | Managed Markdown blocks; `tenet.policy.json`; structural-only automatic tightening | Semantic classification of prose | No implication solver; uncertain changes go through adoption |
 | TD-19 | Opaque work IDs plus labels; shared IDs with sequence and suffix; ancestry-aware reconciliation | Sequential IDs; renumbering | Stable correlation; divergent edits treated as conflicts, not collisions |
 | TD-20 | Starter: Fastify 5, Zod, better-sqlite3, SQL migrations, scrypt, React with Vite (owner decision, October 15) | Hono with `node:sqlite`; Express 5 with Drizzle | Mature, explicit, transactional, with an online backup API |
 | TD-21 | `node:test` plus `fast-check`, with real-OS tests for OS-dependent protocols | In-memory only | OS semantics need OS tests |
 | TD-22 | Signed tags, provenance, reproducible payload | Signing only | PRD Section 5.9.2 chain |
-| TD-23 | User directory holds only preferences and an optional key; copy detection from the marker's own directory identity | An ownership index in the user directory | Nothing machine-wide is needed for correctness; no cross-project races |
+| TD-23 | User directory holds only preferences; copy detection from the marker's own directory identity; no state MAC | An ownership index; a machine key and HMAC | Nothing machine-wide is needed for correctness; a MAC whose key any user process can read catches nothing validation misses |
 | TD-24 | Command-line input: flags plus a quoted-heredoc JSON body | Base64 arguments | Readable approval previews; no encoding work for the agent |
 | TD-25 | Native-first rule with retirement rows (0.6, 4.4) | Building Tenet equivalents of host features | The host improves for free; PRD Sections 7.9 and 15 |
 | TD-26 | Shadow Git repository for non-Git prototypes | A `prepare` verb with blob copies | No pre-edit step for the agent to forget; one Git code path |
-| TD-27 | One `decide` verb over a registry of decision kinds; answers bound to question facts | 14 sub-commands in a switch; binding to the whole state revision | Fewer tool errors; a new kind adds a file; no needless reconfirmation |
+| TD-27 | One `decide` verb over a registry of decision kinds; answers bound to question facts; explicit requests apply in one step unless destructive or gated | 14 sub-commands in a switch; binding to the whole state revision; previewing every request | Fewer tool errors; a new kind adds a file; no needless reconfirmation |
 | TD-28 | Dependency verification before install, from lockfile-only resolution | Verifying after install; walking the installed tree; name-similarity heuristics | Scripts never run unverified; the package manager does the resolution |
-| TD-29 | Authority questions in chat, never through native questions; approval mode unknown except in linked worktrees | Treating native answers as user answers; inferring the mode from prompts | Autopilot answers native questions; only deterministic inferences are recorded |
+| TD-29 | Authority questions in chat, never through native questions; approval mode unknown without a host signal | Treating native answers as user answers; inferring the mode from prompts or from Git worktrees | Autopilot answers native questions; only real host signals are recorded |
 | TD-30 | `finish` commits the candidate; `commit` only for checkpoints | Always two calls | One fewer call and approval per task |
 | TD-31 | Run artifacts and screenshots only in run directories | Screenshots and raw output as `.tenet/` blobs | PRD Section 5.13; much simpler admission and eviction |
-| TD-32 | A small loop-card response (about 400 tokens), disclosure on change, envelope defaults and flag answers | 1,500-token responses repeating controls and identifiers | Responses are re-sent with every later request; output tokens cost most |
-| TD-33 | No Tenet model router; subagents inherit, except a qualified economy model for research named by the qualification table (PA-6); Auto qualified as a configuration; one Deep warning | Role-to-model routing; a model menu; naming models in agent files | RSC-01 and RSC-06; the host already routes; model names change monthly, so they live in release data |
+| TD-32 | A small loop-card response (about 400 tokens), disclosure on change, the required action always first, a mandatory short handle and one cached response | 1,500-token responses repeating controls and identifiers; optional generation and workspace fields; a 64-response cache | Responses are re-sent with every later request; a stale or misdirected call is always fenced |
+| TD-33 | No Tenet model router; subagents inherit, except a qualified economy model for research named by release data, disclosed before use and dropped if the host rejects it; Auto qualified as a measured configuration; stale qualification reads not-evaluated; one Deep warning | Role-to-model routing; a model menu; naming models in agent files; a price table | RSC-01 and RSC-06; the host already routes; model names change monthly |
 | TD-34 | Usage reported as Tenet-attributable counters plus `unknown` with native pointers; never invented | Estimating credits from tokens; a billing client | A plugin cannot see the bill; a false number is worse than none |
-| TD-35 | Tenet's record files are declared outputs, excluded from check-input identities | An ordering rule for projection writes | Recording decisions or manual checks never invalidates evidence; one rule fewer |
+| TD-35 | Three kinds of project files: accepted facts versioned by intent and policy revision, checked inputs bound to receipts, derived records bound to nothing | Excluding everything Tenet writes; including everything | A changed requirement invalidates exactly the judgments that relied on it; recording a manual check reruns nothing |
+| TD-36 | One canonical `project.intent`; contracts reference element IDs and an intent revision | Requirement text inside work contracts | Archival never erases accepted meaning; impact analysis follows existing links |
+| TD-37 | Hook events as atomically written files, deleted only after the state that includes them is published | One appended file rotated by rename | An open descriptor can never write into a renamed file; a crash only causes an idempotent re-read |
 
-### 20.2 Removed in v0.4
+### 20.2 Removed in v0.5
+
+Earlier removals are recorded in Git history; the decision log above keeps each rejected alternative.
 
 | Removed | Replaced by | Effect |
 |---|---|---|
-| One MCP tool per verb (14 schemas on every request) | Three tools (TD-03) | About 3,000–5,000 fewer tokens per request if MCP ships |
-| 1,500-token responses repeating controls, identifiers and envelopes | Loop cards, disclosure on change, envelope defaults (TD-32) | Several thousand fewer tokens of history per task |
-| Inline manifests through the coordinator | Manifests passed by path (TD-16) | No manifest in the coordinator's context or output |
-| Full-review manifests for rechecks | Recheck mode (8.7) | Rechecks cost a fraction of a review |
-| Default parallel Analysts in Standard work | Coordinator search first (5.2) | Fewer subagent sessions |
-| Coordinator loading `tenet-review` | `focused-review.md`; the Reviewer loads the rubric (5.1) | About 4,000 fewer tokens per review |
-| The projection ordering rule | Record files as declared outputs (TD-35) | One rule fewer; no stale receipts from records |
-| Elapsed-time rules for lock breaking and takeover | Process liveness and recorded last state (TD-05, 7.3) | Correct for paused processes and long-lived chats |
-| `git archive` export and APFS clones | Temporary-index checkout and a symlink (TD-15) | Exact tree; portable; no clone cost |
-| Permanent locks on shared support inputs | Contract-scoped locks plus reruns (TD-11) | Later contracts are not blocked |
-| `tools/coverage` mention checking | A fixture for every Must requirement (19.2) | No ID-sprinkling prose |
-
-New mechanisms are small: the recheck manifest mode, the qualification table, the counters of `BudgetState`, the dependency decision kind, manifest files, the backstop revision check and the tiny hook entry, about 300 lines in total. The kernel estimate stays at about 3,500–4,500 lines.
+| State MAC and machine key | No-edit exclusion, validation and the revision check (TD-23) | One fewer file, lifecycle and test; the user directory holds only preferences |
+| `export` verb and its special operation class | `inspect export` preview plus `decide {request: export}` (TD-17) | 13 verbs; three operation classes |
+| 64-response cache in blobs | One cached response per generation (TD-32) | No response blobs, eviction step or forget purge for them |
+| `dispatched` delegation state and `kernelCalls` counter | Reservations tied to manifest validity; the log | Fewer counters; no extra call |
+| `UsageObservation` schema for a Later feature | One sentence (8.6) | No speculative schema |
+| Reviewer handoff button | The user's reply in the same chat | A mechanism that could never appear |
+| Linked-worktree approval inference | `unknown` (TD-29) | No false inference |
+| Two manifest code paths | `buildManifest` (8.7) | One builder, one reservation point |
+| Detailed review-history appendix | Git history and the decision log | No second record to keep consistent |
 
 ### 20.3 PRD amendments
 
-The owner approved PA-1 to PA-6 on October 15, 2026; they are in PRD v0.16 (D-30). Mechanisms they enable still depend on their spikes and qualification: observer hooks on SP-03, the front-end rule on SP-12, and the researcher economy model on release qualification.
+The owner approved PA-1 to PA-6 on October 15, 2026, and PRD v0.16 contains them (D-30); the PRD text is authoritative. Mechanisms they enable still depend on their spikes and qualification: observer hooks on SP-03, the front-end rule on SP-12, and the researcher economy model on release qualification.
 
-| ID | PRD location | Change | Why | Status |
-|---|---|---|---|---|
-| PA-1 | PRD Section 5.7.1; AC-13b | Allow observer hooks before SP-03 qualifies prevention: hooks may record observations (edited paths, subagent dispatch, turn end, session start) and may raise mechanism classes; anything that prevents or forces behavior still waits for SP-03 | Upgrades attribution, review independence and result capture from cooperative to observed at low cost (4.7) | Approved October 15 (PRD v0.16) |
-| PA-2 | PRD Section 5.7.1 (SP-12 rule) | Let the front-end selection weigh credits per task, tool-schema tokens, retyped review results and approval-preview legibility for Guided users, besides prompt counts | Under token billing, prompts are friction and credits are cost; retyping also lets the coordinator alter findings | Approved October 15 (PRD v0.16) |
-| PA-3 | PRD Section 3.8.7 | State that the repository map may be provided by a qualified host language service, with Tenet adding acceptance-test links and coverage reporting | Makes the traceability for AGT-12 explicit rather than relying on Section 7.9 alone | Approved October 15 (PRD v0.16) |
-| PA-4 | PRD Sections 1.6 and 2.2 | Restate the efficiency targets as AI credits per accepted outcome versus a matched native baseline (failed and cancelled work included), with premium requests only for legacy-billed accounts; update the low-allowance plan guidance | The premium-request unit no longer describes most plans | Approved October 15 (PRD v0.16) |
-| PA-5 | PRD Section 4.4.3 | State that the always-loaded budget counts every Tenet-owned item present on every request: descriptions, agent instructions, commands, MCP tool schemas and the charter section | Tool schemas and the charter are always-loaded context too | Approved October 15 (PRD v0.16) |
-| PA-6 | PRD RSC-01 | Clarify that RSC-01 constrains asking the user to switch models; it permits a disclosed, opt-out economy-tier model preference for the read-only researcher role, refreshed with release qualification. The Reviewer and authority-bearing roles keep inheriting | GitHub recommends cheaper models for subagents; the PRD text should settle whether Tenet may use that | Approved October 15 (PRD v0.16) |
+| ID | PRD location | Used in |
+|---|---|---|
+| PA-1 Observer hooks | PRD Section 5.7.1; AC-13b | 4.7 |
+| PA-2 Front-end selection weighs credits | PRD Section 5.7.1 | 4.5 |
+| PA-3 Host-provided repository map | PRD Section 3.8.7 | 8.7 |
+| PA-4 Efficiency in AI credits | PRD Sections 1.6 and 2.2 | 14.4, 17.5 |
+| PA-5 Always-loaded budget scope | PRD Section 4.4.3 | 5.1, 7.8, 14.1 |
+| PA-6 Researcher economy model | RSC-01 | 4.8 |
 
 ---
 
@@ -2285,7 +2368,7 @@ The owner approved PA-1 to PA-6 on October 15, 2026; they are in PRD v0.16 (D-30
 | TQ-01 | Can the agent run the kernel by a skill-relative path? | SP-01 | Pinned copy in the user directory |
 | TQ-02 | Prompts per task through each front-end; session-level approval in the host UI | SP-12 | MCP front-end |
 | TQ-03 | Does the terminal tool pass quoted heredocs intact, and can auto-approve rules match them? | SP-12 | Input file created by the kernel in OS temp |
-| TQ-04 | Are the user directory, `${PLUGIN_DATA}` and OS temp writable from the agent's terminal and the MCP process? | SP-02 | No key; stateless review; sealed baselines unknown |
+| TQ-04 | Are the user directory, `${PLUGIN_DATA}` and OS temp writable from the agent's terminal and the MCP process? | SP-02 | Preferences unavailable; stateless review; sealed baselines unknown |
 | TQ-05 | Subagent tool restriction, parallel limits, dispatch visibility, `usages` inside subagents | SP-08 | Focused passes with reduced independence disclosed; text-search fallback |
 | TQ-06 | Terminal behavior for 10–20-minute commands | SP-01 | Chunk obligations |
 | TQ-07 | MCP elicitation and roots support; does the kernel receive elicited answers? | SP-12 | Reported decisions; workspace confirmed once |
@@ -2304,6 +2387,8 @@ The owner approved PA-1 to PA-6 on October 15, 2026; they are in PRD v0.16 (D-30
 | TQ-20 | Is `Auto` a valid agent `model` value, and how do agent model lists interact with the cost-tier check? | SP-04 | Subagents inherit |
 | TQ-21 | Can subagents read a manifest file in the run directory outside the workspace? | SP-08 | Inline manifest under its own cap |
 | TQ-22 | Which usage signals reach a plugin, hook or agent? | SP-05 | `usage: unknown` with native pointers |
+| TQ-23 | Does the agent see the `tenet` skill's file path before loading any skill? | SP-01 | Pinned kernel copy at a fixed user-directory path |
+| TQ-24 | Can per-task AI credits be attributed on the evaluation account? | SP-11, SP-12 | Isolated report periods; SDK proxy runs labeled as proxies |
 
 ---
 
@@ -2323,6 +2408,7 @@ The owner approved PA-1 to PA-6 on October 15, 2026; they are in PRD v0.16 (D-30
 | Hooks interfering with commits | Medium / Medium | Consent, verification, reported recovery |
 | Conservative freshness makes reruns slow on large suites | Medium / Low | Targeted inner loops; host diagnostics; measure before adding an index |
 | Whole-file locks cause extra dispositions | Medium / Low | Dedicated acceptance files; new files for new examples; batch dispositions |
+| Individually sound mechanisms compose into a false success | Medium / High | Integrated adversarial scenarios (17.3); one builder, one materialization helper, one counter module |
 | Kernel scope creep | Medium / High | Complexity and native-first rules (0.5, 0.6); registries; lint bans; review of new verbs |
 | Starter dependency churn | High / Low | Monthly refresh; template CI |
 | Evaluation cost and feasibility | Medium / High | Tiers; replay; spend cap (Q-16) |
@@ -2330,11 +2416,9 @@ The owner approved PA-1 to PA-6 on October 15, 2026; they are in PRD v0.16 (D-30
 
 ---
 
----
-
 ## Appendix A. Requirement traceability
 
-Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design sections, main component and verifying suites (Section 17.7 maps suites to tests).
+Generated from PRD v0.16 for Tech Spec v0.5. Each requirement maps to its design sections, main component and verifying suites (Section 17.7 maps suites to tests).
 
 | PRD ID | Rel | Design sections | Component | Verification |
 |---|---|---|---|---|
@@ -2351,13 +2435,13 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | INS-11 | B | 2.4.7, 9.3 | Readiness; no implicit installs | AC-03, AC-21 |
 | INS-12 | A | 5.2, 6.5 | `open` | AC-03, AC-21 |
 | INT-01 | M0 | 5.1, 7.8, 7.9 | `tenet-intake`; `decide`; projections | AC-04, AC-21 |
-| INT-02 | A | 7.8 | Managed blocks | AC-13a |
+| INT-02 | A | 7.2, 7.8 | Project intent; OVERVIEW block | AC-13a |
 | INT-03 | A | 6.6, 5.2 | Grouped questions | AC-04, AC-21 |
 | INT-04 | M0 | 2.4.1, 5.3.2 | Explicit-case reuse | AC-24 |
 | INT-05 | M0 | 9.2, 9.7 | Acceptance obligations; locks | AC-05, AC-24 |
 | INT-06 | A | 8.1, 9.7 | Dispositions | AC-07, AC-24 |
 | INT-07 | A | 2.3, 6.5 | `decide` registry | AC-13a |
-| INT-08 | B | 8.5, 6.5 | `inspect impact` | AC-13a |
+| INT-08 | B | 7.8 | `impact()`; `inspect impact` | AC-13a |
 | INT-09 | B | 7.8 | Decision records | AC-13a |
 | INT-10 | A | 7.9 | IDs | AC-13a, AC-25 |
 | INT-11 | R1 | 5.1 | `guided.md` | AC-21 |
@@ -2382,7 +2466,7 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | AGT-02 | M0 | 4.2, 5.4 | Reviewer agent; SP-08 | AC-06, AC-22 |
 | AGT-03 | A | 4.2, 5.4 | Analyst agent | AC-22 |
 | AGT-04 | A | 5.5, 8.7 | Packets and manifests | AC-22 |
-| AGT-05 | A | 5.4 | Result schemas | AC-22 |
+| AGT-05 | A | 5.4 | Result status and open dependencies | AC-22 |
 | AGT-06 | B | 4.2 | Nesting off by default | AC-22 |
 | AGT-07 | B | 5.2, 8.4 | Findings rules | AC-22 |
 | AGT-08 | A | 7.3 | Ownership | AC-17 |
@@ -2392,19 +2476,19 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | AGT-12 | B | 8.7, 4.4 | Host references; required investigations | AC-19, AC-22 |
 | TDD-01 | M0 | 8.1, 9.8 | Declared baseline expectations | AC-05 |
 | TDD-02 | M0 | 9.5 | Failure kinds | AC-05 |
-| TDD-03 | A | 8.3 | Alternative with negative control | AC-05 |
+| TDD-03 | A | 8.1, 8.3 | Alongside with negative control | AC-05 |
 | TDD-04 | A | 5.3, 12.10 | Characterization | AC-05, AC-20 |
 | TDD-05 | B | 5.3.1 | Refactor with preservation tests | AC-05 |
 | TDD-06 | B | 8.3 | Nonbehavioral alternative check | AC-05 |
 | TDD-07 | R1 | 5.3.3 | Mutation testing offer | AC-07 |
 | EVD-01 | M0 | 9.4 | Inventory | AC-18 |
-| EVD-02 | M0 | 9.1, 9.6 | Kinds; validation | AC-07 |
+| EVD-02 | M0 | 9.6 | Status and qualifiers | AC-07 |
 | EVD-03 | A | 8.8 | Conservative freshness; canonical identity | AC-18 |
 | EVD-04 | B | 9.8 | Acceptance and targeted baseline; sealed export | AC-18, AC-19 |
 | EVD-05 | A | 9.5 | JSON reporters; standard-format export | AC-18, AC-20 |
 | EVD-06 | M0 | 8.3 | Verdict | AC-07, AC-27 |
 | EVD-07 | M0 | 6.6, 4.4 | `controls[]` derived from the descriptor | AC-07, AC-13a |
-| EVD-08 | B | 9.9, 9.6 | Flaky; qualifiers | AC-07, AC-18 |
+| EVD-08 | B | 9.6, 9.9 | Qualifiers; flaky reruns | AC-07, AC-18 |
 | EVD-09 | B | 8.8, 7.8, 9.3 | Declared outputs; record files | AC-18 |
 | EVD-10 | A | 9.7 | Project lock manifest | AC-07, AC-24 |
 | EVD-11 | B | 9.4 | Drift during runs | AC-18 |
@@ -2413,9 +2497,9 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | EVD-14 | R1 | 9.12 | `ci-external` only in R1 | AC-25 |
 | REV-01 | M0 | 5.4, 8.7 | Review manifest | AC-06 |
 | REV-02 | M0 | 5.4 | Two stages | AC-06 |
-| REV-03 | A | 8.7, F.2 | Test and configuration diffs inline; rubric | AC-07 |
-| REV-04 | A | 8.4 | Findings | AC-06, AC-27 |
-| REV-05 | A | 8.6 | Review rounds and rechecks | AC-06 |
+| REV-03 | A | 8.7, 5.4 | Attention list with dispositions | AC-07 |
+| REV-04 | A | 5.4, 8.4 | Rechecked outcomes | AC-06, AC-27 |
+| REV-05 | A | 8.6 | Rounds; one recheck | AC-06 |
 | REV-06 | A | 8.5, 5.4 | `dispatchMode` | AC-06 |
 | REV-07 | Later | 21 | Later (SP-04) | AC-06 |
 | REV-08 | B | 8.7 | Coverage-driven follow-up dispatch | AC-06, AC-27 |
@@ -2430,7 +2514,7 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | RES-08 | R1 | 2.5 | Agent-started dev server | AC-21 |
 | RES-09 | B | 8.6 | Deep budget preview | AC-15c |
 | GIT-01 | M0 | 10.9, 12.2 | Init choice; shadow repository | AC-17, AC-25 |
-| GIT-02 | M0 | 10.7 | Branches | AC-25 |
+| GIT-02 | M0 | 10.7 | Per-work or current branch | AC-25 |
 | GIT-03 | M0 | 10.2, 10.3 | Attribution; commit | AC-25 |
 | GIT-04 | A | 10.5 | Progressive inverse patches | AC-17 |
 | GIT-05 | M0 | 10.6 | `publish` bound to remote, branch and commit | AC-04, AC-25 |
@@ -2444,13 +2528,13 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | GIT-13 | B | 10.8 | State detection | AC-25 |
 | GIT-14 | R1 | 10.7 | Cleanup | AC-25 |
 | GIT-15 | A | 10.3 | Commit failures | AC-17, AC-25 |
-| CON-01 | B | 7.8 | Adoption | AC-08, AC-15a |
+| CON-01 | B | 7.8 | Adoption offer; remote warning | AC-08, AC-15a |
 | CON-02 | M0 | 7.1, 7.5 | Layout; marker | AC-17 |
 | CON-03 | M0 | 2.4.4, 15.3 | Resume | AC-08 |
 | CON-04 | A | 7.2, 7.3 | Revisions; lock | AC-17 |
 | CON-05 | B | 15.2 | Diagnostic fallback | AC-17 |
 | CON-06 | A | 7.5 | Quarantine | AC-08, AC-16 |
-| CON-07 | B | 15.3 | Reconstruction | AC-08 |
+| CON-07 | B | 15.3, 7.2 | Reconstruction; canonical intent | AC-08 |
 | CON-08 | B | 7.6 | Admission; eviction | AC-19 |
 | CON-09 | M0 | 2.4.3, 6.3 | Stateless class | AC-04 |
 | CON-10 | B | 6.5, 7.7, 8.9 | `decide` requests; purge of copies | AC-09, AC-10 |
@@ -2464,7 +2548,7 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | SEC-06 | A | 11.2 | Hardening | AC-16 |
 | SEC-07 | A | 4.5, 11.5 | PRD Section 5.7.1 exception | AC-11 |
 | SEC-08 | B | 11.3, 8.7 | Exclusions | AC-16, AC-23 |
-| SEC-09 | B | F.2 | Reviewer rubric | AC-16, AC-20 |
+| SEC-09 | B | E.2 | Reviewer rubric | AC-16, AC-20 |
 | SEC-10 | A | 10.3, 9.7 | No bypass; locks | AC-07 |
 | SEC-11 | A | 11.3 | Redaction | AC-11, AC-16 |
 | SEC-12 | A | 8.5, 7.5 | Trust; quarantine | AC-16 |
@@ -2482,7 +2566,7 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | CFG-08 | B | 7.5, 7.8 | User directory versus shared files | AC-15a |
 | CFG-09 | B | 5.2, 7.8, 11.1 | Host context untrusted; charter file | AC-23 |
 | CFG-10 | B | 6.4, 8.5 | Idempotency | AC-23 |
-| CFG-11 | B | 8.5 | Restriction keys | AC-23 |
+| CFG-11 | B | 8.5 | Restriction-key matching | AC-23 |
 | RSC-01 | A | 4.8 | Inherit; qualified researcher economy model | AC-15b |
 | RSC-02 | A | 4.8, 7.2, 16 | Requested and resolved model records | AC-15b |
 | RSC-03 | A | 11.4 | No billing or routing calls; `host-limit` stop | AC-15c |
@@ -2492,7 +2576,7 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | RSC-07 | Later | 8.6, 16 | Later; `UsageObservation` | AC-15c |
 | RSC-08 | R1 | 4.8, 17.5 | Qualification table; Deep warning | AC-15b, AC-26 |
 | LRN-01 | A | 8.9 | Lessons | AC-09 |
-| LRN-02 | B | 8.9 | Lessons | AC-09 |
+| LRN-02 | B | 8.9 | Scoped lessons; retirement | AC-09 |
 | LRN-03 | A | 8.9 | Lessons | AC-05, AC-09 |
 | LRN-04 | R1 | 8.9 | Lessons | AC-09 |
 | LRN-05 | B | 8.9 | Lessons | AC-09, AC-14 |
@@ -2500,7 +2584,7 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | LFC-01 | R1 | 18, 6.7 | SemVer | AC-10 |
 | LFC-02 | R1 | 18 | Release notes | AC-10, AC-11 |
 | LFC-03 | B | 15.3, 7.2 | Pinned versions | AC-10 |
-| LFC-04 | R1 | 7.7 | Migration | AC-10 |
+| LFC-04 | R1 | 7.7 | Previewed migration | AC-10 |
 | LFC-05 | R1 | 18 | Residue; two cleanup scopes | AC-10 |
 | QLT-01 | A | 12.4, 12.5 | Starter | AC-20 |
 | QLT-02 | R1 | 12.4, 13.3 | ASVS list | AC-20 |
@@ -2511,7 +2595,7 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | QLT-07 | R1 | 12.5 | Transactional migrations; backup; locked restore | AC-20 |
 | QLT-08 | R1 | 5.1 | `docs.md` | AC-20 |
 | QLT-09 | A | 7.8 | Charter | AC-15a |
-| QLT-10 | B | F.2 | Reviewer rubric | AC-13a |
+| QLT-10 | B | 5.4, E.2 | Out-of-scope changes flagged | AC-13a |
 | QLT-11 | B | 12.10, 13.4 | Trait inference | AC-20 |
 | QLT-12 | A | 12.4 | Identity; exposure | AC-16, AC-20 |
 | QLT-13 | B | 5.3.2 | Threat note trigger | AC-20 |
@@ -2527,7 +2611,7 @@ Generated from PRD v0.16 for Tech Spec v0.4. Each requirement maps to its design
 | ENG-06 | R1 | 16 | Export mapping | AC-13a |
 | ENG-07 | R1 | 18 | Release chain | AC-11 |
 | ENG-08 | R1 | 17.8 | Allowlisted experiments | AC-14 |
-| ENG-09 | B | 16 | Log records | AC-13a |
+| ENG-09 | B | 16 | Call records with linkage | AC-13a |
 | ENG-10 | A | 17.6 | CI tiers | AC-28 |
 | ENG-11 | R1 | 18 | Solo rule | AC-11 |
 | OSS-01 | R1 | 18, 3.3 | Release; notices | AC-11 |
@@ -2618,8 +2702,7 @@ Exit: the code produced when the reason decides the response (0 means it appears
 | `takeover-check` | 3 | The previous generation may still be working |
 | `request-mismatch` | 1 | A repeated request ID with different input |
 | `revision-conflict` | 2 | Expected revision differs |
-| `state-modified-outside-kernel` | 4 | MAC mismatch |
-| `marker-mismatch` | 3 | Copied or imported state; quarantine decision |
+| `marker-mismatch` | 3 | Copied, imported or marker-less state; quarantine decision |
 | `state-recovered-from-backup` | 3 | Fallback to state.prev; grants suspended until reconfirmed |
 | `preload-present` | 4 | A preload flag reached the kernel by another launch path |
 | `effect-uncertain` | 3 | Intent without result that reconciliation could not resolve |
@@ -2668,6 +2751,15 @@ Exit: the code produced when the reason decides the response (0 means it appears
 | `ended-without-finish` | 0 | A turn ended while work was active without finish (note; observer hooks) |
 | `dependency-rejected` | 2 | A dependency change was rejected; manifests restored |
 | `host-limit` | 2 | The host stopped responding or reported a usage limit; work paused |
+| `red-invalidated` | 0 | The acceptance test changed between its red and the candidate run |
+| `recheck-exhausted` | 2 | The contract already used its one focused recheck |
+| `lock-recovery-needed` | 2 | A lock breaker died mid-break; a confirmed repair is needed |
+| `run-superseded` | 0 | A run finished after cancellation or replacement; its result was discarded |
+| `hook-reformatted-after-review` | 0 | A commit hook changed only whitespace after review (note) |
+| `test-alongside` | 0 | A test-alongside approach with a negative control was used (note) |
+| `accessibility-claim-narrowed` | 0 | A changed critical journey lacks a screen-reader check (note) |
+| `audit-unavailable` | 0 | Advisory data was unavailable (note unless required) |
+| `migration-needs-approval` | 3 | A newer state schema needs a previewed migration |
 | `review-result-invalid` | 2 | Malformed review result |
 | `unsupported-record` | 4 | Unknown field in a grant, restriction or consent |
 
@@ -2706,6 +2798,9 @@ Consulted October 15, 2026. Secondary summaries are marked; lessons from them ar
 - [Playwright: webServer](https://playwright.dev/docs/test-webserver)
 - [npm install (package-lock-only)](https://docs.npmjs.com/cli/v11/commands/npm-install/)
 - [npm ls](https://docs.npmjs.com/cli/v11/commands/npm-ls/)
+- [Git: update-index (index flags)](https://git-scm.com/docs/git-update-index)
+- [Git: config (core.fsmonitor)](https://git-scm.com/docs/git-config)
+- [Git: diff (external diff, textconv)](https://git-scm.com/docs/git-diff)
 - [Git: archive](https://git-scm.com/docs/git-archive)
 - [Git: apply](https://git-scm.com/docs/git-apply)
 - [Git: revert](https://git-scm.com/docs/git-revert)
@@ -2732,33 +2827,9 @@ Consulted October 15, 2026. Secondary summaries are marked; lessons from them ar
 
 ---
 
-## Appendix E. Review disposition (informative)
+## Appendix E. Agent and skill skeletons
 
-Reviews of v0.3: Claude, Sonnet, Grok, GPT and Gemini. Points adopted as proposed are part of the body and are listed in Section 20.2 and Appendix G; they are not repeated here. This table records only points that were adapted, rejected or deferred. Nothing here changes the PRD; PRD changes are proposed in Section 20.3.
-
-| Point | Raised by | Disposition |
-|---|---|---|
-| Give the Analyst a cheaper model now, reading RSC-01 as limiting only user prompts | Sonnet, Gemini, Claude | Adapted: proposed as PA-6 (Grok and GPT read RSC-01 strictly), approved into PRD v0.16; limited to the researcher role, the model named by release data and only after qualification (4.8) |
-| Pin the Reviewer to a frontier model list if Auto downgrades it | Gemini | Rejected: explicit models above the main model's cost tier do not run, and model names change monthly. SP-04 observes Auto's effect; the qualification table labels the result (4.8) |
-| One-time suggestion to switch to a stronger model before Deep work | Claude | Adapted: a neutral continue-or-stop warning with no model menu (Grok, GPT); the user may change the model themselves (4.8) |
-| One MCP tool for everything | Claude | Adapted: three tools, so read-only calls keep their annotation and the Reviewer gets only `tenet_findings` (4.5) |
-| "One delegation is roughly one premium request" in the README | Sonnet | Rejected: under token billing the statement is false. The result shows counts and `usage: unknown` with native pointers (8.6) |
-| Host usage fields with quota and reset values in `BudgetState` | Gemini | Adapted: a `UsageObservation` record for later, used only when a host or permitted source supplies values; never estimated (8.6, 16) |
-| Billing usage APIs as an integration | GPT | Deferred: authentication stays outside the kernel and the PRD forbids Tenet network connections; recorded as a retirement condition (4.4, RSC-07) |
-| Drop `lock.break` and rename a fresh lock over the stale one | Gemini | Rejected: not race-free. `lock.break` keeps liveness by process, never elapsed time (GPT), plus a revision backstop (7.3) |
-| Symlink `node_modules` in sealed baselines | Gemini | Adopted, with GPT's concern addressed by redirecting caches and disclosing the shared tree (9.8) |
-| Zero-copy manifest files | Gemini | Adopted, with an inline fallback if subagents cannot read the run directory (5.5, TQ-21) |
-| Separate check-in intervals from total runtime | GPT | Adopted: active time is measured between check-ins (8.6) |
-| Replace the JSON state store if its protocols grow | GPT | Deferred: kept while real-OS fixtures pass; no native SQLite in the kernel (TD-04) |
-| Vitest for Tenet's own tests (dogfooding) | Claude | Rejected: Grok and GPT favor `node:test`; Tenet's adapter is dogfooded through its brownfield fixtures instead |
-| A setup question about the plan's allowance | Sonnet, Gemini | Adopted as one optional question; Conserve stays the user's choice (Grok) (8.5) |
-| `tools/coverage` mention checks | Gemini | Rejected (GPT): mentions are not proof; every Must maps to a fixture instead. The real design gaps Gemini found (RSC-03, RSC-04, RSC-08, RES-09) were fixed (19.2) |
-| Observer hooks should stay proposed | Grok | Superseded: the owner approved PA-1 to PA-6 (PRD v0.16); observer hooks still ship only once SP-03 qualifies them |
-| Minimal recipe without authentication | Sonnet | Deferred: a registry addition if demand appears (13.6) |
-
-## Appendix F. Agent and skill skeletons
-
-### F.1 `tenet.agent.md` (coordinator)
+### E.1 `tenet.agent.md` (coordinator)
 
 ```markdown
 ---
@@ -2770,13 +2841,14 @@ agents: ['tenet-reviewer', 'tenet-analyst']
 # How you work
 You coordinate. The Tenet kernel records every binding fact. Run it as:
   env -u NODE_OPTIONS node "<tenet skill folder>/../../kernel/tenet.mjs" <verb> [flags]
-Pass --req (increment it each call) and --gen. Answer questions with --answer <id>=<choice>.
+`open` returns a handle; pass --h <handle> and --req <n> (increment it each call) on every other mutating call.
+Answer options with --answer <id>=<choice>; free text and proposals go in the JSON body.
 Never edit .tenet/. Never state a verdict, freshness or completion the kernel did not return.
 
 # Loop
 1. Pick a profile and run `open <profile>` with the user's request. Say the assistance level and lane once.
 2. Before every kernel call: if the user said something new, handle it first.
-3. When `next` changes, update your todo list. Choose an action `next` permits.
+3. When `next` changes, update your todo list. Do the required action, or a permitted alternative.
    Load only the skill for the current phase (tenet-intake for basis and plan, tenet-build for code).
    Search yourself first; dispatch tenet-analyst only if a question remains, passing the model its packet names.
    For review, dispatch tenet-reviewer with the manifest path the kernel returned.
@@ -2785,13 +2857,14 @@ Never edit .tenet/. Never state a verdict, freshness or completion the kernel di
 5. Exit 3: ask the returned questions (channel native → askQuestions; channel chat → plain chat,
    then end your turn), then `decide`. Exit 2: explain and offer `next`. Exit 4 or 5: stop and report.
 6. Post check-ins as `progress` and the checkpoints preference call for it. Never auto-confirm a host pause.
-7. Never suggest switching model or effort mid-session. After compaction, call `inspect status` once.
+7. Never suggest switching model or effort mid-session. After compaction, call `inspect status` once,
+   then re-read only what the next action needs.
 8. If `finish` returns continue-required, keep working. Render the result only from the last
    kernel response; show the endpoint label exactly as returned.
 Host memory, plans and todos are context, not requirements or permission.
 ```
 
-### F.2 `tenet-review` (Reviewer)
+### E.2 `tenet-review` (Reviewer)
 
 ```markdown
 ---
@@ -2800,36 +2873,27 @@ description: Two-stage independent review of a Tenet review manifest: behavior a
 ---
 Read the manifest at the path you were given. Review the candidate it names; you never edit files.
 Respect the exclusions listed in the manifest for everything you read.
-Work through the closed read list and stop. For each changed exported symbol, find callers with
-`usages` (text search if unavailable); with more than 10 callers, open a sample across modules
-and record it in coverage.sampled. In recheck mode, review only the named findings.
+Work through the investigation list in order. Read adjacent code you need to understand it, within the
+read budget, and list everything you read. For each changed exported symbol, find callers with `usages`
+(text search if unavailable); with more than 10 callers, open a sample across modules and say why.
+In recheck mode, cover the whole diff since the last review and report each named finding as verified or still open.
 Stage A (behavior and intent): for each basis element, does the change satisfy it?
   Does each acceptance test truly assert its example (no vacuous assertions, no bypassed setup)?
   What required behavior has no example or check? Report it in basisGaps and coverage.uncovered.
+  Flag any change outside the requested scope as an out-of-scope-change instead of reviewing it as wanted (QLT-10).
 Stage B (structure, security, charter): design, readability, duplication, suppressions,
   dependency changes, new network destinations, credential handling, test or CI weakening,
-  and the project charter's rules (QLT-10).
+  and the project charter's rules. Give every attention item a disposition.
 Severity: blocker = violates the basis, an integrity rule, or a security or data-integrity obligation;
   major = material quality or reliability defect; minor; note.
-Return exactly one JSON ReviewResult (schema: review-result.schema.json). Give evidence and
-locations, not a narrative. List what you did not reach. Write one sentence on cross-module interactions.
+Return exactly one JSON ReviewResult (schema: review-result.schema.json), with status completed only if you
+covered the list. Give evidence and locations, not a narrative. Write one sentence on cross-module interactions.
 ```
 
-## Appendix G. Revision record
+## Appendix F. Revision record
 
 - v0.1 (October 15, 2026): first draft implementing PRD v0.15.
-- v0.2 (October 15, 2026): incorporates four reviews of v0.1.
-  - Replaces the object store with one state document; separates the transaction lock from work ownership.
-  - Fixes effect ordering, the digest's privacy and write behavior, the verdict shortcuts, lock weakening, attribution, commit hooks, integration and undo.
-  - Reduces the surface to 5 skills and 15 verbs, and the kernel estimate to about 4,500–6,000 lines.
-- v0.3 (October 15, 2026): incorporates five reviews of v0.2.
-  - Adds the native-first rule and the ownership and retirement table; search, references, diagnostics, questions, progress, edit checkpoints and browsing move to the host.
-  - Replaces the import map and bucketed packets with review manifests, and `prepare` with a shadow Git repository; adds one verb pipeline and static registries.
-  - Fixes undo, hook recovery, state publication, check replay safety, inventory privacy, baseline cost, dependency verification order and authority under Autopilot.
-- v0.4 (October 15, 2026): incorporates five reviews of v0.3, focused on the tech stack, token efficiency, model selection and usage tracking under Copilot's token billing.
-  - Adds the cost model (14.4): loop-card responses, flag answers, envelope defaults, manifests passed by path, recheck manifests, three MCP tools, a closed reviewer read list, phase-scoped skills and cache-stable sessions.
-  - Adds the model policy (4.8): inheritance, a qualification table with Auto as a configuration, a Deep warning, and requested versus resolved model records.
-  - Adds honest usage reporting (8.6): complete counters (including launched checks), a Deep budget preview, `usage: unknown` with native pointers, and a spending rule (RSC-03).
-  - Refines the stack: zod 4 with built-in JSON Schema, stdio-only MCP imports, a tiny hook entry, compile cache, separate type checking, pinned Node ranges.
-  - Fixes canonical content identity across commits, preload clearing at launch, the approval-snippet path, hooks in stateless sessions and the observation merge race, lock breaking for paused processes, takeover without elapsed-time rules, bounded idempotency, progressive undo, exact sealed baselines, dependency rollback, project-wide support-file locks, restore exclusion, attempt counting and delegation reservations.
-  - Proposes PA-4 to PA-6 and revises PA-1 and PA-2. The owner approved all six on October 15 (PRD v0.16); Sections 4.5, 4.7 and 4.8 reflect them.
+- v0.2 (October 15, 2026): one state document, the effect protocol, file-level attribution and operation classes; 5 skills and 15 verbs.
+- v0.3 (October 15, 2026): the native-first rule; host search and references instead of an import map; the verb pipeline and registries.
+- v0.4 (October 15, 2026): the cost model for token billing, the model policy and usage reporting; implements PRD v0.16 (PA-1 to PA-6).
+- v0.5 (October 16, 2026): composing correctness contracts (truth boundaries, review chains, durable fencing, Git inspection safety, canonical intent); removes the state MAC, the `export` verb, the response cache and other mechanisms that did not earn their keep.
