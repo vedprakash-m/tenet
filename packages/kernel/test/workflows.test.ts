@@ -322,7 +322,7 @@ describe("things that must not trip it", () => {
     const p = fresh();
     const { h } = await toGreen(p);
     p.write(".env", "TOKEN=hunter2\n");
-    p.write("config/id_rsa", "-----BEGIN PRIVATE KEY-----\n");
+    p.write("config/id_rsa", "-----BEGIN PRIVATE KEY-----\n"); // privacy-ok
     const c = await p.call("check", { h, stage: "candidate", again: true });
     assert.equal(c.exit, 0, JSON.stringify(c));
     const f = await p.call("finish", { h, subject: "s" });

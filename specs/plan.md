@@ -590,7 +590,7 @@ Implemented `specs/plan.md` Phase 2 as far as it can go without the VS Code Copi
 **What exists (all uncommitted at the time of writing, so nothing here is `✅` yet; the commit hash and a CI run are what is missing):**
 - `packages/kernel`: pure core (schemas, reasons, ids, risk, verdict, budget, review, obligations, attribution, exclusions, controls, handoff), six ports, one `pipeline.ts`, adapters (filesystem store with guarded lock and effect log, Git CLI with inventory, temporary-index commit and exact index sync, process runner, Node/Vitest), ten verbs, seven decision kinds, a command-line front-end. About 3,300 kernel source lines plus an 800-line starter template.
 - `plugin/`: `plugin.json`, the `tenet` and `tenet-reviewer` agents, two commands, four skills, generated review-result schema, and (after `npm run build`) the 553 KB bundle.
-- `tools/`: build, `lint-arch`, `lint-skills`, `coverage`; `.github/workflows/untrusted.yml` (never run).
+- `tools/`: build, `lint-arch`, `lint-skills`, `coverage`, `privacy-check`; `.github/workflows/untrusted.yml` (never run).
 - `.github/copilot-instructions.md` (working rules for this repo, tailored to Tenet; `CLAUDE.md` imports it), `tenet-intake/resources/onboarding.md` (greenfield and brownfield start) and `conventions-draft.md` (the instruction-file draft), derived from the instruction file the product owner copied in from another project.
 - 174 T1 tests (`npm run ci` green locally): core and property tests, a verdict row per reachable endpoint, real-OS lock races and kill tests, Git preservation, the walking-skeleton loop, the three injected failures (crash at all four commit steps), misleading-success traps, hook consent, locks by ancestry, zero-write review, and the lints' own failing fixtures.
 

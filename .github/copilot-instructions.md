@@ -21,7 +21,7 @@ This is infrastructure other people's work will rely on. Before changing shared 
 ## Testing and gates
 - Test-first for behavior. Use real processes, real Git and real signals when the behavior is about them (lock races, kills at each effect step, index preservation).
 - Tag the test that proves a PRD requirement with `[REQ-ID]` in its title; `tools/coverage.ts` reads the tags.
-- `npm run ci` runs typecheck, `lint-arch`, `lint-skills`, `coverage`, the bundle build (within its size budget) and every test. All of it passes before work is called done. Tests never depend on the developer's Git configuration or on host credentials.
+- `npm run ci` runs typecheck, `lint-arch`, `lint-skills`, `coverage`, the bundle build (within its size budget) and every test. All of it passes before work is called done. Tests never depend on the developer's Git configuration or on host credentials. `npm run privacy` is the separate pre-commit check in the lifecycle below.
 - Node 24+ runs the TypeScript directly; the shipped bundle must run on Node 22.12+.
 
 ## Plan and honesty
@@ -30,8 +30,16 @@ This is infrastructure other people's work will rely on. Before changing shared 
 - Host behavior (VS Code, Copilot, subagents, approvals) is unobserved until a spike records it. Say "unobserved", never "should work". Each spike needs separate authorization.
 - When you find a spec defect, record it in §12.3; if it touches a never-waivable requirement (PRD §4.7), raise it immediately.
 
-## Feature lifecycle
-1. Plan or spec change, approved. 2. Failing tests. 3. Implementation. 4. `npm run ci`. 5. Backfill the canonical specs if a rule or component was added. 6. Update the plan. 7. Commit only when asked: code and tests first, then spec and plan updates. Never commit credentials or `.env*`; `.tenet/` is git-ignored and never edited by hand.
+## Feature lifecycle (in order; do not skip a step)
+1. **Spec.** Write `specs/<feature>.md`: requirements, behavior as examples with the test file for each, state or contract changes, alternatives considered with a recommendation, risks, assumptions, acceptance criteria. A step already fully specified by the canonical specs and sequenced in `specs/plan.md` needs only its plan entry.
+2. **Review.** An independent pass over the spec (a fresh-context reviewer, `/tenet-review`, or the owner); every finding gets a disposition.
+3. **Sign-off.** The owner approves. No implementation before this.
+4. **Implement with TDD.** A failing test first, then the code, then the next test.
+5. **Validate.** `npm run ci` passes: typecheck, both lints, coverage, bundle within budget, every test.
+6. **UAT.** Run the real thing as a user would: build the bundle (`npm run build`) and drive `plugin/kernel/tenet.mjs` through the feature on a scratch repository, and on the real host once spikes allow it. Compare what you see with the spec's examples; record what was observed and what was not.
+7. **Finalize.** Backfill the canonical specs if a rule or component was added. Move the feature spec to `.archive/specs/`. Add a dated entry to `CHANGELOG.md` (what changed, modified files, tests). Update `specs/plan.md`. Audit `.gitignore`.
+8. **Privacy check before commit and push.** `npm run privacy` on the staged change; before a push also `node tools/privacy-check.ts --range @{u}..HEAD`. It looks for keys, tokens, credential assignments, personal paths and real addresses in added lines; read the result, it finds likely leaks and proves nothing. Never commit credentials or `.env*`; `.tenet/` is git-ignored and never edited by hand.
+9. **Commit and push only when asked.** Commit code and tests first, then spec, plan and changelog. After a push, confirm CI passes before calling it done.
 
 ## Skills and plugin text
 Skill and agent text is executable product behavior. Keep it within the token budgets, name only verbs, flags, decision kinds, reason codes and actions that exist, and state a control only as strongly as its mechanism class allows. `tools/lint-skills.ts` checks this; it checks structure, not meaning, so read what you wrote.
