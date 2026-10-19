@@ -1,0 +1,58 @@
+// The real starter recipe, installed from its pinned lockfile. Needs the network (npm ci); set TENET_OFFLINE=1 to skip.
+import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { after, describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { cleanup, git, initRepo, tmp } from "./helpers.ts";
+import { runVerb } from "../src/pipeline.ts";
+import { VERBS } from "../src/verbs/index.ts";
+import { createPorts } from "../src/wire.ts";
+
+const roots: string[] = [];
+after(() => roots.forEach(cleanup));
+const d = (r: { data?: unknown }) => r.data as Record<string, any>;
+const PLUGIN = join(import.meta.dirname, "../../../plugin/skills/tenet-starter-ts-web-api");
+
+describe("the ts-web-api recipe", () => {
+  it("pins the lockfile it ships", () => {
+    const recipe = JSON.parse(readFileSync(join(PLUGIN, "recipe.json"), "utf8"));
+    assert.equal(createHash("sha256").update(readFileSync(join(PLUGIN, "template/package-lock.json"))).digest("hex"), recipe.lockfileSha256, "re-lock the recipe: update recipe.json with the new hash");
+    assert.deepEqual(recipe.protectedPaths, ["server/src/platform/auth/*", "server/src/platform/session/*", "server/migrations/*"]);
+    assert.deepEqual(recipe.install[0], ["npm", "ci", "--ignore-scripts"]);
+  });
+
+  it("scaffolds into an empty repository, installs the pinned lockfile, and the starter's own tests, types and lint pass under the kernel's check", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
+    const root = tmp("tenet-starter-"); roots.push(root);
+    initRepo(root);
+    const call = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    const o = await call("open", { profile: "feature", request: "a loan desk", scopePaths: [], lane: "quick", initGit: true });
+    const h = o.handle!;
+    await call("decide", { h, kind: "basis", propose: {
+      outcome: "The starter platform is in place and its own tests pass",
+      elements: [
+        { ref: "r", kind: "requirement", origin: "request", text: "the platform's sign-in, session and migration tests pass" },
+        { ref: "e", kind: "example", origin: "request", of: "r", text: "platform.test.ts passes", testFile: "server/test/platform.test.ts", test: "preservation", expect: "pass" },
+      ],
+    } });
+    const s = await call("decide", { h, kind: "scaffold", propose: { name: "loan-desk" } });
+    assert.equal(s.exit, 0, JSON.stringify(s));
+    assert.equal(d(s).version, "0.1.0");
+
+    const c = await call("check", { h, stage: "candidate" });
+    assert.equal(c.exit, 0, JSON.stringify(c));
+    const suite = d(c).receipts.find((r: { obligation: string }) => r.obligation === "OB-suite");
+    assert.equal(suite.status, "pass");
+    assert.ok(suite.counts.executed >= 20, JSON.stringify(suite.counts));
+
+    for (const script of ["typecheck", "lint"]) execFileSync("npm", ["run", "--silent", script], { cwd: root, stdio: "pipe" });
+
+    const f = await call("finish", { h, subject: "Scaffold the starter" });
+    assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
+    const files = git(root, "ls-files").split("\n");
+    assert.ok(files.includes("server/src/platform/auth/passwords.ts") && files.includes("package-lock.json"));
+    assert.ok(!files.some((p) => p.startsWith("node_modules") || p === ".env.local"));
+    assert.equal(git(root, "status", "--porcelain"), "");
+  });
+});

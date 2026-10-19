@@ -1,0 +1,31 @@
+# Untrusted workflow: runs on every pull request, including from forks. Read-only token, no secrets, no network
+# beyond installing the repository's own locked dependencies. It runs the whole T1 suite (plan §5.2, TS §17.6).
+# The development loop runs TypeScript directly (Node 24+); the shipped bundle must also run on the minimum Node.
+name: untrusted
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  t1:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+      - run: npm run ci
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.12.0
+      - name: The shipped bundle runs on the minimum supported Node
+        run: node plugin/kernel/tenet.mjs inspect help

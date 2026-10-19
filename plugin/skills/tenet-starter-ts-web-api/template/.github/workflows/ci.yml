@@ -1,0 +1,20 @@
+# The same obligations Tenet runs locally (types, lint, tests), so a green check here means the same thing.
+name: ci
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+      - run: npm rebuild better-sqlite3
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test

@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "manifest": {
+      "type": "string"
+    },
+    "reservation": {
+      "type": "string"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "full",
+        "recheck"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "partial",
+        "blocked",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "dispatchMode": {
+      "type": "string",
+      "enum": [
+        "subagent-fresh",
+        "same-session"
+      ]
+    },
+    "axes": {
+      "type": "object",
+      "properties": {
+        "behavior": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail"
+          ]
+        },
+        "structure": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail"
+          ]
+        }
+      },
+      "required": [
+        "behavior",
+        "structure"
+      ],
+      "additionalProperties": false
+    },
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "inspected": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "uncovered": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "crossCutting": {
+          "type": "string"
+        },
+        "sampled": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "symbol": {
+                "type": "string"
+              },
+              "callers": {
+                "type": "number"
+              },
+              "opened": {
+                "type": "number"
+              },
+              "semantic": {
+                "type": "boolean"
+              },
+              "why": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "symbol",
+              "callers",
+              "opened",
+              "semantic",
+              "why"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "inspected",
+        "uncovered",
+        "crossCutting",
+        "sampled"
+      ],
+      "additionalProperties": false
+    },
+    "attention": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "disposition": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "finding"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "disposition",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "rechecked": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "finding": {
+            "type": "string"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "still-open"
+            ]
+          },
+          "evidence": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "finding",
+          "outcome",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "blocker",
+              "major",
+              "minor",
+              "note"
+            ]
+          },
+          "axis": {
+            "type": "string",
+            "enum": [
+              "behavior",
+              "structure"
+            ]
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "line": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "path"
+            ],
+            "additionalProperties": false
+          },
+          "claim": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "fix": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "severity",
+          "axis",
+          "location",
+          "claim",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "basisGaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "missing-requirement",
+              "missing-invariant",
+              "weak-test",
+              "out-of-scope-change"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "detail"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "openDependencies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "manifest",
+    "reservation",
+    "attempt",
+    "mode",
+    "status",
+    "dispatchMode",
+    "axes",
+    "coverage",
+    "attention",
+    "findings",
+    "basisGaps"
+  ],
+  "additionalProperties": false
+}

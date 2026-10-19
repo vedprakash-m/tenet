@@ -1,0 +1,7 @@
+{
+  "$schema": "https://code.visualstudio.com/docs/agent-customization/agent-plugins",
+  "name": "tenet",
+  "version": "0.1.0-m0",
+  "description": "A governed, test-first engineering loop: a small local kernel records what is true, and agents do the work.",
+  "license": "UNLICENSED"
+}

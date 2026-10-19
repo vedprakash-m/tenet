@@ -1,0 +1,141 @@
+// The six ports (TS §6.1): Store, Git, Runner, Host, Clock, Random. Everything with a side effect sits behind one.
+// A port exists only where there is a second implementation or a real test boundary; pure logic has no interface.
+import type { AttentionPattern, FileChange } from "../core/review.ts";
+import type { Random } from "../core/ids.ts";
+import type { State } from "../core/schemas.ts";
+
+export type { Random };
+export interface Clock { now(): string; ms(): number }
+
+// ---------------------------------------------------------------- store
+export interface LogEntry { t: string; kind: "intent" | "result" | "call"; effect?: string; id?: string; [k: string]: unknown }
+
+export interface Tx {
+  /** The current state, or null before the first mutating call created `.tenet/`. */
+  readonly state: State | null;
+  /** True when the document came from state.prev (grants are suspended until reconfirmed). */
+  readonly recovered: boolean;
+  /** Creates `.tenet/` and the marker on first need and returns the identity every handle carries. */
+  ensure(): { workspaceId: string; tag: string };
+  publish(next: State): void;
+  /** Appends a call record to the log inside the transaction, so the log never races a repair. */
+  call(entry: Omit<LogEntry, "t" | "kind">): void;
+  intent(effect: string, id: string, op: unknown): void;
+  result(effect: string, id: string, outcome: unknown): void;
+  /** Unresolved effect intents, for reconciliation before anything else touches the resource. */
+  unresolved(): Array<{ effect: string; id: string; op: unknown }>;
+  /** The most recent log entries, for applying a result that was logged but never published. */
+  recent(n: number): LogEntry[];
+}
+
+export interface Store {
+  exists(): boolean;
+  read(): { state: State; recovered: boolean } | null;
+  transaction<T>(verb: string, fn: (tx: Tx) => Promise<T>): Promise<T>;
+  /** The one pre-lock maintenance step: remove a dead lock and its dead guard. */
+  repairLock(): Promise<{ removed: string[] }>;
+  readLog(): LogEntry[];
+  putBlob(content: string): string;
+  readBlob(hash: string): string | null;
+  /** A directory for this call's artifacts (run dirs, manifests), outside the project. */
+  tempDir(name: string): string;
+  /** True while a process with this identity is alive; paused processes are alive (TS §7.3). */
+  alive(pid: number, procStart: string): Promise<boolean>;
+  /** This process's identity, recorded so a later call can tell whether it is still running. */
+  self(): { pid: number; procStart: string };
+  /** Writes a file under a directory returned by `tempDir` and returns its path. */
+  writeArtifact(dir: string, name: string, content: string): string;
+  /** Removes this workspace's run directories and manifests older than `maxAgeMs`, except those under `keep` (TS §7.6). */
+  sweepTemp(maxAgeMs: number, keep: readonly string[]): number;
+  /** Whether the project folder accepts writes (doctor). */
+  canWrite(): boolean;
+}
+
+// ---------------------------------------------------------------- git
+export interface Entry { path: string; mode: string; blob: string; link?: string }
+export interface StatusEntry { path: string; xy: string; staged: boolean; untracked: boolean; mode: string; blob: string; indexBlob: string }
+export interface Inventory {
+  head: string | null; branch: string | null; entries: Map<string, Entry>; status: StatusEntry[]; digest: string;
+}
+export interface RepoProbe {
+  isRepo: boolean; version: string; top: string | null; head: string | null; branch: string | null;
+  state: "ok" | "none" | "readonly"; why?: string; identity: boolean; remotes: string[]; hooks: string | null;
+}
+export interface CommitPlan { paths: string[]; deleted: string[]; message: string; parent: string | null; timeoutMs: number }
+export interface CommitOutcome {
+  ok: boolean; commit?: string; tree?: string; expectedTree?: string; foreign: string[]; reason?: string; detail?: string;
+  indexSync: "synced" | "untouched" | "not-needed"; syncPaths: string[];
+}
+export interface Git {
+  probe(): Promise<RepoProbe>;
+  inventory(exclude: readonly string[]): Promise<Inventory>;
+  /** Working-tree changes of `paths` against `base` as hunks of added and removed lines. */
+  changes(base: string | null, paths: readonly string[], classify: (p: string) => FileChange["kind"]): Promise<FileChange[]>;
+  /** The tree a commit of exactly these paths would have; logged with the intent so recovery can verify the postcondition. */
+  expectedTree(plan: Pick<CommitPlan, "paths" | "deleted" | "parent">): Promise<string>;
+  commit(plan: CommitPlan): Promise<CommitOutcome>;
+  /** Postcondition for crash recovery: did a commit with this parent and tree land? */
+  reconcileCommit(parent: string | null, expectedTree: string, tenetPaths: readonly string[]): Promise<{ completed: boolean; commit?: string }>;
+  syncIndex(paths: readonly string[], oldHead: string | null): Promise<CommitOutcome["indexSync"]>;
+  /** Which of these commits are ancestors of HEAD (`git merge-base --is-ancestor`). */
+  ancestors(commits: readonly string[]): Promise<Set<string>>;
+  init(): Promise<void>;
+  /** Creates and switches to a branch from HEAD, carrying the working tree; idempotent when already on it. */
+  createBranch(name: string): Promise<void>;
+}
+
+// ---------------------------------------------------------------- runner
+export interface RunSpec {
+  argv: string[]; cwd: string; runDir: string; timeoutMs: number;
+  /** A file the command writes its report to; the runner returns its content. */
+  report?: string;
+}
+export interface RunResult {
+  exit?: number; signal?: string; timedOut: boolean; durationMs: number; pid?: number; stdout: string; stderr: string; startedAt: string;
+  report: string | null;
+}
+export interface Runner {
+  run(spec: RunSpec): Promise<RunResult>;
+  /** Stops the recorded process group if its identity still matches (TS §7.4 Check run). */
+  stopRun(runDir: string): Promise<"stopped" | "gone" | "unknown">;
+}
+
+// ---------------------------------------------------------------- stack (Node/TypeScript adapter)
+export interface ToolVersions { node: string; tool: string; reporter: string; adapter: string }
+export interface Detection {
+  language: "ts-js" | "other"; typescript: boolean; depsInstalled: boolean; runnerSupported: boolean; runner?: "vitest";
+  runnerVersion?: string; packageManager: "npm" | "pnpm" | "yarn" | "unknown"; moduleRoot: string; experimental: boolean;
+}
+export interface Normalized {
+  files: Map<string, { executed: number; passed: number; failed: number; skipped: number; focused: number; tests: string[]; failures: Array<{ test: string; kind: string; message: string }> }>;
+  invalid?: string; discovered: number;
+}
+export interface Stack {
+  detect(root: string): Detection;
+  argv(files: readonly string[] | "all", reportPath: string): string[];
+  normalize(raw: string, root: string): Normalized;
+  fingerprint(root: string): ToolVersions;
+  patterns: readonly AttentionPattern[];
+  classify(path: string): FileChange["kind"];
+  isTestPath(path: string): boolean;
+}
+
+// ---------------------------------------------------------------- recipes and the project folder (starter scaffold)
+export interface RecipeFile { path: string; content: string; mode: number }
+export interface Recipe {
+  id: string; version: string; sentinel: string; lockfileSha256: string; protectedPaths: string[]; install: string[][]; files: RecipeFile[];
+}
+export interface Recipes { load(id: string): Recipe | null }
+export interface Project {
+  /** Creates each file exclusively (never overwrites), making directories as needed. */
+  writeNew(files: readonly RecipeFile[]): void;
+  /** sha256 of each file's content, or null when it does not exist. */
+  hashes(paths: readonly string[]): Record<string, string | null>;
+  remove(paths: readonly string[]): void;
+}
+
+export interface Ports {
+  root: string; version: string; store: Store; git: Git; runner: Runner; stack: Stack; clock: Clock; rand: Random;
+  recipes: Recipes; project: Project;
+}
+
