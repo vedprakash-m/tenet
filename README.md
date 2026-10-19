@@ -18,7 +18,22 @@ Projects should remain ordinary software projects that can be maintained without
 
 ## Status
 
-**Planning stage.** This repository currently contains the draft product requirements, not an installable plugin. Capabilities and benefits described here are intended outcomes, not shipped features or demonstrated results.
+**Early implementation (M0).** The deterministic kernel, the plugin payload (agents, commands and skills) and their tests exist in this repository. Nothing has been run inside VS Code Copilot yet, so installing the plugin, dispatching the reviewer and the approval behavior are untested on the real host, and the starter template does not exist. Capabilities and benefits described here are intended outcomes, not shipped features or demonstrated results. [specs/plan.md](specs/plan.md) is the honest, current record of what is built and what has been observed.
+
+## Development
+
+Node 24 or newer runs the TypeScript sources directly; the shipped kernel is one bundled file that runs on Node 22.12+.
+
+```bash
+npm ci
+npm run ci     # typecheck, architecture and skill lints, traceability, bundle, all tests
+```
+
+## Layout
+
+- `packages/kernel/src` is the kernel: a pure `core/`, six ports, one `pipeline.ts` for every verb, and the adapters behind the ports.
+- `plugin/` is what ships: the coordinator and reviewer agents, two commands, four skills, and (after `npm run build`) the bundled kernel.
+- `tools/` holds the build, the architecture and skill lints, and the requirement-to-fixture traceability report.
 
 ## Documentation
 

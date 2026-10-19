@@ -1,6 +1,6 @@
 # Tenet - Technical Specification
 
-> v1.0 | October 18, 2026 | Implementation baseline (pre-spike) | Implements [PRD v0.16](PRD.md)
+> v1.3 | October 18, 2026 | Implementation baseline (pre-spike) | Implements [PRD v0.17](PRD.md)
 
 ## 0. About this document
 
@@ -8,7 +8,7 @@
 
 This specification defines **how** Tenet for Copilot delivers [`specs/PRD.md`](PRD.md): architecture, components, data, algorithms, interfaces, security, the starter application, extension contracts, performance, reliability, verification, release and delivery.
 
-**Precedence:** the PRD owns *what*, including the meaning of "checked", "authorized", "safe" and "supported". This document chooses mechanisms and never redefines semantics; where they disagree the PRD wins and this document is corrected. A mechanism that needs a PRD change stays inactive until the owner approves it (§20.2). The UX Spec (not yet written) owns wording, command syntax and layout; names here are working names. **Scope:** R1 on the PRD Section 2.2 qualification tuple, with the seams R1.1 needs.
+**Precedence:** the PRD owns *what*, including the meaning of "checked", "authorized", "safe" and "supported". This document chooses mechanisms and never redefines semantics; where they disagree the PRD wins and this document is corrected. A mechanism that needs a PRD change stays inactive until the owner approves it (§20.2). The [UX Spec](ux-spec.md) owns wording, command syntax and layout; names here follow it. **Scope:** R1 on the PRD Section 2.2 qualification tuple, with the seams R1.1 needs.
 
 ### 0.2 Status
 
@@ -62,6 +62,7 @@ These are separate fields everywhere; none is folded into another.
 | Capture | How a decision or review result reached the kernel: `reported`, `tool-scoped` or `elicited` | §2.3 |
 | Independence | Whether review ran in a fresh subagent (`subagent-fresh`) or the same session | §2.3 |
 | Owner acceptance | The user's acceptance of a result; never changes the endpoint | §8.3 |
+| Assurance profile (PRD Section 5.3.4, EVD-07) | Not a separate field: derived and shown in `why controls` as one word from endpoint plus mechanism class — `findings-only`/read-only is **Advisory review**; `checked-local` is **Checked local**; a passing protected CI or branch rule that actually verifies the stated artifact is **Externally gated**; R1 has no **Delivery** profile. **Guarded local is not reachable in R1:** it requires evidence of an observed dispatch *denial* (PRD Section 5.3.4), and R1's hooks are recording-only by design (TD-14, no prevention hooks ship) — observing that an action happened is never evidence that a different action could have been blocked, so SP-03 qualifying observation reliability alone never promotes a control past Checked local | §8.3, §4.4, §4.7 |
 
 ---
 
@@ -315,16 +316,19 @@ Only the selected front-end ships. The command line stays in the repository as t
 
 ### 4.6 Approval friction
 
-About 6 coarse calls per Standard task, compact flag-only command lines, and a **per-verb approval snippet** generated from the §6.5 risk column. Setup shows, never writes, a rule that auto-approves routine verbs and leaves consequential verbs to the host, with the **exact absolute kernel path** and an anchored end so redirections and metacharacters never match:
+About 6 coarse calls per Standard task, compact flag-only command lines, and a **per-verb, and for `decide` per-kind, approval snippet** generated from the §6.5 risk column. Setup shows, never writes, a rule that auto-approves routine calls and leaves consequential ones to the host, with the **exact absolute kernel path** and an anchored end so redirections and metacharacters never match:
 
 ```json
 "chat.tools.terminal.autoApprove": {
   "/^env -u NODE_OPTIONS node \"<exact kernel path>\" (open|review|inspect|packet|check|findings|stop)( [^;&|<>`$()\\n]*)?$/": true,
+  "/^env -u NODE_OPTIONS node \"<exact kernel path>\" decide --kind=(basis|plan|overview|lesson|acceptance|basis-confirm)( [^;&|<>`$()\\n]*)?$/": true,
   "/^env -u NODE_OPTIONS node \"<exact kernel path>\" (decide|commit|finish|integrate|undo|publish)\\b/": false
 }
 ```
 
-The host approves a compound command only if every subcommand matches, and heredoc calls never match the routine rule. [SPIKE: SP-12] runs negative tests (`&&`, `;`, `|`, `>`, substitution). In Manual mode the host then gates every decision, commit, integration, undo and remote action itself; a typical Standard task needs about 3 approvals (with MCP: approve `tenet_read` and `tenet` for the session). Hook, filter and envelope consents are remembered per project and configuration hash (§7.2), and all decisions due at one boundary arrive as one grouped question list (§6.6).
+**`decide` is split by kind, not blanket-consequential (TD-44).** The kind's own nature decides the risk column, never the verb name: recording a chosen basis, a plan, an overview, a lesson, an already-rendered acceptance, or a `basis-confirm` reply changes only `.tenet/state` or a managed Markdown block, grants no authority, and is Routine; granting scope, touching a protected path, approving a dependency, a remote or destructive action, risk acceptance, or a config change stays Consequential and is never auto-approved, regardless of front-end. This is a reclassification of what each kind already was, not a loosening of any authority boundary — a routine kind never could grant authority, so marking it Routine makes the approval match what the kind actually does, not less than that. **`decide` answers a question in one call when the answer is already known,** rather than always returning `exit 3` and waiting for a second call: `decide {propose: basis, answers}` records the confirmed basis directly when the coordinator already holds the user's reply (the kickoff's single "ok"), so one user confirmation never costs two host approvals under Manual mode; `decide {propose: basis}` alone (no answer yet) still returns one `basis-confirm` question when nothing is known yet.
+
+The host approves a compound command only if every subcommand matches, and heredoc calls never match the routine rule — the kind flag is a literal argument, not hidden in the heredoc body, so it is visible to the regex. [SPIKE: SP-12] runs negative tests (`&&`, `;`, `|`, `>`, substitution) and re-measures prompts per Standard task against this split, not the pre-split baseline. In Manual mode the host then gates every consequential decision, commit, integration, undo and remote action itself; a typical Standard task needs about 1–2 approvals (`finish`, and `integrate` only if requested; with MCP: approve `tenet_read` and `tenet` for the session). Hook, filter and envelope consents are remembered per project and configuration hash (§7.2), and all decisions due at one boundary arrive as one grouped question list (§6.6).
 
 ### 4.7 Hooks
 
@@ -338,7 +342,7 @@ The host approves a compound command only if every subcommand matches, and hered
 | `SubagentStart`, `SubagentStop` | Which agent ran, when, and its model if the payload carries it | Review independence becomes observed; dispatch counts become observed (§8.6) |
 | `Stop` | A turn ended; whether `finish` preceded it | A note, `ended-without-finish`. Never evidence that a session ended or became inactive, and never forces a turn to continue |
 
-**Mechanics:** `kernel/hook.mjs` (no dependencies) reads the payload from stdin, filters it in the script, keeps only allowlisted bounded fields (event, session, agent, paths, model; never payloads, results or file contents), redacts them, and atomically writes one event file `.tenet/observed/<time>-<random>.json` (temporary name, then rename). It never takes the transaction lock, **never creates `.tenet/`** (so stateless review stays write-free), prints nothing and always exits 0, so it can never approve, deny or continue anything. The spool is capped at 500 files; past the cap the hook writes one overflow marker and stops, and the next result reports observation as incomplete. The next mutating call consumes the events, publishes the state that includes them, and only then deletes them; event IDs make a crash before deletion an idempotent re-read.
+**Mechanics:** `kernel/hook.mjs` (no dependencies) reads the payload from stdin, filters it in the script, keeps only allowlisted bounded fields (event, session, agent, paths, model; never payloads, results or file contents), redacts them, and atomically writes one event file `.tenet/observed/<time>-<random>.json` (temporary name, then rename) — **unless `TENET_STATELESS=1` is set in its environment, in which case it reads stdin, writes nothing at all, and exits 0.** The coordinator sets `TENET_STATELESS=1` for every process it spawns (including a Reviewer subagent dispatched for `/tenet review`) while a stateless or read-only call is in progress, so a hook can never write into an *existing* `.tenet/observed/` during review-only work (CON-09's "no files in the project, including `.tenet/`" covers this even when `.tenet/` predates the review from earlier, unrelated work in the same project). Outside that case, it never takes the transaction lock, **never creates `.tenet/`** (so a brand-new project stays clean too), prints nothing and always exits 0, so it can never approve, deny or continue anything. The spool is capped at 500 files; past the cap the hook writes one overflow marker and stops, and the next result reports observation as incomplete. The next mutating call consumes the events, publishes the state that includes them, and only then deletes them; event IDs make a crash before deletion an idempotent re-read.
 
 **Observation upgrades only the fact observed:** a matching path proves the agent edited the file, not that every change was the agent's (the last-check rule still applies, §10.2), and terminal edits are never seen by edit hooks. Anything unobserved keeps its cooperative label.
 
@@ -399,7 +403,8 @@ Never edit .tenet/. Never state a verdict, freshness or completion the kernel di
 Host memory, plans and todos are context, never requirements, grants or plan items.
 
 # Loop
-1. If the user only asks where things stand, run `inspect status`, answer, and end the turn.
+1. If the user asks where things stand: when idle, run `inspect status`, answer, and end the turn; while working,
+   answer in a line or two and carry on. "What's next?" only proposes; only "continue" resumes.
    Otherwise pick a profile and run `open <profile>` with the request. Say the level and lane once.
 2. Before every kernel call, handle anything new the user said first (pause, cancel, undo, refine).
 3. Mirror `next` into todos when it changes. Do the required action or a permitted alternative;
@@ -413,7 +418,7 @@ Host memory, plans and todos are context, never requirements, grants or plan ite
 6. Post check-ins when `progress` calls for them. Never auto-confirm a host pause. At 80% of a
    budget say so once. Make sure the handoff is current before a dispatch or a long check.
 7. Never suggest switching model or effort. After compaction run `inspect status` once, then
-   re-read only what the next action needs. Offer a fresh chat only at a milestone of long work.
+   re-read only what the next action needs.
 8. If `finish` returns continue-required, keep working. Render the result only from the last
    kernel response; show the endpoint label exactly as returned.
 ```
@@ -491,8 +496,11 @@ Stage B (structure, security, charter): design, readability, duplication, suppre
   are swallowed or secrets logged. Name the fact that makes the change safe and its evidence; look for
   consumers symbol search misses (stored or serialized formats, configuration keys, flags, other languages,
   scripts parsing output). Changeability: one rule in several places, indirection with no purpose, errors
-  handled where nothing can act on them, what the next likely change would have to touch. Judge by
-  consequence, not shape. Give every attention item a disposition.
+  handled where nothing can act on them, what the next likely change would have to touch. Shotgun surgery: did
+  this one conceptual change require edits across several unrelated files or modules to take effect — a
+  distinct, nameable smell from blast radius, which is about how many callers a signature change reaches, not
+  about how scattered the change itself had to be. Judge by consequence, not shape. Give every attention item
+  a disposition.
 Severity: blocker = violates the basis, an integrity rule, or a security or data-integrity obligation;
   major = material quality or reliability defect; minor; note. Severity follows consequence and evidence.
 Return exactly one JSON ReviewResult (schema: review-result.schema.json); status completed only if you
@@ -533,6 +541,8 @@ Short rules the skills teach, at on-demand token cost. Each stays only while gol
 | **Flag, don't expand.** An out-of-scope improvement is named in the reply as "noticed, not changed"; it is not a binding fact | `tenet-build` | QLT-10 |
 | **Format before checking.** Run the project's formatter before a full candidate check, so a formatting hook rarely changes anything after review (§8.7) | `tenet-build` | SEC-10 |
 | **Look facts up; ask only for decisions.** What the repository can answer is searched, never asked. A new project's intake settles purpose and users, scope and non-goals, core flows, data, interfaces, failure modes, quality bar and constraints, or records "none" with a reason | `tenet-intake` | INT-02, INT-03 |
+| **A thin answer gets one real follow-up, not a pass.** For a new project, and for the first Standard-or-deeper change in a brownfield project the coordinator hasn't worked in before, a one-clause answer on purpose, users, or a non-goal gets one concrete follow-up question before the plan is drafted — never a second round on the same dimension, and never on a dimension the user already answered substantively. Thoroughness is bounded the same way everything else is: one pass, one targeted follow-up where it's thin, then proceed | `tenet-intake` | INT-02, INT-03 |
+| **Offer to draft AGENTS.md conventions, once, on a new project.** After the purpose/scope/constraints pass, if the instruction file the host loads (§7.8) has no content outside Tenet's own charter markers, propose a short draft of general conventions (stack choices already decided, naming, where things live) as one preview alongside the rest of the kickoff — adopted like any other file, never written silently. Never repeated once declined or once real content exists there | `tenet-intake` | INT-13 |
 | **Sketch, then mock.** Draft the design sketch where §8.7 requires it. For a `ui` change in Standard or Deep, offer one text wireframe before examples are confirmed; it is alignment, never evidence, and is not kept | `tenet-intake` | WRK-01, INT-04 |
 | **Vertical slices.** Each plan item is runnable and independently checkable and says how it is checked; it either delivers behavior the user can try through the real entry point or resolves a named uncertainty. Before ordering, answer: what uncertainty comes first, what is the smallest runnable slice, which shared contracts constrain order, what can wait for its consumer. Justified preparatory refactors and migration steps are items with their own checks; wide changes go expand, migrate, contract. A journey spanning items is an example of the item that completes it | `plan.md` | INT-12 |
 | **Neutral research.** An analyst packet asks how things work now, never states the desired answer. Every claim carries evidence or says unknown; "looked at X, nothing matched" is an answer | analyst contract | AGT-11 |
@@ -564,14 +574,18 @@ runVerb(verb, rawInput, frontEnd):
   with store.transaction() as tx:                           # lock (7.3)
     tx.consumeObserved(); tx.recover()                      # hook events (4.7); effects (7.4)
     checkEnvelope(tx.state, input)                          # 6.4
-    plan = verb.run(ports, tx.state, input)                 # pure: next state, effects, response
+    plan = verb.run(ports, tx.state, input)                 # pure: next state, effects, a provisional response
     for e in plan.inLockEffects: effects.perform(tx, e)     # file and Git-plumbing effects only
     tx.publish(plan.state)
+  response = plan.response                                  # stands only if there is nothing left to observe
   for job in plan.external:                                 # anything that spawns a process: checks,
     result = runner.execute(job)                            # commits with hooks, installs, remote actions
-    with store.transaction() as tx: tx.finalize(job.id, result)   # guarded; discarded if superseded (7.3)
-  log.call(...); return render(plan.response)
+    with store.transaction() as tx: response = tx.finalize(job.id, result)   # rebuilds the response from the
+  log.call(...); return render(response)                    # observed result; guarded, discarded if superseded (7.3)
 ```
+
+**The response is never older than the facts it reports.** `plan.response` from the pure step is provisional the moment `plan.external` is non-empty — it is what the response would say if every job below succeeds exactly as expected, never what is actually returned. `tx.finalize` does not merely update state; it **re-derives the response** (verdict, receipts, `Result.label`, completed/uncertain effects) from the job's observed outcome, because that is the only response allowed to leave the process. A verb with no external jobs (most read/decide calls) returns `plan.response` unchanged, which is why the common case stays cheap. **Test:** a `check` or `finish` whose external job fails, times out, or is superseded by `stop cancel` must never render the passing response the pure step provisionally drafted.
+
 
 Verb modules contain only their own logic. A front-end translates its transport into `runVerb`, so front-ends cannot diverge. **Dependency rules** (lint): `core/` imports no adapter and does no I/O; front-ends hold no verdict, authority or budget logic; adapters normalize observations and never decide acceptance; recipes and traits declare obligations and never bypass rules; only `core/verdict` produces an endpoint and only `core/budget` changes a counter.
 
@@ -623,7 +637,7 @@ Class: M mutating, R read-only, S stateless; C may run checks (obligation timeou
 |---|---|---|---|
 | `open <profile>` | M | Routine | Create or resume a contract: readiness, assistance level, floors, dirty-tree inventory, routine grant, reconciliation, ownership where editing, a new generation; a shadow snapshot for non-Git prototypes |
 | `review` | S | Routine | Review-only manifest, rubric and finding scaffold |
-| `decide` | M | Consequential | Record user decisions and content proposals (below) |
+| `decide` | M | Routine or Consequential, by kind (§4.6, A14) | Record user decisions and content proposals (below) |
 | `check [--stage baseline\|candidate\|integrated\|committed] [--targeted] [--touched …] [--import-ci]` | M, C | Routine | Inventory, obligation runs, receipt validation, counters, attention, automatic locking; builds the review or recheck manifest when review is next (§8.7) |
 | `packet <role> [--retry]` | M or R | Routine | Analyst packet; reviewer packet for split coverage, an expired run directory or a dispatch retry; handoff or resume packet (read-only) |
 | `findings` | M | Routine | Record a review or analyst result; finding transitions; settle the reservation |
@@ -858,6 +872,7 @@ Several candidate commits, missing reflog history or any other mismatch is *unre
 - A block changed outside Tenet needs acceptance through a diff, which increments the intent revision; the kernel never classifies prose changes as tightening (PRD Section 5.6).
 - Kernel-written blocks and decision records join the contract's Tenet file set and are committed with the work. If `INTENT.md` was human-dirty at the start, one question per contract settles whether Tenet may write its blocks.
 - **Adoption into existing files** changes only the owned region: every other byte and the line endings stay identical; repeating adoption is a no-op; the approval binds to the exact previewed content, so an edit after the preview asks again.
+- **Adopted intent follows the branch, like any other committed file (PH0-4).** `project.intent` is never trusted across a branch switch without re-verification: `open`'s reconciliation step re-reads `INTENT.md` from the currently checked-out branch and compares its hash against the one `state` last parsed, every time, the same comparison already used for any other externally-edited accepted fact (trust comparison, §8.5). A hash match skips re-parsing; a mismatch — including the common case of switching to a branch whose `INTENT.md` diverged — is handled as an ordinary external edit: a diff preview, never a silent carry-over, and never a reconciliation engine beyond the trust-comparison path that already exists for this exact situation. No grant or decision from the prior branch's contract transfers; a contract is scoped to the generation it opened under (§7.3), so a divergent branch's work is simply a different, unrelated contract, not a merge to resolve in the kernel.
 - Past about 8,000 tokens, Tenet proposes splitting into `docs/intent/<area>.md` with an index.
 
 **Impact (INT-08):** `inspect impact <ids>` and every `decide {propose: basis | plan}` preview call one pure `impact(state, ids)`, which follows existing links (plan-item element IDs, `verifiedBy`, decision links, `@tenet` test tags, active contracts' element IDs) and returns affected requirements, examples, plan items, tests, decisions and in-flight work.
@@ -977,7 +992,7 @@ function verdict(i: VerdictInput): Verdict {
 - **Review eligibility comes from evidence and dispositions,** not axis labels. Blocking: a missing required review; a status other than `completed`; reduced independence where independence is required; partial coverage; a chain that does not reach the current candidate and basis (`review-stale`, §8.7); an open blocker; an undisposed major; an undisposed attention item; an open basis gap. Not blocking: a major the user accepted as a risk; the Reviewer's `fail` stays visible and is never edited.
 - **Sampled callers** count as covered only when the Reviewer marked the change as not observable by callers (`semantic: false`) **and** a passing full `types` receipt exists for the candidate; then compilation proves every caller still fits the signature. Otherwise unopened callers are uncovered.
 - **Limitations, not blockers,** unless a required check makes them blocking: an unverified screen-reader journey narrows the accessibility claim (`accessibility-claim-narrowed`, QLT-03); unavailable advisory data is `audit-unavailable`.
-- **Separate dimensions:** endpoint, scope, coverage, controls, owner acceptance and integration are separate fields. Checks passed, automated review and owner acceptance are named as what they are; the structure axis is shown as the Reviewer's judgment of this change, never as maintainability established, and nothing implies a person read the code. When scope is not `committed`, it is part of the endpoint label ("checked-local (working tree, includes your uncommitted edits)").
+- **Separate dimensions:** endpoint, scope, coverage, controls, owner acceptance and integration are separate fields. Checks passed, automated review and owner acceptance are named as what they are; the structure axis is shown as the Reviewer's judgment of this change, never as maintainability established, and nothing implies a person read the code. When scope is not `committed`, it is named in the headline, never the caveat: "Checked locally (working tree), alongside your N uncommitted files"; the commit-without-your-files detail belongs in `Limits`, never the headline (UX Spec §4.2, A10).
 - **`finish` refuses to close** (`continue-required`, exit 2) while an introduced failure remains, attempts remain and no stop reason is set (PRD Section 4.5.2). **Owner acceptance** is recorded by `decide` and never removes a blocking reason (EVD-06).
 - **Tests:** one AC-27 fixture per PRD Section 4.5.2 row, plus properties: more fresh passing evidence never weakens the endpoint; removing evidence never strengthens it.
 
@@ -986,13 +1001,15 @@ function verdict(i: VerdictInput): Verdict {
 ```ts
 type Result = {
   outcome: string; endpoint: Endpoint; scope?: Scope; level: AssistanceLevel;
-  label: string;                    // UX Spec §4.1 headline, e.g. "Checked locally (`checked-local`), committed on <branch>"
+  label: string;                    // UX Spec §4.2 headline: activity-aware, e.g. "Checked locally (`checked-local`), committed on <branch>",
+                                    // "Built, not fully checked", "Built, a check fails", "Plan ready, no source changes", "Can't continue"
   reasons: Reason[]; stopReason?: StopReason;
   demo?: { run: string[]; steps: string[]; screenshots: string[] };           // RES-05; screenshots per 9.10
   readingGuide?: { judgment: GuideItem[]; sketch?: string; order: string[] };  // Standard and Deep
-  coverage?: Coverage; controls: Control[]; acceptance: Acceptance; integration: IntegrationState;
+  coverage?: Coverage; controls: Control[]; acceptance: Acceptance;
+  integration: { setting: "offer" | "auto-on-accept" | "never"; next?: "integrate" | "accept" };  // §10.4; UX Spec UX-D10
   usage: UsageReport;                                                           // 8.6
-  offers: Array<"adopt" | "integrate" | "fresh-chat">; handoff: string;
+  offer?: "adopt" | "reduce-approvals" | "share-settings" | "lesson"; handoff: string;  // UX Spec UX-D15: at most one, besides the next action; integrate is never an offer, it is the next action
 };
 ```
 
@@ -1013,7 +1030,7 @@ The rendered summary is at most about 10 lines; everything else is reached throu
 
 - **Resolution:** the five preference layers of PRD Section 7.4, most specific wins; restrictions (protected paths, exclusions, required checks, stricter dependency-policy values) are **unioned from every source, including shared files not yet adopted**; commands are chosen per check name and never discharge an obligation they are not equivalent to; floors and integrity rules always apply. Output `{value, sources, adoptionState, overridden, limits, effectsOnActiveWork}` is rendered by `inspect why`.
 - **Validation (CFG-11, PRD Section 7.7):** restriction-bearing sources (`tenet.policy.json` and the restriction keys of local configuration) are parsed **strictly**: an unknown or malformed key blocks dependent work with `restriction-key-unknown`, and the message names the nearest valid key. Personal preference files are parsed permissively: an unknown key is reported once and ignored. A mixed update yields a restriction-only revision plus a rejection (PRD Section 7.5).
-- **Where a spoken setting is saved** (UX Spec UX-D3): presentation settings (`style`, `checkpoints`, `resource_mode`) go to personal preferences in the user directory, or to the project's local configuration when the user says "here"; project facts (the other catalog settings) go to the project's local configuration (`state.config.local`) and apply at once. When `tenet.policy.json` is adopted, the response offers once to copy the change there; sharing is a `decide {propose: config}` diff of the policy file. Every saved change reports its home and how to undo it, and personal preferences never reach shared files (CFG-08).
+- **Spoken settings** (UX Spec §8, UX-D3; PRD Section 7.5): a plain request ("be brief") applies to the current task only; only "always …" or "… in this project" persists, without re-asking (CFG-07) and with the interpreted scope shown. Durable `style`, `checkpoints` and `resource_mode` go to personal preferences in the user directory, or to the project's local configuration when the user says "here"; the other catalog settings go to the project's local configuration (`state.config.local`) and apply at once. The `lane` setting is a default that never goes below the floor (§8.2). When `tenet.policy.json` is adopted, sharing is offered later through the result's offer queue, batched, as a `decide {propose: config}` diff of the policy file. Every durable change reports its home and how to undo it (undo restores the previous value), and personal preferences never reach shared files (CFG-08).
 - **Trust comparison** is automatic only for structurally comparable fields of `tenet.policy.json`: `protected_paths` and `exclusions` (superset or not), `required_checks` (obligations added or removed by ID), `dependency_policy` (field by field). Anything else (changed globs or populations, commands, `INTENT.md` blocks, the charter) needs acceptance through a diff; there is no implication solver.
 - **Mid-work changes:** presentation applies at once and invalidates nothing; restrictions apply before the next affected action; command or obligation changes invalidate dependent receipts; widening needs authority (PRD Section 7.6). A predicted path list is an estimate: a newly relevant file is not a scope change unless the user made the paths a constraint (PRD Section 5.3.2).
 
@@ -1067,7 +1084,7 @@ The Reviewer has a fresh context and the host's read, search and `usages` tools,
 **Basis confirmation (UX Spec UX-D1).** Each proposed element carries its `origin`, and the proposal says whether the sketch states a commitment (behavior, data, access, compatibility, an exported interface others consume, or an architecture constraint). `decide {propose: basis}` records the basis as confirmed from the request (capture `reported`, quoting the request) when every element is `origin: request` and the sketch states no commitment; otherwise it returns one `basis-confirm` question that lists Tenet's additions. An `origin: tenet` requirement stays an assumption until confirmed (INT-07). The origin labels are cooperative; seeded-misreading fixtures (AC-24) measure the residual.
 
 **Attention items** come from the adapter's pattern table (§9.5), matched after removing whitespace and folding case, and counted **net per hunk**: markers, suppressions, type escapes, mocks, empty catches and snapshot updates when the hunk adds more than it removes; assertion removals when it removes more than it adds; plus test-discovery configuration, CI files and dependency changes. A project may add patterns, never remove defaults (restrictions are unioned). `check` computes them in every lane and stores them on the contract.
-- **Markers** (skip and focus markers, lint and type suppressions, type escapes such as `as any` and `as unknown as`, empty catch handlers) are accepted only by a fresh-context review or by the user (`decide {request: disposition}`), never by a same-session pass, which cannot approve its own shortcut (SEC-10; `marker-unaccepted`).
+- **Markers** (skip and focus markers, lint and type suppressions, type escapes such as `as any` and `as unknown as`, empty catch handlers) are accepted only by a fresh-context review or by the user (`decide {request: disposition}`, asked in chat as risk acceptance, §11.4), never by a same-session pass, which cannot approve its own shortcut (SEC-10; `marker-unaccepted`).
 - Other items need any disposition, including from a same-session pass recorded through `findings`. In Quick, unaccepted markers reach the user as one batched question at `finish`.
 
 **Review rules:**
@@ -1075,7 +1092,7 @@ The Reviewer has a fresh context and the host's read, search and `usages` tools,
 - **Recheck mode:** the named findings plus **the complete diff since the last reviewed candidate**; the Reviewer covers the whole delta. If the delta touches files outside the findings' locations, adds or changes exports, or the basis hash changed, `buildManifest` produces a full review instead. Earlier uncovered parts stay uncovered.
 - **Review chain:** each settled review is a `ReviewLink`; a recheck extends the full review it is `basedOn`. The chain reaches a candidate only if every delta since the full review is covered and the contract's basis hash (its elements' content and the sketch) is unchanged; otherwise `review-stale`. Binding to the contract's own basis content, not the global intent revision, means an unrelated intent change never stales a review.
 - **Hooks that change files after review:** the hook's delta gets a recheck that does not count against the limit, because the hook caused it. There is no whitespace exemption: whitespace changes meaning in literals, regular expressions and indentation-sensitive files.
-- **Integration:** when the integrated tree equals the reviewed tree, the review stands; when the base moved, receipts rerun (§10.4) and, if the base's changes touch any path in the reviewed diff, the overlap gets a delta review through the same builder.
+- **Integration:** when the integrated tree equals the reviewed tree, the review stands; when the base moved, receipts rerun (§10.4) and, if the base's changes touch any path in the reviewed diff **or a file the host's repository map (§8.7 Investigation list, PA-3) shows is imported by a path in the reviewed diff**, the overlap gets a delta review through the same builder. The import check reuses the same `usages`-backed map the Investigation list already builds — no new call-graph engine, and no claim beyond this one candidate's disjoint-but-interacting files; it does not attempt general semantic closure over every indirect caller.
 - **Binding:** `findings` rejects a result whose manifest hash, reservation or attempt does not match a live reservation (`review-stale`).
 - **Budget:** at most 20,000 tokens of Tenet-injected context per assignment, **including** instructions and rubric (PRD Section 4.4.3); estimate bytes ÷ 3.5 for code, ÷ 4 for prose, plus 10%, calibrated in SP-02 (TQ-13). Packet limits bound Tenet's injection, not what the Reviewer reads or spends.
 - **Partial coverage (REV-08):** non-empty `uncovered` gives `review-partial-coverage`; the coordinator dispatches a follow-up with the uncovered list (same round, one more delegation) or narrows the increment; there is no whole-change verdict from partial coverage, and every full review states one cross-module interaction.
@@ -1303,8 +1320,8 @@ All Git calls go through `git-cli` with argument arrays, `GIT_TERMINAL_PROMPT=0`
 ### 10.4 Integration
 
 Normal Git operations only, never reference edits on a checked-out branch:
+- **Branch switch disclosed, never silent (UX Spec A12):** at `offer` (default), `finish` names "integrate" as the next action and the user's explicit "integrate" request is itself the disclosure, so `integrate` proceeds without a further question. At `auto-on-accept`, the branch switch is a consequence of **acceptance**, not of a separate word: `finish`'s result states it before the user can accept ("Accepting this will also integrate it into main, following your project's setting"), and `decide {accept}` runs this section immediately afterward; `integrate` never asks `branch-switch-needed` in this case because the user already saw the consequence before agreeing to it. At `never`, the result omits any integration mention and this section only runs on a later explicit "integrate". **The one case that still asks:** uncommitted human-dirty paths the switch would carry across, regardless of setting — `branch-switch-needed` is reserved for that, never for an ordinary clean switch the user already requested or was warned about.
 - **Conflicts predicted first:** `git merge-tree --write-tree --name-only -z <base> <work>` (Git 2.38+; writes objects only) runs before anything else; predicted conflicts return `integration-conflict` (exit 3) with the paths, so the editor never leaves the work branch first. With older Git the prediction is skipped and a conflict stops after the switch.
-- **Branch switch disclosed:** the editor follows HEAD, so `integrate` asks `branch-switch-needed` unless the `integration` setting is `auto-on-accept`.
 - **Fast-forward:** `git switch <base>` (Git refuses on conflicting local changes or a base checked out elsewhere; both reported), then `git merge --ff-only <work>`; the tree is unchanged, so receipts and review stand.
 - **Base moved:** `git merge` in the project's convention (merge commit, or rebase then fast-forward for linear history), only when no human-dirty path is involved; conflicts stop with a question. The integrated tree is a new candidate: `check --stage integrated` runs before it is described as checked, and review follows §8.7's integration rule.
 
@@ -1371,7 +1388,7 @@ zod validation with size and depth limits; no `eval`, `Function`, `vm` or dynami
 
 - **Binding:** every answer binds to its question's `factsHash` (§6.6); changed facts ask again, unrelated changes never do.
 - **Capture:** command-line decisions are `reported` (cooperative); MCP elicitation is `elicited` only if SP-12 shows the kernel receives the answer; grants record which. A golden-task trap calls `decide` with a quote never said in the conversation to measure the residual.
-- **Authority questions go to chat.** Questions about widening scope, remote actions, destructive actions, risk acceptance and owner acceptance have `channel: chat`: the coordinator asks in plain chat and ends its turn, because Autopilot answers native blocking questions automatically [SPIKE: SP-12, TQ-17]. Autopilot cannot be detected; the README states that under it every decision record is unverifiable, and `controls[]` labels capture accordingly.
+- **Authority questions go to chat.** Questions about widening scope, protected paths, remote actions, destructive actions, risk acceptance (including accepting a shortcut, §8.7), an envelope that may send project content out, and owner acceptance have `channel: chat`: the coordinator asks in plain chat and ends its turn, because Autopilot answers native blocking questions automatically [SPIKE: SP-12, TQ-17]. Autopilot cannot be detected; the README states that under it every decision record is unverifiable, and `controls[]` labels capture accordingly.
 - **Approval mode** is recorded only from a reliable host signal, never inferred from prompts or a Git linked worktree; none is documented, so it stays `unknown`. When the mode is auto-approve or unknown, remote mutation, project-content egress and destructive actions get a chat question first (SEC-13, `approval-gate`). The approval snippet and MCP grouping make the host gate consequential verbs in Manual mode (§4.6).
 - **Containment** is recorded separately, never inferred from the approval mode; a denied write outside the workspace is recorded literally (`outside-write-denied`), never as a named sandbox.
 - **Spending (RSC-03):** the kernel never calls billing, purchase or routing interfaces and never changes the model, effort or billing route. On a host usage limit the coordinator records `stop pause` with `host-limit` (the handoff is already current) and never suggests overage, another account or a paid route.
@@ -1420,9 +1437,10 @@ Versions are pinned in the recipe lockfile at approval and refreshed monthly (QL
 
 1. `open feature` on an empty folder: L4 for the starter; the init choice is asked (GIT-01).
 2. `decide` records the basis and the first increment's plan.
-3. The kernel writes the template (an effect), substituting the project name.
-4. **Install,** one consented effect: the template's lockfile is verified at each recipe release (§9.11), so M0 installs only that pinned lockfile (`npm ci --ignore-scripts`, then the approved `npm rebuild better-sqlite3`); the Playwright browser installs at the first `e2e` obligation, only if absent.
-5. `check` runs the template's tests, lint and types; the scaffold is committed through §10.3; the first plan item follows the Standard lane.
+3. **The kernel writes the template** (an effect), substituting the project name — **the platform layer only**: `platform/` (config, db, migrate, backup, auth, session, errors, logging, health), the security decisions of §12.4, the migration runner, and build/CI/lint configuration. This is vetted, pinned recipe content, not something rebuilt per project, so it ships complete in this one effect rather than being assembled incrementally — the same reasoning that already pins the lockfile applies to pinning this code. **Feature content does not ship here:** `features/<f>/` starts empty; the first plan item's own build step is what populates the first feature, so the first thing you actually read is the smallest slice you asked for, not a platform you didn't request yet. `docs/hardening.md` starts with only what the platform layer itself needs disclosed (synthetic credentials, localhost-only exposure); it grows per feature as §12.4-equivalent decisions are made for each one.
+4. `decide` also proposes a **starter-specific `protected_paths` default** — `server/src/platform/auth/*`, `server/src/platform/session/*`, `server/migrations/*` — shown as part of the same kickoff preview, not a separate question; declining it leaves `protected_paths` at the general empty default (PRD Section 7.3).
+5. **Install,** one consented effect: the template's lockfile is verified at each recipe release (§9.11), so M0 installs only that pinned lockfile (`npm ci --ignore-scripts`, then the approved `npm rebuild better-sqlite3`); the Playwright browser installs at the first `e2e` obligation, only if absent.
+6. `check` runs the template's tests, lint and types; the scaffold is committed through §10.3; the first plan item follows the Standard lane.
 
 ### 12.3 Project layout and boundaries
 
@@ -1479,7 +1497,7 @@ Data hooks expose `loading`, `empty`, `error`, `denied`, `conflict` and `success
 | Screen-reader check | `a11y-manual` | manual | `manual-affected` |
 
 - **Screen reader:** VoiceOver with Safari over each changed critical journey (sign in, browse, reserve, return, admin overview) and its states; the observer records pass or fail per step in `docs/a11y-checks.md`, recorded by `decide` as a manual receipt (QLT-03). Release qualification covers every critical journey.
-- **Workload:** seed the PRD Section 5.16 data; build, then start the production API; 30 seconds of warm-up then 2 minutes; 20 concurrent clients in a 70/20/10 mix of list, reserve and return; concurrent sign-ins at the configured hashing limit; a 5-way same-item burst every 10 seconds; at least 5,000 samples; data reset to the seed before every run. It reports p50, p95, p99, error rates, peak RSS and event-loop delay, passes when the PRD targets hold with zero double bookings, and reports trends across changes (QLT-05).
+- **Workload:** seed the PRD Section 5.16 data; build, then start the production API; 30 seconds of warm-up then 2 minutes; 20 concurrent clients in a 70/20/10 mix of list, reserve and return; concurrent sign-ins at the configured hashing limit; a 5-way same-item burst every 10 seconds; at least 5,000 samples; data reset to the seed before every run. It reports p50, p95, p99, error rates, peak RSS and event-loop delay, passes when the PRD targets hold with zero double bookings, and reports trends across changes (QLT-05). **Each fitness function declares its own degradation threshold** (e.g. p95 regresses by more than 20% across 3 consecutive checks); crossing it raises `fitness-trend-degraded` as an attention item needing a disposition, the same as any other finding — a slow decline across several individually-passing changes stops being purely informational once it's named.
 
 ### 12.8 Hardening inventory and licensing
 
@@ -1847,6 +1865,7 @@ Each row names the alternative it beat (§0.5); the mechanism itself lives in th
 | TD-41 | Maintainability measured across successive changes as diagnostics (§17.5) | A maintainability judge or score; fitness-trend escalation now | Passing tests do not show the next change stays cheap; escalation waits for evidence of which trend predicts trouble |
 | TD-42 | Delegations counted per dispatch; reservations as capacity holds; retries with attempt numbers (§8.6) | Counting reservations; uncounted re-dispatches | Matches the PRD's definition; a late result cannot settle the wrong attempt |
 | TD-43 | One assistance-level function of readiness probes (§8.2) | Per-verb capability checks | One place states what Tenet may attempt and why |
+| TD-44 | `decide`'s approval class set per kind, not per verb; propose and answer combined in one call when both are already known (§4.6) | A new `answer` verb; always two calls for one confirmation | Matches each kind's actual authority; removes duplicate approvals without loosening any grant |
 
 ### 20.2 PRD amendments
 
@@ -2071,7 +2090,7 @@ Every PRD requirement maps to the sections that implement it; release, priority 
 
 ## Appendix B. PRD Section 11.4 obligations index
 
-Record formats and schemas (7.2, 7.7); Ownership and concurrency (7.3, 15.1); Candidate identity (8.8, 9.4); Lock manifest (9.7); Git staging (10.1–10.3); Branch-safe IDs (7.9); Existing artifacts (7.5, 7.8); Filesystem boundaries (11.2); Execution envelopes (9.3); Process lifetime (9.3, 15.1); Package management (9.5, 9.11); Test isolation (9.3, 12.5); Adapter interfaces and parsers (9.5, 9.6, 13); Repository map (8.7 (host language services; PA-3)); Helper packaging (3.2, 4.5); Evidence storage (7.1, 7.6, 9.3); Trace storage (16); Configuration file (7.8, 8.5); Capability descriptor (4.4); Evaluation infrastructure (17); Starter application (12); Accessibility (12.6, 12.7 (UX Spec for Tenet's own interactions)); Localization (UX Spec); Command syntax and wording (UX Spec (working names: 4.3)); Contract and result presentation (UX Spec (data: 6.6, 8.3)); Example confirmation (UX Spec (records: 6.5 `decide`)); Risky choices (UX Spec (questions: 6.6, 11.4)); Findings and evidence inspection (UX Spec (data: 5.4)); Research data (Evaluation owner (PRD Section 6.7)).
+Record formats and schemas (7.2, 7.7); Ownership and concurrency (7.3, 15.1); Candidate identity (8.8, 9.4); Lock manifest (9.7); Git staging (10.1–10.3); Branch-safe IDs (7.9); Existing artifacts (7.5, 7.8); Filesystem boundaries (11.2); Execution envelopes (9.3); Process lifetime (9.3, 15.1); Package management (9.5, 9.11); Test isolation (9.3, 12.5); Adapter interfaces and parsers (9.5, 9.6, 13); Repository map (8.7 (host language services; PA-3)); Helper packaging (3.2, 4.5); Evidence storage (7.1, 7.6, 9.3); Trace storage (16); Configuration file (7.8, 8.5); Capability descriptor (4.4); Evaluation infrastructure (17); Starter application (12); Accessibility (12.6, 12.7; UX Spec §13.1 for Tenet's own interactions); Localization (UX Spec §13.2); Command syntax and wording (UX Spec §3.2, §4; 4.3); Contract and result presentation (UX Spec §5.1, §5.4; data: 6.6, 8.3); Example confirmation (UX Spec §5.1; records: 6.5 `decide`, 8.7); Risky choices (UX Spec §5.2; questions: 6.6, 11.4); Findings and evidence inspection (UX Spec §5.4; data: 5.4); Research data (UX Spec §14.3 with the evaluation owner, PRD Section 6.7).
 
 ## Appendix C. Reason codes
 
@@ -2095,6 +2114,7 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `test-alongside` | 0 | A test-alongside approach with a negative control was used (note) |
 |  | `accessibility-claim-narrowed` | 0 | A changed critical journey lacks a screen-reader check (note) |
 |  | `audit-unavailable` | 0 | Advisory data was unavailable (note unless required) |
+|  | `fitness-trend-degraded` | 0 | A fitness function crossed its declared degradation threshold across consecutive checks (attention item) |
 |  | `integration-unvalidated` | 0 | Integrated tree not rechecked |
 |  | `dependency-unverified` | 0 | A dependency change no verification explains |
 |  | `locked-test-changed` | 0 | Locked file changed without disposition |

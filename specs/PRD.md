@@ -1,6 +1,6 @@
 # Tenet - Product Requirements Document
 
-> v0.16 | October 15, 2026 | Approved for design (owner sign-off recorded, Section 8.4); implementation design in [`specs/tech-spec.md`](tech-spec.md)
+> v0.17 | October 18, 2026 | Approved for design (owner sign-off recorded, Section 8.4); implementation design in [`specs/tech-spec.md`](tech-spec.md); presentation and wording in [`specs/ux-spec.md`](ux-spec.md)
 
 ## 0. About this document
 
@@ -393,6 +393,8 @@ Before adoption, durable memory stays in `.tenet/`. At the end of the first succ
 
 ### 3.3 Core artifacts users see
 
+The data categories below are normative; their exact wording, rendering and interaction order are owned by the [UX Spec](ux-spec.md), which supersedes the illustrative phrasing in this section.
+
 **Work contract** (shown concisely before Standard or Deep implementation; recorded for every implementation; values are examples):
 
 ```text
@@ -414,15 +416,15 @@ Endpoint   checked-local · assistance level L4
 **Result report:**
 
 ```text
-Done: overdue reminders work locally (checked-local).
+Overdue reminders: Checked locally (checked-local), committed on tenet/w-0007.
 Try it: npm run dev → sign in with the development account printed at startup → Dashboard.
 
 Checked   EX-012-q7k.1 failed on baseline, passes on candidate
           EX-012-q7k.2, .3 and the privacy invariant pass on baseline and candidate (as expected)
           Full suite 148 pass · lint clean · types clean · e2e dashboard pass (receipts in /tenet status)
-Review    Fresh-context reviewer. Behavior ✓ Structure ✓. FND-1 (major) fixed and verified; FND-2 (minor) deferred
+Review    Fresh-context reviewer. Behavior pass, structure pass. FND-1 (major) fixed and verified; FND-2 (minor) deferred
 Limits    Timezone follows accepted assumption ASM-014-c9t
-Next      Integrate into main? · "what's next?" shows plan item PLN-004-h2v
+Next      Say "integrate" to merge into main, or "accept" to keep it on tenet/w-0007 · "what's next?" shows plan item PLN-004-h2v
 ```
 
 **Status:** current work and lifecycle state, plan progress, last valid phase, evidence freshness, open findings with severity, effect records not yet observed, budgets used and remaining, assistance level, next action.
@@ -442,57 +444,57 @@ Next      Integrate into main? · "what's next?" shows plan item PLN-004-h2v
 
 ### 3.5 Example sessions
 
+Illustrative only; exact wording and interaction order follow the [UX Spec](ux-spec.md).
+
 **J-02: new application (Balanced style, technical builder).**
 
 ```text
 User   /tenet I lend out lab equipment and track it in a spreadsheet. Build a small app
        so people can see what's available and I know who has what.
 Tenet  Assistance level L4 (TypeScript starter). This folder has no Git repository.
-       Initialize one so every step can be undone? [Initialize] [Read-only] [Prototype]
-User   Initialize
-Tenet  Plan (edit freely):
-       PLN-001 Items and availability · PLN-002 Reservations · PLN-003 Returns · PLN-004 Reminders
-       Three choices change PLN-001/002 — my recommendation first:
+       Version control: 1. Start Git here, so every commit is a checkpoint (recommended)
+       2. No Git: a prototype, not a checked result
+       Plan: 1. Items and availability · 2. Reservations · 3. Returns · 4. Reminders.
+       Two choices for step 1 (my picks first):
        1. Overlapping reservations for one item? (Recommend: refused)
        2. Who sees borrower names? (Recommend: only the admin)
-       3. When is a loan returned? (Recommend: when the admin marks it)
-User   1 refused, 2 admin only, 3 yes
-Tenet  Acceptance basis for PLN-002:
-       • Ana reserves Microscope A Mon–Wed; Ben asks for Tue → refused, next free date shown
-       • Ben asks for Thu → accepted
-       • Two simultaneous requests for Tue → exactly one succeeds   (invariant)
-       • A borrower never sees other borrowers' names              (invariant)
-       Not in scope: email reminders, multiple admins. Confirm?
-User   Confirm.
-Tenet  ... Done (checked-local). Try it: npm run dev → http://127.0.0.1:5173.
-       Development account and password are printed at startup (local use only, see docs/hardening.md).
-       Save the app's purpose, plan and decisions as files in the project? [Preview]
+       Step 1 is done when: Ana reserves Microscope A Mon–Wed; Ben asks for Tue → refused,
+       next free date shown; Ben asks for Thu → accepted; a borrower never sees other
+       borrowers' names (invariant). Not in scope yet: email reminders, multiple admins.
+       Reply "ok" to accept my picks (including Git), or change anything.
+User   Ok.
+Tenet  Items and availability: Checked locally (checked-local), committed on tenet/w-0001.
+       Try it: npm run dev → http://127.0.0.1:5173. Development account and password are
+       printed at startup (local use only, see docs/hardening.md).
+       Save the app's purpose, plan and decisions as files in the project? (preview first)
 ```
 
 **J-03: brownfield bug (Concise style).**
 
 ```text
 User   /tenet Bug: the CSV export drops rows whose notes contain a newline.
-Tenet  L4 · Quick. Working tree has 2 unrelated modified files; leaving them untouched.
-       Repro export.test.ts "notes with newline": fails on main (2 of 3 rows).
-       Cause csv/writer.ts:41 naive split → use existing csv-stringify. No API change.
-Tenet  checked-local · branch tenet/w-0021-csv-newlines · 1 commit (your 2 files not included)
-       Repro fail→pass · suite 412 pass · lint, types clean · focused review ✓ (no findings)
-       Pre-existing, unchanged: 2 flaky e2e tests in upload.spec.ts (not in this contract's scope)
-       Integrate into main?
+Tenet  L4 · small, contained fix. I'll reproduce it, then repair it with the project's
+       existing tools. Your 2 edited files stay out of this.
+Tenet  CSV newlines: Checked locally (checked-local), alongside your 2 uncommitted files.
+       Evidence: reproduction failed before and passes now · suite 412 pass · lint, types
+       clean · focused review found nothing.
+       Limits: committed on tenet/w-0021 without your 2 files; the commit alone wasn't re-checked.
+       Unchanged and outside this fix: 2 flaky e2e tests in upload.spec.ts.
+       Say "integrate" to merge into main, or "accept" to keep it on tenet/w-0021.
 ```
 
 **J-04: review, then targeted fixes.**
 
 ```text
 User   /tenet review the auth changes on this branch
-Tenet  Read-only review of 14 files at abc123 · no files written · no commands run.
-       FND-1 blocker  Session token not rotated after password change (auth/session.ts:88)
-       FND-2 major    No rate limit on /login
-       FND-3 minor    Duplicate validation helper (lib/validate.ts already provides it)
-       FND-4 major    Test "rejects expired token" asserts nothing (auth.test.ts:120)
+Tenet  Review complete, no project changes (findings-only) · 14 files at abc123 · nothing
+       written, no project checks or scripts run.
+       1. Blocker: session token not rotated after password change (auth/session.ts:88)
+       2. Major: no rate limit on /login
+       3. Minor: duplicate validation helper (lib/validate.ts already provides it)
+       4. Major: test "rejects expired token" asserts nothing (auth.test.ts:120)
 User   fix 1 and 4
-Tenet  Implementing FND-1 and FND-4 only (Standard). FND-2 and FND-3 stay open. ...
+Tenet  Implementing findings 1 and 4 only (Standard). Findings 2 and 3 stay open. ...
 ```
 
 ### 3.6 Experience model
@@ -975,7 +977,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 | QLT-02 | The starter shall meet its published list of applicable OWASP ASVS 5.0 Level 1 requirements, each with a verification method (automated, behavioral test or manual review), non-applicability reasons and results; scans alone shall not be presented as ASVS conformance. | Must | R1 | AC-20 |
 | QLT-03 | The starter UI shall meet WCAG 2.2 AA on its declared critical journeys and their states, verified by automated, keyboard and screen-reader checks; claims shall name the journeys covered. | Must | R1 | AC-20 |
 | QLT-04 | The starter shall include structured logging with redaction, a health endpoint and consistent non-leaking error responses. | Must | R1 | AC-20 |
-| QLT-05 | Each application recipe shall declare a reference workload and fitness functions (Section 5.16); checks shall report trends across changes without claiming whole-application conformance from changed flows. | Must | R1 | AC-19, AC-20 |
+| QLT-05 | Each application recipe shall declare a reference workload and fitness functions (Section 5.16); checks shall report trends across changes without claiming whole-application conformance from changed flows, and a trend crossing its declared degradation threshold across consecutive checks shall raise an attention item rather than only appear in a report. | Must | R1 | AC-19, AC-20 |
 | QLT-06 | Tenet shall apply the obligations contributed by the project's and the change's traits (Section 3.8.4). | Must | B | AC-20 |
 | QLT-07 | Schema changes shall include a migration tested against prior-version fixture data and, where user data exists, a consistent backup through a supported mechanism with a tested restore; Tenet shall never reset data to make tests pass. | Must | R1 | AC-20 |
 | QLT-08 | As part of handover, Tenet shall keep README run instructions, decision records, the architecture doc and CHANGELOG current. | Should | R1 | AC-20 |
@@ -2001,7 +2003,7 @@ Language, geographic and organizational coverage beyond the R1 cohort is future 
 
 Each experiment records:
 - hypothesis;
-- one bounded editable surface (a prompt, review method, test recipe, rule or role-model assignment);
+- one bounded editable surface (a prompt, review method, test recipe, rule, role-model assignment, or a default configuration value or threshold — e.g. a budget cap, a lane-floor sensitivity, a catalog default such as `dependency_policy`);
 - baseline and candidate configurations;
 - observed host and model versions;
 - frozen objective and quality floors;
@@ -2112,7 +2114,7 @@ Restrictions found in any source are applied before affected reads, even while t
 | 9 | `required_checks` | List of check obligations (property, test population, configuration, tool, pass criteria, permitted alternatives) | Recipe defaults | project (shared) | Project commitment | A command mapped to an obligation discharges it only if it meets the obligation; renaming or remapping never does. A missing required check blocks checked-local |
 | 10 | `protected_paths` | List of workspace-relative path patterns | Empty | project (shared) | Project commitment | Union of restrictions across scopes (the writable area is the intersection of what every scope allows); writes inside need per-task authority |
 | 11 | `exclusions` | List of `{pattern, kinds}`, kinds ⊆ {no-model-send, no-read, no-edit, no-export, no-routine-scan} | The Section 5.10.2 defaults | user, project | Data restriction | Union of restrictions; incompatible work is blocked |
-| 12 | `dependency_policy` | `{min_release_age_days: integer ≥ 0, urgent_exception: allow \| require-approval \| deny, unknown_age: allow \| require-approval \| deny}` | `{0, allow, allow}` | project (shared) | Project commitment | Fieldwise strictest across scopes (Section 7.4) |
+| 12 | `dependency_policy` | `{min_release_age_days: integer ≥ 0, urgent_exception: allow \| require-approval \| deny, unknown_age: allow \| require-approval \| deny}` | `{0, allow, require-approval}` | project (shared) | Project commitment | Fieldwise strictest across scopes (Section 7.4). The default asks before installing a package whose publish date can't be determined at all, rather than silently allowing it; a project may loosen this explicitly |
 
 **Null and zero semantics:**
 - An absent value inherits.
@@ -2808,3 +2810,7 @@ This appendix records where review input went. It is not binding: every adopted 
   - Efficiency targets and plan guidance move from premium requests to AI credits per accepted outcome, with failed and cancelled runs included (Sections 1.6, 2.2, 6.4).
   - The always-loaded budget counts tool schemas and the charter, and coordinator instructions get their own budget (Section 4.4.3).
   - RSC-01 permits a disclosed, declinable economy model for the read-only researcher role once qualified.
+- **v0.17:** applies the owner's walkthrough-review decisions of October 18, surfaced while tracing the full install-to-operate user journey against Tech Spec v1.2.
+  - QLT-05's workload trend reporting now escalates: a fitness function crossing its declared degradation threshold across consecutive checks raises an attention item rather than only appearing in a report (Section 4.3, `fitness-trend-degraded`).
+  - `dependency_policy`'s default for `unknown_age` tightens from `allow` to `require-approval` (Section 7.3): a package whose publish date can't be determined no longer installs silently by default.
+  - The maintainer experiment protocol's bounded editable surface explicitly names default configuration values and thresholds as their own category, not merely implied under "a rule" (Section 6.10.1).
