@@ -105,7 +105,8 @@ export function lintPayload(root: string): string[] {
       } catch (e) { bad(f, `"${line}": ${(e as Error).message}`); }
     }
     for (const m of text.matchAll(/resources\/([\w.-]+\.md)/g)) {
-      const dir = skill ? `skills/${skill}` : "";
+      const owner = /^skills\/([^/]+)\//.exec(rel)?.[1];
+      const dir = owner ? `skills/${owner}` : "";
       if (!existsSync(join(root, dir, "resources", m[1]!))) bad(f, `resource ${m[0]} does not exist`);
     }
   }

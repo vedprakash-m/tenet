@@ -27,8 +27,8 @@ Every element has an `origin`: `request` only when it is literally in the user's
 ## Before drafting
 State your assumptions. If the request has several readings, list them with a recommendation instead of choosing silently. If a simpler approach than the one asked for exists, say so. For a change to existing code, name what else it touches (callers, stored data, rendered text, tests) in the kickoff.
 
-## New project
-After purpose, users, scope and constraints, if the project's instruction file has no content of its own, offer the draft in `resources/conventions-draft.md` once, as a preview. Record the project's checks (test command, thresholds) and its authoritative documents there so later work starts with them.
+## Starting a project
+For a new project or the first Standard-or-deeper change in code you have not worked in, follow `resources/onboarding.md`: run `tenet inspect doctor`, then the greenfield or brownfield flow. The instruction-file draft in `resources/conventions-draft.md` is offered once, as a preview, only when the loaded file has no content of its own.
 
 ## Rules
 - A thin answer on purpose, users or a non-goal gets one concrete follow-up before a plan is drafted, never a second round.

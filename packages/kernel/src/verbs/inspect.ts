@@ -38,7 +38,8 @@ function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>)
     { name: "commit hooks", ok: true, detail: probe.hooks ? "present; commits need your consent once" : "none" },
   ];
   const { level, why } = assistanceLevel(readinessOf(ports, probe), "feature");
-  return { checks, level, ...(why ? { why } : {}), ok: checks.every((c) => c.ok) };
+  const detected = { language: d.language, typescript: d.typescript, packageManager: d.packageManager, runner: d.runner ?? null, depsInstalled: d.depsInstalled, hooks: !!probe.hooks, git: probe.isRepo };
+  return { checks, detected, level, ...(why ? { why } : {}), ok: checks.every((c) => c.ok) };
 }
 
 const statusOf = (st: State | null) => ({

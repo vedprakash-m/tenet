@@ -273,7 +273,8 @@ describe("review-only and read-only calls write nothing to the project", () => {
     const manifest = JSON.parse(readFileSync(d(r).manifest, "utf8"));
     assert.ok(manifest.attention.some((a: { pattern: string }) => a.pattern === "@ts-ignore"));
     await p.call("inspect", { view: "status" });
-    await p.call("inspect", { view: "doctor" });
+    const doc = await p.call("inspect", { view: "doctor" });
+    assert.deepEqual((doc.data as any).detected, { language: "ts-js", typescript: true, packageManager: "unknown", runner: "vitest", depsInstalled: true, hooks: false, git: true });
     await p.call("inspect", { view: "help" });
     assert.deepEqual({ ls: listFiles(p.root), status: p.git("status", "--porcelain"), objects: p.git("count-objects", "-v") }, before);
   });
