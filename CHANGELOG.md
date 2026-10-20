@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-20 — Starter: backup before migrating, byte-wise secret comparison (`✅` T1; review plan A3b)
+
+**Changed.** The starter takes a verified backup beside its database file before it applies a migration to a database that already holds data (it only happened if the caller passed a path, and the real start path never did). Secrets are compared by bytes through one `safeEqual`: a CSRF token with the same number of characters but different bytes was an unhandled error, and is now a 403. Not done: the restore tool, the UI shell and the first journey.
+
+**Files.** Starter `server/src/platform/{migrate,safe-equal}.ts`, `auth/csrf.ts`, `session/session.ts` and two starter test files.
+
+**Tests.** Two starter tests added (they run inside the kernel's starter suite: 24 tests); 573 kernel tests.
+
 ## 2026-10-20 — The starter reaches checked-local; declining a step (`✅` T1; review plan A2a, A3a)
 
 **Changed.** Unchanged files a recipe scaffold wrote no longer raise the lane (they were forcing Deep, which cannot be satisfied yet), so the starter scaffold ends `checked-local` and committed, with its tests, types and lint run by the kernel. `decide decline --target tests|review --quote <words>` records a declined mandatory step: the contract stops with reason `declined` and the result names the step, instead of `finish` answering `continue-required`. The tenet skill's steering table uses it.

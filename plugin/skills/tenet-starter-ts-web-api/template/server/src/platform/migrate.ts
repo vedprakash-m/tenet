@@ -1,5 +1,6 @@
 // Numbered, forward-only SQL migrations, one transaction each, recorded with a checksum. A failure rolls back and stops;
-// a changed checksum stops startup. A database that already holds data is backed up (and the copy verified) before migrating.
+// a changed checksum stops startup. A database that already holds data is backed up (and the copy verified) before migrating,
+// beside the file unless the caller says where.
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -28,6 +29,10 @@ function pending(files: Migration[], done: Map<string, string>, dir: string): Mi
   return files.filter((f) => !done.has(f.version));
 }
 
+/** Where the pre-migration copy goes when the caller names none: next to the database file; an in-memory database has none. */
+const beside = (db: Db, version: string): string | undefined =>
+  db.memory ? undefined : `${db.name}.before-${version.replace(/\.sql$/, "")}-${Date.now()}.bak`;
+
 export function migrate(db: Db, opts: MigrateOptions = {}): { applied: string[] } {
   db.exec("CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, checksum TEXT NOT NULL, applied_at INTEGER NOT NULL)");
   const dir = opts.dir ?? MIGRATIONS_DIR;
@@ -35,7 +40,8 @@ export function migrate(db: Db, opts: MigrateOptions = {}): { applied: string[] 
   const todo = pending(load(dir), done, dir);
   if (!todo.length) return { applied: [] };
 
-  if (done.size > 0 && opts.backupTo) backup(db, opts.backupTo);
+  const copy = opts.backupTo ?? beside(db, todo[0]!.version);
+  if (done.size > 0 && copy) backup(db, copy);
   for (const m of todo) {
     db.transaction(() => {
       db.exec(m.sql);

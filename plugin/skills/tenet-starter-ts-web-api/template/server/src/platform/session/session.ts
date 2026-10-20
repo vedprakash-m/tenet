@@ -1,7 +1,8 @@
 // Sessions: a 256-bit random ID in a signed, HttpOnly, SameSite=Lax cookie; rotated on sign-in; every session of a user
 // revoked on password change; 8-hour idle and 7-day absolute expiry; sign-out deletes the row; an invalid session is a 401.
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import type { Db } from "../db.ts";
+import { safeEqual as same } from "../safe-equal.ts";
 import { findUserById } from "../users.repository.ts";
 import type { UserRow } from "../users.repository.ts";
 import { deleteSession, findSession, insertSession, touchSession } from "./sessions.repository.ts";
@@ -12,7 +13,6 @@ export const IDLE_MS = 8 * 3600_000;
 export const ABSOLUTE_MS = 7 * 24 * 3600_000;
 
 const mac = (id: string, secret: string) => createHmac("sha256", secret).update(id).digest("base64url");
-const same = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 
 export const newToken = (): string => randomBytes(32).toString("hex");
 

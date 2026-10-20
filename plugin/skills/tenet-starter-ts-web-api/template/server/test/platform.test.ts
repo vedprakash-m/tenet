@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { hashPassword, verifyPassword } from "../src/platform/auth/passwords.ts";
 import { loadConfig } from "../src/platform/config.ts";
 import { ABSOLUTE_MS, IDLE_MS } from "../src/platform/session/session.ts";
+import { safeEqual } from "../src/platform/safe-equal.ts";
 import { PASSWORD, signIn, testApp } from "./helpers.ts";
 
 describe("sign-in and sessions", () => {
@@ -142,5 +143,17 @@ describe("errors, headers and health", () => {
     expect(loadConfig({ NODE_ENV: "test" }).host).toBe("127.0.0.1");
     expect(() => loadConfig({ NODE_ENV: "production" })).toThrow(/COOKIE_SECRET/);
     expect(loadConfig({ NODE_ENV: "production", COOKIE_SECRET: "x".repeat(32) }).env).toBe("production");
+  });
+});
+
+describe("comparing secrets", () => {
+  it("answers false for strings of equal length but different bytes, instead of throwing", async () => {
+    expect(safeEqual("é", "a")).toBe(false);
+    expect(safeEqual("abc", "abc")).toBe(true);
+    expect(safeEqual("abc", "abd")).toBe(false);
+    const { app } = await testApp();
+    const { sid } = await signIn(app);
+    const res = await app.inject({ method: "POST", url: "/api/auth/sign-out", cookies: { sid: sid! }, headers: { "x-csrf-token": "é".repeat(64) } });
+    expect(res.statusCode).toBe(403);
   });
 });

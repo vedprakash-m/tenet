@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -50,6 +50,25 @@ describe("migrations", () => {
     const b = openDb(copy);
     expect(b.prepare("SELECT x FROM a").all()).toEqual([{ x: 7 }]);
     expect(b.prepare("SELECT version FROM schema_migrations").all()).toEqual([{ version: "0001_a.sql" }]);
+  });
+
+  it("backs up an existing database next to it by default, before applying anything, and leaves an in-memory one alone", () => {
+    const dir = scratch(), file = join(dir, "app.db"), db = openDb(file);
+    sql(dir, "0001_a.sql", "CREATE TABLE a (x INTEGER);");
+    migrate(db, { dir });
+    expect(readdirSync(dir).filter((f) => f.endsWith(".bak"))).toEqual([]); // a new database has nothing to protect
+    db.prepare("INSERT INTO a VALUES (7)").run();
+    sql(dir, "0002_b.sql", "ALTER TABLE a ADD COLUMN y INTEGER;");
+    migrate(db, { dir });
+    const copies = readdirSync(dir).filter((f) => f.endsWith(".bak"));
+    expect(copies).toHaveLength(1);
+    const copy = openDb(join(dir, copies[0]!));
+    expect(copy.prepare("SELECT x FROM a").all()).toEqual([{ x: 7 }]);
+    expect(copy.prepare("SELECT version FROM schema_migrations").all()).toEqual([{ version: "0001_a.sql" }]);
+    const memory = openDb(":memory:");
+    sql(dir, "0003_c.sql", "CREATE TABLE c (x INTEGER);");
+    migrate(memory, { dir });
+    expect(() => migrate(memory, { dir })).not.toThrow();
   });
 
   it("refuses a backup whose schema version differs", () => {
