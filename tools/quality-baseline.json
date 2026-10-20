@@ -60,11 +60,6 @@
    "cc": 28,
    "nest": 2
   },
-  "decisions/dependency.ts#start": {
-   "lines": 78,
-   "cc": 27,
-   "nest": 3
-  },
   "decisions/simple.ts#run#3": {
    "lines": 48,
    "cc": 26,
@@ -110,7 +105,6 @@
   "core/verdict.ts": 18,
   "decisions/adopt.ts": 6,
   "decisions/decision-record.ts": 8,
-  "decisions/dependency.ts": 23,
   "decisions/grant.ts": 6,
   "decisions/index.ts": 1,
   "decisions/overview.ts": 1,
@@ -136,5 +130,5 @@
   "verbs/undo.ts": 5,
   "wire.ts": 2
  },
- "core": 191530
+ "core": 195349
 }
