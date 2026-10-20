@@ -23,7 +23,7 @@ describe("the lockfile diff [SEC-05]", () => {
   it("reports install-script evidence, a missing license and the source kind of each package", () => {
     const d = diffLockfile(null, lock({
       "node_modules/s": pkg("1.0.0", { hasInstallScript: true }),
-      "node_modules/g": { version: "1.0.0", resolved: "git+ssh://git@github.com/x/g.git#abc" },
+      "node_modules/g": { version: "1.0.0", resolved: "git+https://github.com/x/g.git#abc" },
       "node_modules/l": { link: true, resolved: "packages/l" },
       "node_modules/n": pkg("1.0.0", { license: undefined }),
     }));
