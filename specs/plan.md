@@ -279,7 +279,7 @@ Status: ✅ Implemented — CI run [39207795574](https://github.com/vedprakash-m
 - [x] Shadow Git repository for non-Git prototypes *(`.tenet/git`; `open prototype --no-git`; a snapshot at open and at every check; secrets, dependencies and build output excluded; over 20 MB refused; endpoint `prototype`; `prototype.test.ts`)* (build only after a real-repository commit works, per TD-26)
 - **Verification:** Git preservation fixtures with staged/unstaged human hunks, husky/lint-staged mutation fixtures, concurrent `index.lock` contention, a killed sync
 
-Status: ◐ In progress — implemented ✅ after the CI run below, apart from changes made since (shadow repository, `decide sync-index`, support locks; local `npm run ci` green, 183 tests, not yet in CI). (CI run [39207795574](https://github.com/vedprakash-m/tenet/actions/runs/39207795574) green on ubuntu and macOS at `b8c2114` (`npm run ci`, 177 tests, bundle also run on Node 22.12.0)). Not covered: a sync killed mid-way, husky and lint-staged themselves (equivalent hook scripts only), 100,000-file inventory.
+Status: ✅ Implemented — CI run [39363563698](https://github.com/vedprakash-m/tenet/actions/runs/39363563698) green on ubuntu and macOS at `da40ede` (196 tests). Includes the shadow repository, `decide sync-index` and support locks. Not covered: a sync killed mid-way, husky and lint-staged themselves (equivalent hook scripts only), 100,000-file inventory.
 
 ### 6.5 WP-04 — Runner, Vitest adapter, receipts
 
@@ -384,7 +384,7 @@ Status: ◐ In progress — the T1 half of the scenario passes in CI; the real-s
 - [ ] 10 public golden tasks authored, each with a seeded failure the loop must not hide
 - [ ] 6 formative UX sessions run (ux-spec §14.2: clear bug fix; ambiguous feature; review + selected fixes; interrupted task with conflicting human edits; temporary preference; status during active work) — tune skill copy from real evidence, not guesses
 
-Status: ◐ In progress — only §7.4 `undo` and `integrate` and the first setting are built, ahead of the Alpha gate, on the owner's instruction to continue. Everything else in this phase waits for the host spikes (front-end lock, golden tasks, UX sessions) or is not started.
+Status: ◐ In progress — `undo`, `integrate` and the first setting are ✅ implemented (CI run [39363563698](https://github.com/vedprakash-m/tenet/actions/runs/39363563698) green on ubuntu and macOS at `da40ede` (196 tests)), ahead of the Alpha gate, on the owner's instruction to continue. Everything else in this phase waits for the host spikes (front-end lock, golden tasks, UX sessions) or is not started.
 
 ---
 
@@ -592,9 +592,9 @@ Nothing on this list is a Must requirement — nothing else may be added to it w
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
 
-### 2026-10-19 — Prototypes, SP-06 observations, support locks, integrate and undo (local; not yet in CI)
+### 2026-10-19 — Prototypes, SP-06 observations, support locks, integrate and undo (CI green)
 
-Implemented and tested locally (`npm run ci`: 196 tests): the shadow repository for non-Git prototypes (`open prototype --no-git`; snapshots at open and every check; secrets and dependencies never copied; 20 MB refusal); `decide sync-index`; locks on support files and runner configuration; `integrate` (A12 as specified) and `undo`; the first typed setting (`integration`). SP-06 observations: 100,000 files inventory in about 350 ms; real husky 9 and lint-staged 16 leave a person's staged and unstaged edits untouched on the temporary index; a client killed while holding `.git/index.lock` leaves the index untouched. **Alpha work was started ahead of its gate** (M0 exit and SP-12 are not met) on the owner's instruction to continue; the plan phase table says so. Not committed yet, so nothing from this entry is `✅`.
+Implemented and tested locally (`npm run ci`: 196 tests): the shadow repository for non-Git prototypes (`open prototype --no-git`; snapshots at open and every check; secrets and dependencies never copied; 20 MB refusal); `decide sync-index`; locks on support files and runner configuration; `integrate` (A12 as specified) and `undo`; the first typed setting (`integration`). SP-06 observations: 100,000 files inventory in about 350 ms; real husky 9 and lint-staged 16 leave a person's staged and unstaged edits untouched on the temporary index; a client killed while holding `.git/index.lock` leaves the index untouched. **Alpha work was started ahead of its gate** (M0 exit and SP-12 are not met) on the owner's instruction to continue; the plan phase table says so. Committed as `5f7ee9a` and `da40ede` and pushed; CI run [39363563698](https://github.com/vedprakash-m/tenet/actions/runs/39363563698) green on ubuntu and macOS at `da40ede` (196 tests), so the items above are `✅` implemented (T1 only; nothing observed on the real host).
 
 Still blocked, unchanged: SP-08, SP-01, SP-12 and everything that depends on them. Decisions still open: the pipeline/verbs/decisions line budget (now 2,000 lines against 1,050), how a coordinator declares baseline scaffolding, the TS §6.4 amendment, and the bundle budget (581 of 600 KB).
 
