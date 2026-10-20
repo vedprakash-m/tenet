@@ -13,6 +13,29 @@ const safePath = (p: string) => !p.startsWith("/") && !p.split("/").includes("..
 
 type Proposed = z.infer<typeof BasisProposal>["elements"][number];
 
+/** The highest example number already used under each requirement, not counting this contract's own elements. */
+function exampleCounts(all: readonly BasisElement[], own: ReadonlySet<string>): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const e of all) {
+    const m = own.has(e.id) ? null : /^(EX-\d+-[a-z0-9]+)\.(\d+)$/.exec(e.id);
+    if (m) counts.set(m[1]!, Math.max(counts.get(m[1]!) ?? 0, Number(m[2])));
+  }
+  return counts;
+}
+
+/** The element a proposed one becomes; only an example carries a test. */
+function shaped(e: Proposed, id: string, parent: string | undefined): BasisElement {
+  const el: BasisElement = { id, origin: e.origin, kind: e.kind, text: e.text, verifiedBy: [] };
+  if (parent) el.of = parent;
+  if (e.kind === "example") {
+    el.test = e.test ?? "distinguishing";
+    if (e.testFile) el.testFile = e.testFile;
+    if (e.support?.length) el.support = e.support;
+    if (e.expect) el.expect = e.expect;
+  }
+  return el;
+}
+
 export function build(
   proposal: z.infer<typeof BasisProposal>,
   state: State,
@@ -24,12 +47,7 @@ export function build(
   let seq = highestSeq(all);
   const ids: Record<string, string> = {};
   const idOf = (ref: string | undefined) => (ref ? (ids[ref] ?? (all.some((e) => e.id === ref) ? ref : undefined)) : undefined);
-  const exampleCount = new Map<string, number>();
-  for (const e of all)
-    if (!own.has(e.id)) {
-      const m = /^(EX-\d+-[a-z0-9]+)\.(\d+)$/.exec(e.id);
-      if (m) exampleCount.set(m[1]!, Math.max(exampleCount.get(m[1]!) ?? 0, Number(m[2])));
-    }
+  const exampleCount = exampleCounts(all, own);
 
   const assign = (e: Proposed): string => {
     if (e.ref && own.has(e.ref)) return e.ref; // a refinement keeps stable ids
@@ -58,16 +76,7 @@ export function build(
       throw new KernelError("restriction-key-unknown", `test file "${e.testFile}" is outside the project or not editable`);
     const id = assign(e);
     if (e.ref) ids[e.ref] = id;
-    const el: BasisElement = { id, origin: e.origin, kind: e.kind, text: e.text, verifiedBy: [] };
-    const parent = idOf(e.of);
-    if (parent) el.of = parent;
-    if (e.kind === "example") {
-      el.test = e.test ?? "distinguishing";
-      if (e.testFile) el.testFile = e.testFile;
-      if (e.support?.length) el.support = e.support;
-      if (e.expect) el.expect = e.expect;
-    }
-    built.push(el);
+    built.push(shaped(e, id, idOf(e.of)));
   }
   built.sort(
     (a, b) =>
@@ -77,4 +86,3 @@ export function build(
   for (const el of built) el.verifiedBy = linkElement(el, built);
   return { elements: built, ids };
 }
-
