@@ -1,7 +1,8 @@
-import { chmodSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { GitCli, gitBlob } from "../src/adapters/git-cli.ts";
 import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
 
@@ -21,6 +22,42 @@ after(() => dirs.forEach(cleanup));
 const kind = (p: string) => (p.endsWith(".test.ts") ? "test" as const : "source" as const);
 
 describe("git: probe and inventory", () => {
+  it("refuses a linked inverse-patch artifact without changing its target [SEC-06]", async () => {
+    const { g, root } = repo(), runDir = tmp(); dirs.push(runDir);
+    const target = join(root, "outside"); writeFileSync(target, "preserve me");
+    symlinkSync(target, join(runDir, "inverse.patch"));
+    await assert.rejects(g.applyPatch("not a patch", [], { runDir, timeoutMs: 1000 }));
+    assert.equal(readFileSync(target, "utf8"), "preserve me");
+  });
+  it("uses custom operation exclusions and tracks excluded inputs by stat [SEC-14]", async () => {
+    const { g, root } = repo();
+    g.setExclusions([{ pattern: "private/", kinds: ["no-read"] }, { pattern: "src/a.ts", kinds: ["no-model-send"] }]);
+    write(root, "private/customer.txt", "private contents");
+    const before = await g.inventory([]);
+    assert.notEqual(before.entries.get("private/customer.txt")?.blob, gitBlob(Buffer.from("private contents")));
+    write(root, "private/customer.txt", "private contents changed");
+    assert.notEqual((await g.inventory([])).digest, before.digest);
+    write(root, "src/a.ts", "export const a = 9;\n");
+    const changes = await g.changes("HEAD", ["src/a.ts", "private/customer.txt"], kind);
+    assert.deepEqual(changes, []);
+  });
+  it("hashes assume-unchanged files instead of trusting the index [EVD-03]", async () => {
+    const { g, root } = repo();
+    const before = await g.inventory([]);
+    git(root, "update-index", "--assume-unchanged", "src/a.ts");
+    write(root, "src/a.ts", "export const a = 9;\n");
+    const after = await g.inventory([]);
+    assert.notEqual(after.digest, before.digest);
+    assert.equal(after.entries.get("src/a.ts")?.blob, gitBlob(Buffer.from("export const a = 9;\n")));
+  });
+  it("refuses configured clean filters before running status [GIT-12, CON-09]", async () => {
+    const { g, root } = repo();
+    write(root, ".gitattributes", "src/a.ts filter=audit\n");
+    git(root, "config", "filter.audit.clean", `node -e "require('fs').writeFileSync('FILTER_RAN','yes');process.stdin.pipe(process.stdout)"`);
+    write(root, "src/a.ts", "export const a = 9;\n");
+    await assert.rejects(g.inventory([]), /filter/i);
+    assert.equal(existsSync(join(root, "FILTER_RAN")), false);
+  });
   it("reports repository state, and a non-repository", async () => {
     const { g, root } = repo();
     const p = await g.probe();
@@ -61,6 +98,26 @@ describe("git: probe and inventory", () => {
 });
 
 describe("git: changes", () => {
+  it("does not read tracked files through a replaced parent-directory symlink [SEC-14]", async () => {
+    const { g, root } = repo();
+    const outside = tmp(); dirs.push(outside);
+    write(outside, "a.ts", "outside private contents\n");
+    write(outside, "b.ts", "more private contents\n");
+    rmSync(join(root, "src"), { recursive: true });
+    symlinkSync(outside, join(root, "src"));
+    const inventory = await g.inventory([]);
+    assert.notEqual(inventory.entries.get("src/a.ts")?.blob, gitBlob(Buffer.from("outside private contents\n")));
+    const changes = await g.changes("HEAD", ["src/new.ts", "src/a.ts"], kind);
+    assert.ok(!JSON.stringify(changes).includes("private contents"));
+  });
+  it("reads a new symlink as a link instead of reading its destination [SEC-14]", async () => {
+    const { g, root } = repo();
+    const outside = tmp(); dirs.push(outside);
+    write(outside, "private", "outside private contents\n");
+    symlinkSync(join(outside, "private"), join(root, "link.ts"));
+    const changes = await g.changes("HEAD", ["link.ts"], kind);
+    assert.ok(!JSON.stringify(changes).includes("outside private contents"));
+  });
   it("returns hunks for modified, new and deleted files", async () => {
     const { g, root } = repo();
     write(root, "src/a.ts", "export const a = 2;\nexport const z = 3;\n");
@@ -76,6 +133,68 @@ describe("git: changes", () => {
 });
 
 describe("git: commit through a temporary index", () => {
+  it("never removes a different process's index lock after publishing its own index [GIT-03, CON-04]", () => {
+    const { root } = repo(), parent = git(root, "rev-parse", "HEAD");
+    write(root, "src/a.ts", "export const a = 2;\n"); git(root, "add", "src/a.ts"); git(root, "commit", "-qm", "new HEAD");
+    git(root, "read-tree", parent); // recreate the unchanged pre-commit index without moving HEAD or the working tree
+    const result = execFileSync(process.execPath, [join(import.meta.dirname, "fixtures/race-index-sync.ts"), root, parent], { encoding: "utf8", env: { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" } });
+    assert.match(result, /synced/);
+    assert.equal(readFileSync(join(root, ".git/index.lock"), "utf8"), "foreign lock");
+  });
+  it("refuses an unconsented configured signing program before invoking it [GIT-12]", async () => {
+    const { g, root } = repo();
+    write(root, "signer", "#!/bin/sh\necho invoked > SIGNER_RAN\nexit 1\n");
+    chmodSync(join(root, "signer"), 0o755);
+    git(root, "config", "commit.gpgsign", "true");
+    git(root, "config", "gpg.program", join(root, "signer"));
+    write(root, "src/a.ts", "export const a = 9;\n");
+    const parent = git(root, "rev-parse", "HEAD");
+    const out = await g.commit({ paths: ["src/a.ts"], deleted: [], message: "signing requires consent", parent, timeoutMs: 5000 });
+    assert.equal(out.ok, false);
+    assert.equal(out.reason, "signing-unavailable");
+    assert.equal(existsSync(join(root, "SIGNER_RAN")), false);
+    assert.equal(git(root, "rev-parse", "HEAD"), parent);
+  });
+  it("reports a hook's foreign unstaged mutation without reverting it or losing the commit [GIT-12]", async () => {
+    const { g, root } = repo();
+    write(root, "src/a.ts", "export const a = 9;\n");
+    write(root, ".git/hooks/pre-commit", "#!/bin/sh\necho 'changed by hook' > README.md\n");
+    chmodSync(join(root, ".git/hooks/pre-commit"), 0o755);
+    const parent = git(root, "rev-parse", "HEAD");
+    const out = await g.commit({ paths: ["src/a.ts"], deleted: [], message: "foreign hook edit", parent, timeoutMs: 5000 });
+    assert.equal(out.ok, true);
+    assert.deepEqual(out.foreign, ["README.md"]);
+    assert.notEqual(git(root, "rev-parse", "HEAD"), parent);
+    assert.equal(readFileSync(join(root, "README.md"), "utf8"), "changed by hook\n");
+  });
+  for (const path of ["src/line\nbreak.ts", "src/[x].ts"]) it(`syncs the exact literal index entry for ${JSON.stringify(path)} [GIT-03]`, async () => {
+    const { g, root } = repo();
+    write(root, path, "export const value = 1;\n");
+    git(root, "add", "--", path); git(root, "commit", "-qm", "initial unusual path");
+    write(root, path, "export const value = 2;\n");
+    write(root, "src/b.ts", "export const b = 'human staged';\n");
+    git(root, "add", "src/b.ts");
+    const human = git(root, "diff", "--cached", "--", "src/b.ts");
+    const parent = git(root, "rev-parse", "HEAD");
+    const out = await g.commit({ paths: [path], deleted: [], message: "literal path", parent, timeoutMs: 5000 });
+    assert.equal(out.ok, true, JSON.stringify(out));
+    assert.equal(out.indexSync, "synced");
+    const index = git(root, "ls-files", "-s", "-z", "--", `:(literal)${path}`);
+    assert.equal(index.split(" ")[1], git(root, "hash-object", "--", path));
+    assert.equal(git(root, "diff", "--cached", "--", "src/b.ts"), human);
+  });
+  it("bounds a hanging commit hook and leaves no live hook process [NFR-04, GIT-12]", async () => {
+    const { g, root } = repo();
+    write(root, "src/a.ts", "export const a = 2;\n");
+    write(root, ".git/hooks/pre-commit", "#!/bin/sh\nexec sleep 30\n");
+    chmodSync(join(root, ".git/hooks/pre-commit"), 0o755);
+    const before = await g.inventory([]);
+    const out = await g.commit({ paths: ["src/a.ts"], deleted: [], message: "bounded", parent: before.head, timeoutMs: 80 });
+    assert.equal(out.ok, false);
+    assert.equal(out.reason, "hook-failed");
+    assert.match(out.detail ?? "", /timeout|timed out/);
+    assert.equal(git(root, "rev-parse", "HEAD"), before.head);
+  });
   it("commits only Tenet paths and preserves every human staged and unstaged entry byte for byte [GIT-03]", async () => {
     const { g, root } = repo();
     write(root, "src/a.ts", "export const a = 2;\n");            // Tenet

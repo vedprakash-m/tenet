@@ -9,7 +9,7 @@ import { fakeRecipes, portsWith, project } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
-import type { RunResult, RunSpec } from "../src/ports/types.ts";
+import type { Runner, RunResult, RunSpec } from "../src/ports/types.ts";
 
 const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
@@ -23,15 +23,14 @@ function setup(sc: Scenario, files: Record<string, string> = {}) {
   const calls: string[][] = [];
   const base = portsWith(p.root, fakeRecipes());
   const done = (over: Partial<RunResult> = {}): RunResult => ({ exit: 0, timedOut: false, durationMs: 1, stdout: "", stderr: "", startedAt: "t", report: null, ...over });
-  const runner = {
-    ...base.runner,
+  const simulated = {
     async run(spec: RunSpec): Promise<RunResult> {
       calls.push(spec.argv);
       const [, sub, flag] = spec.argv;
       if (sub === "install" && flag === "--package-lock-only") {
-        if (sc.failResolve) return done({ exit: 1, stderr: "E404 not found" });
         writeFileSync(join(p.root, "package.json"), JSON.stringify({ name: "fx", type: "module", private: true, dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }));
         writeFileSync(join(p.root, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: { "": { dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }, ...Object.fromEntries(Object.entries(sc.packages).map(([n, s]) => [`node_modules/${n}`, pkg(n, s)])) } }));
+        if (sc.failResolve) return done({ exit: 1, stderr: "E404 not found" });
         return done();
       }
       if (sub === "view") {
@@ -42,6 +41,12 @@ function setup(sc: Scenario, files: Record<string, string> = {}) {
       if (sub === "ci") writeFileSync(join(p.root, "node_modules-installed"), "1");
       return done();
     },
+  };
+  const guards = new Map<string, (spawn: () => Promise<RunResult>) => Promise<RunResult>>();
+  const runner: Runner = {
+    guardRun: (dir, admit) => { guards.set(dir, admit); },
+    stopRun: dir => base.runner.stopRun(dir),
+    run: spec => guards.has(spec.runDir) ? guards.get(spec.runDir)!(() => simulated.run(spec)) : simulated.run(spec),
   };
   const ports = { ...base, runner };
   const call = (verb: string, input: Record<string, unknown> = {}) => runVerb(ports, VERBS, verb, input);
@@ -149,6 +154,26 @@ describe("verifying before installing [SEC-05]", () => {
     const fr = await f.call("decide", { h: h3, ...ask(["a@1.0.0"]) });
     assert.equal(fr.exit, 2, JSON.stringify(fr));
     assert.equal(f.read("package.json"), before);
+    assert.equal(f.read("package-lock.json"), null);
+  });
+
+  it("rolls back an interrupted dependency resolution on recovery [CON-03, SEC-05]", async () => {
+    const t = setup({ packages: { a: { ageDays: 90 } } });
+    const h = await open(t);
+    const before = t.read("package.json")!;
+    const ports = t.p.ports();
+    const w = Object.values(t.state().work)[0]!;
+    const blob = ports.store.putBlob(before);
+    await ports.store.transaction("dependency", async (tx) => {
+      tx.intent("dependency", "d-crash", { work: w.id, phase: "resolve", before: { manifest: blob, lock: null } });
+    });
+    writeFileSync(join(t.p.root, "package.json"), '{"name":"corrupted"}\n');
+    writeFileSync(join(t.p.root, "package-lock.json"), '{"lockfileVersion":3}\n');
+    const r = await t.call("decide", { h, kind: "config", target: "style", propose: { value: "concise" } });
+    assert.equal(r.exit, 0, JSON.stringify(r));
+    assert.ok(r.effects?.completed.some((e) => /interrupted dependency resolution was rolled back/.test(e)));
+    assert.equal(t.read("package.json"), before);
+    assert.equal(t.read("package-lock.json"), null);
   });
 
   it("needs the user's words, like any grant", async () => {

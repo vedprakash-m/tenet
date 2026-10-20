@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup, git, tmp, write } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, reviewResult } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
@@ -50,10 +50,11 @@ describe("snapshot-backed prototype [GIT-01]", () => {
     write(root, "src/greet.test.ts", GREET_TEST);
     await call("check", { h, stage: "baseline" });
     write(root, "src/greet.ts", GREET_IMPL);
-    const c = await call("check", { h, stage: "candidate" });
+    const c = await call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(c.exit, 0, JSON.stringify(c));
     assert.equal(Number(shadow("rev-list", "--count", "HEAD")), 3, "one snapshot per check");
     assert.match(shadow("show", "HEAD:src/greet.ts"), /Hello/);
+    await call("findings", { h, result: reviewResult(d(c)) });
 
     const f = await call("finish", { h });
     assert.equal(d(f).endpoint, "prototype", JSON.stringify(f.reasons));

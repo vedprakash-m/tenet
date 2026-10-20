@@ -10,7 +10,8 @@ import { DECISIONS } from "../packages/kernel/src/decisions/index.ts";
 import { parseArgs } from "../packages/kernel/src/frontends/cli.ts";
 import { VERBS } from "../packages/kernel/src/verbs/index.ts";
 
-const BODY_BUDGET: Record<string, number> = { tenet: 4000, "tenet-intake": 4000, "tenet-build": 4000, "tenet-review": 4500 };
+const BODY_BUDGET: Record<string, number> = { tenet: 4000, "tenet-intake": 4000, "tenet-build": 4000, "tenet-review": 4500, "tenet-starter-ts-web-api": 4000 };
+const RESOURCE_BUDGET: Record<string, number> = { "skills/tenet/resources/focused-review.md": 400 };
 const AGENT_BUDGET = 1000, DESCRIPTION_BUDGET = 2000, LOADED_BUDGET = 12000;
 const AGENT_ALLOWLIST = new Set(["tenet-reviewer", "tenet-analyst"]);
 const AMBIGUOUS_WORDS = ["stop", "undo", "ok", "do it", "continue"];
@@ -73,6 +74,8 @@ export function lintPayload(root: string): string[] {
     if (error) bad(f, `front matter is not valid YAML (${error}); quote the value`);
     const skill = /^skills\/([^/]+)\/SKILL\.md$/.exec(rel)?.[1];
     const isAgent = /agents\/.+\.agent\.md$/.test(rel);
+    const resourceBudget = RESOURCE_BUDGET[rel];
+    if (resourceBudget && tokens(body) > resourceBudget) bad(f, `resource is ${tokens(body)} tokens, budget ${resourceBudget}`);
     if (meta.name) names.add(meta.name);
     if (skill || isAgent) {
       if (!meta.name) bad(f, "missing name");

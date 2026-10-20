@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup, git, tmp, write } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult, finishFixture, focusFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
@@ -23,7 +23,7 @@ async function toGreen(p: Project, over: Record<string, unknown> = {}) {
   p.write("src/greet.test.ts", GREET_TEST);
   await p.call("check", { h, stage: "baseline" });
   p.write("src/greet.ts", GREET_IMPL);
-  const g = await p.call("check", { h, stage: "candidate" });
+  const g = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
   return { h, g };
 }
 const addHook = (p: Project, script: string) => {
@@ -58,7 +58,8 @@ describe("a new project", () => {
     assert.equal(red.exit, 0, JSON.stringify(red));
     assert.equal(red.next[0]!.action, "implement", "new scaffolding does not contaminate the baseline");
     write(root, "src/greet.ts", GREET_IMPL);
-    await call("check", { h, stage: "candidate" });
+    const green = await call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    await call("findings", { h, result: reviewResult(d(green)) });
     const f = await call("finish", { h, subject: "First commit" });
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f));
     assert.equal(d(f).scope, "working-tree-with-your-edits", "package.json and tsconfig.json are the user's untracked files, present while checking");
@@ -82,7 +83,7 @@ describe("refusals", () => {
     const p = fresh();
     const { h } = await toGreen(p);
     p.write("src/greet.ts", `${GREET_IMPL}// edited after the check\n`);
-    const f = await p.call("finish", { h });
+    const f = await finishFixture(p, { h });
     assert.equal(f.exit, 0, "finish itself computes the honest verdict: the evidence is stale");
     assert.ok(f.reasons.some((r) => r.code === "stale"), JSON.stringify(f.reasons));
     assert.equal(d(f).endpoint, "implemented-unverified");
@@ -103,12 +104,12 @@ describe("commit hooks (TS §10.3)", () => {
     const p = fresh();
     addHook(p, "#!/bin/sh\nexit 0\n");
     const { h } = await toGreen(p);
-    const ask = await p.call("finish", { h });
+    const ask = await finishFixture(p, { h });
     assert.equal(ask.exit, 3);
     assert.equal(ask.questions![0]!.id, "hook-consent");
     assert.equal(ask.questions![0]!.channel, "native", "a routine consent with no outside effect is a picker, not a chat gate");
     await p.call("decide", { h, kind: "hook-consent", answers: { "hook-consent": "commit-with-hooks" } });
-    const f = await p.call("finish", { h, subject: "Add greet" });
+    const f = await finishFixture(p, { h, subject: "Add greet" });
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f));
     assert.equal(d(f).scope, "committed");
     assert.equal(p.ports().store.read()!.state.consents.length, 1);
@@ -118,9 +119,9 @@ describe("commit hooks (TS §10.3)", () => {
     const p = fresh();
     addHook(p, "#!/bin/sh\necho x > made-by-hook.txt\ngit add made-by-hook.txt\n");
     const { h } = await toGreen(p);
-    await p.call("finish", { h });
+    await finishFixture(p, { h });
     await p.call("decide", { h, kind: "hook-consent", answers: { "hook-consent": "commit-with-hooks" } });
-    const f = await p.call("finish", { h, subject: "Add greet" });
+    const f = await finishFixture(p, { h, subject: "Add greet" });
     assert.ok(f.reasons.some((r) => r.code === "hook-staged-foreign-path"), JSON.stringify(f.reasons));
     assert.equal(p.git("show", "--name-only", "--format=", "HEAD").includes("made-by-hook.txt"), true, "the commit is kept");
   });
@@ -129,10 +130,10 @@ describe("commit hooks (TS §10.3)", () => {
     const p = fresh();
     addHook(p, "#!/bin/sh\necho 'lint failed' >&2\nexit 1\n");
     const { h } = await toGreen(p);
-    await p.call("finish", { h });
+    await finishFixture(p, { h });
     await p.call("decide", { h, kind: "hook-consent", answers: { "hook-consent": "commit-with-hooks" } });
     const head = p.git("rev-parse", "HEAD");
-    const f = await p.call("finish", { h, subject: "Add greet" });
+    const f = await finishFixture(p, { h, subject: "Add greet" });
     assert.ok(f.reasons.some((r) => r.code === "hook-failed"), JSON.stringify(f.reasons));
     assert.equal(p.git("rev-parse", "HEAD"), head);
     assert.equal(d(f).scope, "working-tree-uncommitted");
@@ -143,9 +144,9 @@ describe("commit hooks (TS §10.3)", () => {
     const p = fresh();
     addHook(p, "#!/bin/sh\nexit 0\n");
     const { h } = await toGreen(p);
-    await p.call("finish", { h });
+    await finishFixture(p, { h });
     await p.call("decide", { h, kind: "hook-consent", answers: { "hook-consent": "keep-uncommitted" } });
-    const f = await p.call("finish", { h });
+    const f = await finishFixture(p, { h });
     assert.equal(d(f).scope, "working-tree-uncommitted");
     assert.equal(p.git("status", "--porcelain").length > 0, true);
   });
@@ -156,8 +157,8 @@ describe("dispositions", () => {
     const p = fresh();
     const { h } = await toGreen(p);
     p.write("src/greet.ts", `${GREET_IMPL}export const legacy = (x: unknown) => x as any;\n`);
-    await p.call("check", { h, stage: "candidate" });
-    const blocked = await p.call("finish", { h, noCommit: true });
+    await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    const blocked = await finishFixture(p, { h, noCommit: true });
     const marker = p.ports().store.read()!.state.work[Object.keys(p.ports().store.read()!.state.work)[0]!]!.attention.find((a) => a.marker)!;
     assert.ok(blocked.reasons.some((r) => r.code === "marker-unaccepted"));
     const p2 = fresh();
@@ -168,7 +169,7 @@ describe("dispositions", () => {
     assert.equal(id, marker.id.length ? id : id);
     const accept = await p2.call("decide", { h: r.h, kind: "disposition", target: id, propose: { outcome: "accepted", reason: "the legacy API returns unknown" } });
     assert.equal(accept.exit, 0, JSON.stringify(accept));
-    const f = await p2.call("finish", { h: r.h, subject: "greet" });
+    const f = await finishFixture(p2, { h: r.h, subject: "greet" });
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
   });
 
@@ -176,8 +177,8 @@ describe("dispositions", () => {
     const p = fresh();
     const { h } = await toGreen(p);
     p.write("src/greet.test.ts", GREET_TEST.replace('.toBe("Hello, Ada!")', ".toBeTruthy()"));
-    await p.call("check", { h, stage: "candidate" });
-    const blocked = await p.call("finish", { h, noCommit: true });
+    await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    const blocked = await finishFixture(p, { h, noCommit: true });
     assert.ok(blocked.reasons.some((r) => r.code === "locked-test-changed"));
     const p2 = fresh();
     const r = await toGreen(p2);
@@ -186,8 +187,9 @@ describe("dispositions", () => {
     assert.equal(none.exit, 1, "a disposition needs a reason");
     await p2.call("decide", { h: r.h, kind: "disposition", target: "src/greet.test.ts", propose: { outcome: "accepted", reason: "tightened later" } });
     await p2.call("check", { h: r.h, stage: "candidate" });
-    const f = await p2.call("finish", { h: r.h, noCommit: true });
-    assert.ok(!f.reasons.some((x) => x.code === "locked-test-changed" || x.code === "red-invalidated"), JSON.stringify(f.reasons));
+    const f = await finishFixture(p2, { h: r.h, noCommit: true });
+    assert.ok(!f.reasons.some((x) => x.code === "locked-test-changed"), JSON.stringify(f.reasons));
+    assert.ok(f.reasons.some((x) => x.code === "no-distinguishing-red"), "permission to revise is not baseline proof");
   });
 });
 
@@ -196,7 +198,7 @@ describe("honest claims and handoffs (EVD-07, RES-04, WRK-12)", () => {
     const p = fresh();
     const { h, g } = await toGreen(p, { lane: "standard" });
     await p.call("findings", { h, result: reviewResult(d(g), { dispatchMode: "same-session" }) });
-    const f = await p.call("finish", { h, noCommit: true });
+    const f = await finishFixture(p, { h, noCommit: true });
     assert.equal(d(f).assurance, "Advisory", "an unreached checked-local claims no assurance");
     const classes = Object.fromEntries(d(f).controls.map((c: { control: string; class: string }) => [c.control, c.class]));
     assert.equal(classes["acceptance-test locks"], "detected");
@@ -206,14 +208,14 @@ describe("honest claims and handoffs (EVD-07, RES-04, WRK-12)", () => {
 
     const q = fresh();
     const r = await toGreen(q);
-    const done = await q.call("finish", { h: r.h, subject: "s" });
+    const done = await finishFixture(q, { h: r.h, subject: "s" });
     assert.equal(d(done).assurance, "Checked local");
   });
 
   it("writes a handoff at the end of the contract and at a budget stop, enough to resume without re-explaining [RES-04]", async () => {
     const p = fresh();
     const { h } = await toGreen(p);
-    const f = await p.call("finish", { h, noCommit: true });
+    const f = await finishFixture(p, { h, noCommit: true });
     assert.match(d(f).handoff, /W-0001 · feature · quick lane · L4 · finished/);
     assert.match(d(f).handoff, /Checks: .*pass/);
 
@@ -244,11 +246,11 @@ describe("a checkpoint commit does not hide work from the review", () => {
     assert.equal(cp.exit, 0, JSON.stringify(cp));
     assert.equal(p.git("show", "--name-only", "--format=", "HEAD"), "src/greet.test.ts");
     p.write("src/greet.ts", GREET_IMPL);
-    const g = await p.call("check", { h, stage: "candidate" });
+    const g = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     const manifest = JSON.parse(readFileSync(d(g).review.manifest, "utf8"));
     assert.deepEqual(manifest.changes.map((c: { path: string }) => c.path).sort(), ["src/greet.test.ts", "src/greet.ts"]);
     await p.call("findings", { h, result: reviewResult(d(g)) });
-    const f = await p.call("finish", { h, subject: "Implement greet" });
+    const f = await finishFixture(p, { h, subject: "Implement greet" });
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
     assert.equal(d(f).commits.length, 2);
   });
@@ -262,7 +264,7 @@ describe("acceptance-test locks follow history (TS §9.7)", () => {
   it("binds a branch that has the locked test and leaves one that never had it alone", async () => {
     const p = fresh();
     const { h } = await toGreen(p);
-    const first = await p.call("finish", { h, subject: "Add greet" });
+    const first = await finishFixture(p, { h, subject: "Add greet" });
     assert.equal(d(first).endpoint, "checked-local", JSON.stringify(first.reasons));
     const lock = p.ports().store.read()!.state.locks[0]!;
     assert.deepEqual(Object.keys(lock.anchor), ["commit"], "anchored to the commit that first contains it");
@@ -276,8 +278,8 @@ describe("acceptance-test locks follow history (TS §9.7)", () => {
     p.write("src/double.test.ts", 'import { expect, it } from "vitest";\nimport { double } from "./double.ts";\nit("doubles", () => { expect(double(2)).toBe(4); });\n');
     await p.call("check", { h: h2, stage: "baseline" });
     p.write("src/double.ts", "export const double = (n: number): number => n * 2;\n");
-    await p.call("check", { h: h2, stage: "candidate" });
-    const f2 = await p.call("finish", { h: h2, subject: "double" });
+    await p.call("check", { h: h2, stage: "candidate", touched: ["src/double.ts"] });
+    const f2 = await finishFixture(p, { h: h2, subject: "double" });
     assert.ok(!f2.reasons.some((r) => r.code === "locked-test-changed"), JSON.stringify(f2.reasons));
     assert.equal(d(f2).endpoint, "checked-local");
 
@@ -298,7 +300,7 @@ describe("a Git process killed while holding the index lock [GIT-03]", () => {
     const holder = spawn(process.execPath, ["-e", `require("fs").writeFileSync(${JSON.stringify(join(p.root, ".git/index.lock"))}, ""); process.kill(process.pid, "SIGKILL")`], { stdio: "ignore" });
     await new Promise((r) => holder.on("exit", r));
     const indexBefore = readFileSync(join(p.root, ".git/index"));
-    const f = await p.call("finish", { h, subject: "Add greet" });
+    const f = await finishFixture(p, { h, subject: "Add greet" });
     const note = f.reasons.find((r) => r.code === "index-sync-needed");
     assert.ok(note, JSON.stringify(f.reasons));
     assert.match(note.message, /src\/greet\.test\.ts.*src\/greet\.ts|src\/greet\.ts.*src\/greet\.test\.ts/);
@@ -330,9 +332,9 @@ describe("things that must not trip it", () => {
   it("reports a finished contract's current result when finished again, without committing or changing anything", async () => {
     const p = fresh();
     const { h } = await toGreen(p);
-    const first = await p.call("finish", { h, noCommit: true });
+    const first = await finishFixture(p, { h, noCommit: true });
     const rev = p.ports().store.read()!.state.revision;
-    const again = await p.call("finish", { h, subject: "now commit it", noCommit: false });
+    const again = await finishFixture(p, { h, subject: "now commit it", noCommit: false });
     assert.equal(again.exit, 0);
     assert.equal(d(again).endpoint, d(first).endpoint);
     assert.equal(p.ports().store.read()!.state.revision, rev, "nothing was published");
@@ -350,7 +352,7 @@ describe("things that must not trip it", () => {
     p.write("config/id_rsa", "-----BEGIN PRIVATE KEY-----\n"); // privacy-ok
     const c = await p.call("check", { h, stage: "candidate", again: true });
     assert.equal(c.exit, 0, JSON.stringify(c));
-    const f = await p.call("finish", { h, subject: "s" });
+    const f = await finishFixture(p, { h, subject: "s" });
     assert.equal(f.exit, 0, "no question about the secret files");
     assert.equal(p.git("show", "--name-only", "--format=", "HEAD").includes(".env"), false);
     assert.equal(p.git("show", "--name-only", "--format=", "HEAD").includes("id_rsa"), false);
@@ -368,6 +370,7 @@ describe("parking, resuming and non-editing work", () => {
     const other = await p.call("open", { profile: "feature", request: "something else", scopePaths: [] });
     assert.equal(other.exit, 0, "a parked contract no longer owns the source");
     await p.call("stop", { h: other.handle!, mode: "abandon" });
+    await p.call("decide", { h: other.handle!, kind: "abandon-confirm", answers: { "abandon-confirm": "abandon" } });
     const back = await p.call("open", { profile: "feature", request: "add a greeting", resume: true });
     assert.equal(back.exit, 0, JSON.stringify(back));
     assert.match(back.handle!, /^W1\.3\./);
@@ -380,7 +383,7 @@ describe("parking, resuming and non-editing work", () => {
     await p.call("open", { profile: "feature", request: "build", scopePaths: [] });
     const inv = await p.call("open", { profile: "investigate", request: "how are greetings made?" });
     assert.equal(inv.exit, 0);
-    const f = await p.call("finish", { h: inv.handle! });
+    const f = await finishFixture(p, { h: inv.handle! });
     assert.equal(d(f).endpoint, "findings-only");
     assert.equal(d(f).label, "Findings only, nothing changed");
     const st = p.ports().store.read()!.state;
@@ -390,6 +393,7 @@ describe("parking, resuming and non-editing work", () => {
   it("answers `inspect why` from the same verdict finish would compute, and any edit makes the evidence stale [EVD-01, EVD-03]", async () => {
     const p = fresh();
     const { h } = await toGreen(p);
+    await focusFixture(p, h);
     const why = await p.call("inspect", { view: "why", h });
     assert.equal(d(why).endpoint, "checked-local");
     assert.match(d(why).label, /Checked locally/);
@@ -403,7 +407,7 @@ describe("parking, resuming and non-editing work", () => {
     const p = fresh();
     const { h } = await toGreen(p, { lane: "standard" });
     await p.call("decide", { h, kind: "acceptance", target: "accepted" });
-    const f = await p.call("finish", { h, noCommit: true });
+    const f = await finishFixture(p, { h, noCommit: true });
     assert.equal(d(f).acceptance, "accepted");
     assert.equal(d(f).endpoint, "implemented-unverified", "no review yet: acceptance does not stand in for it");
     assert.ok(f.reasons.some((r) => r.code === "review-missing"));

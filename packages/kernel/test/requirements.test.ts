@@ -31,8 +31,8 @@ describe("helpers stay inside the workspace [SEC-06]", () => {
       assert.throws(() => p.write(rel, "x"), /project|link|resolved/, rel);
       assert.throws(() => p.writeNew([{ path: rel, content: "x", mode: 0o644 }]), /project|link|resolved/, rel);
     }
-    assert.equal(p.read("INTENT.md"), null, "a link that leads out reads as absent");
-    assert.deepEqual(p.hashes(["INTENT.md", "link/secret.txt"]), { "INTENT.md": null, "link/secret.txt": null });
+    assert.throws(() => p.read("INTENT.md"), /link/, "an unreadable link is not an absent file");
+    assert.throws(() => p.hashes(["INTENT.md", "link/secret.txt"]), /link/);
     assert.equal(readFileSync(join(outside, "secret.txt"), "utf8"), "outside\n");
     mkdirSync(join(root, "docs"));
     p.write("docs/ok.md", "fine\n");

@@ -1,8 +1,8 @@
 ---
 agent: tenet
-description: "Review code without changing anything: a document, uncommitted changes, a branch or files."
+description: "Review uncommitted code without changing anything."
 ---
-Run `tenet review` for the scope below, dispatch `tenet-reviewer` on the manifest it returns, and report the
+Only working-tree review against HEAD is implemented. For another scope, report that limitation. Run `tenet review` for uncommitted changes below, dispatch `tenet-reviewer` on the manifest it returns, and report the
 findings. This changes nothing in the project: no files, no Git objects, no checks or scripts run.
 
 ${input:scope}

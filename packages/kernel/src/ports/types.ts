@@ -2,19 +2,22 @@
 // A port exists only where there is a second implementation or a real test boundary; pure logic has no interface.
 import type { AttentionPattern, FileChange } from "../core/review.ts";
 import type { Random } from "../core/ids.ts";
-import type { State } from "../core/schemas.ts";
+import type { IndexSyncRecord, State } from "../core/schemas.ts";
+import type { Exclusion } from "../core/exclusions.ts";
 
 export type { Random };
 export interface Clock { now(): string; ms(): number }
 
 // ---------------------------------------------------------------- store
-export interface LogEntry { t: string; kind: "intent" | "result" | "call"; effect?: string; id?: string; [k: string]: unknown }
+export interface LogEntry { t: string; kind: "intent" | "result" | "call" | "accounting"; effect?: string; id?: string; [k: string]: unknown }
+export interface Quarantined { path: string; nonce: string; entries: number }
 
 export interface Tx {
   /** The current state, or null before the first mutating call created `.tenet/`. */
   readonly state: State | null;
   /** True when the document came from state.prev (grants are suspended until reconfirmed). */
   readonly recovered: boolean;
+  readonly quarantined?: Quarantined;
   /** Creates `.tenet/` and the marker on first need and returns the identity every handle carries. */
   ensure(): { workspaceId: string; tag: string };
   publish(next: State): void;
@@ -61,14 +64,20 @@ export interface RepoProbe {
   isRepo: boolean; /** the repository is the shadow repository in .tenet/git (a non-Git prototype) */ shadow: boolean; version: string; top: string | null; head: string | null; branch: string | null;
   state: "ok" | "none" | "readonly"; why?: string; identity: boolean; remotes: string[]; hooks: string | null;
 }
-export interface CommitPlan { paths: string[]; deleted: string[]; message: string; parent: string | null; timeoutMs: number }
+export interface IndexJournal {
+  owner: { pid: number; procStart: string };
+  intent(record: IndexSyncRecord): Promise<void>;
+  result(status: CommitOutcome["indexSync"]): Promise<void>;
+}
+export interface CommitPlan { paths: string[]; deleted: string[]; message: string; parent: string | null; timeoutMs: number; runDir?: string; indexJournal?: IndexJournal }
 export interface CommitOutcome {
   ok: boolean; commit?: string; tree?: string; expectedTree?: string; foreign: string[]; reason?: string; detail?: string;
   indexSync: "synced" | "untouched" | "not-needed"; syncPaths: string[];
 }
 export interface Git {
+  setExclusions(exclusions: readonly Exclusion[]): void;
   probe(): Promise<RepoProbe>;
-  inventory(exclude: readonly string[]): Promise<Inventory>;
+  inventory(exclude: readonly string[], declaredInputs?: readonly string[]): Promise<Inventory>;
   /** Working-tree changes of `paths` against `base` as hunks of added and removed lines. */
   changes(base: string | null, paths: readonly string[], classify: (p: string) => FileChange["kind"]): Promise<FileChange[]>;
   /** The tree a commit of exactly these paths would have; logged with the intent so recovery can verify the postcondition. */
@@ -76,13 +85,15 @@ export interface Git {
   commit(plan: CommitPlan): Promise<CommitOutcome>;
   /** Postcondition for crash recovery: did a commit with this parent and tree land? */
   reconcileCommit(parent: string | null, expectedTree: string, tenetPaths: readonly string[]): Promise<{ completed: boolean; commit?: string }>;
-  syncIndex(paths: readonly string[], oldHead: string | null): Promise<CommitOutcome["indexSync"]>;
+  syncIndex(paths: readonly string[], oldHead: string | null, journal?: IndexJournal, head?: string): Promise<CommitOutcome["indexSync"]>;
+  /** Reconcile a journalled lock of a dead process, then rerun only the exact recorded sync. */
+  recoverIndexSync(record: unknown, journal: IndexJournal): Promise<CommitOutcome["indexSync"] | "uncertain">;
   /** Commits on the current history carrying `Tenet-Work: <label>`, newest first; `shallow` when history is cut short. */
   workCommits(label: string): Promise<{ commits: string[]; shallow: boolean; merges: boolean }>;
   /** The inverse of these commits (newest first) applied to a temporary index from HEAD; never touches the real index or tree. */
   planUndo(commits: readonly string[]): Promise<{ ok: true; tree: string; patch: string; paths: string[]; stat: string } | { ok: false; conflict: string[]; detail: string }>;
   /** Applies a patch to the working tree only (never the index); `include` limits it to these paths. */
-  applyPatch(patch: string, include?: readonly string[]): Promise<{ ok: boolean; detail?: string }>;
+  applyPatch(patch: string, include?: readonly string[], options?: { runDir: string; timeoutMs: number }): Promise<{ ok: boolean; detail?: string; uncertain?: boolean }>;
   /** Blob ids of paths in a tree-ish (null when absent). */
   blobsAt(treeish: string, paths: readonly string[]): Promise<Record<string, string | null>>;
   /** Commits after `since` on the current history that touch these paths. */
@@ -92,7 +103,7 @@ export interface Git {
   /** Files an integration would conflict on, from `git merge-tree` (writes objects only); supported is false before Git 2.38. */
   predictConflicts(base: string, work: string): Promise<{ supported: boolean; paths: string[] }>;
   /** Switches to `base` and fast-forwards, or merges when the base moved. */
-  integrate(base: string, work: string): Promise<{ ok: boolean; commit?: string; mode?: "fast-forward" | "merge"; detail?: string }>;
+  integrate(base: string, work: string, options?: { runDir: string; timeoutMs: number }): Promise<{ ok: boolean; commit?: string; mode?: "fast-forward" | "merge"; detail?: string; uncertain?: boolean }>;
   /** Postcondition for recovery: did this integration land (TS §7.4)? */
   reconcileIntegration(base: string, baseBefore: string, work: string): Promise<{ completed: boolean; commit?: string; mode?: "fast-forward" | "merge" }>;
   /** The parent of a commit, or null for a root commit. */
@@ -111,6 +122,8 @@ export interface Git {
 // ---------------------------------------------------------------- runner
 export interface RunSpec {
   argv: string[]; cwd: string; runDir: string; timeoutMs: number;
+  /** Kernel-selected variables, never a user-supplied execution surface. */
+  env?: Record<string, string>;
   /** A file the command writes its report to; the runner returns its content. */
   report?: string;
 }
@@ -119,6 +132,8 @@ export interface RunResult {
   report: string | null;
 }
 export interface Runner {
+  /** Bind a prepared run directory (including its child commands) to an atomic kernel spawn check. */
+  guardRun(runDir: string, admit: (spawn: () => Promise<RunResult>) => Promise<RunResult>): void;
   run(spec: RunSpec): Promise<RunResult>;
   /** Stops the recorded process group if its identity still matches (TS §7.4 Check run). */
   stopRun(runDir: string): Promise<"stopped" | "gone" | "unknown">;
@@ -131,10 +146,11 @@ export interface Detection {
   runnerVersion?: string; packageManager: "npm" | "pnpm" | "yarn" | "unknown"; moduleRoot: string; experimental: boolean;
 }
 export interface Normalized {
-  files: Map<string, { executed: number; passed: number; failed: number; skipped: number; focused: number; tests: string[]; failures: Array<{ test: string; kind: string; message: string }> }>;
+  files: Map<string, { executed: number; passed: number; failed: number; skipped: number; focused: number; tests: string[]; failureKinds: string[]; failures: Array<{ test: string; kind: string; message: string }> }>;
   invalid?: string; discovered: number;
 }
 export interface Stack {
+  setExclusions(exclusions: readonly Exclusion[]): void;
   detect(root: string): Detection;
   argv(files: readonly string[] | "all", reportPath: string): string[];
   normalize(raw: string, root: string): Normalized;
@@ -155,11 +171,12 @@ export interface Recipes {
   text(rel: string): string | null;
 }
 export interface Project {
+  setExclusions(exclusions: readonly Exclusion[]): void;
   /** Creates each file exclusively (never overwrites), making directories as needed. */
   writeNew(files: readonly RecipeFile[]): void;
-  /** sha256 of each file's content, or null when it does not exist. */
+  /** sha256 of each regular file's content; null only when absent. Linked/excluded/unreadable inputs throw. */
   hashes(paths: readonly string[]): Record<string, string | null>;
-  /** The file's text, or null when it does not exist. */
+  /** A regular file's text; null only when absent. Linked/excluded/unreadable inputs throw. */
   read(path: string): string | null;
   /** Replaces one file atomically (a temporary file renamed over it), making directories as needed. */
   write(path: string, content: string): void;

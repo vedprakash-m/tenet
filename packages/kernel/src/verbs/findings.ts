@@ -16,9 +16,9 @@ export const findings: Verb<FindingsInput> = {
     const w = workOf(state, input.h);
     const r = input.result;
     const chk = checkResult(w, r, w.lane);
-    // A result is a native dispatch whether or not it still binds to anything: stale or not, it counts (TS §8.6).
+    // Every reported native dispatch counts, including a stale result; a same-session pass is never a delegation.
     if (!chk.reservation) {
-      const nw = { ...w, budget: recordDelegation(w.budget), updatedAt: ports.clock.now() };
+      const nw = { ...w, budget: r.dispatchMode === "same-session" ? w.budget : recordDelegation(w.budget), updatedAt: ports.clock.now() };
       return { state: withWork(state!, nw), resp: { work: w.id, exit: 2, reasons: chk.reasons, next: [nx("review", "Request a fresh manifest with packet reviewer, then dispatch again.", true)] } };
     }
     const now = ports.clock.now();
@@ -31,11 +31,12 @@ export const findings: Verb<FindingsInput> = {
       const n = all.length + 1;
       all.push({ id: `FND-${n}`, n, severity: "major", axis: "behavior", location: { path: "basis" }, claim, evidence: "reported by the reviewer as a gap in the basis", state: "valid", history: [{ to: "valid", by: "reviewer", reason: "basis gap", at: now }] });
     }
-    const budget = settleReservation(w.budget, chk.reservation.id, { countRound: applied.countRound, recheck: r.mode === "recheck" });
-    const nw = { ...w, findings: all, attention: applied.attention, reviews: [...w.reviews, applied.link], budget, updatedAt: now };
+    const budget = settleReservation(w.budget, chk.reservation.id, { countRound: applied.countRound, recheck: r.mode === "recheck", native: r.dispatchMode === "subagent-fresh" });
+    const nw = { ...w, findings: all, attention: applied.attention, reviews: [...w.reviews, applied.link], budget, focusedReview: undefined, updatedAt: now };
     const blocking = all.filter((f) => (f.severity === "blocker" || f.severity === "major") && ["valid", "open", "disputed"].includes(f.state));
-    const next = r.status === "partial" || applied.link.uncovered.length ? [nx("review", "The reviewer left parts uncovered; dispatch a follow-up on the uncovered list.", true)]
-      : r.status !== "completed" ? [nx("review", `The review ${r.status}; request a retry with packet reviewer --retry.`, true)]
+    const action = w.lane === "quick" ? "focused-review" : "review";
+    const next = r.status === "partial" || applied.link.uncovered.length ? [nx(action, "The review left parts uncovered; request a follow-up manifest for the uncovered list.", true)]
+      : r.status !== "completed" ? [nx(action, `The review ${r.status}; request a retry with packet reviewer --retry.`, true)]
       : blocking.length ? [nx("implement", "Fix the blockers and majors, then check; one focused recheck follows.", true)]
       : [nx("finish", "The review reached this candidate with nothing blocking.")];
     return {

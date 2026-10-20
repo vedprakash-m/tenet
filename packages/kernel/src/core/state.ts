@@ -1,5 +1,5 @@
 // Constructors for the state document and a contract (TS §7.2). Pure: ids and time arrive as arguments.
-import { newBudget } from "./budget.ts";
+import { newBudget, recoverAccounting } from "./budget.ts";
 import { SCHEMA_VERSION } from "./schemas.ts";
 import type { Lane, Level, Profile, StartSnapshot, State, WorkContract } from "./schemas.ts";
 
@@ -11,6 +11,11 @@ export const emptyState = (workspaceId: string, tag: string): State => ({
   },
   config: { local: {}, revision: 0 }, consents: [], trust: [], locks: [], pending: [], work: {}, archive: [],
 });
+
+export function recoveredState(state: State, at: string, records: readonly unknown[]): State {
+  const accounting = recoverAccounting(state, records);
+  return { ...accounting.state, consents: [], recovered: { from: "state.prev", at, accounting: accounting.verified ? "verified" : "unknown" }, work: Object.fromEntries(Object.entries(accounting.state.work).map(([id, w]) => { const { last: _cached, ...session } = w.session; return [id, { ...w, grants: [], session }]; })) };
+}
 
 export interface NewContract {
   id: string; label: string; profile: Profile; request: string; lane: Lane; floor: Lane; level: Level;

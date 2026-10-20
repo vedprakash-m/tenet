@@ -13,7 +13,7 @@ export function snapshotOf(inv: Inventory): StartSnapshot {
 }
 
 export interface Attribution {
-  tenet: string[];       // clean at start, changed since, explained by a declaration or the predicted scope
+  tenet: string[];       // clean at start, changed since, declared or written by a kernel effect
   human: string[];       // dirty at start and unchanged since, or changed without a declaration
   mixed: string[];       // dirty at start and Tenet declared it touched: the user decides first
   unexplained: string[]; // clean at start, changed, explained by nothing

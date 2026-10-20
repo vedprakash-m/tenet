@@ -15,10 +15,12 @@ export function deriveObligations(elements: readonly BasisElement[], tool: strin
     const base: Obligation = {
       id, kind: "test", category: kind === "boundary" ? "boundary" : "acceptance", targeted: true, tool, example: el.id,
       testFile: el.testFile, ...(el.support?.length ? { support: el.support } : {}), test: kind, expectation: el.expect ?? (kind === "distinguishing" ? "fail" : "pass"),
+      state: "registered",
     };
     // A revised test keeps its earlier red only if the file is unchanged, so the prior record carries over by id.
     const p = prev.get(id);
-    out.push(p && p.testFile === base.testFile ? { ...base, state: p.state, baselineTestHash: p.baselineTestHash, baselineMatched: p.baselineMatched } : base);
+    const same = p && p.testFile === base.testFile && p.test === base.test && p.expectation === base.expectation && JSON.stringify(p.support ?? []) === JSON.stringify(base.support ?? []);
+    out.push(same ? { ...base, state: p.state, baselineTestHash: p.baselineTestHash, baselineMatched: p.baselineMatched, baselineInputs: p.baselineInputs } : base);
   }
   out.push(prev.get(FULL_SUITE) ?? { id: FULL_SUITE, kind: "test", category: "affected", tool });
   return out;
@@ -36,8 +38,17 @@ export function linkElement(el: BasisElement, all: readonly BasisElement[]): Bas
 }
 
 /** Support files locked with a test: those the example declares, plus the runner's own configuration (TS §9.7). */
-const RUNNER_CONFIG = /^(?:vitest|vite)\.config\.[cm]?[jt]s$/;
+export const CONFIG_INPUTS = ["package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "tsconfig.json", ...["vitest", "vite"].flatMap(tool => ["ts", "js", "mts", "mjs", "cts", "cjs"].map(ext => `${tool}.config.${ext}`))];
+
+/** Declared inputs participate even when Git ignores them; absences bind the baseline too. */
+export const declaredInputs = (obligations: readonly Obligation[]): string[] => [...new Set([...CONFIG_INPUTS, ...obligations.flatMap(o => [...(o.testFile ? [o.testFile] : []), ...(o.support ?? []), ...Object.keys(o.baselineInputs ?? {})])])];
 export function supportOf(ob: Obligation, facts: { inv: { entries: Map<string, { blob: string }> } }): Record<string, string> {
-  const paths = [...(ob.support ?? []), ...[...facts.inv.entries.keys()].filter((p) => RUNNER_CONFIG.test(p))];
-  return Object.fromEntries(paths.flatMap((p) => { const blob = facts.inv.entries.get(p)?.blob; return blob ? [[p, blob]] : []; }));
+  const paths = [...(ob.support ?? []), ...CONFIG_INPUTS];
+  return Object.fromEntries(paths.map(p => [p, facts.inv.entries.get(p)?.blob ?? ""]));
+}
+
+/** Both locking and the verdict require the same complete baseline definition, including declared absences. */
+export function baselineDefinitionMatches(ob: Obligation, hash: (path: string) => string | undefined): boolean {
+  return !!ob.baselineMatched && !!ob.testFile && !!ob.baselineTestHash && !!ob.baselineInputs &&
+    hash(ob.testFile) === ob.baselineTestHash && Object.entries(ob.baselineInputs).every(([path, value]) => (hash(path) ?? "") === value);
 }

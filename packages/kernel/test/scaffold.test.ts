@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
-import { FAKE_LOCK, callWith, fakeRecipe, fakeRecipes } from "./support/fixture.ts";
+import { FAKE_LOCK, callWith, fakeRecipe, fakeRecipes, reviewResult } from "./support/fixture.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -44,7 +44,8 @@ describe("scaffold", () => {
 
     const c = await call("check", { h, stage: "candidate" });
     assert.equal(c.exit, 0, JSON.stringify(c));
-    assert.equal(c.next[0]!.action, "finish");
+    assert.equal(c.next[0]!.action, "review", "dependency changes raise the lane from the actual files");
+    await call("findings", { h, result: reviewResult(d(c)) });
     const f = await call("finish", { h, subject: "Scaffold the starter" });
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
     const committed = git(root, "show", "--name-only", "--format=", "HEAD").split("\n");
@@ -121,6 +122,7 @@ describe("scaffold crash recovery (the file-write effect has four steps)", () =>
     assert.ok(existsSync(join(root, "node_modules")), point);
     const c = await call("check", { h, stage: "candidate" });
     assert.equal(c.exit, 0, `${point}: ${JSON.stringify(c)}`);
+    await call("findings", { h, result: reviewResult(d(c)) });
     const f = await call("finish", { h, subject: "Scaffold" });
     assert.equal(d(f).endpoint, "checked-local", `${point}: ${JSON.stringify(f.reasons)}`);
     assert.equal(git(root, "show", "--name-only", "--format=", "HEAD").split("\n").length, 6, `${point}: every starter file is committed once`);
@@ -130,4 +132,5 @@ describe("scaffold crash recovery (the file-write effect has four steps)", () =>
   it("in the middle of the write: the partial write is rolled back, then it is written whole", async () => { await crashAt("mid-write"); });
   it("after every file is written, before the result record", async () => { await crashAt("after-write"); });
   it("after the result record, before the revision is published", async () => { await crashAt("after-result"); });
+  for (const point of ["after-temp-fsync", "after-link", "after-file-dir-fsync"]) it(`recovers the exclusive file publication boundary ${point} [CON-03]`, async () => { await crashAt(point); });
 });

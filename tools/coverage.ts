@@ -25,11 +25,6 @@ const HOST_BY_NATURE: Record<string, string> = {
   "SEC-01": "native permission requests and their explanations (host)",
 };
 
-/** Requirements about actions that M0 cannot perform at all, so there is nothing to test yet; each names the verb that brings it in. */
-const UNREACHABLE: Record<string, string> = {
-  "SEC-13": "needs a remote, destructive or content-sending action; none exists before `publish`, `undo` and `integrate` (Alpha)",
-};
-
 export const parsePrd = (text: string): Requirement[] =>
   text.split("\n").flatMap((l) => {
     const m = ROW.exec(l);
@@ -79,7 +74,6 @@ export function report(root: string, milestone: string): Report {
   for (const r of reqs) {
     if (tagged.has(r.id)) { covered.push({ id: r.id, tests: tagged.get(r.id)! }); continue; }
     if (HOST_BY_NATURE[r.id]) { hostOnly.push(r); continue; }
-    if (UNREACHABLE[r.id]) { unreachable.push(r); continue; }
     const t1Capable = r.acs.length === 0 || r.acs.some((ac) => !tiers.has(ac) || tiers.get(ac)!.includes("T1"));
     (t1Capable ? unmapped : hostOnly).push(r);
   }
@@ -88,11 +82,21 @@ export function report(root: string, milestone: string): Report {
   return { covered, hostOnly, unreachable, unmapped, reasonCodes: { referenced, total: Object.keys(REASONS).length }, overBudget: moduleBudgets(root), tooLong: tooLong(root) };
 }
 
-/** No verb or decision file is longer than this: growth is caught in the file that grew (owner decision, 2026-10-19). */
+/** No verb or decision file is longer than this, and no source line packs >340 chars to evade the cap (owner decision, 2026-10-19). */
 const FILE_CAP = 250;
+const LINE_WIDTH_CAP = 340;
 function tooLong(root: string): Report["tooLong"] {
   const src = join(root, "packages/kernel/src");
-  return ["verbs", "decisions"].flatMap((d) => readdirSync(join(src, d)).filter((f) => f.endsWith(".ts")).map((f) => ({ file: `${d}/${f}`, lines: readFileSync(join(src, d, f), "utf8").split("\n").length }))).filter((x) => x.lines > FILE_CAP);
+  const byLines = ["verbs", "decisions"]
+    .flatMap((d) => readdirSync(join(src, d)).filter((f) => f.endsWith(".ts")).map((f) => ({ file: `${d}/${f}`, lines: readFileSync(join(src, d, f), "utf8").split("\n").length })))
+    .filter((x) => x.lines > FILE_CAP);
+  const walkTs = (d: string): string[] =>
+    readdirSync(join(src, d), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walkTs(`${d}/${e.name}`) : e.name.endsWith(".ts") ? [`${d}/${e.name}`] : []));
+  const byWidth = walkTs(".").flatMap((file) => {
+    const max = Math.max(0, ...readFileSync(join(src, file), "utf8").split("\n").map((l) => l.length));
+    return max > LINE_WIDTH_CAP ? [{ file: `${file} (max line ${max} > ${LINE_WIDTH_CAP} chars)`, lines: max }] : [];
+  });
+  return [...byLines, ...byWidth];
 }
 
 /** Module line budgets are planning targets; more than 25% over needs a decision before the module grows (TS §6.2). */
@@ -116,7 +120,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const r = report(join(import.meta.dirname, ".."), milestone);
   const total = r.covered.length + r.hostOnly.length + r.unreachable.length + r.unmapped.length;
   console.log(`coverage ${milestone}: ${total} Musts · ${r.covered.length} with a T1 fixture · ${r.hostOnly.length} need the real host (T3/T4) · ${r.unreachable.length} not reachable yet · ${r.unmapped.length} unmapped`);
-  for (const x of r.unreachable) console.log(`  not reachable yet: ${x.id}: ${UNREACHABLE[x.id]}`);
   if (r.hostOnly.length) console.log(`  host only: ${r.hostOnly.map((x) => x.id).join(", ")}`);
   console.log(`  reason codes referenced by a fixture: ${r.reasonCodes.referenced} of ${r.reasonCodes.total}`);
   for (const o of r.overBudget) console.log(`  over budget by more than 25%: ${o.module} is ${o.lines} lines, budget ${o.budget}`);

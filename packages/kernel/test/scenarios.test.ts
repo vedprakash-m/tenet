@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, SLOW_TEST, cli, isAlive, listFiles, project, reviewResult, runCli, runningCheck, waitFor } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, SLOW_TEST, cli, isAlive, listFiles, project, reviewResult, runCli, runningCheck, waitFor, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -25,7 +25,7 @@ async function toRed(p: Project, over: Record<string, unknown> = {}, basis = BAS
 }
 async function toGreen(p: Project, h: string) {
   p.write("src/greet.ts", GREET_IMPL);
-  return p.call("check", { h, stage: "candidate" });
+  return p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
 }
 
 describe("one-stop rule (UX-D1)", () => {
@@ -46,7 +46,7 @@ describe("one-stop rule (UX-D1)", () => {
     assert.equal(ok.exit, 0, JSON.stringify(ok));
     assert.equal(ok.questions, undefined);
     const st = p.ports().store.read()!.state;
-    assert.equal(Object.values(st.work)[0]!.grants.some((g) => g.capture === "elicited"), true);
+    assert.equal(Object.values(st.work)[0]!.grants.some((g) => g.capture === "elicited"), false, "CLI capture is reported");
   });
 
   it("an assumption the user confirmed at kickoff does not block checked-local [INT-07]", async () => {
@@ -60,7 +60,7 @@ describe("one-stop rule (UX-D1)", () => {
     await p.call("check", { h, stage: "baseline" });
     const g = await toGreen(p, h);
     await p.call("findings", { h, result: reviewResult(d(g)) });
-    const done = await p.call("finish", { h, noCommit: true });
+    const done = await finishFixture(p, { h, noCommit: true });
     assert.equal(d(done).endpoint, "checked-local", JSON.stringify(done.reasons));
   });
 
@@ -69,7 +69,7 @@ describe("one-stop rule (UX-D1)", () => {
     const { h } = await toRed(p, {}, { ...BASIS, elements: [...BASIS.elements, { ref: "a1", kind: "assumption", origin: "request", text: "names are plain strings" }] } as typeof BASIS);
     const g = await toGreen(p, h);
     await p.call("findings", { h, result: reviewResult(d(g)) });
-    const done = await p.call("finish", { h, noCommit: true });
+    const done = await finishFixture(p, { h, noCommit: true });
     assert.ok(done.reasons.some((r) => r.code === "assumption-unresolved"), JSON.stringify(done.reasons));
   });
 
@@ -125,12 +125,12 @@ describe("misleading-success traps (AC-07)", () => {
     const { h } = await toRed(p);
     p.write("src/greet.ts", GREET_IMPL);
     p.write("src/greet.test.ts", GREET_TEST.replace('it("greets', 'it.skip("greets'));
-    const skipped = await p.call("check", { h, stage: "candidate" });
+    const skipped = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.ok(skipped.reasons.some((x) => x.code === "zero-tests"), JSON.stringify(skipped.reasons));
     p.write("src/greet.test.ts", GREET_TEST.replace('it("greets', 'it.only("greets'));
     const focused = await p.call("check", { h, stage: "candidate", again: true });
     assert.ok(focused.reasons.some((x) => x.code === "focused-tests"), JSON.stringify(focused.reasons));
-    const f = await p.call("finish", { h });
+    const f = await finishFixture(p, { h });
     assert.notEqual(d(f).endpoint, "checked-local");
   });
 
@@ -138,12 +138,12 @@ describe("misleading-success traps (AC-07)", () => {
     const p = fresh();
     const { h } = await toRed(p, { lane: "quick" });
     const green = await toGreen(p, h);
-    assert.equal(green.next[0]!.action, "finish");
+    assert.equal(green.next[0]!.action, "focused-review");
     assert.equal(p.ports().store.read()!.state.locks.length, 1);
     p.write("src/greet.test.ts", GREET_TEST.replace('.toBe("Hello, Ada!")', ".toBeTruthy()"));
-    const c2 = await p.call("check", { h, stage: "candidate" });
+    const c2 = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(c2.exit, 0, JSON.stringify(c2));
-    const f = await p.call("finish", { h, noCommit: true });
+    const f = await finishFixture(p, { h, noCommit: true });
     assert.ok(f.reasons.some((x) => x.code === "locked-test-changed"), JSON.stringify(f.reasons));
     assert.notEqual(d(f).endpoint, "checked-local");
   });
@@ -156,33 +156,36 @@ describe("misleading-success traps (AC-07)", () => {
     p.write("src/greet.test.ts", 'import { it } from "vitest";\nimport { greet } from "./greet.ts";\nimport { same } from "./helper.ts";\nit("greets by name", () => { same(greet("Ada"), "Hello, Ada!"); });\n');
     await p.call("check", { h, stage: "baseline", again: true });
     p.write("src/greet.ts", GREET_IMPL);
-    const g = await p.call("check", { h, stage: "candidate" });
+    const g = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(g.exit, 0, JSON.stringify(g));
     const lock = p.ports().store.read()!.state.locks[0]!;
-    assert.deepEqual(Object.keys(lock.supportInputs).sort(), ["src/helper.ts", "vitest.config.ts"]);
+    assert.ok(lock.supportInputs["src/helper.ts"]);
+    assert.ok(lock.supportInputs["vitest.config.ts"]);
+    assert.ok(lock.supportInputs["package.json"]);
+    assert.equal(lock.supportInputs["vitest.config.mts"], "", "a later configuration introduction must invalidate the baseline");
 
     p.write("src/helper.ts", 'export const same = (_a: unknown, _b: unknown) => undefined;\n'); // the assertion is gone; the test still "passes"
-    await p.call("check", { h, stage: "candidate" });
-    const f = await p.call("finish", { h, noCommit: true });
+    await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    const f = await finishFixture(p, { h, noCommit: true });
     assert.ok(f.reasons.some((r) => r.code === "locked-test-changed" && /src\/helper\.ts/.test(r.message)), JSON.stringify(f.reasons));
     assert.notEqual(d(f).endpoint, "checked-local");
 
     p.write("src/helper.ts", helper);
     p.write("vitest.config.ts", 'import { defineConfig } from "vitest/config";\nexport default defineConfig({ test: { exclude: ["**"] } });\n');
-    const f2 = await p.call("finish", { h, noCommit: true });
+    const f2 = await finishFixture(p, { h, noCommit: true });
     assert.ok(f2.reasons.some((r) => r.code === "locked-test-changed" && /vitest\.config\.ts/.test(r.message)), JSON.stringify(f2.reasons));
     const ok = await p.call("decide", { h, kind: "disposition", target: "vitest.config.ts", propose: { outcome: "accepted", reason: "narrowed on purpose" } });
     assert.equal(ok.exit, 0, JSON.stringify(ok));
     await p.call("check", { h, stage: "candidate", again: true });
-    assert.ok(!(await p.call("finish", { h, noCommit: true })).reasons.some((r) => r.code === "locked-test-changed"));
+    assert.ok(!(await finishFixture(p, { h, noCommit: true })).reasons.some((r) => r.code === "locked-test-changed"));
   });
 
   it("a weakened assertion raises an attention item that needs a disposition, and a marker needs the reviewer or the user", async () => {
     const p = fresh({ "src/other.test.ts": 'import { it, expect } from "vitest";\nit("o", () => { expect(1).toBe(1); });\n' });
     const { h } = await toRed(p, { lane: "quick" });
     p.write("src/greet.ts", `${GREET_IMPL}// @ts-ignore\nexport const x: number = "s" as any;\n`);
-    await p.call("check", { h, stage: "candidate" });
-    const f = await p.call("finish", { h, noCommit: true });
+    await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    const f = await finishFixture(p, { h, noCommit: true });
     const codes = f.reasons.map((r) => r.code);
     assert.ok(codes.includes("marker-unaccepted"), JSON.stringify(codes));
     assert.notEqual(d(f).endpoint, "checked-local");
@@ -218,13 +221,13 @@ describe("declared scaffolding", () => {
     const { p, h } = await setup();
     await p.call("check", { h, stage: "baseline", scaffold: ["src/index.ts"] });
     p.write("src/index.ts", "export const keep = 1;\nexport const double = (n: number): number => n * 2;\n");
-    await p.call("check", { h, stage: "candidate" });
-    const blocked = await p.call("finish", { h, noCommit: true });
+    await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    const blocked = await finishFixture(p, { h, noCommit: true });
     assert.ok(blocked.reasons.some((r) => r.code === "major-undisposed" && /declared scaffolding/.test(r.message)), JSON.stringify(blocked.reasons));
     const id = Object.values(p.ports().store.read()!.state.work)[0]!.attention.find((a) => a.pattern === "declared scaffolding")!.id;
     await p.call("decide", { h, kind: "disposition", target: id, propose: { outcome: "accepted", reason: "the stub became the implementation" } });
     await p.call("check", { h, stage: "candidate", again: true });
-    assert.equal(d(await p.call("finish", { h, noCommit: true })).endpoint, "checked-local");
+    assert.equal(d(await finishFixture(p, { h, noCommit: true })).endpoint, "checked-local");
   });
 
   it("cannot hide an implementation: a declared file that already passes is still no distinguishing red", async () => {
@@ -253,7 +256,7 @@ describe("review binding", () => {
     assert.equal(late.reasons[0]!.code, "review-stale", "a late result from the earlier child cannot settle the later attempt");
     const good = await p.call("findings", { h, result: reviewResult({ review: second }) });
     assert.equal(good.exit, 0, JSON.stringify(good));
-    assert.equal((await p.call("finish", { h, subject: "s" })).data && d(await p.call("inspect", { view: "why", h })).endpoint, "checked-local");
+    assert.equal((await finishFixture(p, { h, subject: "s" })).data && d(await p.call("inspect", { view: "why", h })).endpoint, "checked-local");
   });
 
   it("a same-session review reduces independence and cannot reach checked-local", async () => {
@@ -261,7 +264,7 @@ describe("review binding", () => {
     const { h } = await toRed(p);
     const g = await toGreen(p, h);
     await p.call("findings", { h, result: reviewResult(d(g), { dispatchMode: "same-session" }) });
-    const f = await p.call("finish", { h, noCommit: true });
+    const f = await finishFixture(p, { h, noCommit: true });
     assert.ok(f.reasons.some((r) => r.code === "reduced-independence"));
     assert.equal(d(f).endpoint, "implemented-unverified");
   });
@@ -274,14 +277,14 @@ describe("review binding", () => {
     const r1 = await p.call("findings", { h, result: reviewResult(d(g), { findings: [blocker] }) });
     assert.equal(r1.next[0]!.action, "implement");
     p.write("src/greet.ts", "export const greet = (name: string): string => `Hello, ${name.trim()}!`;\n");
-    const c2 = await p.call("check", { h, stage: "candidate" });
+    const c2 = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(c2.next[0]!.action, "recheck", JSON.stringify(c2));
     const rv = d(c2).review;
     assert.equal(rv.mode, "recheck");
     const r2 = await p.call("findings", { h, result: reviewResult({ review: rv }, { mode: "recheck", rechecked: [{ finding: "FND-1", outcome: "verified", evidence: "src/greet.ts:1 trims" }] }) });
     assert.equal(r2.exit, 0, JSON.stringify(r2));
     assert.equal(r2.budget.rounds, "1/2");
-    const f = await p.call("finish", { h, subject: "s" });
+    const f = await finishFixture(p, { h, subject: "s" });
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
   });
 });
@@ -291,13 +294,13 @@ describe("budget and stops", () => {
     const p = fresh();
     const { h } = await toRed(p, { lane: "quick" });
     p.write("src/greet.ts", "export const greet = (name: string): string => `Hi, ${name}!`;\n");
-    const a = await p.call("check", { h, stage: "candidate" });
+    const a = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(a.exit, 0);
     p.write("src/greet.ts", "export const greet = (name: string): string => `Hi, ${name}!`; // second try\n");
-    const b = await p.call("check", { h, stage: "candidate" });
+    const b = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(b.exit, 2, JSON.stringify(b));
     assert.ok(b.reasons.some((r) => r.code === "repeated-failure"));
-    const f = await p.call("finish", { h, noCommit: true });
+    const f = await finishFixture(p, { h, noCommit: true });
     assert.equal(f.exit, 0);
     assert.equal(d(f).endpoint, "implemented-unverified");
     assert.equal(d(f).stopReason, "repeated-failure");
@@ -306,8 +309,8 @@ describe("budget and stops", () => {
   it("finish refuses to close while a failure remains and attempts are left", async () => {
     const p = fresh();
     const { h } = await toRed(p, { lane: "quick" });
-    await p.call("check", { h, stage: "candidate" }); // the stub still fails
-    const f = await p.call("finish", { h, noCommit: true });
+    await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] }); // the stub still fails
+    const f = await finishFixture(p, { h, noCommit: true });
     assert.equal(f.exit, 2);
     assert.equal(f.reasons[0]!.code, "continue-required");
     assert.equal(f.next[0]!.action, "implement");
@@ -319,8 +322,8 @@ describe("idempotency and the envelope", () => {
     const p = fresh();
     const { h } = await toRed(p, { lane: "quick" });
     p.write("src/greet.ts", GREET_IMPL);
-    const first = await p.call("check", { h, stage: "candidate" });
-    const again = await p.call("check", { h, stage: "candidate" });
+    const first = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    const again = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(again.historical, true);
     assert.equal(again.budget.attempts, first.budget.attempts);
     const forced = await p.call("check", { h, stage: "candidate", again: true });
@@ -332,9 +335,10 @@ describe("idempotency and the envelope", () => {
     const p = fresh();
     const { h } = await toRed(p);
     const resumed = await p.call("open", { profile: "feature", request: "add a greeting", resume: true });
-    assert.equal(resumed.exit, 0, JSON.stringify(resumed));
+    assert.equal(resumed.exit, 3, JSON.stringify(resumed));
+    assert.equal(resumed.questions?.[0]?.id, "takeover-check");
     assert.notEqual(resumed.handle, h);
-    const stale = await p.call("check", { h, stage: "candidate" });
+    const stale = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(stale.exit, 4);
     assert.equal(stale.reasons[0]!.code, "stale-session");
     const other = fresh();
@@ -397,9 +401,9 @@ describe("injected failure 1: a human's edits on the files Tenet needs", () => {
     p.write("src/greet.test.ts", GREET_TEST);
     await p.call("check", { h, stage: "baseline" });
     p.write("src/greet.ts", `// my own work in progress\n${GREET_IMPL}`);
-    const g = await p.call("check", { h, stage: "candidate" });
+    const g = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     await p.call("findings", { h, result: reviewResult(d(g)) });
-    const f = await p.call("finish", { h, subject: "greet" });
+    const f = await finishFixture(p, { h, subject: "greet" });
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f));
     assert.match(p.git("show", "HEAD:src/greet.ts"), /my own work in progress/, "included by the user's choice, byte for byte");
   });
@@ -412,12 +416,12 @@ describe("injected failure 1: a human's edits on the files Tenet needs", () => {
     const g2 = await p.call("check", { h, stage: "candidate", again: true });
     await p.call("findings", { h, result: reviewResult(d(g2)) });
     void g;
-    const ask = await p.call("finish", { h, subject: "greet" });
+    const ask = await finishFixture(p, { h, subject: "greet" });
     assert.equal(ask.exit, 3, "Tenet cannot explain docs/notes.md");
     assert.equal(ask.questions![0]!.id, "unexplained");
     const ans = await p.call("decide", { h, kind: "unexplained", answers: { unexplained: "not-mine" } });
     assert.equal(ans.exit, 0, JSON.stringify(ans));
-    const f = await p.call("finish", { h, subject: "greet" });
+    const f = await finishFixture(p, { h, subject: "greet" });
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f));
     assert.equal(d(f).scope, "working-tree-with-your-edits");
     assert.match(d(f).label, /alongside your 1 uncommitted file/);
@@ -440,11 +444,11 @@ describe("injected failure 2: SIGKILL during a check", () => {
 
     p.write("src/greet.test.ts", GREET_TEST);
     p.write("src/greet.ts", GREET_IMPL);
-    const r = await p.call("check", { h, stage: "candidate" });
+    const r = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(r.exit, 0, JSON.stringify(r));
     assert.ok(r.effects?.completed.some((e) => /discarded the interrupted check/.test(e)), JSON.stringify(r.effects));
     await waitFor(() => !isAlive(run.pid), 5000, "the orphan to be stopped");
-    assert.equal(r.next[0]!.action, "finish");
+    assert.equal(r.next[0]!.action, "focused-review");
     const st = p.ports().store.read()!.state;
     assert.equal(Object.values(st.work)[0]!.session.inCall, undefined);
     assert.ok(Object.values(st.work)[0]!.receipts.every((x) => x.status !== "fail" || x.stage === "baseline"));
@@ -495,7 +499,7 @@ describe("injected failure 3: a crash anywhere in the commit effect (intent, act
     assert.equal(sig, "SIGKILL", point);
     assert.equal(Number(p.git("rev-list", "--count", "HEAD")), before + (landed ? 1 : 0), `${point}: the commit ${landed ? "landed" : "had not run"}`);
 
-    const f = await p.call("finish", { h, subject: "greet" });
+    const f = await finishFixture(p, { h, subject: "greet" });
     assert.equal(f.exit, 0, `${point}: ${JSON.stringify(f)}`);
     assert.equal(Number(p.git("rev-list", "--count", "HEAD")), before + 1, `${point}: exactly one commit, never none and never two`);
     assert.equal(d(f).endpoint, "checked-local", `${point}: ${JSON.stringify(f.reasons)}`);

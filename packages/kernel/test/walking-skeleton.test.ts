@@ -1,7 +1,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult, finishFixture } from "./support/fixture.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -28,13 +28,13 @@ describe("walking skeleton: open → basis → red → green → review → chec
     assert.equal(red.next[0]!.action, "implement", JSON.stringify(red));
 
     p.write("src/greet.ts", GREET_IMPL);
-    const green = await p.call("check", { h, stage: "candidate" });
+    const green = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(green.exit, 0, JSON.stringify(green));
     assert.equal(green.next[0]!.action, "review", JSON.stringify(green));
     assert.equal(green.budget.attempts, "1/3");
     const data = green.data as Record<string, any>;
 
-    const early = await p.call("finish", { h });
+    const early = await finishFixture(p, { h });
     assert.equal((early.data as any).endpoint, "implemented-unverified", "no review yet: the endpoint is honest");
     assert.ok(early.reasons.some((r) => r.code === "review-missing"));
   });
@@ -48,12 +48,12 @@ describe("walking skeleton: open → basis → red → green → review → chec
     p.write("src/greet.test.ts", GREET_TEST);
     await p.call("check", { h, stage: "baseline" });
     p.write("src/greet.ts", GREET_IMPL);
-    const green = await p.call("check", { h, stage: "candidate" });
+    const green = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     const r = await p.call("findings", { h, result: reviewResult(green.data as Record<string, any>) });
     assert.equal(r.exit, 0, JSON.stringify(r));
     assert.equal(r.next[0]!.action, "finish");
 
-    const f = await p.call("finish", { h, subject: "Add greet" });
+    const f = await finishFixture(p, { h, subject: "Add greet" });
     const d = f.data as Record<string, any>;
     assert.equal(f.exit, 0, JSON.stringify(f));
     assert.equal(d.endpoint, "checked-local", JSON.stringify(f));

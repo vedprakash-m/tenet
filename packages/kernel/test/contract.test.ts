@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -38,7 +38,7 @@ describe("the work contract", () => {
     p.write("src/greet.test.ts", GREET_TEST);
     responses.push(await p.call("check", { h, stage: "baseline" }));
     p.write("src/greet.ts", GREET_IMPL);
-    responses.push(await p.call("check", { h, stage: "candidate" }), await p.call("finish", { h, subject: "s" }));
+    responses.push(await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] }), await finishFixture(p, { h, subject: "s" }));
     assert.ok(responses.every((r) => r.exit === 0 && !r.questions), "edits, checks and the commit asked nothing");
     const grant = work(p).grants.find((g) => g.id === "GR-1")!;
     assert.deepEqual([grant.actions, grant.source, grant.capture, grant.quote], [["local-routine"], "request", "reported", "add a greeting"]);
@@ -55,10 +55,10 @@ describe("the work contract", () => {
     p.write("src/greet.test.ts", GREET_TEST);
     await p.call("check", { h, stage: "baseline" });
     p.write("src/greet.ts", GREET_IMPL);
-    const g = await p.call("check", { h, stage: "candidate" });
+    const g = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     const r = await p.call("findings", { h, result: reviewResult(d(g), { axes: { behavior: "pass", structure: "fail" } }) });
     assert.ok(r.reasons.some((x) => /structure: fail/.test(x.message) && x.note));
-    const f = await p.call("finish", { h, noCommit: true });
+    const f = await finishFixture(p, { h, noCommit: true });
     assert.deepEqual(d(f).review.axes, { behavior: "pass", structure: "fail" });
     assert.equal(d(f).endpoint, "checked-local", "a structure judgment is shown, and blocks only through findings that need disposition");
   });
@@ -73,7 +73,7 @@ describe("the review manifest is self-sufficient (SP-08, observed on Copilot CLI
     p.write("src/greet.test.ts", GREET_TEST);
     await p.call("check", { h, stage: "baseline" });
     p.write("src/greet.ts", GREET_IMPL);
-    const g = await p.call("check", { h, stage: "candidate" });
+    const g = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     const manifest = JSON.parse(readFileSync(d(g).review.manifest, "utf8"));
     assert.match(manifest.rubric, /Stage A \(behavior and intent\)/);
     assert.match(manifest.rubric, /resultTemplate/);
@@ -99,7 +99,7 @@ describe("limits warn at 80% and stop at the bound [WRK-08]", () => {
     const out = [];
     for (const t of tries) {
       p.write("src/greet.ts", `export const greet = (n: string): string => \`${t}, \${n}!\`;\n`);
-      out.push(await p.call("check", { h, stage: "candidate" }));
+      out.push(await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] }));
     }
     assert.equal(out[0]!.budget.attempts, "1/3");
     assert.ok(!out[0]!.reasons.some((r) => r.code === "budget-warning") && !out[1]!.reasons.some((r) => r.code === "budget-warning"), "80% of three is 2.4: the warning and the bound coincide");
@@ -121,7 +121,7 @@ describe("repository content is data (SEC-02)", () => {
     p.write("src/greet.test.ts", GREET_TEST);
     await p.call("check", { h, stage: "baseline" });
     p.write("src/greet.ts", `${hostile}${GREET_IMPL}`);
-    const g = await p.call("check", { h, stage: "candidate" });
+    const g = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     const w = work(p);
     assert.equal(w.acceptance, "pending");
     assert.deepEqual(w.grants.map((x) => x.id), ["GR-1", ...(w.grants.some((x) => x.id === "GR-basis") ? ["GR-basis"] : [])]);

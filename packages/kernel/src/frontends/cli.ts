@@ -10,7 +10,7 @@ import type { Ports } from "../ports/types.ts";
 const POSITIONAL: Record<string, string> = { open: "profile", decide: "kind", packet: "role", stop: "mode", inspect: "view", check: "stage" };
 /** Verbs whose input can be large or structured take a JSON object on stdin; the rest never wait for it. */
 const BODY_VERBS = new Set(["findings", "decide", "open"]);
-const LISTS = new Set(["touched", "scopePaths", "protectedPaths", "signals"]);
+const LISTS = new Set(["touched", "scaffold", "scopePaths", "protectedPaths", "signals"]);
 const camel = (s: string) => s.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
 
 export function parseArgs(argv: readonly string[]): { verb: string; input: Record<string, unknown> } {
@@ -24,10 +24,11 @@ export function parseArgs(argv: readonly string[]): { verb: string; input: Recor
       if (field && !positional) { input[field] = a; positional = true; continue; }
       throw new Error(`unexpected argument "${a}"`);
     }
-    const key = camel(a.slice(2));
-    const next = rest[i + 1];
-    if (next === undefined || next.startsWith("--")) { input[key] = true; continue; }
-    i++;
+    const eq = a.indexOf("=");
+    const key = camel(a.slice(2, eq < 0 ? undefined : eq));
+    const next = eq < 0 ? rest[i + 1] : a.slice(eq + 1);
+    if (next === undefined || (eq < 0 && next.startsWith("--"))) { input[key] = true; continue; }
+    if (eq < 0) i++;
     if (key === "answer") { // --answer <id>=<choice>, repeatable: one question, one answer
       const eq = next.indexOf("=");
       if (eq < 1) throw new Error(`--answer needs <id>=<choice>, got "${next}"`);
@@ -40,15 +41,27 @@ export function parseArgs(argv: readonly string[]): { verb: string; input: Recor
 }
 
 /** Reads a JSON object from stdin without hanging: a pipe that never delivers a byte is treated as empty. */
-export async function readStdin(stream: NodeJS.ReadableStream & { isTTY?: boolean }, graceMs = 250): Promise<Record<string, unknown>> {
+export async function readStdin(stream: NodeJS.ReadableStream & { isTTY?: boolean }, graceMs = 250, limits = { bytes: 1024 * 1024, deadlineMs: 5_000 }): Promise<Record<string, unknown>> {
   if (stream.isTTY) return {};
   const chunks: Buffer[] = [];
-  const text = await new Promise<string>((resolve) => {
-    let started = false;
-    const timer = setTimeout(() => { if (!started) { stream.pause(); resolve(""); } }, graceMs);
-    stream.on("data", (c: Buffer) => { started = true; clearTimeout(timer); chunks.push(Buffer.from(c)); });
-    stream.on("end", () => { clearTimeout(timer); resolve(Buffer.concat(chunks).toString("utf8")); });
-    stream.on("error", () => { clearTimeout(timer); resolve(""); });
+  const text = await new Promise<string>((resolve, reject) => {
+    let size = 0;
+    const finish = (error?: Error, empty = false) => {
+      clearTimeout(idle); clearTimeout(deadline);
+      stream.off("data", data); stream.off("end", end); stream.off("error", failed); stream.pause();
+      if (error) reject(error); else resolve(empty ? "" : Buffer.concat(chunks).toString("utf8"));
+    };
+    const data = (c: Buffer) => {
+      clearTimeout(idle);
+      const chunk = Buffer.from(c); size += chunk.length;
+      if (size > limits.bytes) { finish(new Error(`stdin exceeds ${limits.bytes} bytes`)); return; }
+      chunks.push(chunk);
+    };
+    const end = () => finish();
+    const failed = (e: Error) => finish(e);
+    const idle = setTimeout(() => finish(undefined, true), graceMs);
+    const deadline = setTimeout(() => finish(new Error("stdin body deadline exceeded")), limits.deadlineMs);
+    stream.on("data", data); stream.on("end", end); stream.on("error", failed);
   });
   if (!text.trim()) return {};
   const parsed: unknown = JSON.parse(text);

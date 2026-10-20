@@ -3,7 +3,8 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { KernelResponse } from "../../src/core/schemas.ts";
-import { runVerb } from "../../src/pipeline.ts";
+import { handleOf, runVerb } from "../../src/pipeline.ts";
+import { configurePolicy } from "../../src/verbs/reconcile.ts";
 import { VERBS } from "../../src/verbs/index.ts";
 import { createPorts } from "../../src/wire.ts";
 import { git, initRepo, tmp, write } from "../helpers.ts";
@@ -45,10 +46,27 @@ export const BASIS = {
 
 export const reviewResult = (data: Record<string, any>, over: Record<string, unknown> = {}) => ({
   manifest: data.review.hash, reservation: data.review.reservation, attempt: data.review.attempt, mode: data.review.mode,
-  status: "completed", dispatchMode: "subagent-fresh", axes: { behavior: "pass", structure: "pass" },
-  coverage: { inspected: ["src/greet.ts", "src/greet.test.ts"], uncovered: [], crossCutting: "no other callers", sampled: [] },
+  status: "completed", dispatchMode: data.review.dispatchMode ?? "subagent-fresh", axes: { behavior: "pass", structure: "pass" },
+  coverage: { inspected: data.review.files ?? ["src/greet.ts", "src/greet.test.ts"], uncovered: [], crossCutting: "no other callers", sampled: [] },
   attention: [], findings: [], basisGaps: [], ...over,
 });
+
+/** A synthetic coordinator step for existing workflow fixtures: report the current offered same-session pass.
+ * Product tests that prove the missing-pass refusal call the kernel directly (focused-review.test.ts). */
+export async function focusFixture(p: Project, h: string): Promise<KernelResponse | undefined> {
+  const ports = p.ports(), state = ports.store.read()?.state;
+  const w = state && Object.values(state.work).find(w => handleOf(state, w) === h);
+  const rv = w?.focusedReview;
+  if (!state || !w || !rv || state.pending.length || w.state === "finished") return;
+  configurePolicy(ports, state);
+  if ((await ports.git.inventory([])).digest !== rv.candidate) return;
+  return p.call("findings", { h, result: reviewResult({ review: { hash: rv.manifestHash, reservation: rv.id, attempt: rv.attempt, mode: rv.mode, files: rv.requiredPaths ?? Object.keys(rv.files), dispatchMode: "same-session" } }) });
+}
+
+export async function finishFixture(p: Project, input: Record<string, unknown>): Promise<KernelResponse> {
+  if (typeof input.h === "string") await focusFixture(p, input.h);
+  return p.call("finish", input);
+}
 
 const MAIN = join(import.meta.dirname, "../../src/main.ts");
 export interface Cli { code: number | null; signal: NodeJS.Signals | null; stdout: string; json?: KernelResponse }
@@ -86,7 +104,8 @@ export function runningCheck(p: Project): { runDir: string; pid: number } | unde
   const st = p.ports().store.read()?.state;
   const c = Object.values(st?.work ?? {}).map((w) => w.session.inCall).find(Boolean);
   if (!c?.runDir || !existsSync(join(c.runDir, "run.json"))) return undefined;
-  return { runDir: c.runDir, pid: JSON.parse(readFileSync(join(c.runDir, "run.json"), "utf8")).pid };
+  const record = JSON.parse(readFileSync(join(c.runDir, "run.json"), "utf8"));
+  return typeof record.pid === "number" && record.procStart ? { runDir: c.runDir, pid: record.pid } : undefined;
 }
 
 export const listFiles = (root: string): string[] => readdirSync(root).sort();

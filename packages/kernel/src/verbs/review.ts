@@ -11,7 +11,8 @@ export const review: Verb<ReviewInput> = {
   schema: ReviewInput,
   class: () => "stateless",
 
-  async run(ports, _s, _i) {
+  async run(ports, _s, input) {
+    if (input.scope !== "working-tree" || input.base) throw new KernelError("capability-missing", "only working-tree review against HEAD is implemented; branch, file, document and explicit-base review are unavailable", { exit: 2 });
     const probe = await ports.git.probe();
     if (!probe.isRepo) throw new KernelError("capability-missing", "review needs a Git repository to compare against", { exit: 2 });
     const inv = await ports.git.inventory([]);

@@ -7,7 +7,7 @@ import type { VerdictInput } from "../src/core/verdict.ts";
 import type { BasisElement, Finding, Obligation, Receipt, ReviewLink } from "../src/core/schemas.ts";
 
 const CHECK = "chk1";
-const ob: Obligation = { id: "OB-EX-1", kind: "test", category: "acceptance", testFile: "a.test.ts", test: "distinguishing", expectation: "fail", baselineMatched: true, baselineTestHash: "h1" };
+const ob: Obligation = { id: "OB-EX-1", kind: "test", category: "acceptance", testFile: "a.test.ts", test: "distinguishing", expectation: "fail", baselineMatched: true, baselineTestHash: "h1", baselineInputs: {} };
 const suite: Obligation = { id: "OB-suite", kind: "test", category: "affected" };
 const rc = (obligation: string, over: Partial<Receipt> = {}): Receipt => ({
   id: `RC-${obligation}`, obligation, kind: "test", stage: "candidate", source: "kernel-run", checkInputId: CHECK, scope: "full", argv: [], cwd: ".",
@@ -16,7 +16,8 @@ const rc = (obligation: string, over: Partial<Receipt> = {}): Receipt => ({
 });
 const req: BasisElement = { id: "REQ-1", origin: "request", kind: "requirement", text: "t", verifiedBy: [{ method: "obligation", ref: "OB-EX-1" }] };
 const ex: BasisElement = { id: "EX-1", origin: "request", kind: "example", text: "t", of: "REQ-1", testFile: "a.test.ts", verifiedBy: [{ method: "obligation", ref: "OB-EX-1" }] };
-const link: ReviewLink = { reservation: "RV", mode: "full", candidate: "cand", basisHash: "bh", uncovered: [], verified: [], independence: "subagent-fresh", status: "completed", files: {} };
+const coverage = { inspected: ["a.ts"], uncovered: [], crossCutting: "a calls the shared helper", sampled: [] };
+const link: ReviewLink = { reservation: "RV", mode: "full", candidate: "cand", basisHash: "bh", uncovered: [], verified: [], independence: "subagent-fresh", status: "completed", files: { "a.ts": "a" }, coverage };
 const finding = (over: Partial<Finding>): Finding => ({ id: "F1", n: 1, severity: "major", axis: "behavior", location: { path: "a.ts" }, claim: "c", evidence: "e", state: "valid", history: [], ...over });
 
 const base = (): VerdictInput => ({
@@ -28,6 +29,47 @@ const base = (): VerdictInput => ({
 const codes = (i: VerdictInput) => verdict(i).reasons.filter((r) => !r.note).map((r) => r.code);
 
 describe("verdict table [RES-02, EVD-01]", () => {
+  it("cannot claim Deep assurance without architecture and security evidence [WRK-04]", () => {
+    const v = verdict({ ...base(), lane: "deep" });
+    assert.notEqual(v.endpoint, "checked-local");
+    assert.ok(v.reasons.some(r => r.code === "review-missing" && /architecture/.test(r.message)));
+    assert.ok(v.reasons.some(r => r.code === "review-missing" && /security/.test(r.message)));
+  });
+  it("requires the full review chain, including coverage of the recheck delta [REV-01]", () => {
+    const root = { ...link, reservation: "root", candidate: "old" };
+    const recheck: ReviewLink = { ...link, reservation: "delta", mode: "recheck", basedOn: "root", files: { "a.ts": "new" } };
+    assert.deepEqual(codes({ ...base(), reviews: [root, recheck] }), []);
+    assert.ok(codes({ ...base(), reviews: [recheck] }).includes("review-stale"));
+    assert.ok(codes({ ...base(), reviews: [{ ...root, uncovered: ["unread.ts"] }, recheck] }).includes("review-partial-coverage"));
+    assert.ok(codes({ ...base(), reviews: [root, { ...recheck, coverage: { ...coverage, inspected: [] } }] }).includes("review-partial-coverage"));
+  });
+  it("requires inspection, cross-module evidence and no open review dependencies [REV-08]", () => {
+    assert.ok(codes({ ...base(), reviews: [{ ...link, coverage: undefined }] }).includes("review-partial-coverage"));
+    assert.ok(codes({ ...base(), reviews: [{ ...link, coverage: { ...coverage, crossCutting: "" } }] }).includes("review-partial-coverage"));
+    assert.ok(codes({ ...base(), reviews: [{ ...link, openDependencies: ["unread imported module"] }] }).includes("review-partial-coverage"));
+  });
+  it("allows caller sampling only for nonsemantic changes with a fresh full types receipt [REV-08]", () => {
+    const sampled = { ...coverage, sampled: [{ symbol: "f", callers: 20, opened: 3, semantic: false, why: "same signature" }] };
+    const sampledLink = { ...link, coverage: sampled };
+    const types: Obligation = { id: "types", kind: "static", category: "affected", tool: "tsc" };
+    const typed = { ...base(), reviews: [sampledLink], obligations: [ob, suite, types], receipts: [...base().receipts, rc("types", { kind: "static" })] };
+    assert.deepEqual(codes(typed), []);
+    assert.ok(codes({ ...base(), reviews: [sampledLink] }).includes("review-partial-coverage"));
+    assert.ok(codes({ ...typed, reviews: [{ ...link, coverage: { ...sampled, sampled: [{ ...sampled.sampled[0]!, semantic: true }] } }] }).includes("review-partial-coverage"));
+  });
+  it("does not treat a fabricated manual reference as evidence [EVD-12]", () => {
+    assert.ok(codes({ ...base(), elements: [{ ...req, verifiedBy: [{ method: "manual", ref: "someone said it works" }] }] }).includes("basis-element-unverified"));
+  });
+  it("invalidates red when a declared support input changes or disappears [TDD-03]", () => {
+    const obligations = [{ ...ob, baselineInputs: { "helper.ts": "old" } }, suite];
+    assert.ok(codes({ ...base(), obligations, testHashes: { "a.test.ts": "h1", "helper.ts": "new" } }).includes("red-invalidated"));
+    assert.ok(codes({ ...base(), obligations }).includes("red-invalidated"));
+  });
+  it("requires a distinguishing obligation and every declared baseline expectation [TDD-01, TDD-04]", () => {
+    assert.ok(codes({ ...base(), obligations: [suite] }).includes("no-distinguishing-red"));
+    assert.ok(codes({ ...base(), obligations: [{ ...ob, category: "boundary", test: "boundary", baselineMatched: false }, suite] }).includes("no-distinguishing-red"));
+    assert.ok(codes({ ...base(), obligations: [ob, { ...ob, id: "preserve", test: "preservation", expectation: "pass", baselineMatched: false }, suite] }).includes("evidence-missing"));
+  });
   it("checked-local, committed, with no reasons when everything is fresh and reviewed", () => {
     const v = verdict(base());
     assert.deepEqual([v.endpoint, v.scope, v.reasons.length], ["checked-local", "committed", 0]);

@@ -12,7 +12,9 @@ import type { RunFacts } from "../core/receipts.ts";
 import type { AttentionItem, Obligation, State, WorkContract } from "../core/schemas.ts";
 import type { Reason } from "../core/schemas.ts";
 import { hashOf } from "../core/ids.ts";
-import { supportOf } from "../core/obligations.ts";
+import { baselineDefinitionMatches, declaredInputs, supportOf } from "../core/obligations.ts";
+import { allowed } from "../core/exclusions.ts";
+import type { Exclusion } from "../core/exclusions.ts";
 import type { Job, Plan, Resp, Verb } from "../pipeline.ts";
 import type { Normalized } from "../ports/types.ts";
 import { nx, withWork, workOf } from "./common.ts";
@@ -20,7 +22,7 @@ import { dirtyQuestion, undecidedDirty } from "./dirty.ts";
 import { grantQuestion } from "./authority.ts";
 import { checkInputId, gather, unauthorizedEdits, worldDigest } from "./facts.ts";
 import { issueReview } from "./manifest.ts";
-import { keepRecovered, recover } from "./recover.ts";
+import { settingsFor, unsupportedExecution } from "./reconcile.ts";
 
 const TIMEOUT_MS = 10 * 60_000;
 
@@ -31,18 +33,32 @@ export const check: Verb<CheckInput> = {
   identity: worldDigest,
   editing: () => true,
 
-  async run(ports, state0, input, tx): Promise<Plan> {
-    const state = state0!;
-    let w = workOf(state, input.h);
+  async run(ports, state0, input): Promise<Plan> {
+    if (input.stage === "committed") throw new KernelError("capability-missing", "committed-tree checks are not implemented; check the working-tree candidate instead", { exit: 2 });
+    const cur = state0!;
+    let w = workOf(cur, input.h);
     if (!w.basis) throw new KernelError("continue-required", "record a basis with decide before checking", { exit: 2 });
+    const unavailable = unsupportedExecution(ports, cur, w);
+    if (unavailable.length) throw new KernelError("capability-missing", `execution of ${unavailable.slice(0, 3).join(", ")} is not implemented; no substitute check was run`, { exit: 2 });
+    const inputs = declaredInputs(w.obligations);
+    const exclusions = settingsFor(ports, cur, w).exclusions as Exclusion[];
+    const unreadable = inputs.filter((path) => !allowed("read", path, exclusions));
+    if (unreadable.length) throw new KernelError("capability-missing", `excluded evidence inputs cannot be verified from stat alone: ${unreadable.slice(0, 3).join(", ")}; no check was launched`, { exit: 2 });
+    const detected = ports.stack.detect(ports.root);
+    if (!detected.runnerSupported || !detected.depsInstalled) {
+      const code = detected.runnerVersion ? "adapter-unsupported-version" : "capability-missing";
+      const msg = detected.runnerVersion ? `Vitest ${detected.runnerVersion} is outside the supported adapter range; no check was launched` : "a supported installed test runner is required; no check was launched";
+      throw new KernelError(code, msg, { exit: 2 });
+    }
     // Finished work can still be rechecked on the integrated tree; nothing else reopens it.
-    if (["finished", "cancelled", "superseded"].includes(w.state) && !(w.state === "finished" && input.stage === "integrated")) throw new KernelError("stale-session", `this work is ${w.state}`, { exit: 2 });
-    const rec = await recover(ports, tx!, state);
-    let cur = rec.state;
-    w = cur.work[w.id]!;
-    if (w.session.inCall) throw new KernelError("work-busy", `a ${w.session.inCall.verb} is running`);
+    if (["finished", "cancelled", "superseded"].includes(w.state) && !(w.state === "finished" && input.stage === "integrated")) {
+      throw new KernelError("stale-session", `this work is ${w.state}`, { exit: 2 });
+    }
+    if (input.stage === "candidate" && !input.targeted && (!attemptsLeft(w.budget, w.lane) || w.stopReason)) {
+      throw new KernelError(w.stopReason === "repeated-failure" ? "repeated-failure" : "budget-exhausted", "No candidate attempt remains. Finish with the current evidence and handoff.", { exit: 2 });
+    }
     if (cur.pending.length) {
-      return keepRecovered({ resp: { work: w.id, exit: 3, questions: cur.pending, next: [nx("ask", "Answer the open question first.", true)] } }, rec, state);
+      return { resp: { work: w.id, exit: 3, questions: cur.pending, next: [nx("ask", "Answer the open question first.", true)] } };
     }
 
     const now = ports.clock.now();
@@ -56,14 +72,22 @@ export const check: Verb<CheckInput> = {
     const undecided = undecidedDirty(w);
     if (undecided.length) {
       const q = dirtyQuestion(undecided);
-      return { state: withWork({ ...cur, pending: [...cur.pending.filter((p) => p.id !== q.id), q] }, w), resp: { work: w.id, exit: 3, questions: [q], reasons: [reason("attribution-mixed-file", undecided.join(", "))], next: [nx("ask", "Ask the user what happens to their edits.", true)] } };
+      return {
+        state: withWork({ ...cur, pending: [...cur.pending.filter((p) => p.id !== q.id), q] }, w),
+        resp: { work: w.id, exit: 3, questions: [q], reasons: [reason("attribution-mixed-file", undecided.join(", "))], next: [nx("ask", "Ask the user what happens to their edits.", true)] },
+      };
     }
 
     const facts = await gather(ports, w);
+    const linked = inputs.filter((path) => facts.inv.entries.get(path)?.mode === "120000");
+    if (linked.length) throw new KernelError("capability-missing", `linked evidence inputs cannot be verified from their link spelling: ${linked.slice(0, 3).join(", ")}; no check was launched`, { exit: 2 });
     const ungranted = unauthorizedEdits(ports, w, facts);
     if (ungranted.length) {
       const q = grantQuestion(ungranted);
-      return keepRecovered({ state: withWork({ ...cur, pending: [...cur.pending.filter((p) => p.id !== q.id), q] }, w), resp: { work: w.id, exit: 3, questions: [q], reasons: [reason("authority-needed", ungranted.slice(0, 3).join(", "))], next: [nx("ask", "Ask the user; their words authorize the edits, or undo them.", true)] } }, rec, state);
+      return {
+        state: withWork({ ...cur, pending: [...cur.pending.filter((p) => p.id !== q.id), q] }, w),
+        resp: { work: w.id, exit: 3, questions: [q], reasons: [reason("authority-needed", ungranted.slice(0, 3).join(", "))], next: [nx("ask", "Ask the user; their words authorize the edits, or undo them.", true)] },
+      };
     }
     const id = checkInputId(ports, w, facts.candidate);
     const runId = `${w.label}-${ports.rand.base32(6)}`;
@@ -92,7 +116,7 @@ export const check: Verb<CheckInput> = {
         const argv = ports.stack.argv(toExecute, report);
         const r = await ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: TIMEOUT_MS, report });
         const raw = r.report;
-        const after = (await ports.git.inventory([])).digest;
+        const after = (await ports.git.inventory([], inputs)).digest;
         return { ...(r.exit !== undefined ? { exit: r.exit } : {}), ...(r.signal ? { signal: r.signal } : {}), timedOut: r.timedOut, durationMs: r.durationMs, ...(r.pid ? { pid: r.pid } : {}), startedAt: r.startedAt, raw, after, ran: r.exit !== undefined || !!r.signal };
       },
 
@@ -111,7 +135,7 @@ export const check: Verb<CheckInput> = {
         // The baseline may differ from the start only by tests and new files (the minimal scaffolding a new interface needs);
         // a pre-existing source file that changed means the red was not taken on the starting behavior.
         const isNew = (p: string) => facts.inv.status.some((s) => s.path === p && (s.untracked || s.xy.startsWith("A")));
-        const contaminated = baseline ? [...facts.att.tenet, ...facts.att.mixed].filter((p) => ports.stack.classify(p) === "source" && !isNew(p) && !(cw.scaffolding ?? []).includes(p)) : [];
+        const contaminated = baseline ? facts.inv.status.map(s => s.path).filter((p) => ports.stack.classify(p) === "source" && !isNew(p) && !cw.git.start.dirty.some(d => d.path === p && d.blob === facts.inv.entries.get(p)?.blob) && !(cw.scaffolding ?? []).includes(p)) : [];
         if (baseline && cw.scaffolding?.length) for (const r of receipts) r.limitations.push(`scaffolding declared in existing files: ${cw.scaffolding.slice(0, 3).join(", ")}`);
         if (contaminated.length) for (const r of receipts) { r.status = "inconclusive"; r.reasons.push("evidence-inconclusive"); r.limitations.push(`source changed before the baseline: ${contaminated.slice(0, 3).join(", ")}`); }
         const hasConfigFailure = receipts.some((r) => r.status === "inconclusive");
@@ -121,17 +145,17 @@ export const check: Verb<CheckInput> = {
           const r = receipts.find((x) => x.obligation === ob.id);
           if (!r || !baseline) return ob;
           const wantsRed = (ob.expectation ?? "pass") === "fail";
-          const behavioral = r.status === "fail" && (r.failures ?? []).length > 0 && (r.failures ?? []).every((f) => f.kind === "assertion");
+          const behavioral = r.status === "fail" && (r.failureKinds ?? []).length > 0 && r.failureKinds!.every(kind => kind === "assertion");
           const matched = wantsRed ? behavioral : r.status === "pass";
-          return { ...ob, baselineMatched: matched, baselineTestHash: ob.testFile ? facts.inv.entries.get(ob.testFile)?.blob : undefined, state: matched ? "verified" as const : ob.state };
+          return { ...ob, baselineMatched: matched, baselineTestHash: ob.testFile ? facts.inv.entries.get(ob.testFile)?.blob : undefined, baselineInputs: supportOf(ob, facts) };
         });
-        let budget = recordLaunchedChecks(cw.budget, receipts.length);
+        let budget = recordLaunchedChecks(cw.budget, o.ran ? toRun.filter(ob => !missing.some(m => m.id === ob.id)).length : 0);
         const failing = receipts.filter((r) => r.status === "fail");
         const passedAll = !baseline && scope === "full" && receipts.length > 0 && receipts.every((r) => r.status === "pass") && cw.obligations.every((ob) => receipts.some((r) => r.obligation === ob.id));
         if (stage === "candidate" && scope === "full" && !hasConfigFailure) {
           budget = recordAttempt(budget);
           const first = failing[0];
-          budget = withSignature(budget, first ? failureSignature(first.obligation, (first.failures ?? []).map((f) => f.test), first.failures?.[0]?.message ?? "") : `pass@${budget.attempts}`);
+          budget = first ? withSignature(budget, failureSignature(first.obligation, (first.failures ?? []).map((f) => f.test), first.failures?.[0]?.message ?? "")) : { ...budget, signatures: [] };
         }
         const stop = stopFor(budget, cw.lane);
 
@@ -139,7 +163,9 @@ export const check: Verb<CheckInput> = {
         let locks = st.locks;
         for (const ob of obligations) {
           const r = receipts.find((x) => x.obligation === ob.id);
-          if (stage === "candidate" && r?.status === "pass" && ob.testFile && ob.baselineMatched && !locks.some((l) => l.path === ob.testFile)) {
+          const same = baselineDefinitionMatches(ob, path => facts.inv.entries.get(path)?.blob);
+          if (stage === "candidate" && ob.baselineMatched && !same) obligations = obligations.map(x => x.id === ob.id ? { ...x, state: "revised" as const } : x);
+          if (stage === "candidate" && r?.status === "pass" && ob.testFile && same && !locks.some((l) => l.path === ob.testFile)) {
             const blob = facts.inv.entries.get(ob.testFile)?.blob;
             if (blob) { locks = [...locks, { path: ob.testFile, hash: blob, obligation: ob.id, anchor: { provisional: cw.id }, supportInputs: supportOf(ob, facts) }]; obligations = obligations.map((x) => (x.id === ob.id ? { ...x, state: "locked" as const } : x)); }
           }
@@ -175,12 +201,9 @@ export const check: Verb<CheckInput> = {
         } else if (failing.length || hasConfigFailure) {
           next.push(nx(failing.length ? "implement" : "check", failing.length ? `Fix the failing check (${attemptsLeft(budget, cw.lane)} attempts left).` : "The check could not run cleanly; fix the cause and retry.", true));
         } else if (passedAll) {
-          if (cw.lane === "quick") next.push(nx("finish", "Checks pass. Finish to commit and get the result."));
-          else {
-            const issued = issueReview(ports, st, nw, facts, changes);
-            nw = issued.work; next.push(...issued.next); reasons.push(...issued.reasons);
-            if (issued.data) data = { ...data, ...issued.data };
-          }
+          const issued = issueReview(ports, st, nw, facts, changes);
+          nw = issued.work; next.push(...issued.next); reasons.push(...issued.reasons);
+          if (issued.data) data = { ...data, ...issued.data };
         } else {
           next.push(nx(scope === "targeted" ? "check" : "implement", scope === "targeted" ? "Targeted checks pass; run a full check when the pass is done." : "Continue.", false));
         }
@@ -193,7 +216,17 @@ export const check: Verb<CheckInput> = {
         if (stop || nearLimit(nw.budget, nw.lane)) nw = { ...nw, handoff: handoffText(withWork(st, nw), nw) };
         if (stage === "integrated" && passedAll && nw.git.integrated) nw = { ...nw, git: { ...nw.git, integrated: { ...nw.git.integrated, validated: true } } };
         const out: State = { ...withWork(st, nw), locks };
-        return { state: out, resp: { work: nw.id, reasons, next, data, progress: { phase: "checking", ...(passedAll ? { boundary: "milestone" as const } : {}) }, ...(stop ? { exit: 2 as const } : {}), ...(rec.completed.length ? { effects: { completed: rec.completed, uncertain: rec.uncertain } } : {}) } };
+        return {
+          state: out,
+          resp: {
+            work: nw.id,
+            reasons,
+            next,
+            data,
+            progress: { phase: "checking", ...(passedAll ? { boundary: "milestone" as const } : {}) },
+            ...(stop ? { exit: 2 as const } : {}),
+          },
+        };
       },
     };
     return { state: withWork(cur, prepared), resp: { work: w.id, progress: { phase: "checking" }, next: [] }, job };

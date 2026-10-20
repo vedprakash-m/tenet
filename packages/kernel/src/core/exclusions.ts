@@ -13,14 +13,14 @@ export const glob = (g: string): RegExp => {
 };
 
 /** PRD 5.10.2 defaults: a secret file is stat-only to Tenet and never read, sent, edited or exported. */
-const SECRET = [/^(?:.*\/)?\.env(?:\..+)?$/, /\.(?:pem|key|p12)$/, /(?:^|\/)id_(?:rsa|ed25519)[^/]*$/].map((r) => r);
+const SECRET = [/^(?:.*\/)?\.env(?:\..+)?$/, /\.(?:pem|key|p12)$/, /(?:^|\/)id_(?:rsa|ed25519)[^/]*$/, /(?:^|\/)\.npmrc$/, /(?:^|\/)\.(?:aws|azure|config\/gcloud)(?:\/|$)/].map((r) => r);
 const isSecret = (p: string): boolean => !/(?:^|\/)\.env\.example$/.test(p) && SECRET.some((r) => r.test(p));
-const isTenetState = (p: string): boolean => p === ".tenet" || p.startsWith(".tenet/");
+export const isKernelFile = (p: string): boolean => p === ".tenet" || p.startsWith(".tenet/") || /(?:^|\/)\.tenet-write-[a-f0-9-]{36}\.tmp$/.test(p);
 
 export function allowed(op: Op, path: string, extra: readonly Exclusion[] = []): boolean {
   if (isSecret(path)) return false;
-  if (isTenetState(path)) return op !== "edit" && op !== "scan";
-  const kinds = new Set<Kind>(extra.filter((e) => glob(e.pattern).test(path)).flatMap((e) => e.kinds));
+  if (isKernelFile(path)) return false;
+  const kinds = new Set<Kind>(extra.filter((e) => matches(e.pattern, path)).flatMap((e) => e.kinds));
   if (kinds.has("no-read")) return false;
   switch (op) {
     case "scan": return !kinds.has("no-routine-scan");

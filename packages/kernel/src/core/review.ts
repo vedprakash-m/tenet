@@ -68,6 +68,7 @@ export function buildManifest(i: ManifestInput): Manifest | Reason {
   const reservation: Reservation = {
     id: `RV-${i.work.label}-${i.attempt}`, role: "reviewer", manifest: "", manifestHash: "", candidate: i.candidate,
     basisHash: i.basisHash, attempt: i.attempt, mode: i.mode, files: i.files,
+    ...(i.basedOn ? { basedOn: i.basedOn.reservation } : {}), requiredPaths: i.mode === "recheck" ? deltaSince(i.basedOn, i.files) : Object.keys(i.files),
   };
   const evidence = i.work.receipts.slice(-12).map((r: Receipt) => ({ obligation: r.obligation, stage: r.stage, status: r.status, scope: r.scope, counts: r.counts }));
   const changes = i.changes.map((c) => ({ path: c.path, kind: c.kind, added: c.added, removed: c.removed }));
@@ -86,14 +87,17 @@ export function buildManifest(i: ManifestInput): Manifest | Reason {
   // including the exact shape to answer in, with the identity fields already filled (observed on a real host, SP-08).
   const resultTemplate = {
     manifest: hash, reservation: reservation.id, attempt: i.attempt, mode: i.mode, status: "completed | partial | blocked | failed | cancelled",
-    dispatchMode: "subagent-fresh", axes: { behavior: "pass | fail", structure: "pass | fail" },
+    dispatchMode: i.work.lane === "quick" ? "same-session" : "subagent-fresh", axes: { behavior: "pass | fail", structure: "pass | fail" },
     coverage: { inspected: ["path:line ..."], uncovered: [], crossCutting: "one cross-module interaction you checked", sampled: [] },
     attention: [{ id: "AT-... from the attention list", disposition: "accepted | finding", reason: "..." }],
     findings: [{ severity: "blocker | major | minor | note", axis: "behavior | structure", location: { path: "...", line: 1 }, claim: "...", evidence: "path:line or command -> output", fix: "optional" }],
     basisGaps: [{ kind: "missing-requirement | missing-invariant | weak-test | out-of-scope-change", detail: "..." }],
+    openDependencies: [],
   };
   const text = JSON.stringify({ ...body, resultTemplate }, null, 1);
-  return { text, hash, reservation, tokens: estimateTokens(text), mode: i.mode };
+  const tokens = estimateTokens(text);
+  if (tokens > TOKEN_BUDGET) return reason("narrow-increment", `the full assignment, including instructions and rubric, is about ${tokens} tokens`);
+  return { text, hash, reservation, tokens, mode: i.mode };
 }
 
 export const isManifest = (m: Manifest | Reason): m is Manifest => "text" in m;
@@ -102,11 +106,14 @@ export const isManifest = (m: Manifest | Reason): m is Manifest => "text" in m;
 
 /** `findings` rejects a result that does not match a live reservation (`review-stale`) or is out of limits. */
 export function checkResult(work: WorkContract, r: ReviewResult, lane: Lane): { reservation?: Reservation; reasons: Reason[] } {
-  const res = work.budget.reservations.find((x) => x.id === r.reservation);
+  const focused = work.focusedReview?.id === r.reservation;
+  const res = focused ? work.focusedReview : work.budget.reservations.find((x) => x.id === r.reservation);
   if (!res || res.attempt !== r.attempt || res.manifestHash !== r.manifest) return { reasons: [reason("review-stale", "no live reservation matches this result")] };
   if (res.mode !== r.mode) return { reasons: [reason("review-result-invalid", "mode differs from the reservation")] };
+  if (focused && r.dispatchMode !== "same-session") return { reasons: [reason("review-result-invalid", "a focused pass must be reported as same-session")] };
+  if (r.coverage.sampled.some(s => s.opened > s.callers)) return { reasons: [reason("review-result-invalid", "opened callers exceeds the reported caller population")] };
   if (r.mode === "recheck" && work.budget.rechecks >= 1) return { reasons: [reason("recheck-exhausted")] };
-  if (!canReserve({ ...work.budget, reservations: work.budget.reservations.filter((x) => x.id !== res.id) }, lane)) {
+  if (!focused && !canReserve({ ...work.budget, reservations: work.budget.reservations.filter((x) => x.id !== res.id) }, lane)) {
     return { reasons: [reason("budget-exhausted", "delegations")] };
   }
   const known = new Set(work.attention.map((a) => a.id));
@@ -134,15 +141,17 @@ export function applyResult(work: WorkContract, r: ReviewResult, res: Reservatio
     const d = r.attention.find((x) => x.id === a.id);
     return d ? { ...a, disposition: { by: r.dispatchMode === "subagent-fresh" ? "reviewer" as const : "same-session" as const, outcome: d.disposition, reason: d.reason } } : a;
   });
-  const status = r.status === "completed" && r.coverage.uncovered.length ? "partial" : r.status;
+  const missing = (res.requiredPaths ?? Object.keys(res.files)).filter(p => !r.coverage.inspected.some(x => x === p || x.startsWith(`${p}:`)));
+  const uncovered = [...new Set([...r.coverage.uncovered, ...missing, ...(r.coverage.crossCutting.trim() ? [] : ["cross-module interaction"]), ...(r.openDependencies ?? [])])];
+  const status = r.status === "completed" && uncovered.length ? "partial" : r.status;
   const link: ReviewLink = {
     reservation: res.id, mode: r.mode, candidate: res.candidate, basisHash: res.basisHash,
-    uncovered: r.coverage.uncovered, verified: (r.rechecked ?? []).filter((x) => x.outcome === "verified").map((x) => x.finding),
+    uncovered, verified: (r.rechecked ?? []).filter((x) => x.outcome === "verified").map((x) => x.finding),
     independence: r.dispatchMode, status, files: res.files, axes: r.axes,
+    coverage: r.coverage, openDependencies: r.openDependencies ?? [],
   };
   if (res.mode === "recheck") {
-    const base = [...work.reviews].reverse().find((l) => l.mode === "full");
-    if (base) link.basedOn = base.reservation;
+    if (res.basedOn) link.basedOn = res.basedOn;
   }
   return { findings, attention, link, basisGaps: r.basisGaps, countRound: r.status === "completed" || r.status === "partial" };
 }

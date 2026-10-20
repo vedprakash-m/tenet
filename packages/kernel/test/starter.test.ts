@@ -9,6 +9,7 @@ import { cleanup, git, initRepo, tmp } from "./helpers.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
+import { reviewResult } from "./support/fixture.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -23,7 +24,7 @@ describe("the ts-web-api recipe", () => {
     assert.deepEqual(recipe.install[0], ["npm", "ci", "--ignore-scripts"]);
   });
 
-  it("scaffolds into an empty repository, installs the pinned lockfile, and the starter's own tests, types and lint pass under the kernel's check", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
+  it("scaffolds, receipts the starter tests, and separately validates types and lint", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
     const root = tmp("tenet-starter-"); roots.push(root);
     initRepo(root);
     const call = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
@@ -43,13 +44,19 @@ describe("the ts-web-api recipe", () => {
     const c = await call("check", { h, stage: "candidate" });
     assert.equal(c.exit, 0, JSON.stringify(c));
     const suite = d(c).receipts.find((r: { obligation: string }) => r.obligation === "OB-suite");
-    assert.equal(suite.status, "pass");
+    assert.equal(suite.status, "pass", JSON.stringify(suite));
     assert.ok(suite.counts.executed >= 20, JSON.stringify(suite.counts));
 
     for (const script of ["typecheck", "lint"]) execFileSync("npm", ["run", "--silent", script], { cwd: root, stdio: "pipe" });
+    await call("findings", { h, result: reviewResult(d(c)) });
 
     const f = await call("finish", { h, subject: "Scaffold the starter" });
-    assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
+    assert.equal(d(f).endpoint, "implemented-unverified", JSON.stringify(f.reasons));
+    assert.ok(f.reasons.some(r => r.code === "review-missing" && /architecture/.test(r.message)));
+    assert.ok(f.reasons.some(r => r.code === "review-missing" && /security/.test(r.message)));
+    assert.equal(await createPorts(root).git.refCommit("HEAD"), null, "finish does not automatically commit a candidate missing its Deep passes");
+    const checkpoint = await call("commit", { h, subject: "Checkpoint the unverified starter" });
+    assert.equal(checkpoint.exit, 0, JSON.stringify(checkpoint));
     const files = git(root, "ls-files").split("\n");
     assert.ok(files.includes("server/src/platform/auth/passwords.ts") && files.includes("package-lock.json"));
     assert.ok(!files.some((p) => p.startsWith("node_modules") || p === ".env.local"));

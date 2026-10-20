@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -229,6 +229,7 @@ describe("adoption crash recovery (the file write has the effect protocol's step
   it("after the intent, before the file is written", async () => { await crashAt("after-intent"); });
   it("after the file is written, before the result record", async () => { await crashAt("after-write"); });
   it("after the result record, before the revision is published", async () => { await crashAt("after-result"); });
+  for (const point of ["after-temp-fsync", "after-publish", "after-dir-fsync"]) it(`recovers the atomic publication boundary ${point} [CON-03]`, async () => { await crashAt(point); });
 });
 
 describe("the adoption offer (CON-01)", () => {
@@ -238,13 +239,13 @@ describe("the adoption offer (CON-01)", () => {
     p.write("src/greet.test.ts", GREET_TEST);
     await p.call("check", { h, stage: "baseline" });
     p.write("src/greet.ts", GREET_IMPL);
-    const green = await p.call("check", { h, stage: "candidate" });
+    const green = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     await p.call("findings", { h, result: reviewResult(green.data as Record<string, any>) });
-    const done = await p.call("finish", { h, noCommit: true });
+    const done = await finishFixture(p, { h, noCommit: true });
     assert.equal((done.data as Record<string, any>).endpoint, "checked-local", JSON.stringify(done.reasons));
     assert.equal((done.data as Record<string, any>).offer, "adopt");
     assert.equal(state(p).project.adoption.offered, true);
-    const again = await p.call("finish", { h, noCommit: true, subject: "again" }); // a different call, so not the cached answer
+    const again = await finishFixture(p, { h, noCommit: true, subject: "again" }); // a different call, so not the cached answer
     assert.equal((again.data as Record<string, any>).offer, undefined, "the offer is not repeated");
   });
   it("is not made when the user already answered", async () => {
@@ -255,9 +256,9 @@ describe("the adoption offer (CON-01)", () => {
     p.write("src/greet.test.ts", GREET_TEST);
     await p.call("check", { h, stage: "baseline" });
     p.write("src/greet.ts", GREET_IMPL);
-    const green = await p.call("check", { h, stage: "candidate" });
+    const green = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     await p.call("findings", { h, result: reviewResult(green.data as Record<string, any>) });
-    const done = await p.call("finish", { h, noCommit: true });
+    const done = await finishFixture(p, { h, noCommit: true });
     assert.equal((done.data as Record<string, any>).offer, undefined);
   });
 });

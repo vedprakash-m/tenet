@@ -47,6 +47,15 @@ describe("lint-skills [ENG-03]", () => {
     assert.match(p, /names "tenet-ghost"/);
   });
 
+  it("enforces the starter skill and focused-pass resource budgets", () => {
+    const d = copy();
+    edit(d, "skills/tenet-starter-ts-web-api/SKILL.md", s => `${s}\n${"word ".repeat(4000)}`);
+    edit(d, "skills/tenet/resources/focused-review.md", s => `${s}\n${"word ".repeat(400)}`);
+    const problems = lintPayload(d).join("\n");
+    assert.match(problems, /tenet-starter-ts-web-api\/SKILL.md: body is \d+ tokens, budget 4000/);
+    assert.match(problems, /focused-review.md: resource is \d+ tokens, budget 400/);
+  });
+
   it("fails a secret, an unscoped claim and an enforcement claim, and honors the lint-ok marker", () => {
     const d = copy();
     edit(d, "skills/tenet-intake/SKILL.md", (s) => `${s}\nThis is production-ready.\nIt prevents tampering.\ntoken ghp_${"a".repeat(30)}\nSay secure anyway. <!-- lint-ok -->\n`);

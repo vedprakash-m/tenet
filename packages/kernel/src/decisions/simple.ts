@@ -34,7 +34,17 @@ export const acceptance: Decision = {
     if (!ACCEPT.includes(v as (typeof ACCEPT)[number])) throw new KernelError("revision-conflict", `target must be one of ${ACCEPT.join(", ")}`, { exit: 1 });
     const w = { ...work, acceptance: v as (typeof ACCEPT)[number] };
     // Under `auto-on-accept` the result already said accepting also integrates; accepting is the consent (UX A12).
-    if (v !== "rejected" && integrationSetting(state) === "auto-on-accept" && w.git.commits.length && w.git.branch && w.git.start.branch && w.git.branch !== w.git.start.branch && !w.git.integrated) return startIntegrate(ports, tx, withWork(state, w), w);
+    if (
+      v !== "rejected" &&
+      integrationSetting(ports, state, w) === "auto-on-accept" &&
+      w.git.commits.length &&
+      w.git.branch &&
+      w.git.start.branch &&
+      w.git.branch !== w.git.start.branch &&
+      !w.git.integrated
+    ) {
+      return startIntegrate(ports, tx, withWork(state, w), w);
+    }
     return { state: withWork(state, w), resp: { work: w.id, next: [nx("finish", "Acceptance is recorded; it does not change the checks.")], data: { acceptance: v } } };
   },
 };
@@ -50,21 +60,30 @@ export const disposition: Decision = {
     if (!why) throw new KernelError("revision-conflict", "a disposition needs a reason", { exit: 1 });
     const now = ports.clock.now();
 
-    // A locked acceptance test the user confirms may change: the lock moves to what the file is now, and so does the
-    // record of the red it was verified against (INT-06). The reason is the user's, on the record.
+    // Permission to revise a test never proves its new definition against the baseline (INT-06).
     const lock = state.locks.find((l) => l.path === id || id in l.supportInputs);
     if (lock) {
       const blob = (await gather(ports, work)).inv.entries.get(id)?.blob;
       if (!blob) throw new KernelError("revision-conflict", `${id} no longer exists; a deleted locked test needs a basis change`, { exit: 2 });
-      const locks = state.locks.map((l) => (l.path === id ? { ...l, hash: blob } : id in l.supportInputs ? { ...l, supportInputs: { ...l.supportInputs, [id]: blob } } : l));
-      const w = { ...work, obligations: work.obligations.map((o) => (o.testFile === id ? { ...o, baselineTestHash: blob } : o)) };
-      return { state: withWork({ ...state, locks }, w), resp: { work: w.id, next: [nx("check", "Check again; the locked test is dispositioned.")] } };
+      const locks = state.locks.map((l) => {
+        if (l.path !== id && !(id in l.supportInputs)) return l;
+        const patch = l.path === id ? { hash: blob } : { supportInputs: { ...l.supportInputs, [id]: blob } };
+        const rev = { path: id, from: l.path === id ? l.hash : l.supportInputs[id]!, to: blob, reason: why, at: now };
+        return { ...l, ...patch, revisions: [...(l.revisions ?? []), rev] };
+      });
+      const obligations = work.obligations.map((o) =>
+        o.testFile === id || id in (o.baselineInputs ?? {}) ? { ...o, state: "revised" as const, baselineMatched: false } : o,
+      );
+      return {
+        state: withWork({ ...state, locks }, { ...work, obligations }),
+        resp: { work: work.id, next: [nx("test", "The revision is authorized. Re-establish baseline and candidate proof before claiming checked-local.", true)] },
+      };
     }
     const att = work.attention.find((a) => a.id === id);
     if (att) {
       const outcome = body.outcome === "finding" ? "finding" as const : "accepted" as const;
       const w = { ...work, attention: work.attention.map((a) => (a.id === id ? { ...a, disposition: { by: "user" as const, outcome, reason: why } } : a)) };
-      return { state: withWork(state, w), resp: { work: w.id, next: [nx("check", "Re-check; the item is dispositioned.")] } };
+      return { state: withWork(state, w), resp: { work: work.id, next: [nx("check", "Re-check; the item is dispositioned.")] } };
     }
     const f = work.findings.find((x) => x.id === id);
     if (f) {
@@ -135,7 +154,13 @@ export const config: Decision = {
     if (!v.ok) throw new KernelError("restriction-key-unknown", v.message, { exit: 2 });
     const held = scope === "task" ? work.settings ?? {} : state.config.local;
     const { [key]: had, ...rest } = held;
-    const data = { setting: key, scope, ...(v.value === undefined ? { reset: true } : { value: v.value }) };
+    const hasConfigured = (key === "commands" || key === "required_checks") && v.value && Object.keys(v.value as object).length;
+    const data = {
+      setting: key,
+      scope,
+      ...(v.value === undefined ? { reset: true } : { value: v.value }),
+      ...(hasConfigured ? { limits: ["Stored declaration only: configured execution is unavailable; checks and checked-local are blocked."] } : {}),
+    };
     if (JSON.stringify(had) === JSON.stringify(v.value)) return { resp: { work: work.id, next: [], data: { ...data, changed: false } } };
     const next = v.value === undefined ? rest : { ...rest, [key]: v.value };
     const out = scope === "task" ? withWork(state, { ...work, settings: next }) : withWork({ ...state, config: { revision: state.config.revision + 1, local: next } }, work);
@@ -146,11 +171,25 @@ export const config: Decision = {
 /** The one-step "sync my index" after a commit left the index untouched (TS §10.3 step 7): reruns only that step. */
 export const syncIndex: Decision = {
   kind: "sync-index",
-  async run({ ports, work }) {
+  async run({ ports, work, tx }) {
     const last = work.git.commits.at(-1);
     if (!last) throw new KernelError("revision-conflict", "there is no commit of this work to sync the index for", { exit: 2 });
-    const result = await ports.git.syncIndex(work.git.committed, await ports.git.parentOf(last));
-    if (result === "untouched") return { resp: { work: work.id, exit: 2, reasons: [reason("git-locked", "another Git process holds the index lock; try again when it ends, or remove a stale .git/index.lock", { refs: [] })], next: [nx("commit", "Retry the sync once the lock is gone.")] } };
+    const id = `index-${ports.rand.base32(10)}`;
+    const result = await ports.git.syncIndex(work.git.committed, await ports.git.parentOf(last), {
+      owner: ports.store.self(),
+      intent: async (sync) => { tx.intent("index-sync", id, { work: work.id, sync }); },
+      result: async (status) => { tx.result("index-sync", id, { status }); },
+    }, last);
+    if (result === "untouched") {
+      return {
+        resp: {
+          work: work.id,
+          exit: 2,
+          reasons: [reason("index-sync-needed", "the index was left untouched; its lock, current commit or format does not permit this sync", { refs: [] })],
+          next: [nx("reconcile", "Review the current commit and index lock, then retry decide sync-index.")],
+        },
+      };
+    }
     return { resp: { work: work.id, next: [], data: { index: result } } };
   },
 };

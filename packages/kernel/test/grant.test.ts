@@ -3,7 +3,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -95,7 +95,7 @@ describe("the protected-path gate [WRK-03]", () => {
     p.write("db/001.sql", "edited after the check\n");
     await p.call("check", { h, stage: "candidate", touched: ["db/001.sql"] }); // asks; the user declines the grant
     await p.call("decide", { h, kind: "grant", target: "protected-path", answers: { "grant-confirm": "decline" } });
-    const f = await p.call("finish", { h, noCommit: true });
+    const f = await finishFixture(p, { h, noCommit: true });
     assert.notEqual(d(f).endpoint, "checked-local");
     assert.ok(f.reasons.some((x) => x.code === "authority-needed"), JSON.stringify(f.reasons));
   });
@@ -107,6 +107,7 @@ describe("the protected-path gate [WRK-03]", () => {
     await p.call("check", { h, stage: "candidate", touched: ["db/001.sql"] });
     await p.call("decide", { h, kind: "grant", target: "protected-path", quote: "ok" });
     await p.call("stop", { h, mode: "abandon" });
+    await p.call("decide", { h, kind: "abandon-confirm", answers: { "abandon-confirm": "abandon" } });
     const h2 = (await p.call("open", { profile: "feature", request: "again", scopePaths: ["src/greet.ts"], protectedPaths: ["db/**"] })).handle!;
     await p.call("decide", { h: h2, kind: "basis", propose: { ...BASIS, outcome: "again" } });
     const r = await p.call("check", { h: h2, stage: "baseline", touched: ["db/001.sql"] });

@@ -21,14 +21,22 @@ const Request = z.object({
 
 const INSTALL_TIMEOUT_MS = 10 * 60_000;
 const union = (a: readonly string[], b: readonly string[]) => [...new Set([...a, ...b])];
-const projectName = (root: string) => basename(root).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^[^a-z]+|-+$/g, "") || "app";
+const projectName = (root: string) =>
+  basename(root).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^[^a-z]+|-+$/g, "") || "app";
 
 /** What the scaffold effect's intent records, so recovery can verify and finish it. */
-export interface ScaffoldOp { work: string; recipe: { id: string; version: string }; expected: Record<string, string>; protect: string[] }
+export interface ScaffoldOp {
+  work: string;
+  recipe: { id: string; version: string };
+  expected: Record<string, string>;
+  protect: string[];
+}
 
 /** Applies the scaffold's consequences to the contract: its files are Tenet's, and the protected paths are in force. */
 export const scaffolded = (w: WorkContract, expected: Readonly<Record<string, string>>, protect: readonly string[]): WorkContract => ({
-  ...w, vetted: { ...w.vetted, ...expected }, touched: [...w.touched, ...Object.keys(expected).filter((p) => !w.touched.some((t) => t.path === p)).map((path) => ({ path }))],
+  ...w,
+  vetted: { ...w.vetted, ...expected },
+  touched: [...w.touched, ...Object.keys(expected).filter((p) => !w.touched.some((t) => t.path === p)).map((path) => ({ path }))],
   scope: { ...w.scope, protected: union(w.scope.protected, protect) },
 });
 
@@ -41,7 +49,9 @@ export const scaffold: Decision = {
     const recipe = ports.recipes.load(req.recipe);
     if (!recipe) throw new KernelError("capability-missing", `no starter recipe called "${req.recipe}"`, { exit: 1 });
     const lock = recipe.files.find((f) => f.path === "package-lock.json");
-    if (!lock || sha256(lock.content) !== recipe.lockfileSha256) throw new KernelError("recipe-integrity-failed", "the lockfile is not the one the recipe pinned");
+    if (!lock || sha256(lock.content) !== recipe.lockfileSha256) {
+      throw new KernelError("recipe-integrity-failed", "the lockfile is not the one the recipe pinned");
+    }
 
     const name = req.name ?? projectName(ports.root);
     const files = recipe.files.map((f) => ({ ...f, content: f.content.replaceAll(recipe.sentinel, name) }));
@@ -70,14 +80,17 @@ export const scaffold: Decision = {
     const runId = `${work.label}-i${ports.rand.base32(5)}`;
     const runDir = ports.store.tempDir(`run-${runId}`);
     const now = ports.clock.now();
-    w = { ...w, updatedAt: now, session: { ...w.session, inCall: { runId, ...ports.store.self(), verb: "scaffold", since: now, runDir } } };
+    const inCall = { runId, ...ports.store.self(), verb: "scaffold", since: now, runDir };
+    w = { ...w, updatedAt: now, session: { ...w.session, inCall } };
 
     const job: Job = {
       id: runId,
       async execute() {
         for (const argv of recipe.install) {
           const r = await ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: INSTALL_TIMEOUT_MS });
-          if (r.exit !== 0) return { failed: argv.join(" "), tail: (r.stderr || r.stdout).trim().split("\n").slice(-6).join("\n"), timedOut: r.timedOut };
+          if (r.exit !== 0) {
+            return { failed: argv.join(" "), tail: (r.stderr || r.stdout).trim().split("\n").slice(-6).join("\n"), timedOut: r.timedOut };
+          }
         }
         return { ok: true };
       },
@@ -87,15 +100,27 @@ export const scaffold: Decision = {
         const r = result as { ok?: boolean; failed?: string; tail?: string; timedOut?: boolean; error?: string };
         if (!r.ok) {
           const why = r.error ?? `${r.timedOut ? "timed out: " : ""}${r.failed}\n${r.tail ?? ""}`;
-          return { state: withWork(st, done), resp: { work: done.id, exit: 2, reasons: [reason("install-failed", why)], next: [nx("reconcile", "Fix the cause (network, proxy, disk), then run the same scaffold decision again; the files are kept and only the install repeats.", true)] } };
+          return {
+            state: withWork(st, done),
+            resp: {
+              work: done.id,
+              exit: 2,
+              reasons: [reason("install-failed", why)],
+              next: [nx("reconcile", "Fix the cause (network, proxy, disk), then run the same scaffold decision again; the files are kept and only the install repeats.", true)],
+            },
+          };
         }
-        // The project can now be built and checked, so what Tenet may attempt is worked out again (it was L2 with no dependencies).
         const probe = await ports.git.probe();
         const level = assistanceLevel(readinessOf(ports, probe), done.profile).level;
         const recipeRecord = { id: recipe.id, version: recipe.version, installed: true };
         return {
           state: withWork({ ...st, project: { ...st.project, recipe: recipeRecord } }, { ...done, level }),
-          resp: { work: done.id, progress: { phase: "scaffolded", boundary: "milestone" }, next: [nx("check", "Run the starter's own tests as the first check, then finish to commit the scaffold.", true)], data: { recipe: recipe.id, version: recipe.version, files: paths.length, protected: protect, name } },
+          resp: {
+            work: done.id,
+            progress: { phase: "scaffolded", boundary: "milestone" },
+            next: [nx("check", "Run the starter's own tests as the first check, then finish to commit the scaffold.", true)],
+            data: { recipe: recipe.id, version: recipe.version, files: paths.length, protected: protect, name },
+          },
         };
       },
     };

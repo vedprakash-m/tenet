@@ -21,6 +21,36 @@ const norm = (raw: string) => normalize(raw, "/p");
 const one = (o: Obligation, r: RunFacts, n: ReturnType<typeof norm> | null, c = ctx) => receiptsFrom(r, n, [o], c)[0]!;
 
 describe("receipts", () => {
+  it("returns invalid for malformed file statuses and failure messages without throwing [EVD-05]", () => {
+    for (const variant of ["file-status", "message-type"]) {
+      const raw = JSON.parse(report([{ status: "failed", failure: "AssertionError" }]));
+      if (variant === "file-status") raw.testResults[0].status = "invented";
+      else raw.testResults[0].assertionResults[0].failureMessages = [{ instruction: "untrusted data" }];
+      let result: ReturnType<typeof norm> | undefined;
+      assert.doesNotThrow(() => { result = norm(JSON.stringify(raw)); });
+      assert.ok(result?.invalid, variant);
+    }
+  });
+  it("keeps classification of every failure even when diagnostic examples are capped [EVD-05]", () => {
+    const tests = [...Array.from({ length: 5 }, () => ({ status: "failed", failure: "AssertionError: expected 1 to be 2" })), { status: "failed", failure: "TypeError: setup crashed" }];
+    const r = one(ob, run({ exit: 1 }), norm(report(tests)));
+    assert.equal(r.failures!.length, 5);
+    assert.deepEqual(new Set(r.failureKinds), new Set(["assertion", "runtime-error"]));
+  });
+  it("never passes a terminated process or a duplicate report identity [EVD-02, EVD-05]", () => {
+    const good = report([{ status: "passed" }]);
+    assert.equal(one(ob, run({ exit: undefined, signal: "SIGKILL" }), norm(good)).status, "inconclusive");
+    const duplicate = JSON.parse(good);
+    duplicate.testResults.unshift({ ...duplicate.testResults[0], status: "failed", assertionResults: [{ fullName: "bad", status: "failed", failureMessages: ["AssertionError"] }] });
+    assert.equal(one(ob, run(), norm(JSON.stringify(duplicate))).status, "inconclusive");
+  });
+  it("refuses outside paths, unknown test statuses and silent report overflow [EVD-05]", () => {
+    assert.ok(norm(report([{ status: "passed" }], "/elsewhere/a.test.ts")).invalid);
+    assert.ok(norm(report([{ status: "invented" }])).invalid);
+    const many = JSON.parse(report([{ status: "passed" }]));
+    many.testResults = Array.from({ length: 2001 }, (_, n) => ({ ...many.testResults[0], name: `/p/${n}.test.ts` }));
+    assert.ok(norm(JSON.stringify(many)).invalid);
+  });
   it("passes only when tests executed, none failed, and the exit status agrees [EVD-02, EVD-05]", () => {
     const r = one(ob, run(), norm(report([{ status: "passed" }])));
     assert.deepEqual([r.status, r.counts?.executed, r.reasons], ["pass", 1, []]);
@@ -74,7 +104,7 @@ describe("receipts", () => {
     const s = one(suite, run({ exit: 1 }), norm(report([{ status: "failed", failure: "AssertionError: x" }])));
     assert.deepEqual([s.status, s.counts?.executed], ["fail", 2]);
     const a = one(ob, run(), norm(report([{ status: "passed" }, { status: "skipped" }])));
-    assert.deepEqual([a.status, a.limitations], ["pass", ["1 skipped"]]);
+    assert.deepEqual([a.status, a.limitations], ["inconclusive", ["1 skipped"]]);
   });
   it("reports a test file that does not exist yet as not executed, with the reason", () => {
     const r = one(ob, run(), norm(report([{ status: "passed" }])), { ...ctx, missing: new Set(["OB-1"]) });

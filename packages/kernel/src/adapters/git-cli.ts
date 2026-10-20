@@ -2,15 +2,20 @@
 // change what Tenet parses; blob identities for dirty files are computed in Node; the user's index is never rewritten
 // except by the exact, locked sync after a commit.
 import { execFile } from "node:child_process";
-import { closeSync, constants, copyFileSync, existsSync, fsyncSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, readlinkSync, renameSync, rmSync, writeFileSync, writeSync } from "node:fs";
+import { closeSync, constants, copyFileSync, existsSync, fstatSync, fsyncSync, linkSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, readlinkSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { createHash } from "node:crypto";
-import { allowed } from "../core/exclusions.ts";
+import { dirname, join, resolve, sep } from "node:path";
+import { createHash, randomUUID } from "node:crypto";
+import { allowed, isKernelFile } from "../core/exclusions.ts";
+import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
 import type { FileChange, Hunk } from "../core/review.ts";
-import type { CommitOutcome, CommitPlan, Entry, Git, Inventory, RepoProbe, StatusEntry } from "../ports/types.ts";
+import type { CommitOutcome, CommitPlan, Entry, Git, IndexJournal, Inventory, RepoProbe, Runner, StatusEntry } from "../ports/types.ts";
+import { IndexSyncRecord } from "../core/schemas.ts";
+import { ProcessRunner } from "./runner.ts";
+import { isAlive, procStart } from "./proc.ts";
+import { systemClock } from "./system.ts";
 
 const MAX_UNTRACKED = 20_000;
 const MAX_SNAPSHOT_BYTES = 20 * 1024 * 1024;
@@ -21,6 +26,8 @@ const ZERO = "0".repeat(40);
 
 interface Out { code: number; stdout: string; stderr: string }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const sameFile = (path: string, id: { dev: number; ino: number }) => { try { const st = lstatSync(path); return st.isFile() && !st.isSymbolicLink() && st.dev === id.dev && st.ino === id.ino; } catch { return false; } };
+const syncDir = (path: string) => { const fd = openSync(path, "r"); try { fsyncSync(fd); } finally { closeSync(fd); } };
 /** Hash of the hook files present (names and contents), or null when there are none: consent binds to it. */
 function hookInventory(dirs: string[]): string | null {
   const seen: string[] = [];
@@ -36,7 +43,10 @@ export const gitBlob = (content: Buffer): string => createHash("sha1").update(`b
 
 export class GitCli implements Git {
   private root: string;
-  constructor(root: string) { this.root = root; }
+  private exclusions: readonly Exclusion[] = [];
+  private runner: Runner;
+  constructor(root: string, runner: Runner = new ProcessRunner(systemClock, process.env)) { this.root = root; this.runner = runner; }
+  setExclusions(exclusions: readonly Exclusion[]): void { this.exclusions = exclusions; }
 
   private get shadowDir(): string { return join(this.root, ".tenet/git"); }
   /** A folder with no Git of its own but a shadow repository uses `--git-dir=.tenet/git --work-tree=<folder>`. */
@@ -70,7 +80,7 @@ export class GitCli implements Git {
     const branch = await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]);
     const gitDir = (await this.tryOut(["rev-parse", "--absolute-git-dir"])) ?? join(top, ".git");
     const busy = ["rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"].find((f) => existsSync(join(gitDir, f)));
-    const conflicts = (await this.tryOut(["diff", "--name-only", "--diff-filter=U"])) ?? "";
+    const conflicts = (await this.tryOut(["diff", "--cached", "--name-only", "--diff-filter=U"])) ?? "";
     let state: RepoProbe["state"] = "ok", why: string | undefined;
     if (busy) [state, why] = ["readonly", `a ${busy.replace(/_HEAD$/, "").toLowerCase()} is in progress`];
     else if (conflicts) [state, why] = ["readonly", "there are unresolved conflicts"];
@@ -84,11 +94,17 @@ export class GitCli implements Git {
     return probe;
   }
 
+  private async inspectionSafe(): Promise<void> {
+    if (await this.tryOut(["config", "--get-regexp", "^filter\\..*\\.(clean|process)$"])) throw new KernelError("filter-consent-needed", "configured Git filters may run project code; working-tree inspection is unavailable until filter consent is implemented", { exit: 3 });
+    if (await this.tryOut(["rev-parse", "--show-object-format"]) === "sha256") throw new KernelError("capability-missing", "SHA-256 Git repositories are not supported by this adapter", { exit: 2 });
+  }
+
   // ------------------------------------------------------------ inventory
-  async inventory(exclude: readonly string[] = []): Promise<Inventory> {
+  async inventory(exclude: readonly string[] = [], declaredInputs: readonly string[] = []): Promise<Inventory> {
+    await this.inspectionSafe();
     const head = await this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]);
     const branch = await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]);
-    const skip = (p: string) => p === ".tenet" || p.startsWith(".tenet/") || exclude.some((x) => p === x || p.startsWith(`${x}/`));
+    const skip = (p: string) => isKernelFile(p) || exclude.some((x) => p === x || p.startsWith(`${x}/`));
     const index = new Map<string, Entry>();
     for (const rec of (await this.ok(["ls-files", "-s", "-z"])).split("\0").filter(Boolean)) {
       const tab = rec.indexOf("\t");
@@ -96,7 +112,14 @@ export class GitCli implements Git {
       const path = rec.slice(tab + 1);
       if (stage === "0" && !skip(path)) index.set(path, { path, mode: mode!, blob: blob! });
     }
-    const status = await this.parseStatus(skip);
+    const others = (await this.ok(["ls-files", "--others", "--exclude-standard", "-z"])).split("\0").filter(p => p && !skip(p));
+    if (others.length > MAX_UNTRACKED) throw new KernelError("inventory-too-large", `${others.length} untracked files; add them to .gitignore`);
+    const statOnly = [...index.keys(), ...others].filter(p => !allowed("scan", p, this.exclusions));
+    const status = await this.parseStatus(skip, statOnly);
+    for (const path of others.filter(p => statOnly.includes(p))) {
+      const content = this.workBlob(path);
+      if (content) status.push({ path, xy: "??", staged: false, untracked: true, ...content, indexBlob: "" });
+    }
     const untracked = status.filter((s) => s.untracked).length;
     if (untracked > MAX_UNTRACKED) throw new KernelError("inventory-too-large", `${untracked} untracked files; add them to .gitignore`);
 
@@ -106,32 +129,66 @@ export class GitCli implements Git {
       if (s.blob === "") entries.delete(s.path); // deleted in the working tree
       else entries.set(s.path, { path: s.path, mode: s.mode, blob: s.blob });
     }
+    // Git status deliberately hides these paths. Their actual content must still enter the candidate identity.
+    for (const rec of (await this.ok(["ls-files", "-v", "-z"])).split("\0").filter(Boolean)) {
+      if (rec[0] === "H") continue;
+      const path = rec.slice(2);
+      if (skip(path) || !index.has(path)) continue;
+      const content = this.workBlob(path);
+      if (content) {
+        entries.set(path, { path, ...content });
+        if (content.blob !== index.get(path)!.blob && !status.some(s => s.path === path)) status.push({ path, xy: ".M", staged: false, untracked: false, ...content, indexBlob: index.get(path)!.blob });
+      }
+    }
+    // Explicit tests/support/configuration are inputs even when ignored. Never ask Git to interpret them as patterns.
+    for (const path of new Set(declaredInputs)) {
+      if (skip(path)) continue;
+      if (path.startsWith("/") || path.split("/").includes("..")) throw new KernelError("capability-missing", "a declared input leaves the workspace", { exit: 2 });
+      this.contentPath(path, true);
+      const content = this.workBlob(path);
+      if (!content) { entries.delete(path); continue; }
+      entries.set(path, { path, ...content });
+      if (!index.has(path) && !status.some(s => s.path === path)) status.push({ path, xy: "??", staged: false, untracked: true, ...content, indexBlob: "" });
+    }
     const lines: string[] = [];
     for (const e of [...entries.values()].sort((a, b) => (a.path < b.path ? -1 : 1))) {
-      if (allowed("scan", e.path)) lines.push(`${e.path}\t${e.mode}\t${e.blob}`);
+      if (allowed("scan", e.path, this.exclusions)) lines.push(`${e.path}\t${e.mode}\t${e.blob}`);
       else lines.push(`${e.path}\t${this.stat(e.path)}`); // excluded: stat only, a stat change is a change
     }
     return { head, branch, entries, status, digest: sha256(lines.join("\n")) };
   }
 
   private stat(rel: string): string {
-    try { const s = lstatSync(join(this.root, rel)); return `stat:${s.size}:${Math.floor(s.mtimeMs)}:${s.mode}`; } catch { return "stat:absent"; }
+    try { const path = this.contentPath(rel); if (!path) return "stat:unavailable"; const s = lstatSync(path); return `stat:${s.size}:${Math.floor(s.mtimeMs)}:${s.mode}`; } catch { return "stat:absent"; }
+  }
+
+  /** A file may itself be a link, but content lookup never traverses a linked parent directory. */
+  private contentPath(rel: string, required = false): string | null {
+    const root = resolve(this.root), path = resolve(root, rel);
+    if (!path.startsWith(root + sep)) return null;
+    try { for (let dir = dirname(path); dir !== root; dir = dirname(dir)) if (lstatSync(dir).isSymbolicLink()) {
+      if (required) throw new KernelError("capability-missing", `a declared input traverses a linked directory: ${rel}`, { exit: 2 });
+      return null;
+    } }
+    catch (e) { if (e instanceof KernelError) throw e; return null; }
+    return path;
   }
 
   /** Content identity of a working-tree path: Git's blob id, computed here, never following symlinks. */
   private workBlob(rel: string): { mode: string; blob: string } | null {
-    const abs = join(this.root, rel);
+    const abs = this.contentPath(rel);
+    if (!abs) return null;
     try {
       const st = lstatSync(abs);
       if (st.isSymbolicLink()) return { mode: "120000", blob: gitBlob(Buffer.from(readlinkSync(abs))) };
       if (!st.isFile()) return null;
       const mode = st.mode & 0o111 ? "100755" : "100644";
-      return { mode, blob: allowed("scan", rel) ? gitBlob(readFileSync(abs)) : sha256(this.stat(rel)).slice(0, 40) };
+      return { mode, blob: allowed("scan", rel, this.exclusions) ? gitBlob(readFileSync(abs)) : sha256(this.stat(rel)).slice(0, 40) };
     } catch { return null; }
   }
 
-  private async parseStatus(skip: (p: string) => boolean): Promise<StatusEntry[]> {
-    const recs = (await this.ok(["status", "--porcelain=v2", "-z", "--untracked-files=all"])).split("\0");
+  private async parseStatus(skip: (p: string) => boolean, statOnly: readonly string[]): Promise<StatusEntry[]> {
+    const recs = (await this.ok(["status", "--porcelain=v2", "-z", "--untracked-files=all", "--", ".", ...statOnly.map(p => `:(exclude,literal)${p}`)])).split("\0");
     const out: StatusEntry[] = [];
     for (let i = 0; i < recs.length; i++) {
       const r = recs[i]!;
@@ -158,8 +215,9 @@ export class GitCli implements Git {
 
   // ------------------------------------------------------------ changes (hunks for attention and manifests)
   async changes(base: string | null, paths: readonly string[], classify: (p: string) => FileChange["kind"]): Promise<FileChange[]> {
+    await this.inspectionSafe();
     const out: FileChange[] = [];
-    const wanted = paths.filter((p) => allowed("model-send", p)); // excluded content never enters a manifest
+    const wanted = paths.filter((p) => allowed("model-send", p, this.exclusions)); // excluded content never enters a manifest
     // One call tells which of the paths exist in the base; the rest are new files.
     const inBase = new Set(base && wanted.length ? (await this.ok(["ls-tree", "-r", "-z", "--name-only", base, "--", ...wanted.map((p) => `:(literal)${p}`)])).split("\0").filter(Boolean) : []);
     const tracked = wanted.filter((p) => inBase.has(p));
@@ -174,13 +232,14 @@ export class GitCli implements Git {
 
   private wholeFile(path: string, kind: FileChange["kind"]): FileChange {
     let lines: string[] = [];
-    try { lines = readFileSync(join(this.root, path), "utf8").split("\n"); if (lines.at(-1) === "") lines.pop(); } catch { /* deleted or unreadable */ }
+    try { const p = this.contentPath(path); if (p) { lines = (lstatSync(p).isSymbolicLink() ? readlinkSync(p) : readFileSync(p, "utf8")).split("\n"); if (lines.at(-1) === "") lines.pop(); } } catch { /* deleted or unreadable */ }
     return { path, kind, hunks: lines.length ? [{ line: 1, added: lines, removed: [] }] : [], added: lines.length, removed: 0 };
   }
 
   // ------------------------------------------------------------ commit (temporary index, TS §10.3)
   /** Builds the tree a commit of exactly these paths would have, in a temporary index the user never sees. */
   private async buildTree(plan: Pick<CommitPlan, "paths" | "deleted" | "parent">, env: Record<string, string>): Promise<string> {
+    await this.inspectionSafe();
     if (plan.parent) await this.ok(["read-tree", plan.parent], { env, inspect: false }); else await this.ok(["read-tree", "--empty"], { env, inspect: false });
     const live = plan.paths.filter((p) => this.workBlob(p));
     if (live.length) await this.ok(["add", "--", ...live.map((p) => `:(literal)${p}`)], { env, inspect: false });
@@ -198,12 +257,22 @@ export class GitCli implements Git {
     const fail = (reason: string, detail?: string): CommitOutcome => ({ ok: false, reason, ...(detail ? { detail } : {}), foreign: [], indexSync: "untouched", syncPaths: [] });
     const dir = mkdtempSync(join(tmpdir(), "tenet-idx-"));
     const env = { GIT_INDEX_FILE: join(dir, "index") };
+    let expectedTree: string | undefined, launched = false;
     try {
-      const expectedTree = await this.buildTree(plan, env);
+      if (await this.tryOut(["config", "--bool", "commit.gpgsign"]) === "true") return fail("signing-unavailable", "configured signing programs require consent that is not implemented; the commit was not attempted");
+      const before = await this.inventory([]);
+      const excludedBefore = new Map([...before.entries.keys()].filter(p => !allowed("scan", p, this.exclusions)).map(p => [p, this.stat(p)]));
+      expectedTree = await this.buildTree(plan, env);
       const baseTree = plan.parent ? (await this.ok(["rev-parse", `${plan.parent}^{tree}`])).trim() : null;
       if (expectedTree === baseTree) return { ...fail("nothing-to-commit"), expectedTree };
-      const r = await this.run(["commit", "-m", plan.message, "--allow-empty-message"], { env, inspect: false });
-      if (r.code !== 0) {
+      const gitConfig = Object.fromEntries(["GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"].flatMap(k => process.env[k] === undefined ? [] : [[k, process.env[k]!]]));
+      const where = this.shadow ? ["--git-dir", this.shadowDir, "--work-tree", this.root] : [];
+      launched = true;
+      const r = await this.runner.run({ argv: ["git", ...where, "--no-pager", "commit", "-m", plan.message, "--allow-empty-message"], cwd: this.root, runDir: plan.runDir ?? join(dir, "run"), timeoutMs: plan.timeoutMs, env: { ...env, ...gitConfig, GIT_TERMINAL_PROMPT: "0" } });
+      if (r.exit !== 0 || r.signal || r.timedOut) {
+        const head = await this.refCommit("HEAD");
+        if (head !== plan.parent) return { ...fail("effect-uncertain", "HEAD moved during a failed or interrupted commit; its outcome needs reconciliation"), expectedTree, ...(head ? { commit: head } : {}) };
+        if (r.timedOut) return { ...fail("hook-failed", "the commit timed out; its process group was stopped"), expectedTree };
         const text = `${r.stdout}\n${r.stderr}`;
         const reason = /gpg|sign/i.test(text) ? "signing-unavailable" : /Author identity unknown|empty ident|tell me who you are/i.test(text) ? "git-identity-missing"
           : /index\.lock/.test(text) ? "git-locked" : "hook-failed";
@@ -211,13 +280,22 @@ export class GitCli implements Git {
       }
       const commit = (await this.ok(["rev-parse", "HEAD"])).trim();
       const parent = (await this.tryOut(["rev-parse", `${commit}^`])) ?? null;
-      if (parent !== plan.parent) return { ...fail("hook-failed", "HEAD moved during the commit"), expectedTree };
+      if (parent !== plan.parent) return { ...fail("effect-uncertain", "HEAD moved during the commit; the observed commit has a different parent"), expectedTree, commit };
       const tree = (await this.ok(["rev-parse", `${commit}^{tree}`])).trim();
       const changed = (await this.ok(["diff-tree", "--no-commit-id", "--name-only", "-r", "-z", "--root", commit])).split("\0").filter(Boolean);
       const mine = new Set([...plan.paths, ...plan.deleted]);
-      const foreign = changed.filter((p) => !mine.has(p));
-      const sync = await this.syncIndex(changed.filter((p) => mine.has(p)), plan.parent);
+      const after = await this.inventory([]);
+      const touched = [...new Set([...before.entries.keys(), ...after.entries.keys()])].filter(p => {
+        const a = before.entries.get(p), b = after.entries.get(p);
+        return a?.blob !== b?.blob || a?.mode !== b?.mode || (excludedBefore.has(p) && excludedBefore.get(p) !== this.stat(p));
+      });
+      const foreign = [...new Set([...changed, ...touched].filter((p) => !mine.has(p)))].sort();
+      const sync = await this.syncIndex(changed.filter((p) => mine.has(p)), plan.parent, plan.indexJournal, commit);
       return { ok: true, commit, tree, expectedTree, foreign, indexSync: sync, syncPaths: sync === "untouched" ? [...mine] : [] };
+    } catch (e) {
+      if (!launched) throw e;
+      const head = await this.refCommit("HEAD");
+      return { ...fail("effect-uncertain", `commit execution or postcondition inspection could not be verified: ${String(e)}`), expectedTree, ...(head ? { commit: head } : {}) };
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -236,19 +314,28 @@ export class GitCli implements Git {
   }
 
   /** Exact index sync under Git's own lock (GIT-03): only entries still equal to the old HEAD's are advanced. */
-  async syncIndex(paths: readonly string[], oldHead: string | null): Promise<CommitOutcome["indexSync"]> {
+  async syncIndex(paths: readonly string[], oldHead: string | null, journal?: IndexJournal, head?: string): Promise<CommitOutcome["indexSync"]> {
     if (!paths.length) return "not-needed";
     const gitDir = (await this.ok(["rev-parse", "--absolute-git-dir"])).trim();
     if (readdirSync(gitDir).some((f) => f.startsWith("sharedindex."))) return "untouched";
-    const lock = join(gitDir, "index.lock");
-    let fd = -1;
-    for (let i = 0; i < 3 && fd < 0; i++) {
-      try { fd = openSync(lock, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, 0o600); } catch { await sleep(40); }
-    }
-    if (fd < 0) return "untouched";
+    const target = head ?? await this.refCommit("HEAD");
+    if (!target || await this.refCommit("HEAD") !== target) return "untouched";
+    const lock = join(gitDir, "index.lock"), temp = `tenet-index-${randomUUID()}.lock`, stagedLock = join(gitDir, temp);
+    let fd = openSync(stagedLock, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL, 0o600);
+    const acquired = fstatSync(fd), ownsLock = () => sameFile(lock, acquired);
     const scratchDir = mkdtempSync(join(tmpdir(), "tenet-sync-"));
+    let logged = false, published = false, status: CommitOutcome["indexSync"] = "untouched";
     try {
+      fsyncSync(fd); syncDir(gitDir);
+      const record = IndexSyncRecord.parse({ parent: oldHead, head: target, paths, dev: acquired.dev, ino: acquired.ino, temp, ...(journal?.owner ?? { pid: process.pid, procStart: procStart(process.pid) ?? "" }) });
+      if (journal) { await journal.intent(record); logged = true; }
+      let linked = false;
+      for (let i = 0; i < 3 && !linked; i++) {
+        try { linkSync(stagedLock, lock); linked = true; syncDir(gitDir); } catch (e) { if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e; await sleep(40); }
+      }
+      if (!linked) return status;
       const scratch = join(scratchDir, "index");
+      if (existsSync(join(gitDir, "index")) && !lstatSync(join(gitDir, "index")).isFile()) return status;
       if (existsSync(join(gitDir, "index"))) copyFileSync(join(gitDir, "index"), scratch);
       const env = { GIT_INDEX_FILE: scratch };
       const lit = paths.map((p) => `:(literal)${p}`);
@@ -258,26 +345,55 @@ export class GitCli implements Git {
         return [r.slice(t + 1), `${f[0]} ${f[blobAt]}`] as const;
       }));
       const idx = parse(await this.ok(["ls-files", "-s", "-z", "--", ...lit], { env }), 1);
-      const old = oldHead ? parse(await this.ok(["ls-tree", "-r", "-z", oldHead, "--", ...paths]), 2) : new Map<string, string>();
-      const next = parse(await this.ok(["ls-tree", "-r", "-z", "HEAD", "--", ...paths]), 2);
+      const old = oldHead ? parse(await this.ok(["ls-tree", "-r", "-z", oldHead, "--", ...lit]), 2) : new Map<string, string>();
+      const next = parse(await this.ok(["ls-tree", "-r", "-z", target, "--", ...lit]), 2);
       const info: string[] = [];
       for (const p of paths) {
         if ((idx.get(p) ?? "") !== (old.get(p) ?? "")) continue; // the user staged something else here: never touched
         const n = next.get(p);
         info.push(n ? `${n.split(" ")[0]} ${n.split(" ")[1]}\t${p}` : `0 ${ZERO}\t${p}`);
       }
-      if (info.length) await this.ok(["update-index", "--index-info"], { env, input: `${info.join("\n")}\n` });
-      writeSync(fd, readFileSync(scratch));
+      if (info.length) await this.ok(["update-index", "-z", "--index-info"], { env, input: `${info.join("\0")}\0` });
+      if (!ownsLock() || await this.refCommit("HEAD") !== target) return status;
+      writeFileSync(fd, readFileSync(scratch));
       fsyncSync(fd); closeSync(fd); fd = -1;
+      if (!ownsLock() || await this.refCommit("HEAD") !== target) return status;
       renameSync(lock, join(gitDir, "index"));
-      return "synced";
-    } catch {
+      published = true;
+      syncDir(gitDir);
+      status = "synced"; return status;
+    } catch (e) {
+      if (published) throw new KernelError("effect-uncertain", `the index rename was observed but durability could not be established: ${String(e)}`, { exit: 2 });
       return "untouched";
     } finally {
       if (fd >= 0) closeSync(fd);
-      rmSync(lock, { force: true });
+      if (ownsLock()) rmSync(lock, { force: true });
+      if (sameFile(stagedLock, acquired)) rmSync(stagedLock);
+      syncDir(gitDir);
       rmSync(scratchDir, { recursive: true, force: true });
+      if (logged && (!published || status === "synced")) await journal!.result(status);
     }
+  }
+
+  async recoverIndexSync(raw: unknown, journal: IndexJournal): Promise<CommitOutcome["indexSync"] | "uncertain"> {
+    const parsed = IndexSyncRecord.safeParse(raw);
+    if (!parsed.success || isAlive(parsed.data.pid, parsed.data.procStart)) return "uncertain";
+    const record = parsed.data, gitDir = (await this.ok(["rev-parse", "--absolute-git-dir"])).trim();
+    const lock = join(gitDir, "index.lock"), temp = join(gitDir, record.temp), index = join(gitDir, "index");
+    const landed = sameFile(index, record);
+    if (landed) {
+      if (sameFile(lock, record)) rmSync(lock);
+      if (sameFile(temp, record)) rmSync(temp);
+      syncDir(gitDir); return "synced";
+    }
+    if (existsSync(lock) && !sameFile(lock, record)) {
+      if (sameFile(temp, record)) { rmSync(temp); syncDir(gitDir); }
+      return "untouched";
+    }
+    if (sameFile(lock, record)) rmSync(lock);
+    if (sameFile(temp, record)) rmSync(temp);
+    syncDir(gitDir);
+    return this.syncIndex(record.paths, record.parent, journal, record.head);
   }
 
   async workCommits(label: string): Promise<{ commits: string[]; shallow: boolean; merges: boolean }> {
@@ -313,9 +429,15 @@ export class GitCli implements Git {
     }
   }
 
-  async applyPatch(patch: string, include: readonly string[] = []): Promise<{ ok: boolean; detail?: string }> {
-    const r = await this.run(["apply", "--whitespace=nowarn", ...include.map((p) => `--include=${p}`)], { input: patch, inspect: false });
-    return r.code === 0 ? { ok: true } : { ok: false, detail: r.stderr.trim().slice(0, 400) };
+  async applyPatch(patch: string, include: readonly string[] = [], options?: { runDir: string; timeoutMs: number }): ReturnType<Git["applyPatch"]> {
+    await this.inspectionSafe();
+    const runDir = options?.runDir ?? mkdtempSync(join(tmpdir(), "tenet-patch-"));
+    const file = join(runDir, "inverse.patch");
+    const fd = openSync(file, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW, 0o600);
+    try { writeFileSync(fd, patch); } finally { closeSync(fd); }
+    const env = Object.fromEntries(["GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"].flatMap(k => process.env[k] === undefined ? [] : [[k, process.env[k]!]]));
+    const r = await this.runner.run({ argv: ["git", ...INSPECT, "apply", "--whitespace=nowarn", ...include.map(p => `--include=${p}`), "--", file], cwd: this.root, runDir, timeoutMs: options?.timeoutMs ?? 60_000, env });
+    return r.exit === 0 && !r.signal && !r.timedOut ? { ok: true } : { ok: false, uncertain: r.timedOut || !!r.signal || r.exit === undefined, detail: r.stderr.trim().slice(0, 400) };
   }
 
   async blobsAt(treeish: string, paths: readonly string[]): Promise<Record<string, string | null>> {
@@ -344,16 +466,29 @@ export class GitCli implements Git {
     return { supported: true, paths: fields.slice(0, end < 0 ? fields.length : end) };
   }
 
-  async integrate(base: string, work: string): Promise<{ ok: boolean; commit?: string; mode?: "fast-forward" | "merge"; detail?: string }> {
-    const fail = (detail: string) => ({ ok: false, detail: detail.trim().slice(-400) });
-    if ((await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"])) !== base) {
-      const sw = await this.run(["switch", "-q", base], { inspect: false });
-      if (sw.code !== 0) return fail(sw.stderr); // local changes in the way, or the base is checked out elsewhere
-    }
-    const ff = (await this.run(["merge-base", "--is-ancestor", base, work])).code === 0;
-    const m = await this.run(ff ? ["merge", "-q", "--ff-only", work] : ["merge", "-q", "--no-ff", "-m", `Merge ${work} into ${base}`, work], { inspect: false });
-    if (m.code !== 0) { await this.run(["merge", "--abort"], { inspect: false }); return fail(`${m.stdout}${m.stderr}`); }
-    return { ok: true, commit: (await this.tryOut(["rev-parse", "HEAD"])) ?? undefined, mode: ff ? "fast-forward" : "merge" };
+  async integrate(base: string, work: string, options?: { runDir: string; timeoutMs: number }): ReturnType<Git["integrate"]> {
+    await this.inspectionSafe();
+    if ((await this.probe()).hooks) throw new KernelError("capability-missing", "integration hooks require an execution consent path that is not implemented; the editor was not switched", { exit: 2 });
+    if (await this.tryOut(["config", "--bool", "commit.gpgsign"]) === "true") throw new KernelError("signing-unavailable", "integration signing consent is not implemented; the editor was not switched", { exit: 2 });
+    const runDir = options?.runDir ?? mkdtempSync(join(tmpdir(), "tenet-integrate-"));
+    const env = Object.fromEntries(["GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"].flatMap(k => process.env[k] === undefined ? [] : [[k, process.env[k]!]]));
+    let launched = false;
+    const run = (args: string[]) => {
+      launched = true;
+      return this.runner.run({ argv: ["git", ...INSPECT, ...args], cwd: this.root, runDir, timeoutMs: options?.timeoutMs ?? 60_000, env });
+    };
+    const fail = (detail: string) => ({ ok: false, uncertain: launched, detail: detail.trim().slice(-400) });
+    try {
+      if ((await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"])) !== base) {
+        const sw = await run(["switch", "-q", base]);
+        if (sw.exit !== 0 || sw.timedOut || sw.signal) return fail(sw.stderr || "branch switch did not complete cleanly");
+      }
+      const ff = (await this.run(["merge-base", "--is-ancestor", base, work])).code === 0;
+      const m = await run(ff ? ["merge", "-q", "--ff-only", work] : ["merge", "-q", "--no-ff", "-m", `Merge ${work} into ${base}`, work]);
+      if (m.exit !== 0 || m.timedOut || m.signal) return fail(`${m.stdout}${m.stderr}` || "integration did not complete cleanly");
+      const commit = await this.tryOut(["rev-parse", "HEAD"]);
+      return commit ? { ok: true, commit, mode: ff ? "fast-forward" : "merge" } : fail("integration postcondition could not be inspected");
+    } catch (e) { return fail(String(e)); }
   }
 
   async reconcileIntegration(base: string, baseBefore: string, work: string): Promise<{ completed: boolean; commit?: string; mode?: "fast-forward" | "merge" }> {
@@ -402,6 +537,8 @@ export class GitCli implements Git {
 
   async createBranch(name: string): Promise<void> {
     if ((await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"])) === name) return;
+    const hook = (await this.ok(["rev-parse", "--git-path", "hooks/post-checkout"])).trim();
+    if (existsSync(resolve(this.root, hook))) throw new KernelError("capability-missing", "creating a work branch could run a checkout hook; that guarded execution path is unavailable, so the editor was not switched", { exit: 2 });
     await this.ok(["checkout", "-q", "-b", name], { inspect: false });
   }
 }

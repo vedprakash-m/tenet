@@ -29,8 +29,9 @@ function pluginRoot(): string {
 
 export function createPorts(cwd: string, env: Record<string, string | undefined> = process.env): Ports {
   const root = workspaceRoot(cwd);
+  const runner = new ProcessRunner(systemClock, env);
   return {
     root, version: KERNEL_VERSION, clock: systemClock, rand: systemRandom,
-    recipes: new FsRecipes(pluginRoot()), project: new FsProject(root), store: new FsStore(root, systemClock, systemRandom), git: new GitCli(root), runner: new ProcessRunner(systemClock, env), stack: createStack(),
+    recipes: new FsRecipes(pluginRoot()), project: new FsProject(root), store: new FsStore(root, systemClock, systemRandom), git: new GitCli(root, runner), runner, stack: createStack(),
   };
 }

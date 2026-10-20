@@ -1,11 +1,11 @@
 // Local integration (TS §10.4, GIT-11): conflicts predicted first, the switch disclosed, receipts that stand or rerun.
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { chmodSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, project } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, project, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -21,13 +21,23 @@ async function finished(p: Project) {
   p.write("src/greet.test.ts", GREET_TEST);
   await p.call("check", { h, stage: "baseline" });
   p.write("src/greet.ts", GREET_IMPL);
-  await p.call("check", { h, stage: "candidate" });
-  const f = await p.call("finish", { h, subject: "Add greet" });
+  await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+  const f = await finishFixture(p, { h, subject: "Add greet" });
   assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
   return { h, work: p.git("branch", "--show-current"), f };
 }
 
 describe("integrate [GIT-11]", () => {
+  it("refuses unconsented integration hooks before switching the editor [SEC-15, GIT-11]", async () => {
+    const p = fresh(); const { h, work } = await finished(p);
+    p.write(".git/hooks/post-checkout", "#!/bin/sh\nprintf unsafe > integration-hook-ran\n");
+    chmodSync(join(p.root, ".git/hooks/post-checkout"), 0o755);
+    const r = await p.call("integrate", { h });
+    assert.equal(r.exit, 2, JSON.stringify(r));
+    assert.ok(r.reasons.some(r => r.code === "capability-missing"));
+    assert.equal(p.git("branch", "--show-current"), work);
+    assert.equal(existsSync(join(p.root, "integration-hook-ran")), false);
+  });
   it("fast-forwards the base, moves the editor to it, and the receipts and review still stand", async () => {
     const p = fresh();
     const { h, work, f } = await finished(p);
@@ -46,7 +56,7 @@ describe("integrate [GIT-11]", () => {
     assert.equal(p.git("rev-list", "--count", "main"), "2");
   });
 
-  it("merges onto a moved base, calls the result unchecked until it is rechecked, and then says checked", async () => {
+  it("merges onto a moved base, rechecks it, and keeps the result unverified until review reaches the integrated candidate", async () => {
     const p = fresh();
     const { h, work } = await finished(p);
     p.git("switch", "-q", "main");
@@ -64,7 +74,8 @@ describe("integrate [GIT-11]", () => {
     const c = await p.call("check", { h, stage: "integrated" });
     assert.equal(c.exit, 0, JSON.stringify(c));
     const after = await p.call("inspect", { view: "why", h });
-    assert.deepEqual([d(after).endpoint, d(after).scope], ["checked-local", "committed"]);
+    assert.equal(d(after).endpoint, "implemented-unverified");
+    assert.ok(after.reasons.some(r => r.code === "review-stale"), "an earlier focused pass cannot certify an imported candidate");
   });
 
   it("predicts a conflict before the editor moves, and names the files", async () => {
@@ -105,9 +116,9 @@ describe("integrate [GIT-11]", () => {
     assert.equal((await p.call("decide", { h, kind: "config", target: "nonsense", propose: { value: "x" } })).exit, 2);
     assert.equal((await p.call("decide", { h, kind: "config", target: "integration", propose: { value: "sometimes" } })).exit, 2);
     await p.call("decide", { h, kind: "config", target: "integration", propose: { value: "never" } });
-    assert.equal(d(await p.call("finish", { h })).integration.next, undefined);
+    assert.equal(d(await finishFixture(p, { h })).integration.next, undefined);
     await p.call("decide", { h, kind: "config", target: "integration", propose: { value: "auto-on-accept" } });
-    assert.equal(d(await p.call("finish", { h })).integration.next, "accept", "the result says accepting will integrate");
+    assert.equal(d(await finishFixture(p, { h })).integration.next, "accept", "the result says accepting will integrate");
     const acc = await p.call("decide", { h, kind: "acceptance", target: "accepted" });
     assert.equal(acc.exit, 0, JSON.stringify(acc));
     assert.equal(p.git("branch", "--show-current"), "main", "accepting did the integration");

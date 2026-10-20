@@ -5,10 +5,26 @@
 import { runVerb } from "../../src/pipeline.ts";
 import { VERBS } from "../../src/verbs/index.ts";
 import { portsWith, fakeRecipes } from "../support/fixture.ts";
+import fs from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
+import { join } from "node:path";
 
 const [root, json, point] = [process.argv[2]!, process.argv[3]!, process.argv[4]!];
 const ports = portsWith(root, fakeRecipes());
 const die = () => process.kill(process.pid, "SIGKILL");
+const open = fs.openSync, sync = fs.fsyncSync, rename = fs.renameSync;
+let temporary = -1, published = false;
+fs.openSync = ((path, ...args) => { const fd = open(path, ...args); if (String(path).includes(".tenet-write-")) temporary = fd; return fd; }) as typeof fs.openSync;
+fs.fsyncSync = fd => {
+  sync(fd);
+  if (point === "after-temp-fsync" && fd === temporary) die();
+  if (point === "after-dir-fsync" && published && fs.fstatSync(fd).isDirectory()) die();
+};
+fs.renameSync = (from, to) => {
+  rename(from, to);
+  if (String(to) === join(root, "INTENT.md")) { published = true; if (point === "after-publish") die(); }
+};
+syncBuiltinESMExports();
 
 const real = ports.project.write.bind(ports.project);
 ports.project.write = (path, content) => {

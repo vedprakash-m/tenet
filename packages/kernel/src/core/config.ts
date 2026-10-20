@@ -31,6 +31,11 @@ export const CATALOG = {
 export type SettingKey = keyof typeof CATALOG;
 export const isSettingKey = (k: string): k is SettingKey => k in CATALOG;
 
+/** Stored preferences/restrictions obey the same catalog and scope rules as incoming decisions. */
+export const settingsSchema = (scope: Scope) => z.strictObject(Object.fromEntries(
+  (Object.entries(CATALOG) as [SettingKey, Entry][]).filter(([, e]) => e.scopes.includes(scope)).map(([key, e]) => [key, e.schema.optional()]),
+));
+
 export interface Layers { shared: PolicyFile; local: Record<string, unknown>; task: Record<string, unknown>; adoption: { intent: AdoptionState; policy: AdoptionState } }
 export interface Resolved {
   key: SettingKey; value: unknown; source: string; adoption: AdoptionState | "n/a";
@@ -52,7 +57,7 @@ const json = (v: unknown) => JSON.stringify(v);
 
 export function resolveSetting(key: SettingKey, l: Layers): Resolved {
   const e: Entry = CATALOG[key];
-  const howToChange = `tenet decide config --target ${key} --scope ${e.scopes.join("|") || "none"} (reset removes the override)`;
+  const howToChange = key === "shared_memory" ? "tenet decide adopt --h <handle> --target intent (preview, then answer adopt-confirm)" : `tenet decide config --h <handle> --target ${key} with JSON stdin {"propose":{"value":<value>,"scope":"${e.scopes[0]}"}}; {"propose":{"reset":true,"scope":"${e.scopes[0]}"}} removes the override`;
   const base = { key, limits: [] as string[], howToChange };
   if (key === "shared_memory") return { ...base, value: l.adoption.intent, source: "adoption", adoption: l.adoption.intent, overridden: [] };
 
@@ -103,6 +108,7 @@ export function resolveSetting(key: SettingKey, l: Layers): Resolved {
     default: value = { ...((a as object) ?? {}), ...((b as object) ?? {}) }; // commands: per check name, the project's own win
   }
   const sharedUsed = sources.some(([s]) => s === "shared policy");
+  if ((key === "commands" || key === "required_checks") && Object.keys(value as object).length) limits.push("Stored declaration only: configured execution is unavailable; checks and checked-local are blocked until it is implemented or the declaration is removed.");
   return { ...base, value, source: sources.map(([s]) => s).join(" + ") || "default", adoption: sharedUsed ? l.adoption.policy : "n/a", overridden: [], contributions };
 }
 

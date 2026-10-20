@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, project } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, project, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -23,8 +23,8 @@ async function finished(p: Project) {
   p.write("src/greet.test.ts", GREET_TEST);
   await p.call("check", { h, stage: "baseline" });
   p.write("src/greet.ts", GREET_IMPL);
-  await p.call("check", { h, stage: "candidate" });
-  assert.equal(d(await p.call("finish", { h, subject: "Add greet" })).endpoint, "checked-local");
+  await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+  assert.equal(d(await finishFixture(p, { h, subject: "Add greet" })).endpoint, "checked-local");
   return h;
 }
 
@@ -56,7 +56,7 @@ describe("undo [GIT-04]", () => {
     assert.notEqual(h2, h);
     const c = await p.call("check", { h: h2, stage: "candidate" });
     assert.equal(c.exit, 0, JSON.stringify(c));
-    const f = await p.call("finish", { h: h2, subject: "Undo W-0001" });
+    const f = await finishFixture(p, { h: h2, subject: "Undo W-0001" });
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
     assert.equal(p.git("show", "--name-only", "--format=", "HEAD").split("\n").sort().join(), "src/greet.test.ts,src/greet.ts");
     assert.equal(p.git("show", "HEAD:src/greet.ts"), STUB.trim());
@@ -130,6 +130,6 @@ describe("undo [GIT-04]", () => {
     assert.equal(c.exit, 0, JSON.stringify(c));
     assert.ok(c.effects?.completed.some((e) => /undo was finished/.test(e)), JSON.stringify(c.effects));
     assert.equal(readFileSync(join(p.root, "src/greet.ts"), "utf8"), STUB);
-    assert.equal(d(await p.call("finish", { h: h2, subject: "Undo" })).endpoint, "checked-local");
+    assert.equal(d(await finishFixture(p, { h: h2, subject: "Undo" })).endpoint, "checked-local");
   });
 });

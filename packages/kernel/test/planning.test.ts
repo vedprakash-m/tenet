@@ -2,7 +2,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -121,7 +121,7 @@ describe("working through the plan [INT-12]", () => {
     p.write("src/greet.ts", GREET_IMPL);
     const green = await p.call("check", { h, stage: "candidate" });
     await p.call("findings", { h, result: reviewResult(d(green)) });
-    const done = await p.call("finish", { h, noCommit: true });
+    const done = await finishFixture(p, { h, noCommit: true });
     assert.equal(d(done).endpoint, "checked-local", JSON.stringify(done.reasons));
     assert.equal(state(p).project.intent.plan[0]!.state, "done");
     assert.equal(d(await p.call("inspect", { view: "status" })).plan.next, b!.id);
@@ -133,6 +133,7 @@ describe("working through the plan [INT-12]", () => {
     const [a] = state(p).project.intent.plan;
     const o = await runItem(p, a!.id);
     await p.call("stop", { h: o.handle!, mode: "abandon" });
+    await p.call("decide", { h: o.handle!, kind: "abandon-confirm", answers: { "abandon-confirm": "abandon" } });
     const item = state(p).project.intent.plan[0]!;
     assert.equal(item.state, "accepted");
     assert.equal(item.work, undefined);

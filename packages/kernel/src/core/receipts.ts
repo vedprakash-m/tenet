@@ -32,6 +32,7 @@ export function receiptsFrom(o: RunFacts, norm: Normalized | null, obs: readonly
     if (c.missing.has(ob.id)) { rec.limitations.push("the test file does not exist yet"); return stop("not-executed"); }
     if (!o.ran) return stop("not-executed");
     if (o.timedOut) return stop("timeout");
+    if (o.signal || o.exit === undefined) return stop("not-executed");
     if (o.after !== c.before) return stop("concurrent-edit"); // an input changed during the run (EVD-11)
     if (!norm) return stop(o.raw === null ? "report-missing" : "report-invalid");
     if (norm.invalid) return stop("report-invalid");
@@ -42,8 +43,10 @@ export function receiptsFrom(o: RunFacts, norm: Normalized | null, obs: readonly
     const sum = per.reduce((a, p) => ({ executed: a.executed + p!.executed, passed: a.passed + p!.passed, failed: a.failed + p!.failed, skipped: a.skipped + p!.skipped, focused: a.focused + p!.focused }), { executed: 0, passed: 0, failed: 0, skipped: 0, focused: 0 });
     rec.counts = { discovered: sum.executed + sum.skipped, ...sum };
     rec.failures = per.flatMap((p) => p!.failures).slice(0, 5).map((f) => ({ ...f, message: redact(f.message) })); // the record keeps no likely secret (SEC-11)
+    rec.failureKinds = [...new Set(per.flatMap(p => p!.failureKinds))];
     if (sum.focused) return stop("focused-tests");
     if (sum.executed === 0 && sum.failed === 0) return stop("zero-tests"); // runners exit non-zero when they find nothing to run; that is no contradiction
+    if (sum.skipped > 0 && ob.testFile) { rec.limitations.push(`${sum.skipped} skipped`); return stop("population-mismatch"); }
     if (o.exit === 0 && sum.failed > 0) return stop("report-contradiction");
     // The exit status belongs to the whole run: a file that passed beside a failing one is no contradiction (found with TDD-04).
     const reportFailed = [...norm.files.values()].some((p) => p.failed > 0);

@@ -1,9 +1,11 @@
 import { spawn } from "node:child_process";
-import { cpSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { KernelError } from "../src/core/errors.ts";
+import { Grant, State } from "../src/core/schemas.ts";
+import { emptyState, newContract } from "../src/core/state.ts";
 import { cleanup, initState, newStore, tmp } from "./helpers.ts";
 
 const dirs: string[] = [];
@@ -16,6 +18,53 @@ const bump = (root: string, n: number) => new Promise<number>((res) => {
 });
 
 describe("store: transactions", () => {
+  it("rejects unknown or malformed stored restrictions while retaining explicit safe extensions [SEC-12]", () => {
+    const state = emptyState("ws_aaaaaaaaaa", "aaaa");
+    for (const local of [{ protected_pathz: ["src/"] }, { protected_paths: "src/" }, { style: "turbo" }]) assert.equal(State.safeParse({ ...state, config: { revision: 1, local } }).success, false);
+    assert.equal(State.safeParse({ ...state, trust: [{ file: "tenet.policy.json", hash: "h", adoptedAt: "t", restrictions: { protected_pathz: ["src/"] } }] }).success, false);
+    const work = newContract({ id: "work", label: "W-0001", profile: "feature", request: "test", lane: "quick", floor: "quick", level: "L4", generation: 1, now: "t", version: "v", assessment: {}, scopePaths: [], protectedPaths: [], gitMode: "git", base: null, branch: "main", start: { head: null, branch: "main", staged: [], dirty: [] } });
+    assert.equal(State.safeParse({ ...state, work: { work: { ...work, settings: { protected_paths: ["src/"] } } } }).success, false, "a project restriction cannot be smuggled into task preferences");
+    assert.equal(State.safeParse({ ...state, _ext: { harmlessDescription: "retained" } }).success, true);
+  });
+  it("suspends recovered hook consents with recovered grants [SEC-12]", async () => {
+    const root = fresh(), store = await initState(root);
+    await store.transaction("t", async tx => tx.publish({ ...tx.state!, consents: [{ kind: "hooks", configHash: "old", at: "2026-10-19T00:00:00Z" }] }));
+    await store.transaction("t", async tx => tx.publish(tx.state!));
+    writeFileSync(join(root, ".tenet/state"), "{ corrupt");
+    assert.equal(store.read()!.state.consents.length, 0);
+  });
+  it("refuses a symlinked store and markerless existing directory before writing [SEC-06, SEC-12]", async () => {
+    const root = fresh(), outside = fresh();
+    symlinkSync(outside, join(root, ".tenet"));
+    await assert.rejects(newStore(root).transaction("t", async tx => tx.ensure()), /link|marker/i);
+    assert.equal(existsSync(join(outside, "marker")), false);
+    assert.equal(existsSync(join(outside, "lock")), false);
+    const other = fresh();
+    mkdirSync(join(other, ".tenet"));
+    writeFileSync(join(other, ".tenet/untrusted"), "keep me");
+    await assert.rejects(newStore(other).transaction("t", async tx => tx.ensure()), /marker/i);
+    assert.equal(readFileSync(join(other, ".tenet/untrusted"), "utf8"), "keep me");
+    assert.equal(existsSync(join(other, ".tenet/lock")), false);
+  });
+
+  it("refuses symlinked state, log and blob paths, including dangling links [SEC-06]", async () => {
+    for (const file of ["state", "log", "blobs"]) {
+      const root = fresh(), outside = fresh();
+      const store = await initState(root);
+      const { rmSync } = await import("node:fs");
+      rmSync(join(root, ".tenet", file), { force: true });
+      symlinkSync(join(outside, "missing"), join(root, ".tenet", file));
+      if (file === "state") assert.throws(() => store.read(), /link/i);
+      else if (file === "log") await assert.rejects(store.transaction("t", async () => 1), /link/i);
+      else assert.throws(() => store.putBlob("x"), /link/i);
+      assert.equal(existsSync(join(outside, "missing")), false);
+    }
+  });
+
+  it("refuses unknown authority fields instead of silently stripping them [CON-04, SEC-12]", () => {
+    assert.equal(Grant.safeParse({ id: "g", actions: ["local-routine"], source: "request", capture: "reported", bind: { factsHash: "f" }, futureAuthority: true }).success, false);
+  });
+
   it("publishes revisions atomically and keeps state.prev [CON-04]", async () => {
     const root = fresh();
     const store = await initState(root);
