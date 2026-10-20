@@ -11,7 +11,8 @@ const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
 const fake = {
   github: `ghp_${"a1B2".repeat(9)}`, aws: `AKIA${"Q7".repeat(8)}`, openai: `sk-${"z9Y8".repeat(8)}`, slack: `xoxb-${"1234567890"}-${"abcdefghij"}`,
-  jwt: `eyJ${"a".repeat(12)}.${"b".repeat(12)}.${"c".repeat(12)}`, pem: "-----BEGIN RSA PRIVATE KEY-----\nMIIEow\nabc\n-----END RSA PRIVATE KEY-----",
+  jwt: `eyJ${"a".repeat(12)}.${"b".repeat(12)}.${"c".repeat(12)}`,
+  pem: ["-----BEGIN RSA PRIVATE KEY-----", "MIIEow", "abc", "-----END RSA PRIVATE KEY-----"].join("\n"), // privacy-ok: a fake key for the redaction test
 };
 
 describe("redaction [SEC-11]", () => {
@@ -25,7 +26,7 @@ describe("redaction [SEC-11]", () => {
   });
   it("redacts credential assignments and credentials inside URLs, but not their names", () => {
     assert.equal(redact("DB_PASSWORD=hunter2hunter2 and api_key: abcd1234efgh"), "DB_PASSWORD=[redacted] and api_key: [redacted]");
-    assert.equal(redact("connect to https://admin:s3cr3tpass@db.internal/app"), "connect to https://admin:[redacted]@db.internal/app");
+    assert.equal(redact("connect to https://admin:s3cr3tpass@db.internal/app"), "connect to https://admin:[redacted]@db.internal/app"); // privacy-ok: a fake URL credential
     assert.equal(redact("Authorization: Bearer " + "x".repeat(30)), "Authorization: Bearer [redacted]");
   });
   it("leaves ordinary text, hashes and identifiers alone", () => {
