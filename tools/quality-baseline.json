@@ -95,11 +95,6 @@
    "cc": 23,
    "nest": 1
   },
-  "pipeline.ts#mutate": {
-   "lines": 100,
-   "cc": 91,
-   "nest": 3
-  },
   "verbs/commit.ts#startCommit": {
    "lines": 89,
    "cc": 39,
@@ -168,7 +163,6 @@
   "decisions/takeover.ts": 3,
   "decisions/undo.ts": 7,
   "frontends/cli.ts": 4,
-  "pipeline.ts": 20,
   "ports/types.ts": 10,
   "verbs/authority.ts": 2,
   "verbs/commit.ts": 13,
@@ -187,5 +181,5 @@
   "verbs/undo.ts": 5,
   "wire.ts": 2
  },
- "core": 184390
+ "core": 188064
 }
