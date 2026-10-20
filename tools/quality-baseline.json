@@ -120,11 +120,6 @@
    "cc": 47,
    "nest": 1
   },
-  "verbs/open.ts#run": {
-   "lines": 166,
-   "cc": 80,
-   "nest": 3
-  },
   "verbs/stop.ts#stopWork": {
    "lines": 93,
    "cc": 28,
@@ -185,7 +180,6 @@
   "verbs/inspect.ts": 8,
   "verbs/integrate.ts": 8,
   "verbs/manifest.ts": 13,
-  "verbs/open.ts": 24,
   "verbs/packet.ts": 4,
   "verbs/reconcile.ts": 11,
   "verbs/review.ts": 3,
@@ -193,5 +187,5 @@
   "verbs/undo.ts": 5,
   "wire.ts": 2
  },
- "core": 181170
+ "core": 184390
 }
