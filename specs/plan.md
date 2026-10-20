@@ -49,14 +49,14 @@ PRD owns meaning. Tech Spec owns mechanism. UX Spec owns wording. This plan owns
 | Phase 0 — Alignment | ☐ Not started | — | — |
 | Phase 1 — Feasibility spikes & discovery | ☐ Not started | — | — |
 | Phase 2 — M0 walking skeleton | ◐ In progress | 2026-10-18 | 0 / 34 Musts qualified · 29 / 34 have a T1 fixture · 4 need the real host · 1 not reachable yet (`node tools/coverage.ts`) |
-| Phase 3 — Alpha | ☐ Not started | — | 0 / 66 Musts (0 / 100 cumulative) |
+| Phase 3 — Alpha | ◐ Started ahead of its gate (M0 exit and SP-12 are not met) | 2026-10-19 | 0 / 66 Musts qualified; Git completion (`integrate`, `undo`) implemented, T1-green locally |
 | Phase 4 — Beta | ☐ Not started | — | 0 / 58 Musts (0 / 158 cumulative) |
 | Phase 5 — R1 | ☐ Not started | — | 0 / 23 Musts + 0 / 16 Shoulds (0 / 181 cumulative) |
 | Phase 6 — Post-R1 operations | ☐ Not started | — | — |
 
 **Current focus:** Phase 2 was started on the product owner's direct instruction before the Phase 1 host spikes were dispositioned (this deviates from §6's entry criterion; see §13, 2026-10-18). The kernel, the plugin payload and the T1 suite exist and are green locally. **Nothing has been run inside VS Code Copilot**, so everything host-dependent (install path, skill-relative kernel location, fresh-reviewer dispatch, approval behavior) is unobserved. Next: run SP-08, SP-01 and SP-12 on the real VS Code Copilot host with separate authorization; nothing else in M0 can move until they are observed.
 
-**Open blockers:** (1) SP-01, SP-08 and SP-12 need the real VS Code Copilot host and cannot be run from this development environment; they remain unobserved and are the main remaining M0 risk. (2) The pipeline, verbs and decisions are 55% over their TS §6.2 line budget (1,629 vs 1,050), which TS §6.2 says needs a decision before they grow further (§12.3). Otherwise none: all ten Phase 0 items are resolved (seven were already settled in the specs or fixed directly in tech-spec v1.2; PH0-10's mechanism is fixed and now awaits SP-12's measurement, not a prior decision).
+**Open blockers:** (1) SP-01, SP-08 and SP-12 need the real VS Code Copilot host and cannot be run from this development environment; they remain unobserved and are the main remaining M0 risk. (2) The pipeline, verbs and decisions are 90% over their TS §6.2 line budget (2,000 vs 1,050), which TS §6.2 says needs a decision before they grow further (§12.3). Otherwise none: all ten Phase 0 items are resolved (seven were already settled in the specs or fixed directly in tech-spec v1.2; PH0-10's mechanism is fixed and now awaits SP-12's measurement, not a prior decision).
 
 **Qualified tuple (fill in once Phase 1 confirms it):** VS Code desktop ⟨version⟩ · GitHub Copilot Chat ⟨version⟩ · Local harness · ⟨OS/arch⟩ · Node ⟨version⟩ · Git ⟨version⟩.
 
@@ -130,7 +130,7 @@ These are restated from the specs as execution discipline, because a plan that d
 | 4 | SP-06 | ☐ | Inventory at 10k/100k files; temporary-index commit with husky/lint-staged; atomic index sync under concurrent staging and a killed sync; split-index repos | p95 ≤1s on 100k files; zero lost human staged/unstaged content across every race case | Narrower attribution claims; ask before stash-using hook managers; consent before clean filters |
 | 5 | SP-10 | ☐ | Vitest/Jest/Playwright/ESLint/tsc JSON normalization on starter (single-active-reservation model, per PH0-2) + brownfield fixtures, including malformed reports | Correct normalization; unsupported cases explicitly reported | Narrower brownfield eligibility (`adapter-unsupported-config`) |
 
-**Local observations made while implementing (not spike dispositions; each spike still needs separate authorization, PRD §8.1):** *SP-06* — inventory of a 10,000-file repository takes about 0.25 s; temporary-index commits, the exact index sync under `.git/index.lock`, a held lock, a split index, and hooks that stage foreign paths behaved as designed in `git.test.ts` and `scenarios.test.ts` on Git 2.56. Not yet exercised: 100,000 files, husky or lint-staged themselves (only equivalent hook scripts), a sync killed mid-way, concurrent staging by a second process. *SP-10* — Vitest 3.2.7's JSON reporter was inspected on a fixture with an assertion failure, a thrown error, a skipped test, an import error and `.only` (the last two surface as file-level failures and an "Unexpected .only modifier" failure under `CI=1`); the adapter normalizes these. Jest, Playwright, ESLint and tsc are not built. Vitest 5.0.5 produced the same normalized result on the same fixture, and the scaffolded starter runs under it end to end. The supported-version range (Vitest 2–5) in `adapters/node-ts.ts` is two observations and a guess for the versions between.
+**Local observations made while implementing (not spike dispositions; each spike still needs separate authorization, PRD §8.1):** *SP-06* — inventory of a 10,000-file repository takes about 0.25 s; temporary-index commits, the exact index sync under `.git/index.lock`, a held lock, a split index, and hooks that stage foreign paths behaved as designed in `git.test.ts` and `scenarios.test.ts` on Git 2.56. Added on 2026-10-19 (local): 100,000 files take about 350 ms to inventory clean and with 1,000 edited (`tools/bench-inventory.ts`; 10,000 files about 65 ms); real husky 9 and lint-staged 16 run on the temporary index without touching a person's staged or unstaged edits and leave no stash, and their reformatting of Tenet's file shows as a tree different from the planned one (`hooks.test.ts`); a client killed while holding `.git/index.lock` leaves the index byte-for-byte untouched and `decide sync-index` finishes the job once the lock is gone. Not yet exercised: concurrent staging by a second live process, a split index, a sync killed at its last rename. *SP-10* — Vitest 3.2.7's JSON reporter was inspected on a fixture with an assertion failure, a thrown error, a skipped test, an import error and `.only` (the last two surface as file-level failures and an "Unexpected .only modifier" failure under `CI=1`); the adapter normalizes these. Jest, Playwright, ESLint and tsc are not built. Vitest 5.0.5 produced the same normalized result on the same fixture, and the scaffolded starter runs under it end to end. The supported-version range (Vitest 2–5) in `adapters/node-ts.ts` is two observations and a guess for the versions between.
 
 **Note on PRD §10.2's broader gate:** PRD's feasibility register lists eight spikes (adds SP-05, SP-11) under "before design approval." Per PH0-1's resolution, tech-spec's narrower M0-blocking set above is the code-start gate; SP-05 and SP-11 still need to close before this project claims full PRD-gate-2 "design approved" status, but that claim is separate from, and does not block, starting to write code.
 
@@ -276,10 +276,10 @@ Status: ✅ Implemented — CI run [39207795574](https://github.com/vedprakash-m
 - [x] Start snapshot + file-level attribution by the last-check rule (`user-dirty-at-start`, `tenet-modified`, `user-concurrent`, `mixed`); a mixed/overlapping file triggers one specific chat question (per ux-spec J-03b, including the "edit in place, don't commit" option added in the last review round)
 - [x] Temporary-index commit helper: stage only Tenet-owned paths, commit, verify parent + path-subset postconditions, **atomic index sync under `.git/index.lock`** preserving every human staged/unstaged entry byte-for-byte, with the documented untouched-index fallback on contention
 - [x] Honor `--no-commit` (`finish`) when the user says "don't commit" for the task
-- [ ] Shadow Git repository for non-Git prototypes *(not built; a non-Git folder gets the init question, and the prototype endpoint has no path to it yet)* (build only after a real-repository commit works, per TD-26)
+- [x] Shadow Git repository for non-Git prototypes *(`.tenet/git`; `open prototype --no-git`; a snapshot at open and at every check; secrets, dependencies and build output excluded; over 20 MB refused; endpoint `prototype`; `prototype.test.ts`)* (build only after a real-repository commit works, per TD-26)
 - **Verification:** Git preservation fixtures with staged/unstaged human hunks, husky/lint-staged mutation fixtures, concurrent `index.lock` contention, a killed sync
 
-Status: ◐ In progress — all but the shadow repository are ✅ implemented (CI run [39207795574](https://github.com/vedprakash-m/tenet/actions/runs/39207795574) green on ubuntu and macOS at `b8c2114` (`npm run ci`, 177 tests, bundle also run on Node 22.12.0)). Not covered: a sync killed mid-way, husky and lint-staged themselves (equivalent hook scripts only), 100,000-file inventory.
+Status: ◐ In progress — implemented ✅ after the CI run below, apart from changes made since (shadow repository, `decide sync-index`, support locks; local `npm run ci` green, 183 tests, not yet in CI). (CI run [39207795574](https://github.com/vedprakash-m/tenet/actions/runs/39207795574) green on ubuntu and macOS at `b8c2114` (`npm run ci`, 177 tests, bundle also run on Node 22.12.0)). Not covered: a sync killed mid-way, husky and lint-staged themselves (equivalent hook scripts only), 100,000-file inventory.
 
 ### 6.5 WP-04 — Runner, Vitest adapter, receipts
 
@@ -288,7 +288,7 @@ Status: ◐ In progress — all but the shadow repository are ✅ implemented (C
 - [x] Whole-file acceptance test locks (TD-11) *(anchored to the first commit that contains them and applied by ancestry, TS §9.7)*: once a test file passes red→green, lock its blob OID; any later edit/rename/mock needs a disposition
 - **Verification:** misleading-success traps (AC-07) — vacuous assertions, skipped tests, compile-error-as-red, support-file weakening, mutated locked test
 
-Status: ✅ Implemented — CI run [39207795574](https://github.com/vedprakash-m/tenet/actions/runs/39207795574) green on ubuntu and macOS at `b8c2114` (`npm run ci`, 177 tests, bundle also run on Node 22.12.0). Traps covered: vacuous red, compile-error-as-red, skipped, focused, mutated locked test, forged contradictions (exit and report disagree). **Not covered:** support-file weakening (support inputs and fixtures are not modeled), and Jest, Playwright, ESLint and tsc.
+Status: ✅ Implemented — CI run [39207795574](https://github.com/vedprakash-m/tenet/actions/runs/39207795574) green on ubuntu and macOS at `b8c2114` (`npm run ci`, 177 tests, bundle also run on Node 22.12.0). Traps covered: support-file and runner-configuration weakening, vacuous red, compile-error-as-red, skipped, focused, mutated locked test, forged contradictions (exit and report disagree). Support-file weakening is covered too: an example declares `support` files, which are locked with the test together with the runner configuration (`scenarios`). **Not covered:** Jest, Playwright, ESLint and tsc.
 
 ### 6.6 WP-06 — Coordinator, Reviewer agent, core skills
 
@@ -361,11 +361,11 @@ Status: ◐ In progress — the T1 half of the scenario passes in CI; the real-s
 
 ### 7.2 Decision registry, managed blocks, config
 
-- [ ] All `decide` kinds implemented over one registry (TD-27); answers bind to the facts shown (`factsHash`), not the whole revision
+- [ ] All `decide` kinds implemented over one registry (TD-27); *(the registry exists with 12 kinds: basis, scaffold, dirty-overlap, acceptance, disposition, repair-lock, unexplained, hook-consent, sync-index, branch-switch, config, undo-confirm; forget, delete-records, cleanup, remote, adopt, grant, dependency, export and the content kinds are not built)* answers bind to the facts shown (`factsHash`), not the whole revision
 - [ ] Managed Markdown blocks in `INTENT.md` (and `docs/architecture.md`, `docs/hardening.md`): preserve user prose outside Tenet's markers; malformed markers → `intent-markers-invalid` (already specified in ux-spec §10)
 - [ ] **PH0-4's branch-reconciliation decision implemented and fixture-tested** before this is considered done
 - [ ] `tenet.policy.json` structural trust comparison: automatic tightening, loosening/unknown needs explicit confirmation; `$schema` generated from zod
-- [ ] 12-setting catalog, one typed source; "never touch X" must not silently become "ask before touching X" (preserve the user's actual restriction strength)
+- [ ] 12-setting catalog, one typed source; *(started: `core/config.ts` holds one setting, `integration`, set with `decide config`; eleven remain)* "never touch X" must not silently become "ask before touching X" (preserve the user's actual restriction strength)
 
 ### 7.3 Analyst agent
 
@@ -374,8 +374,8 @@ Status: ◐ In progress — the T1 half of the scenario passes in CI; the real-s
 
 ### 7.4 Git completion
 
-- [ ] `undo`: inverse patch against current state, previewed, overlap stops cleanly (`undo-conflict`), never a restore of old contents
-- [ ] `integrate`: conflict prediction before any branch switch; **A12 implemented exactly** — `offer` names "integrate" as the disclosure, `auto-on-accept` states the consequence before acceptance, `never` omits the mention, a dirty-path switch still asks regardless of setting
+- [x] `undo`: inverse patch against current state, previewed, overlap stops cleanly (`undo-conflict`), never a restore of old contents *(`undo` previews in plain chat; `decide undo-confirm` applies to the working tree only; the revert becomes a new quick contract that is checked and committed; an interrupted apply rolls forward; `undo.test.ts`)*
+- [x] `integrate`: conflict prediction before any branch switch; **A12 implemented exactly** *(`integrate.test.ts`: fast-forward keeps the receipts, a merge onto a moved base is unchecked until `check --stage integrated`, conflicts named before the editor moves, uncommitted edits ask regardless of setting, `auto-on-accept` integrates on acceptance, a crash after the merge recovers)* — `offer` names "integrate" as the disclosure, `auto-on-accept` states the consequence before acceptance, `never` omits the mention, a dirty-path switch still asks regardless of setting
 - [ ] Dependency verification from lockfile before install, package-manager-specific postconditions (an npm postcondition is not a stand-in for pnpm)
 
 ### 7.5 Evaluation foundation
@@ -384,7 +384,7 @@ Status: ◐ In progress — the T1 half of the scenario passes in CI; the real-s
 - [ ] 10 public golden tasks authored, each with a seeded failure the loop must not hide
 - [ ] 6 formative UX sessions run (ux-spec §14.2: clear bug fix; ambiguous feature; review + selected fixes; interrupted task with conflicting human edits; temporary preference; status during active work) — tune skill copy from real evidence, not guesses
 
-Status: ☐ Not started
+Status: ◐ In progress — only §7.4 `undo` and `integrate` and the first setting are built, ahead of the Alpha gate, on the owner's instruction to continue. Everything else in this phase waits for the host spikes (front-end lock, golden tasks, UX sessions) or is not started.
 
 ---
 
@@ -567,11 +567,20 @@ Nothing on this list is a Must requirement — nothing else may be added to it w
 | 2026-10-18 | `kernel.payloadHash` and the kernel-location/payload verification (TS §4.5, §6.6) are not built. | Needs the release chain (hashes) and SP-01 (location). | — | TS §6.6: omitted; `kernel` carries version and schema only. |
 | 2026-10-18 | Stateless `review` returns the manifest by path only; there is no inline fallback. | TS §5.5 makes the inline fallback conditional on SP-08. | `scenarios`: review writes nothing to the project. | TS §5.5: build the fallback if SP-08 shows OS-temp reads are unavailable. |
 | 2026-10-18 | The bundle must be minified to fit its budget (553 KB vs 600 KB; 903 KB unminified, mostly zod). | Plan §5.2 says "unminified"; TS §14.1 gives the budget. | `invariants`: bundle size and run with nothing but Node. | Plan §5.2 corrected here. `zod/mini` would shrink it further if the budget tightens. |
-| 2026-10-18 | Pipeline, verbs and decisions total 1,629 lines against a 1,050-line budget (55% over; the other modules are within budget). | TS §6.2: more than 25% over needs a decision before the module grows. Lines here are long; the real size is larger than the count suggests. | `node tools/coverage.ts` reports it. | TS §6.2: **needs a decision** (simplify, or raise the budget with a reason). `verbs/check.ts` (the receipt derivation could move to a tested pure module) and `decisions/simple.ts` are the first places to look. |
+| 2026-10-18 | Pipeline, verbs and decisions total 1,629 lines against a 1,050-line budget (90% over; the other modules are within budget). | TS §6.2: more than 25% over needs a decision before the module grows. Lines here are long; the real size is larger than the count suggests. | `node tools/coverage.ts` reports it. | TS §6.2: **needs a decision** (simplify, or raise the budget with a reason). `verbs/check.ts` (the receipt derivation could move to a tested pure module) and `decisions/simple.ts` are the first places to look. |
 | 2026-10-18 | Locks are anchored by ancestry, but when the anchor is not an ancestor and the path exists, the lock still applies. | TS §9.7 says "ask the user when ambiguous"; M0 has no such question and prefers protection over silence. | `workflows`: locks follow history. | TS §9.7: M0 never drops a lock silently and never asks. |
 | 2026-10-18 | `hook-consent` first used the chat channel, then the native picker. | UX §5.2 classifies a commit-hook consent as routine (native); an earlier reading of SEC-13 suggested chat. | `workflows`: hook consent. | None; UX §5.2 wins. SEC-13 has no M0 fixture because no M0 verb performs a remote, destructive or content-sending action. |
 | 2026-10-18 | `open` in a non-Git folder creates `.tenet/` (a marker and a lock) before refusing with the Git question. | The lock needs the directory; the refusal happens inside the transaction. | `workflows`: new project. | Minor: harmless but contradicts "nothing is written until it is needed" (CON-09 covers review and readiness, not a refused `open`). |
 | 2026-10-18 | 80% of an integer limit of 3 attempts is 2.4, so the warning and the bound coincide. | PRD WRK-08 says "warn at 80%" without saying how integers round. | `core`/`contract` tests. | None; the literal rule is implemented. |
+| 2026-10-19 | TS §10.3 step 7 promises a one-step "sync my index" but names no verb. | The commit protocol was written without the verb surface. | `workflows`: killed index lock. | TS §6.5 / §10.3: implemented as `decide sync-index`; add it to the decision table. |
+| 2026-10-19 | A non-Git folder can be built as a prototype only by opening the prototype profile with `--no-git`; any other profile with `--no-git` is refused. | GIT-01 offers a snapshot prototype but the spec does not say how the choice is made. | `prototype.test`. | TS §10.9 / UX §5.1: the Git question's second option names the prototype profile. |
+| 2026-10-19 | `Lock.supportInputs` is a map of file to blob (it was a list of paths), and the runner configuration is a support input of every lock without being declared. | A list cannot say what a support file looked like when locked. | `scenarios`: support-file weakening. | TS §7.2 / §9.7. |
+| 2026-10-19 | `undo` creates a new quick `fix` contract for the revert. | TS §10.5 says "check, then commit through §10.3" without saying under which contract; the original is finished and its obligations describe the work being removed. | `undo.test`. | TS §10.5. The original is marked `undoneBy` and cannot be undone twice. |
+| 2026-10-19 | `undo` finds the work's commits by the `Tenet-Work` trailer only, refuses a shallow clone or a merge commit, and does not use `git patch-id` after a squash or rebase. | Patch-id matching needs a decision on what "uncertain" asks the user. | `undo.test`. | TS §10.5: M0/Alpha subset; squash and rebase cases are not handled. |
+| 2026-10-19 | `integrate` uses a merge commit when the base moved; rebase-then-fast-forward and `branching: current` are not built. | TS §10.4 allows either convention "following the project". | `integrate.test`. | TS §10.4 / §10.7. |
+| 2026-10-19 | A runner that finds no test files exits non-zero; that is `zero-tests`, not a report contradiction. | Vitest exits 1 with an empty report when nothing matches. | `receipts.test`, `undo.test`. | TS §9.6. |
+| 2026-10-19 | Removing assertions from files an `undo` was asked to revert raises no attention item. | The user's request is the disposition. | `undo.test`. | TS §8.7. |
+| 2026-10-19 | The shipped bundle is 581 KB of its 600 KB budget (zod is most of it). | Each verb adds schemas. | `invariants.test` enforces the budget. | TS §14.1: the next verb needs `zod/mini` or a budget decision. |
 | 2026-10-18 | The starter recipe adds three reason codes: `scaffold-target-not-empty`, `recipe-integrity-failed`, `install-failed`. | Appendix C has none for a refused or failed scaffold. | `scaffold.test`. | TS Appendix C (additive, minor). |
 | 2026-10-18 | After a scaffold and install the assistance level is recomputed (it was L2 at `open`, with no dependencies, which would cap the endpoint at findings-only). | TS §8.2 computes the level at `open` only. | `scaffold.test`. | TS §8.2 / §12.2: recompute after an install. |
 | 2026-10-18 | Recipe files a scaffold wrote raise no attention items while unchanged (`WorkContract.vetted`). | TS §8.7 lists configuration changes as attention but a vetted recipe's own config should not need a disposition. | `scaffold.test`. | TS §8.7 / §12.2. |
@@ -582,6 +591,12 @@ Nothing on this list is a Must requirement — nothing else may be added to it w
 ---
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
+
+### 2026-10-19 — Prototypes, SP-06 observations, support locks, integrate and undo (local; not yet in CI)
+
+Implemented and tested locally (`npm run ci`: 196 tests): the shadow repository for non-Git prototypes (`open prototype --no-git`; snapshots at open and every check; secrets and dependencies never copied; 20 MB refusal); `decide sync-index`; locks on support files and runner configuration; `integrate` (A12 as specified) and `undo`; the first typed setting (`integration`). SP-06 observations: 100,000 files inventory in about 350 ms; real husky 9 and lint-staged 16 leave a person's staged and unstaged edits untouched on the temporary index; a client killed while holding `.git/index.lock` leaves the index untouched. **Alpha work was started ahead of its gate** (M0 exit and SP-12 are not met) on the owner's instruction to continue; the plan phase table says so. Not committed yet, so nothing from this entry is `✅`.
+
+Still blocked, unchanged: SP-08, SP-01, SP-12 and everything that depends on them. Decisions still open: the pipeline/verbs/decisions line budget (now 2,000 lines against 1,050), how a coordinator declares baseline scaffolding, the TS §6.4 amendment, and the bundle budget (581 of 600 KB).
 
 ### 2026-10-18 — First CI run: T1 green on ubuntu and macOS; spikes still need the real host
 
@@ -602,7 +617,7 @@ Implemented `specs/plan.md` Phase 2 as far as it can go without the VS Code Copi
 
 **Observed vs. documented:** every statement above is T1 on macOS / Node 26 / Git 2.56. Nothing was run in VS Code. SP-01 (install path, skill-relative kernel path), SP-08 (fresh reviewer, tools, `usages`), SP-12 (approval counts, front-end choice), and SP-02 (host storage and instruction-file loading) are unobserved. The agent and skill text was written from the specs and has not been exercised by a model.
 
-**Decisions and spec gaps found:** see §12.3 (21 rows). The ones that need a product decision: the line budget for pipeline, verbs and decisions (55% over), how a coordinator declares baseline scaffolding, and the TS §6.4 amendment for call identity.
+**Decisions and spec gaps found:** see §12.3 (30 rows). The ones that need a product decision: the line budget for pipeline, verbs and decisions (90% over), how a coordinator declares baseline scaffolding, and the TS §6.4 amendment for call identity.
 
 **Not built (still open in M0):** the starter's UI/journeys/workload/restore tool (§6.7), shadow-Git prototypes, user-directory preferences, `inspect result/impact/residue/settings`, dogfooding, the real-host half of the walking skeleton, and the §3.1 role assignment.
 
