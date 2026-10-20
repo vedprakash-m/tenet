@@ -88,7 +88,7 @@ describe("the review manifest is self-sufficient (SP-08, observed on Copilot CLI
 });
 
 describe("limits warn at 80% and stop at the bound [WRK-08]", () => {
-  it("warns at 80%, writes the handoff at the stop, and stops with a diagnosis at the attempt limit", async () => {
+  it("warns at 80%, writes the handoff at the stop, and stops with a diagnosis at the attempt limit [WRK-12]", async () => {
     const p = fresh();
     const o = await p.call("open", { profile: "feature", request: "x", scopePaths: ["src/greet.ts"], lane: "standard" });
     const h = o.handle!;

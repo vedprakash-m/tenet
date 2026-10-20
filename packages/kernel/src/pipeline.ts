@@ -5,6 +5,7 @@ import type { ZodType } from "zod";
 import { summarize } from "./core/budget.ts";
 import { formatHandle, hashOf, parseHandle } from "./core/ids.ts";
 import { KernelError } from "./core/errors.ts";
+import { redact, redactDeep } from "./core/redact.ts";
 import type { KernelResponse, Question, Reason, State, WorkContract } from "./core/schemas.ts";
 import type { Ports, Tx } from "./ports/types.ts";
 
@@ -70,7 +71,7 @@ function render(ports: Ports, verb: string, resp: Resp, state: State | null, ext
   if (resp.effects) out.effects = resp.effects;
   if (resp.data !== undefined) out.data = resp.data;
   if (resp.kernel) out.kernel = { version: ports.version, schemaVersion: 1 };
-  return out;
+  return redactDeep(out); // nothing displayed, and nothing cached on the contract, carries a likely secret (SEC-11)
 }
 
 const inputHash = (verb: string, input: unknown, world: unknown): string => {
@@ -94,7 +95,8 @@ export async function runVerb(ports: Ports, verbs: Record<string, Verb>, name: s
     const msg = parsed.error.issues.slice(0, 3).map((i) => `${i.path.join(".") || "input"}: ${i.message}`).join("; ");
     return render(ports, name, { exit: 1, reasons: [{ code: "invalid-input", message: msg }] }, null);
   }
-  const input = parsed.data;
+  // The user's own words and request text are kept as they said them, minus anything that looks like a secret (SEC-11).
+  const input = Object.fromEntries(Object.entries(parsed.data as Record<string, unknown>).map(([k, v]) => [k, (k === "quote" || k === "request") && typeof v === "string" ? redact(v) : v])) as typeof parsed.data;
   const cls = verb.class(input);
   try {
     if (cls === "stateless") return render(ports, name, (await verb.run(ports, null, input)).resp, null);

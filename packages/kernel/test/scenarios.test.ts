@@ -134,7 +134,7 @@ describe("misleading-success traps (AC-07)", () => {
     assert.notEqual(d(f).endpoint, "checked-local");
   });
 
-  it("editing a locked acceptance test after it went green blocks checked-local [INT-05]", async () => {
+  it("editing a locked acceptance test after it went green blocks checked-local [INT-05, EVD-10]", async () => {
     const p = fresh();
     const { h } = await toRed(p, { lane: "quick" });
     const green = await toGreen(p, h);
@@ -148,7 +148,7 @@ describe("misleading-success traps (AC-07)", () => {
     assert.notEqual(d(f).endpoint, "checked-local");
   });
 
-  it("weakening a support file or the runner configuration after a test is locked blocks checked-local, until the user dispositions it [INT-05]", async () => {
+  it("weakening a support file or the runner configuration after a test is locked blocks checked-local, until the user dispositions it [INT-05, EVD-10, SEC-10]", async () => {
     const helper = 'import { expect } from "vitest";\nexport const same = (a: unknown, b: unknown) => expect(a).toBe(b);\n';
     const p = fresh({ "src/helper.ts": helper, "vitest.config.ts": 'import { defineConfig } from "vitest/config";\nexport default defineConfig({ test: {} });\n' });
     const basis = { ...BASIS, elements: [BASIS.elements[0], { ...BASIS.elements[1], support: ["src/helper.ts"] }] };
@@ -266,7 +266,7 @@ describe("review binding", () => {
     assert.equal(d(f).endpoint, "implemented-unverified");
   });
 
-  it("a blocker blocks until fixed and verified by a focused recheck, which is allowed once", async () => {
+  it("a blocker blocks until fixed and verified by a focused recheck, which is allowed once [REV-04]", async () => {
     const p = fresh();
     const { h } = await toRed(p);
     const g = await toGreen(p, h);
@@ -287,7 +287,7 @@ describe("review binding", () => {
 });
 
 describe("budget and stops", () => {
-  it("stops on the same failure twice and finishes honestly, never claiming a check [WRK-08]", async () => {
+  it("stops on the same failure twice and finishes honestly, never claiming a check [WRK-08, WRK-09]", async () => {
     const p = fresh();
     const { h } = await toRed(p, { lane: "quick" });
     p.write("src/greet.ts", "export const greet = (name: string): string => `Hi, ${name}!`;\n");
@@ -351,7 +351,7 @@ describe("idempotency and the envelope", () => {
     assert.equal(Object.keys(p.ports().store.read()!.state.work).length, 1);
   });
 
-  it("blocks a second editing contract while the first owns the source, and not a non-editing one", async () => {
+  it("blocks a second editing contract while the first owns the source, and not a non-editing one [AGT-08]", async () => {
     const p = fresh();
     await p.call("open", { profile: "feature", request: "one", scopePaths: [] });
     const two = await p.call("open", { profile: "feature", request: "two", scopePaths: [] });
@@ -427,7 +427,7 @@ describe("injected failure 1: a human's edits on the files Tenet needs", () => {
 });
 
 describe("injected failure 2: SIGKILL during a check", () => {
-  it("recovers on the next call: orphans are stopped, the run is discarded, a clean rerun passes [CON-03]", async () => {
+  it("recovers on the next call: orphans are stopped, the run is discarded, a clean rerun passes [CON-03, NFR-04]", async () => {
     const p = fresh();
     const { h } = await toRed(p, { lane: "quick" });
     p.write("src/greet.test.ts", SLOW_TEST);
@@ -541,7 +541,7 @@ describe("the command line", () => {
     assert.ok(help.json!.data);
   });
 
-  it("answers a copied .tenet directory with an integrity exit, never a crash", async () => {
+  it("answers a copied .tenet directory with an integrity exit, never a crash [CON-06]", async () => {
     const a = fresh();
     await a.call("open", { profile: "feature", request: "x", scopePaths: [] });
     const b = fresh();

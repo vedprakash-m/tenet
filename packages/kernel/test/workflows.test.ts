@@ -68,7 +68,7 @@ describe("a new project", () => {
 });
 
 describe("refusals", () => {
-  it("will not edit a repository that is mid-rebase or detached, but can still investigate", async () => {
+  it("will not edit a repository that is mid-rebase or detached, but can still investigate [INS-06]", async () => {
     const p = fresh();
     p.git("checkout", "-q", "--detach");
     const o = await p.call("open", { profile: "feature", request: "x", scopePaths: [] });
@@ -99,7 +99,7 @@ describe("refusals", () => {
 });
 
 describe("commit hooks (TS §10.3)", () => {
-  it("asks once before the first commit, remembers the answer by the hook configuration, and commits with the hook", async () => {
+  it("asks once before the first commit, remembers the answer by the hook configuration, and commits with the hook [GIT-12]", async () => {
     const p = fresh();
     addHook(p, "#!/bin/sh\nexit 0\n");
     const { h } = await toGreen(p);
@@ -125,7 +125,7 @@ describe("commit hooks (TS §10.3)", () => {
     assert.equal(p.git("show", "--name-only", "--format=", "HEAD").includes("made-by-hook.txt"), true, "the commit is kept");
   });
 
-  it("leaves the candidate uncommitted when a hook fails, and says so in the headline", async () => {
+  it("leaves the candidate uncommitted when a hook fails, and says so in the headline [GIT-12, GIT-15]", async () => {
     const p = fresh();
     addHook(p, "#!/bin/sh\necho 'lint failed' >&2\nexit 1\n");
     const { h } = await toGreen(p);
@@ -139,7 +139,7 @@ describe("commit hooks (TS §10.3)", () => {
     assert.match(d(f).label, /working tree/);
   });
 
-  it("keeps the work uncommitted when the user declines hooks", async () => {
+  it("keeps the work uncommitted when the user declines hooks [GIT-15]", async () => {
     const p = fresh();
     addHook(p, "#!/bin/sh\nexit 0\n");
     const { h } = await toGreen(p);
@@ -152,7 +152,7 @@ describe("commit hooks (TS §10.3)", () => {
 });
 
 describe("dispositions", () => {
-  it("lets the user accept a shortcut, and only then reaches checked-local", async () => {
+  it("lets the user accept a shortcut, and only then reaches checked-local [REV-04]", async () => {
     const p = fresh();
     const { h } = await toGreen(p);
     p.write("src/greet.ts", `${GREET_IMPL}export const legacy = (x: unknown) => x as any;\n`);
@@ -172,7 +172,7 @@ describe("dispositions", () => {
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
   });
 
-  it("re-locks an acceptance test the user confirms may change, and accepts nothing without a reason", async () => {
+  it("re-locks an acceptance test the user confirms may change, and accepts nothing without a reason [INT-06]", async () => {
     const p = fresh();
     const { h } = await toGreen(p);
     p.write("src/greet.test.ts", GREET_TEST.replace('.toBe("Hello, Ada!")', ".toBeTruthy()"));
@@ -343,7 +343,7 @@ describe("things that must not trip it", () => {
     assert.equal(d(await p.call("inspect", { view: "why", h })).scope, "committed");
   });
 
-  it("never treats a secret file as Tenet's, or asks about it, even when it is not ignored", async () => {
+  it("never treats a secret file as Tenet's, or asks about it, even when it is not ignored [SEC-14]", async () => {
     const p = fresh();
     const { h } = await toGreen(p);
     p.write(".env", "TOKEN=hunter2\n");
@@ -387,7 +387,7 @@ describe("parking, resuming and non-editing work", () => {
     assert.equal(Object.values(st.work).find((w) => w.profile === "feature")!.id, st.sourceOwner!.work, "the implementation still owns the source");
   });
 
-  it("answers `inspect why` from the same verdict finish would compute, and any edit makes the evidence stale [EVD-01]", async () => {
+  it("answers `inspect why` from the same verdict finish would compute, and any edit makes the evidence stale [EVD-01, EVD-03]", async () => {
     const p = fresh();
     const { h } = await toGreen(p);
     const why = await p.call("inspect", { view: "why", h });

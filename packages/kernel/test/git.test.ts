@@ -48,7 +48,7 @@ describe("git: probe and inventory", () => {
     assert.equal((await g.inventory([])).digest, clean.digest);
   });
 
-  it("never reads secret files, only their stat, and ignores .tenet", async () => {
+  it("never reads secret files, only their stat, and ignores .tenet [SEC-14]", async () => {
     const { g, root } = repo();
     write(root, ".env", "TOKEN=abc\n");
     write(root, ".tenet/state", "{}");

@@ -16,7 +16,7 @@ const bump = (root: string, n: number) => new Promise<number>((res) => {
 });
 
 describe("store: transactions", () => {
-  it("publishes revisions atomically and keeps state.prev", async () => {
+  it("publishes revisions atomically and keeps state.prev [CON-04]", async () => {
     const root = fresh();
     const store = await initState(root);
     await store.transaction("t", async (tx) => tx.publish({ ...tx.state!, workSeq: 7 }));
@@ -26,7 +26,7 @@ describe("store: transactions", () => {
     assert.equal(JSON.parse(readFileSync(join(root, ".tenet/state.prev"), "utf8")).revision, 1);
   });
 
-  it("serializes competing writers across real processes: no lost update", async () => {
+  it("serializes competing writers across real processes: no lost update [CON-04, AGT-08]", async () => {
     const root = fresh();
     await initState(root);
     const codes = await Promise.all([bump(root, 15), bump(root, 15), bump(root, 15)]);

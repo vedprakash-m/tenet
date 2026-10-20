@@ -1,17 +1,25 @@
 // The project folder as an adapter: the only code that writes files the user will see. Never overwrites.
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import type { Project, RecipeFile } from "../ports/types.ts";
+
+const lexists = (p: string): boolean => { try { lstatSync(p); return true; } catch { return false; } };
 
 export class FsProject implements Project {
   private root: string;
   constructor(root: string) { this.root = resolve(root); }
 
-  /** A path inside the project, or an error: a recipe can never write outside the folder it was asked to fill. */
+  /** A path inside the project, or an error: a recipe can never write outside the folder it was asked to fill, and a symlink that leads out is outside. */
   private at(rel: string): string {
     const p = resolve(this.root, rel);
     if (p !== this.root && !p.startsWith(this.root + sep)) throw new Error(`path escapes the project: ${rel}`);
+    let probe = p;
+    while (!lexists(probe) && probe !== this.root) probe = dirname(probe); // the nearest part that exists decides where a new file would land
+    let real: string;
+    try { real = realpathSync(probe); } catch { throw new Error(`path cannot be resolved (a link that leads nowhere?): ${rel}`); }
+    const home = realpathSync(this.root);
+    if (real !== home && !real.startsWith(home + sep)) throw new Error(`path leaves the project through a link: ${rel}`);
     return p;
   }
 

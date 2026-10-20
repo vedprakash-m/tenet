@@ -40,7 +40,7 @@ describe("verdict table [RES-02, EVD-01]", () => {
   const rows: Array<[string, (i: VerdictInput) => VerdictInput, string, string]> = [
     ["evidence-missing", (i) => ({ ...i, receipts: [rc("OB-EX-1")] }), "evidence-missing", "implemented-unverified"],
     ["a planned red is not evidence of the candidate", (i) => ({ ...i, receipts: [rc("OB-EX-1", { stage: "baseline", status: "pass" }), rc("OB-suite")] }), "evidence-missing", "implemented-unverified"],
-    ["stale (any input changed)", (i) => ({ ...i, receipts: i.receipts.map((r) => ({ ...r, checkInputId: "old" })) }), "stale", "implemented-unverified"],
+    ["stale (any input changed) [EVD-03]", (i) => ({ ...i, receipts: i.receipts.map((r) => ({ ...r, checkInputId: "old" })) }), "stale", "implemented-unverified"],
     ["evidence-failed", (i) => ({ ...i, receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "fail", failures: [{ test: "t", kind: "assertion", message: "m" }] })] }), "evidence-failed", "implemented-unverified"],
     ["evidence-inconclusive", (i) => ({ ...i, receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "inconclusive", reasons: ["timeout"] })] }), "evidence-inconclusive", "implemented-unverified"],
     ["evidence-flaky", (i) => ({ ...i, receipts: [rc("OB-EX-1", { qualifiers: ["flaky"] }), rc("OB-suite")] }), "evidence-flaky", "implemented-unverified"],

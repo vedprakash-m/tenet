@@ -15,13 +15,13 @@ describe("judging tenet.policy.json against the adopted one", () => {
     assert.equal(j.kind === "changed" && j.pending.length, 0);
     assert.equal(j.kind === "changed" && j.applied.length, 1);
   });
-  it("a loosening waits, and the previous rule stays in what is in force", () => {
+  it("a loosening waits, and the previous rule stays in what is in force [SEC-12]", () => {
     const j = judgePolicyFile(entry(policy), JSON.stringify({ protected_paths: ["db/**"] }));
     assert.ok(j.kind === "changed");
     assert.equal(j.kind === "changed" && j.pending.length, 1);
     assert.deepEqual(j.kind === "changed" && j.restrictions.protected_paths, ["db/**", "infra/**"]);
   });
-  it("a file that is not valid is unreadable, and names the key", () => {
+  it("a file that is not valid is unreadable, and names the key [NFR-03]", () => {
     assert.equal(judgePolicyFile(entry(policy), "{ not json").kind, "unreadable");
     const j = judgePolicyFile(entry(policy), JSON.stringify({ protected_path: [] }));
     assert.ok(j.kind === "unreadable" && /protected_paths/.test(j.message));

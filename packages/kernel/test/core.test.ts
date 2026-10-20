@@ -77,7 +77,7 @@ describe("risk", () => {
 });
 
 describe("budget", () => {
-  it("treats the same signature twice, or A-B-A-B, as repeated failure, but not A-B-A", () => {
+  it("treats the same signature twice, or A-B-A-B, as repeated failure, but not A-B-A [WRK-09]", () => {
     assert.equal(repeatedFailure(["a", "a"]), true);
     assert.equal(repeatedFailure(["a", "b", "a", "b"]), true);
     assert.equal(repeatedFailure(["a", "b", "a"]), false);
@@ -117,7 +117,7 @@ describe("budget", () => {
 });
 
 describe("exclusions", () => {
-  it("never allows content use of default secret files, but allows .env.example", () => {
+  it("never allows content use of default secret files, but allows .env.example [SEC-14]", () => {
     for (const p of [".env", ".env.local", "config/.env.production", "certs/server.pem", "k.key", "id_rsa", "home/id_ed25519.pub"]) {
       for (const op of ["scan", "read", "model-send", "edit", "export"] as const) assert.equal(allowed(op, p), false, `${op} ${p}`);
     }
@@ -137,7 +137,7 @@ const change = (path: string, added: string[], removed: string[] = []): FileChan
 const names = (cs: FileChange[], ps: readonly AttentionPattern[] = PATTERNS) => netAttention(cs, ps).map((a) => a.pattern);
 
 describe("attention (net per hunk, whitespace and case folded)", () => {
-  it("flags added markers, suppressions, escapes, mocks, empty catches and snapshots", () => {
+  it("flags added markers, suppressions, escapes, mocks, empty catches and snapshots [REV-03]", () => {
     assert.deepEqual(names([change("a.ts", ["// @ts-ignore", "const x = y as any;", "try { f() } catch {}", "vi.mock('./x')", "it.skip('a', () => {})"])]).sort(), ["@ts-ignore", ".skip", "as any", "empty catch", "mock"].sort());
   });
   it("is not fooled by spacing or case", () => {
@@ -148,7 +148,7 @@ describe("attention (net per hunk, whitespace and case folded)", () => {
     assert.deepEqual(names([change("a.ts", ["// @ts-ignore"], ["// @ts-ignore"])]), []);
     assert.deepEqual(names([change("a.ts", ["// @ts-ignore", "// @ts-ignore"], ["// @ts-ignore"])]), ["@ts-ignore"]);
   });
-  it("flags removed assertions, not added ones", () => {
+  it("flags removed assertions, not added ones [REV-03]", () => {
     assert.deepEqual(names([change("a.test.ts", [], ["expect(a).toBe(1);"])]), ["assertion removed"]);
     assert.deepEqual(names([change("a.test.ts", ["expect(a).toBe(1);"])]), []);
     assert.deepEqual(names([change("a.test.ts", ["expect(a).toBe(2);"], ["expect(a).toBe(1);"])]), [], "replacing an assertion keeps the count");

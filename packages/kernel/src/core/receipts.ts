@@ -1,5 +1,6 @@
 // Receipts (TS §9.6): turn one observed run and its normalized report into one receipt per obligation. The adapter
 // normalized the report; this decides what it proves. A receipt that cannot prove anything is inconclusive, never a pass.
+import { redact } from "./redact.ts";
 import { reason } from "./reasons.ts";
 import type { Obligation, Reason, Receipt } from "./schemas.ts";
 import type { Normalized, ToolVersions } from "../ports/types.ts";
@@ -40,11 +41,13 @@ export function receiptsFrom(o: RunFacts, norm: Normalized | null, obs: readonly
     if (per.some((p) => !p)) return stop("population-mismatch");
     const sum = per.reduce((a, p) => ({ executed: a.executed + p!.executed, passed: a.passed + p!.passed, failed: a.failed + p!.failed, skipped: a.skipped + p!.skipped, focused: a.focused + p!.focused }), { executed: 0, passed: 0, failed: 0, skipped: 0, focused: 0 });
     rec.counts = { discovered: sum.executed + sum.skipped, ...sum };
-    rec.failures = per.flatMap((p) => p!.failures).slice(0, 5);
+    rec.failures = per.flatMap((p) => p!.failures).slice(0, 5).map((f) => ({ ...f, message: redact(f.message) })); // the record keeps no likely secret (SEC-11)
     if (sum.focused) return stop("focused-tests");
     if (sum.executed === 0 && sum.failed === 0) return stop("zero-tests"); // runners exit non-zero when they find nothing to run; that is no contradiction
     if (o.exit === 0 && sum.failed > 0) return stop("report-contradiction");
-    if (o.exit !== undefined && o.exit !== 0 && sum.failed === 0) return stop("report-contradiction");
+    // The exit status belongs to the whole run: a file that passed beside a failing one is no contradiction (found with TDD-04).
+    const reportFailed = [...norm.files.values()].some((p) => p.failed > 0);
+    if (o.exit !== undefined && o.exit !== 0 && !reportFailed) return stop("report-contradiction");
     rec.status = sum.failed > 0 ? "fail" : "pass";
     if (sum.skipped > 0 && ob.testFile) rec.limitations.push(`${sum.skipped} skipped`);
     return rec;

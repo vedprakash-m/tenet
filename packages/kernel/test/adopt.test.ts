@@ -171,7 +171,7 @@ describe("open reconciles the shared files with what was adopted [PH0-4, PRD §7
     assert.ok(o.reasons.some((r) => /tighten/i.test(r.message)), JSON.stringify(o.reasons));
   });
 
-  it("keeps the previous rules for a loosening and asks, until the user accepts the diff", async () => {
+  it("keeps the previous rules for a loosening and asks, until the user accepts the diff [SEC-12]", async () => {
     const p = await adoptedPolicy({ protected_paths: ["db/**", "infra/**"] });
     p.write("tenet.policy.json", JSON.stringify({ protected_paths: ["db/**"] }));
     const o = await p.call("open", { profile: "investigate", request: "look around" });

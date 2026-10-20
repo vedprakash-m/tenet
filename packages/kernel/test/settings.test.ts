@@ -13,7 +13,7 @@ const d = (r: { data?: unknown }) => r.data as Record<string, any>;
 const open = (p: Project, over: Record<string, unknown> = {}) => p.call("open", { profile: "investigate", request: "look around", ...over });
 
 describe("decide config [CFG-06, CFG-07]", () => {
-  it("a plain preference applies to this task only; a project one is kept and revisioned", async () => {
+  it("a plain preference applies to this task only; a project one is kept and revisioned [LRN-01]", async () => {
     const p = fresh();
     const h = (await open(p)).handle!;
     const task = await p.call("decide", { h, kind: "config", target: "style", propose: { value: "concise" } });

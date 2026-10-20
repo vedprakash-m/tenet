@@ -16,7 +16,7 @@ const copy = () => { const d = scratch(); cpSync(PLUGIN, d, { recursive: true, f
 const edit = (root: string, rel: string, fn: (s: string) => string) => writeFileSync(join(root, rel), fn(readFileSync(join(root, rel), "utf8")));
 
 describe("lint-skills [ENG-03]", () => {
-  it("passes the shipped payload", () => assert.deepEqual(lintPayload(PLUGIN), []));
+  it("passes the shipped payload [ENG-01]", () => assert.deepEqual(lintPayload(PLUGIN), []));
 
   it("fails an unknown verb, flag, decision kind and a call that does not satisfy its schema", () => {
     const d = copy();

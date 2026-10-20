@@ -21,7 +21,7 @@ const norm = (raw: string) => normalize(raw, "/p");
 const one = (o: Obligation, r: RunFacts, n: ReturnType<typeof norm> | null, c = ctx) => receiptsFrom(r, n, [o], c)[0]!;
 
 describe("receipts", () => {
-  it("passes only when tests executed, none failed, and the exit status agrees [EVD-02]", () => {
+  it("passes only when tests executed, none failed, and the exit status agrees [EVD-02, EVD-05]", () => {
     const r = one(ob, run(), norm(report([{ status: "passed" }])));
     assert.deepEqual([r.status, r.counts?.executed, r.reasons], ["pass", 1, []]);
     assert.equal(r.checkInputId, "chk");
@@ -41,6 +41,13 @@ describe("receipts", () => {
   it("is inconclusive when exit status and report disagree, in either direction", () => {
     assert.deepEqual(one(ob, run({ exit: 0 }), norm(report([{ status: "failed", failure: "boom" }]))).reasons, ["report-contradiction"]);
     assert.deepEqual(one(ob, run({ exit: 1 }), norm(report([{ status: "passed" }]))).reasons, ["report-contradiction"]);
+  });
+  it("a file that passed beside a failing file in the same run is a pass, not a contradiction [TDD-04]", () => {
+    const raw = JSON.stringify({ testResults: [
+      { name: "/p/a.test.ts", status: "passed", assertionResults: [{ fullName: "a", status: "passed", failureMessages: [] }] },
+      { name: "/p/b.test.ts", status: "failed", assertionResults: [{ fullName: "b", status: "failed", failureMessages: ["AssertionError: expected 1 to be 2"] }] },
+    ] });
+    assert.deepEqual([one(ob, run({ exit: 1 }), norm(raw)).status, one({ ...ob, testFile: "b.test.ts" }, run({ exit: 1 }), norm(raw)).status], ["pass", "fail"]);
   });
   it("is inconclusive when the file the obligation names was not in the report", () => {
     assert.deepEqual(one({ ...ob, testFile: "missing.test.ts" }, run(), norm(report([{ status: "passed" }]))).reasons, ["population-mismatch"]);
