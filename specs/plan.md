@@ -368,9 +368,9 @@ Status: ◐ In progress — the T1 half of the scenario passes in CI; the real-s
 ### 7.2 Decision registry, managed blocks, config
 
 - [ ] All `decide` kinds implemented over one registry (TD-27); *(the registry exists with 12 kinds: basis, scaffold, dirty-overlap, acceptance, disposition, repair-lock, unexplained, hook-consent, sync-index, branch-switch, config, undo-confirm; forget, delete-records, cleanup, remote, adopt, grant, dependency, export and the content kinds are not built)* answers bind to the facts shown (`factsHash`), not the whole revision
-- [ ] Managed Markdown blocks in `INTENT.md` (and `docs/architecture.md`, `docs/hardening.md`): preserve user prose outside Tenet's markers; malformed markers → `intent-markers-invalid` (already specified in ux-spec §10)
+- [ ] Managed Markdown blocks in `INTENT.md` (and `docs/architecture.md`, `docs/hardening.md`): preserve user prose outside Tenet's markers; malformed markers → `intent-markers-invalid` (already specified in ux-spec §10) *(started, T1 only: `core/intent-md.ts` parses markers (duplicate, nested, unbalanced and malformed markers named with their line; charter markers and fenced examples ignored), renders the overview, requirements with their examples and invariants, the other kinds and plan items, and projects them into a file keeping every other byte and the line endings, leaving a block a person edited and reporting stale ones. Not wired: `decide adopt` (preview and write), the `open` reconciliation that re-reads `INTENT.md` (PH0-4), the `intent-markers-invalid` result, the human-dirty question, and the other two documents)*
 - [ ] **PH0-4's branch-reconciliation decision implemented and fixture-tested** before this is considered done
-- [ ] `tenet.policy.json` structural trust comparison: automatic tightening, loosening/unknown needs explicit confirmation; `$schema` generated from zod
+- [ ] `tenet.policy.json` structural trust comparison: automatic tightening, loosening/unknown needs explicit confirmation; `$schema` generated from zod *(started, T1 only: `core/policy.ts` parses the file strictly (unknown key named with the nearest valid one), compares `protected_paths`, `exclusions`, `required_checks` and `dependency_policy` structurally, treats `commands` and changed definitions as needing acceptance, and keeps the previous value of anything loosened until accepted; `plugin/schemas/tenet.policy.schema.json` is generated at build. Not wired: reading the file in `open`, the `policy-change-needs-acceptance` question, `decide adopt` for the policy, and the adoption-state record)*
 - [ ] 12-setting catalog, one typed source; *(started: `core/config.ts` holds one setting, `integration`, set with `decide config`; eleven remain)* "never touch X" must not silently become "ask before touching X" (preserve the user's actual restriction strength)
 
 ### 7.3 Analyst agent
@@ -602,6 +602,10 @@ Nothing on this list is a Must requirement — nothing else may be added to it w
 ---
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
+
+### 2026-10-19 (evening) — Alpha group A started: managed blocks and policy trust comparison (T1, uncommitted)
+
+Two pure modules with tests (`intent-md.test.ts`, `policy.test.ts`; 237 tests locally, `npm run ci` green): `core/intent-md.ts` and `core/policy.ts`, plus the generated policy JSON schema. Their plan items in §7.2 stay unchecked because nothing calls them yet; the notes there say what is wired and what is not. The assumption-confirmation fix (§12.3) is committed as `9d9c018`, CI run green on ubuntu and macOS. Nothing in this entry is observed on the host. Next in group A: `decide adopt` (preview, write, reconcile at `open`) for `INTENT.md` and the policy, then the remaining settings.
 
 ### 2026-10-19 (later) — First runs on VS Code Copilot: SP-08, SP-01, SP-02 partly observed
 
