@@ -109,7 +109,7 @@ function moduleBudgets(root: string): Report["overBudget"] {
     ["core/budget", lines(join(src, "core/budget.ts")), 150], ["core/verdict", lines(join(src, "core/verdict.ts")), 300],
     ["core/review", lines(join(src, "core/review.ts")), 350], ["adapters/store-fs", lines(join(src, "adapters/store-fs.ts")), 450],
     ["adapters/git-cli", lines(join(src, "adapters/git-cli.ts")), 650], ["adapters/runner", lines(join(src, "adapters/runner.ts")), 350],
-    ["adapters/node-ts", lines(join(src, "adapters/node-ts.ts")), 350], ["pipeline + verbs + decisions", lines(join(src, "pipeline.ts")) + dir("verbs") + dir("decisions"), 3000],
+    ["adapters/node-ts", lines(join(src, "adapters/node-ts.ts")), 350], ["pipeline + verbs + decisions", readdirSync(src).filter((f) => /^pipeline[\w-]*\.ts$/.test(f)).reduce((n, f) => n + lines(join(src, f)), 0) + dir("verbs") + dir("decisions"), 3000],
   ];
   return budgets.filter(([, n, b]) => n > b * 1.25).map(([module, n, budget]) => ({ module, lines: n, budget }));
 }

@@ -46,7 +46,7 @@ export function measure(dir: string): Measured {
     const text = readFileSync(file, "utf8");
     const wide = text.split("\n").filter((l) => l.length > LIMITS.width).length;
     if (wide) out.wide[rel] = wide;
-    if (rel === "pipeline.ts" || /^(verbs|decisions)\//.test(rel)) out.core += text.replace(/\s+/g, "").length;
+    if (/^pipeline[\w-]*\.ts$/.test(rel) || /^(verbs|decisions)\//.test(rel)) out.core += text.replace(/\s+/g, "").length;
     const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
     const seen = new Map<string, number>();
     const visit = (n: ts.Node) => {
