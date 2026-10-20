@@ -444,6 +444,8 @@ Host memory, plans and todos are context, never requirements, grants or plan ite
 | Lane | Steps |
 |---|---|
 | **Quick** | Localize with search and `usages`, bounded by relevance and budget → reproduce (failing test; `check --stage baseline`) → smallest in-scope repair → `check` (targeted and related tests, lint, types) → focused pass → `finish`. A behavior-preserving refactor (TDD-05) uses preservation tests that pass on the baseline instead |
+
+Quick's focused pass has a candidate/basis/manifest binding separate from native reservations. `findings` accepts only a reported `same-session` result for that binding. It consumes the review-round bound without charging a native delegation, discloses reduced independence, and cannot self-accept attention markers. Standard and Deep retain their fresh-context requirements.
 | **Standard** | Acceptance basis with at least one boundary or negative case per new requirement (INT-15) → a threat and data note when the change carries `auth`, `persistence`, `personal-data` or `external-effects` (QLT-13) → contract preview with the design sketch where required (§8.7) → acceptance tests and `check --stage baseline` → attempts, each submitted with a full candidate `check` → fresh Reviewer → fixes with at most one recheck (REV-05) → `finish` and the integration offer |
 | **Deep** | Standard, plus a native Architect pass (drafts the sketch, a decision record and the `docs/architecture.md` update), a native Security pass, the full suite, and mutation testing offered where the adapter supports it (TDD-07) |
 
@@ -661,6 +663,8 @@ Class: M mutating, R read-only, S stateless; C may run checks (obligation timeou
 
 A request carrying the user's words (`quote`) applies in one step when the request already names the action and target, recorded as `reported`. A preview question is mandatory only for destructive kinds (CON-10) and actions under the SEC-13 gate (§11.4), so an explicit request is never confirmed twice.
 
+The CLI implementation of abandonment is `stop abandon --h <handle>` → the chat question `abandon-confirm` → `decide abandon-confirm --h <handle> --answer abandon-confirm=abandon` (or `cancel`). The answer binds to work identity, generation, phase and any live run. Previewing closes nothing; uncertainty keeps the resource fenced. Approval mode remains unknown and the chat gate advisory until a reliable host signal is observed.
+
 ### 6.6 Response envelope
 
 Responses are re-sent with every later request, so routine responses are a small **loop card** and everything else is on demand.
@@ -733,7 +737,7 @@ type State = {
   locks: Lock[]; pending: Question[]; lessons: Lesson[];
   work: Record<WorkId, WorkContract>;           // active and parked contracts only
   archive: Array<{ id: WorkId; label: string; endpoint: Endpoint; blob: string; finishedAt: string }>;
-  recovered?: { from: "state.prev"; at: string };   // authority suspended until reconfirmed (15.2)
+  recovered?: { from: "state.prev"; at: string; accounting?: "verified" | "unknown" }; // authority suspended until reconfirmed (15.2)
 };
 
 type ProjectIntent = { revision: number;         // increments on every accepted change
@@ -752,12 +756,13 @@ type WorkContract = {
   id: WorkId /* wk_8f3a91c2d4 */; label: string /* W-0007 */; profile: Profile;
   lane: Lane; floor: Lane; level: AssistanceLevel; state: WorkState; lastValidPhase?: WorkState; stopReason?: StopReason;
   session: { generation: number; last?: { inputHash: string; response: KernelResponse<unknown> };
-             inCall?: { runId: string; pid?: number; procStart?: string; verb: string; since: string } };
+             inCall?: { runId: string; pid?: number; procStart?: string; verb: string; since: string; runDir?: string; cancelled?: boolean } };
   outcome: string; planItem?: string;
   scope: { paths: string[]; protected: string[]; exceptions: Exception[] };   // paths: predicted, an estimate (8.5)
   basis: { intentRevision: number; elementIds: string[]; design?: string; hash: string; traits: string[] };
   grants: Grant[]; obligations: Obligation[]; receipts: Receipt[];
   attention: AttentionItem[]; findings: Finding[]; reviews: ReviewLink[]; declined: string[];
+  focusedReview?: Reservation;                    // Quick same-session binding; no native delegation charge
   git: { base: string; branch: string; start: StartSnapshot; stacked?: string; commits: string[] };
   touched: Array<{ path: string; hashAtLastCheck?: string; observed?: boolean }>;
   budget: BudgetState; model: ModelRecord; pinned: { tenet: string; schema: number; recipe?: string; adapter: string };
@@ -775,14 +780,20 @@ type Finding = { id: string; severity: Severity; axis: Axis; location: Location;
   history: Array<{ to: string; by: "coordinator" | "reviewer" | "user"; reason: string; at: string }> };
 type ReviewLink = { reservation: string; mode: "full" | "recheck"; candidate: string;
   basisHash: string;                             // contract basis content including the sketch (8.7)
-  basedOn?: string; uncovered: string[]; verified: string[] };
+  basedOn?: string; uncovered: string[]; verified: string[];
+  status: ReviewResult["status"]; independence: "subagent-fresh" | "same-session"; files: Record<string, string>;
+  coverage: ReviewResult["coverage"]; openDependencies: string[] };
 type Lock = { path: string; hash: string; obligation: string; anchor: { commit: string } | { provisional: WorkId };
-  supportInputs: string[] };                     // 9.7
+  supportInputs: Record<string, string>;          // content hashes, including declared absences (9.7)
+  revisions?: Array<{ path: string; from: string; to: string; reason: string; at: string }> };
 type StartSnapshot = { head: string | null; branch: string | null;
   staged: Array<{ path: string; mode: string; blob: string }>;      // index entries that differ from HEAD
   dirty: Array<{ path: string; status: string; mode: string; blob?: string; stat?: FileStat }> };
+type Reservation = { id: string; role: Role; manifest: string; manifestHash: string; candidate: string;
+  basisHash: string; attempt: number; mode: "full" | "recheck"; files: Record<string, string>;
+  basedOn?: string; requiredPaths?: string[]; retries?: number };
 type BudgetState = { attempts: number; reviewRounds: number; rechecks: number;
-  reservations: Array<{ id: string; role: Role; manifest: string; candidate: string; basisHash: string; attempt: number }>;
+  reservations: Reservation[];
   delegations: number; delegationsByRole: Record<Role, number>; checksLaunched: number; tenetTokens: number;
   activeMinutesSinceCheckIn: number; activeMinutesTotal: number };
 type ModelRecord = { requested: "inherited" | "auto (host setting)" | string; resolved?: string;
@@ -801,16 +812,20 @@ Three separate mechanisms (TD-05):
 | Call identity (`work.session`) | Which chat may drive a contract; idempotent retries | Generation and last input per contract (§6.4) |
 | Source ownership (`state.sourceOwner`) | Which contract may coordinate source edits | Taken by an editing contract; checked in every editing transaction |
 
-**Liveness** is process ID plus start time (`ps -o lstart= -p <pid>` behind the Runner port), read only when a lock or record already exists. Elapsed time never decides liveness, because a paused process is alive.
+**Liveness** is process ID plus start time (`ps -o lstart= -p <pid>` behind the Runner port), read only when a lock or record already exists. Elapsed time never decides liveness, because a paused process is alive. A missing start identity prevents a new lock; malformed lock records cannot prove death and are left for recovery. When start-time inspection fails for a PID that still exists, liveness remains conservative and the lock is not broken.
 
 **Acquiring the lock:** (1) exclusive-create `lock`; (2) if it exists and its holder is alive, `kernel-busy` (exit 2, retryable); (3) if the holder is dead, exclusive-create `lock.break` with the breaker's identity, re-read `lock`, unlink it only if it still holds the dead holder's nonce, remove `lock.break`, retry. No fresh lock can exist while the stale one does, so two breakers never remove a live lock. (4) **A dead guard is never broken automatically:** if `lock.break` belongs to a dead process, the call stops with `lock-recovery-needed`. `decide {request: repair-lock}` is the one pre-lock maintenance step: it confirms both holders are dead, removes both files, then enters the normal pipeline. *Rejected:* renaming a fresh lock over a stale one is not race-free.
 
 **Publishing a revision:** read `state`; consume hook events; recover (§7.4); validate the envelope; compute; write and fsync `state.tmp`; hard-link the current `state` to `state.prev.tmp` and rename it over `state.prev`; re-read `state`'s revision and abort with `revision-conflict` if it moved (a diagnostic for lock failures, not compare-and-swap); rename `state.tmp` over `state`; fsync the directory; remove `lock`. Readers always see one revision.
 
+Before publishing a revision that has allocated work, append and fsync a strict `accounting` checkpoint to the local log. It records workspace/revision, work/generation sequence high-water marks, changed per-work budgets and generations, accounting completeness and in-flight work IDs. Budget counters are nonnegative integers; failure signatures are hashes of their normalized identity, so assertion text is not copied into the journal. On read, later checkpoints can raise spent counters and allocated sequences, including after a crash before publication; they never recreate a missing contract or restore grants, consents, receipts or review judgments. Backup recovery marks accounting verified only with a contiguous checkpoint sequence whose latest record establishes complete accounting with no unresolved in-flight work. Missing, legacy, invalid or incomplete records leave accounting unknown and grants suspended; `open` cannot create or resume editing authority while those facts remain unknown. Every stateful response discloses backup diagnostic mode; a success otherwise exits 3, while existing refusals retain their exit. Read-only views never republish state. Reconfirmation and unknown-cost reconciliation remain unavailable; log retention and bounds still need their qualification work.
+
 **External jobs** (checks, commits with hooks, installs, remote actions) run in three steps: *prepare* (a transaction records the run intent with a `runId` in `session.inCall`, then releases the lock); *execute* (the runner spawns the process group and writes its process ID and start time to `run.json` immediately; until then the run counts as busy, never absent); *finalize* (a second transaction records the result only if `inCall.runId` still names this run and no cancellation was recorded; otherwise `run-superseded`, so a check finishing after `stop cancel` can never publish passing receipts). While `inCall` names a live process, other mutating calls on that contract get `work-busy` except `stop` (always allowed) and recovery (read-only).
 
+The prepared run directory is registered with an atomic spawn guard: a short transaction rechecks the work, generation and `inCall.runId`, starts the child and records its identity before releasing the lock. Stop either precedes launch and prevents it or observes the recorded process. This applies to runner jobs; every other external mutation must carry the same protocol before its safeguard is qualified. The pipeline writes a durable prepared sentinel before publishing the job. The runner atomically replaces it with a starting record before spawn, then with the process identity. Only the prepared sentinel proves no child started; missing, malformed or starting records remain uncertain. Cancellation retains a fence in `inCall` until process ownership is resolved. Process recovery rejects linked records, invalid PID types/ranges and absent start identities rather than signalling an untrusted target. Local integration and working-tree inverse jobs use this runner protocol too; unbuilt integration-hook/signing consent paths refuse before switching the editor.
+
 **Rules:**
-- **Same contract, new chat:** `open --resume` issues the next generation. Unless the previous generation's last call left the work parked, finished or awaiting an answer, one `takeover-check` question asks whether the earlier chat has stopped; generations cannot stop native edits from a running chat, and no hook event counts as proof that it stopped.
+- **Same contract, new chat:** `open --resume` issues the next generation. Unless the previous generation's last call left the work parked, finished or awaiting an answer, one `takeover-check` question asks whether the earlier chat has stopped; generations cannot stop native edits from a running chat, and no hook event counts as proof that it stopped. Retries retain the unanswered question and generation; its chat answer is bound to that generation. While it is unanswered, dependent mutations remain fenced. This confirms what the user reports; it cannot prove native edits stopped.
 - **Source ownership:** an editing contract takes it at `open`; another editing contract is blocked (`owned-by-other-work`) while the owner is active. Non-editing contracts (plan, investigate) and accepted-fact writes never need it, so an investigation can run beside an implementation without gaining write authority. Ownership is released only at a safe boundary (pause, park, finish) with no owned process running and no effect uncertain.
 - **Owner unknown** (an `inCall` whose process is dead): `open` reconciles and continues; the user is asked only if the inventory shows changes the kernel cannot attribute (§10.2).
 
@@ -825,7 +840,13 @@ Three separate mechanisms (TD-05):
 
 **Steps:** append `{effect, id, op, expected}` to `log` and fsync; act; append `{effect, id, outcome, observed}` and fsync; publish the revision referencing the outcome. A final log line that does not parse is a torn write: it is truncated before the next append and its effect treated as intent-only.
 
+Project-file publication uses an exclusive, no-follow `.tenet-write-<uuid>.tmp` beside the destination. The file is written and fsynced before publication; replacement uses rename, while recipe creation uses an exclusive hard link so an existing file is never overwritten. Destination directories are synced through the workspace root. Temporary-file identity is checked before publication and cleanup while its descriptor remains open; a replacement detected by either check is left untouched. New accepted-fact files are private by default; replacement preserves existing permission bits and recipe files retain their declared mode. Reserved atomic temporary files are excluded from source identity and content access, including after a crash; unreferenced-file cleanup still needs the storage/retention protocol.
+
+The project port normalizes paths before applying exclusions and refuses linked components, dangling links and non-file inputs. `read` and `hashes` return null only for absence; exclusion, unreadability and invalid topology are errors, never absent-file proof. Adoption/scaffold recovery leaves such postconditions unresolved and does not attempt rollback. Full case/NFC comparison and the remaining filesystem race matrix still require their qualification work (§11.2).
+
 **Recovery, before anything else touches the resource:** an intent without a result is **uncertain**, never "did not happen", and is reconciled from its postcondition to *completed*, *not performed* or *unresolved* (a question). A result logged but not yet published is applied to state idempotently. After a fallback to `state.prev` (§15.2), effects logged after that revision are reconciled first. Reconciliation reports the local artifact, process termination and external side effects as separate facts; evidence from an interrupted run is never eligible; log compaction never removes an unresolved intent.
+
+`stop` remains available when project policy cannot be read. Its recovery pass handles process ownership/cancellation and defers effect reconciliation and result replay until a policy-aware call; it never rolls project files forward or back as a side effect of stopping. Pending effects keep their journal entries and source-ownership fence, and the response reports the uncertainty. The next ordinary mutating call applies the current policy before reconciling them.
 
 | Effect | Completed when (postcondition) | Not performed when |
 |---|---|---|
@@ -839,14 +860,20 @@ Three separate mechanisms (TD-05):
 
 Several candidate commits, missing reflog history or any other mismatch is *unresolved*. The kernel never promises that nothing partial happened.
 
+If backup recovery lost an undo's newly created contract, its absence does not establish that the apply step never happened. Recovery first establishes process termination and checks every pre-image. Only that confirmed precondition permits a not-performed result; landed, partial or unknown changes remain unresolved and fence dependent work rather than fabricating the missing contract.
+
 ### 7.5 Marker, user directory and quarantine
 
 - **Marker** `{workspaceId, tag, nonce, schema, dev, ino}` is written whenever `.tenet/` is first created, by any profile that needs persistent state; `dev` and `ino` identify the directory itself and `tag` (4 characters) appears in every handle.
 - **Quarantine:** a copied `.tenet/` (new inode) or one without a valid marker has its lessons, commands, settings and contracts ignored and its entries moved into `.tenet/quarantine-<date>/` as inert data, with a `quarantine-in-progress` record written first so an interrupted move resumes. `open` offers to review it through `decide {request: adopt}` or keep the fresh start (CON-06). A same-filesystem move keeps the inode and only triggers scope reconciliation (CON-11); a Git clone never carries `.tenet/`.
+  The local implementation uses an inode-specific bootstrap lock independent of the imported `lock`. Before moving entries it publishes a bounded `quarantine-in-progress-<nonce>` journal (at most 10,000 top-level entries and 2 MB) with source device/inode pairs, destination and fresh marker. Each rename is durable; a moved phase is published before the fresh marker, and the marker publishes atomically. Retries resume matching entries, preserve both copies on a conflict and never overwrite a changed destination. The journal is removed only after owned state durably records the quarantine. Imported process records are never signalled. Linked paths and malformed/ambiguous journals refuse; owned markers with another schema require a compatible kernel or approved migration rather than quarantine.
+  `State.quarantine` records `{path, nonce, entries, choice: "pending" | "fresh" | "review-requested"}`. The fresh contract's `quarantine-review` question is in chat and binds that snapshot. `decide adopt --target quarantine` accepts `quarantine-review=fresh` or `review`; both leave imported authority/settings/commands inert. Review currently returns location/count metadata only; importing record contents is unavailable and approved intent must be restated through ordinary decisions. Pending import questions fence dependent mutations while stop and confirmed abandonment remain available. Read-only calls never quarantine or change file modes.
 - **User directory** (§4.9) holds only preferences (`prefs`), updated under the same exclusive-create lock primitive; nothing in it is needed for correctness [SPIKE: SP-02, TQ-04].
 - **Read-only storage:** inspection works; every mutation is refused with the reason. **Tamper detection** relies on the default `.tenet/` no-edit exclusion, schema validation and the revision check; a state MAC would catch nothing validation misses (TD-23).
 
 ### 7.6 Retention and admission
+
+State records are regular files, read with a bounded allocation (at most 50 MB per document) and checked to depth 64 before schema traversal. Owned state directories use `0700` and state records `0600`; mutating admission restores those permissions, while read-only calls make no permission changes. Workspace temp subdirectories and artifact leaves refuse symlinks before writes. These bounds supplement the total storage and retention rules below.
 
 - **Budgets:** `.tenet/` ≤ 50 MB (PRD Section 4.4.3); run directories ≤ 200 MB per project and 1 GB per machine.
 - **Admission:** prototype snapshots over 20 MB are refused (`snapshot-too-large`, offering `git init`); state writes are always admitted with a 5 MB reserve.
@@ -1200,7 +1227,7 @@ inventory():
 ### 9.5 Node/TypeScript adapter
 
 The adapter is mostly data: detection rules and invocations per tool, plus one pure `normalize(kind, rawReport)` per report format.
-- **Detection:** package manager from the lockfile (npm, pnpm, Yarn 1; Plug'n'Play unsupported; governed dependency changes need npm or pnpm, and Yarn 1 dependencies are verified only after the user installs them); `moduleRoot` from the project record (default `.`; one root in monorepos, experimental); runners from configuration files and `devDependencies`. Supported versions are in the matrix and confirmed by SP-10; others yield `adapter-unsupported-version`.
+- **Detection:** package manager from the lockfile (npm, pnpm, Yarn 1; Plug'n'Play unsupported; governed dependency changes need npm or pnpm, and Yarn 1 dependencies are verified only after the user installs them); `moduleRoot` from the project record (default `.`; one root in monorepos, experimental); runners from configuration files and `devDependencies`. Supported versions are in the matrix and confirmed by SP-10; others yield `adapter-unsupported-version`. Detection and version fingerprints use the project's operation exclusions. Each check re-probes installed runner readiness before preparing or launching the job; an open contract does not authorize executing a newly unsupported version.
 
 | Tool | Invocation | Kind |
 |---|---|---|
@@ -1241,13 +1268,15 @@ type Receipt = {
 | Does it satisfy the obligation (duplicate test identities make the population ambiguous)? | `population-mismatch`, `zero-tests`, `focused-tests` |
 | Is it still valid (§8.8)? | `stale` |
 
-Reports are untrusted: their paths must resolve inside the workspace or run directory and embedded text is data. A model-written summary is never a receipt (EVD-12).
+Reports are untrusted: their paths must resolve inside the workspace or run directory and embedded text is data. File reports must be regular, in the prepared run directory, newer than spawn and within the bound before allocation; linked, outside or stale artifacts are inconclusive. A model-written summary is never a receipt (EVD-12).
+
+Diagnostic examples may be bounded, but population facts must remain complete: receipts retain the set of failure kinds across the entire normalized population independently of the displayed failures. Baseline matching uses that complete set; an unshown runtime or import failure can never become an assertion-only distinguishing red.
 
 ### 9.7 Locks
 
 - **Lock manifest:** project-level (`state.locks`) for **acceptance test files**, so locks outlive their contract and are never evicted (PRD Section 5.15). Locking is **whole-file**: any change to a locked file without a disposition is a blocker, because a weakened setup disables a test as surely as a weakened assertion, and an added `vi.mock` or `beforeEach` can disable every existing test. Dispositions can cover a batch of mechanical edits (INT-06).
 - **Anchoring:** a lock verified on an uncommitted candidate is **provisional**, bound to its contract, and is anchored to the commit that first contains it. An anchored lock applies when its commit is an ancestor of HEAD (`git merge-base --is-ancestor`, batched once per check), so a branch that never had the test is unaffected and the lock returns when branches meet. After history rewriting (the anchor is no longer an ancestor but the file at HEAD still has the locked content), the lock re-anchors to HEAD; when the relationship is ambiguous, the user is asked, and protection is never dropped silently.
-- **Support inputs** (helpers, fixtures, snapshots, runner configuration and environment files a test depends on) are locked during the contract that declared them; afterwards a change to one reruns every acceptance obligation that lists it at the next boundary, and the manifest's attention list includes its diff.
+- **Support inputs** (helpers, fixtures, snapshots, runner configuration and environment files a test depends on) are locked during the contract that declared them; afterwards a change to one reruns every acceptance obligation that lists it at the next boundary, and the manifest's attention list includes its diff. Baseline records bind the declared support set and the known runner/package configuration paths, including absences, so introducing a configuration after the red invalidates that proof. Git ignores do not remove declared inputs from candidate identity. Excluded content cannot be proved unchanged from stat alone; dependent checks report the unavailable capability. The implemented obligation facts are `baselineMatched`, `baselineTestHash` and `baselineInputs: Record<string, string>`; changing the declared definition discards that match. A linked test/support/config input is unavailable for proof, because hashing a link spelling does not establish the content the tool executed.
 - Case-only renames and symlink replacements are detected because path comparison is case- and normalization-insensitive and symlinks are inventoried by target (§11.2, §9.4). Finer granularity waits until false lock violations are measured (TD-11).
 
 ### 9.8 Baselines and committed-tree checks
@@ -1312,7 +1341,13 @@ All Git calls go through `git-cli` with argument arrays, `GIT_TERMINAL_PROMPT=0`
 4. **Message:** the coordinator drafts the subject in the project's visible convention; the kernel checks length and appends the `Tenet-Work` and `Tenet-Req` trailers (configurable).
 5. **Effect intent** with old HEAD, `expectedTree` and message; then `GIT_INDEX_FILE=$tmp git commit -m <message>`. Hooks run normally and inherit the temporary index, so they cannot change the user's index.
 6. **Verify:** the parent is the old HEAD; changed paths are a subset of the Tenet files; no non-Tenet path changed in the working tree (inventory before and after). A foreign path keeps the commit and reports `hook-staged-foreign-path` (exit 3), offering to keep it or move the branch back to the old HEAD (`git update-ref`, working tree untouched) after review, because moving back would not undo the hook's other effects. If the commit tree differs from `expectedTree` only on Tenet files, dependent evidence is stale, affected obligations rerun before any claim, and the hook's delta gets a recheck (§8.7).
-7. **Index sync under Git's own lock** (exact, GIT-03): (a) create `.git/index.lock` exclusively, the lock every Git client honors, and record its inode in the commit effect, so a concurrent stage waits or fails visibly instead of being overwritten; (b) copy the index to a scratch file; (c) on the copy, for each committed path whose entry still equals the old HEAD's entry, set the new blob with `GIT_INDEX_FILE=<scratch> git update-index --index-info`, so Git writes the format and Tenet never parses it; (d) re-read the copy, write it into `index.lock`, fsync, and rename it over the index (Git's atomic update); on any failure remove `index.lock` and leave the index untouched. An entry that differs from the old HEAD (the user staged something) is never changed. **Fallback:** if another process holds the lock after 3 short retries, or the repository uses a split index, the index is left untouched and the result reports `index-sync-needed` with the exact paths and a one-step "sync my index", which reruns this step. The kernel never stages anything else.
+7. **Index sync under Git's own lock** (exact, GIT-03): (a) create `.git/index.lock` exclusively, the lock every Git client honors, and record its inode in the commit effect, so a concurrent stage waits or fails visibly instead of being overwritten; (b) copy the index to a scratch file; (c) on the copy, for each committed path whose entry still equals the old HEAD's entry, set the new blob with `GIT_INDEX_FILE=<scratch> git update-index --index-info`, so Git writes the format and Tenet never parses it; (d) re-read the copy, write it into `index.lock`, fsync, and rename it over the index (Git's atomic update); on any failure remove only Tenet's own `index.lock` and leave the index untouched. An entry that differs from the old HEAD (the user staged something) is never changed. **Fallback:** if another process holds the lock after 3 short retries, or the repository uses a split index, the index is left untouched and the result reports `index-sync-needed` with the exact paths and a one-step "sync my index", which reruns this step. The kernel never stages anything else. Before writing or publishing the lock, compare its device/inode with the acquired descriptor; cleanup removes only that same lock. A different client's lock created after the rename remains untouched.
+
+   The adapter first creates/fsyncs a private `tenet-index-<uuid>.lock` beside the index and fsyncs the directory. Before publishing it at Git's lock path with an exclusive hard link, the caller fsyncs an `index-sync` intent with work ID, owner PID/start identity, device/inode, private basename, exact paths, old parent and target commit. This ordering leaves no visible Git lock without a prior ownership record. Commit-time sync logs through a short transaction that rechecks the prepared job; `decide sync-index` logs in its existing transaction. Cleanup and directory fsync precede the result record. An interruption before the ownership record can leave only a private file; cleanup/retention of such unreferenced private files remains part of the storage work.
+
+   Recovery validates the record before touching paths, requires the recorded owner to be dead, and resolves Git's directory from the current repository rather than trusting an absolute journal path. It removes only matching regular-file inodes. If the index itself has the recorded inode, the rename landed; a newer client's lock stays untouched. Otherwise it reruns the exact sync only while HEAD still equals the recorded target; staged entries are compared again with the old parent. Foreign/linked locks, moved HEAD and split indexes leave the index untouched with the retry instruction. Live/unknown owners or malformed records remain unresolved and fence dependent work. Journalled recovery itself uses the same protocol, so another interruption remains recoverable. Read-only calls never reconcile or remove locks.
+
+   A rename observed before a directory-fsync error is `effect-uncertain`; it never receives an untouched/success result record. Recovery establishes the current postcondition on the next call. This covers local filesystem failure without claiming that an unsynced rename was durable.
 8. **Effect result;** publish.
 
 **Failures:** a failed hook, unavailable signing or missing identity leaves the candidate uncommitted (`hook-failed`, `signing-unavailable`, `git-identity-missing`; GIT-15) and the endpoint says "working tree, uncommitted". Hooks are never bypassed and signing never disabled.
@@ -1343,6 +1378,8 @@ Only on explicit request. `decide {request: remote}` binds remote URL, branch an
 ### 10.7 Branches, trailers and cleanup
 
 `branching: per-work` (default) uses `tenet/w-0007-<slug>` from the current HEAD, stating any stacking on an unintegrated work branch; `branching: current` (GIT-02) commits on the current branch, so integration is a no-op. Trailers `Tenet-Work` and `Tenet-Req` are configurable. After integration or abandonment Tenet offers `git branch -d`; deleting unmerged branches needs explicit consent (GIT-14).
+
+The local branch helper resolves `hooks/post-checkout` through `git rev-parse --git-path`, which honors `core.hooksPath`. If that hook exists, basis adoption refuses with `capability-missing` before creating or switching the branch; a consented, bounded checkout job and its crash reconciliation are not implemented. Existing commit-hook consent does not supply that missing execution mechanism. Explicit `branching: current` does not invoke checkout, and a commit-only hook does not block branch creation. This admission safeguard does not qualify the remaining branch/init/shadow launch and stop races.
 
 ### 10.8 Repository state detection (GIT-13)
 

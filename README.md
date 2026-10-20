@@ -18,7 +18,7 @@ Projects should remain ordinary software projects that can be maintained without
 
 ## Status
 
-**Early implementation (M0).** The deterministic kernel, the plugin payload (agents, commands and skills) and their tests exist in this repository. Nothing has been run inside VS Code Copilot yet, so installing the plugin, dispatching the reviewer and the approval behavior are untested on the real host, and the starter template does not exist. Capabilities and benefits described here are intended outcomes, not shipped features or demonstrated results. [specs/plan.md](specs/plan.md) is the honest, current record of what is built and what has been observed.
+**Unfinished M0 and partial Alpha.** The kernel, plugin, starter template and deterministic tests exist. Two standard-lane loops ran in VS Code Copilot on October 19, 2026; host isolation, tool restrictions, approval behavior and the full qualified tuple remain unqualified. An implementation audit found integrity and human-work preservation defects; corrective work is in progress. Capabilities and benefits described here remain intended outcomes until their gates pass. [specs/plan.md](specs/plan.md) records implementation, local validation, host observations and the remaining work separately.
 
 ## Development
 
@@ -32,7 +32,7 @@ npm run ci     # typecheck, architecture and skill lints, traceability, bundle, 
 ## Layout
 
 - `packages/kernel/src` is the kernel: a pure `core/`, six ports, one `pipeline.ts` for every verb, and the adapters behind the ports.
-- `plugin/` is what ships: the coordinator and reviewer agents, two commands, four skills, and (after `npm run build`) the bundled kernel.
+- `plugin/` is the payload: the coordinator and reviewer agents, two commands, five skills, and (after `npm run build`) the bundled kernel.
 - `tools/` holds the build, the architecture and skill lints, and the requirement-to-fixture traceability report.
 
 ## Documentation
