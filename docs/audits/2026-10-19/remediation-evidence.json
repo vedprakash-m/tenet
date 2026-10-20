@@ -1,0 +1,356 @@
+{
+  "date": "2026-10-20",
+  "baseline": "5a022e3ef726ad2d79e735d5c7191a4e9ed22272",
+  "status": "local-uncommitted",
+  "runtime": {
+    "node": "v26.3.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "osRelease": "27.0.0",
+    "git": "git version 2.56.0"
+  },
+  "ci": {
+    "command": "npm run ci",
+    "exit": 0,
+    "tests": 532,
+    "suites": 113,
+    "passed": 532,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 243426.614958,
+    "scope": "local with real Git, process inspection and package access; no remote CI"
+  },
+  "bundle": {
+    "path": "plugin/kernel/tenet.mjs",
+    "bytes": 691372,
+    "sha256": "372ff8aeb02aa0fd54cd9638d07f4ed58ac5050389ed2094a82b0fc86e3a9c0c",
+    "reportedBuild": "build: plugin/kernel/tenet.mjs 675 KB (budget 750 KB)"
+  },
+  "coverage": {
+    "M0": {
+      "tagged": 30,
+      "hostOnly": 4,
+      "unreachable": 0,
+      "unmapped": 0,
+      "reasonCodes": {
+        "referenced": 70,
+        "total": 104
+      }
+    },
+    "A": {
+      "tagged": 74,
+      "hostOnly": 9,
+      "unreachable": 0,
+      "unmapped": 17,
+      "reasonCodes": {
+        "referenced": 70,
+        "total": 104
+      }
+    },
+    "B": {
+      "tagged": 85,
+      "hostOnly": 13,
+      "unreachable": 0,
+      "unmapped": 60,
+      "reasonCodes": {
+        "referenced": 70,
+        "total": 104
+      }
+    },
+    "R1": {
+      "tagged": 86,
+      "hostOnly": 16,
+      "unreachable": 0,
+      "unmapped": 79,
+      "reasonCodes": {
+        "referenced": 70,
+        "total": 104
+      }
+    }
+  },
+  "uat": {
+    "artifact": "built CLI bundle",
+    "scope": "Twenty-nine disposable local Git scenarios on Node 26.3.0 and Node 22.12.0, including fault injection at real filesystem boundaries; synthetic reported Quick review only; no real reviewer-host qualification",
+    "observations": [
+      {
+        "scenario": "built CLI red-green-finish with concurrent human file inside predicted scope",
+        "endpoint": "checked-local",
+        "scope": "working-tree-with-your-edits",
+        "committed": [
+          "src/greet.test.ts",
+          "src/greet.ts"
+        ],
+        "humanFilePreserved": true,
+        "cliEqualsSyntax": true,
+        "focusedPassReported": true,
+        "nativeDelegations": 0
+      },
+      {
+        "scenario": "unimplemented committed-tree stage",
+        "exit": 2,
+        "reason": "capability-missing"
+      },
+      {
+        "scenario": "built guarded local integration with carried human file",
+        "exit": 0,
+        "mode": "fast-forward",
+        "humanFilePreserved": true
+      },
+      {
+        "scenario": "built guarded working-tree undo",
+        "exit": 0,
+        "humanFilePreserved": true,
+        "newContractRequiresChecks": true
+      },
+      {
+        "scenario": "built readiness reprobe after runner version change",
+        "exit": 2,
+        "reason": "adapter-unsupported-version",
+        "childLaunched": false
+      },
+      {
+        "scenario": "built ignored acceptance and new ignored configuration",
+        "baseline": "fail",
+        "introducedConfigInvalidatesRed": true
+      },
+      {
+        "scenario": "passing unrelated suite without baseline proof",
+        "exit": 2,
+        "reason": "no-distinguishing-red",
+        "checkedLocal": false
+      },
+      {
+        "scenario": "built active-chat takeover",
+        "question": "takeover-check",
+        "oldHandleFenced": true,
+        "chatConfirmationRequired": true
+      },
+      {
+        "scenario": "built abandonment preview, cancel and confirm",
+        "previewExit": 3,
+        "channel": "chat",
+        "cancelExit": 0,
+        "confirmExit": 0,
+        "finalState": "cancelled"
+      },
+      {
+        "scenario": "built copied-state quarantine and metadata review",
+        "exit": 3,
+        "originalBytesPreserved": true,
+        "importedSettingsActive": false,
+        "importedAuthorityActive": false,
+        "canaryDisclosed": false
+      },
+      {
+        "scenario": "built markerless-state quarantine and fresh-start choice",
+        "exit": 0,
+        "entriesPreserved": true,
+        "importedLockIgnored": true
+      },
+      {
+        "scenario": "built backup recovery conserves real candidate costs",
+        "attemptsBefore": 3,
+        "attemptsAfter": 3,
+        "checksBefore": 7,
+        "checksAfter": 7,
+        "accounting": "verified",
+        "authoritySuspended": true,
+        "additionalAttemptLaunched": false
+      },
+      {
+        "scenario": "built unknown legacy accounting fences new editing authority",
+        "exit": 3,
+        "handleIssued": false,
+        "branchUnchanged": true,
+        "recordsUnchanged": true
+      },
+      {
+        "scenario": "built atomic project write predictable-temp-link",
+        "killedAtBoundary": false,
+        "adoptedOnce": true,
+        "outsideBytesPreserved": true
+      },
+      {
+        "scenario": "built atomic project write after-temp-fsync",
+        "killedAtBoundary": true,
+        "adoptedOnce": true,
+        "outsideBytesPreserved": true
+      },
+      {
+        "scenario": "built atomic project write after-publish",
+        "killedAtBoundary": true,
+        "adoptedOnce": true,
+        "outsideBytesPreserved": true
+      },
+      {
+        "scenario": "built atomic project write after-dir-fsync",
+        "killedAtBoundary": true,
+        "adoptedOnce": true,
+        "outsideBytesPreserved": true
+      },
+      {
+        "scenario": "built unreadable adoption remains uncertain through stop",
+        "exit": 2,
+        "authorityRetainedAsFence": true,
+        "outsideBytesPreserved": true,
+        "canaryDisclosed": false
+      },
+      {
+        "scenario": "built secret alias is refused before adoption preview",
+        "exit": 2,
+        "canaryDisclosed": false
+      },
+      {
+        "scenario": "built stop preserves interrupted scaffold under tighter policy",
+        "exit": 2,
+        "partialFilePreserved": true,
+        "pendingEffectRetained": true,
+        "installLaunched": false
+      },
+      {
+        "scenario": "built default checkout-hook admission",
+        "exit": 2,
+        "hookLaunched": false,
+        "branchUnchanged": true,
+        "explicitCurrentBranchAccepted": true
+      },
+      {
+        "scenario": "built configured checkout-hook admission",
+        "exit": 2,
+        "hookLaunched": false,
+        "branchUnchanged": true,
+        "explicitCurrentBranchAccepted": true
+      },
+      {
+        "scenario": "built index recovery before-lock",
+        "killedAtBoundary": true,
+        "directorySyncFailure": false,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "built index recovery after-lock",
+        "killedAtBoundary": true,
+        "directorySyncFailure": false,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "built index recovery before-rename",
+        "killedAtBoundary": true,
+        "directorySyncFailure": false,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "built index recovery after-rename",
+        "killedAtBoundary": true,
+        "directorySyncFailure": false,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "built index recovery manual-after-lock",
+        "killedAtBoundary": true,
+        "directorySyncFailure": false,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "built index recovery failed-directory-sync",
+        "killedAtBoundary": false,
+        "directorySyncFailure": true,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "symlinked state directory",
+        "exit": 3,
+        "reason": "marker-mismatch",
+        "outsideWrites": false
+      }
+    ],
+    "bundle": {
+      "bytes": 691372,
+      "sha256": "372ff8aeb02aa0fd54cd9638d07f4ed58ac5050389ed2094a82b0fc86e3a9c0c"
+    }
+  },
+  "remaining": "See remediation.md and specs/plan.md \u00a712.4. C0 remains incomplete; no milestone newly qualified.",
+  "commit": null,
+  "remoteCi": null,
+  "newHostSpikes": [],
+  "minimumRuntime": {
+    "version": "v22.12.0",
+    "archive": "https://nodejs.org/dist/v22.12.0/node-v22.12.0-darwin-arm64.tar.gz",
+    "checksumSource": "https://nodejs.org/dist/v22.12.0/SHASUMS256.txt",
+    "archiveSha256": "293dcc6c2408da21562d135b0412525e381bb6fe150d688edb58fe850d0f3e13",
+    "checksumVerified": true,
+    "uatScenarios": 29,
+    "exit": 0,
+    "bundle": {
+      "bytes": 691372,
+      "sha256": "372ff8aeb02aa0fd54cd9638d07f4ed58ac5050389ed2094a82b0fc86e3a9c0c"
+    },
+    "scope": "Shipped bundle UAT only; direct TypeScript test suite uses Node 26.3.0"
+  },
+  "hostRunPolicy": "Owner deferred all host runs on October 20; no host spike performed.",
+  "recoveryLimitations": [
+    "Quarantine content review is metadata only; no record adoption.",
+    "Backup authority reconfirmation and unknown-cost/process reconciliation are unavailable; unknown recovery refuses editing admission.",
+    "Index sync has journalled inode recovery and crash/error controls; unreferenced private files still need storage cleanup/retention.",
+    "Guarded checkout execution, branch/init/shadow launch/stop races and manual lock-repair races remain open.",
+    "Project-file byte bounds, complete case/Unicode comparison, concurrent path-replacement qualification and orphan temporary-file cleanup remain open.",
+    "Remaining C0 consumers and milestone/host qualification are incomplete."
+  ],
+  "gitRecovery": {
+    "indexSourceControls": 15,
+    "branchSourceControls": 5,
+    "builtIndexCases": 6,
+    "builtBranchCases": 2,
+    "indexOwnerJournalBeforeLockPublication": true,
+    "directorySyncFailureRemainsUncertain": true,
+    "checkoutHookExecution": "unavailable; refused before editor switch",
+    "fullBranchLifecycleQualified": false
+  },
+  "projectFilesystem": {
+    "admissionSourceControls": 13,
+    "recoverySourceControls": 6,
+    "additionalKilledPublicationBoundaries": 6,
+    "builtCases": 7,
+    "exclusiveNoFollowTemporaryFiles": true,
+    "temporaryInodeCheckedBeforePublicationAndCleanup": true,
+    "exclusiveRecipePublication": true,
+    "directoriesSyncedThroughRoot": true,
+    "normalizedExclusionsAndLinkRefusal": true,
+    "nullMeansAbsentOnly": true,
+    "stopDefersPolicyDependentEffects": true,
+    "orphanAtomicFilesExcludedFromSourceIdentity": true,
+    "completeConcurrentPathReplacementQualification": false,
+    "boundedProjectReads": false,
+    "temporaryRetentionCleanup": false
+  },
+  "validationCaveats": [
+    {
+      "scenario": "First full CI while both UAT runtimes also ran",
+      "tests": 532,
+      "passed": 531,
+      "failed": 1,
+      "durationMs": 439263.274292,
+      "failure": "starter.test.ts: suite receipt status fail; original assertion did not include the receipt",
+      "diagnosis": "Cause unclassified; resource contention is a hypothesis, not an established cause.",
+      "followUp": "Added receipt assertion diagnostics. Isolated starter passed (2 tests, 12278.519791 ms); full CI then passed without concurrent UAT (532 tests, 243426.614958 ms). No timeout increase, retry wrapper or assertion weakening. Retain diagnosis as open if it recurs."
+    }
+  ]
+}

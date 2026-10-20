@@ -1,0 +1,176 @@
+{
+  "baseline": "5a022e3",
+  "observations": [
+    {
+      "id": "A01-report-integrity",
+      "observed": {
+        "duplicate": "pass",
+        "killed": "pass"
+      }
+    },
+    {
+      "id": "A02-store-boundary",
+      "observed": {
+        "symlinkExit": 0,
+        "stateWrittenOutsideWorkspace": true,
+        "markerlessExit": 0
+      }
+    },
+    {
+      "id": "A03-unknown-authority",
+      "observed": {
+        "accepted": true,
+        "unknownFieldRetained": false
+      }
+    },
+    {
+      "id": "A04-malformed-policy",
+      "observed": {
+        "issuedHandle": true
+      }
+    },
+    {
+      "id": "A05-no-red",
+      "observed": {
+        "endpoint": "checked-local",
+        "baselineRuns": 0
+      }
+    },
+    {
+      "id": "A06-boundary-baseline",
+      "observed": {
+        "endpoint": "checked-local"
+      }
+    },
+    {
+      "id": "A07-attempt-limit",
+      "observed": {
+        "attempts": 4,
+        "maximum": 3,
+        "committedStagePassedOnDirtyTree": true
+      }
+    },
+    {
+      "id": "A08-source-ownership",
+      "observed": {
+        "oldContractCheckExit": 0,
+        "anotherContractOwnsSource": true
+      }
+    },
+    {
+      "id": "A09-stacked-branch",
+      "observed": {
+        "firstBranch": "tenet/w-0001-return-a-greeting",
+        "secondBranch": "tenet/w-0001-return-a-greeting"
+      }
+    },
+    {
+      "id": "A10-review-scope",
+      "observed": {
+        "committedBranchDiffFiles": 1,
+        "manifestFiles": 0
+      }
+    },
+    {
+      "id": "A11-actual-risk",
+      "observed": {
+        "lane": "quick",
+        "floor": "quick",
+        "changedAuthFile": true
+      }
+    },
+    {
+      "id": "A12-cli-snippet",
+      "observed": {
+        "parsedInput": {
+          "kind=basis": true,
+          "h": "W1.1.abcd"
+        }
+      }
+    },
+    {
+      "id": "A13-npmrc-exclusion",
+      "observed": {
+        "npmrcModelSendAllowed": true
+      }
+    },
+    {
+      "id": "A14-review-filter-execution",
+      "observed": {
+        "reviewExit": 0,
+        "configuredProgramRanAndWroteProjectFile": true
+      }
+    },
+    {
+      "id": "A15-flagged-input",
+      "observed": {
+        "digestUnchangedAfterSourceEdit": true
+      }
+    },
+    {
+      "id": "A16-predicted-path-authorship",
+      "observed": {
+        "endpoint": "checked-local",
+        "undeclaredHumanFileCommitted": true
+      }
+    }
+  ],
+  "date": "2026-10-19",
+  "timezone": "America/Los_Angeles",
+  "node": "v26.3.0",
+  "git": "git version 2.56.0",
+  "ci": {
+    "command": "npm run ci",
+    "exit": 0,
+    "tests": 365,
+    "suites": 96,
+    "passed": 365,
+    "failed": 0,
+    "skipped": 0,
+    "bundleKiB": 626,
+    "durationMs": 72234.7515,
+    "scope": "Local macOS run with process inspection and package downloads; no new VS Code qualification"
+  },
+  "coverage": {
+    "M0": {
+      "tagged": 29,
+      "hostOnly": 4,
+      "unreachable": 1,
+      "unmapped": 0,
+      "reasonCodes": {
+        "referenced": 61,
+        "total": 104
+      }
+    },
+    "A": {
+      "tagged": 68,
+      "hostOnly": 11,
+      "unreachable": 1,
+      "unmapped": 20,
+      "reasonCodes": {
+        "referenced": 61,
+        "total": 104
+      }
+    },
+    "B": {
+      "tagged": 72,
+      "hostOnly": 15,
+      "unreachable": 1,
+      "unmapped": 70,
+      "reasonCodes": {
+        "referenced": 61,
+        "total": 104
+      }
+    },
+    "R1": {
+      "tagged": 72,
+      "hostOnly": 18,
+      "unreachable": 1,
+      "unmapped": 90,
+      "reasonCodes": {
+        "referenced": 61,
+        "total": 104
+      }
+    }
+  }
+}
