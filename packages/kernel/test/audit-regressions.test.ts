@@ -90,7 +90,7 @@ describe("audit: common mutation boundaries", () => {
     p.write("src/greet.ts", GREET_IMPL);
     await p.call("check", { h, touched: ["src/greet.ts"] });
     await focusFixture(p, h);
-    p.write(".git/hooks/pre-commit", "#!/bin/sh\ngit config filter.audit.clean cat\n");
+    p.write(".git/hooks/pre-commit", "#!/bin/sh\nfor i in $(seq 1 20001); do : > \"made-by-hook-$i\"; done\n");
     const { chmodSync } = await import("node:fs"); chmodSync(join(p.root, ".git/hooks/pre-commit"), 0o755);
     await p.call("finish", { h });
     await p.call("decide", { h, kind: "hook-consent", answers: { "hook-consent": "commit-with-hooks" } });

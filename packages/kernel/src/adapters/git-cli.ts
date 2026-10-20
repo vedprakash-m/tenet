@@ -33,6 +33,7 @@ import type {
   CommitOutcome,
   CommitPlan,
   Entry,
+  FilterGate,
   Git,
   IndexJournal,
   Inventory,
@@ -182,6 +183,9 @@ export class GitCli implements Git {
   private root: string;
   private exclusions: readonly Exclusion[] = [];
   private runner: Runner;
+  private neutral?: Promise<string[]>;
+  private gate?: Promise<FilterGate | null>;
+  private consented: ReadonlySet<string> = new Set();
   constructor(root: string, runner: Runner = new ProcessRunner(systemClock, process.env)) {
     this.root = root;
     this.runner = runner;
@@ -198,10 +202,12 @@ export class GitCli implements Git {
     return !existsSync(join(this.root, ".git")) && existsSync(join(this.shadowDir, "HEAD"));
   }
 
-  private run(
+  private async run(
     args: string[],
-    o: { env?: Record<string, string>; input?: string; inspect?: boolean; cwd?: string } = {},
+    o: { env?: Record<string, string>; input?: string; inspect?: boolean; cwd?: string; filters?: boolean } = {},
   ): Promise<Out> {
+    // Filters are programs: only a call the user consented to may run them, every other call gets them switched off.
+    const neutral = o.filters ? [] : await this.neutralArgs();
     const env = {
       ...process.env,
       GIT_TERMINAL_PROMPT: "0",
@@ -212,7 +218,7 @@ export class GitCli implements Git {
       const where = this.shadow ? ["--git-dir", this.shadowDir, "--work-tree", this.root] : [];
       const c = execFile(
         "git",
-        [...where, ...(o.inspect === false ? ["--no-pager"] : INSPECT), ...args],
+        [...where, ...neutral, ...(o.inspect === false ? ["--no-pager"] : INSPECT), ...args],
         { cwd: o.cwd ?? this.root, env, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" },
         (err, stdout, stderr) => resolve({ code: err ? ((err as { code?: number }).code ?? 1) : 0, stdout, stderr }),
       );
@@ -268,20 +274,75 @@ export class GitCli implements Git {
     return probe;
   }
 
-  private async inspectionSafe(): Promise<void> {
-    if (await this.tryOut(["config", "--get-regexp", "^filter\\..*\\.(clean|process)$"]))
-      throw new KernelError(
-        "filter-consent-needed",
-        "configured Git filters may run project code; working-tree inspection is unavailable until filter consent is implemented",
-        { exit: 3 },
-      );
+  /** SHA-256 repositories hash differently from the blob ids computed here; they are refused rather than misread. */
+  private async objectFormatSafe(): Promise<void> {
     if ((await this.tryOut(["rev-parse", "--show-object-format"])) === "sha256")
       throw new KernelError("capability-missing", "SHA-256 Git repositories are not supported by this adapter", { exit: 2 });
   }
 
+  // ------------------------------------------------------------ filters (GIT-12)
+  /** Every configured filter's commands, by name. Read with the raw profile: this is what neutralizing is built from. */
+  private async filterConfig(): Promise<Map<string, string[]>> {
+    const out = new Map<string, string[]>();
+    const r = await this.run(["config", "--null", "--get-regexp", "^filter\\."], { inspect: false, filters: true });
+    for (const rec of r.stdout.split("\0").filter(Boolean)) {
+      const nl = rec.indexOf("\n");
+      const key = rec.slice(0, nl).split("."), name = key.slice(1, -1).join("."), field = key.at(-1)!;
+      if (name && ["clean", "smudge", "process", "required"].includes(field)) {
+        out.set(name, [...(out.get(name) ?? []), `${field}=${rec.slice(nl + 1)}`]);
+      }
+    }
+    return out;
+  }
+
+  /** `-c` overrides that make every configured filter a no-op, so reading never runs a user or project program. */
+  private neutralArgs(): Promise<string[]> {
+    const off = (n: string) => [
+      ...["clean", "smudge", "process"].flatMap((k) => ["-c", `filter.${n}.${k}=`]),
+      ...["-c", `filter.${n}.required=false`],
+    ];
+    this.neutral ??= this.filterConfig().then((f) => [...f.keys()].flatMap(off));
+    return this.neutral;
+  }
+
+  /** The configured filters that some file in this repository actually uses, or null when none applies (Git LFS installed but unused). */
+  filterGate(): Promise<FilterGate | null> {
+    this.gate ??= this.findGate();
+    return this.gate;
+  }
+
+  private async findGate(): Promise<FilterGate | null> {
+    const config = await this.filterConfig();
+    if (![...config.values()].some((f) => f.some((x) => /^(clean|process)=./.test(x)))) return null;
+    const listed = await this.ok(["ls-files", "-z", "--cached", "--others", "--exclude-standard"]);
+    const paths = listed.split("\0").filter((p) => p && !isKernelFile(p));
+    const attrs = await this.run(["check-attr", "-z", "--stdin", "filter"], { input: paths.join("\0"), filters: true });
+    const used = new Set<string>();
+    const rec = attrs.stdout.split("\0");
+    for (let i = 0; i + 2 < rec.length; i += 3) if (config.has(rec[i + 2]!)) used.add(rec[i + 2]!);
+    if (!used.size) return null;
+    const names = [...used].sort();
+    return { names, hash: sha256(JSON.stringify(names.map((n) => [n, [...config.get(n)!].sort()]))).slice(0, 16) };
+  }
+
+  allowFilters(hashes: readonly string[]): void {
+    this.consented = new Set(hashes);
+  }
+
+  /** Programs only run for something Tenet is about to do, and only on the user's word; undo and integration have no consent path yet. */
+  private async refuseFilters(doing: string): Promise<void> {
+    const gate = await this.filterGate();
+    if (gate)
+      throw new KernelError(
+        "filter-consent-needed",
+        `Git filters (${gate.names.join(", ")}) apply here; ${doing} under them is not supported yet, so nothing was changed`,
+        { exit: 2 },
+      );
+  }
+
   // ------------------------------------------------------------ inventory
   async inventory(exclude: readonly string[] = [], declaredInputs: readonly string[] = []): Promise<Inventory> {
-    await this.inspectionSafe();
+    await this.objectFormatSafe();
     const head = await this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]);
     const branch = await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]);
     const skip = (p: string) => isKernelFile(p) || exclude.some((x) => p === x || p.startsWith(`${x}/`));
@@ -322,7 +383,7 @@ export class GitCli implements Git {
     return status;
   }
 
-  /** Git status deliberately hides these paths ("assume unchanged" and similar). Their actual content must still enter the candidate identity. */
+  /** Git status hides these paths ("assume unchanged" and similar). Their actual content must still enter the candidate identity. */
   private async hiddenChanges(
     skip: (p: string) => boolean,
     index: Map<string, Entry>,
@@ -474,7 +535,7 @@ export class GitCli implements Git {
     paths: readonly string[],
     classify: (p: string) => FileChange["kind"],
   ): Promise<FileChange[]> {
-    await this.inspectionSafe();
+    await this.objectFormatSafe();
     const out: FileChange[] = [];
     const wanted = paths.filter((p) => allowed("model-send", p, this.exclusions)); // excluded content never enters a manifest
     // One call tells which of the paths exist in the base; the rest are new files.
@@ -523,11 +584,19 @@ export class GitCli implements Git {
   // ------------------------------------------------------------ commit (temporary index, TS §10.3)
   /** Builds the tree a commit of exactly these paths would have, in a temporary index the user never sees. */
   private async buildTree(plan: Pick<CommitPlan, "paths" | "deleted" | "parent">, env: Record<string, string>): Promise<string> {
-    await this.inspectionSafe();
+    await this.objectFormatSafe();
+    const gate = await this.filterGate();
+    const filters = !!gate && this.consented.has(gate.hash);
+    if (gate && !filters)
+      throw new KernelError(
+        "filter-consent-needed",
+        `Git filters (${gate.names.join(", ")}) would run on this commit and were not consented to`,
+        { exit: 3 },
+      );
     if (plan.parent) await this.ok(["read-tree", plan.parent], { env, inspect: false });
     else await this.ok(["read-tree", "--empty"], { env, inspect: false });
     const live = plan.paths.filter((p) => this.workBlob(p));
-    if (live.length) await this.ok(["add", "--", ...live.map((p) => `:(literal)${p}`)], { env, inspect: false });
+    if (live.length) await this.ok(["add", "--", ...live.map((p) => `:(literal)${p}`)], { env, inspect: false, filters });
     const gone = [...plan.deleted, ...plan.paths.filter((p) => !this.workBlob(p))];
     if (gone.length) await this.ok(["update-index", "--force-remove", "--", ...gone], { env, inspect: false });
     return (await this.ok(["write-tree"], { env, inspect: false })).trim();
@@ -823,7 +892,8 @@ export class GitCli implements Git {
     include: readonly string[] = [],
     options?: { runDir: string; timeoutMs: number },
   ): ReturnType<Git["applyPatch"]> {
-    await this.inspectionSafe();
+    await this.objectFormatSafe();
+    await this.refuseFilters("undoing work");
     const runDir = options?.runDir ?? mkdtempSync(join(tmpdir(), "tenet-patch-"));
     const file = join(runDir, "inverse.patch");
     const fd = openSync(file, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW, 0o600);
@@ -880,7 +950,8 @@ export class GitCli implements Git {
   }
 
   async integrate(base: string, work: string, options?: { runDir: string; timeoutMs: number }): ReturnType<Git["integrate"]> {
-    await this.inspectionSafe();
+    await this.objectFormatSafe();
+    await this.refuseFilters("integrating work");
     if ((await this.probe()).hooks)
       throw new KernelError(
         "capability-missing",

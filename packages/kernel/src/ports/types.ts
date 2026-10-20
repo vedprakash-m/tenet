@@ -74,8 +74,14 @@ export interface CommitOutcome {
   ok: boolean; commit?: string; tree?: string; expectedTree?: string; foreign: string[]; reason?: string; detail?: string;
   indexSync: "synced" | "untouched" | "not-needed"; syncPaths: string[];
 }
+/** The configured Git filters that some file here uses: running one is an executable effect that needs the user's consent (GIT-12). */
+export interface FilterGate { names: string[]; hash: string }
 export interface Git {
   setExclusions(exclusions: readonly Exclusion[]): void;
+  /** Reading never runs a filter. This names the ones a commit would run, or null when none applies. */
+  filterGate(): Promise<FilterGate | null>;
+  /** The filter-configuration hashes the user consented to; a commit under any other is refused. */
+  allowFilters(hashes: readonly string[]): void;
   probe(): Promise<RepoProbe>;
   inventory(exclude: readonly string[], declaredInputs?: readonly string[]): Promise<Inventory>;
   /** Working-tree changes of `paths` against `base` as hunks of added and removed lines. */

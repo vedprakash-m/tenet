@@ -193,20 +193,3 @@ export const syncIndex: Decision = {
     return { resp: { work: work.id, next: [], data: { index: result } } };
   },
 };
-
-/** Consent to run this project's commit hooks, bound to the hook files as they are now (TS §10.3). */
-export const hookConsent: Decision = {
-  kind: "hook-consent",
-  async run({ ports, state, work, input }) {
-    const answer = input.answers?.["hook-consent"];
-    const q = state.pending.find((p) => p.id === "hook-consent");
-    if (!q) throw new KernelError("revision-conflict", "there is no open question about commit hooks", { exit: 2 });
-    if (answer !== "commit-with-hooks" && answer !== "keep-uncommitted") throw new KernelError("revision-conflict", 'answer "commit-with-hooks" or "keep-uncommitted"', { exit: 1 });
-    const probe = await ports.git.probe();
-    if (probe.hooks !== q.bind.factsHash) throw new KernelError("revision-conflict", "the hooks changed since the question was asked", { exit: 2 });
-    const rest = state.pending.filter((p) => p.id !== "hook-consent");
-    if (answer === "keep-uncommitted") return { state: withWork({ ...state, pending: rest }, { ...work, git: { ...work.git, noCommit: true } }), resp: { work: work.id, next: [nx("finish", "Finish without committing.")] } };
-    const consents = [...state.consents, { kind: "hooks" as const, configHash: q.bind.factsHash, at: ports.clock.now() }];
-    return { state: withWork({ ...state, pending: rest, consents }, work), resp: { work: work.id, next: [nx("finish", "Hooks are consented; finish again to commit.", true)] } };
-  },
-};

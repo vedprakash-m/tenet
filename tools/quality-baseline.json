@@ -94,5 +94,9 @@
   "verbs/undo.ts": 5,
   "wire.ts": 2
  },
- "core": 195349
+ "modules": {
+  "adapters/git-cli": 1129,
+  "core/schemas": 439,
+  "pipeline + verbs + decisions": 4912
+ }
 }

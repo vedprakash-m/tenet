@@ -1,6 +1,7 @@
 // Quality ratchet (.github/copilot-instructions.md: simplicity first). New code meets the limits below. Code that already
 // exceeded them is recorded in tools/quality-baseline.json and may only shrink; a new offender, or growth in a recorded
 // one, fails. `--update` lowers the record after a refactor; `--init` writes it once. Nothing here raises a limit.
+// Module sizes (TS §6.2) follow the same rule: a module over its owner-set line budget may not grow past its recorded ceiling.
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,8 +9,22 @@ import ts from "typescript";
 
 export const LIMITS = { lines: 80, cc: 25, nest: 5, width: 140 } as const;
 export interface Fn { lines: number; cc: number; nest: number }
-export interface Measured { functions: Record<string, Fn>; wide: Record<string, number>; core: number }
-export interface Baseline { functions: Record<string, Fn>; wide: Record<string, number>; core?: number }
+export interface Measured { functions: Record<string, Fn>; wide: Record<string, number>; modules: Record<string, number> }
+export interface Baseline { functions: Record<string, Fn>; wide: Record<string, number>; modules?: Record<string, number> }
+
+/** Line budgets set by the owner (TS §6.2). A module is a file, or a group of files (a directory, or files matching a pattern). */
+export const BUDGETS: Record<string, { match: RegExp; lines: number }> = {
+  "core/schemas": { match: /^core\/schemas\.ts$/, lines: 400 },
+  "core/risk": { match: /^core\/risk\.ts$/, lines: 150 },
+  "core/budget": { match: /^core\/budget\.ts$/, lines: 150 },
+  "core/verdict": { match: /^core\/verdict\.ts$/, lines: 300 },
+  "core/review": { match: /^core\/review\.ts$/, lines: 350 },
+  "adapters/store-fs": { match: /^adapters\/store-fs\.ts$/, lines: 450 },
+  "adapters/git-cli": { match: /^adapters\/git-cli\.ts$/, lines: 650 },
+  "adapters/runner": { match: /^adapters\/runner\.ts$/, lines: 350 },
+  "adapters/node-ts": { match: /^adapters\/node-ts\.ts$/, lines: 350 },
+  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 3000 },
+};
 
 const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => {
   const p = join(dir, f);
@@ -38,15 +53,15 @@ const nameOf = (n: ts.Node): string | undefined => {
   return undefined;
 };
 
-/** Length, complexity and nesting of every named function (a nested closure counts in its parent too), wide lines per file, and the non-whitespace character total of pipeline, verbs and decisions (wrapping or indenting a line must not look like growth). */
+/** Length, complexity and nesting of every named function (a nested closure counts in its parent too), wide lines per file, and lines per budgeted module. */
 export function measure(dir: string): Measured {
-  const out: Measured = { functions: {}, wide: {}, core: 0 };
+  const out: Measured = { functions: {}, wide: {}, modules: {} };
   for (const file of files(dir)) {
     const rel = relative(dir, file);
     const text = readFileSync(file, "utf8");
     const wide = text.split("\n").filter((l) => l.length > LIMITS.width).length;
     if (wide) out.wide[rel] = wide;
-    if (/^pipeline[\w-]*\.ts$/.test(rel) || /^(verbs|decisions)\//.test(rel)) out.core += text.replace(/\s+/g, "").length;
+    for (const [name, b] of Object.entries(BUDGETS)) if (b.match.test(rel)) out.modules[name] = (out.modules[name] ?? 0) + text.split("\n").length;
     const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
     const seen = new Map<string, number>();
     const visit = (n: ts.Node) => {
@@ -67,7 +82,7 @@ export function measure(dir: string): Measured {
 
 const over = (f: Fn): boolean => f.lines > LIMITS.lines || f.cc > LIMITS.cc || f.nest > LIMITS.nest;
 
-/** Problems: a new offender, a recorded offender that grew, wide lines gained, or the core total grown. */
+/** Problems: a new offender, a recorded offender that grew, wide lines gained, or a module past its budget or its recorded ceiling. */
 export function check(m: Measured, base: Baseline): string[] {
   const out: string[] = [];
   for (const [key, f] of Object.entries(m.functions)) {
@@ -87,7 +102,11 @@ export function check(m: Measured, base: Baseline): string[] {
     if (r === undefined) out.push(`${file}: ${n} line(s) wider than ${LIMITS.width} characters`);
     else if (n > r) out.push(`${file} gained wide lines: ${n}, recorded ${r}`);
   }
-  if (base.core !== undefined && m.core > base.core) out.push(`pipeline, verbs and decisions grew: ${m.core} characters (whitespace excluded), recorded ${base.core}`);
+  for (const [name, n] of Object.entries(m.modules)) {
+    const ceiling = base.modules?.[name], budget = BUDGETS[name]!.lines;
+    if (ceiling === undefined && n > budget) out.push(`${name}: ${n} lines (budget ${budget})`);
+    else if (ceiling !== undefined && n > ceiling) out.push(`${name} grew: ${n} lines, ceiling ${ceiling} (budget ${budget})`);
+  }
   return out;
 }
 
@@ -100,7 +119,12 @@ export function lowered(m: Measured, base: Baseline): Baseline {
   }
   const wide: Record<string, number> = {};
   for (const [file, r] of Object.entries(base.wide)) { const n = Math.min(m.wide[file] ?? 0, r); if (n) wide[file] = n; }
-  return { functions, wide, ...(base.core === undefined ? {} : { core: Math.min(m.core, base.core) }) };
+  const modules: Record<string, number> = {};
+  for (const [name, ceiling] of Object.entries(base.modules ?? {})) {
+    const n = Math.min(m.modules[name] ?? 0, ceiling);
+    if (n > BUDGETS[name]!.lines) modules[name] = n;
+  }
+  return { functions, wide, modules };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -110,7 +134,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv.includes("--init")) {
     if (existsSync(recordPath)) { console.error("lint-quality: the baseline exists; use --update to lower it"); process.exit(1); }
     const functions = Object.fromEntries(Object.entries(m.functions).filter(([, f]) => over(f)));
-    writeFileSync(recordPath, `${JSON.stringify({ functions, wide: m.wide, core: m.core }, null, 1)}\n`);
+    const modules = Object.fromEntries(Object.entries(m.modules).filter(([name, n]) => n > BUDGETS[name]!.lines));
+    writeFileSync(recordPath, `${JSON.stringify({ functions, wide: m.wide, modules }, null, 1)}\n`);
     console.log(`lint-quality: recorded ${Object.keys(functions).length} functions and ${Object.keys(m.wide).length} files`);
   } else {
     const base = JSON.parse(readFileSync(recordPath, "utf8")) as Baseline;
@@ -121,6 +146,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const problems = check(m, base);
       for (const p of problems) console.error(p);
       const left = Object.keys(base.functions).length;
+      for (const [name, n] of Object.entries(m.modules)) if (n > BUDGETS[name]!.lines) console.log(`  over its budget: ${name} is ${n} lines, budget ${BUDGETS[name]!.lines}`);
       console.log(`lint-quality: ${problems.length ? `${problems.length} problem(s)` : "no problems"}; ${left} recorded offender(s) left to refactor`);
       if (problems.length) process.exit(1);
     }

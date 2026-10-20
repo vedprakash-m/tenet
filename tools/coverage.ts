@@ -16,7 +16,7 @@ const ROW = /^\| ([A-Z]{2,4}-\d+[a-z]?) \| (.*?) \| (Must|Should|Could|May) \| (
 export interface Requirement { id: string; text: string; level: string; milestone: string; acs: string[] }
 export interface Report {
   covered: Array<{ id: string; tests: number }>; hostOnly: Requirement[]; unreachable: Requirement[]; unmapped: Requirement[];
-  reasonCodes: { referenced: number; total: number }; overBudget: Array<{ module: string; lines: number; budget: number }>; tooLong: Array<{ file: string; lines: number }>;
+  reasonCodes: { referenced: number; total: number }; tooLong: Array<{ file: string; lines: number }>;
 }
 
 /** Requirements that are agent behavior or host mechanics: there is nothing for the kernel to assert, so only T3 can show them. */
@@ -79,7 +79,7 @@ export function report(root: string, milestone: string): Report {
   }
   const all = Object.values(files).join("\n");
   const referenced = Object.keys(REASONS).filter((c) => new RegExp(`["'\`]${c}["'\`]`).test(all)).length;
-  return { covered, hostOnly, unreachable, unmapped, reasonCodes: { referenced, total: Object.keys(REASONS).length }, overBudget: moduleBudgets(root), tooLong: tooLong(root) };
+  return { covered, hostOnly, unreachable, unmapped, reasonCodes: { referenced, total: Object.keys(REASONS).length }, tooLong: tooLong(root) };
 }
 
 /** No verb or decision file is longer than this, and no source line packs >340 chars to evade the cap (owner decision, 2026-10-19). */
@@ -99,21 +99,6 @@ function tooLong(root: string): Report["tooLong"] {
   return [...byLines, ...byWidth];
 }
 
-/** Module line budgets are planning targets; more than 25% over needs a decision before the module grows (TS §6.2). */
-function moduleBudgets(root: string): Report["overBudget"] {
-  const src = join(root, "packages/kernel/src");
-  const lines = (p: string) => { try { return readFileSync(p, "utf8").split("\n").length; } catch { return 0; } };
-  const dir = (d: string) => { try { return readdirSync(join(src, d)).filter((f) => f.endsWith(".ts")).reduce((n, f) => n + lines(join(src, d, f)), 0); } catch { return 0; } };
-  const budgets: Array<[string, number, number]> = [
-    ["core/schemas", lines(join(src, "core/schemas.ts")), 400], ["core/risk", lines(join(src, "core/risk.ts")), 150],
-    ["core/budget", lines(join(src, "core/budget.ts")), 150], ["core/verdict", lines(join(src, "core/verdict.ts")), 300],
-    ["core/review", lines(join(src, "core/review.ts")), 350], ["adapters/store-fs", lines(join(src, "adapters/store-fs.ts")), 450],
-    ["adapters/git-cli", lines(join(src, "adapters/git-cli.ts")), 650], ["adapters/runner", lines(join(src, "adapters/runner.ts")), 350],
-    ["adapters/node-ts", lines(join(src, "adapters/node-ts.ts")), 350], ["pipeline + verbs + decisions", readdirSync(src).filter((f) => /^pipeline[\w-]*\.ts$/.test(f)).reduce((n, f) => n + lines(join(src, f)), 0) + dir("verbs") + dir("decisions"), 3000],
-  ];
-  return budgets.filter(([, n, b]) => n > b * 1.25).map(([module, n, budget]) => ({ module, lines: n, budget }));
-}
-
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const i = process.argv.indexOf("--milestone");
   const milestone = i > 0 ? process.argv[i + 1]! : "M0";
@@ -122,7 +107,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   console.log(`coverage ${milestone}: ${total} Musts · ${r.covered.length} with a T1 fixture · ${r.hostOnly.length} need the real host (T3/T4) · ${r.unreachable.length} not reachable yet · ${r.unmapped.length} unmapped`);
   if (r.hostOnly.length) console.log(`  host only: ${r.hostOnly.map((x) => x.id).join(", ")}`);
   console.log(`  reason codes referenced by a fixture: ${r.reasonCodes.referenced} of ${r.reasonCodes.total}`);
-  for (const o of r.overBudget) console.log(`  over budget by more than 25%: ${o.module} is ${o.lines} lines, budget ${o.budget}`);
   for (const t of r.tooLong) console.error(`${t.file} is ${t.lines} lines; the cap is ${FILE_CAP}`);
   if (r.tooLong.length) process.exit(1);
   if (r.unmapped.length) { console.error(`unmapped Musts: ${r.unmapped.map((x) => `${x.id} (${x.acs.join(" ")})`).join(", ")}`); process.exit(1); }

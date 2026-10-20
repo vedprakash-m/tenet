@@ -8,7 +8,7 @@ import type { Reason, State, WorkContract } from "../core/schemas.ts";
 import type { Job, Plan, Resp, Verb } from "../pipeline.ts";
 import type { CommitOutcome, IndexJournal, Ports, Tx } from "../ports/types.ts";
 import { nx, withWork, workOf } from "./common.ts";
-import { hookQuestion, unexplainedQuestion } from "./commit-questions.ts";
+import { filterQuestion, hookQuestion, unexplainedQuestion } from "./commit-questions.ts";
 import { gather, worldDigest } from "./facts.ts";
 import type { Facts } from "./facts.ts";
 
@@ -59,8 +59,22 @@ async function blockers(ports: Ports, st: State, w: WorkContract, facts: Facts):
         work: w.id,
         exit: 3,
         questions: [q],
-        reasons: [reason("filter-consent-needed", "commit hooks need consent")],
+        reasons: [reason("hook-consent-needed", "commit hooks need consent")],
         next: [nx("ask", "Ask the user about commit hooks.", true)],
+      },
+    };
+  }
+  const filters = await ports.git.filterGate();
+  if (filters && !st.consents.some((c) => c.kind === "filters" && c.configHash === filters.hash) && !w.git.noCommit) {
+    const q = filterQuestion(filters);
+    return {
+      state: { ...st, pending: [...st.pending.filter((p) => p.id !== q.id), q] },
+      resp: {
+        work: w.id,
+        exit: 3,
+        questions: [q],
+        reasons: [reason("filter-consent-needed", `Git filters ${filters.names.join(", ")} would run on this commit`)],
+        next: [nx("ask", "Ask the user about the Git filters.", true)],
       },
     };
   }

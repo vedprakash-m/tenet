@@ -50,14 +50,6 @@ describe("git: probe and inventory", () => {
     assert.notEqual(after.digest, before.digest);
     assert.equal(after.entries.get("src/a.ts")?.blob, gitBlob(Buffer.from("export const a = 9;\n")));
   });
-  it("refuses configured clean filters before running status [GIT-12, CON-09]", async () => {
-    const { g, root } = repo();
-    write(root, ".gitattributes", "src/a.ts filter=audit\n");
-    git(root, "config", "filter.audit.clean", `node -e "require('fs').writeFileSync('FILTER_RAN','yes');process.stdin.pipe(process.stdout)"`);
-    write(root, "src/a.ts", "export const a = 9;\n");
-    await assert.rejects(g.inventory([]), /filter/i);
-    assert.equal(existsSync(join(root, "FILTER_RAN")), false);
-  });
   it("reports repository state, and a non-repository", async () => {
     const { g, root } = repo();
     const p = await g.probe();

@@ -94,6 +94,8 @@ export const REASONS = {
   "branch-switch-needed": [3, "Integration will switch the editor branch"],
   "repo-state-readonly": [2, "Rebase, merge, conflicts or detached HEAD"],
   "filter-consent-needed": [3, "Executable Git filters configured"],
+  "filters-not-run": [0, "Git filters apply here; reading never runs them, so a file a filter rewrites can look modified"],
+  "hook-consent-needed": [3, "Commit hooks need consent"],
   // authority, configuration and budget
   "capability-missing": [2, "A required host capability is absent"],
   "continue-required": [2, "Policy requires more work before finishing"],

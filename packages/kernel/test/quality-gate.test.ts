@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { LIMITS, check, lowered, measure } from "../../../tools/lint-quality.ts";
+import { BUDGETS, LIMITS, check, lowered, measure } from "../../../tools/lint-quality.ts";
 import { cleanup, tmp } from "./helpers.ts";
 
 const dirs: string[] = [];
@@ -17,7 +17,7 @@ const tree = (files: Record<string, string>) => {
 };
 const longFn = (name: string, body: number) => `export function ${name}(x: number): number {\n${"  x += 1;\n".repeat(body)}  return x;\n}\n`;
 const branchy = (name: string, n: number) => `export function ${name}(x: number): number {\n${Array.from({ length: n }, (_, i) => `  if (x === ${i}) return ${i};`).join("\n")}\n  return -1;\n}\n`;
-const none = { functions: {}, wide: {} };
+const none: { functions: Record<string, never>; wide: Record<string, number>; modules?: Record<string, number> } = { functions: {}, wide: {} };
 
 describe("measuring", () => {
   it("reports length, complexity and nesting per named function, and wide lines per file", () => {
@@ -53,24 +53,31 @@ describe("checking against the baseline", () => {
     const grown = measure(tree({ "a.ts": longFn("legacy", LIMITS.lines + 21) }));
     assert.match(check(grown, base).join("\n"), /a\.ts#legacy grew: \d+ lines, recorded \d+/);
   });
-  it("fails the aggregate when the verbs, decisions and pipeline size grows past its record; wrapping or indenting a line does not count as growth", () => {
-    const m = measure(tree({ "pipeline.ts": "export const a = 1;\n", "verbs/x.ts": "export const b = 1;\nexport const c = 2;\n" }));
-    const chars = "exportconsta=1;".length + "exportconstb=1;exportconstc=2;".length;
-    assert.equal(m.core, chars);
-    assert.match(check(m, { ...none, core: chars - 1 }).join("\n"), new RegExp(`grew: ${chars} characters \\(whitespace excluded\\), recorded ${chars - 1}`));
-    assert.deepEqual(check(m, { ...none, core: chars }), []);
+  it("fails a module over its line budget until a ceiling is recorded, and then fails growth past that ceiling", () => {
+    const text = (lines: number) => "export const a = 1;\n".repeat(lines);
+    const over = measure(tree({ "core/risk.ts": text(BUDGETS["core/risk"]!.lines + 10) }));
+    assert.match(check(over, none).join("\n"), /core\/risk: \d+ lines \(budget 150\)/);
+    const ceiling = over.modules["core/risk"]!;
+    assert.deepEqual(check(over, { ...none, modules: { "core/risk": ceiling } }), []);
+    const grown = measure(tree({ "core/risk.ts": text(BUDGETS["core/risk"]!.lines + 11) }));
+    assert.match(check(grown, { ...none, modules: { "core/risk": ceiling } }).join("\n"), /core\/risk grew: \d+ lines, ceiling \d+ \(budget 150\)/);
+  });
+  it("counts pipeline, verbs and decisions as one module, whatever the line width", () => {
+    const m = measure(tree({ "pipeline.ts": "a\n", "pipeline-mutate.ts": "a\n", "verbs/x.ts": "a\nb\n", "decisions/y.ts": "a\n", "core/z.ts": "a\n" }));
+    assert.equal(m.modules["pipeline + verbs + decisions"], 2 + 2 + 3 + 2);
   });
 });
 
 describe("tightening the baseline", () => {
   it("lowers recorded values and drops offenders that now pass, but never records a new or larger one", () => {
     const before = measure(tree({ "a.ts": longFn("legacy", LIMITS.lines + 20), "b.ts": longFn("gone", LIMITS.lines + 5) }));
-    const base = { functions: before.functions, wide: {} };
+    const base = { functions: before.functions, wide: {}, modules: { "core/risk": 500 } };
     const after2 = measure(tree({ "a.ts": longFn("legacy", LIMITS.lines + 10), "b.ts": longFn("gone", 3), "c.ts": longFn("fresh", LIMITS.lines + 50) }));
     const next = lowered(after2, base);
     assert.equal(next.functions["a.ts#legacy"]!.lines, after2.functions["a.ts#legacy"]!.lines);
     assert.equal("b.ts#gone" in next.functions, false);
     assert.equal("c.ts#fresh" in next.functions, false, "a new offender is a failure, not a baseline entry");
+    assert.equal("core/risk" in (next.modules ?? {}), false, "a module back under its budget leaves the record");
   });
 });
 

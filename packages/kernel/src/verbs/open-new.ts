@@ -135,6 +135,11 @@ function claim(state: State, itemId: string, work: string): State {
   return { ...state, project: { ...state.project, intent: { ...intent, plan } } };
 }
 
+const filtersNote = (names: string[]) =>
+  reason("filters-not-run", `${names.join(", ")}: I read these files without running the filter, and ask before a commit that would`, {
+    note: true,
+  });
+
 export async function created(c: Ctx): Promise<Plan> {
   const { ports, input } = c;
   const editing = isEditingProfile(input.profile);
@@ -157,12 +162,14 @@ export async function created(c: Ctx): Promise<Plan> {
     workSeq: state.workSeq + 1,
     ...(editing ? { sourceOwner: { work: w.id, generation: gen } } : {}),
   };
+  const filters = probe.isRepo ? await ports.git.filterGate() : null;
   const imported = "Imported records were set aside as inert data; this contract starts from the current request.";
   const notes = [
     ...(next.quarantine?.choice === "pending" ? [reason("marker-mismatch", imported)] : []),
     ...(clamped
       ? [reason("budget-warning", `the ${floor} lane is the floor for this change and cannot be lowered`, { note: true })]
       : []),
+    ...(filters ? [filtersNote(filters.names)] : []),
     ...(why && level !== "L4" ? [reason("capability-missing", why, { note: true })] : []),
   ];
   const asking = next.pending.find((q) => q.id === "dirty-overlap") ?? c.shared.question;
