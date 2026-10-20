@@ -38,7 +38,7 @@ const nameOf = (n: ts.Node): string | undefined => {
   return undefined;
 };
 
-/** Length, complexity and nesting of every named function (a nested closure counts in its parent too), wide lines per file, and the character total of pipeline, verbs and decisions (wrapping a line must not look like growth). */
+/** Length, complexity and nesting of every named function (a nested closure counts in its parent too), wide lines per file, and the non-whitespace character total of pipeline, verbs and decisions (wrapping or indenting a line must not look like growth). */
 export function measure(dir: string): Measured {
   const out: Measured = { functions: {}, wide: {}, core: 0 };
   for (const file of files(dir)) {
@@ -46,7 +46,7 @@ export function measure(dir: string): Measured {
     const text = readFileSync(file, "utf8");
     const wide = text.split("\n").filter((l) => l.length > LIMITS.width).length;
     if (wide) out.wide[rel] = wide;
-    if (rel === "pipeline.ts" || /^(verbs|decisions)\//.test(rel)) out.core += text.length;
+    if (rel === "pipeline.ts" || /^(verbs|decisions)\//.test(rel)) out.core += text.replace(/\s+/g, "").length;
     const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
     const seen = new Map<string, number>();
     const visit = (n: ts.Node) => {
@@ -87,7 +87,7 @@ export function check(m: Measured, base: Baseline): string[] {
     if (r === undefined) out.push(`${file}: ${n} line(s) wider than ${LIMITS.width} characters`);
     else if (n > r) out.push(`${file} gained wide lines: ${n}, recorded ${r}`);
   }
-  if (base.core !== undefined && m.core > base.core) out.push(`pipeline, verbs and decisions grew: ${m.core} characters, recorded ${base.core}`);
+  if (base.core !== undefined && m.core > base.core) out.push(`pipeline, verbs and decisions grew: ${m.core} characters (whitespace excluded), recorded ${base.core}`);
   return out;
 }
 
