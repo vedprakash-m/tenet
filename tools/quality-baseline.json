@@ -70,45 +70,15 @@
    "cc": 27,
    "nest": 3
   },
-  "decisions/scaffold.ts#run": {
-   "lines": 84,
-   "cc": 21,
-   "nest": 2
-  },
   "decisions/simple.ts#run#3": {
    "lines": 48,
    "cc": 26,
-   "nest": 2
-  },
-  "decisions/undo.ts#run": {
-   "lines": 106,
-   "cc": 23,
-   "nest": 1
-  },
-  "verbs/commit.ts#startCommit": {
-   "lines": 89,
-   "cc": 39,
-   "nest": 2
-  },
-  "verbs/finish.ts#run": {
-   "lines": 82,
-   "cc": 20,
-   "nest": 2
-  },
-  "verbs/integrate.ts#startIntegrate": {
-   "lines": 85,
-   "cc": 23,
    "nest": 2
   },
   "verbs/manifest.ts#issueReview": {
    "lines": 42,
    "cc": 47,
    "nest": 1
-  },
-  "verbs/stop.ts#stopWork": {
-   "lines": 93,
-   "cc": 28,
-   "nest": 3
   },
   "core/basis-build.ts#build": {
    "lines": 64,
@@ -152,28 +122,25 @@
   "decisions/overview.ts": 1,
   "decisions/plan.ts": 10,
   "decisions/quarantine.ts": 3,
-  "decisions/scaffold.ts": 2,
   "decisions/simple.ts": 28,
   "decisions/takeover.ts": 3,
-  "decisions/undo.ts": 7,
   "frontends/cli.ts": 4,
   "ports/types.ts": 10,
   "verbs/authority.ts": 2,
-  "verbs/commit.ts": 13,
   "verbs/decide.ts": 1,
   "verbs/dirty.ts": 3,
   "verbs/facts.ts": 9,
   "verbs/findings.ts": 8,
   "verbs/index.ts": 1,
   "verbs/inspect.ts": 8,
-  "verbs/integrate.ts": 8,
+  "verbs/integrate.ts": 2,
   "verbs/manifest.ts": 13,
   "verbs/packet.ts": 4,
   "verbs/reconcile.ts": 11,
   "verbs/review.ts": 3,
-  "verbs/stop.ts": 7,
+  "verbs/stop.ts": 1,
   "verbs/undo.ts": 5,
   "wire.ts": 2
  },
- "core": 186786
+ "core": 191530
 }
