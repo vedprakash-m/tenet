@@ -5,7 +5,8 @@ import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
 import { build } from "../core/basis-build.ts";
 import { hashOf } from "../core/ids.ts";
-import { deriveObligations, wantedStatic, withStatic } from "../core/obligations.ts";
+import { deriveObligations, wantedStatic, withoutBoundary, withStatic } from "../core/obligations.ts";
+import { reason } from "../core/reasons.ts";
 import { BasisProposal } from "../core/schemas.ts";
 import type { DecideInput, State, WorkContract } from "../core/schemas.ts";
 import type { Plan } from "../pipeline.ts";
@@ -171,11 +172,13 @@ export const basis: Decision = {
     const d = draftBasis(ports, state, work, input, proposal, facts, needsConfirm);
     const w = await moveToWorkBranch(ports, tx, state, work, d.w, proposal.outcome);
     const stacked = w.git.start.branch?.startsWith("tenet/") && w.git.branch !== w.git.start.branch;
+    const bare = w.lane === "quick" ? [] : withoutBoundary(d.intent.elements.filter((e) => w.basis?.elementIds.includes(e.id)));
     return {
       state: withWork({ ...state, project: { ...state.project, intent: d.intent } }, w),
       resp: {
         work: w.id,
         progress: { phase: "authorized", boundary: "milestone" },
+        ...(bare.length ? { reasons: [reason("boundary-example-missing", bare.join(", "), { note: true })] } : {}),
         next: [
           d.reds
             ? nx("test", "Write the failing acceptance test(s), then run check --stage baseline.", true)

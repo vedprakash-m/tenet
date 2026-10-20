@@ -668,7 +668,8 @@ Source: the progress review of 2026-10-20 (gaps G1–G16). Owner direction: exec
 - [ ] A2b Analyst and Deep evidence; model record (RSC-01/02/03) — G10
 - [x] A3a Declared steps: `decide decline --target tests|review --quote` records the user's words, stops with `declined`, and the verdict names the step (`decline.test.ts`) — G4
 - [x] A3c Scoped fixes (RES-06): `open fix` with the named findings makes them the contract's open findings, scoped to where they are; a change elsewhere needs a disposition (`fix.test.ts`) — G4
-- [ ] A3 Readiness states; boundary-example check; checkpoints; active time; intent re-projection; Host port; starter fixes (restore tool, UI shell) — G4, G10, G15
+- [x] A3d Boundary-example check (INT-15): `decide basis` notes each requirement with neither a boundary example nor an invariant, outside Quick (`boundary-example.test.ts`)
+- [ ] A3 Readiness states; checkpoints; active time; intent re-projection; Host port; starter fixes (restore tool, UI shell) — G4, G10, G15
 - [x] A3b Starter: a pre-migration backup is taken next to the database by default (QLT-07), and secrets are compared by bytes so a multibyte CSRF token is a 403, not an error (`migrate.test.ts`, `platform.test.ts`, run by the kernel in the starter's suite) — G15 (part)
 - [ ] H Host qualification (SP-08, SP-01/02, SP-12, SP-06/10 dispositions) — needs authorization (D1) — G6
 - [ ] E Owners, licence, evaluation account, `eval/` replay, ten golden tasks, six UX sessions, pilot recruiting — G11, G16

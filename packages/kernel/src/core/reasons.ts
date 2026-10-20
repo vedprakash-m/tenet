@@ -97,6 +97,7 @@ export const REASONS = {
   "branch-switch-needed": [3, "Integration will switch the editor branch"],
   "repo-state-readonly": [2, "Rebase, merge, conflicts or detached HEAD"],
   "filter-consent-needed": [3, "Executable Git filters configured"],
+  "boundary-example-missing": [0, "A requirement has no boundary or negative example; propose one"],
   "filters-not-run": [0, "Git filters apply here; reading never runs them, so a file a filter rewrites can look modified"],
   "hook-consent-needed": [3, "Commit hooks need consent"],
   // authority, configuration and budget

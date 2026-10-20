@@ -23,6 +23,13 @@ export const withStatic = (obligations: readonly Obligation[], tools: readonly S
     .map((t): Obligation => ({ id: STATIC[t], kind: "static", category: "boundary", tool: t })),
 ];
 
+/** Requirements that have neither a boundary example nor an invariant (a negative statement) to go with them (INT-15). */
+export const withoutBoundary = (elements: readonly BasisElement[]): string[] =>
+  elements
+    .filter((r) => r.kind === "requirement")
+    .filter((r) => !elements.some((e) => e.of === r.id && (e.kind === "invariant" || (e.kind === "example" && e.test === "boundary"))))
+    .map((r) => r.id);
+
 /** Whether a required check is one the kernel runs itself; every other one is still only a stored declaration. */
 export const isStaticCheck = (c: { id: string; tool?: string }): boolean => wantedStatic([], [c]).length > 0;
 

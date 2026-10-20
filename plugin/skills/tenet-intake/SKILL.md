@@ -9,7 +9,7 @@ Use when `next` says `basis`, `plan` or `decision`. Look facts up in the reposit
 ## Draft the basis
 Write down, in the user's words where possible:
 1. **Requirements** the change must meet, one sentence each.
-2. **Examples** under each requirement: concrete input and expected result. Include at least one boundary or negative case per new requirement. Mark each example's test file and whether it should fail today (`expect: fail`, a distinguishing red) or already pass (`expect: pass`, a preservation or boundary case).
+2. **Examples** under each requirement: concrete input and expected result. Include at least one boundary or negative case per new requirement. Mark each example's test file and whether it should fail today (`expect: fail`, a distinguishing red) or already pass (`expect: pass`, a preservation or boundary case). If `tenet decide basis` answers `boundary-example-missing`, add one as your own addition.
 3. **Invariants** the change must not break.
 4. **Constraints**, **assumptions** (say "for now, X (easy to change later)"), and **deferred** choices.
 5. A **design sketch** for Standard and Deep when the change adds a module, changes an exported type or signature, touches persistence or shared policy, or crosses a module boundary: where the behavior belongs, what changes, the call path, what is reused. 1,500 characters; skip it for obvious bug fixes and behavior-preserving refactors.

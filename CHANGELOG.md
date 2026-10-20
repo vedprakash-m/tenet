@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20 — Boundary-example note (`✅` T1; review plan A3d)
+
+**Changed.** `decide basis` now says which requirement has neither a boundary example nor an invariant (`boundary-example-missing`, a note), except in Quick, so the coordinator proposes one as its own addition (INT-15). The intake skill says what to do with the note.
+
+**Files.** `decisions/basis.ts`, `core/{obligations,reasons}.ts`, `plugin/skills/tenet-intake/SKILL.md`. **Tests.** `boundary-example.test.ts` (2); 579 tests. Alpha Musts with a T1 fixture: 76 of 100.
+
 ## 2026-10-20 — "Fix findings N and M" (`✅` T1; review plan A3c)
 
 **Changed.** `open fix` takes the findings the user named, as the review gave them. They become the contract's open findings (`FND-n`) and its scope; a change to a file they do not name raises an attention item (`outside the named findings`) that needs a disposition, and the verdict stays unchecked while a named major finding is open. Before, the `fix` profile was refused. The tenet skill's steering row uses it.
