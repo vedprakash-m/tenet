@@ -1,6 +1,5 @@
 // Copied records are inert. Journal every move before acting and resume only against the same directory identities.
 import { closeSync, constants, existsSync, fstatSync, fsyncSync, linkSync, lstatSync, mkdirSync, openSync, readSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
 import { SCHEMA_VERSION } from "../core/schemas.ts";

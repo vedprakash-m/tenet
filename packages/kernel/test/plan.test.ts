@@ -4,8 +4,6 @@ import assert from "node:assert/strict";
 import { buildPlan, nextItem } from "../src/core/plan.ts";
 import type { PlanItem } from "../src/core/schemas.ts";
 
-let n = 0;
-const ids = { next: () => `x${++n}`.padEnd(3, "0") };
 const item = (id: string, state: PlanItem["state"], dependsOn: string[] = []): PlanItem => ({ id, outcome: id, elementIds: [], dependsOn, check: "c", state });
 
 describe("building a plan from a proposal [INT-12]", () => {

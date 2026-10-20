@@ -32,7 +32,6 @@ describe("walking skeleton: open → basis → red → green → review → chec
     assert.equal(green.exit, 0, JSON.stringify(green));
     assert.equal(green.next[0]!.action, "review", JSON.stringify(green));
     assert.equal(green.budget.attempts, "1/3");
-    const data = green.data as Record<string, any>;
 
     const early = await finishFixture(p, { h });
     assert.equal((early.data as any).endpoint, "implemented-unverified", "no review yet: the endpoint is honest");

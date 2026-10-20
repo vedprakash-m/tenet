@@ -158,7 +158,7 @@ describe("open reconciles the shared files with what was adopted [PH0-4, PRD §7
 
   it("puts the adopted protected paths into every new contract", async () => {
     const p = await adoptedPolicy({ protected_paths: ["db/**"] });
-    const o = await p.call("open", { profile: "investigate", request: "look around" });
+    await p.call("open", { profile: "investigate", request: "look around" });
     assert.deepEqual(protectedOf(p), ["db/**"]);
   });
 
