@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "protected_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "exclusions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string"
+          },
+          "kinds": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "no-model-send",
+                "no-read",
+                "no-edit",
+                "no-export",
+                "no-routine-scan"
+              ]
+            }
+          }
+        },
+        "required": [
+          "pattern",
+          "kinds"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "required_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "population": {
+            "type": "string"
+          },
+          "configuration": {
+            "type": "string"
+          },
+          "tool": {
+            "type": "string"
+          },
+          "pass": {
+            "type": "string"
+          },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "property"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "dependency_policy": {
+      "type": "object",
+      "properties": {
+        "min_release_age_days": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "urgent_exception": {
+          "type": "string",
+          "enum": [
+            "allow",
+            "require-approval",
+            "deny"
+          ]
+        },
+        "unknown_age": {
+          "type": "string",
+          "enum": [
+            "allow",
+            "require-approval",
+            "deny"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "commands": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "argv": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cwd": {
+            "type": "string"
+          },
+          "env": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "obligation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "argv"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

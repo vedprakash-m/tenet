@@ -5,6 +5,7 @@ import { mkdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { build } from "esbuild";
 import { z } from "zod";
+import { Policy } from "../packages/kernel/src/core/policy.ts";
 import { ReviewResult } from "../packages/kernel/src/core/schemas.ts";
 
 const ROOT = join(import.meta.dirname, "..");
@@ -21,6 +22,7 @@ await build({
 
 mkdirSync(join(ROOT, "plugin/schemas"), { recursive: true });
 writeFileSync(join(ROOT, "plugin/schemas/review-result.schema.json"), `${JSON.stringify(z.toJSONSchema(ReviewResult), null, 2)}\n`);
+writeFileSync(join(ROOT, "plugin/schemas/tenet.policy.schema.json"), `${JSON.stringify(z.toJSONSchema(Policy), null, 2)}\n`); // adoption writes a $schema reference to it (TS §7.8)
 
 const size = statSync(OUT).size;
 console.log(`build: plugin/kernel/tenet.mjs ${(size / 1024).toFixed(0)} KB (budget ${BUDGET_BYTES / 1024} KB)`);
