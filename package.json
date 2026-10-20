@@ -7,7 +7,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "node tools/lint-arch.ts && node tools/lint-skills.ts",
+    "lint": "node tools/lint-arch.ts && node tools/lint-skills.ts && node tools/lint-quality.ts",
     "coverage": "node tools/coverage.ts --milestone M0",
     "build": "node tools/build.ts",
     "test": "node --test --test-concurrency=4 \"packages/**/test/**/*.test.ts\"",

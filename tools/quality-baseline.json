@@ -1,0 +1,214 @@
+{
+ "functions": {
+  "adapters/git-cli.ts#inventory": {
+   "lines": 57,
+   "cc": 31,
+   "nest": 3
+  },
+  "adapters/git-cli.ts#commit": {
+   "lines": 47,
+   "cc": 26,
+   "nest": 3
+  },
+  "adapters/git-cli.ts#syncIndex": {
+   "lines": 60,
+   "cc": 36,
+   "nest": 4
+  },
+  "adapters/git-cli.ts#parseDiff": {
+   "lines": 24,
+   "cc": 15,
+   "nest": 8
+  },
+  "adapters/node-ts.ts#normalize": {
+   "lines": 49,
+   "cc": 39,
+   "nest": 5
+  },
+  "adapters/quarantine-fs.ts#quarantine": {
+   "lines": 107,
+   "cc": 37,
+   "nest": 3
+  },
+  "core/config.ts#resolveSetting": {
+   "lines": 56,
+   "cc": 28,
+   "nest": 4
+  },
+  "core/plan.ts#buildPlan": {
+   "lines": 42,
+   "cc": 35,
+   "nest": 3
+  },
+  "core/policy.ts#comparePolicy": {
+   "lines": 36,
+   "cc": 29,
+   "nest": 3
+  },
+  "core/policy.ts#effectivePolicy": {
+   "lines": 21,
+   "cc": 27,
+   "nest": 2
+  },
+  "core/receipts.ts#receiptsFrom": {
+   "lines": 39,
+   "cc": 28,
+   "nest": 1
+  },
+  "core/verdict.ts#judgeReview": {
+   "lines": 32,
+   "cc": 32,
+   "nest": 2
+  },
+  "core/verdict.ts#verdict": {
+   "lines": 29,
+   "cc": 28,
+   "nest": 2
+  },
+  "decisions/basis.ts#build": {
+   "lines": 48,
+   "cc": 28,
+   "nest": 3
+  },
+  "decisions/basis.ts#run": {
+   "lines": 137,
+   "cc": 37,
+   "nest": 3
+  },
+  "decisions/dependency.ts#start": {
+   "lines": 78,
+   "cc": 27,
+   "nest": 3
+  },
+  "decisions/scaffold.ts#run": {
+   "lines": 84,
+   "cc": 21,
+   "nest": 2
+  },
+  "decisions/simple.ts#run#3": {
+   "lines": 48,
+   "cc": 26,
+   "nest": 2
+  },
+  "decisions/undo.ts#run": {
+   "lines": 106,
+   "cc": 23,
+   "nest": 1
+  },
+  "pipeline.ts#mutate": {
+   "lines": 100,
+   "cc": 91,
+   "nest": 3
+  },
+  "verbs/check.ts#run": {
+   "lines": 198,
+   "cc": 124,
+   "nest": 5
+  },
+  "verbs/check.ts#finalize": {
+   "lines": 108,
+   "cc": 87,
+   "nest": 5
+  },
+  "verbs/commit.ts#startCommit": {
+   "lines": 89,
+   "cc": 39,
+   "nest": 2
+  },
+  "verbs/finish.ts#run": {
+   "lines": 82,
+   "cc": 20,
+   "nest": 2
+  },
+  "verbs/integrate.ts#startIntegrate": {
+   "lines": 85,
+   "cc": 23,
+   "nest": 2
+  },
+  "verbs/manifest.ts#issueReview": {
+   "lines": 42,
+   "cc": 47,
+   "nest": 1
+  },
+  "verbs/open.ts#run": {
+   "lines": 166,
+   "cc": 80,
+   "nest": 3
+  },
+  "verbs/recover.ts#recover": {
+   "lines": 236,
+   "cc": 97,
+   "nest": 11
+  },
+  "verbs/stop.ts#stopWork": {
+   "lines": 93,
+   "cc": 28,
+   "nest": 3
+  }
+ },
+ "wide": {
+  "adapters/git-cli.ts": 53,
+  "adapters/node-ts.ts": 10,
+  "adapters/project-fs.ts": 6,
+  "adapters/quarantine-fs.ts": 4,
+  "adapters/recipes-fs.ts": 1,
+  "adapters/runner.ts": 6,
+  "adapters/store-fs.ts": 11,
+  "core/authority.ts": 2,
+  "core/budget.ts": 4,
+  "core/config.ts": 18,
+  "core/controls.ts": 5,
+  "core/dependencies.ts": 10,
+  "core/exclusions.ts": 2,
+  "core/handoff.ts": 3,
+  "core/ids.ts": 1,
+  "core/intent-md.ts": 9,
+  "core/obligations.ts": 7,
+  "core/plan.ts": 4,
+  "core/policy.ts": 9,
+  "core/receipts.ts": 5,
+  "core/redact.ts": 2,
+  "core/review.ts": 22,
+  "core/risk.ts": 2,
+  "core/schemas.ts": 13,
+  "core/state.ts": 1,
+  "core/trust.ts": 1,
+  "core/verdict.ts": 18,
+  "decisions/adopt.ts": 6,
+  "decisions/basis.ts": 5,
+  "decisions/decision-record.ts": 8,
+  "decisions/dependency.ts": 23,
+  "decisions/grant.ts": 6,
+  "decisions/index.ts": 1,
+  "decisions/overview.ts": 1,
+  "decisions/plan.ts": 10,
+  "decisions/quarantine.ts": 3,
+  "decisions/scaffold.ts": 2,
+  "decisions/simple.ts": 28,
+  "decisions/takeover.ts": 3,
+  "decisions/undo.ts": 7,
+  "frontends/cli.ts": 4,
+  "pipeline.ts": 20,
+  "ports/types.ts": 10,
+  "verbs/authority.ts": 2,
+  "verbs/check.ts": 34,
+  "verbs/commit.ts": 13,
+  "verbs/decide.ts": 1,
+  "verbs/dirty.ts": 3,
+  "verbs/facts.ts": 9,
+  "verbs/findings.ts": 8,
+  "verbs/index.ts": 1,
+  "verbs/inspect.ts": 8,
+  "verbs/integrate.ts": 8,
+  "verbs/manifest.ts": 13,
+  "verbs/open.ts": 24,
+  "verbs/packet.ts": 4,
+  "verbs/reconcile.ts": 11,
+  "verbs/recover.ts": 5,
+  "verbs/review.ts": 3,
+  "verbs/stop.ts": 7,
+  "verbs/undo.ts": 5,
+  "wire.ts": 2
+ },
+ "core": 3540
+}
