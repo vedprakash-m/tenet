@@ -1,5 +1,6 @@
 // The small decision kinds: each is a few lines over one record. Kept together; split a kind out when it grows.
-import { SETTINGS, isSettingKey } from "../core/config.ts";
+import { CATALOG, isSettingKey, validateSetting } from "../core/config.ts";
+import type { Scope } from "../core/config.ts";
 import { KernelError } from "../core/errors.ts";
 import { reason } from "../core/reasons.ts";
 import type { BasisElement, Finding } from "../core/schemas.ts";
@@ -122,17 +123,23 @@ export const branchSwitch: Decision = {
   },
 };
 
-/** A project setting, from the typed catalog; it changes what the next action says, never what a word does. */
+/** A setting from the typed catalog: set for this task or this project, or reset. A change to what is already in force is no change (PRD §7.5). */
 export const config: Decision = {
   kind: "config",
   run({ state, work, input }) {
     const key = input.target ?? "";
-    if (!isSettingKey(key)) throw new KernelError("restriction-key-unknown", `"${key}" is not a setting; known: ${Object.keys(SETTINGS).join(", ")}`, { exit: 2 });
-    const value = SETTINGS[key].safeParse((input.propose as { value?: unknown } | undefined)?.value);
-    if (!value.success) throw new KernelError("restriction-key-unknown", `${key} must be ${SETTINGS[key].options.join(", ")}`, { exit: 2 });
-    const next = { ...state, config: { revision: state.config.revision + 1, local: { ...state.config.local, [key]: value.data } } };
-
-    return { state: withWork(next, work), resp: { work: work.id, next: [], data: { [key]: value.data } } };
+    if (!isSettingKey(key)) throw new KernelError("restriction-key-unknown", `"${key}" is not a setting; known: ${Object.keys(CATALOG).join(", ")}`, { exit: 2 });
+    const body = (input.propose ?? {}) as { value?: unknown; scope?: Scope; reset?: boolean };
+    const scope: Scope = body.scope ?? CATALOG[key].scopes[0] ?? "project";
+    const v = body.reset ? { ok: true as const, value: undefined } : validateSetting(key, body.value, scope);
+    if (!v.ok) throw new KernelError("restriction-key-unknown", v.message, { exit: 2 });
+    const held = scope === "task" ? work.settings ?? {} : state.config.local;
+    const { [key]: had, ...rest } = held;
+    const data = { setting: key, scope, ...(v.value === undefined ? { reset: true } : { value: v.value }) };
+    if (JSON.stringify(had) === JSON.stringify(v.value)) return { resp: { work: work.id, next: [], data: { ...data, changed: false } } };
+    const next = v.value === undefined ? rest : { ...rest, [key]: v.value };
+    const out = scope === "task" ? withWork(state, { ...work, settings: next }) : withWork({ ...state, config: { revision: state.config.revision + 1, local: next } }, work);
+    return { state: out, resp: { work: work.id, next: [], data: { ...data, changed: true } } };
   },
 };
 

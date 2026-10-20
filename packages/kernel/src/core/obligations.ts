@@ -34,3 +34,10 @@ export function linkElement(el: BasisElement, all: readonly BasisElement[]): Bas
   if (el.kind === "assumption") return [];
   return { notApplicable: `${el.kind} carries no check of its own` };
 }
+
+/** Support files locked with a test: those the example declares, plus the runner's own configuration (TS §9.7). */
+const RUNNER_CONFIG = /^(?:vitest|vite)\.config\.[cm]?[jt]s$/;
+export function supportOf(ob: Obligation, facts: { inv: { entries: Map<string, { blob: string }> } }): Record<string, string> {
+  const paths = [...(ob.support ?? []), ...[...facts.inv.entries.keys()].filter((p) => RUNNER_CONFIG.test(p))];
+  return Object.fromEntries(paths.flatMap((p) => { const blob = facts.inv.entries.get(p)?.blob; return blob ? [[p, blob]] : []; }));
+}

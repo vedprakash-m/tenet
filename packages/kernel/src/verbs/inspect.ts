@@ -1,5 +1,6 @@
 // `inspect`: read-only views. `help` and `doctor` are stateless: they never create or read `.tenet/`.
 import { LIMITS, summarize } from "../core/budget.ts";
+import { isSettingKey, layersOf, resolveSetting } from "../core/config.ts";
 import { KernelError } from "../core/errors.ts";
 import { controlsFor } from "../core/controls.ts";
 import { handoffText } from "../core/handoff.ts";
@@ -11,6 +12,7 @@ import type { Plan, Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
 import { nodeOk, readinessOf, workOf } from "./common.ts";
 import { gather, verdictInput } from "./facts.ts";
+import { settingsFor, sharedPolicy } from "./reconcile.ts";
 
 const VERBS = {
   open: "open --profile <feature|bug|refactor|investigate|plan|…> --request <text>   start or resume a contract",
@@ -24,7 +26,7 @@ const VERBS = {
   undo: "undo --h <handle>   preview the inverse of the work's commits; apply with decide undo-confirm",
   stop: "stop --h <handle> --mode <pause|cancel|abandon>   always allowed",
   review: "review [--scope working-tree]   review-only manifest, nothing written to the project",
-  inspect: "inspect [--view status|why|doctor|help]   read-only views",
+  inspect: "inspect [--view status|why|doctor|help|settings [--topic <setting>]]   read-only views",
 };
 
 function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>) {
@@ -75,6 +77,13 @@ export const inspect: Verb<InspectInput> = {
         const facts = await gather(ports, w, state!.locks);
         const v = verdict(verdictInput(ports, state!, w, facts));
         return { resp: { work: w.id, reasons: v.reasons, data: { endpoint: v.endpoint, scope: v.scope ?? null, label: headline(v, { profile: w.profile, branch: w.git.branch }), ...controlsFor(w, v.endpoint) } } };
+      }
+      case "settings": {
+        const w = input.h ? workOf(state, input.h) : undefined;
+        const revision = state?.config.revision ?? 0;
+        if (!input.topic) return { resp: { data: { settings: settingsFor(ports, state, w), revision } } };
+        if (!isSettingKey(input.topic)) throw new KernelError("restriction-key-unknown", `"${input.topic}" is not a setting`, { exit: 2 });
+        return { resp: { data: { setting: resolveSetting(input.topic, layersOf(state, w, sharedPolicy(ports, state))), revision } } };
       }
       default:
         throw new KernelError("capability-missing", `the "${input.view}" view arrives after M0`, { exit: 1 });

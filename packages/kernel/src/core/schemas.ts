@@ -195,6 +195,7 @@ export const WorkContract = z.object({
     noCommit: z.boolean().optional(),
   }),
   scaffolding: z.array(z.string()).optional(), // existing files declared as baseline scaffolding; each is an attention item
+  settings: z.record(z.string(), z.unknown()).optional(), // task-scope overrides (PRD §7.1): they end with the contract
   reverting: z.array(z.string()).optional(), // paths an undo was asked to revert: removing their assertions is the request, not a weakening
   vetted: z.record(z.string(), z.string()), // recipe files written by a scaffold: path to sha256, exempt from attention while unchanged
   touched: z.array(z.object({ path: z.string(), hashAtLastCheck: z.string().optional() })),

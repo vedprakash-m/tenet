@@ -7,25 +7,27 @@ import { formatHandle, workId, workLabel } from "../core/ids.ts";
 import { reason } from "../core/reasons.ts";
 import { assistanceLevel, chooseLane, isEditingProfile, laneFloor, raise } from "../core/risk.ts";
 import { OpenInput } from "../core/schemas.ts";
-import type { Question, Reason, State, WorkContract } from "../core/schemas.ts";
+import type { Lane, Question, Reason, State, WorkContract } from "../core/schemas.ts";
 import { emptyState, isLive, newContract } from "../core/state.ts";
 import type { Plan, Verb } from "../pipeline.ts";
+import type { Ports } from "../ports/types.ts";
 import { factsHash, nx, question, readinessOf, withWork } from "./common.ts";
 import { dirtyQuestion, undecidedDirty } from "./dirty.ts";
-import { reconcileShared } from "./reconcile.ts";
+import { reconcileShared, settingsFor } from "./reconcile.ts";
 import type { Shared } from "./reconcile.ts";
 import { recover } from "./recover.ts";
 
 /** What reconciling the shared files adds to an answer: its reasons, and the question when a change needs acceptance. */
 const surface = (s: Shared, base: Reason[] = []) => ({ reasons: [...base, ...s.reasons], ...(s.question ? { questions: [s.question], exit: 3 as const } : {}) });
 
-function describe(state: State, w: WorkContract) {
+function describe(ports: Ports, state: State, w: WorkContract) {
+  const { style, checkpoints, resource_mode } = settingsFor(ports, state, w); // how the coordinator should present and pace this task
   const first = w.profile === "plan" ? nx("plan", "Draft the plan with the user.", true)
     : w.profile === "investigate" ? nx("research", "Investigate and report findings; nothing is edited.", true)
     : nx("basis", "Propose the outcome and examples, then record them with decide.", true);
   return {
     next: state.pending.length ? [nx("ask", "Answer the open question first.", true)] : [first],
-    data: { label: w.label, handle: formatHandle(Number(w.label.slice(2)), w.session.generation, state.tag), profile: w.profile, lane: w.lane, floor: w.floor, level: w.level, branch: w.git.branch },
+    data: { settings: { style, checkpoints, resource_mode }, label: w.label, handle: formatHandle(Number(w.label.slice(2)), w.session.generation, state.tag), profile: w.profile, lane: w.lane, floor: w.floor, level: w.level, branch: w.git.branch },
   };
 }
 
@@ -48,7 +50,7 @@ export const open: Verb<OpenInput> = {
 
     // A repeated open with the same profile and request returns the still-proposed contract (TS §6.4).
     const same = Object.values(state.work).find((w) => w.state === "proposed" && w.profile === input.profile && w.request === input.request);
-    if (same && !input.resume) return { ...(state !== state0 ? { state } : {}), resp: { work: same.id, ...describe(state, same), ...(effects ? { effects } : {}), kernel: true, ...surface(shared) } };
+    if (same && !input.resume) return { ...(state !== state0 ? { state } : {}), resp: { work: same.id, ...describe(ports, state, same), ...(effects ? { effects } : {}), kernel: true, ...surface(shared) } };
 
     if (input.resume) {
       const prev = Object.values(state.work).filter(isLive).filter((w) => !input.planItem || w.planItem === input.planItem).at(-1);
@@ -60,7 +62,7 @@ export const open: Verb<OpenInput> = {
         return {
           state: { ...withWork(state, w), generationSeq: gen, ...owner },
           resp: {
-            work: w.id, ...describe(state, w), kernel: true, ...(effects ? { effects } : {}),
+            work: w.id, ...describe(ports, state, w), kernel: true, ...(effects ? { effects } : {}),
             ...surface(shared, takeover ? [reason("takeover-check", "if the earlier chat is still working on this, stop it before continuing", { note: true })] : []),
             next: [nx(w.state === "proposed" ? "basis" : "check", "Continue where the contract left off.", true)],
           },
@@ -99,11 +101,12 @@ export const open: Verb<OpenInput> = {
     }
 
     const scope = input.scopePaths ?? [];
-    const protectedPaths = [...new Set([...(input.protectedPaths ?? []), ...shared.protectedPaths])];
+    const prefs = settingsFor(ports, state);
+    const protectedPaths = [...new Set([...(input.protectedPaths ?? []), ...(prefs.protected_paths as string[])])];
     const protectedHit = scope.some((p) => protectedPaths.some((x) => matches(x, p)));
     const assessment = raise(input.assessment ?? {}, [...scope, ...(input.signals ?? [])], state.project.traits, protectedHit);
     const floor = laneFloor(assessment);
-    const { lane, clamped } = chooseLane(input.lane, floor, floor);
+    const { lane, clamped } = chooseLane(input.lane ?? (prefs.lane === "auto" ? undefined : prefs.lane as Lane), floor, floor);
 
     const inv = probe.isRepo ? await ports.git.inventory([]) : null;
     const start = inv ? snapshotOf(inv) : { head: null, branch: null, staged: [], dirty: [] };
@@ -130,7 +133,7 @@ export const open: Verb<OpenInput> = {
     return {
       state: next,
       resp: {
-        work: w.id, ...describe(next, w), kernel: true, reasons: [...notes, ...shared.reasons],
+        work: w.id, ...describe(ports, next, w), kernel: true, reasons: [...notes, ...shared.reasons],
         ...(pending ? { questions: [pending], exit: 3 } : shared.question ? { questions: [shared.question], exit: 3 } : {}), ...(effects ? { effects } : {}),
         progress: { phase: "proposed" },
       },

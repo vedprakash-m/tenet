@@ -12,6 +12,7 @@ import type { RunFacts } from "../core/receipts.ts";
 import type { AttentionItem, Obligation, State, WorkContract } from "../core/schemas.ts";
 import type { Reason } from "../core/schemas.ts";
 import { hashOf } from "../core/ids.ts";
+import { supportOf } from "../core/obligations.ts";
 import type { Job, Plan, Resp, Verb } from "../pipeline.ts";
 import type { Normalized } from "../ports/types.ts";
 import { nx, withWork, workOf } from "./common.ts";
@@ -21,13 +22,6 @@ import { issueReview } from "./manifest.ts";
 import { keepRecovered, recover } from "./recover.ts";
 
 const TIMEOUT_MS = 10 * 60_000;
-
-/** Support files locked with a test: those the example declares, plus the runner's own configuration (TS §9.7). */
-const RUNNER_CONFIG = /^(?:vitest|vite)\.config\.[cm]?[jt]s$/;
-function supportOf(ob: Obligation, facts: { inv: { entries: Map<string, { blob: string }> } }): Record<string, string> {
-  const paths = [...(ob.support ?? []), ...[...facts.inv.entries.keys()].filter((p) => RUNNER_CONFIG.test(p))];
-  return Object.fromEntries(paths.flatMap((p) => { const blob = facts.inv.entries.get(p)?.blob; return blob ? [[p, blob]] : []; }));
-}
 
 export const check: Verb<CheckInput> = {
   name: "check",
