@@ -2,7 +2,7 @@
 import { join } from "node:path";
 import { failureSignature, recordAttempt, recordLaunchedChecks, stopFor, withSignature } from "../core/budget.ts";
 import { hashOf } from "../core/ids.ts";
-import { baselineDefinitionMatches, supportOf } from "../core/obligations.ts";
+import { baselineDefinitionMatches, supportOf, wantsRed } from "../core/obligations.ts";
 import { receiptsFrom } from "../core/receipts.ts";
 import type { RunFacts } from "../core/receipts.ts";
 import { carryDispositions, netAttention } from "../core/review.ts";
@@ -69,12 +69,11 @@ export function matchBaseline(run: Run, cw: WorkContract, receipts: Receipt[]): 
   return cw.obligations.map((ob) => {
     const r = receipts.find((x) => x.obligation === ob.id);
     if (!r || !run.baseline) return ob;
-    const wantsRed = (ob.expectation ?? "pass") === "fail";
-    const behavioral =
+        const behavioral =
       r.status === "fail" && (r.failureKinds ?? []).length > 0 && r.failureKinds!.every((kind) => kind === "assertion");
     return {
       ...ob,
-      baselineMatched: wantsRed ? behavioral : r.status === "pass",
+      baselineMatched: wantsRed(ob) ? behavioral : r.status === "pass",
       baselineTestHash: ob.testFile ? run.facts.inv.entries.get(ob.testFile)?.blob : undefined,
       baselineInputs: supportOf(ob, run.facts),
     };

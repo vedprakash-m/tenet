@@ -4,6 +4,10 @@ import type { BasisElement, Obligation } from "./schemas.ts";
 export const obligationId = (elementId: string): string => `OB-${elementId}`;
 export const FULL_SUITE = "OB-suite";
 
+/** Whether the obligation's test must fail on the baseline. The default follows the test kind (deriveObligations sets the same one). */
+export const wantsRed = (ob: Pick<Obligation, "test" | "expectation">): boolean =>
+  (ob.expectation ?? (ob.test === "distinguishing" ? "fail" : "pass")) === "fail";
+
 /** One acceptance obligation per example that names a test file, plus the full-suite affected obligation. */
 export function deriveObligations(elements: readonly BasisElement[], tool: string, previous: readonly Obligation[]): Obligation[] {
   const prev = new Map(previous.map((o) => [o.id, o]));

@@ -56,9 +56,7 @@ export function assistanceLevel(r: Readiness, profile: Profile): { level: Level;
   if (editing && !r.platformOk) return { level: "L0", why: "mutating work needs a supported platform" };
   if (r.language === "other") return { level: "L1", why: "this stack is outside the TypeScript and JavaScript profile" };
   if (profile === "plan") return { level: "L2", why: "planning only, as asked" };
-  if (!r.depsInstalled || !r.runnerSupported) {
-    if (!r.depsInstalled) return { level: "L2", why: "dependencies are not installed" };
-  }
+  if (!r.depsInstalled) return { level: "L2", why: "dependencies are not installed" };
   if (!r.runnerSupported || r.experimental || !r.typescript) {
     return { level: "L3", why: !r.runnerSupported ? "no supported test runner was found" : r.experimental ? "this setup is experimental" : "this is not a TypeScript project" };
   }

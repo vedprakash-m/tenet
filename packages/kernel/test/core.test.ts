@@ -9,6 +9,7 @@ import type { AttentionPattern, FileChange } from "../src/core/review.ts";
 import { assistanceLevel, ceiling, chooseLane, laneFloor, raise } from "../src/core/risk.ts";
 import type { Readiness } from "../src/core/risk.ts";
 import { allowed } from "../src/core/exclusions.ts";
+import { deriveObligations, wantsRed } from "../src/core/obligations.ts";
 import { PATTERNS } from "../src/adapters/node-ts.ts";
 
 describe("ids", () => {
@@ -159,5 +160,16 @@ describe("attention (net per hunk, whitespace and case folded)", () => {
     const next = netAttention([change("a.ts", ["x as any"])], PATTERNS);
     assert.equal(carryDispositions([disposed], next)[0]!.disposition?.by, "user");
     assert.equal(carryDispositions([disposed], netAttention([change("a.ts", ["y as any"])], PATTERNS))[0]!.disposition, undefined);
+  });
+});
+
+describe("the baseline expectation of a test", () => {
+  it("defaults to a red for a distinguishing test and a pass for any other, the same wherever it is read [TDD-01]", () => {
+    assert.equal(wantsRed({ test: "distinguishing" }), true);
+    assert.equal(wantsRed({ test: "preservation" }), false);
+    assert.equal(wantsRed({ test: "boundary" }), false);
+    assert.equal(wantsRed({ test: "boundary", expectation: "fail" }), true);
+    const [ob] = deriveObligations([{ id: "EX-1", origin: "request", kind: "example", text: "t", testFile: "a.test.ts", verifiedBy: [] }], "vitest", []);
+    assert.equal(ob!.expectation, "fail", "what is derived is what wantsRed would answer");
   });
 });

@@ -42,7 +42,6 @@
   }
  },
  "wide": {
-  "adapters/git-cli.ts": 1,
   "adapters/project-fs.ts": 6,
   "adapters/recipes-fs.ts": 1,
   "adapters/runner.ts": 6,
@@ -74,7 +73,7 @@
   "decisions/overview.ts": 1,
   "decisions/plan.ts": 10,
   "decisions/quarantine.ts": 3,
-  "decisions/simple.ts": 28,
+  "decisions/simple.ts": 24,
   "decisions/takeover.ts": 3,
   "frontends/cli.ts": 4,
   "ports/types.ts": 10,
@@ -97,6 +96,6 @@
  "modules": {
   "adapters/git-cli": 1129,
   "core/schemas": 439,
-  "pipeline + verbs + decisions": 4912
+  "pipeline + verbs + decisions": 4911
  }
 }

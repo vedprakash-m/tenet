@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
-const source = fileURLToPath(new URL('../../../', import.meta.url));
+const source = fileURLToPath(new URL('../../', import.meta.url));
 const bundle = join(source, 'plugin/kernel/tenet.mjs');
 const roots = [];
 const env = { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' };
@@ -170,7 +170,7 @@ try {
   assert.equal(call(adoption, 'decide', { h: ah, kind: 'basis', propose: basis }).exit, 0);
   assert.equal(call(adoption, 'decide', { h: ah, kind: 'adopt', target: 'intent' }).questions[0].id, 'adopt-confirm');
   const confirm = { h: ah, kind: 'adopt', target: 'intent', answers: { 'adopt-confirm': 'confirm' } };
-  const action = spawnSync(process.execPath, [join(source, 'docs/audits/2026-10-19/crash-bundle-project.mjs'), bundle, point === 'unreadable-recovery' ? 'after-temp-fsync' : point, join(outside, 'private'), 'decide'], { cwd: adoption, env, input: JSON.stringify(confirm), encoding: 'utf8' });
+  const action = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle, point === 'unreadable-recovery' ? 'after-temp-fsync' : point, join(outside, 'private'), 'decide'], { cwd: adoption, env, input: JSON.stringify(confirm), encoding: 'utf8' });
   if (point === 'predictable-temp-link') { assert.equal(action.signal, null); assert.equal(action.status, 0, action.stderr + action.stdout); }
   else assert.equal(action.signal, 'SIGKILL', action.stderr + action.stdout);
   assert.equal(readFileSync(join(outside, 'private'), 'utf8'), 'PRIVATE_PROJECT_WRITE_CANARY');
@@ -204,7 +204,7 @@ try {
  write(scaffoldStop, 'NOTES.txt', 'preserve my note\n'); git(scaffoldStop, 'add', '-A'); git(scaffoldStop, 'commit', '-qm', 'initial');
  const ssh = call(scaffoldStop, 'open', { profile: 'feature', request: 'new app', lane: 'quick' }).handle;
  assert.equal(call(scaffoldStop, 'decide', { h: ssh, kind: 'basis', propose: { outcome: 'starter platform', elements: [{ ref: 'r', kind: 'requirement', origin: 'request', text: 'starter platform' }] } }).exit, 0);
- const killedScaffold = spawnSync(process.execPath, [join(source, 'docs/audits/2026-10-19/crash-bundle-project.mjs'), bundle, 'after-first-link', '-', 'decide'], { cwd: scaffoldStop, env, input: JSON.stringify({ h: ssh, kind: 'scaffold' }), encoding: 'utf8' });
+ const killedScaffold = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle, 'after-first-link', '-', 'decide'], { cwd: scaffoldStop, env, input: JSON.stringify({ h: ssh, kind: 'scaffold' }), encoding: 'utf8' });
  assert.equal(killedScaffold.signal, 'SIGKILL', killedScaffold.stderr + killedScaffold.stdout);
  const intent = readFileSync(join(scaffoldStop, '.tenet/log'), 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)).find(e => e.kind === 'intent' && e.effect === 'scaffold');
  const first = Object.keys(intent.op.expected).find(path => existsSync(join(scaffoldStop, path))); assert.ok(first);
@@ -249,7 +249,7 @@ try {
    rmSync(join(interrupted, '.git/index.lock'));
    args = ['decide']; input = JSON.stringify({ h: ch, kind: 'sync-index' });
   }
-  const killed = spawnSync(process.execPath, [join(source, 'docs/audits/2026-10-19/crash-bundle-index.mjs'), bundle, point === 'manual-after-lock' ? 'after-lock' : point, ...args], { cwd: interrupted, env, input, encoding: 'utf8' });
+  const killed = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-index.mjs'), bundle, point === 'manual-after-lock' ? 'after-lock' : point, ...args], { cwd: interrupted, env, input, encoding: 'utf8' });
   if (point === 'failed-directory-sync') {
    assert.equal(killed.signal, null); assert.equal(killed.status, 2, killed.stderr + killed.stdout);
    assert.ok(JSON.parse(killed.stdout).reasons.some(r => r.code === 'effect-uncertain'));
@@ -265,6 +265,14 @@ try {
   assert.deepEqual(readdirSync(join(interrupted, '.git')).filter(p => p.startsWith('tenet-index-')), []);
   observations.push({ scenario: `built index recovery ${point}`, killedAtBoundary: point !== 'failed-directory-sync', directorySyncFailure: point === 'failed-directory-sync', commitCount: 2, duplicateCommit: false, humanStagingPreserved: true, indexSyncRecovered: true });
  }
+ // Git LFS installs filters into the user's own configuration; they must not stop the kernel from reading or opening.
+ const lfsRoot = create(), lfsConfig = join(lfsRoot, '..', `${lfsRoot.split('/').pop()}.gitconfig`);
+ writeFileSync(lfsConfig, '[filter "lfs"]\n\tclean = git-lfs clean -- %f\n\tsmudge = git-lfs smudge -- %f\n\tprocess = git-lfs filter-process\n\trequired = true\n');
+ const lfsRun = (verb, body) => JSON.parse(spawnSync(process.execPath, [bundle, verb], { cwd: lfsRoot, env: { ...env, GIT_CONFIG_GLOBAL: lfsConfig }, input: JSON.stringify(body), encoding: 'utf8' }).stdout);
+ const lfsOpen = lfsRun('open', { profile: 'feature', request: 'greeting', scopePaths: ['src/greet.ts'] });
+ assert.equal(lfsOpen.exit, 0, JSON.stringify(lfsOpen)); assert.equal(lfsRun('review', {}).exit, 0);
+ rmSync(lfsConfig, { force: true });
+ observations.push({ scenario: 'user-level Git LFS filter configuration', openExit: lfsOpen.exit, filterRan: false });
  const linked = create(), outside = mkdtempSync(join(tmpdir(), 'tenet-c0-outside-')); roots.push(outside);
  symlinkSync(outside, join(linked, '.tenet'));
  const refusal = call(linked, 'open', { profile: 'feature', request: 'greeting' }); assert.notEqual(refusal.exit, 0); assert.deepEqual(readdirSync(outside), []);

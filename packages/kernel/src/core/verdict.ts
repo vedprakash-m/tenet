@@ -2,7 +2,7 @@
 // more fresh passing evidence never weakens an endpoint, removing evidence never strengthens it.
 import { ceiling } from "./risk.ts";
 import { reason } from "./reasons.ts";
-import { baselineDefinitionMatches } from "./obligations.ts";
+import { baselineDefinitionMatches, wantsRed } from "./obligations.ts";
 import type { AttentionItem, BasisElement, Endpoint, Finding, Lane, Level, Obligation, Profile, Reason, Receipt, ReviewLink, Scope, StopReason } from "./schemas.ts";
 
 export interface VerdictInput {
@@ -87,12 +87,11 @@ function judgeElement(el: BasisElement, i: VerdictInput): Reason[] {
 function judgeRed(i: VerdictInput): Reason[] {
   const out: Reason[] = [];
   const acceptance = i.obligations.filter(o => o.testFile && o.test);
-  if (!acceptance.some(o => o.test !== "preservation" && (o.expectation ?? "fail") === "fail")) out.push(reason("no-distinguishing-red", "no distinguishing baseline obligation was recorded"));
+  if (!acceptance.some(o => o.test !== "preservation" && wantsRed(o))) out.push(reason("no-distinguishing-red", "no distinguishing baseline obligation was recorded"));
   for (const ob of acceptance) {
-    const wantsRed = (ob.expectation ?? "fail") === "fail";
     const proved = ob.baselineMatched && ob.baselineTestHash && ob.baselineInputs;
-    if (wantsRed && !proved) out.push(reason("no-distinguishing-red", ob.id, { refs: [ob.id] }));
-    else if (!wantsRed && !proved) out.push(reason("evidence-missing", `the baseline expectation for ${ob.id} was not verified`, { refs: [ob.id] }));
+    if (wantsRed(ob) && !proved) out.push(reason("no-distinguishing-red", ob.id, { refs: [ob.id] }));
+    else if (!wantsRed(ob) && !proved) out.push(reason("evidence-missing", `the baseline expectation for ${ob.id} was not verified`, { refs: [ob.id] }));
     else if (!baselineDefinitionMatches(ob, path => i.testHashes[path]) && ob.testFile && i.testHashes[ob.testFile] !== ob.baselineTestHash) {
       out.push(reason("red-invalidated", ob.testFile, { refs: [ob.id] }));
     }
