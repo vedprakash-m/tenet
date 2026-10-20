@@ -44,7 +44,7 @@ describe("scaffold", () => {
 
     const c = await call("check", { h, stage: "candidate" });
     assert.equal(c.exit, 0, JSON.stringify(c));
-    assert.equal(c.next[0]!.action, "review", "dependency changes raise the lane from the actual files");
+    assert.equal(c.next[0]!.action, "focused-review", "the recipe's own vetted files are not a change that raises the lane");
     await call("findings", { h, result: reviewResult(d(c)) });
     const f = await call("finish", { h, subject: "Scaffold the starter" });
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
@@ -52,6 +52,21 @@ describe("scaffold", () => {
     assert.deepEqual(committed.sort(), [".gitignore", "README.md", "package-lock.json", "package.json", "server/test/starter.test.ts", "tsconfig.json"]);
     assert.ok(!committed.includes("NOTES.txt") && !committed.some((p) => p.startsWith("node_modules")));
     assert.equal(d(f).scope, "committed");
+  });
+
+  it("raises the lane for a recipe file only once someone changes it, and never for the recipe's own content [WRK-04]", async () => {
+    const auth = { path: "server/src/platform/auth/passwords.ts", content: "export const hash = (s: string) => s;\n", mode: 0o644 };
+    const recipe = fakeRecipe({ files: [...fakeRecipe().files, auth] });
+    const { root, call, h } = await empty(fakeRecipes(recipe));
+    await call("decide", { h, kind: "scaffold", propose: { name: "x" } });
+    const unchanged = await call("check", { h, stage: "candidate" });
+    assert.equal(unchanged.next[0]!.action, "focused-review", "the vetted auth file alone does not raise the lane");
+    write(root, auth.path, "export const hash = (s: string) => s + '!';\n");
+    const changed = await call("check", { h, stage: "candidate", touched: [auth.path], again: true });
+    assert.notEqual(changed.exit, 0, "a change under a protected auth path needs its grant");
+    assert.ok(changed.reasons.some((r) => r.code === "authority-needed"), JSON.stringify(changed.reasons));
+    const st = JSON.parse(readFileSync(join(root, ".tenet/state"), "utf8"));
+    assert.equal(Object.values(st.work as Record<string, { lane: string }>)[0]!.lane, "deep", "the edit raised the lane: an auth path, and a protected path, are two high dimensions");
   });
 
   it("can decline the protected-path defaults, and refuses to run twice", async () => {

@@ -88,7 +88,11 @@ async function claimSource(ports: Ports, verb: Verb, input: Input, current: Stat
     );
   }
   const protectedPaths = [...new Set([...w0.scope.protected, ...(prefs.protected_paths as string[])])];
-  const paths = (await ports.git.inventory([])).status.map((s) => s.path);
+  // What a scaffold wrote and nobody changed is the recipe's own vetted content, not the change being assessed.
+  const vetted = ports.project.hashes(Object.keys(w0.vetted));
+  const paths = (await ports.git.inventory([])).status
+    .map((s) => s.path)
+    .filter((p) => !(p in w0.vetted && vetted[p] === w0.vetted[p]));
   const assessment = raise(
     w0.assessment,
     paths,

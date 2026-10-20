@@ -1,4 +1,5 @@
 import { filterConsent, hookConsent } from "./consent.ts";
+import { decline } from "./decline.ts";
 import { adopt } from "./adopt.ts";
 import { abandon } from "./abandon.ts";
 import { takeover } from "./takeover.ts";
@@ -13,4 +14,4 @@ import { scaffold } from "./scaffold.ts";
 import { acceptance, branchSwitch, config, dirtyOverlap, disposition, repairLock, syncIndex, unexplained } from "./simple.ts";
 import type { Decision } from "./types.ts";
 
-export const DECISIONS: Record<string, Decision> = Object.fromEntries([basis, scaffold, dirtyOverlap, acceptance, disposition, repairLock, unexplained, hookConsent, filterConsent, syncIndex, branchSwitch, config, undoConfirm, adopt, overview, plan, grant, decisionRecord, dependency, abandon, takeover].map((d) => [d.kind, d]));
+export const DECISIONS: Record<string, Decision> = Object.fromEntries([basis, scaffold, dirtyOverlap, acceptance, disposition, repairLock, unexplained, hookConsent, filterConsent, syncIndex, branchSwitch, config, undoConfirm, adopt, overview, plan, grant, decisionRecord, dependency, abandon, takeover, decline].map((d) => [d.kind, d]));

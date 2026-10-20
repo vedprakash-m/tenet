@@ -50,15 +50,12 @@ describe("the ts-web-api recipe", () => {
       const receipt = d(c).receipts.find((r: { obligation: string }) => r.obligation === id);
       assert.equal(receipt?.status, "pass", `${id}: ${JSON.stringify(receipt)}`);
     }
+    assert.equal(c.next[0]!.action, "focused-review", "the recipe's own vetted auth and session files do not raise the lane to Deep");
     await call("findings", { h, result: reviewResult(d(c)) });
 
     const f = await call("finish", { h, subject: "Scaffold the starter" });
-    assert.equal(d(f).endpoint, "implemented-unverified", JSON.stringify(f.reasons));
-    assert.ok(f.reasons.some(r => r.code === "review-missing" && /architecture/.test(r.message)));
-    assert.ok(f.reasons.some(r => r.code === "review-missing" && /security/.test(r.message)));
-    assert.equal(await createPorts(root).git.refCommit("HEAD"), null, "finish does not automatically commit a candidate missing its Deep passes");
-    const checkpoint = await call("commit", { h, subject: "Checkpoint the unverified starter" });
-    assert.equal(checkpoint.exit, 0, JSON.stringify(checkpoint));
+    assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
+    assert.equal(d(f).scope, "committed");
     const files = git(root, "ls-files").split("\n");
     assert.ok(files.includes("server/src/platform/auth/passwords.ts") && files.includes("package-lock.json"));
     assert.ok(!files.some((p) => p.startsWith("node_modules") || p === ".env.local"));

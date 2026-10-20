@@ -659,7 +659,7 @@ Class: M mutating, R read-only, S stateless; C may run checks (obligation timeou
 |---|---|---|
 | `{answers: {<questionId>: value}}` | Answer kernel questions, each checked against its binding | Dirty-tree choice, consent, risk acceptance, takeover, migration |
 | `{propose: kind, content}` | Record content drafted with the user | `basis` (including the design sketch; confirmation rule in §8.7), `plan`, `decision-record`, `config`, `lesson`, `overview` |
-| `{request: kind, target, quote?}` | A user-initiated action | `forget`, `delete-records`, `cleanup`, `remote`, `acceptance`, `adopt`, `disposition`, `grant`, `dependency`, `export`, `repair-lock` |
+| `{request: kind, target, quote?}` | A user-initiated action | `forget`, `delete-records`, `cleanup`, `remote`, `acceptance`, `adopt`, `disposition`, `grant`, `decline`, `dependency`, `export`, `repair-lock` |
 
 A request carrying the user's words (`quote`) applies in one step when the request already names the action and target, recorded as `reported`. A preview question is mandatory only for destructive kinds (CON-10) and actions under the SEC-13 gate (§11.4), so an explicit request is never confirmed twice.
 
@@ -963,7 +963,7 @@ Every basis element names how it is verified (obligation, review or manual) or w
 
 ### 8.2 Risk, lane floors and assistance level
 
-The coordinator submits a structured assessment of the **change** (six dimensions, low or high, one line of evidence each). The kernel raises dimensions from deterministic signals about the change, never about the project, and never lowers them (PRD Section 5.2):
+The coordinator submits a structured assessment of the **change** (six dimensions, low or high, one line of evidence each). The kernel raises dimensions from deterministic signals about the change, never about the project, and never lowers them (PRD Section 5.2). Files a recipe scaffold wrote and nobody has changed since (`vetted`) are the recipe's own pinned content and raise nothing; changing one makes it a signal like any other:
 
 | Signal in the planned or actual diff | Raises |
 |---|---|
