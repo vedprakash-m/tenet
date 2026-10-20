@@ -100,16 +100,6 @@
    "cc": 91,
    "nest": 3
   },
-  "verbs/check.ts#run": {
-   "lines": 198,
-   "cc": 124,
-   "nest": 5
-  },
-  "verbs/check.ts#finalize": {
-   "lines": 108,
-   "cc": 87,
-   "nest": 5
-  },
   "verbs/commit.ts#startCommit": {
    "lines": 89,
    "cc": 39,
@@ -186,7 +176,6 @@
   "pipeline.ts": 20,
   "ports/types.ts": 10,
   "verbs/authority.ts": 2,
-  "verbs/check.ts": 34,
   "verbs/commit.ts": 13,
   "verbs/decide.ts": 1,
   "verbs/dirty.ts": 3,
@@ -204,5 +193,5 @@
   "verbs/undo.ts": 5,
   "wire.ts": 2
  },
- "core": 176645
+ "core": 181170
 }
