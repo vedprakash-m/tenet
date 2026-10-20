@@ -1,8 +1,30 @@
 // Obligations derived from the accepted basis (TS §9.2). Recipes and traits declare; they never bypass rules.
+import type { StaticTool } from "../ports/types.ts";
 import type { BasisElement, Obligation } from "./schemas.ts";
 
 export const obligationId = (elementId: string): string => `OB-${elementId}`;
 export const FULL_SUITE = "OB-suite";
+
+const STATIC: Record<StaticTool, string> = { tsc: "OB-types", eslint: "OB-lint" };
+const ALIASES: Record<string, StaticTool> = { types: "tsc", typecheck: "tsc", lint: "eslint" };
+
+/** The static checks a contract owes: both after a starter scaffold, otherwise those a required check names (by tool, or by id). */
+export function wantedStatic(recipe: readonly StaticTool[], required: readonly { id: string; tool?: string }[]): StaticTool[] {
+  const toolOf = (c: { id: string; tool?: string }) => (c.tool ? (c.tool in STATIC ? (c.tool as StaticTool) : undefined) : ALIASES[c.id]);
+  const named = new Set(required.map(toolOf));
+  return (Object.keys(STATIC) as StaticTool[]).filter((t) => recipe.includes(t) || named.has(t));
+}
+
+/** Adds the static obligations that are not there yet; the acceptance obligations are untouched. */
+export const withStatic = (obligations: readonly Obligation[], tools: readonly StaticTool[]): Obligation[] => [
+  ...obligations,
+  ...tools
+    .filter((t) => !obligations.some((o) => o.id === STATIC[t]))
+    .map((t): Obligation => ({ id: STATIC[t], kind: "static", category: "boundary", tool: t })),
+];
+
+/** Whether a required check is one the kernel runs itself; every other one is still only a stored declaration. */
+export const isStaticCheck = (c: { id: string; tool?: string }): boolean => wantedStatic([], [c]).length > 0;
 
 /** Whether the obligation's test must fail on the baseline. The default follows the test kind (deriveObligations sets the same one). */
 export const wantsRed = (ob: Pick<Obligation, "test" | "expectation">): boolean =>
@@ -42,7 +64,7 @@ export function linkElement(el: BasisElement, all: readonly BasisElement[]): Bas
 }
 
 /** Support files locked with a test: those the example declares, plus the runner's own configuration (TS §9.7). */
-export const CONFIG_INPUTS = ["package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "tsconfig.json", ...["vitest", "vite"].flatMap(tool => ["ts", "js", "mts", "mjs", "cts", "cjs"].map(ext => `${tool}.config.${ext}`))];
+export const CONFIG_INPUTS = ["package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "tsconfig.json", ...["vitest", "vite", "eslint"].flatMap(tool => ["ts", "js", "mts", "mjs", "cts", "cjs"].map(ext => `${tool}.config.${ext}`))];
 
 /** Declared inputs participate even when Git ignores them; absences bind the baseline too. */
 export const declaredInputs = (obligations: readonly Obligation[]): string[] => [...new Set([...CONFIG_INPUTS, ...obligations.flatMap(o => [...(o.testFile ? [o.testFile] : []), ...(o.support ?? []), ...Object.keys(o.baselineInputs ?? {})])])];

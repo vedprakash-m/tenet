@@ -3,7 +3,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import type { AttentionPattern, FileChange } from "../core/review.ts";
-import type { Detection, Normalized, Stack, ToolVersions } from "../ports/types.ts";
+import type { Detection, Normalized, StaticNorm, StaticTool, Stack, ToolVersions } from "../ports/types.ts";
 import { allowed } from "../core/exclusions.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
@@ -40,7 +40,7 @@ export const PATTERNS: AttentionPattern[] = [
 export const classify = (path: string): FileChange["kind"] => {
   if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(path) || /(?:^|\/)__tests__\//.test(path)) return "test";
   if (
-    /(?:^|\/)(?:vitest|vite|jest)\.config\.|(?:^|\/)tsconfig[^/]*\.json$|(?:^|\/)package(?:-lock)?\.json$|^\.github\//.test(path)
+    /(?:^|\/)(?:vitest|vite|jest|eslint)\.config\.|(?:^|\/)tsconfig[^/]*\.json$|(?:^|\/)package(?:-lock)?\.json$|^\.github\//.test(path)
   )
     return "config";
   return "source";
@@ -231,6 +231,67 @@ export function normalize(raw: string, root = ""): Normalized {
   return { files, discovered };
 }
 
+// ---------------------------------------------------------------- static tools (TS §9.5): TypeScript and ESLint
+const TSC_ERROR = /^(.+?)\((\d+),\d+\): error (TS\d+): (.*)$/;
+const TSC_CONFIG_ERROR = /^error (TS\d+): (.*)$/;
+const MAX_EXAMPLES = 5;
+const staticInvalid = (problem: string): StaticNorm => ({ status: "invalid", failures: [], problem });
+/** The first error of each kind is kept, up to five, in report order. */
+const verdictOf = (failures: StaticNorm["failures"]): StaticNorm => ({
+  status: failures.length ? "fail" : "pass",
+  failures: failures.slice(0, MAX_EXAMPLES),
+});
+
+function normalizeTsc(exit: number | undefined, raw: string | null): StaticNorm {
+  if (raw === null || exit === undefined) return staticInvalid("tsc left no output to read");
+  const failures: StaticNorm["failures"] = [];
+  let unread = 0;
+  for (const line of raw.split("\n").filter((l) => l.trim())) {
+    const at = TSC_ERROR.exec(line);
+    const config = at ? null : TSC_CONFIG_ERROR.exec(line);
+    if (at) failures.push({ test: `${at[1]}:${at[2]}`, kind: "type-error", message: `${at[3]} ${at[4]}`.slice(0, 500) });
+    else if (config) failures.push({ test: "tsconfig", kind: "configuration", message: `${config[1]} ${config[2]}`.slice(0, 500) });
+    else if (!/^\s/.test(line)) unread++; // continuation lines of a message are indented
+  }
+  if ((exit === 0) !== (failures.length === 0)) return staticInvalid("tsc's exit status and its diagnostics disagree");
+  if (failures.length === 0 && unread > 0) return staticInvalid("tsc printed output that is not a diagnostic");
+  return verdictOf(failures);
+}
+
+function normalizeEslint(exit: number | undefined, raw: string | null): StaticNorm {
+  if (raw === null || (exit !== 0 && exit !== 1)) return staticInvalid("eslint did not finish normally or left no report");
+  if (Buffer.byteLength(raw) > 10 * 1024 * 1024) return staticInvalid("the lint report exceeds 10 MB");
+  let files: any;
+  try {
+    files = JSON.parse(raw);
+  } catch {
+    return staticInvalid("the lint report is not valid JSON");
+  }
+  if (!Array.isArray(files)) return staticInvalid("the lint report is not a list");
+  if (files.length === 0) return staticInvalid("no file was linted");
+  const failures: StaticNorm["failures"] = [];
+  for (const f of files) {
+    if (!f || typeof f.filePath !== "string" || !Array.isArray(f.messages) || typeof f.errorCount !== "number") {
+      return staticInvalid("a lint file record is invalid");
+    }
+    for (const m of f.messages) {
+      if (m?.severity !== 2 || failures.length >= MAX_EXAMPLES) continue;
+      const message = `${m.ruleId ?? "error"} ${String(m.message)}`.slice(0, 500);
+      failures.push({ test: `${f.filePath}:${m.line ?? 0}`, kind: "lint-error", message });
+    }
+  }
+  const errors = files.reduce((n: number, f: { errorCount: number }) => n + f.errorCount, 0);
+  if ((exit === 0) !== (errors === 0)) return staticInvalid("eslint's exit status and its report disagree");
+  return verdictOf(failures);
+}
+
+/** Pure: a static tool's exit status and output to a pass, a bounded list of errors, or `invalid` when they prove nothing. */
+export function normalizeStatic(tool: StaticTool, out: { exit: number | undefined; raw: string | null }): StaticNorm {
+  return tool === "tsc" ? normalizeTsc(out.exit, out.raw) : normalizeEslint(out.exit, out.raw);
+}
+
+const STATIC_SCRIPT: Record<StaticTool, string> = { tsc: "typescript/bin/tsc", eslint: "eslint/bin/eslint.js" };
+
 export function createStack(): Stack {
   let exclusions: readonly Exclusion[] = [];
   return {
@@ -251,11 +312,26 @@ export function createStack(): Stack {
       ];
     },
     normalize,
+    staticArgv: (root, tool, report) => {
+      if (!existsSync(join(root, "node_modules", STATIC_SCRIPT[tool]))) return null;
+      const script = join("node_modules", STATIC_SCRIPT[tool]); // a direct binary, never npx (TS §9.3)
+      return tool === "tsc"
+        ? [process.execPath, script, "--noEmit", "--pretty", "false"]
+        : [process.execPath, script, "--format", "json", "--output-file", report, "--no-color", "."];
+    },
+    staticOutput: (tool, r) => (tool === "tsc" ? r.stdout : r.report),
+    normalizeStatic,
     fingerprint: (root): ToolVersions => ({
       node: process.version,
       tool: String(metadata(root, exclusions).json("node_modules/vitest/package.json")?.version ?? "none"),
       reporter: "vitest-json",
       adapter: ADAPTER,
+      static: Object.fromEntries(
+        (["tsc", "eslint"] as const).map((t) => {
+          const pkg = metadata(root, exclusions).json(`node_modules/${t === "tsc" ? "typescript" : "eslint"}/package.json`);
+          return [t, String(pkg?.version ?? "none")];
+        }),
+      ),
     }),
     patterns: PATTERNS,
     classify,

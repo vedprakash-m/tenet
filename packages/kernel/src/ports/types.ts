@@ -146,7 +146,15 @@ export interface Runner {
 }
 
 // ---------------------------------------------------------------- stack (Node/TypeScript adapter)
-export interface ToolVersions { node: string; tool: string; reporter: string; adapter: string }
+/** `static` holds the installed version of each static tool ("none" when absent), so a tool upgrade makes earlier receipts stale. */
+export interface ToolVersions { node: string; tool: string; reporter: string; adapter: string; static: Record<string, string> }
+export type StaticTool = "tsc" | "eslint";
+/** A static tool's output reduced to what a receipt needs: a pass, a fail with bounded examples, or a report that proves nothing. */
+export interface StaticNorm {
+  status: "pass" | "fail" | "invalid";
+  failures: Array<{ test: string; kind: string; message: string }>;
+  problem?: string;
+}
 export interface Detection {
   language: "ts-js" | "other"; typescript: boolean; depsInstalled: boolean; runnerSupported: boolean; runner?: "vitest";
   runnerVersion?: string; packageManager: "npm" | "pnpm" | "yarn" | "unknown"; moduleRoot: string; experimental: boolean;
@@ -160,6 +168,11 @@ export interface Stack {
   detect(root: string): Detection;
   argv(files: readonly string[] | "all", reportPath: string): string[];
   normalize(raw: string, root: string): Normalized;
+  /** A direct binary, never npx; null when the tool is not installed in the project. */
+  staticArgv(root: string, tool: StaticTool, report: string): string[] | null;
+  /** Where a static tool reports: tsc prints its diagnostics, ESLint writes its JSON report. */
+  staticOutput(tool: StaticTool, r: Pick<RunResult, "stdout" | "report">): string | null;
+  normalizeStatic(tool: StaticTool, out: { exit: number | undefined; raw: string | null }): StaticNorm;
   fingerprint(root: string): ToolVersions;
   patterns: readonly AttentionPattern[];
   classify(path: string): FileChange["kind"];
@@ -170,6 +183,8 @@ export interface Stack {
 export interface RecipeFile { path: string; content: string; mode: number }
 export interface Recipe {
   id: string; version: string; sentinel: string; lockfileSha256: string; protectedPaths: string[]; install: string[][]; files: RecipeFile[];
+  /** The static checks every project from this recipe owes (typecheck, lint). */
+  checks?: StaticTool[];
 }
 export interface Recipes {
   load(id: string): Recipe | null;

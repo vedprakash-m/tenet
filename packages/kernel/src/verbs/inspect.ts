@@ -13,7 +13,7 @@ import type { Plan, Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
 import { nodeOk, readinessOf, workOf } from "./common.ts";
 import { gather, verdictInput } from "./facts.ts";
-import { settingsFor, sharedPolicy } from "./reconcile.ts";
+import { settingsFor, sharedPolicy, withRequiredChecks } from "./reconcile.ts";
 
 const VERBS = {
   open: "open --profile <feature|bug|refactor|investigate|plan|…> --request <text>   start or resume a contract",
@@ -74,7 +74,7 @@ export const inspect: Verb<InspectInput> = {
         return { resp: { data: statusOf(state) } };
       }
       case "why": {
-        const w = workOf(state, input.h);
+        const w = withRequiredChecks(ports, state!, workOf(state, input.h));
         if (!w.basis && w.profile !== "plan" && w.profile !== "investigate") return { resp: { work: w.id, data: { why: "No basis is recorded yet, so there is nothing to judge." } } };
         const facts = await gather(ports, w, state!.locks);
         const v = verdict(verdictInput(ports, state!, w, facts));

@@ -9,12 +9,13 @@ import { declaredInputs } from "../core/obligations.ts";
 import { reason } from "../core/reasons.ts";
 import type { RunFacts } from "../core/receipts.ts";
 import { CheckInput } from "../core/schemas.ts";
-import type { Question, Reason, State, WorkContract } from "../core/schemas.ts";
+import type { Obligation, Question, Reason, State, WorkContract } from "../core/schemas.ts";
 import type { Job, Plan, Verb } from "../pipeline.ts";
-import type { Ports } from "../ports/types.ts";
+import type { Ports, RunResult, StaticTool } from "../ports/types.ts";
 import { grantQuestion } from "./authority.ts";
 import { finalizeCheck } from "./check-finalize.ts";
-import type { Run } from "./check-evidence.ts";
+import { isStatic, staticReport } from "./check-evidence.ts";
+import type { Executed, Run } from "./check-evidence.ts";
 import { nx, withWork, workOf } from "./common.ts";
 import { dirtyQuestion, undecidedDirty } from "./dirty.ts";
 import { checkInputId, gather, unauthorizedEdits, worldDigest } from "./facts.ts";
@@ -166,29 +167,41 @@ export const check: Verb<CheckInput> = {
   },
 };
 
-/** Runs the named test files (or everything) once, outside the lock, and reports what the process did. */
-async function execute(run: Run, inputs: readonly string[]): Promise<RunFacts> {
+/** What the process did, whatever it was. `raw` is the output the tool's own report format is read from. */
+const observed = (r: RunResult, raw: string | null): Omit<RunFacts, "after"> => ({
+  ...(r.exit !== undefined ? { exit: r.exit } : {}),
+  ...(r.signal ? { signal: r.signal } : {}),
+  timedOut: r.timedOut,
+  durationMs: r.durationMs,
+  ...(r.pid ? { pid: r.pid } : {}),
+  startedAt: r.startedAt,
+  raw,
+  ran: r.exit !== undefined || !!r.signal,
+});
+
+/** One static tool over the whole project; a tool that is not installed did not run. */
+async function runStatic(run: Run, ob: Obligation): Promise<Omit<RunFacts, "after">> {
+  const { ports, runDir } = run;
+  const tool = ob.tool as StaticTool, report = staticReport(runDir, tool);
+  const argv = ports.stack.staticArgv(ports.root, tool, report);
+  if (!argv) return { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, ran: false };
+  const r = await ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: TIMEOUT_MS, report });
+  return observed(r, ports.stack.staticOutput(tool, r));
+}
+
+/** Runs the named test files (or everything) once, outside the lock, then each static check, and reports what the processes did. */
+async function execute(run: Run, inputs: readonly string[]): Promise<Executed> {
   const { ports, runDir, toExecute, facts } = run;
   if (toExecute !== "all" && !toExecute.length)
-    return { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, after: facts.candidate, ran: false };
+    return { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, after: facts.candidate, ran: false, statics: {} };
   const report = join(runDir, "vitest.json");
-  const r = await ports.runner.run({
-    argv: ports.stack.argv(toExecute, report),
-    cwd: ports.root,
-    runDir,
-    timeoutMs: TIMEOUT_MS,
-    report,
-  });
+  const r = await ports.runner.run({ argv: ports.stack.argv(toExecute, report), cwd: ports.root, runDir, timeoutMs: TIMEOUT_MS, report });
+  const statics: Record<string, Omit<RunFacts, "after">> = {};
+  for (const ob of run.toRun.filter(isStatic)) statics[ob.id] = await runStatic(run, ob);
   const after = (await ports.git.inventory([], inputs)).digest;
   return {
-    ...(r.exit !== undefined ? { exit: r.exit } : {}),
-    ...(r.signal ? { signal: r.signal } : {}),
-    timedOut: r.timedOut,
-    durationMs: r.durationMs,
-    ...(r.pid ? { pid: r.pid } : {}),
-    startedAt: r.startedAt,
-    raw: r.report,
+    ...observed(r, r.report),
     after,
-    ran: r.exit !== undefined || !!r.signal,
+    statics: Object.fromEntries(Object.entries(statics).map(([id, s]) => [id, { ...s, after }])),
   };
 }

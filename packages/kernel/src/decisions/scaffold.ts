@@ -5,9 +5,10 @@ import { basename } from "node:path";
 import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
+import { wantedStatic, withStatic } from "../core/obligations.ts";
 import { reason } from "../core/reasons.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
-import type { Recipe } from "../ports/types.ts";
+import type { Recipe, StaticTool } from "../ports/types.ts";
 import type { Job } from "../pipeline.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 import { assistanceLevel } from "../core/risk.ts";
@@ -35,7 +36,7 @@ const projectName = (root: string) =>
 /** What the scaffold effect's intent records, so recovery can verify and finish it. */
 export interface ScaffoldOp {
   work: string;
-  recipe: { id: string; version: string };
+  recipe: { id: string; version: string; checks?: StaticTool[] };
   expected: Record<string, string>;
   protect: string[];
 }
@@ -44,10 +45,12 @@ export interface ScaffoldOp {
 export const scaffolded = (
   w: WorkContract,
   expected: Readonly<Record<string, string>>,
-  protect: readonly string[]
+  protect: readonly string[],
+  checks: readonly StaticTool[]
 ): WorkContract => ({
   ...w,
   vetted: { ...w.vetted, ...expected },
+  obligations: withStatic(w.obligations, wantedStatic(checks, [])), // the recipe names the static checks its projects owe
   touched: [
     ...w.touched,
     ...Object.keys(expected)
@@ -98,15 +101,15 @@ function writeFiles(
   const id = `s-${ports.rand.base32(6)}`;
   const op: ScaffoldOp = {
     work: work.id,
-    recipe: { id: p.recipe.id, version: p.recipe.version },
+    recipe: { id: p.recipe.id, version: p.recipe.version, checks: p.recipe.checks ?? [] },
     expected: p.expected,
     protect: p.protect,
   };
   tx.intent("scaffold", id, op);
   ports.project.writeNew(p.files); // exclusive create: a file that appeared meanwhile makes this throw, not overwrite
   tx.result("scaffold", id, { completed: true, files: p.paths.length });
-  const recipe = { id: p.recipe.id, version: p.recipe.version, installed: false };
-  return { state: { ...state, project: { ...state.project, recipe } }, w: scaffolded(work, p.expected, p.protect) };
+  const recipe = { id: p.recipe.id, version: p.recipe.version, installed: false, checks: p.recipe.checks ?? [] };
+  return { state: { ...state, project: { ...state.project, recipe } }, w: scaffolded(work, p.expected, p.protect, p.recipe.checks ?? []) };
 }
 
 async function install(ports: Ports, recipe: Recipe, runDir: string) {
@@ -137,7 +140,7 @@ async function installed(ports: Ports, st: State, work: WorkContract, p: ReturnT
     };
   }
   const level = assistanceLevel(readinessOf(ports, await ports.git.probe()), done.profile).level;
-  const recipeRecord = { id: p.recipe.id, version: p.recipe.version, installed: true };
+  const recipeRecord = { id: p.recipe.id, version: p.recipe.version, installed: true, checks: p.recipe.checks ?? [] };
   return {
     state: withWork({ ...st, project: { ...st.project, recipe: recipeRecord } }, { ...done, level }),
     resp: {

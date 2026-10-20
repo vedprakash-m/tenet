@@ -2,6 +2,7 @@
 // ordinary external edit, never a silent carry-over: a tightened policy applies at once, anything looser or not
 // comparable waits for the user's acceptance, and a block someone edited stays as they wrote it.
 import { effectiveSettings, layersOf } from "../core/config.ts";
+import { isStaticCheck, wantedStatic, withStatic } from "../core/obligations.ts";
 import { parsePolicy } from "../core/policy.ts";
 import type { Change, Policy } from "../core/policy.ts";
 import { reason } from "../core/reasons.ts";
@@ -67,7 +68,15 @@ export const settingsFor = (ports: Ports, state: State | null, w?: WorkContract)
 /** Declared execution consumers that do not exist yet must block evidence, rather than silently use defaults. */
 export function unsupportedExecution(ports: Ports, state: State | null, w?: WorkContract): string[] {
   const settings = settingsFor(ports, state, w);
-  return [...Object.keys(settings.commands as object).map(id => `configured command ${id}`), ...(settings.required_checks as { id: string }[]).map(c => `required check ${c.id}`)];
+  return [...Object.keys(settings.commands as object).map(id => `configured command ${id}`), ...(settings.required_checks as { id: string; tool?: string }[]).filter(c => !isStaticCheck(c)).map(c => `required check ${c.id}`)];
+}
+
+/** The contract with the static checks its recipe and the required checks owe now: a restriction applies before the next action. */
+export function withRequiredChecks(ports: Ports, state: State, w: WorkContract): WorkContract {
+  if (!w.basis) return w;
+  const required = settingsFor(ports, state, w).required_checks as Array<{ id: string; tool?: string }>;
+  const obligations = withStatic(w.obligations, wantedStatic(state.project.recipe?.checks ?? [], required));
+  return obligations.length === w.obligations.length ? w : { ...w, obligations };
 }
 
 /** Configure the same operation policy before an adapter reads project content. */

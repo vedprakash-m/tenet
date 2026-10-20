@@ -28,7 +28,7 @@ describe("audit: common mutation boundaries", () => {
     assert.notEqual((why.data as { endpoint: string }).endpoint, "checked-local");
     assert.ok(why.reasons.some(r => r.code === "authority-needed"));
   });
-  it("does not ignore a configured required check added after green [CFG-11, EVD-01]", async () => {
+  it("does not ignore a required type check added after green [CFG-11, EVD-01]", async () => {
     const p = fresh();
     const h = (await p.call("open", { profile: "feature", request: "required checks", lane: "quick" })).handle!;
     await p.call("decide", { h, kind: "basis", propose: BASIS });
@@ -39,11 +39,10 @@ describe("audit: common mutation boundaries", () => {
     await p.call("decide", { h, kind: "config", target: "required_checks", propose: { value: [{ id: "types", property: "no type errors", tool: "tsc" }] } });
     const why = await p.call("inspect", { h, view: "why" });
     assert.notEqual((why.data as { endpoint: string }).endpoint, "checked-local");
-    assert.ok(why.reasons.some(r => r.code === "evidence-missing" && /types/.test(r.message)));
+    assert.ok(why.reasons.some(r => r.code === "evidence-missing" && /OB-types/.test(r.message)), JSON.stringify(why.reasons));
     const check = await p.call("check", { h, again: true });
-    assert.equal(check.exit, 2);
-    assert.ok(check.reasons.some(r => r.code === "capability-missing"));
-    assert.equal(Object.values(p.ports().store.read()!.state.work)[0]!.budget.checksLaunched, before);
+    assert.ok((check.data as { receipts: Array<{ obligation: string }> }).receipts.some(r => r.obligation === "OB-types"), "the new requirement is run, not ignored");
+    assert.ok(Object.values(p.ports().store.read()!.state.work)[0]!.budget.checksLaunched > before);
   });
   it("does not lock a changed support definition as if the earlier red still proved it [TDD-03, EVD-10]", async () => {
     const p = project({ "src/helper.ts": "export const helper = 1;\n" }); roots.push(p.root);

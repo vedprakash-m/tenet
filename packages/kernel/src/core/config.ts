@@ -2,6 +2,7 @@
 // composition; pure. Preferences take the most specific source. Restrictions only ever add: every source contributes and
 // none removes. A value is validated here and nowhere else; an unknown key is refused, never stored.
 import { z } from "zod";
+import { isStaticCheck } from "./obligations.ts";
 import { Policy } from "./policy.ts";
 import type { Policy as PolicyFile } from "./policy.ts";
 
@@ -108,9 +109,17 @@ export function resolveSetting(key: SettingKey, l: Layers): Resolved {
     default: value = { ...((a as object) ?? {}), ...((b as object) ?? {}) }; // commands: per check name, the project's own win
   }
   const sharedUsed = sources.some(([s]) => s === "shared policy");
-  if ((key === "commands" || key === "required_checks") && Object.keys(value as object).length) limits.push("Stored declaration only: configured execution is unavailable; checks and checked-local are blocked until it is implemented or the declaration is removed.");
+  if (declaredButNotRun(key, value)) limits.push(STORED_ONLY);
   return { ...base, value, source: sources.map(([s]) => s).join(" + ") || "default", adoption: sharedUsed ? l.adoption.policy : "n/a", overridden: [], contributions };
 }
+
+const STORED_ONLY = "Stored declaration only: configured execution is unavailable; checks and checked-local are blocked until it is implemented or the declaration is removed.";
+
+/** Commands, and required checks other than the static ones the kernel runs, are stored but have no execution consumer yet. */
+const declaredButNotRun = (key: string, value: unknown): boolean => {
+  if (key === "commands") return Object.keys(value as object).length > 0;
+  return key === "required_checks" && (value as { id: string; tool?: string }[]).some((c) => !isStaticCheck(c));
+};
 
 export const effectiveSettings = (l: Layers): Record<SettingKey, unknown> =>
   Object.fromEntries((Object.keys(CATALOG) as SettingKey[]).map((k) => [k, resolveSetting(k, l).value])) as Record<SettingKey, unknown>;

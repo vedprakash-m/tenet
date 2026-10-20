@@ -1,6 +1,5 @@
 // The real starter recipe, installed from its pinned lockfile. Needs the network (npm ci); set TENET_OFFLINE=1 to skip.
 import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
@@ -24,7 +23,7 @@ describe("the ts-web-api recipe", () => {
     assert.deepEqual(recipe.install[0], ["npm", "ci", "--ignore-scripts"]);
   });
 
-  it("scaffolds, receipts the starter tests, and separately validates types and lint", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
+  it("scaffolds, and receipts the starter's tests, types and lint, all run by the kernel", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
     const root = tmp("tenet-starter-"); roots.push(root);
     initRepo(root);
     const call = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
@@ -47,7 +46,10 @@ describe("the ts-web-api recipe", () => {
     assert.equal(suite.status, "pass", JSON.stringify(suite));
     assert.ok(suite.counts.executed >= 20, JSON.stringify(suite.counts));
 
-    for (const script of ["typecheck", "lint"]) execFileSync("npm", ["run", "--silent", script], { cwd: root, stdio: "pipe" });
+    for (const id of ["OB-types", "OB-lint"]) {
+      const receipt = d(c).receipts.find((r: { obligation: string }) => r.obligation === id);
+      assert.equal(receipt?.status, "pass", `${id}: ${JSON.stringify(receipt)}`);
+    }
     await call("findings", { h, result: reviewResult(d(c)) });
 
     const f = await call("finish", { h, subject: "Scaffold the starter" });

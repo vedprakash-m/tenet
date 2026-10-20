@@ -3,12 +3,12 @@ import { join } from "node:path";
 import { failureSignature, recordAttempt, recordLaunchedChecks, stopFor, withSignature } from "../core/budget.ts";
 import { hashOf } from "../core/ids.ts";
 import { baselineDefinitionMatches, supportOf, wantsRed } from "../core/obligations.ts";
-import { receiptsFrom } from "../core/receipts.ts";
+import { receiptsFrom, staticReceipt } from "../core/receipts.ts";
 import type { RunFacts } from "../core/receipts.ts";
 import { carryDispositions, netAttention } from "../core/review.ts";
 import type { FileChange } from "../core/review.ts";
 import type { AttentionItem, BudgetState, Obligation, Receipt, State, StopReason, WorkContract } from "../core/schemas.ts";
-import type { Normalized, Ports } from "../ports/types.ts";
+import type { Normalized, Ports, StaticTool } from "../ports/types.ts";
 import type { Facts } from "./facts.ts";
 
 /** Everything a run decided before it started, which its result needs to be interpreted. */
@@ -27,11 +27,33 @@ export interface Run {
   id: string;
 }
 
-export function receiptsOf(run: Run, cw: WorkContract, o: RunFacts): Receipt[] {
+/** What a check run observed: the test runner, and each static tool by obligation. */
+export interface Executed extends RunFacts { statics: Record<string, RunFacts> }
+export const isStatic = (ob: Obligation): boolean => ob.kind === "static";
+export const staticReport = (runDir: string, tool: string): string => join(runDir, `${tool}.json`);
+
+/** A static check is judged by its own run, on the same candidate as the tests. */
+function staticReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
+  const { ports, facts, runId, runDir, stage, scope } = run;
+  const versions = ports.stack.fingerprint(ports.root);
+  return run.toRun.filter(isStatic).map((ob, i) => {
+    const tool = ob.tool as StaticTool;
+    const argv = ports.stack.staticArgv(ports.root, tool, staticReport(runDir, tool)) ?? [];
+    const candidate = facts.candidate;
+    const ctx = { stage, scope, id: run.id, candidate, runId, runDir, argv, versions, before: candidate, missing: new Set<string>() };
+    const notRun: RunFacts = { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, after: candidate, ran: false };
+    const ran = o.statics[ob.id] ?? notRun;
+    const norm = ports.stack.normalizeStatic(tool, { exit: ran.exit, raw: ran.raw });
+    return staticReceipt(ran, norm, ob, firstIndex + i, ctx);
+  });
+}
+
+export function receiptsOf(run: Run, cw: WorkContract, o: Executed): Receipt[] {
   const { ports, facts, runId, runDir, stage, scope } = run;
   const norm: Normalized | null = o.raw === null ? null : ports.stack.normalize(o.raw, ports.root);
   const argv = ports.stack.argv(run.toExecute, join(runDir, "vitest.json"));
-  const receipts = receiptsFrom(o, norm, run.toRun, {
+  const tests = run.toRun.filter((ob) => !isStatic(ob));
+  const receipts = receiptsFrom(o, norm, tests, {
     stage,
     scope,
     id: run.id,
@@ -43,6 +65,7 @@ export function receiptsOf(run: Run, cw: WorkContract, o: RunFacts): Receipt[] {
     versions: ports.stack.fingerprint(ports.root),
     missing: new Set(run.missing.map((m) => m.id)),
   });
+  receipts.push(...staticReceipts(run, o, tests.length));
   if (!run.baseline) return receipts;
   // The baseline may differ from the start only by tests and new files (the minimal scaffolding a new interface needs);
   // a pre-existing source file that changed means the red was not taken on the starting behavior.
@@ -84,11 +107,12 @@ export function matchBaseline(run: Run, cw: WorkContract, receipts: Receipt[]): 
 export function account(
   run: Run,
   cw: WorkContract,
-  o: RunFacts,
+  o: Executed,
   receipts: Receipt[],
   configFailed: boolean
 ): { budget: BudgetState; stop: StopReason | undefined } {
-  const launched = o.ran ? run.toRun.filter((ob) => !run.missing.some((m) => m.id === ob.id)).length : 0;
+  const ranTests = o.ran ? run.toRun.filter((ob) => !isStatic(ob) && !run.missing.some((m) => m.id === ob.id)).length : 0;
+  const launched = ranTests + run.toRun.filter((ob) => isStatic(ob) && o.statics[ob.id]?.ran).length;
   let budget = recordLaunchedChecks(cw.budget, launched);
   if (run.stage === "candidate" && run.scope === "full" && !configFailed) {
     budget = recordAttempt(budget);

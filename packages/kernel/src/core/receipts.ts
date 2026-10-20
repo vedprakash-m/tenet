@@ -3,7 +3,7 @@
 import { redact } from "./redact.ts";
 import { reason } from "./reasons.ts";
 import type { Obligation, Reason, Receipt } from "./schemas.ts";
-import type { Normalized, ToolVersions } from "../ports/types.ts";
+import type { Normalized, StaticNorm, ToolVersions } from "../ports/types.ts";
 
 /** What was observed about the process, independent of what the report says. */
 export interface RunFacts {
@@ -121,6 +121,26 @@ function receiptFor(o: RunFacts, norm: Normalized | null, ob: Obligation, i: num
   }
   if (contradicts(o, norm, sum)) return stop("report-contradiction");
   rec.status = sum.failed > 0 ? "fail" : "pass";
+  return rec;
+}
+
+/** A static check proves one thing about the whole project: the tool ran to the end on this tree and reported nothing, or errors. */
+export function staticReceipt(o: RunFacts, norm: StaticNorm, ob: Obligation, i: number, c: ReceiptContext): Receipt {
+  const rec = blank(o, ob, i, c);
+  const tool = ob.tool ?? "";
+  rec.versions = { tool: `${tool}@${c.versions.static[tool] ?? "none"}`, reporter: tool, adapter: c.versions.adapter };
+  const stop = (code: string, limit?: string) => {
+    rec.reasons.push(code);
+    if (limit) rec.limitations.push(limit);
+    return rec;
+  };
+  if (!o.ran) return stop("not-executed", `${tool} did not run; is it installed in the project?`);
+  const early = runProblem(o, c);
+  if (early) return stop(early);
+  if (norm.status === "invalid") return stop("report-invalid", norm.problem);
+  rec.failures = norm.failures.map((f) => ({ ...f, message: redact(f.message) }));
+  rec.failureKinds = [...new Set(norm.failures.map((f) => f.kind))];
+  rec.status = norm.status;
   return rec;
 }
 

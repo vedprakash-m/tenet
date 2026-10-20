@@ -12,7 +12,7 @@ import type { Job, Plan, Verb } from "./pipeline.ts";
 import type { Ports, Tx } from "./ports/types.ts";
 import { recover } from "./verbs/recover.ts";
 import type { Recovered } from "./verbs/recover.ts";
-import { configurePolicy, reconcileShared, settingsFor } from "./verbs/reconcile.ts";
+import { configurePolicy, reconcileShared, settingsFor, withRequiredChecks } from "./verbs/reconcile.ts";
 
 type Input = Record<string, any>;
 const EFFECT_DECISIONS = ["scaffold", "dependency", "sync-index", "undo-confirm"];
@@ -113,6 +113,8 @@ async function claimSource(ports: Ports, verb: Verb, input: Input, current: Stat
 async function envelope(ports: Ports, verb: Verb, input: Input, current0: State, world: unknown) {
   let w = workByHandle(current0, input.h);
   let current = current0;
+  const owed = withRequiredChecks(ports, current, w);
+  if (owed !== w) ({ w, current } = { w: owed, current: { ...current, work: { ...current.work, [owed.id]: owed } } });
   fence(current, verb, input, w);
   if (changesSource(verb, input, current, w)) ({ w, current } = await claimSource(ports, verb, input, current, w));
   const last = w.session.last;

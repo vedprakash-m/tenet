@@ -8,7 +8,7 @@ import { normalize } from "../src/adapters/node-ts.ts";
 
 const ob: Obligation = { id: "OB-1", kind: "test", category: "acceptance", testFile: "a.test.ts" };
 const suite: Obligation = { id: "OB-suite", kind: "test", category: "affected" };
-const ctx: ReceiptContext = { stage: "candidate", scope: "full", id: "chk", candidate: "c", runId: "r", runDir: "/d", argv: ["vitest"], before: "d0", versions: { node: "v", tool: "3", reporter: "json", adapter: "a" }, missing: new Set() };
+const ctx: ReceiptContext = { stage: "candidate", scope: "full", id: "chk", candidate: "c", runId: "r", runDir: "/d", argv: ["vitest"], before: "d0", versions: { node: "v", tool: "3", reporter: "json", adapter: "a", static: {} }, missing: new Set() };
 const run = (over: Partial<RunFacts> = {}): RunFacts => ({ exit: 0, timedOut: false, durationMs: 5, startedAt: "t", raw: "x", after: "d0", ran: true, ...over });
 
 const report = (tests: Array<{ status: string; failure?: string }>, file = "/p/a.test.ts", other = true) => JSON.stringify({

@@ -4,13 +4,12 @@ import { KernelError } from "../core/errors.ts";
 import { handoffText } from "../core/handoff.ts";
 import { reason } from "../core/reasons.ts";
 import { receiptReasons } from "../core/receipts.ts";
-import type { RunFacts } from "../core/receipts.ts";
 import type { FileChange } from "../core/review.ts";
 import type { Obligation, Reason, Receipt, State, StopReason, WorkContract } from "../core/schemas.ts";
 import type { Resp } from "../pipeline.ts";
 import { nx, withWork } from "./common.ts";
 import { account, applyLocks, attentionOf, matchBaseline, receiptsOf } from "./check-evidence.ts";
-import type { Run } from "./check-evidence.ts";
+import type { Executed, Run } from "./check-evidence.ts";
 import { issueReview } from "./manifest.ts";
 
 type Next = Array<ReturnType<typeof nx>>;
@@ -126,7 +125,7 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
       },
     };
   }
-  const o = result as RunFacts | { error: string };
+  const o = result as Executed | { error: string };
   if ("error" in o) {
     const back = { ...cw, state: cw.lastValidPhase ?? "executing", session: { generation: cw.session.generation } };
     return {

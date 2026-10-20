@@ -22,7 +22,7 @@ const addCommit = (r: Recovery, w: WorkContract, commit: string, paths: readonly
 const applyIntegration = (r: Recovery, w: WorkContract, op: IntegrationOp, commit: string, moved: boolean) =>
   withGit(r, w, { integrated: { into: op.base, commit, moved, validated: !moved } });
 function applyScaffold(r: Recovery, w: WorkContract, op: ScaffoldOp) {
-  put(r, scaffolded(w, op.expected, op.protect));
+  put(r, scaffolded(w, op.expected, op.protect, op.recipe.checks ?? []));
   r.state = { ...r.state, project: { ...r.state.project, recipe: r.state.project.recipe ?? { ...op.recipe, installed: false } } };
 }
 
