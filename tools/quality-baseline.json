@@ -1,25 +1,5 @@
 {
  "functions": {
-  "adapters/git-cli.ts#inventory": {
-   "lines": 57,
-   "cc": 31,
-   "nest": 3
-  },
-  "adapters/git-cli.ts#commit": {
-   "lines": 47,
-   "cc": 26,
-   "nest": 3
-  },
-  "adapters/git-cli.ts#syncIndex": {
-   "lines": 60,
-   "cc": 36,
-   "nest": 4
-  },
-  "adapters/git-cli.ts#parseDiff": {
-   "lines": 24,
-   "cc": 15,
-   "nest": 8
-  },
   "adapters/node-ts.ts#normalize": {
    "lines": 49,
    "cc": 39,
@@ -69,15 +49,10 @@
    "lines": 42,
    "cc": 47,
    "nest": 1
-  },
-  "core/basis-build.ts#build": {
-   "lines": 64,
-   "cc": 28,
-   "nest": 3
   }
  },
  "wide": {
-  "adapters/git-cli.ts": 53,
+  "adapters/git-cli.ts": 1,
   "adapters/node-ts.ts": 10,
   "adapters/project-fs.ts": 6,
   "adapters/recipes-fs.ts": 1,
