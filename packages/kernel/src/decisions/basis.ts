@@ -3,69 +3,145 @@
 // otherwise exactly one `basis-confirm` question lists Tenet's additions. Nothing is classified as "already said".
 import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
-import { allowed } from "../core/exclusions.ts";
-import { hashOf, highestSeq, KIND_PREFIX, elementId } from "../core/ids.ts";
-import { deriveObligations, linkElement } from "../core/obligations.ts";
+import { build } from "../core/basis-build.ts";
+import { hashOf } from "../core/ids.ts";
+import { deriveObligations } from "../core/obligations.ts";
 import { BasisProposal } from "../core/schemas.ts";
-import type { BasisElement, State, WorkContract } from "../core/schemas.ts";
+import type { DecideInput, State, WorkContract } from "../core/schemas.ts";
+import type { Plan } from "../pipeline.ts";
+import type { Ports, Tx } from "../ports/types.ts";
 import { isEditingProfile } from "../core/risk.ts";
 import { factsHash, nx, question, withWork } from "../verbs/common.ts";
 import { settingsFor } from "../verbs/reconcile.ts";
 import type { Decision } from "./types.ts";
 
-const REQ = /^REQ-(\d+)-([a-z0-9]+)$/;
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32) || "work";
-const safePath = (p: string) => !p.startsWith("/") && !p.split("/").includes("..") && allowed("edit", p);
+const slug = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 32) || "work";
 
-type Proposed = z.infer<typeof BasisProposal>["elements"][number];
+type Proposal = z.infer<typeof BasisProposal>;
+type Draft = { w: WorkContract; intent: State["project"]["intent"]; hash: string; ids: Record<string, string>; reds: boolean };
 
-function build(proposal: z.infer<typeof BasisProposal>, state: State, w: WorkContract, suffix: () => string): { elements: BasisElement[]; ids: Record<string, string> } {
-  const own = new Set(w.basis?.elementIds ?? []);
-  const all = state.project.intent.elements;
-  let seq = highestSeq(all);
-  const ids: Record<string, string> = {};
-  const idOf = (ref: string | undefined) => (ref ? ids[ref] ?? (all.some((e) => e.id === ref) ? ref : undefined) : undefined);
-  const exampleCount = new Map<string, number>();
-  for (const e of all) if (!own.has(e.id)) { const m = /^(EX-\d+-[a-z0-9]+)\.(\d+)$/.exec(e.id); if (m) exampleCount.set(m[1]!, Math.max(exampleCount.get(m[1]!) ?? 0, Number(m[2]))); }
-
-  const assign = (e: Proposed): string => {
-    if (e.ref && own.has(e.ref)) return e.ref; // a refinement keeps stable ids
-    if (e.kind === "example") {
-      const parent = idOf(e.of);
-      const m = parent ? REQ.exec(parent) : null;
-      if (m) {
-        const stem = `EX-${m[1]}-${m[2]}`;
-        const n = (exampleCount.get(stem) ?? 0) + 1;
-        exampleCount.set(stem, n);
-        return `${stem}.${n}`;
-      }
-      return `${elementId("EX", ++seq, suffix())}.1`;
-    }
-    return elementId(KIND_PREFIX[e.kind], ++seq, suffix());
+/** The one confirmation of Tenet's additions or a design commitment, asked with the exact content bound (INT-04, UX-D1). */
+function askToConfirm(state: State, work: WorkContract, proposal: Proposal, facts: string): Plan {
+  const adds = proposal.elements.filter((e) => e.origin === "tenet");
+  const summary = adds
+    .slice(0, 4)
+    .map((e) => `${e.kind} "${e.text.slice(0, 80)}"`)
+    .join("; ");
+  const countText = adds.length
+    ? `${adds.length} thing${adds.length === 1 ? "" : "s"} you did not ask for`
+    : "a design commitment";
+  const designText = proposal.designCommitment ? "; the sketch commits to a specific design" : "";
+  const q = question({
+    id: "basis-confirm",
+    header: "Confirm the plan",
+    bind: { factsHash: facts },
+    channel: "native",
+    question: `I added ${countText}: ${summary}${designText}. Keep them?`,
+    options: [
+      { label: "Yes, go ahead", description: "Build on this basis.", recommended: true },
+      { label: "Change something", description: "Tell me what to adjust; nothing is recorded yet." },
+    ],
+  });
+  return {
+    state: { ...state, pending: [...state.pending.filter((p) => p.id !== "basis-confirm"), q] },
+    resp: {
+      work: work.id,
+      exit: 3,
+      questions: [q],
+      reasons: [{ code: "basis-confirm", message: "Tenet's additions need one confirmation" }],
+      next: [nx("ask", "Ask the user to confirm the additions.", true)],
+    },
   };
+}
 
-  // Requirements first, so examples can name their parent by ref in any order.
-  const order = [...proposal.elements.keys()].sort((a, b) => Number(proposal.elements[a]!.kind === "example") - Number(proposal.elements[b]!.kind === "example"));
-  const built: BasisElement[] = [];
-  for (const i of order) {
-    const e = proposal.elements[i]!;
-    if (e.testFile && !safePath(e.testFile)) throw new KernelError("restriction-key-unknown", `test file "${e.testFile}" is outside the project or not editable`);
-    const id = assign(e);
-    if (e.ref) ids[e.ref] = id;
-    const el: BasisElement = { id, origin: e.origin, kind: e.kind, text: e.text, verifiedBy: [] };
-    const parent = idOf(e.of);
-    if (parent) el.of = parent;
-    if (e.kind === "example") {
-      el.test = e.test ?? "distinguishing";
-      if (e.testFile) el.testFile = e.testFile;
-      if (e.support?.length) el.support = e.support;
-      if (e.expect) el.expect = e.expect;
-    }
-    built.push(el);
+/** The elements, the intent revision, the obligations and the contract this basis makes; nothing is written yet. */
+function draftBasis(
+  ports: Ports,
+  state: State,
+  work: WorkContract,
+  input: DecideInput,
+  proposal: Proposal,
+  facts: string,
+  confirmed: boolean
+): Draft {
+  const built = build(proposal, state, work, () => ports.rand.base32(3));
+  // The user confirmed Tenet's additions at kickoff (INT-07), so those assumptions are no longer open.
+  const elements = built.elements.map((e) =>
+    confirmed && e.kind === "assumption" && e.origin === "tenet"
+      ? { ...e, verifiedBy: [{ method: "manual" as const, ref: "confirmed by the user at kickoff" }] }
+      : e
+  );
+  const own = new Set(work.basis?.elementIds ?? []);
+  const old = state.project.intent;
+  const intent = { ...old, revision: old.revision + 1, elements: [...old.elements.filter((e) => !own.has(e.id)), ...elements] };
+  const hash = hashOf({
+    outcome: proposal.outcome,
+    design: proposal.design ?? null,
+    elements: elements.map(({ verifiedBy: _v, ...rest }) => rest),
+  });
+  const obligations = deriveObligations(elements, ports.stack.detect(ports.root).runner ?? "vitest", work.obligations);
+  const grant = {
+    id: "GR-basis",
+    actions: ["local-routine" as const],
+    source: "decide" as const,
+    capture: "reported" as const,
+    ...(input.quote ? { quote: input.quote } : {}),
+    bind: { factsHash: facts },
+  };
+  const w: WorkContract = {
+    ...work,
+    outcome: proposal.outcome,
+    obligations,
+    state: work.state === "proposed" ? "executing" : work.state,
+    scope: { ...work.scope, paths: proposal.scopePaths ?? work.scope.paths },
+    basis: {
+      intentRevision: intent.revision,
+      elementIds: elements.map((e) => e.id),
+      hash,
+      traits: state.project.traits,
+      confirmedAssumptions: confirmed
+        ? elements.filter((e) => e.kind === "assumption" && e.origin === "tenet").map((e) => e.id)
+        : [],
+      ...(proposal.design ? { design: proposal.design } : {}),
+    },
+    grants: confirmed || input.quote ? [...work.grants.filter((g) => g.id !== "GR-basis"), grant] : work.grants,
+  };
+  return {
+    w,
+    intent,
+    hash,
+    ids: built.ids,
+    reds: obligations.some((o) => o.category === "acceptance" && o.expectation === "fail" && o.testFile),
+  };
+}
+
+/** Branch per work (GIT-02): the editor moves to a work branch cut from HEAD; the working tree is carried unchanged. */
+async function moveToWorkBranch(
+  ports: Ports,
+  tx: Tx,
+  state: State,
+  work: WorkContract,
+  w: WorkContract,
+  outcome: string
+): Promise<WorkContract> {
+  if (!isEditingProfile(w.profile) || w.git.mode !== "git" || work.basis || settingsFor(ports, state, w).branching !== "per-work")
+    return w;
+  const name = `tenet/${w.label.toLowerCase()}-${slug(outcome)}`;
+  const id = `b-${ports.rand.base32(6)}`;
+  tx.intent("branch", id, { work: w.id, from: w.git.branch, to: name });
+  try {
+    await ports.git.createBranch(name);
+  } catch (e) {
+    if ((await ports.git.probe()).branch === w.git.branch) tx.result("branch", id, { completed: false });
+    throw e;
   }
-  built.sort((a, b) => proposal.elements.findIndex((x) => ids[x.ref ?? ""] === a.id) - proposal.elements.findIndex((x) => ids[x.ref ?? ""] === b.id));
-  for (const el of built) el.verifiedBy = linkElement(el, built);
-  return { elements: built, ids };
+  tx.result("branch", id, { completed: true, branch: name });
+  return { ...w, git: { ...w.git, branch: name } };
 }
 
 export const basis: Decision = {
@@ -76,131 +152,35 @@ export const basis: Decision = {
     }
     const proposal = BasisProposal.parse(input.propose);
     const facts = factsHash(proposal);
-    const adds = proposal.elements.filter((e) => e.origin === "tenet");
-    const needsConfirm = adds.length > 0 || proposal.designCommitment;
+    const needsConfirm = proposal.elements.some((e) => e.origin === "tenet") || proposal.designCommitment;
     const answer = input.answers?.["basis-confirm"];
-    const pending = state.pending.find((q) => q.id === "basis-confirm");
-
-    if (needsConfirm && answer === undefined) {
-      const summary = adds.slice(0, 4).map((e) => `${e.kind} "${e.text.slice(0, 80)}"`).join("; ");
-      const countText = adds.length ? `${adds.length} thing${adds.length === 1 ? "" : "s"} you did not ask for` : "a design commitment";
-      const designText = proposal.designCommitment ? "; the sketch commits to a specific design" : "";
-      const q = question({
-        id: "basis-confirm",
-        header: "Confirm the plan",
-        bind: { factsHash: facts },
-        channel: "native",
-        question: `I added ${countText}: ${summary}${designText}. Keep them?`,
-        options: [
-          { label: "Yes, go ahead", description: "Build on this basis.", recommended: true },
-          { label: "Change something", description: "Tell me what to adjust; nothing is recorded yet." },
-        ],
-      });
-      return {
-        state: { ...state, pending: [...state.pending.filter((p) => p.id !== "basis-confirm"), q] },
-        resp: {
-          work: work.id,
-          exit: 3,
-          questions: [q],
-          reasons: [{ code: "basis-confirm", message: "Tenet's additions need one confirmation" }],
-          next: [nx("ask", "Ask the user to confirm the additions.", true)],
-        },
-      };
-    }
+    if (needsConfirm && answer === undefined) return askToConfirm(state, work, proposal, facts);
     if (needsConfirm) {
-      const without = { ...state, pending: state.pending.filter((p) => p.id !== "basis-confirm") };
-      if (answer !== "confirm") {
-        return { state: without, resp: { work: work.id, next: [nx("basis", "Revise the proposal as the user asked.", true)] } };
-      }
+      const pending = state.pending.find((q) => q.id === "basis-confirm");
+      state = { ...state, pending: state.pending.filter((p) => p.id !== "basis-confirm") };
+      if (answer !== "confirm")
+        return { state, resp: { work: work.id, next: [nx("basis", "Revise the proposal as the user asked.", true)] } };
       if (!pending || pending.bind.factsHash !== facts) {
         throw new KernelError("basis-confirm", "the proposal changed since the question was asked; ask again", { exit: 3 });
       }
-      state = without;
     }
-
-    const built = build(proposal, state, work, () => ports.rand.base32(3));
-    const ids = built.ids;
-    // The user confirmed Tenet's additions at kickoff (INT-07), so those assumptions are no longer open.
-    const elements = built.elements.map((e) =>
-      needsConfirm && e.kind === "assumption" && e.origin === "tenet"
-        ? { ...e, verifiedBy: [{ method: "manual" as const, ref: "confirmed by the user at kickoff" }] }
-        : e,
-    );
-    const own = new Set(work.basis?.elementIds ?? []);
-    const intent = state.project.intent;
-    const nextIntent = {
-      ...intent,
-      revision: intent.revision + 1,
-      elements: [...intent.elements.filter((e) => !own.has(e.id)), ...elements],
-    };
-    const hash = hashOf({
-      outcome: proposal.outcome,
-      design: proposal.design ?? null,
-      elements: elements.map(({ verifiedBy: _v, ...rest }) => rest),
-    });
-    const runner = ports.stack.detect(ports.root).runner ?? "vitest";
-    const obligations = deriveObligations(elements, runner, work.obligations);
-    const confirmedAssumptions = needsConfirm
-      ? elements.filter((e) => e.kind === "assumption" && e.origin === "tenet").map((e) => e.id)
-      : [];
-
-    let w: WorkContract = {
-      ...work,
-      outcome: proposal.outcome,
-      obligations,
-      state: work.state === "proposed" ? "executing" : work.state,
-      scope: { ...work.scope, paths: proposal.scopePaths ?? work.scope.paths },
-      basis: {
-        intentRevision: nextIntent.revision,
-        elementIds: elements.map((e) => e.id),
-        hash,
-        traits: state.project.traits,
-        confirmedAssumptions,
-        ...(proposal.design ? { design: proposal.design } : {}),
-      },
-      grants:
-        needsConfirm || input.quote
-          ? [
-              ...work.grants.filter((g) => g.id !== "GR-basis"),
-              {
-                id: "GR-basis",
-                actions: ["local-routine"],
-                source: "decide" as const,
-                capture: "reported" as const,
-                ...(input.quote ? { quote: input.quote } : {}),
-                bind: { factsHash: facts },
-              },
-            ]
-          : work.grants,
-    };
-    // Branch per work (GIT-02): the editor moves to a work branch cut from HEAD; the working tree is carried unchanged.
-    if (isEditingProfile(w.profile) && w.git.mode === "git" && !work.basis && settingsFor(ports, state, w).branching === "per-work") {
-      const name = `tenet/${w.label.toLowerCase()}-${slug(proposal.outcome)}`;
-      const id = `b-${ports.rand.base32(6)}`;
-      tx.intent("branch", id, { work: w.id, from: w.git.branch, to: name });
-      try {
-        await ports.git.createBranch(name);
-      } catch (e) {
-        if ((await ports.git.probe()).branch === w.git.branch) tx.result("branch", id, { completed: false });
-        throw e;
-      }
-      tx.result("branch", id, { completed: true, branch: name });
-      w = { ...w, git: { ...w.git, branch: name } };
-    }
-    const reds = obligations.filter((o) => o.category === "acceptance" && o.expectation === "fail" && o.testFile);
+    const d = draftBasis(ports, state, work, input, proposal, facts, needsConfirm);
+    const w = await moveToWorkBranch(ports, tx, state, work, d.w, proposal.outcome);
     const stacked = w.git.start.branch?.startsWith("tenet/") && w.git.branch !== w.git.start.branch;
     return {
-      state: withWork({ ...state, project: { ...state.project, intent: nextIntent } }, w),
+      state: withWork({ ...state, project: { ...state.project, intent: d.intent } }, w),
       resp: {
         work: w.id,
         progress: { phase: "authorized", boundary: "milestone" },
-        next: reds.length
-          ? [nx("test", "Write the failing acceptance test(s), then run check --stage baseline.", true)]
-          : [nx("implement", "Make the change, then run check.", true)],
+        next: [
+          d.reds
+            ? nx("test", "Write the failing acceptance test(s), then run check --stage baseline.", true)
+            : nx("implement", "Make the change, then run check.", true),
+        ],
         data: {
-          basisHash: hash,
-          ids,
-          obligations: obligations.map((o) => o.id),
+          basisHash: d.hash,
+          ids: d.ids,
+          obligations: w.obligations.map((o) => o.id),
           branch: w.git.branch,
           ...(stacked ? { stackedOn: w.git.start.branch } : {}),
         },

@@ -65,16 +65,6 @@
    "cc": 28,
    "nest": 2
   },
-  "decisions/basis.ts#build": {
-   "lines": 48,
-   "cc": 28,
-   "nest": 3
-  },
-  "decisions/basis.ts#run": {
-   "lines": 137,
-   "cc": 37,
-   "nest": 3
-  },
   "decisions/dependency.ts#start": {
    "lines": 78,
    "cc": 27,
@@ -119,6 +109,11 @@
    "lines": 93,
    "cc": 28,
    "nest": 3
+  },
+  "core/basis-build.ts#build": {
+   "lines": 64,
+   "cc": 28,
+   "nest": 3
   }
  },
  "wide": {
@@ -150,7 +145,6 @@
   "core/trust.ts": 1,
   "core/verdict.ts": 18,
   "decisions/adopt.ts": 6,
-  "decisions/basis.ts": 5,
   "decisions/decision-record.ts": 8,
   "decisions/dependency.ts": 23,
   "decisions/grant.ts": 6,
@@ -181,5 +175,5 @@
   "verbs/undo.ts": 5,
   "wire.ts": 2
  },
- "core": 188064
+ "core": 186786
 }
