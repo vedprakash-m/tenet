@@ -53,11 +53,12 @@ describe("checking against the baseline", () => {
     const grown = measure(tree({ "a.ts": longFn("legacy", LIMITS.lines + 21) }));
     assert.match(check(grown, base).join("\n"), /a\.ts#legacy grew: \d+ lines, recorded \d+/);
   });
-  it("fails the aggregate when the verbs, decisions and pipeline total grows past its record", () => {
+  it("fails the aggregate when the verbs, decisions and pipeline size grows past its record; wrapping a line does not count as growth", () => {
     const m = measure(tree({ "pipeline.ts": "export const a = 1;\n", "verbs/x.ts": "export const b = 1;\nexport const c = 2;\n" }));
-    assert.equal(m.core, 3);
-    assert.match(check(m, { ...none, core: 2 }).join("\n"), /grew: 3 lines, recorded 2/);
-    assert.deepEqual(check(m, { ...none, core: 3 }), []);
+    const chars = "export const a = 1;\n".length + "export const b = 1;\nexport const c = 2;\n".length;
+    assert.equal(m.core, chars);
+    assert.match(check(m, { ...none, core: chars - 1 }).join("\n"), new RegExp(`grew: ${chars} characters, recorded ${chars - 1}`));
+    assert.deepEqual(check(m, { ...none, core: chars }), []);
   });
 });
 
