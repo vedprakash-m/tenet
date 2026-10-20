@@ -1,7 +1,8 @@
 // Quality ratchet (.github/copilot-instructions.md: simplicity first). New code meets the limits below. Code that already
 // exceeded them is recorded in tools/quality-baseline.json and may only shrink; a new offender, or growth in a recorded
 // one, fails. `--update` lowers the record after a refactor; `--init` writes it once. Nothing here raises a limit.
-// Module sizes (TS §6.2) follow the same rule: a module over its owner-set line budget may not grow past its recorded ceiling.
+// Module sizes (TS §6.2) follow the same rule: a module over its owner-set budget may not grow past its recorded ceiling.
+// Size is counted in non-whitespace characters, so wrapping a line or splitting a function is not growth (owner decision, 2026-10-20).
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,7 +13,11 @@ export interface Fn { lines: number; cc: number; nest: number }
 export interface Measured { functions: Record<string, Fn>; wide: Record<string, number>; modules: Record<string, number> }
 export interface Baseline { functions: Record<string, Fn>; wide: Record<string, number>; modules?: Record<string, number> }
 
-/** Line budgets set by the owner (TS §6.2). A module is a file, or a group of files (a directory, or files matching a pattern). */
+/** Characters per budgeted line: the density of the pipeline, verbs and decisions when the owner set their 3,000-line budget (146,543 characters in 2,544 lines). */
+export const CHARS_PER_LINE = 57.6;
+export const budgetChars = (name: string): number => Math.round(BUDGETS[name]!.lines * CHARS_PER_LINE);
+
+/** Budgets set by the owner (TS §6.2) in lines, enforced as characters. A module is a file, or a group of files (a directory, or files matching a pattern). */
 export const BUDGETS: Record<string, { match: RegExp; lines: number }> = {
   "core/schemas": { match: /^core\/schemas\.ts$/, lines: 400 },
   "core/risk": { match: /^core\/risk\.ts$/, lines: 150 },
@@ -53,7 +58,7 @@ const nameOf = (n: ts.Node): string | undefined => {
   return undefined;
 };
 
-/** Length, complexity and nesting of every named function (a nested closure counts in its parent too), wide lines per file, and lines per budgeted module. */
+/** Length, complexity and nesting of every named function (a nested closure counts in its parent too), wide lines per file, and non-whitespace characters per budgeted module. */
 export function measure(dir: string): Measured {
   const out: Measured = { functions: {}, wide: {}, modules: {} };
   for (const file of files(dir)) {
@@ -61,7 +66,7 @@ export function measure(dir: string): Measured {
     const text = readFileSync(file, "utf8");
     const wide = text.split("\n").filter((l) => l.length > LIMITS.width).length;
     if (wide) out.wide[rel] = wide;
-    for (const [name, b] of Object.entries(BUDGETS)) if (b.match.test(rel)) out.modules[name] = (out.modules[name] ?? 0) + text.split("\n").length;
+    for (const [name, b] of Object.entries(BUDGETS)) if (b.match.test(rel)) out.modules[name] = (out.modules[name] ?? 0) + text.replace(/\s+/g, "").length;
     const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
     const seen = new Map<string, number>();
     const visit = (n: ts.Node) => {
@@ -103,9 +108,9 @@ export function check(m: Measured, base: Baseline): string[] {
     else if (n > r) out.push(`${file} gained wide lines: ${n}, recorded ${r}`);
   }
   for (const [name, n] of Object.entries(m.modules)) {
-    const ceiling = base.modules?.[name], budget = BUDGETS[name]!.lines;
-    if (ceiling === undefined && n > budget) out.push(`${name}: ${n} lines (budget ${budget})`);
-    else if (ceiling !== undefined && n > ceiling) out.push(`${name} grew: ${n} lines, ceiling ${ceiling} (budget ${budget})`);
+    const ceiling = base.modules?.[name], budget = budgetChars(name);
+    if (ceiling === undefined && n > budget) out.push(`${name}: ${n} characters (budget ${budget})`);
+    else if (ceiling !== undefined && n > ceiling) out.push(`${name} grew: ${n} characters, ceiling ${ceiling} (budget ${budget})`);
   }
   return out;
 }
@@ -122,7 +127,7 @@ export function lowered(m: Measured, base: Baseline): Baseline {
   const modules: Record<string, number> = {};
   for (const [name, ceiling] of Object.entries(base.modules ?? {})) {
     const n = Math.min(m.modules[name] ?? 0, ceiling);
-    if (n > BUDGETS[name]!.lines) modules[name] = n;
+    if (n > budgetChars(name)) modules[name] = n;
   }
   return { functions, wide, modules };
 }
@@ -134,7 +139,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv.includes("--init")) {
     if (existsSync(recordPath)) { console.error("lint-quality: the baseline exists; use --update to lower it"); process.exit(1); }
     const functions = Object.fromEntries(Object.entries(m.functions).filter(([, f]) => over(f)));
-    const modules = Object.fromEntries(Object.entries(m.modules).filter(([name, n]) => n > BUDGETS[name]!.lines));
+    const modules = Object.fromEntries(Object.entries(m.modules).filter(([name, n]) => n > budgetChars(name)));
     writeFileSync(recordPath, `${JSON.stringify({ functions, wide: m.wide, modules }, null, 1)}\n`);
     console.log(`lint-quality: recorded ${Object.keys(functions).length} functions and ${Object.keys(m.wide).length} files`);
   } else {
@@ -146,7 +151,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const problems = check(m, base);
       for (const p of problems) console.error(p);
       const left = Object.keys(base.functions).length;
-      for (const [name, n] of Object.entries(m.modules)) if (n > BUDGETS[name]!.lines) console.log(`  over its budget: ${name} is ${n} lines, budget ${BUDGETS[name]!.lines}`);
+      for (const [name, n] of Object.entries(m.modules)) if (n > budgetChars(name)) console.log(`  over its budget: ${name} is ${n} characters, budget ${budgetChars(name)}`);
       console.log(`lint-quality: ${problems.length ? `${problems.length} problem(s)` : "no problems"}; ${left} recorded offender(s) left to refactor`);
       if (problems.length) process.exit(1);
     }

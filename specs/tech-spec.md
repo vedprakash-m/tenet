@@ -593,7 +593,7 @@ Verb modules contain only their own logic. A front-end translates its transport 
 
 ### 6.2 Module map
 
-Line budgets are set by the owner and checked by `tools/lint-quality`: a module over its budget may not grow past its recorded ceiling, and the ceiling only falls. Raising a budget is an owner decision.
+Budgets are set by the owner in lines and checked by `tools/lint-quality` in non-whitespace characters, at 57.6 per budgeted line (the density of the pipeline, verbs and decisions when their 3,000-line budget was set), so wrapping a line or splitting a function is not growth (owner decision, October 20). A module over its budget may not grow past its recorded ceiling, and the ceiling only falls. Raising a budget is an owner decision.
 
 | Module | Responsibility | PRD | Lines |
 |---|---|---|---|

@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { BUDGETS, LIMITS, check, lowered, measure } from "../../../tools/lint-quality.ts";
+import { LIMITS, budgetChars, check, lowered, measure } from "../../../tools/lint-quality.ts";
 import { cleanup, tmp } from "./helpers.ts";
 
 const dirs: string[] = [];
@@ -53,25 +53,28 @@ describe("checking against the baseline", () => {
     const grown = measure(tree({ "a.ts": longFn("legacy", LIMITS.lines + 21) }));
     assert.match(check(grown, base).join("\n"), /a\.ts#legacy grew: \d+ lines, recorded \d+/);
   });
-  it("fails a module over its line budget until a ceiling is recorded, and then fails growth past that ceiling", () => {
-    const text = (lines: number) => "export const a = 1;\n".repeat(lines);
-    const over = measure(tree({ "core/risk.ts": text(BUDGETS["core/risk"]!.lines + 10) }));
-    assert.match(check(over, none).join("\n"), /core\/risk: \d+ lines \(budget 150\)/);
+  it("fails a module over its budget until a ceiling is recorded, and then fails growth past that ceiling", () => {
+    const text = (chars: number) => "x\n".repeat(chars); // one character per line: no wide line
+    const budget = budgetChars("core/risk");
+    const over = measure(tree({ "core/risk.ts": text(budget + 100) }));
+    assert.match(check(over, none).join("\n"), new RegExp(`core/risk: ${budget + 100} characters \\(budget ${budget}\\)`));
     const ceiling = over.modules["core/risk"]!;
     assert.deepEqual(check(over, { ...none, modules: { "core/risk": ceiling } }), []);
-    const grown = measure(tree({ "core/risk.ts": text(BUDGETS["core/risk"]!.lines + 11) }));
-    assert.match(check(grown, { ...none, modules: { "core/risk": ceiling } }).join("\n"), /core\/risk grew: \d+ lines, ceiling \d+ \(budget 150\)/);
+    const grown = measure(tree({ "core/risk.ts": text(budget + 101) }));
+    assert.match(check(grown, { ...none, modules: { "core/risk": ceiling } }).join("\n"), /core\/risk grew: \d+ characters, ceiling \d+/);
   });
-  it("counts pipeline, verbs and decisions as one module, whatever the line width", () => {
-    const m = measure(tree({ "pipeline.ts": "a\n", "pipeline-mutate.ts": "a\n", "verbs/x.ts": "a\nb\n", "decisions/y.ts": "a\n", "core/z.ts": "a\n" }));
-    assert.equal(m.modules["pipeline + verbs + decisions"], 2 + 2 + 3 + 2);
+  it("counts pipeline, verbs and decisions as one module, and wrapping or indenting a line is not growth", () => {
+    const m = measure(tree({ "pipeline.ts": "a b\n", "pipeline-mutate.ts": "c\n", "verbs/x.ts": "d\ne\n", "decisions/y.ts": "f\n", "core/z.ts": "g\n" }));
+    assert.equal(m.modules["pipeline + verbs + decisions"], 2 + 1 + 2 + 1);
+    const wrapped = measure(tree({ "pipeline.ts": "a\n    b\n", "pipeline-mutate.ts": "c\n", "verbs/x.ts": "d\ne\n", "decisions/y.ts": "f\n" }));
+    assert.equal(wrapped.modules["pipeline + verbs + decisions"], 6);
   });
 });
 
 describe("tightening the baseline", () => {
   it("lowers recorded values and drops offenders that now pass, but never records a new or larger one", () => {
     const before = measure(tree({ "a.ts": longFn("legacy", LIMITS.lines + 20), "b.ts": longFn("gone", LIMITS.lines + 5) }));
-    const base = { functions: before.functions, wide: {}, modules: { "core/risk": 500 } };
+    const base = { functions: before.functions, wide: {}, modules: { "core/risk": 50_000 } };
     const after2 = measure(tree({ "a.ts": longFn("legacy", LIMITS.lines + 10), "b.ts": longFn("gone", 3), "c.ts": longFn("fresh", LIMITS.lines + 50) }));
     const next = lowered(after2, base);
     assert.equal(next.functions["a.ts#legacy"]!.lines, after2.functions["a.ts#legacy"]!.lines);

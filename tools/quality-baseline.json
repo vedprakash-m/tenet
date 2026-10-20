@@ -94,8 +94,6 @@
   "wire.ts": 2
  },
  "modules": {
-  "adapters/git-cli": 1129,
-  "core/schemas": 439,
-  "pipeline + verbs + decisions": 4911
+  "pipeline + verbs + decisions": 198788
  }
 }
