@@ -25,11 +25,6 @@
    "cc": 39,
    "nest": 5
   },
-  "adapters/quarantine-fs.ts#quarantine": {
-   "lines": 107,
-   "cc": 37,
-   "nest": 3
-  },
   "core/config.ts#resolveSetting": {
    "lines": 56,
    "cc": 28,
@@ -90,7 +85,6 @@
   "adapters/git-cli.ts": 53,
   "adapters/node-ts.ts": 10,
   "adapters/project-fs.ts": 6,
-  "adapters/quarantine-fs.ts": 4,
   "adapters/recipes-fs.ts": 1,
   "adapters/runner.ts": 6,
   "adapters/store-fs.ts": 11,
