@@ -5,7 +5,10 @@ name: untrusted
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: ["**"]
+concurrency:
+  group: untrusted-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
