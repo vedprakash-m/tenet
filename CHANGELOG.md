@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-20 — "Fix findings N and M" (`✅` T1; review plan A3c)
+
+**Changed.** `open fix` takes the findings the user named, as the review gave them. They become the contract's open findings (`FND-n`) and its scope; a change to a file they do not name raises an attention item (`outside the named findings`) that needs a disposition, and the verdict stays unchecked while a named major finding is open. Before, the `fix` profile was refused. The tenet skill's steering row uses it.
+
+**Files.** `core/schemas.ts`, `verbs/{open,open-new,check-evidence}.ts`, `plugin/skills/tenet/SKILL.md`, specs (TS §2.4).
+
+**Tests.** `fix.test.ts` added (4). 577 tests.
+
 ## 2026-10-20 — Starter: backup before migrating, byte-wise secret comparison (`✅` T1; review plan A3b)
 
 **Changed.** The starter takes a verified backup beside its database file before it applies a migration to a database that already holds data (it only happened if the caller passed a path, and the real start path never did). Secrets are compared by bytes through one `safeEqual`: a CSRF token with the same number of characters but different bytes was an unhandled error, and is now a 403. Not done: the restore tool, the UI shell and the first journey.

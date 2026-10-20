@@ -174,7 +174,7 @@ A clear request already authorizes routine local steps (WRK-02), so `open` recor
 | Flow | Shape | Home |
 |---|---|---|
 | Quick bug fix | `open bug` → localize → reproduction test → baseline (red) → repair → `check` → focused pass (`findings`) → `finish`; a High risk dimension raises the lane | §5.3, §8.2 |
-| Review only | One stateless `review` call: manifest in OS temp, nothing written to the project, no project tools run (CON-09). "Fix findings 2 and 4" calls `open fix` with the manifest hash and the finding numbers (RES-06) | §6.3 |
+| Review only | One stateless `review` call: manifest in OS temp, nothing written to the project, no project tools run (CON-09). "Fix findings 2 and 4" calls `open fix` with those findings as the review gave them (RES-06); they become the contract's open findings and its scope | §6.3 |
 | Resume after a stop | `open --resume` reconciles uncertain effects, stops owned orphans, compares the inventory with the last receipts, and returns `reconcile` and `revalidate` before new work | §7.3, §7.4 |
 | Multi-increment | `open plan` → drafted plan items → `decide` → each item opens its own contract (`open feature --plan-item PLN-…`); planning takes no source ownership | §7.2 |
 | Prototype without Git | Shadow snapshots in `.tenet/git` at `open` and every `check`; endpoint `prototype` | §10.9 |

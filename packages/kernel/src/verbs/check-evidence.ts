@@ -177,10 +177,13 @@ export async function attentionOf(run: Run, cw: WorkContract): Promise<{ changes
   const cfg = changes
     .filter((c) => c.kind === "config" && vetted[c.path] !== cw.vetted[c.path])
     .map((c) => item(hashOf(["cfg", c.path, c.hunks]), c.path, c.hunks[0]?.line ?? 1, "test or build configuration"));
+  const allowed = new Set([...(cw.scopedTo ?? []), ...cw.obligations.flatMap((o) => o.testFile ?? [])]);
+  const outside = (cw.scopedTo ? facts.reviewPaths : []).filter((p) => !allowed.has(p) && !(p in cw.vetted));
+  const stray = outside.map((path) => item(hashOf(["outside", path]), path, 1, "outside the named findings"));
   const declared = (cw.scaffolding ?? []).map((path) => item(hashOf(["scaffold", path]), path, 1, "declared scaffolding"));
   const weakened = netAttention(
     changes.filter((c) => !cw.reverting?.includes(c.path)),
     ports.stack.patterns
   );
-  return { changes, attention: carryDispositions(cw.attention, [...declared, ...weakened, ...cfg]) };
+  return { changes, attention: carryDispositions(cw.attention, [...declared, ...stray, ...weakened, ...cfg]) };
 }

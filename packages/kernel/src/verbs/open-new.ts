@@ -90,7 +90,8 @@ function lanePlan(c: Ctx, scope: string[], protectedPaths: string[], prefs: Retu
 /** The new contract itself: lane, snapshot of the starting tree, and the routine grant a clear request gives (WRK-02). */
 async function draft(c: Ctx, probe: RepoProbe, level: Level) {
   const { ports, input, now, state } = c;
-  const scope = input.scopePaths ?? [];
+  const named = input.findings ?? [];
+  const scope = [...new Set([...(input.scopePaths ?? []), ...named.map((f) => f.location.path)])];
   const prefs = settingsFor(ports, state);
   const protectedPaths = [...new Set([...(input.protectedPaths ?? []), ...(prefs.protected_paths as string[])])];
   const { assessment, floor, lane, clamped } = lanePlan(c, scope, protectedPaths, prefs);
@@ -116,6 +117,11 @@ async function draft(c: Ctx, probe: RepoProbe, level: Level) {
     start,
     ...(input.planItem ? { planItem: input.planItem } : {}),
   });
+  if (named.length) {
+    const history = [{ to: "valid", by: "coordinator" as const, reason: "named by the user for repair", at: now }];
+    w.findings = named.map((f) => ({ id: `FND-${f.n}`, axis: "behavior" as const, state: "valid" as const, history, evidence: "", ...f }));
+    w.scopedTo = scope;
+  }
   if (isEditingProfile(input.profile)) {
     const quote = input.request.slice(0, 200);
     w.grants.push({

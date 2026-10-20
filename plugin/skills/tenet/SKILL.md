@@ -12,7 +12,7 @@ In every skill, `tenet <verb> [positional] [--flag value]` is shorthand: never t
 
 | Verb | Use |
 |---|---|
-| `tenet open <profile> --request <text> --scope-paths <paths>` | Start a contract. Profiles: `feature`, `bug`, `refactor`, `investigate`, `plan`, `prototype` (with `--no-git` in a folder the user chose not to put under Git). Assess all six change-risk dimensions; recommend the lane from the risk and honor user changes within its floor. Ordinary features default to Standard; actual edits can raise the floor |
+| `tenet open <profile> --request <text> --scope-paths <paths>` | Start a contract. Profiles: `feature`, `bug`, `refactor`, `fix` (needs `findings`), `investigate`, `plan`, `prototype` (with `--no-git` in a folder the user chose not to put under Git). Assess all six change-risk dimensions; recommend the lane from the risk and honor user changes within its floor. Ordinary features default to Standard; actual edits can raise the floor |
 | `tenet decide <kind> --h <handle>` | Record a decision. Kinds: `basis`, `scaffold`, `sync-index`, `config`, `branch-switch`, `undo-confirm`, `abandon-confirm`, `takeover-check`, `dirty-overlap`, `unexplained`, `hook-consent`, `filter-consent`, `decline`, `acceptance`, `disposition`, `repair-lock`, `overview`, `plan`, `grant`, `decision-record`, `dependency`, `adopt` (`--target intent` or `policy`; it previews first, then `--answer adopt-confirm=confirm` or `decline`). `config` sets one of the twelve settings: `--target <setting>` with `{"propose": {"value": ..., "scope": "task"|"project"}}`, or `{"propose": {"reset": true, "scope": "task"}}`; a plain request ("be brief") is task scope, only "always" or "in this project" is project scope. `tenet inspect --view settings [--topic <setting>]` answers "why" for a setting. Content goes in JSON on stdin as `{"propose": ...}`; answers are `--answer <id>=<choice>` |
 | `tenet check --h <handle> --stage candidate` | Run the obligations. `--stage baseline` for the planned red, `--targeted` while iterating, `--touched <paths>` for every file you edited |
 | `tenet packet reviewer --h <handle> --retry` | A fresh manifest attempt. `packet handoff` and `packet resume` read the state back |
@@ -74,7 +74,7 @@ Handle anything new from the user before the next kernel call.
 | "skip the tests" or "skip the review" | `tenet decide decline --h <handle> --target tests` (or `review`) `--quote <their words>`, then proceed; say once the result will read "Built, not fully checked" and name the declined step |
 | "don't commit" | `tenet finish --no-commit --h <handle>` for this task |
 | "be brief", "explain more" | Change presentation for this task |
-| "fix 1 and 3" | One contract scoped to exactly those findings |
+| "fix 1 and 3" | `tenet open fix` with JSON stdin `{"profile":"fix","request":"fix findings 1 and 3","findings":[{"n":1,"severity":"major","location":{"path":"src/a.ts","line":4},"claim":"…","evidence":"…"}]}`: exactly the findings the user named, copied from the review. Changing a file they do not name asks for a disposition |
 | "make it smaller" | Split into plan steps |
 | "why …?" | `tenet inspect why --h <handle>`, at most 10 lines |
 

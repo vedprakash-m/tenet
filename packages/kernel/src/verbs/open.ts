@@ -19,7 +19,10 @@ import { quarantineQuestion, quarantineSurface } from "../decisions/quarantine.t
 
 /** Admission and housekeeping every `open` goes through: quarantine, recovery, a suspended backup, temp cleanup, shared files. */
 async function begin(ports: Ports, before: State | null, input: OpenInput, tx: Tx): Promise<Ctx> {
-  if (["promote", "recipe-upgrade", "fix", "continue"].includes(input.profile)) {
+  if (input.profile === "fix" && !input.findings) {
+    throw new KernelError("capability-missing", "name the findings to fix: pass them as findings, as the review gave them", { exit: 1 });
+  }
+  if (["promote", "recipe-upgrade", "continue"].includes(input.profile)) {
     throw new KernelError(
       "capability-missing",
       `the ${input.profile} workflow is not implemented; resume an existing contract with its original profile and --resume`,

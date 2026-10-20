@@ -1,5 +1,4 @@
-// zod schemas for every verb input, record and output (TS §6.2 core/schemas). Wire schemas use only
-// JSON-compatible constructs so z.toJSONSchema() converts them without loss (TS §3.3).
+// zod schemas for every verb input, record and output (TS §6.2). Wire schemas use only JSON-compatible constructs (TS §3.3).
 import { z } from "zod";
 import { settingsSchema } from "./config.ts";
 import { Policy } from "./policy.ts";
@@ -233,6 +232,7 @@ export const WorkContract = z.object({
     committed: z.array(z.string()), // every path Tenet has committed in this contract, so a review sees the whole change
     noCommit: z.boolean().optional(),
   }),
+  scopedTo: z.array(z.string()).optional(), // `fix`: where the named findings are; a change elsewhere needs a disposition
   scaffolding: z.array(z.string()).optional(), // existing files declared as baseline scaffolding; each is an attention item
   settings: settingsSchema("task").optional(), // task-scope overrides (PRD §7.1): they end with the contract
   // A dependency change resolved and waiting for the user's answer: what the files were, and what the resolution wrote (TS §9.11).
@@ -344,6 +344,11 @@ export type KernelResponse = z.infer<typeof KernelResponse>;
 const bodyLimit = z.string().max(256 * 1024);
 const Handle = z.string().regex(/^W\d+\.\d+\.[a-z0-9]{4}$/, "handle looks like W7.3.k7q");
 
+/** A finding to fix, as the review gave it. */
+export const NamedFinding = Finding
+  .pick({ n: true, severity: true, location: true, claim: true, evidence: true, fix: true })
+  .partial({ evidence: true });
+
 export const OpenInput = z.object({
   profile: Profile,
   request: bodyLimit.default(""),
@@ -357,6 +362,7 @@ export const OpenInput = z.object({
   lane: Lane.optional(), // user-requested lane (raise freely, lower only to the floor)
   noGit: z.boolean().optional(), // "no Git": prototype instead of initializing (shadow repository, post-M0)
   initGit: z.boolean().optional(), // the user agreed to initialize Git here
+  findings: z.array(NamedFinding).min(1).max(20).optional(), // `fix`: these findings, and only these (RES-06)
 });
 export type OpenInput = z.infer<typeof OpenInput>;
 

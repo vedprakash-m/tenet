@@ -158,7 +158,7 @@ describe("audit: common mutation boundaries", () => {
   });
   it("refuses specialized profiles that lack their safeguards [WRK-07]", async () => {
     const p = fresh();
-    for (const profile of ["promote", "recipe-upgrade", "fix", "continue"]) {
+    for (const profile of ["promote", "recipe-upgrade", "continue"]) {
       const r = await p.call("open", { profile, request: "first" });
       assert.equal(r.exit, 2);
       assert.equal(r.reasons[0]?.code, "capability-missing");
