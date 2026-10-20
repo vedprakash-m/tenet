@@ -62,6 +62,7 @@ export const PlanItem = z.object({
   id: z.string(), outcome: z.string(), elementIds: z.array(z.string()), dependsOn: z.array(z.string()),
   check: z.string(), state: z.enum(["proposed", "accepted", "in-progress", "done", "dropped"]), work: z.string().optional(),
 });
+export type PlanItem = z.infer<typeof PlanItem>;
 
 export const Grant = z.object({
   id: z.string(), actions: z.array(ActionClass), paths: z.array(z.string()).optional(),

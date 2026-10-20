@@ -2,6 +2,7 @@
 import { LIMITS, summarize } from "../core/budget.ts";
 import { isSettingKey, layersOf, resolveSetting } from "../core/config.ts";
 import { KernelError } from "../core/errors.ts";
+import { nextItem } from "../core/plan.ts";
 import { controlsFor } from "../core/controls.ts";
 import { handoffText } from "../core/handoff.ts";
 import { verdict, headline } from "../core/verdict.ts";
@@ -50,6 +51,7 @@ const statusOf = (st: State | null) => ({
   initialized: !!st, revision: st?.revision ?? 0,
   work: Object.values(st?.work ?? {}).map((w) => ({ label: w.label, profile: w.profile, state: w.state, lane: w.lane, outcome: w.outcome.slice(0, 80), budget: summarize(w.budget, w.lane) })),
   pending: (st?.pending ?? []).map((q) => q.id), sourceOwner: st?.sourceOwner?.work ?? null,
+  plan: { items: (st?.project.intent.plan ?? []).map((i) => ({ id: i.id, outcome: i.outcome, state: i.state, dependsOn: i.dependsOn })), next: nextItem(st?.project.intent.plan ?? [])?.id ?? null },
 });
 
 export const inspect: Verb<InspectInput> = {

@@ -1,5 +1,6 @@
 // `stop`: pause at a safe boundary, cancel owned processes, or close the contract. Always allowed, even mid-check.
 import { handoffText } from "../core/handoff.ts";
+import { releaseItem } from "../core/plan.ts";
 import { StopInput } from "../core/schemas.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
 import type { Verb } from "../pipeline.ts";
@@ -38,7 +39,9 @@ export const stop: Verb<StopInput> = {
       state: input.mode === "pause" ? "parked" : input.mode === "abandon" ? "cancelled" : w.state,
     };
     // Cancel keeps the contract open at its last valid phase; pause and abandon release source ownership.
-    const st = input.mode === "cancel" ? withWork(rec.state, next) : release(withWork(rec.state, next), next);
+    const parked = input.mode === "cancel" ? withWork(rec.state, next) : release(withWork(rec.state, next), next);
+    // Abandoning ends the contract, so its plan item is available again; pausing keeps it in progress.
+    const st = input.mode === "abandon" ? { ...parked, project: { ...parked.project, intent: { ...parked.project.intent, plan: releaseItem(parked.project.intent.plan, w.id, false) } } } : parked;
     return {
       state: st,
       resp: {

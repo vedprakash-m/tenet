@@ -4,6 +4,7 @@ import { summarize } from "../core/budget.ts";
 import { controlsFor } from "../core/controls.ts";
 import { handoffText } from "../core/handoff.ts";
 import { KernelError } from "../core/errors.ts";
+import { releaseItem } from "../core/plan.ts";
 import { reason } from "../core/reasons.ts";
 import { FinishInput } from "../core/schemas.ts";
 import type { Reason, State, WorkContract } from "../core/schemas.ts";
@@ -73,7 +74,9 @@ export const finish: Verb<FinishInput> = {
       // The first checked-local result carries the one offer to save the project's shared files (CON-01).
       const offer = v.endpoint === "checked-local" && isEditing(nw) && st.project.adoption.intent === "undecided" && !st.project.adoption.offered;
       const resp = result(closed, v, f, extra, integrationSetting(st), offer);
-      const final: State = offer ? { ...out, project: { ...out.project, adoption: { ...out.project.adoption, offered: true } } } : out;
+      // The plan item this contract worked on is done when it reached checked-local, otherwise available again (INT-12).
+      const settled: State = { ...out, project: { ...out.project, intent: { ...out.project.intent, plan: releaseItem(out.project.intent.plan, nw.id, v.endpoint === "checked-local") } } };
+      const final: State = offer ? { ...settled, project: { ...settled.project, adoption: { ...settled.project.adoption, offered: true } } } : settled;
       return { state: final, resp: effects ? { ...resp, effects } : resp };
     };
 

@@ -34,5 +34,10 @@ For a new project or the first Standard-or-deeper change in code you have not wo
 ## Rules
 - A thin answer on purpose, users or a non-goal gets one concrete follow-up before a plan is drafted, never a second round.
 - Plan steps are vertical slices: each runnable, independently checkable, and says how it is checked. Resolve the biggest uncertainty first.
+
+## Record the overview and the plan
+- `tenet decide overview --h <handle>` with `{"propose": {"purpose": "...", "users": "...", "preferences": [], "nonGoals": []}}`; name only the fields that changed.
+- `tenet decide plan --h <handle>` with `{"propose": {"items": [{"ref": "a", "outcome": "...", "check": "how it is checked", "dependsOn": ["a"]}]}}`. It returns a `plan-confirm` question showing the numbered plan: show it, and on yes send the same proposal with `--answer plan-confirm=confirm`. To change a recorded plan, send the whole list again with `id` for each item you keep; an item you leave out is dropped.
+- Work one item at a time: `tenet open feature --plan-item <id>`. `tenet inspect` shows the plan and which item is next; propose it, never start it unasked.
 - A change of direction is a delta: what changes, what it affects, what is unaffected; then the choices.
 - An out-of-scope improvement you notice is named as "noticed, not changed".

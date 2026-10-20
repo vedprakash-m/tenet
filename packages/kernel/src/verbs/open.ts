@@ -8,6 +8,7 @@ import { reason } from "../core/reasons.ts";
 import { assistanceLevel, chooseLane, isEditingProfile, laneFloor, raise } from "../core/risk.ts";
 import { OpenInput } from "../core/schemas.ts";
 import type { Lane, Question, Reason, State, WorkContract } from "../core/schemas.ts";
+import { planBlock } from "../core/plan.ts";
 import { emptyState, isLive, newContract } from "../core/state.ts";
 import type { Plan, Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
@@ -100,6 +101,10 @@ export const open: Verb<OpenInput> = {
       if (owner && isLive(owner) && owner.state !== "parked") throw new KernelError("owned-by-other-work", `${owner.label} is editing here`);
     }
 
+    const item = input.planItem ? state.project.intent.plan.find((i) => i.id === input.planItem) : undefined;
+    if (input.planItem && !item) throw new KernelError("plan-invalid", `there is no plan item ${input.planItem}`, { exit: 2 });
+    const blocked = item && planBlock(state.project.intent.plan, item);
+    if (blocked) throw new KernelError("plan-item-blocked", blocked, { exit: 2 });
     const scope = input.scopePaths ?? [];
     const prefs = settingsFor(ports, state);
     const protectedPaths = [...new Set([...(input.protectedPaths ?? []), ...(prefs.protected_paths as string[])])];
@@ -124,7 +129,8 @@ export const open: Verb<OpenInput> = {
     const dirtyScope = undecidedDirty(w);
     if (dirtyScope.length) state = { ...state, pending: [...state.pending.filter((q) => q.id !== "dirty-overlap"), dirtyQuestion(dirtyScope)] };
 
-    const next: State = { ...withWork(state, w), generationSeq: gen, workSeq: seq, ...(editing ? { sourceOwner: { work: w.id, generation: gen } } : {}) };
+    const claimed = item ? { ...state, project: { ...state.project, intent: { ...state.project.intent, plan: state.project.intent.plan.map((i) => (i.id === item.id ? { ...i, state: "in-progress" as const, work: w.id } : i)) } } } : state;
+    const next: State = { ...withWork(claimed, w), generationSeq: gen, workSeq: seq, ...(editing ? { sourceOwner: { work: w.id, generation: gen } } : {}) };
     const notes = [
       ...(clamped ? [reason("budget-warning", `the ${floor} lane is the floor for this change and cannot be lowered`, { note: true })] : []),
       ...(why && level !== "L4" ? [reason("capability-missing", why, { note: true })] : []),
