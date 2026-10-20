@@ -135,11 +135,6 @@
    "cc": 80,
    "nest": 3
   },
-  "verbs/recover.ts#recover": {
-   "lines": 236,
-   "cc": 97,
-   "nest": 11
-  },
   "verbs/stop.ts#stopWork": {
    "lines": 93,
    "cc": 28,
@@ -204,11 +199,10 @@
   "verbs/open.ts": 24,
   "verbs/packet.ts": 4,
   "verbs/reconcile.ts": 11,
-  "verbs/recover.ts": 5,
   "verbs/review.ts": 3,
   "verbs/stop.ts": 7,
   "verbs/undo.ts": 5,
   "wire.ts": 2
  },
- "core": 215973
+ "core": 217284
 }
