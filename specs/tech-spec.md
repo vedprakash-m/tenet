@@ -605,7 +605,7 @@ Line budgets are planning targets checked by `tools/coverage`; a module that exc
 | `core/obligations`, `core/findings` | Obligations, applicability, trait composition; finding dispositions | QLT-06, REV-04 | 250 |
 | `core/config` | Resolution, restriction parsing, trust comparison | CFG, SEC-12 | 250 |
 | `core/attribution`, `core/ids`, `core/retention` | File attribution; IDs and reconciliation; admission and eviction | GIT-03, INT-10, CON-08 | 300 |
-| `pipeline`, `verbs/*`, `decisions/*` | The pipeline; one module per verb and per decision kind. Re-baselined October 19 (owner decision) from 1,050 to 2,200 after `integrate`, `undo`, the starter scaffold, crash recovery and the dirty-file, hook and index decisions were added; no verb or decision file exceeds 250 lines (`tools/coverage` fails the build otherwise) | — | 2,200 |
+| `pipeline`, `verbs/*`, `decisions/*` | The pipeline; one module per verb and per decision kind. Re-baselined October 19 (owner decision) from 1,050 to 2,200 after `integrate`, `undo`, the starter scaffold, crash recovery and the dirty-file, hook and index decisions were added, then to 3,000 the same day after `decide adopt`, shared-file reconciliation and the settings catalog left 17 lines free and the remaining decision kinds were still to build; no verb or decision file exceeds 250 lines (`tools/coverage` fails the build otherwise) | — | 3,000 |
 | `adapters/store-fs` | State document, lock, log, observations, blobs, marker | §7 | 450 |
 | `adapters/git-cli` | Git with argument arrays; the inspection profile; one temporary-index helper; the shadow repository | §10 | 650 |
 | `adapters/runner` | Envelopes, environment, process groups, run directories, ports | §9.3 | 350 |
