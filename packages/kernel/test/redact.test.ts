@@ -41,6 +41,17 @@ describe("redaction [SEC-11]", () => {
   });
 });
 
+describe("redaction stays linear on hostile or merely odd input [SEC-11, NFR-04]", () => {
+  it("handles 200 KB of repeated separators, schemes and keywords in well under a second each", () => {
+    const inputs = ["a.".repeat(100_000), "ab-".repeat(70_000), "api_key".repeat(30_000), "token_".repeat(40_000), "a://b:".repeat(30_000), "Bearer ".repeat(30_000)];
+    for (const s of inputs) {
+      const t = Date.now();
+      redact(s);
+      assert.ok(Date.now() - t < 500, `${s.slice(0, 12)}... took ${Date.now() - t} ms`);
+    }
+  });
+});
+
 describe("what a check prints never reaches the response or the record unredacted [SEC-11]", () => {
   it("redacts a secret a failing test prints, in the response and in the stored receipt", async () => {
     const p: Project = project();
