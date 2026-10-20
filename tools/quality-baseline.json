@@ -1,10 +1,5 @@
 {
  "functions": {
-  "adapters/node-ts.ts#normalize": {
-   "lines": 49,
-   "cc": 39,
-   "nest": 5
-  },
   "core/config.ts#resolveSetting": {
    "lines": 56,
    "cc": 28,
@@ -24,11 +19,6 @@
    "lines": 21,
    "cc": 27,
    "nest": 2
-  },
-  "core/receipts.ts#receiptsFrom": {
-   "lines": 39,
-   "cc": 28,
-   "nest": 1
   },
   "core/verdict.ts#judgeReview": {
    "lines": 32,
@@ -53,7 +43,6 @@
  },
  "wide": {
   "adapters/git-cli.ts": 1,
-  "adapters/node-ts.ts": 10,
   "adapters/project-fs.ts": 6,
   "adapters/recipes-fs.ts": 1,
   "adapters/runner.ts": 6,
@@ -70,7 +59,7 @@
   "core/obligations.ts": 7,
   "core/plan.ts": 4,
   "core/policy.ts": 9,
-  "core/receipts.ts": 5,
+  "core/receipts.ts": 2,
   "core/redact.ts": 2,
   "core/review.ts": 22,
   "core/risk.ts": 2,
