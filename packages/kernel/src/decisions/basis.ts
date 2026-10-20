@@ -93,7 +93,10 @@ export const basis: Decision = {
       state = without;
     }
 
-    const { elements, ids } = build(proposal, state, work, () => ports.rand.base32(3));
+    const built = build(proposal, state, work, () => ports.rand.base32(3));
+    const ids = built.ids;
+    // The user confirmed Tenet's additions at kickoff (INT-07), so those assumptions are no longer open.
+    const elements = built.elements.map((e) => (needsConfirm && e.kind === "assumption" && e.origin === "tenet" ? { ...e, verifiedBy: [{ method: "manual" as const, ref: "confirmed by the user at kickoff" }] } : e));
     const own = new Set(work.basis?.elementIds ?? []);
     const intent = state.project.intent;
     const nextIntent = { ...intent, revision: intent.revision + 1, elements: [...intent.elements.filter((e) => !own.has(e.id)), ...elements] };

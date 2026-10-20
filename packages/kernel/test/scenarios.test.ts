@@ -49,6 +49,30 @@ describe("one-stop rule (UX-D1)", () => {
     assert.equal(Object.values(st.work)[0]!.grants.some((g) => g.capture === "elicited"), true);
   });
 
+  it("an assumption the user confirmed at kickoff does not block checked-local [INT-07]", async () => {
+    const p = fresh();
+    const assumption = { ref: "a1", kind: "assumption", origin: "tenet", text: "for now names are plain strings" };
+    const proposal = { ...BASIS, elements: [...BASIS.elements, assumption] };
+    const h = (await p.call("open", { profile: "feature", request: "add a greeting", scopePaths: ["src/greet.ts"], lane: "standard" })).handle!;
+    assert.equal((await p.call("decide", { h, kind: "basis", propose: proposal })).exit, 3);
+    assert.equal((await p.call("decide", { h, kind: "basis", propose: proposal, answers: { "basis-confirm": "confirm" } })).exit, 0);
+    p.write("src/greet.test.ts", GREET_TEST);
+    await p.call("check", { h, stage: "baseline" });
+    const g = await toGreen(p, h);
+    await p.call("findings", { h, result: reviewResult(d(g)) });
+    const done = await p.call("finish", { h, noCommit: true });
+    assert.equal(d(done).endpoint, "checked-local", JSON.stringify(done.reasons));
+  });
+
+  it("an assumption nobody confirmed (recorded without the confirmation) still blocks checked-local [INT-07]", async () => {
+    const p = fresh();
+    const { h } = await toRed(p, {}, { ...BASIS, elements: [...BASIS.elements, { ref: "a1", kind: "assumption", origin: "request", text: "names are plain strings" }] } as typeof BASIS);
+    const g = await toGreen(p, h);
+    await p.call("findings", { h, result: reviewResult(d(g)) });
+    const done = await p.call("finish", { h, noCommit: true });
+    assert.ok(done.reasons.some((r) => r.code === "assumption-unresolved"), JSON.stringify(done.reasons));
+  });
+
   it("refuses a confirmation whose proposal changed after the question was asked", async () => {
     const p = fresh();
     const h = (await p.call("open", { profile: "feature", request: "x", scopePaths: ["src/greet.ts"] })).handle!;

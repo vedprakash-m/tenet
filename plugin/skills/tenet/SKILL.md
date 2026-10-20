@@ -58,6 +58,8 @@ Every message is a kickoff, a question, a check-in or a report. Lead line first.
 
 **Report.** Headline, evidence, read or limits, next. The headline is `data.label` exactly as returned. Evidence spends lines on exceptions: when all passed, one line. Name the scope when it is not a clean commit. Reasons follow their sentence in code font: "Shortcut needs your decision (`marker-unaccepted`)". Add a reading guide of at most three entries ("read first") for Standard and Deep. Call the reviewer "an automated reviewer" once, then "the reviewer". A clean result's next action names both words: "Say 'integrate' to merge into main, or 'accept' to keep it on <branch>." Other findings read: severity, claim, consequence, fix, `path:line`; chat numbers findings 1, 2, 3.
 
+An assumption that stays open (`assumption-unresolved`) blocks `checked-local`: say it in the report, ask the user to confirm it in plain words, and on yes run `tenet decide disposition --h <handle> --target <id>` with `{"propose": {"outcome": "accepted", "reason": "<their words>"}}`.
+
 ## Steering
 Handle anything new from the user before the next kernel call.
 
