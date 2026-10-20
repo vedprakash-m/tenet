@@ -49,6 +49,10 @@ export function parseBlocks(text: string): Parsed {
 
 const list = (label: string, items: readonly string[]): string => (items.length ? `**${label}**\n${items.map((x) => `- ${x}`).join("\n")}\n` : "");
 
+/** A decision with its context and consequences, so a reader of the file needs nothing else (INT-10). */
+const decisionBody = (r: Intent["records"][number]): string =>
+  `**${r.id} ${r.title}** (${r.status}, ${r.date.slice(0, 10)})\n- Context: ${r.context}\n- Decision: ${r.decision}\n${r.consequences ? `- Consequences: ${r.consequences}\n` : ""}${r.alternatives.map((a) => `- Considered ${a.option}: ${a.why}\n`).join("")}${r.supersedes ? `- Supersedes ${r.supersedes}\n` : ""}`;
+
 /** Block bodies by ID, in the order they appear: the overview, then each requirement with its examples and invariants, then the rest, then plan items. */
 export function renderIntent(intent: Intent): Map<string, string> {
   const out = new Map<string, string>();
@@ -59,7 +63,8 @@ export function renderIntent(intent: Intent): Map<string, string> {
   for (const e of intent.elements) {
     if (e.of && reqs.has(e.of) && (e.kind === "example" || e.kind === "invariant")) continue;
     const children = e.kind === "requirement" ? intent.elements.filter((c) => c.of === e.id && (c.kind === "example" || c.kind === "invariant")) : [];
-    out.set(e.id, `**${line(e)}**\n${children.map((c) => `- ${line(c)}\n`).join("")}`);
+    const rec = e.kind === "decision" ? intent.records.find((r) => r.id === e.id) : undefined;
+    out.set(e.id, rec ? decisionBody(rec) : `**${line(e)}**\n${children.map((c) => `- ${line(c)}\n`).join("")}`);
   }
   for (const p of intent.plan) out.set(p.id, `**${p.id} ${p.outcome}** (${p.state})\n${p.check ? `- check: ${p.check}\n` : ""}${p.dependsOn.length ? `- depends on: ${p.dependsOn.join(", ")}\n` : ""}`);
   return out;

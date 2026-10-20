@@ -58,6 +58,14 @@ export const BasisElement = z.object({
 });
 export type BasisElement = z.infer<typeof BasisElement>;
 
+export const DecisionRecord = z.object({
+  id: z.string(), title: z.string(), status: z.enum(["accepted", "superseded"]), date: z.string(),
+  context: z.string(), decision: z.string(), consequences: z.string(),
+  alternatives: z.array(z.object({ option: z.string(), why: z.string() })),
+  supersedes: z.string().optional(), links: z.array(z.string()), quote: z.string(), // the user's own words (capture: reported)
+});
+export type DecisionRecord = z.infer<typeof DecisionRecord>;
+
 export const PlanItem = z.object({
   id: z.string(), outcome: z.string(), elementIds: z.array(z.string()), dependsOn: z.array(z.string()),
   check: z.string(), state: z.enum(["proposed", "accepted", "in-progress", "done", "dropped"]), work: z.string().optional(),
@@ -197,6 +205,12 @@ export const WorkContract = z.object({
   }),
   scaffolding: z.array(z.string()).optional(), // existing files declared as baseline scaffolding; each is an attention item
   settings: z.record(z.string(), z.unknown()).optional(), // task-scope overrides (PRD §7.1): they end with the contract
+  // A dependency change resolved and waiting for the user's answer: what the files were, and what the resolution wrote (TS §9.11).
+  dependency: z.object({
+    specs: z.array(z.string()), urgent: z.boolean(), quote: z.string(), scripts: z.array(z.string()),
+    before: z.object({ manifest: z.string().nullable(), lock: z.string().nullable() }), // blob hashes of the files as they were
+    after: z.object({ manifest: z.string(), lock: z.string() }), // sha256 of the files as the resolution wrote them
+  }).optional(),
   reverting: z.array(z.string()).optional(), // paths an undo was asked to revert: removing their assertions is the request, not a weakening
   vetted: z.record(z.string(), z.string()), // recipe files written by a scaffold: path to sha256, exempt from attention while unchanged
   touched: z.array(z.object({ path: z.string(), hashAtLastCheck: z.string().optional() })),
@@ -228,6 +242,7 @@ export const State = z.object({
       revision: z.number(),
       overview: z.object({ purpose: z.string(), users: z.string(), preferences: z.array(z.string()), nonGoals: z.array(z.string()) }),
       elements: z.array(BasisElement), plan: z.array(PlanItem),
+      records: z.array(DecisionRecord).default([]), // decisions with their context and consequences (INT-10)
     }),
     moduleRoot: z.string(), traits: z.array(z.string()),
     recipe: z.object({ id: z.string(), version: z.string(), installed: z.boolean() }).optional(), // the starter this project was scaffolded from

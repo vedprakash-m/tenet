@@ -8,7 +8,7 @@ import type { BasisElement } from "../src/core/schemas.ts";
 type Intent = Parameters<typeof renderIntent>[0];
 const el = (id: string, kind: BasisElement["kind"], text: string, of?: string): BasisElement => ({ id, origin: "tenet", kind, text, ...(of ? { of } : {}), verifiedBy: [] });
 const intent = (elements: BasisElement[], over: Partial<Intent> = {}): Intent => ({
-  revision: 1, overview: { purpose: "Loans for a small library", users: "librarians", preferences: [], nonGoals: [] }, elements, plan: [], ...over,
+  revision: 1, overview: { purpose: "Loans for a small library", users: "librarians", preferences: [], nonGoals: [] }, elements, plan: [], records: [], ...over,
 });
 const REQ = [el("REQ-001-aaa", "requirement", "A loan is due in 14 days"), el("EX-001-aaa.1", "example", "borrowed on 1 May is due on 15 May", "REQ-001-aaa"), el("INV-002-bbb", "invariant", "a book is never on loan twice", "REQ-001-aaa")];
 const begin = (id: string) => `<!-- tenet:begin ${id} -->`;

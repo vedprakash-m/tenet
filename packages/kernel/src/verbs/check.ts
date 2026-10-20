@@ -17,7 +17,8 @@ import type { Job, Plan, Resp, Verb } from "../pipeline.ts";
 import type { Normalized } from "../ports/types.ts";
 import { nx, withWork, workOf } from "./common.ts";
 import { dirtyQuestion, undecidedDirty } from "./dirty.ts";
-import { checkInputId, gather, worldDigest } from "./facts.ts";
+import { grantQuestion } from "./authority.ts";
+import { checkInputId, gather, unauthorizedEdits, worldDigest } from "./facts.ts";
 import { issueReview } from "./manifest.ts";
 import { keepRecovered, recover } from "./recover.ts";
 
@@ -59,6 +60,11 @@ export const check: Verb<CheckInput> = {
     }
 
     const facts = await gather(ports, w);
+    const ungranted = unauthorizedEdits(ports, w, facts);
+    if (ungranted.length) {
+      const q = grantQuestion(ungranted);
+      return keepRecovered({ state: withWork({ ...cur, pending: [...cur.pending.filter((p) => p.id !== q.id), q] }, w), resp: { work: w.id, exit: 3, questions: [q], reasons: [reason("authority-needed", ungranted.slice(0, 3).join(", "))], next: [nx("ask", "Ask the user; their words authorize the edits, or undo them.", true)] } }, rec, state);
+    }
     const id = checkInputId(ports, w, facts.candidate);
     const runId = `${w.label}-${ports.rand.base32(6)}`;
     const runDir = ports.store.tempDir(`run-${runId}`);

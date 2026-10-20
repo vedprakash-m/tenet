@@ -6,7 +6,7 @@ import type { Lane, Level, Profile, StartSnapshot, State, WorkContract } from ".
 export const emptyState = (workspaceId: string, tag: string): State => ({
   schema: SCHEMA_VERSION, revision: 0, workspaceId, tag, generationSeq: 0, workSeq: 0,
   project: {
-    intent: { revision: 0, overview: { purpose: "", users: "", preferences: [], nonGoals: [] }, elements: [], plan: [] },
+    intent: { revision: 0, overview: { purpose: "", users: "", preferences: [], nonGoals: [] }, elements: [], plan: [], records: [] },
     moduleRoot: ".", traits: [], adoption: { intent: "undecided", policy: "undecided", charter: "undecided" },
   },
   config: { local: {}, revision: 0 }, consents: [], trust: [], locks: [], pending: [], work: {}, archive: [],

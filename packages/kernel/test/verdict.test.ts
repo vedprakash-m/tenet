@@ -22,7 +22,7 @@ const finding = (over: Partial<Finding>): Finding => ({ id: "F1", n: 1, severity
 const base = (): VerdictInput => ({
   profile: "feature", level: "L4", implementationExists: true, prototypeRequested: false, behavioralChange: true, reviewRequired: true,
   candidate: "cand", checkInputId: CHECK, basisHash: "bh", elements: [req, ex], obligations: [ob, suite], receipts: [rc("OB-EX-1"), rc("OB-suite")],
-  baselineFailures: [], excludedScope: [], testHashes: { "a.test.ts": "h1" }, changedLocks: [], reviews: [link], findings: [], attention: [], declined: [],
+  baselineFailures: [], excludedScope: [], testHashes: { "a.test.ts": "h1" }, changedLocks: [], unauthorized: [], reviews: [link], findings: [], attention: [], declined: [],
   attemptsLeft: 2, commitExists: true, committedTreeChecked: true, checkedIncludesHumanEdits: false, integratedStale: false,
 });
 const codes = (i: VerdictInput) => verdict(i).reasons.filter((r) => !r.note).map((r) => r.code);
@@ -48,6 +48,7 @@ describe("verdict table [RES-02, EVD-01]", () => {
     ["assumption-unresolved", (i) => ({ ...i, elements: [...i.elements, { id: "ASM-1", origin: "tenet", kind: "assumption", text: "a", verifiedBy: [] }] }), "assumption-unresolved", "implemented-unverified"],
     ["no-distinguishing-red", (i) => ({ ...i, obligations: [{ ...ob, baselineMatched: false }, suite] }), "no-distinguishing-red", "implemented-unverified"],
     ["red-invalidated", (i) => ({ ...i, testHashes: { "a.test.ts": "changed" } }), "red-invalidated", "implemented-unverified"],
+    ["authority-needed (an edit in a protected path no grant covers)", (i) => ({ ...i, unauthorized: ["db/migrations/001.sql"] }), "authority-needed", "implemented-unverified"],
     ["locked-test-changed", (i) => ({ ...i, changedLocks: ["a.test.ts"] }), "locked-test-changed", "implemented-unverified"],
     ["review-missing", (i) => ({ ...i, reviews: [] }), "review-missing", "implemented-unverified"],
     ["review-stale (candidate moved)", (i) => ({ ...i, reviews: [{ ...link, candidate: "older" }] }), "review-stale", "implemented-unverified"],

@@ -21,6 +21,7 @@ export interface VerdictInput {
   excludedScope: readonly string[];
   testHashes: Readonly<Record<string, string>>; // current hash of each acceptance test file
   changedLocks: readonly string[]; // locked paths changed without disposition
+  unauthorized: readonly string[]; // edits in protected paths that no grant covers (WRK-03)
   reviews: readonly ReviewLink[];
   findings: readonly Finding[];
   attention: readonly AttentionItem[];
@@ -129,6 +130,7 @@ export function verdict(i: VerdictInput): Verdict {
   for (const ob of i.obligations) r.push(...judgeObligation(ob, i));
   for (const el of i.elements) r.push(...judgeElement(el, i));
   for (const p of i.changedLocks) r.push(reason("locked-test-changed", p));
+  if (i.unauthorized.length) r.push(reason("authority-needed", `protected path${i.unauthorized.length === 1 ? "" : "s"} ${i.unauthorized.slice(0, 3).join(", ")}`, { refs: [...i.unauthorized] }));
   if (i.behavioralChange) r.push(...judgeRed(i));
   if (i.reviewRequired) r.push(...judgeReview(i));
   r.push(...judgeFindings(i), ...judgeAttention(i));

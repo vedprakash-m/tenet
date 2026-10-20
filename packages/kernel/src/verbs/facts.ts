@@ -1,6 +1,7 @@
 // Facts observed from the working tree for one contract: inventory, attribution, candidate and check-input identity.
 // Shared by check, commit, finish and inspect so they all see the same thing.
 import { attribute } from "../core/attribution.ts";
+import { uncoveredProtected } from "../core/authority.ts";
 import { attemptsLeft } from "../core/budget.ts";
 import type { Attribution } from "../core/attribution.ts";
 import { matches } from "../core/exclusions.ts";
@@ -42,6 +43,14 @@ export async function gather(ports: Ports, w: WorkContract, locks: State["locks"
   return { inv, att, candidate: inv.digest, tenetPaths, reviewPaths, lockAnchors: anchors.length ? await ports.git.ancestors(anchors) : new Set() };
 }
 
+/** Edits in protected paths that Tenet made (or declared) and no grant covers. Declaring is cooperative; an unexplained change is not Tenet's to ask about (TS §9.7). */
+export function unauthorizedEdits(ports: Ports, w: WorkContract, f: Facts): string[] {
+  const changed = new Set(f.inv.status.map((s) => s.path));
+  const mine = [...f.reviewPaths, ...w.touched.map((t) => t.path).filter((p) => changed.has(p) || w.git.committed.includes(p))];
+  const vetted = ports.project.hashes(Object.keys(w.vetted)); // what a scaffold wrote is authorized by its kickoff, until someone changes it
+  return uncoveredProtected(w.scope.protected, [...new Set(mine)].filter((p) => !(p in w.vetted && vetted[p] === w.vetted[p])).sort(), w.grants, ports.clock.now());
+}
+
 /** sha256(source candidate, obligation definitions, toolchain fingerprint, semantic envelope) (TS §8.8). */
 export function checkInputId(ports: Ports, w: WorkContract, candidate: string): string {
   const defs = w.obligations.map((o) => ({ id: o.id, kind: o.kind, tool: o.tool, testFile: o.testFile, expectation: o.expectation }));
@@ -74,6 +83,7 @@ export function verdictInput(ports: Ports, st: State, w: WorkContract, facts: Fa
     candidate: facts.candidate, checkInputId: checkInputId(ports, w, facts.candidate), basisHash: w.basis?.hash ?? "",
     elements: st.project.intent.elements.filter((e) => w.basis?.elementIds.includes(e.id)),
     obligations: w.obligations, receipts: w.receipts, baselineFailures: [], excludedScope: [], testHashes,
+    unauthorized: unauthorizedEdits(ports, w, facts),
     changedLocks: st.locks.filter((l) => lockApplies(l, w, facts)).flatMap((l) => [
       ...(inv.entries.get(l.path)?.blob !== l.hash ? [l.path] : []),
       ...Object.entries(l.supportInputs).filter(([p, h]) => inv.entries.get(p)?.blob !== h).map(([p]) => p),
