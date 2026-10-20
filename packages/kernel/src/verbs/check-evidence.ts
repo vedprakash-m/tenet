@@ -11,7 +11,6 @@ import type { AttentionItem, BudgetState, Obligation, Receipt, State, StopReason
 import type { Normalized, Ports } from "../ports/types.ts";
 import type { Facts } from "./facts.ts";
 
-
 /** Everything a run decided before it started, which its result needs to be interpreted. */
 export interface Run {
   ports: Ports;

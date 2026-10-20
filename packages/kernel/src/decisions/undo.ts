@@ -1,7 +1,7 @@
 // `decide undo-confirm`: apply a previewed inverse to the working tree (TS §10.5). The inverse is planned again and must
 // still be the one the user saw. Applying is a non-repeatable effect with per-path postconditions; the revert then becomes
 // a new quick contract so it is checked and committed like any other change.
-import { KernelError } from "../core/errors.ts";
+import { KernelError, ownedByOther } from "../core/errors.ts";
 import { workId, workLabel } from "../core/ids.ts";
 import { deriveObligations } from "../core/obligations.ts";
 import { snapshotOf } from "../core/attribution.ts";
@@ -182,7 +182,7 @@ export const undoConfirm: Decision = {
     }
     const owner = rest.sourceOwner && rest.work[rest.sourceOwner.work];
     if (owner && owner.id !== work.id && isLive(owner) && owner.state !== "parked") {
-      throw new KernelError("owned-by-other-work", `${owner.label} is editing here`);
+      throw ownedByOther(owner.label);
     }
     const id = `u-${ports.rand.base32(6)}`;
     const runDir = ports.store.tempDir(`run-${id}`);

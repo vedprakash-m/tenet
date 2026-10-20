@@ -25,8 +25,8 @@ export function readinessOf(ports: Ports, probe: RepoProbe): Readiness {
 
 /** The contract a call addresses; mutating calls were already fenced by the pipeline, read-only ones are checked here. */
 export function workOf(state: State | null, h: string | undefined): WorkContract {
-  if (!state) throw new KernelError("stale-session", "there is no Tenet state in this folder yet", { exit: 1 });
-  if (!h) throw new KernelError("stale-session", "this verb needs --h <handle>", { exit: 1 });
+  if (!state) throw new KernelError("handle-unknown", "there is no Tenet state in this folder yet; start with open");
+  if (!h) throw new KernelError("handle-required", "pass --h <handle>; open returns one");
   return workByHandle(state, h);
 }
 

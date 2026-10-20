@@ -11,11 +11,16 @@ export type Stamped = { res: KernelResponse; plan?: Plan };
 
 export function workByHandle(state: State, h: string): WorkContract {
   const p = parseHandle(h);
-  if (!p) throw new KernelError("stale-session", "malformed handle", { exit: 1 });
-  if (p.tag !== state.tag) throw new KernelError("stale-session", "this handle belongs to another workspace");
+  if (!p) throw new KernelError("handle-unknown", "a handle looks like W7.3.k7q");
+  if (p.tag !== state.tag) throw new KernelError("handle-unknown", "it belongs to another workspace");
   const w = Object.values(state.work).find((x) => x.label === `W-${String(p.labelN).padStart(4, "0")}`);
-  if (!w) throw new KernelError("stale-session", `no contract ${h}`);
-  if (w.session.generation !== p.generation) throw new KernelError("stale-session", "a newer chat took over this contract");
+  if (!w) throw new KernelError("handle-unknown", `there is no contract ${h}`);
+  if (w.session.generation !== p.generation) {
+    const why = "Run open --resume to continue this contract in this chat, if the user wants that.";
+    throw new KernelError("stale-session", "a newer chat took over this contract; take it back with open --resume", {
+      next: [{ action: "reconcile", why, required: true }],
+    });
+  }
   return w;
 }
 

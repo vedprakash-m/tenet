@@ -1,6 +1,6 @@
 // `open`: create or resume a contract (TS §6.5). Readiness, assistance level, lane floor, the starting snapshot,
 // source ownership and a new generation. Writes nothing to Git.
-import { KernelError } from "../core/errors.ts";
+import { KernelError, ownedByOther } from "../core/errors.ts";
 import { reason } from "../core/reasons.ts";
 import { isEditingProfile } from "../core/risk.ts";
 import { OpenInput } from "../core/schemas.ts";
@@ -11,7 +11,7 @@ import type { Ports, Tx } from "../ports/types.ts";
 import { nx, question, withWork } from "./common.ts";
 import { describe, surface } from "./open-context.ts";
 import type { Ctx } from "./open-context.ts";
-import { created } from "./open-new.ts";
+import { admitFolder, created } from "./open-new.ts";
 import { reconcileShared } from "./reconcile.ts";
 import { recover } from "./recover.ts";
 import { takeoverFacts } from "../decisions/takeover.ts";
@@ -99,7 +99,7 @@ function resumed(c: Ctx): Plan | undefined {
   if (prev.session.inCall)
     throw new KernelError("work-busy", `a ${prev.session.inCall.verb} is still running; pause it before taking over`);
   if (isEditingProfile(prev.profile) && state.sourceOwner && state.sourceOwner.work !== prev.id) {
-    throw new KernelError("owned-by-other-work", "another contract owns source");
+    throw ownedByOther(state.work[state.sourceOwner.work]?.label ?? "another contract");
   }
   const waiting = state.pending.find((q) => q.id === "takeover-check" && q.bind.factsHash === takeoverFacts(prev));
   if (waiting) {
@@ -152,6 +152,8 @@ export const open: Verb<OpenInput> = {
   name: "open",
   schema: OpenInput,
   class: () => "mutating",
+  // Before the lock exists: a folder with no Git is asked about, and nothing is written into it meanwhile.
+  preLock: admitFolder,
 
   async run(ports, state0, input, tx): Promise<Plan> {
     const c = await begin(ports, state0, input, tx!);

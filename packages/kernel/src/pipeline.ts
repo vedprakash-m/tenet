@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import type { ZodType } from "zod";
 import { inputProblem } from "./core/input.ts";
 import { KernelError } from "./core/errors.ts";
+import { reason } from "./core/reasons.ts";
 import { redact } from "./core/redact.ts";
 import { mutate } from "./pipeline-mutate.ts";
 import { render } from "./pipeline-render.ts";
@@ -57,27 +58,24 @@ export interface Verb<I = any> {
   preLock?(ctx: Ports, input: I): Promise<void>;
 }
 
+type Issue = { path: PropertyKey[]; message: string };
+/** A missing handle is its own cause with its own remedy; any other schema problem lists the first few fields at fault. */
+function invalidInput(issues: readonly Issue[], raw: unknown): Reason {
+  const given = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  if (issues.some((i) => i.path[0] === "h") && given.h === undefined) {
+    return reason("handle-required", "pass --h <handle>; open returns one");
+  }
+  const at = (i: Issue) => `${i.path.map(String).join(".") || "input"}: ${i.message}`;
+  const message = issues.slice(0, 3).map(at).join("; ");
+  return { code: "invalid-input", message };
+}
+
 function fail(ports: Ports, verb: string, e: unknown, state: State | null): KernelResponse {
-  if (e instanceof KernelError)
-    return render(ports, verb, { exit: e.exit, reasons: e.reasons, ...(e.questions ? { questions: e.questions } : {}) }, state);
-  if (e instanceof ZodError)
-    return render(
-      ports,
-      verb,
-      {
-        exit: 1,
-        reasons: [
-          {
-            code: "invalid-input",
-            message: e.issues
-              .slice(0, 3)
-              .map((i) => `${i.path.join(".") || "input"}: ${i.message}`)
-              .join("; "),
-          },
-        ],
-      },
-      state
-    );
+  if (e instanceof KernelError) {
+    const { exit, reasons, questions, next } = e;
+    return render(ports, verb, { exit, reasons, ...(questions ? { questions } : {}), ...(next ? { next } : {}) }, state);
+  }
+  if (e instanceof ZodError) return render(ports, verb, { exit: 1, reasons: [invalidInput(e.issues, undefined)] }, state);
   const message = e instanceof Error ? e.message : String(e);
   // Internal errors never yield a success-shaped response (TS §6.1 principle 5).
   return render(ports, verb, { exit: 5, reasons: [{ code: "internal-error", message }] }, state);
@@ -89,13 +87,7 @@ export async function runVerb(ports: Ports, verbs: Record<string, Verb>, name: s
   const problem = inputProblem(raw);
   if (problem) return render(ports, name, { exit: 1, reasons: [{ code: "invalid-input", message: problem }] }, null);
   const parsed = verb.schema.safeParse(raw ?? {});
-  if (!parsed.success) {
-    const msg = parsed.error.issues
-      .slice(0, 3)
-      .map((i) => `${i.path.join(".") || "input"}: ${i.message}`)
-      .join("; ");
-    return render(ports, name, { exit: 1, reasons: [{ code: "invalid-input", message: msg }] }, null);
-  }
+  if (!parsed.success) return render(ports, name, { exit: 1, reasons: [invalidInput(parsed.error.issues, raw)] }, null);
   // The user's own words and request text are kept as they said them, minus anything that looks like a secret (SEC-11).
   const input = Object.fromEntries(
     Object.entries(parsed.data as Record<string, unknown>).map(([k, v]) => [

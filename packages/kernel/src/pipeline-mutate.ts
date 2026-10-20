@@ -1,7 +1,7 @@
 // The mutating path of the pipeline (TS §6.1, §7.3): recovery, the handle envelope and source ownership inside the lock,
 // then an external job outside it, and a second transaction that publishes the result if the contract still wants it.
 import { routineAuthorized } from "./core/authority.ts";
-import { KernelError } from "./core/errors.ts";
+import { KernelError, ownedByOther } from "./core/errors.ts";
 import { allowed, matches } from "./core/exclusions.ts";
 import type { Exclusion } from "./core/exclusions.ts";
 import { isEditingProfile, laneFloor, maxLane, raise } from "./core/risk.ts";
@@ -57,7 +57,7 @@ function changesSource(verb: Verb, input: Input, current: State, w: WorkContract
 
 /** An editing call: routine authority must be live, the lease free, the branch the contract's, no excluded path; the lane may only rise. */
 async function claimSource(ports: Ports, verb: Verb, input: Input, current: State, w0: WorkContract) {
-  const fail = (code: "authority-needed" | "owned-by-other-work" | "stale-session", why: string, exit?: 2) => {
+  const fail = (code: "authority-needed" | "stale-session", why: string, exit?: 2) => {
     throw new KernelError(code, why, exit ? { exit } : {});
   };
   if (!routineAuthorized(w0.grants, ports.clock.now())) {
@@ -68,7 +68,7 @@ async function claimSource(ports: Ports, verb: Verb, input: Input, current: Stat
     );
   }
   if (current.sourceOwner && current.sourceOwner.work !== w0.id) {
-    fail("owned-by-other-work", `${current.work[current.sourceOwner.work]?.label ?? "another contract"} owns source`);
+    throw ownedByOther(current.work[current.sourceOwner.work]?.label ?? "another contract");
   }
   if (["parked", "cancelled", "superseded"].includes(w0.state)) fail("stale-session", "resume this contract before editing", 2);
   const mustBeOnBranch =

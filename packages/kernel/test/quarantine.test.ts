@@ -43,7 +43,7 @@ describe("quarantine and a fresh start [CON-06, SEC-12]", () => {
     assert.deepEqual(state.config.local, {});
     assert.deepEqual(state.consents, []);
     assert.deepEqual(state.trust, []);
-    assert.equal((await copy.call("decide", { h: old.handle!, kind: "basis", propose: BASIS })).reasons[0]?.code, "stale-session");
+    assert.equal((await copy.call("decide", { h: old.handle!, kind: "basis", propose: BASIS })).reasons[0]?.code, "handle-unknown");
     const blocked = await copy.call("decide", { h: opened.handle!, kind: "basis", propose: BASIS });
     assert.equal(blocked.exit, 3);
     assert.ok(blocked.questions?.some(q => q.id === "quarantine-review"));

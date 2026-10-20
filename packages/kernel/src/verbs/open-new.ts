@@ -1,6 +1,6 @@
 // `open` for a new contract: the repository, readiness, ownership, plan item, lane and the starting snapshot (TS §6.5).
 import { snapshotOf } from "../core/attribution.ts";
-import { KernelError } from "../core/errors.ts";
+import { KernelError, ownedByOther } from "../core/errors.ts";
 import { matches } from "../core/exclusions.ts";
 import { workId, workLabel } from "../core/ids.ts";
 import { planBlock } from "../core/plan.ts";
@@ -18,41 +18,43 @@ import { describe } from "./open-context.ts";
 import type { Ctx } from "./open-context.ts";
 import { settingsFor } from "./reconcile.ts";
 
-/** The repository the contract will use: ask before `git init`, or build a snapshot-backed prototype when the user chose no Git. */
+/** The question asked in a folder with no Git: initialize one, or build a snapshot-backed prototype. */
+export function gitInitQuestion(ports: Ports): Question {
+  return question({
+    id: "git-init",
+    header: "Git",
+    question: "This folder is not a Git repository. Tenet records its work in Git. Initialize one here?",
+    options: [
+      {
+        label: "Start Git here",
+        description: "Run git init in this folder so every commit is a checkpoint you can review or undo; nothing else changes.",
+        recommended: true,
+      },
+      {
+        label: "No Git: a prototype",
+        description: "Build a snapshot-backed prototype, not a checked result. Open it with the prototype profile and --no-git.",
+      },
+    ],
+    bind: { factsHash: factsHash(ports.root) },
+  });
+}
+
+/** Nothing is created in a folder with no Git until the user has chosen what to do about it. */
+export async function admitFolder(ports: Ports, input: OpenInput): Promise<void> {
+  if (input.noGit && input.profile !== "prototype") {
+    const why = "only a prototype can be built without Git; open it with the prototype profile";
+    throw new KernelError("capability-missing", why, { exit: 1 });
+  }
+  if (!isEditingProfile(input.profile) || input.noGit || input.initGit || (await ports.git.probe()).isRepo) return;
+  throw new KernelError("not-a-repository", "choose between starting Git here and a prototype", { questions: [gitInitQuestion(ports)] });
+}
+
+/** The repository the contract will use; the folder was admitted before anything was written. */
 async function repository(ports: Ports, input: OpenInput, editing: boolean): Promise<RepoProbe> {
   let probe = await ports.git.probe();
-  if (input.noGit && input.profile !== "prototype") {
-    throw new KernelError("capability-missing", "only a prototype can be built without Git; open it with the prototype profile", {
-      exit: 1,
-    });
-  }
   if (editing && !probe.isRepo) {
-    if (input.noGit) {
-      await ports.git.initShadow();
-    } else if (!input.initGit) {
-      const q: Question = question({
-        id: "git-init",
-        header: "Git",
-        question: "This folder is not a Git repository. Tenet records its work in Git. Initialize one here?",
-        options: [
-          {
-            label: "Start Git here",
-            description:
-              "Run git init in this folder so every commit is a checkpoint you can review or undo; nothing else changes.",
-            recommended: true,
-          },
-          {
-            label: "No Git: a prototype",
-            description:
-              "Build a snapshot-backed prototype, not a checked result. Open it with the prototype profile and --no-git.",
-          },
-        ],
-        bind: { factsHash: factsHash(ports.root) },
-      });
-      throw new KernelError("repo-state-readonly", "this folder is not a Git repository", { exit: 3, questions: [q] });
-    } else {
-      await ports.git.init();
-    }
+    if (input.noGit) await ports.git.initShadow();
+    else await ports.git.init();
     probe = await ports.git.probe();
   }
   if (editing && probe.state === "readonly") throw new KernelError("repo-state-readonly", probe.why);
@@ -65,7 +67,7 @@ function admitNew(c: Ctx, editing: boolean) {
   if (editing && state.sourceOwner) {
     const owner = state.work[state.sourceOwner.work];
     if (owner && isLive(owner) && owner.state !== "parked")
-      throw new KernelError("owned-by-other-work", `${owner.label} is editing here`);
+      throw ownedByOther(owner.label);
   }
   const item = input.planItem ? state.project.intent.plan.find((i) => i.id === input.planItem) : undefined;
   if (input.planItem && !item) throw new KernelError("plan-invalid", `there is no plan item ${input.planItem}`, { exit: 2 });

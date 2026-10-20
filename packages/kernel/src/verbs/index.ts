@@ -1,4 +1,4 @@
-// The M0 verb set (plan §6.2). `integrate`, `undo` and `publish` arrive in Alpha.
+// The verbs. `publish` is not registered: remote effects stay refused until their authority and reconciliation exist.
 import type { Verb } from "../pipeline.ts";
 import { check } from "./check.ts";
 import { commit } from "./commit.ts";

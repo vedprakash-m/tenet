@@ -344,7 +344,8 @@ describe("idempotency and the envelope", () => {
     const other = fresh();
     await other.call("open", { profile: "feature", request: "x", scopePaths: [] });
     const cross = await other.call("check", { h: resumed.handle! });
-    assert.equal(cross.exit, 4);
+    assert.equal(cross.exit, 1);
+    assert.equal(cross.reasons[0]!.code, "handle-unknown");
   });
 
   it("repeats open with the same request as the still-proposed contract", async () => {
@@ -537,7 +538,8 @@ describe("the command line", () => {
     const malformed = await runCli(p.root, ["check", "--h", "nonsense"]);
     assert.equal(malformed.code, 1);
     const unknown = await runCli(p.root, ["check", "--h", "W9.1.abcd"]);
-    assert.equal(unknown.code, 4);
+    assert.equal(unknown.code, 1);
+    assert.equal(unknown.json!.reasons[0]!.code, "handle-unknown");
     const usage = await runCli(p.root, ["decide", "--h", h]);
     assert.equal(usage.code, 1);
     const help = await runCli(p.root, ["--help"]);
