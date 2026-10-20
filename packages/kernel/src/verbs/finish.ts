@@ -14,12 +14,14 @@ import { isEditing, nx, withWork, workOf } from "./common.ts";
 import { startCommit } from "./commit.ts";
 import { gather, verdictInput, worldDigest } from "./facts.ts";
 import type { Facts } from "./facts.ts";
+import { integrationSetting } from "./integrate.ts";
+import type { IntegrationSetting } from "./integrate.ts";
 import { keepRecovered, recover } from "./recover.ts";
 
 const MAX_REASONS = 8;
 
 /** The result the user reads: outcome first, then checks, limits and the next action (RES-01). */
-function result(w: WorkContract, v: Verdict, facts: Facts, extra: Reason[]): Resp {
+function result(w: WorkContract, v: Verdict, facts: Facts, extra: Reason[], setting: IntegrationSetting): Resp {
   const label = headline(v, { profile: w.profile, branch: w.git.branch, humanFiles: facts.att.human.length + facts.att.concurrent.length + facts.att.unexplained.length });
   const reasons = [...v.reasons.filter((r) => !r.note), ...v.reasons.filter((r) => r.note), ...extra];
   const checks = [...new Map(w.receipts.filter((r) => r.stage !== "baseline").map((r) => [r.obligation, r])).values()].map((r) => ({ obligation: r.obligation, status: r.status, counts: r.counts }));
@@ -29,7 +31,7 @@ function result(w: WorkContract, v: Verdict, facts: Facts, extra: Reason[]): Res
     data: {
       outcome: w.outcome, endpoint: v.endpoint, ...(v.scope ? { scope: v.scope } : {}), level: w.level, label,
       ...(v.stopReason ? { stopReason: v.stopReason } : {}), acceptance: w.acceptance, checks, usage: summarize(w.budget, w.lane),
-      ...controlsFor(w, v.endpoint), review: w.reviews.at(-1) ? { independence: w.reviews.at(-1)!.independence, axes: w.reviews.at(-1)!.axes ?? null, uncovered: w.reviews.at(-1)!.uncovered } : null, commits: w.git.commits, branch: w.git.branch, handoff: w.handoff ?? null, omitted: Math.max(0, reasons.length - MAX_REASONS),
+      ...controlsFor(w, v.endpoint), review: w.reviews.at(-1) ? { independence: w.reviews.at(-1)!.independence, axes: w.reviews.at(-1)!.axes ?? null, uncovered: w.reviews.at(-1)!.uncovered } : null, commits: w.git.commits, branch: w.git.branch, integration: { setting, ...(setting !== "never" && v.endpoint === "checked-local" && w.git.branch !== w.git.start.branch && !w.git.integrated ? { next: setting === "auto-on-accept" ? "accept" : "integrate" } : {}) }, handoff: w.handoff ?? null, omitted: Math.max(0, reasons.length - MAX_REASONS),
     },
   };
 }
@@ -52,7 +54,7 @@ export const finish: Verb<FinishInput> = {
     if (w.state === "finished") {
       // Already closed: report the verdict as it stands now, change nothing, commit nothing.
       const f = await gather(ports, w, cur.locks);
-      return keepRecovered({ resp: result(w, verdict(verdictInput(ports, cur, w, f)), f, []) }, rec, state!);
+      return keepRecovered({ resp: result(w, verdict(verdictInput(ports, cur, w, f)), f, [], integrationSetting(cur)) }, rec, state!);
     }
     if (cur.pending.length) return keepRecovered({ resp: { work: w.id, exit: 3, questions: cur.pending, next: [nx("ask", "Answer the open question first.", true)] } }, rec, state!);
 
@@ -68,7 +70,7 @@ export const finish: Verb<FinishInput> = {
       const closed: WorkContract = { ...done, handoff: handoffText(st, done), updatedAt: ports.clock.now(), session: { generation: nw.session.generation, ...(nw.session.last ? { last: nw.session.last } : {}) } };
       const { sourceOwner, ...rest } = withWork(st, closed);
       const out: State = sourceOwner && sourceOwner.work !== nw.id ? { ...rest, sourceOwner } : rest;
-      const resp = result(closed, v, f, extra);
+      const resp = result(closed, v, f, extra, integrationSetting(st));
       return { state: out, resp: effects ? { ...resp, effects } : resp };
     };
 

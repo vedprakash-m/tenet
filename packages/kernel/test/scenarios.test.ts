@@ -124,6 +124,35 @@ describe("misleading-success traps (AC-07)", () => {
     assert.notEqual(d(f).endpoint, "checked-local");
   });
 
+  it("weakening a support file or the runner configuration after a test is locked blocks checked-local, until the user dispositions it [INT-05]", async () => {
+    const helper = 'import { expect } from "vitest";\nexport const same = (a: unknown, b: unknown) => expect(a).toBe(b);\n';
+    const p = fresh({ "src/helper.ts": helper, "vitest.config.ts": 'import { defineConfig } from "vitest/config";\nexport default defineConfig({ test: {} });\n' });
+    const basis = { ...BASIS, elements: [BASIS.elements[0], { ...BASIS.elements[1], support: ["src/helper.ts"] }] };
+    const { h } = await toRed(p, { lane: "quick" }, basis as typeof BASIS);
+    p.write("src/greet.test.ts", 'import { it } from "vitest";\nimport { greet } from "./greet.ts";\nimport { same } from "./helper.ts";\nit("greets by name", () => { same(greet("Ada"), "Hello, Ada!"); });\n');
+    await p.call("check", { h, stage: "baseline", again: true });
+    p.write("src/greet.ts", GREET_IMPL);
+    const g = await p.call("check", { h, stage: "candidate" });
+    assert.equal(g.exit, 0, JSON.stringify(g));
+    const lock = p.ports().store.read()!.state.locks[0]!;
+    assert.deepEqual(Object.keys(lock.supportInputs).sort(), ["src/helper.ts", "vitest.config.ts"]);
+
+    p.write("src/helper.ts", 'export const same = (_a: unknown, _b: unknown) => undefined;\n'); // the assertion is gone; the test still "passes"
+    await p.call("check", { h, stage: "candidate" });
+    const f = await p.call("finish", { h, noCommit: true });
+    assert.ok(f.reasons.some((r) => r.code === "locked-test-changed" && /src\/helper\.ts/.test(r.message)), JSON.stringify(f.reasons));
+    assert.notEqual(d(f).endpoint, "checked-local");
+
+    p.write("src/helper.ts", helper);
+    p.write("vitest.config.ts", 'import { defineConfig } from "vitest/config";\nexport default defineConfig({ test: { exclude: ["**"] } });\n');
+    const f2 = await p.call("finish", { h, noCommit: true });
+    assert.ok(f2.reasons.some((r) => r.code === "locked-test-changed" && /vitest\.config\.ts/.test(r.message)), JSON.stringify(f2.reasons));
+    const ok = await p.call("decide", { h, kind: "disposition", target: "vitest.config.ts", propose: { outcome: "accepted", reason: "narrowed on purpose" } });
+    assert.equal(ok.exit, 0, JSON.stringify(ok));
+    await p.call("check", { h, stage: "candidate", again: true });
+    assert.ok(!(await p.call("finish", { h, noCommit: true })).reasons.some((r) => r.code === "locked-test-changed"));
+  });
+
   it("a weakened assertion raises an attention item that needs a disposition, and a marker needs the reviewer or the user", async () => {
     const p = fresh({ "src/other.test.ts": 'import { it, expect } from "vitest";\nit("o", () => { expect(1).toBe(1); });\n' });
     const { h } = await toRed(p, { lane: "quick" });

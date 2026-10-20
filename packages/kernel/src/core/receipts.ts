@@ -42,9 +42,9 @@ export function receiptsFrom(o: RunFacts, norm: Normalized | null, obs: readonly
     rec.counts = { discovered: sum.executed + sum.skipped, ...sum };
     rec.failures = per.flatMap((p) => p!.failures).slice(0, 5);
     if (sum.focused) return stop("focused-tests");
+    if (sum.executed === 0 && sum.failed === 0) return stop("zero-tests"); // runners exit non-zero when they find nothing to run; that is no contradiction
     if (o.exit === 0 && sum.failed > 0) return stop("report-contradiction");
     if (o.exit !== undefined && o.exit !== 0 && sum.failed === 0) return stop("report-contradiction");
-    if (sum.executed === 0 && sum.failed === 0) return stop("zero-tests");
     rec.status = sum.failed > 0 ? "fail" : "pass";
     if (sum.skipped > 0 && ob.testFile) rec.limitations.push(`${sum.skipped} skipped`);
     return rec;

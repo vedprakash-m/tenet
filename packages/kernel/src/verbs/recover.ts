@@ -2,6 +2,9 @@
 // happen", and is reconciled from its postcondition. Interrupted runs are stopped and discarded.
 import { scaffolded } from "../decisions/scaffold.ts";
 import type { ScaffoldOp } from "../decisions/scaffold.ts";
+import type { UndoOp } from "../decisions/undo.ts";
+
+export interface IntegrationOp { work: string; base: string; baseBefore: string; workTip: string }
 import type { State, WorkContract } from "../core/schemas.ts";
 import type { Plan } from "../pipeline.ts";
 import type { Ports, Tx } from "../ports/types.ts";
@@ -12,6 +15,9 @@ export async function recover(ports: Ports, tx: Tx, state: State): Promise<Recov
   const completed: string[] = [], uncertain: string[] = [];
   let next = state;
   const put = (w: WorkContract) => { next = { ...next, work: { ...next.work, [w.id]: w } }; };
+
+  const applyIntegration = (w: WorkContract, op: IntegrationOp, commit: string, moved: boolean) =>
+    put({ ...w, git: { ...w.git, integrated: { into: op.base, commit, moved, validated: !moved } } });
 
   const applyScaffold = (w: WorkContract, op: ScaffoldOp) => {
     put(scaffolded(w, op.expected, op.protect));
@@ -43,6 +49,30 @@ export async function recover(ports: Ports, tx: Tx, state: State): Promise<Recov
         tx.result("commit", u.id, { completed: false });
         completed.push("an interrupted commit did not happen");
       }
+    } else if (u.effect === "integration") {
+      const op = u.op as IntegrationOp;
+      const r = await ports.git.reconcileIntegration(op.base, op.baseBefore, op.workTip);
+      const w = next.work[op.work];
+      if (r.completed && r.commit && w) {
+        applyIntegration(w, op, r.commit, r.mode === "merge");
+        tx.result("integration", u.id, { completed: true, commit: r.commit, mode: r.mode });
+        completed.push(`the integration into ${op.base} had landed before the result was recorded`);
+      } else {
+        tx.result("integration", u.id, { completed: false });
+        completed.push("an interrupted integration did not happen");
+      }
+    } else if (u.effect === "undo") {
+      // The revert contract was published before the patch was applied, so an interrupted undo rolls forward.
+      const op = u.op as UndoOp;
+      if (!next.work[op.work]) { tx.result("undo", u.id, { completed: false }); completed.push("an interrupted undo did not happen"); continue; }
+      const here = await ports.git.inventory([]);
+      const at = (p: string) => here.entries.get(p)?.blob ?? null;
+      const todo = op.paths.filter((p) => at(p) !== op.post[p]);
+      if (todo.some((p) => at(p) !== op.pre[p])) { tx.result("undo", u.id, { completed: false, uncertain: true }); uncertain.push(`the undo touched files that have since changed (${todo.slice(0, 3).join(", ")})`); continue; }
+      const patch = ports.store.readBlob(op.patch);
+      const ok = !todo.length || (!!patch && (await ports.git.applyPatch(patch, todo)).ok);
+      tx.result("undo", u.id, { completed: ok });
+      (ok ? completed : uncertain).push(ok ? (todo.length ? "an interrupted undo was finished" : "the undo had been applied before the result was recorded") : "an interrupted undo could not be finished");
     } else if (u.effect === "scaffold") {
       const op = u.op as ScaffoldOp;
       const paths = Object.keys(op.expected);
@@ -74,6 +104,14 @@ export async function recover(ports: Ports, tx: Tx, state: State): Promise<Recov
       const op = log.find((e) => e.kind === "intent" && e.effect === "scaffold" && e.id === r.id)?.op as ScaffoldOp | undefined;
       const w = op && next.work[op.work];
       if (w && op && !w.touched.some((t) => t.path in op.expected)) { applyScaffold(w, op); completed.push("the scaffold was recorded as done but not yet in the contract; it is now"); }
+      continue;
+    }
+    if (r.kind === "result" && r.effect === "integration" && out?.completed && (r.outcome as { commit?: string }).commit) {
+      const intent = log.find((e) => e.kind === "intent" && e.effect === "integration" && e.id === r.id);
+      const op = intent?.op as IntegrationOp | undefined;
+      const w = op && next.work[op.work];
+      const commit = (r.outcome as { commit: string; mode?: string }).commit;
+      if (w && op && !w.git.integrated) { applyIntegration(w, op, commit, (r.outcome as { mode?: string }).mode === "merge"); completed.push("the integration was recorded as done but not yet in the contract; it is now"); }
       continue;
     }
     if (r.kind !== "result" || r.effect !== "commit" || !out?.completed || !out.commit) continue;

@@ -49,6 +49,7 @@ export const BasisElement = z.object({
   test: z.enum(["distinguishing", "preservation", "boundary"]).optional(),
   expect: z.enum(["fail", "pass"]).optional(), // declared baseline expectation (boundary cases)
   testFile: z.string().optional(),
+  support: z.array(z.string()).optional(), // helpers, fixtures and setup files the test depends on: locked with it
   expiresAt: z.string().optional(),
   verifiedBy: z.union([
     z.array(z.object({ method: z.enum(["obligation", "review", "manual"]), ref: z.string() })),
@@ -77,6 +78,7 @@ export const Obligation = z.object({
   tool: z.string().optional(), // adapter tool id, e.g. "vitest"
   example: z.string().optional(),
   testFile: z.string().optional(),
+  support: z.array(z.string()).optional(),
   test: z.enum(["distinguishing", "preservation", "boundary"]).optional(),
   expectation: z.enum(["fail", "pass"]).optional(), // declared baseline expectation
   state: z.enum(["registered", "verified", "locked", "revised"]).optional(),
@@ -186,9 +188,13 @@ export const WorkContract = z.object({
   git: z.object({
     mode: z.enum(["git", "shadow", "none"]),
     base: z.string().nullable(), branch: z.string().nullable(), start: StartSnapshot, commits: z.array(z.string()),
+    integrated: z.object({ into: z.string(), commit: z.string(), moved: z.boolean(), validated: z.boolean() }).optional(), // local integration into the base branch
+    undoneBy: z.string().optional(), // the label of the contract that reverted this work
+    switchConsent: z.string().optional(), // facts hash the user agreed to carry uncommitted edits across a branch switch under
     committed: z.array(z.string()), // every path Tenet has committed in this contract, so a review sees the whole change
     noCommit: z.boolean().optional(),
   }),
+  reverting: z.array(z.string()).optional(), // paths an undo was asked to revert: removing their assertions is the request, not a weakening
   vetted: z.record(z.string(), z.string()), // recipe files written by a scaffold: path to sha256, exempt from attention while unchanged
   touched: z.array(z.object({ path: z.string(), hashAtLastCheck: z.string().optional() })),
   includeDirty: z.array(z.string()), // human-dirty files the user chose to include in Tenet's commit
@@ -206,7 +212,7 @@ export type WorkContract = z.infer<typeof WorkContract>;
 export const Lock = z.object({
   path: z.string(), hash: z.string(), obligation: z.string(),
   anchor: z.union([z.object({ commit: z.string() }), z.object({ provisional: z.string() })]),
-  supportInputs: z.array(z.string()),
+  supportInputs: z.record(z.string(), z.string()), // support file to blob, locked with the test
 });
 export type Lock = z.infer<typeof Lock>;
 
@@ -310,6 +316,7 @@ export const BasisElementInput = z.object({
   test: z.enum(["distinguishing", "preservation", "boundary"]).optional(),
   expect: z.enum(["fail", "pass"]).optional(),
   testFile: z.string().optional(),
+  support: z.array(z.string()).max(20).optional(),
 });
 
 export const BasisProposal = z.object({
@@ -363,6 +370,12 @@ export type PacketInput = z.infer<typeof PacketInput>;
 
 export const ReviewInput = z.object({ scope: z.string().default("working-tree"), base: z.string().optional() });
 export type ReviewInput = z.infer<typeof ReviewInput>;
+
+export const IntegrateInput = z.object({ h: Handle, again: z.boolean().optional() });
+export type IntegrateInput = z.infer<typeof IntegrateInput>;
+
+export const UndoInput = z.object({ h: Handle, again: z.boolean().optional() });
+export type UndoInput = z.infer<typeof UndoInput>;
 
 export const InspectInput = z.object({
   view: z.enum(["status", "why", "doctor", "help", "result", "impact", "residue", "settings"]).default("status"),

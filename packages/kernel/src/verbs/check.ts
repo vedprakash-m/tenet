@@ -22,6 +22,13 @@ import { keepRecovered, recover } from "./recover.ts";
 
 const TIMEOUT_MS = 10 * 60_000;
 
+/** Support files locked with a test: those the example declares, plus the runner's own configuration (TS §9.7). */
+const RUNNER_CONFIG = /^(?:vitest|vite)\.config\.[cm]?[jt]s$/;
+function supportOf(ob: Obligation, facts: { inv: { entries: Map<string, { blob: string }> } }): Record<string, string> {
+  const paths = [...(ob.support ?? []), ...[...facts.inv.entries.keys()].filter((p) => RUNNER_CONFIG.test(p))];
+  return Object.fromEntries(paths.flatMap((p) => { const blob = facts.inv.entries.get(p)?.blob; return blob ? [[p, blob]] : []; }));
+}
+
 export const check: Verb<CheckInput> = {
   name: "check",
   schema: CheckInput,
@@ -33,7 +40,8 @@ export const check: Verb<CheckInput> = {
     const state = state0!;
     let w = workOf(state, input.h);
     if (!w.basis) throw new KernelError("continue-required", "record a basis with decide before checking", { exit: 2 });
-    if (["finished", "cancelled", "superseded"].includes(w.state)) throw new KernelError("stale-session", `this work is ${w.state}`, { exit: 2 });
+    // Finished work can still be rechecked on the integrated tree; nothing else reopens it.
+    if (["finished", "cancelled", "superseded"].includes(w.state) && !(w.state === "finished" && input.stage === "integrated")) throw new KernelError("stale-session", `this work is ${w.state}`, { exit: 2 });
     const rec = await recover(ports, tx!, state);
     let cur = rec.state;
     w = cur.work[w.id]!;
@@ -128,7 +136,7 @@ export const check: Verb<CheckInput> = {
           const r = receipts.find((x) => x.obligation === ob.id);
           if (stage === "candidate" && r?.status === "pass" && ob.testFile && ob.baselineMatched && !locks.some((l) => l.path === ob.testFile)) {
             const blob = facts.inv.entries.get(ob.testFile)?.blob;
-            if (blob) { locks = [...locks, { path: ob.testFile, hash: blob, obligation: ob.id, anchor: { provisional: cw.id }, supportInputs: [] }]; obligations = obligations.map((x) => (x.id === ob.id ? { ...x, state: "locked" as const } : x)); }
+            if (blob) { locks = [...locks, { path: ob.testFile, hash: blob, obligation: ob.id, anchor: { provisional: cw.id }, supportInputs: supportOf(ob, facts) }]; obligations = obligations.map((x) => (x.id === ob.id ? { ...x, state: "locked" as const } : x)); }
           }
         }
 
@@ -138,7 +146,7 @@ export const check: Verb<CheckInput> = {
         // Recipe files a scaffold wrote are vetted content; they raise nothing until someone changes them.
         const vetted = ports.project.hashes(Object.keys(cw.vetted));
         const cfg: AttentionItem[] = changes.filter((c) => c.kind === "config" && vetted[c.path] !== cw.vetted[c.path]).map((c) => ({ id: `AT-${hashOf(["cfg", c.path, c.hunks]).slice(0, 8)}`, path: c.path, line: c.hunks[0]?.line ?? 1, pattern: "test or build configuration", marker: false }));
-        const attention = carryDispositions(cw.attention, [...netAttention(changes, ports.stack.patterns), ...cfg]);
+        const attention = carryDispositions(cw.attention, [...netAttention(changes.filter((c) => !cw.reverting?.includes(c.path)), ports.stack.patterns), ...cfg]);
 
         let nw: WorkContract = {
           ...cw, obligations, budget, attention, receipts: [...cw.receipts.filter((r) => !receipts.some((n) => n.obligation === r.obligation && n.stage === r.stage && n.scope === r.scope)), ...receipts].slice(-80),
@@ -170,9 +178,14 @@ export const check: Verb<CheckInput> = {
         } else {
           next.push(nx(scope === "targeted" ? "check" : "implement", scope === "targeted" ? "Targeted checks pass; run a full check when the pass is done." : "Continue.", false));
         }
+        // A prototype's recovery point: every check snapshots the folder into the shadow repository (TS §10.9).
+        if (nw.git.mode === "shadow") {
+          try { await ports.git.snapshot(`Tenet: ${stage} check`); } catch (e) { if (!(e instanceof KernelError)) throw e; reasons.push(...e.reasons.map((r) => ({ ...r, note: true }))); }
+        }
         if (nearLimit(nw.budget, nw.lane)) reasons.push(reason("budget-warning", "80% of a limit is used", { note: true }));
         // At a stop, and at 80% of any limit, the handoff is written while there is still budget to write it (WRK-12).
         if (stop || nearLimit(nw.budget, nw.lane)) nw = { ...nw, handoff: handoffText(withWork(st, nw), nw) };
+        if (stage === "integrated" && passedAll && nw.git.integrated) nw = { ...nw, git: { ...nw.git, integrated: { ...nw.git.integrated, validated: true } } };
         const out: State = { ...withWork(st, nw), locks };
         return { state: out, resp: { work: nw.id, reasons, next, data, progress: { phase: "checking", ...(passedAll ? { boundary: "milestone" as const } : {}) }, ...(stop ? { exit: 2 as const } : {}), ...(rec.completed.length ? { effects: { completed: rec.completed, uncertain: rec.uncertain } } : {}) } };
       },

@@ -1,10 +1,12 @@
 // The small decision kinds: each is a few lines over one record. Kept together; split a kind out when it grows.
+import { SETTINGS, isSettingKey } from "../core/config.ts";
 import { KernelError } from "../core/errors.ts";
 import { reason } from "../core/reasons.ts";
 import type { BasisElement, Finding } from "../core/schemas.ts";
 import { undecidedDirty } from "../verbs/dirty.ts";
 import { factsHash, nx, withWork } from "../verbs/common.ts";
 import { gather } from "../verbs/facts.ts";
+import { integrationSetting, startIntegrate, switchFacts } from "../verbs/integrate.ts";
 import type { Decision } from "./types.ts";
 
 /** Answers the dirty-overlap question: the question's facts must still be the current facts. */
@@ -26,10 +28,12 @@ const ACCEPT = ["accepted", "rejected", "accepted-with-residual-risk"] as const;
 /** Owner acceptance is recorded as what it is and never removes a blocking reason (EVD-06). */
 export const acceptance: Decision = {
   kind: "acceptance",
-  run({ state, work, input }) {
+  async run({ ports, tx, state, work, input }) {
     const v = input.target;
     if (!ACCEPT.includes(v as (typeof ACCEPT)[number])) throw new KernelError("revision-conflict", `target must be one of ${ACCEPT.join(", ")}`, { exit: 1 });
     const w = { ...work, acceptance: v as (typeof ACCEPT)[number] };
+    // Under `auto-on-accept` the result already said accepting also integrates; accepting is the consent (UX A12).
+    if (v !== "rejected" && integrationSetting(state) === "auto-on-accept" && w.git.commits.length && w.git.branch && w.git.start.branch && w.git.branch !== w.git.start.branch && !w.git.integrated) return startIntegrate(ports, tx, withWork(state, w), w);
     return { state: withWork(state, w), resp: { work: w.id, next: [nx("finish", "Acceptance is recorded; it does not change the checks.")], data: { acceptance: v } } };
   },
 };
@@ -47,11 +51,11 @@ export const disposition: Decision = {
 
     // A locked acceptance test the user confirms may change: the lock moves to what the file is now, and so does the
     // record of the red it was verified against (INT-06). The reason is the user's, on the record.
-    const lock = state.locks.find((l) => l.path === id);
+    const lock = state.locks.find((l) => l.path === id || id in l.supportInputs);
     if (lock) {
       const blob = (await gather(ports, work)).inv.entries.get(id)?.blob;
       if (!blob) throw new KernelError("revision-conflict", `${id} no longer exists; a deleted locked test needs a basis change`, { exit: 2 });
-      const locks = state.locks.map((l) => (l.path === id ? { ...l, hash: blob } : l));
+      const locks = state.locks.map((l) => (l.path === id ? { ...l, hash: blob } : id in l.supportInputs ? { ...l, supportInputs: { ...l.supportInputs, [id]: blob } } : l));
       const w = { ...work, obligations: work.obligations.map((o) => (o.testFile === id ? { ...o, baselineTestHash: blob } : o)) };
       return { state: withWork({ ...state, locks }, w), resp: { work: w.id, next: [nx("check", "Check again; the locked test is dispositioned.")] } };
     }
@@ -98,6 +102,49 @@ export const unexplained: Decision = {
     if (factsHash([...paths].sort()) !== q.bind.factsHash) throw new KernelError("revision-conflict", "the files changed since the question was asked", { exit: 2 });
     const w = answer === "mine" ? { ...work, touched: [...work.touched, ...paths.map((path) => ({ path }))] } : { ...work, keepOut: [...work.keepOut, ...paths] };
     return { state: withWork({ ...state, pending: state.pending.filter((p) => p.id !== "unexplained") }, w), resp: { work: w.id, next: [nx("check", answer === "mine" ? "Check again so the new files are covered." : "Continue.", answer === "mine")] } };
+  },
+};
+
+/** Consent to carry uncommitted edits across the branch switch an integration makes, bound to the files and branch shown. */
+export const branchSwitch: Decision = {
+  kind: "branch-switch",
+  async run({ ports, state, work, input }) {
+    const q = state.pending.find((p) => p.id === "branch-switch");
+    const answer = input.answers?.["branch-switch"];
+    if (!q) throw new KernelError("revision-conflict", "there is no open question about switching branches", { exit: 2 });
+    if (answer !== "continue" && answer !== "cancel") throw new KernelError("revision-conflict", 'answer "continue" or "cancel"', { exit: 1 });
+    const rest = state.pending.filter((p) => p.id !== "branch-switch");
+    if (answer === "cancel") return { state: withWork({ ...state, pending: rest }, work), resp: { work: work.id, next: [] } };
+    const dirty = (await gather(ports, work, state.locks)).inv.status.map((s) => s.path);
+    const base = work.git.start.branch ?? "";
+    if (switchFacts(base, dirty) !== q.bind.factsHash) throw new KernelError("revision-conflict", "your uncommitted files changed since the question was asked", { exit: 2 });
+    return { state: withWork({ ...state, pending: rest }, { ...work, git: { ...work.git, switchConsent: q.bind.factsHash } }), resp: { work: work.id, next: [nx("integrate", "Integrate again; the switch is agreed.", true)] } };
+  },
+};
+
+/** A project setting, from the typed catalog; it changes what the next action says, never what a word does. */
+export const config: Decision = {
+  kind: "config",
+  run({ state, work, input }) {
+    const key = input.target ?? "";
+    if (!isSettingKey(key)) throw new KernelError("restriction-key-unknown", `"${key}" is not a setting; known: ${Object.keys(SETTINGS).join(", ")}`, { exit: 2 });
+    const value = SETTINGS[key].safeParse((input.propose as { value?: unknown } | undefined)?.value);
+    if (!value.success) throw new KernelError("restriction-key-unknown", `${key} must be ${SETTINGS[key].options.join(", ")}`, { exit: 2 });
+    const next = { ...state, config: { revision: state.config.revision + 1, local: { ...state.config.local, [key]: value.data } } };
+
+    return { state: withWork(next, work), resp: { work: work.id, next: [], data: { [key]: value.data } } };
+  },
+};
+
+/** The one-step "sync my index" after a commit left the index untouched (TS §10.3 step 7): reruns only that step. */
+export const syncIndex: Decision = {
+  kind: "sync-index",
+  async run({ ports, work }) {
+    const last = work.git.commits.at(-1);
+    if (!last) throw new KernelError("revision-conflict", "there is no commit of this work to sync the index for", { exit: 2 });
+    const result = await ports.git.syncIndex(work.git.committed, await ports.git.parentOf(last));
+    if (result === "untouched") return { resp: { work: work.id, exit: 2, reasons: [reason("git-locked", "another Git process holds the index lock; try again when it ends, or remove a stale .git/index.lock", { refs: [] })], next: [nx("commit", "Retry the sync once the lock is gone.")] } };
+    return { resp: { work: work.id, next: [], data: { index: result } } };
   },
 };
 

@@ -74,10 +74,13 @@ export function verdictInput(ports: Ports, st: State, w: WorkContract, facts: Fa
     candidate: facts.candidate, checkInputId: checkInputId(ports, w, facts.candidate), basisHash: w.basis?.hash ?? "",
     elements: st.project.intent.elements.filter((e) => w.basis?.elementIds.includes(e.id)),
     obligations: w.obligations, receipts: w.receipts, baselineFailures: [], excludedScope: [], testHashes,
-    changedLocks: st.locks.filter((l) => lockApplies(l, w, facts)).filter((l) => inv.entries.get(l.path)?.blob !== l.hash).map((l) => l.path),
+    changedLocks: st.locks.filter((l) => lockApplies(l, w, facts)).flatMap((l) => [
+      ...(inv.entries.get(l.path)?.blob !== l.hash ? [l.path] : []),
+      ...Object.entries(l.supportInputs).filter(([p, h]) => inv.entries.get(p)?.blob !== h).map(([p]) => p),
+    ]),
     reviews: w.reviews, findings: w.findings, attention: w.attention, declined: w.declined, attemptsLeft: attemptsLeft(w.budget, w.lane),
     commitExists, committedTreeChecked: commitExists && inv.status.length === 0 && w.lastCheck?.candidate === facts.candidate,
-    checkedIncludesHumanEdits: humanPresent, integratedStale: false,
+    checkedIncludesHumanEdits: humanPresent, integratedStale: !!w.git.integrated && w.git.integrated.moved && !w.git.integrated.validated,
   };
   if (w.stopReason) i.stopReason = w.stopReason;
   return i;

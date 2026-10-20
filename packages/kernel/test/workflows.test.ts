@@ -1,5 +1,6 @@
 // Workflow edge cases on real repositories: new projects, hooks, refusals, dispositions, parking and non-editing work.
-import { chmodSync, existsSync, readFileSync, symlinkSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { chmodSync, existsSync, readFileSync, rmSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -286,6 +287,30 @@ describe("acceptance-test locks follow history (TS §9.7)", () => {
     await p.call("decide", { h: o3.handle!, kind: "basis", propose: { outcome: "tidy", scopePaths: ["src/greet.ts"], elements: [{ ref: "r", kind: "requirement", origin: "request", text: "greet keeps working" }] } });
     const why = await p.call("inspect", { view: "why", h: o3.handle! });
     assert.ok(why.reasons.some((r) => r.code === "locked-test-changed"), JSON.stringify(why.reasons));
+  });
+});
+
+describe("a Git process killed while holding the index lock [GIT-03]", () => {
+  it("leaves the index untouched, says exactly what to sync, and syncs in one step once the lock is gone", async () => {
+    const p = fresh();
+    const { h } = await toGreen(p);
+    // A killed git client leaves its lock behind; nothing else is wrong with the repository.
+    const holder = spawn(process.execPath, ["-e", `require("fs").writeFileSync(${JSON.stringify(join(p.root, ".git/index.lock"))}, ""); process.kill(process.pid, "SIGKILL")`], { stdio: "ignore" });
+    await new Promise((r) => holder.on("exit", r));
+    const indexBefore = readFileSync(join(p.root, ".git/index"));
+    const f = await p.call("finish", { h, subject: "Add greet" });
+    const note = f.reasons.find((r) => r.code === "index-sync-needed");
+    assert.ok(note, JSON.stringify(f.reasons));
+    assert.match(note.message, /src\/greet\.test\.ts.*src\/greet\.ts|src\/greet\.ts.*src\/greet\.test\.ts/);
+    assert.equal(d(f).endpoint, "checked-local");
+    assert.ok(indexBefore.equals(readFileSync(join(p.root, ".git/index"))), "the index file is byte-for-byte what it was");
+
+    const stuck = await p.call("decide", { h, kind: "sync-index" });
+    assert.equal(stuck.exit, 2, "still locked");
+    rmSync(join(p.root, ".git/index.lock"));
+    const ok = await p.call("decide", { h, kind: "sync-index", again: true });
+    assert.equal(ok.exit, 0, JSON.stringify(ok));
+    assert.equal(p.git("status", "--porcelain"), "", "index and tree now agree with HEAD");
   });
 });
 

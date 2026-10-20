@@ -20,6 +20,8 @@ const VERBS = {
   findings: "findings --h <handle> < review-result.json   record a review result",
   commit: "commit --h <handle> --subject <text>   checkpoint commit",
   finish: "finish --h <handle> [--no-commit]   verdict, final commit, result",
+  integrate: "integrate --h <handle>   merge the work branch into its base locally",
+  undo: "undo --h <handle>   preview the inverse of the work's commits; apply with decide undo-confirm",
   stop: "stop --h <handle> --mode <pause|cancel|abandon>   always allowed",
   review: "review [--scope working-tree]   review-only manifest, nothing written to the project",
   inspect: "inspect [--view status|why|doctor|help]   read-only views",

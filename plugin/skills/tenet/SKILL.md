@@ -11,13 +11,15 @@ You are one teammate. The kernel (`tenet`) decides what is true; you do the work
 
 | Verb | Use |
 |---|---|
-| `tenet open <profile> --request <text> --scope-paths <paths>` | Start a contract. Profiles: `feature`, `bug`, `refactor`, `investigate`, `plan`, `continue`. Add `--lane standard` or `--lane deep` only when the user asks for more rigor |
-| `tenet decide <kind> --h <handle>` | Record a decision. Kinds: `basis`, `scaffold`, `dirty-overlap`, `unexplained`, `hook-consent`, `acceptance`, `disposition`, `repair-lock`. Content goes in JSON on stdin as `{"propose": ...}`; answers are `--answer <id>=<choice>` |
+| `tenet open <profile> --request <text> --scope-paths <paths>` | Start a contract. Profiles: `feature`, `bug`, `refactor`, `investigate`, `plan`, `continue`, `prototype` (with `--no-git` in a folder the user chose not to put under Git). Add `--lane standard` or `--lane deep` only when the user asks for more rigor |
+| `tenet decide <kind> --h <handle>` | Record a decision. Kinds: `basis`, `scaffold`, `sync-index`, `config`, `branch-switch`, `undo-confirm`, `dirty-overlap`, `unexplained`, `hook-consent`, `acceptance`, `disposition`, `repair-lock`. Content goes in JSON on stdin as `{"propose": ...}`; answers are `--answer <id>=<choice>` |
 | `tenet check --h <handle> --stage candidate` | Run the obligations. `--stage baseline` for the planned red, `--targeted` while iterating, `--touched <paths>` for every file you edited |
 | `tenet packet reviewer --h <handle> --retry` | A fresh manifest attempt. `packet handoff` and `packet resume` read the state back |
 | `tenet findings --h <handle>` | Record a reviewer's result, JSON on stdin as `{"result": ...}` |
 | `tenet commit --h <handle> --subject <text>` | A checkpoint commit |
+| `tenet integrate --h <handle>` | Merge the work branch into its base locally, when the user says "integrate". It predicts conflicts first and switches the editor to the base; a merge onto a moved base needs `tenet check --h <handle> --stage integrated` before it is called checked |
 | `tenet finish --h <handle>` | Verdict, final commit, result. `--no-commit` when the user said not to commit |
+| `tenet undo --h <handle>` | After a commit, when the user asks to undo the work: previews the inverse of its commits and asks in plain chat (end your turn). On "undo", `tenet decide undo-confirm --h <handle> --answer undo-confirm=apply` reverts the working tree, then check and finish the new revert contract it returns. Databases and external effects are never undone |
 | `tenet stop pause --h <handle>` | `pause`, `cancel` or `abandon`; always allowed |
 | `tenet inspect status` | Read-only: `status`, `why`, `doctor`, `help` |
 | `tenet review` | Review-only manifest; nothing is written to the project |
@@ -39,7 +41,7 @@ The kernel names the next action. Do the one marked `required`, or a permitted a
 | `focused-review` | Reread the diff yourself against the basis, then `tenet findings`; it will count as reduced independence |
 | `commit`, `finish` | Run the verb |
 | `reconcile`, `revalidate` | Follow the reasons, then run the verb `next` names |
-| `integrate`, `publish` | Offer only; run nothing remote unless the user asks |
+| `integrate`, `publish` | Offer; run `tenet integrate` only when the user asks (or accepts under the `auto-on-accept` setting). Nothing remote is ever run |
 | `stop` | Run the stop mode named |
 
 ## The four shapes

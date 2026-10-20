@@ -63,15 +63,21 @@ export const open: Verb<OpenInput> = {
 
     let probe = await ports.git.probe();
     const editing = isEditingProfile(input.profile);
+    if (input.noGit && input.profile !== "prototype") throw new KernelError("capability-missing", "only a prototype can be built without Git; open it with the prototype profile", { exit: 1 });
     if (editing && !probe.isRepo) {
-      if (!input.initGit) {
+      if (input.noGit) {
+        // GIT-01: no Git by the user's choice means a snapshot-backed prototype, never a checked result.
+        await ports.git.initShadow();
+        probe = await ports.git.probe();
+      } else if (!input.initGit) {
         const q: Question = question({ id: "git-init", header: "Git", question: "This folder is not a Git repository. Tenet records its work in Git. Initialize one here?",
-          options: [{ label: "Initialize Git", description: "Run git init in this folder; nothing else changes.", recommended: true }, { label: "Not now", description: "Stop; no files are changed." }],
+          options: [{ label: "Start Git here", description: "Run git init in this folder so every commit is a checkpoint you can review or undo; nothing else changes.", recommended: true }, { label: "No Git: a prototype", description: "Build a snapshot-backed prototype, not a checked result. Open it with the prototype profile and --no-git." }],
           bind: { factsHash: factsHash(ports.root) } });
         throw new KernelError("repo-state-readonly", "this folder is not a Git repository", { exit: 3, questions: [q] });
+      } else {
+        await ports.git.init();
+        probe = await ports.git.probe();
       }
-      await ports.git.init();
-      probe = await ports.git.probe();
     }
     if (editing && probe.state === "readonly") throw new KernelError("repo-state-readonly", probe.why);
 
@@ -98,7 +104,7 @@ export const open: Verb<OpenInput> = {
     const w = newContract({
       id: workId(ports.rand), label: workLabel(seq), profile: input.profile, request: input.request, lane, floor, level, generation: gen, now,
       version: ports.version, assessment: assessment as Record<string, "low" | "high">, scopePaths: scope, protectedPaths,
-      gitMode: probe.isRepo ? "git" : "none", base: probe.head, branch: probe.branch, start, ...(input.planItem ? { planItem: input.planItem } : {}),
+      gitMode: probe.shadow ? "shadow" : probe.isRepo ? "git" : "none", base: probe.head, branch: probe.branch, start, ...(input.planItem ? { planItem: input.planItem } : {}),
     });
     if (editing) {
       w.grants.push({ id: "GR-1", actions: ["local-routine"], source: "request", capture: "reported", quote: input.request.slice(0, 200), bind: { factsHash: factsHash(scope) } });

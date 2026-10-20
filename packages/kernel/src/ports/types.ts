@@ -58,7 +58,7 @@ export interface Inventory {
   head: string | null; branch: string | null; entries: Map<string, Entry>; status: StatusEntry[]; digest: string;
 }
 export interface RepoProbe {
-  isRepo: boolean; version: string; top: string | null; head: string | null; branch: string | null;
+  isRepo: boolean; /** the repository is the shadow repository in .tenet/git (a non-Git prototype) */ shadow: boolean; version: string; top: string | null; head: string | null; branch: string | null;
   state: "ok" | "none" | "readonly"; why?: string; identity: boolean; remotes: string[]; hooks: string | null;
 }
 export interface CommitPlan { paths: string[]; deleted: string[]; message: string; parent: string | null; timeoutMs: number }
@@ -77,9 +77,33 @@ export interface Git {
   /** Postcondition for crash recovery: did a commit with this parent and tree land? */
   reconcileCommit(parent: string | null, expectedTree: string, tenetPaths: readonly string[]): Promise<{ completed: boolean; commit?: string }>;
   syncIndex(paths: readonly string[], oldHead: string | null): Promise<CommitOutcome["indexSync"]>;
+  /** Commits on the current history carrying `Tenet-Work: <label>`, newest first; `shallow` when history is cut short. */
+  workCommits(label: string): Promise<{ commits: string[]; shallow: boolean; merges: boolean }>;
+  /** The inverse of these commits (newest first) applied to a temporary index from HEAD; never touches the real index or tree. */
+  planUndo(commits: readonly string[]): Promise<{ ok: true; tree: string; patch: string; paths: string[]; stat: string } | { ok: false; conflict: string[]; detail: string }>;
+  /** Applies a patch to the working tree only (never the index); `include` limits it to these paths. */
+  applyPatch(patch: string, include?: readonly string[]): Promise<{ ok: boolean; detail?: string }>;
+  /** Blob ids of paths in a tree-ish (null when absent). */
+  blobsAt(treeish: string, paths: readonly string[]): Promise<Record<string, string | null>>;
+  /** Commits after `since` on the current history that touch these paths. */
+  laterCommits(since: string, paths: readonly string[]): Promise<string[]>;
+  /** The commit a ref names, or null. */
+  refCommit(ref: string): Promise<string | null>;
+  /** Files an integration would conflict on, from `git merge-tree` (writes objects only); supported is false before Git 2.38. */
+  predictConflicts(base: string, work: string): Promise<{ supported: boolean; paths: string[] }>;
+  /** Switches to `base` and fast-forwards, or merges when the base moved. */
+  integrate(base: string, work: string): Promise<{ ok: boolean; commit?: string; mode?: "fast-forward" | "merge"; detail?: string }>;
+  /** Postcondition for recovery: did this integration land (TS §7.4)? */
+  reconcileIntegration(base: string, baseBefore: string, work: string): Promise<{ completed: boolean; commit?: string; mode?: "fast-forward" | "merge" }>;
+  /** The parent of a commit, or null for a root commit. */
+  parentOf(commit: string): Promise<string | null>;
   /** Which of these commits are ancestors of HEAD (`git merge-base --is-ancestor`). */
   ancestors(commits: readonly string[]): Promise<Set<string>>;
   init(): Promise<void>;
+  /** Creates the shadow repository for a folder with no Git (TS §10.9) and takes the first snapshot. */
+  initShadow(): Promise<void>;
+  /** Commits a snapshot of the folder into the shadow repository; a no-op in a real repository. */
+  snapshot(message: string): Promise<string | null>;
   /** Creates and switches to a branch from HEAD, carrying the working tree; idempotent when already on it. */
   createBranch(name: string): Promise<void>;
 }

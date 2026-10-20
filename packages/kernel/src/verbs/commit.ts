@@ -73,7 +73,7 @@ export async function startCommit(ports: Ports, tx: Tx, st: State, w: WorkContra
       tx2.result("commit", runId, { completed: true, commit: o.commit ?? null, tree: o.tree ?? null });
       const reasons: Reason[] = [];
       if (o.foreign.length) reasons.push(reason("hook-staged-foreign-path", o.foreign.join(", ")));
-      if (o.indexSync === "untouched" && o.syncPaths.length) reasons.push(reason("index-sync-needed", o.syncPaths.join(", "), { note: true }));
+      if (o.indexSync === "untouched" && o.syncPaths.length) reasons.push(reason("index-sync-needed", `${o.syncPaths.join(", ")}; run: decide sync-index`, { note: true }));
       const commits = o.commit && !base.git.commits.includes(o.commit) ? [...base.git.commits, o.commit] : base.git.commits;
       const nw: WorkContract = { ...base, state: base.lastValidPhase ?? base.state, git: { ...base.git, commits, committed: [...new Set([...base.git.committed, ...paths])] }, touched: [] };
       // A lock verified on an uncommitted candidate is anchored to the first commit that contains it (TS §9.7).

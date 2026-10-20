@@ -57,6 +57,7 @@ function build(proposal: z.infer<typeof BasisProposal>, state: State, w: WorkCon
     if (e.kind === "example") {
       el.test = e.test ?? "distinguishing";
       if (e.testFile) el.testFile = e.testFile;
+      if (e.support?.length) el.support = e.support;
       if (e.expect) el.expect = e.expect;
     }
     built.push(el);
