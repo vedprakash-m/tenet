@@ -1,6 +1,6 @@
 // The project folder as an adapter: the only code that writes files the user will see. Never overwrites.
 import { createHash } from "node:crypto";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve, sep } from "node:path";
 import type { Project, RecipeFile } from "../ports/types.ts";
 
@@ -27,6 +27,18 @@ export class FsProject implements Project {
     return Object.fromEntries(paths.map((rel) => {
       try { return [rel, createHash("sha256").update(readFileSync(this.at(rel))).digest("hex")]; } catch { return [rel, null]; }
     }));
+  }
+
+  read(rel: string): string | null {
+    try { return readFileSync(this.at(rel), "utf8"); } catch { return null; }
+  }
+
+  write(rel: string, content: string): void {
+    const p = this.at(rel);
+    mkdirSync(dirname(p), { recursive: true });
+    const tmp = `${p}.tenet-${process.pid}.tmp`;
+    writeFileSync(tmp, content);
+    renameSync(tmp, p);
   }
 
   remove(paths: readonly string[]): void { for (const rel of paths) rmSync(this.at(rel), { force: true }); }

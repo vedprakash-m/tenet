@@ -233,10 +233,13 @@ export const State = z.object({
       intent: z.enum(["undecided", "adopted", "declined"]),
       policy: z.enum(["undecided", "adopted", "declined"]),
       charter: z.enum(["undecided", "adopted", "declined"]),
+      offered: z.boolean().optional(), // the one-time offer to adopt shared files has been made (CON-01)
     }),
   }),
   config: z.object({ local: z.record(z.string(), z.unknown()), revision: z.number() }),
   consents: z.array(z.object({ kind: z.enum(["hooks", "filters", "envelope", "remote-read"]), configHash: z.string(), at: z.string() })),
+  // Shared files adopted by hash, with what was accepted from each (TS §7.2): block hashes for INTENT.md, the policy itself for tenet.policy.json.
+  trust: z.array(z.object({ file: z.string(), hash: z.string(), adoptedAt: z.string(), restrictions: z.record(z.string(), z.unknown()) })).default([]),
   locks: z.array(Lock), pending: z.array(Question),
   work: z.record(z.string(), WorkContract),
   archive: z.array(z.object({ id: z.string(), label: z.string(), endpoint: Endpoint, blob: z.string(), finishedAt: z.string() })),

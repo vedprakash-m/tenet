@@ -7,12 +7,17 @@ import { formatHandle, workId, workLabel } from "../core/ids.ts";
 import { reason } from "../core/reasons.ts";
 import { assistanceLevel, chooseLane, isEditingProfile, laneFloor, raise } from "../core/risk.ts";
 import { OpenInput } from "../core/schemas.ts";
-import type { Question, State, WorkContract } from "../core/schemas.ts";
+import type { Question, Reason, State, WorkContract } from "../core/schemas.ts";
 import { emptyState, isLive, newContract } from "../core/state.ts";
 import type { Plan, Verb } from "../pipeline.ts";
 import { factsHash, nx, question, readinessOf, withWork } from "./common.ts";
 import { dirtyQuestion, undecidedDirty } from "./dirty.ts";
+import { reconcileShared } from "./reconcile.ts";
+import type { Shared } from "./reconcile.ts";
 import { recover } from "./recover.ts";
+
+/** What reconciling the shared files adds to an answer: its reasons, and the question when a change needs acceptance. */
+const surface = (s: Shared, base: Reason[] = []) => ({ reasons: [...base, ...s.reasons], ...(s.question ? { questions: [s.question], exit: 3 as const } : {}) });
 
 function describe(state: State, w: WorkContract) {
   const first = w.profile === "plan" ? nx("plan", "Draft the plan with the user.", true)
@@ -36,12 +41,14 @@ export const open: Verb<OpenInput> = {
     state = rec.state;
     // Housekeeping at a boundary: day-old run directories and manifests go, except those a live run or reservation uses.
     ports.store.sweepTemp(24 * 3600_000, Object.values(state.work).flatMap((w) => [w.session.inCall?.runDir, ...w.budget.reservations.map((r) => r.manifest)].filter((x): x is string => !!x)));
+    const shared = reconcileShared(ports, state);
+    state = shared.state;
     const effects = rec.completed.length || rec.uncertain.length ? { completed: rec.completed, uncertain: rec.uncertain } : undefined;
     const now = ports.clock.now();
 
     // A repeated open with the same profile and request returns the still-proposed contract (TS §6.4).
     const same = Object.values(state.work).find((w) => w.state === "proposed" && w.profile === input.profile && w.request === input.request);
-    if (same && !input.resume) return { ...(rec.state !== state0 ? { state } : {}), resp: { work: same.id, ...describe(state, same), ...(effects ? { effects } : {}), kernel: true } };
+    if (same && !input.resume) return { ...(state !== state0 ? { state } : {}), resp: { work: same.id, ...describe(state, same), ...(effects ? { effects } : {}), kernel: true, ...surface(shared) } };
 
     if (input.resume) {
       const prev = Object.values(state.work).filter(isLive).filter((w) => !input.planItem || w.planItem === input.planItem).at(-1);
@@ -54,7 +61,7 @@ export const open: Verb<OpenInput> = {
           state: { ...withWork(state, w), generationSeq: gen, ...owner },
           resp: {
             work: w.id, ...describe(state, w), kernel: true, ...(effects ? { effects } : {}),
-            reasons: takeover ? [reason("takeover-check", "if the earlier chat is still working on this, stop it before continuing", { note: true })] : [],
+            ...surface(shared, takeover ? [reason("takeover-check", "if the earlier chat is still working on this, stop it before continuing", { note: true })] : []),
             next: [nx(w.state === "proposed" ? "basis" : "check", "Continue where the contract left off.", true)],
           },
         };
@@ -92,7 +99,7 @@ export const open: Verb<OpenInput> = {
     }
 
     const scope = input.scopePaths ?? [];
-    const protectedPaths = input.protectedPaths ?? [];
+    const protectedPaths = [...new Set([...(input.protectedPaths ?? []), ...shared.protectedPaths])];
     const protectedHit = scope.some((p) => protectedPaths.some((x) => matches(x, p)));
     const assessment = raise(input.assessment ?? {}, [...scope, ...(input.signals ?? [])], state.project.traits, protectedHit);
     const floor = laneFloor(assessment);
@@ -123,8 +130,8 @@ export const open: Verb<OpenInput> = {
     return {
       state: next,
       resp: {
-        work: w.id, ...describe(next, w), kernel: true, reasons: notes,
-        ...(pending ? { questions: [pending], exit: 3 } : {}), ...(effects ? { effects } : {}),
+        work: w.id, ...describe(next, w), kernel: true, reasons: [...notes, ...shared.reasons],
+        ...(pending ? { questions: [pending], exit: 3 } : shared.question ? { questions: [shared.question], exit: 3 } : {}), ...(effects ? { effects } : {}),
         progress: { phase: "proposed" },
       },
     };

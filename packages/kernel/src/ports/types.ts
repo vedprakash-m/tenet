@@ -159,6 +159,10 @@ export interface Project {
   writeNew(files: readonly RecipeFile[]): void;
   /** sha256 of each file's content, or null when it does not exist. */
   hashes(paths: readonly string[]): Record<string, string | null>;
+  /** The file's text, or null when it does not exist. */
+  read(path: string): string | null;
+  /** Replaces one file atomically (a temporary file renamed over it), making directories as needed. */
+  write(path: string, content: string): void;
   remove(paths: readonly string[]): void;
 }
 

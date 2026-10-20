@@ -9,7 +9,7 @@ export const emptyState = (workspaceId: string, tag: string): State => ({
     intent: { revision: 0, overview: { purpose: "", users: "", preferences: [], nonGoals: [] }, elements: [], plan: [] },
     moduleRoot: ".", traits: [], adoption: { intent: "undecided", policy: "undecided", charter: "undecided" },
   },
-  config: { local: {}, revision: 0 }, consents: [], locks: [], pending: [], work: {}, archive: [],
+  config: { local: {}, revision: 0 }, consents: [], trust: [], locks: [], pending: [], work: {}, archive: [],
 });
 
 export interface NewContract {

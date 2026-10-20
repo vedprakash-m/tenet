@@ -13,7 +13,7 @@ In every skill, `tenet <verb> [positional] [--flag value]` is shorthand: never t
 | Verb | Use |
 |---|---|
 | `tenet open <profile> --request <text> --scope-paths <paths>` | Start a contract. Profiles: `feature`, `bug`, `refactor`, `investigate`, `plan`, `continue`, `prototype` (with `--no-git` in a folder the user chose not to put under Git). Add `--lane standard` or `--lane deep` only when the user asks for more rigor |
-| `tenet decide <kind> --h <handle>` | Record a decision. Kinds: `basis`, `scaffold`, `sync-index`, `config`, `branch-switch`, `undo-confirm`, `dirty-overlap`, `unexplained`, `hook-consent`, `acceptance`, `disposition`, `repair-lock`. Content goes in JSON on stdin as `{"propose": ...}`; answers are `--answer <id>=<choice>` |
+| `tenet decide <kind> --h <handle>` | Record a decision. Kinds: `basis`, `scaffold`, `sync-index`, `config`, `branch-switch`, `undo-confirm`, `dirty-overlap`, `unexplained`, `hook-consent`, `acceptance`, `disposition`, `repair-lock`, `adopt` (`--target intent` or `policy`; it previews first, then `--answer adopt-confirm=confirm` or `decline`). Content goes in JSON on stdin as `{"propose": ...}`; answers are `--answer <id>=<choice>` |
 | `tenet check --h <handle> --stage candidate` | Run the obligations. `--stage baseline` for the planned red, `--targeted` while iterating, `--touched <paths>` for every file you edited |
 | `tenet packet reviewer --h <handle> --retry` | A fresh manifest attempt. `packet handoff` and `packet resume` read the state back |
 | `tenet findings --h <handle>` | Record a reviewer's result, JSON on stdin as `{"result": ...}` |
@@ -59,6 +59,8 @@ Every message is a kickoff, a question, a check-in or a report. Lead line first.
 **Report.** Headline, evidence, read or limits, next. The headline is `data.label` exactly as returned. Evidence spends lines on exceptions: when all passed, one line. Name the scope when it is not a clean commit. Reasons follow their sentence in code font: "Shortcut needs your decision (`marker-unaccepted`)". Add a reading guide of at most three entries ("read first") for Standard and Deep. Call the reviewer "an automated reviewer" once, then "the reviewer". A clean result's next action names both words: "Say 'integrate' to merge into main, or 'accept' to keep it on <branch>." Other findings read: severity, claim, consequence, fix, `path:line`; chat numbers findings 1, 2, 3.
 
 An assumption that stays open (`assumption-unresolved`) blocks `checked-local`: say it in the report, ask the user to confirm it in plain words, and on yes run `tenet decide disposition --h <handle> --target <id>` with `{"propose": {"outcome": "accepted", "reason": "<their words>"}}`.
+
+When `data.offer` is `adopt`, end the report with one offer: "Save the project's purpose, plan and decisions as files in the project, so the next change starts with them? (preview first)". On yes run `tenet decide adopt --h <handle> --target intent` and show the question it returns. A `policy-change-needs-acceptance` question from `open` is asked the same way; say plainly that the previous rules stay in force until the user accepts. Mention `intent-edited-outside` and `intent-markers-invalid` once, as limits.
 
 ## Steering
 Handle anything new from the user before the next kernel call.

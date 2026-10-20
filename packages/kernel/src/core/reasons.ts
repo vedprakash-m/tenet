@@ -101,6 +101,7 @@ export const REASONS = {
   "basis-confirm": [3, "The proposed basis contains Tenet's additions or a sketch commitment; one confirmation"],
   "intent-markers-invalid": [2, "Malformed managed blocks"],
   "restriction-key-unknown": [2, "Unknown or malformed restriction key"],
+  "intent-edited-outside": [0, "INTENT.md changed outside Tenet; the edited blocks stay as written until a diff is accepted"],
   "policy-change-needs-acceptance": [3, "Shared change needs local acceptance"],
   "dependency-rejected": [2, "A dependency change was rejected; manifests restored"],
   "repeated-failure": [2, "Same failure signature twice or oscillation; sets a stop reason"],

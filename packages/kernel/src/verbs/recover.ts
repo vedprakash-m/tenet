@@ -1,5 +1,7 @@
 // Recovery before anything else touches a resource (TS §7.4): an intent without a result is uncertain, never "did not
 // happen", and is reconciled from its postcondition. Interrupted runs are stopped and discarded.
+import { adopted } from "../decisions/adopt.ts";
+import type { AdoptOp } from "../decisions/adopt.ts";
 import { scaffolded } from "../decisions/scaffold.ts";
 import type { ScaffoldOp } from "../decisions/scaffold.ts";
 import type { UndoOp } from "../decisions/undo.ts";
@@ -91,6 +93,12 @@ export async function recover(ports: Ports, tx: Tx, state: State): Promise<Recov
         tx.result("scaffold", u.id, { completed: false });
         completed.push(same.length ? "an interrupted scaffold was rolled back" : "an interrupted scaffold did not happen");
       }
+    } else if (u.effect === "adopt") {
+      // The file is replaced atomically, so it is either the new text or the old one.
+      const op = u.op as AdoptOp;
+      const here = ports.project.hashes([op.file])[op.file];
+      if (here === op.after) { next = adopted(next, op); tx.result("adopt", u.id, { completed: true }); completed.push(`${op.file} had been written before the result was recorded`); }
+      else { tx.result("adopt", u.id, { completed: false }); completed.push(`an interrupted write of ${op.file} did not happen`); }
     } else {
       tx.result(u.effect, u.id, { completed: false, note: "unreconciled" });
       uncertain.push(`${u.effect} ${u.id}`);
@@ -104,6 +112,11 @@ export async function recover(ports: Ports, tx: Tx, state: State): Promise<Recov
       const op = log.find((e) => e.kind === "intent" && e.effect === "scaffold" && e.id === r.id)?.op as ScaffoldOp | undefined;
       const w = op && next.work[op.work];
       if (w && op && !w.touched.some((t) => t.path in op.expected)) { applyScaffold(w, op); completed.push("the scaffold was recorded as done but not yet in the contract; it is now"); }
+      continue;
+    }
+    if (r.kind === "result" && r.effect === "adopt" && out?.completed) {
+      const op = log.find((e) => e.kind === "intent" && e.effect === "adopt" && e.id === r.id)?.op as AdoptOp | undefined;
+      if (op && !next.trust.some((t) => t.file === op.file && t.hash === op.after)) { next = adopted(next, op); completed.push(`${op.file} was recorded as written but not yet adopted; it is now`); }
       continue;
     }
     if (r.kind === "result" && r.effect === "integration" && out?.completed && (r.outcome as { commit?: string }).commit) {
