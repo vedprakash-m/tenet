@@ -8,7 +8,13 @@ import type { Ports } from "../ports/types.ts";
 import { nx } from "./common.ts";
 import type { Facts } from "./facts.ts";
 
-const RUBRIC = "Stage A: does the change satisfy each basis element and follow the design sketch? Stage B: structure, security, charter. Give every attention item a disposition. Return one ReviewResult.";
+const FALLBACK_RUBRIC = "Stage A: does the change satisfy each basis element and follow the design sketch? Stage B: structure, security, charter. Give every attention item a disposition. Return one ReviewResult shaped like resultTemplate.";
+
+/** The reviewer's rubric is the body of the tenet-review skill: one source, carried in the manifest. */
+function rubric(ports: Ports): string {
+  const text = ports.recipes.text("skills/tenet-review/SKILL.md");
+  return text ? text.replace(/^---\n[\s\S]*?\n---\n/, "").trim() : FALLBACK_RUBRIC;
+}
 
 export interface Issued { work: WorkContract; next: Array<ReturnType<typeof nx>>; reasons: Reason[]; data?: Record<string, unknown> }
 
@@ -32,7 +38,7 @@ export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Fac
   const attempt = live ? live.attempt + (retry ? 1 : 0) : budget.delegations + budget.reservations.length + 1;
   const m = buildManifest({
     work: nw, elements: st.project.intent.elements.filter((e) => basis.elementIds.includes(e.id)), changes: shown, candidate: facts.candidate, basisHash: basis.hash,
-    attempt, mode, ...(basedOn ? { basedOn } : {}), recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: RUBRIC, id: nw.label, files,
+    attempt, mode, ...(basedOn ? { basedOn } : {}), recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports), id: nw.label, files,
   });
   if (!isManifest(m)) return { work: nw, next: [nx("ask", "The basis is too large to review in one pass; narrow the increment.", true)], reasons: [m] };
 

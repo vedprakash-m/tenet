@@ -64,6 +64,29 @@ describe("the work contract", () => {
   });
 });
 
+describe("the review manifest is self-sufficient (SP-08, observed on Copilot CLI)", () => {
+  it("carries the rubric from the tenet-review skill and a result template with the identity already filled in, so a reviewer that cannot load skills can answer correctly", async () => {
+    const p = fresh();
+    const o = await p.call("open", { profile: "feature", request: "x", scopePaths: ["src/greet.ts"], lane: "standard" });
+    const h = o.handle!;
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    p.write("src/greet.test.ts", GREET_TEST);
+    await p.call("check", { h, stage: "baseline" });
+    p.write("src/greet.ts", GREET_IMPL);
+    const g = await p.call("check", { h, stage: "candidate" });
+    const manifest = JSON.parse(readFileSync(d(g).review.manifest, "utf8"));
+    assert.match(manifest.rubric, /Stage A \(behavior and intent\)/);
+    assert.match(manifest.rubric, /resultTemplate/);
+    assert.doesNotMatch(manifest.rubric, /^---/, "front matter is stripped");
+    const t = manifest.resultTemplate;
+    assert.deepEqual([t.manifest, t.reservation, t.attempt, t.mode], [d(g).review.hash, d(g).review.reservation, d(g).review.attempt, "full"]);
+    // A reviewer that fills the template in (keeping the identity) is accepted as is.
+    const filled = { ...t, status: "completed", axes: { behavior: "pass", structure: "pass" }, coverage: { inspected: ["src/greet.ts:1"], uncovered: [], crossCutting: "none", sampled: [] }, attention: [], findings: [], basisGaps: [] };
+    const r = await p.call("findings", { h, result: filled });
+    assert.equal(r.exit, 0, JSON.stringify(r));
+  });
+});
+
 describe("limits warn at 80% and stop at the bound [WRK-08]", () => {
   it("warns at 80%, writes the handoff at the stop, and stops with a diagnosis at the attempt limit", async () => {
     const p = fresh();

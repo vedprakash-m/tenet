@@ -11,6 +11,10 @@ export class FsRecipes implements Recipes {
   private pluginRoot: string;
   constructor(pluginRoot: string) { this.pluginRoot = pluginRoot; }
 
+  text(rel: string): string | null {
+    try { return readFileSync(join(this.pluginRoot, rel), "utf8"); } catch { return null; }
+  }
+
   load(id: string): Recipe | null {
     const dir = join(this.pluginRoot, "skills", `tenet-starter-${id}`);
     if (!existsSync(join(dir, "recipe.json"))) return null;

@@ -1,13 +1,13 @@
 ---
 name: tenet-build
-description: Test-first implementation inside a Tenet contract: write the red, make it green, keep the change small, declare every edit.
+description: "Test-first implementation inside a Tenet contract: write the red, make it green, keep the change small, declare every edit."
 ---
 # Build: test first, smallest change
 
 Use when `next` says `test` or `implement`. Edit natively; the kernel judges.
 
 ## The loop
-1. **Red.** Write the acceptance test(s) for the new examples exactly as recorded, in the test file named. Expected values come from the example, never from running the code. Run `tenet check --h <handle> --stage baseline`. It must fail on an assertion; a compile or import error, a skipped test or a passing test is not a red and the kernel says so. Fix the test, not the product code.
+1. **Red.** Write the acceptance test(s) for the new examples exactly as recorded, in the test file named. Expected values come from the example, never from running the code. Run `tenet check --h <handle> --stage baseline`. If a new interface needs a minimal stub in an existing file so the test compiles, add `--scaffold <paths>` naming that file: it is allowed at baseline and the reviewer will see it. Stubs in new files need no declaration. It must fail on an assertion; a compile or import error, a skipped test or a passing test is not a red and the kernel says so. Fix the test, not the product code.
 2. **Green.** Make the smallest in-scope change. Format with the project's formatter first. Iterate with `tenet check --h <handle> --targeted --touched <paths>`; finish an attempt with a full `tenet check --h <handle> --stage candidate --touched <paths>`.
 3. **Then** follow `next`: review, or finish.
 A behavior-preserving refactor uses preservation tests that already pass; there is no artificial red.

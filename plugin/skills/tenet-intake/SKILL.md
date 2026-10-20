@@ -1,6 +1,6 @@
 ---
 name: tenet-intake
-description: Turn a request into an acceptance basis: clarify, write examples and a design sketch, then record them with the kernel.
+description: "Turn a request into an acceptance basis: clarify, write examples and a design sketch, then record them with the kernel."
 ---
 # Intake: the acceptance basis
 

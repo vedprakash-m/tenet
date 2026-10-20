@@ -194,6 +194,7 @@ export const WorkContract = z.object({
     committed: z.array(z.string()), // every path Tenet has committed in this contract, so a review sees the whole change
     noCommit: z.boolean().optional(),
   }),
+  scaffolding: z.array(z.string()).optional(), // existing files declared as baseline scaffolding; each is an attention item
   reverting: z.array(z.string()).optional(), // paths an undo was asked to revert: removing their assertions is the request, not a weakening
   vetted: z.record(z.string(), z.string()), // recipe files written by a scaffold: path to sha256, exempt from attention while unchanged
   touched: z.array(z.object({ path: z.string(), hashAtLastCheck: z.string().optional() })),
@@ -344,6 +345,7 @@ export const CheckInput = z.object({
   stage: z.enum(["baseline", "candidate", "integrated", "committed"]).default("candidate"),
   targeted: z.boolean().optional(),
   touched: z.array(z.string()).optional(),
+  scaffold: z.array(z.string()).optional(), // existing files holding the minimal stubs a new interface needs; allowed to differ at baseline
   again: z.boolean().optional(),
 });
 export type CheckInput = z.infer<typeof CheckInput>;

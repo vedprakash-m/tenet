@@ -54,6 +54,10 @@ export const check: Verb<CheckInput> = {
     const declared = (input.touched ?? []).filter((p) => !p.startsWith("/") && !p.split("/").includes(".."));
     w = { ...w, touched: [...w.touched, ...declared.filter((p) => !w.touched.some((t) => t.path === p)).map((path) => ({ path }))] };
 
+    // Scaffolding in existing files is declared, never inferred; each declared file is shown to the reviewer.
+    const scaffold = (input.scaffold ?? []).filter((p) => !p.startsWith("/") && !p.split("/").includes(".."));
+    if (scaffold.length) w = { ...w, scaffolding: [...new Set([...(w.scaffolding ?? []), ...scaffold])] };
+
     const undecided = undecidedDirty(w);
     if (undecided.length) {
       const q = dirtyQuestion(undecided);
@@ -107,7 +111,8 @@ export const check: Verb<CheckInput> = {
         // The baseline may differ from the start only by tests and new files (the minimal scaffolding a new interface needs);
         // a pre-existing source file that changed means the red was not taken on the starting behavior.
         const isNew = (p: string) => facts.inv.status.some((s) => s.path === p && (s.untracked || s.xy.startsWith("A")));
-        const contaminated = baseline ? [...facts.att.tenet, ...facts.att.mixed].filter((p) => ports.stack.classify(p) === "source" && !isNew(p)) : [];
+        const contaminated = baseline ? [...facts.att.tenet, ...facts.att.mixed].filter((p) => ports.stack.classify(p) === "source" && !isNew(p) && !(cw.scaffolding ?? []).includes(p)) : [];
+        if (baseline && cw.scaffolding?.length) for (const r of receipts) r.limitations.push(`scaffolding declared in existing files: ${cw.scaffolding.slice(0, 3).join(", ")}`);
         if (contaminated.length) for (const r of receipts) { r.status = "inconclusive"; r.reasons.push("evidence-inconclusive"); r.limitations.push(`source changed before the baseline: ${contaminated.slice(0, 3).join(", ")}`); }
         const hasConfigFailure = receipts.some((r) => r.status === "inconclusive");
 
@@ -146,7 +151,8 @@ export const check: Verb<CheckInput> = {
         // Recipe files a scaffold wrote are vetted content; they raise nothing until someone changes them.
         const vetted = ports.project.hashes(Object.keys(cw.vetted));
         const cfg: AttentionItem[] = changes.filter((c) => c.kind === "config" && vetted[c.path] !== cw.vetted[c.path]).map((c) => ({ id: `AT-${hashOf(["cfg", c.path, c.hunks]).slice(0, 8)}`, path: c.path, line: c.hunks[0]?.line ?? 1, pattern: "test or build configuration", marker: false }));
-        const attention = carryDispositions(cw.attention, [...netAttention(changes.filter((c) => !cw.reverting?.includes(c.path)), ports.stack.patterns), ...cfg]);
+        const declared = (cw.scaffolding ?? []).map((path): AttentionItem => ({ id: `AT-${hashOf(["scaffold", path]).slice(0, 8)}`, path, line: 1, pattern: "declared scaffolding", marker: false }));
+        const attention = carryDispositions(cw.attention, [...declared, ...netAttention(changes.filter((c) => !cw.reverting?.includes(c.path)), ports.stack.patterns), ...cfg]);
 
         let nw: WorkContract = {
           ...cw, obligations, budget, attention, receipts: [...cw.receipts.filter((r) => !receipts.some((n) => n.obligation === r.obligation && n.stage === r.stage && n.scope === r.scope)), ...receipts].slice(-80),

@@ -80,9 +80,19 @@ export function buildManifest(i: ManifestInput): Manifest | Reason {
     ...(i.mode === "recheck" ? { recheck: i.recheckFindings.map((f) => ({ id: f.id, claim: f.claim, location: f.location })), basedOn: i.basedOn?.candidate } : {}),
     rubric: i.rubric,
   };
-  const text = JSON.stringify(body, null, 1);
   const hash = hashOf(body).slice(0, 16);
   reservation.manifestHash = hash;
+  // The reviewer has read and search tools only, so it cannot load a skill: the manifest carries everything it needs,
+  // including the exact shape to answer in, with the identity fields already filled (observed on a real host, SP-08).
+  const resultTemplate = {
+    manifest: hash, reservation: reservation.id, attempt: i.attempt, mode: i.mode, status: "completed | partial | blocked | failed | cancelled",
+    dispatchMode: "subagent-fresh", axes: { behavior: "pass | fail", structure: "pass | fail" },
+    coverage: { inspected: ["path:line ..."], uncovered: [], crossCutting: "one cross-module interaction you checked", sampled: [] },
+    attention: [{ id: "AT-... from the attention list", disposition: "accepted | finding", reason: "..." }],
+    findings: [{ severity: "blocker | major | minor | note", axis: "behavior | structure", location: { path: "...", line: 1 }, claim: "...", evidence: "path:line or command -> output", fix: "optional" }],
+    basisGaps: [{ kind: "missing-requirement | missing-invariant | weak-test | out-of-scope-change", detail: "..." }],
+  };
+  const text = JSON.stringify({ ...body, resultTemplate }, null, 1);
   return { text, hash, reservation, tokens: estimateTokens(text), mode: i.mode };
 }
 

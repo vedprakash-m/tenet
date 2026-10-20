@@ -4,6 +4,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
 import { ACTIONS } from "../packages/kernel/src/core/schemas.ts";
 import { DECISIONS } from "../packages/kernel/src/decisions/index.ts";
 import { parseArgs } from "../packages/kernel/src/frontends/cli.ts";
@@ -33,12 +34,17 @@ function files(dir: string): string[] {
   });
 }
 
-function frontMatter(text: string): { meta: Record<string, string>; body: string } {
+/** Front matter is parsed as YAML, the way the hosts parse it: a description with an unquoted ": " is an error here too. */
+function frontMatter(text: string): { meta: Record<string, string>; body: string; error?: string } {
   const m = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(text);
   if (!m) return { meta: {}, body: text };
-  const meta: Record<string, string> = {};
-  for (const l of m[1]!.split("\n")) { const i = l.indexOf(":"); if (i > 0) meta[l.slice(0, i).trim()] = l.slice(i + 1).trim(); }
-  return { meta, body: m[2]! };
+  try {
+    const doc = parseYaml(m[1]!) as Record<string, unknown> | null;
+    const meta = Object.fromEntries(Object.entries(doc ?? {}).map(([k, v]) => [k, typeof v === "string" ? v : JSON.stringify(v)]));
+    return { meta, body: m[2]! };
+  } catch (e) {
+    return { meta: {}, body: m[2]!, error: (e as Error).message.split("\n")[0]! };
+  }
 }
 
 /** Kernel command lines in inline code: `tenet <verb> ...`. A bare `tenet <verb>` names the verb; it is not an example. */
@@ -62,8 +68,9 @@ export function lintPayload(root: string): string[] {
   let descriptionTokens = 0, loadedTokens = 0;
 
   for (const [f, text] of texts) {
-    const { meta, body } = frontMatter(text);
+    const { meta, body, error } = frontMatter(text);
     const rel = relative(root, f);
+    if (error) bad(f, `front matter is not valid YAML (${error}); quote the value`);
     const skill = /^skills\/([^/]+)\/SKILL\.md$/.exec(rel)?.[1];
     const isAgent = /agents\/.+\.agent\.md$/.test(rel);
     if (meta.name) names.add(meta.name);

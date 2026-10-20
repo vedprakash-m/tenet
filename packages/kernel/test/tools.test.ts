@@ -65,6 +65,12 @@ describe("lint-skills [ENG-03]", () => {
     assert.match(lintPayload(d).join("\n"), /repeats a paragraph/);
   });
 
+  it("fails front matter that a YAML parser rejects, such as an unquoted colon in a description", () => {
+    const d = copy();
+    edit(d, "skills/tenet-build/SKILL.md", (s) => s.replace(/^description: ".*"$/m, "description: Test-first work: write the red"));
+    assert.match(lintPayload(d).join("\n"), /front matter is not valid YAML/);
+  });
+
   it("parses command lines the way the command line will", () => {
     assert.deepEqual(parseCommand("tenet check --h <handle> --stage baseline|candidate [--targeted]"), { verb: "check", input: { h: "W1.1.abcd", stage: "baseline" } });
     assert.deepEqual(parseCommand("tenet decide dirty-overlap --h <handle> --answer dirty-overlap=include").input, { kind: "dirty-overlap", h: "W1.1.abcd", answers: { "dirty-overlap": "include" } });

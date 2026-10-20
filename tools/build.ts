@@ -9,7 +9,7 @@ import { ReviewResult } from "../packages/kernel/src/core/schemas.ts";
 
 const ROOT = join(import.meta.dirname, "..");
 const OUT = join(ROOT, "plugin/kernel/tenet.mjs");
-const BUDGET_BYTES = 600 * 1024;
+const BUDGET_BYTES = 750 * 1024; // owner decision 2026-10-19; zod is 447 KB of it (TS §3.2)
 
 execFileSync(join(ROOT, "node_modules/.bin/tsc"), ["--noEmit"], { cwd: ROOT, stdio: "inherit" });
 

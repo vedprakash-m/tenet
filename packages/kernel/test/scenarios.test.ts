@@ -165,6 +165,52 @@ describe("misleading-success traps (AC-07)", () => {
   });
 });
 
+describe("declared scaffolding", () => {
+  const basis = { outcome: "double(n) doubles", scopePaths: ["src/index.ts"], elements: [
+    { ref: "r", kind: "requirement", origin: "request", text: "double(n) returns n * 2" },
+    { ref: "e", kind: "example", origin: "request", of: "r", text: "double(2) is 4", testFile: "src/double.test.ts", test: "distinguishing", expect: "fail" },
+  ] };
+  const TEST = 'import { expect, it } from "vitest";\nimport { double } from "./index.ts";\nit("doubles", () => { expect(double(2)).toBe(4); });\n';
+  async function setup() {
+    const p = fresh({ "src/index.ts": "export const keep = 1;\n" });
+    const h = (await p.call("open", { profile: "feature", request: "double", scopePaths: ["src/index.ts"], lane: "quick" })).handle!;
+    await p.call("decide", { h, kind: "basis", propose: basis });
+    p.write("src/double.test.ts", TEST);
+    p.write("src/index.ts", "export const keep = 1;\nexport const double = (_n: number): number => 0;\n"); // the stub the test needs, in an existing file
+    return { p, h };
+  }
+
+  it("a stub in an existing file makes the baseline inconclusive until it is declared", async () => {
+    const { p, h } = await setup();
+    const undeclared = await p.call("check", { h, stage: "baseline" });
+    assert.ok(undeclared.reasons.some((r) => r.code === "evidence-inconclusive"), JSON.stringify(undeclared.reasons));
+    const declared = await p.call("check", { h, stage: "baseline", scaffold: ["src/index.ts"] });
+    assert.equal(declared.next[0]!.action, "implement", JSON.stringify(declared));
+    const rc = Object.values(p.ports().store.read()!.state.work)[0]!.receipts.find((r) => r.stage === "baseline")!;
+    assert.match(rc.limitations.join(), /scaffolding declared in existing files: src\/index\.ts/);
+  });
+
+  it("is shown to the reviewer: the declared file is an attention item that needs a disposition before checked-local", async () => {
+    const { p, h } = await setup();
+    await p.call("check", { h, stage: "baseline", scaffold: ["src/index.ts"] });
+    p.write("src/index.ts", "export const keep = 1;\nexport const double = (n: number): number => n * 2;\n");
+    await p.call("check", { h, stage: "candidate" });
+    const blocked = await p.call("finish", { h, noCommit: true });
+    assert.ok(blocked.reasons.some((r) => r.code === "major-undisposed" && /declared scaffolding/.test(r.message)), JSON.stringify(blocked.reasons));
+    const id = Object.values(p.ports().store.read()!.state.work)[0]!.attention.find((a) => a.pattern === "declared scaffolding")!.id;
+    await p.call("decide", { h, kind: "disposition", target: id, propose: { outcome: "accepted", reason: "the stub became the implementation" } });
+    await p.call("check", { h, stage: "candidate", again: true });
+    assert.equal(d(await p.call("finish", { h, noCommit: true })).endpoint, "checked-local");
+  });
+
+  it("cannot hide an implementation: a declared file that already passes is still no distinguishing red", async () => {
+    const { p, h } = await setup();
+    p.write("src/index.ts", "export const keep = 1;\nexport const double = (n: number): number => n * 2;\n");
+    const r = await p.call("check", { h, stage: "baseline", scaffold: ["src/index.ts"] });
+    assert.ok(r.reasons.some((x) => x.code === "no-distinguishing-red"), JSON.stringify(r.reasons));
+  });
+});
+
 describe("review binding", () => {
   it("rejects a result for a stale reservation, counting the dispatch, and a late result for a replaced attempt [AGT-02, REV-01]", async () => {
     const p = fresh();

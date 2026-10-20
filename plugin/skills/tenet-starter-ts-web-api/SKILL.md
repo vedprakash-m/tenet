@@ -1,6 +1,6 @@
 ---
 name: tenet-starter-ts-web-api
-description: Scaffold and extend the TypeScript API starter (Fastify, SQLite, sessions, CSRF, migrations) for a new project, then grow it one feature at a time.
+description: "Scaffold and extend the TypeScript API starter (Fastify, SQLite, sessions, CSRF, migrations) for a new project, then grow it one feature at a time."
 ---
 # Starter: TypeScript API
 

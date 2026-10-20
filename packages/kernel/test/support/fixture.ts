@@ -96,6 +96,7 @@ it("slow", async () => { await new Promise((r) => setTimeout(r, 90000)); expect(
 
 // ---------------------------------------------------------------- a small fake starter recipe (no network)
 import { createHash } from "node:crypto";
+import { FsRecipes } from "../../src/adapters/recipes-fs.ts";
 import type { Ports, Recipe, Recipes } from "../../src/ports/types.ts";
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -117,7 +118,8 @@ export const fakeRecipe = (over: Partial<Recipe> = {}): Recipe => ({
   ], ...over,
 });
 
-export const fakeRecipes = (recipe: Recipe = fakeRecipe()): Recipes => ({ load: (id) => (id === recipe.id ? recipe : null) });
+const realPlugin = new FsRecipes(join(import.meta.dirname, "../../../../plugin"));
+export const fakeRecipes = (recipe: Recipe = fakeRecipe()): Recipes => ({ load: (id) => (id === recipe.id ? recipe : null), text: (rel) => realPlugin.text(rel) });
 
 /** Ports for a folder, with the recipe source replaced. */
 export const portsWith = (root: string, recipes: Recipes): Ports => ({ ...createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), recipes });

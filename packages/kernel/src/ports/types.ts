@@ -149,7 +149,11 @@ export interface RecipeFile { path: string; content: string; mode: number }
 export interface Recipe {
   id: string; version: string; sentinel: string; lockfileSha256: string; protectedPaths: string[]; install: string[][]; files: RecipeFile[];
 }
-export interface Recipes { load(id: string): Recipe | null }
+export interface Recipes {
+  load(id: string): Recipe | null;
+  /** A text file shipped in the plugin, for example a skill; null when absent. */
+  text(rel: string): string | null;
+}
 export interface Project {
   /** Creates each file exclusively (never overwrites), making directories as needed. */
   writeNew(files: readonly RecipeFile[]): void;

@@ -44,7 +44,7 @@ describe("no remote effects exist before `publish` (GIT-05)", () => {
 describe("the shipped bundle (INS-07: no runtime beyond Node)", () => {
   const bundle = join(import.meta.dirname, "../../../plugin/kernel/tenet.mjs");
   it("is one self-contained file within its size budget, and runs with nothing but Node [INS-07]", { skip: !existsSync(bundle) && "run `npm run build` first" }, () => {
-    assert.ok(statSync(bundle).size <= 600 * 1024);
+    assert.ok(statSync(bundle).size <= 750 * 1024);
     assert.doesNotMatch(readFileSync(bundle, "utf8"), /from\s*["'](?!node:)[^."'/][^"']*["']/, "no bare package import is left unbundled");
     const out = execFileSync(process.execPath, [bundle, "inspect", "help"], { env: { PATH: process.env.PATH }, encoding: "utf8" });
     assert.ok(JSON.parse(out).data.verbs.open);

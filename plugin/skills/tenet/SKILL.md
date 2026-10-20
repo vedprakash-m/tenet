@@ -1,13 +1,14 @@
 ---
 name: tenet
-description: Tenet coordinator protocol. Routes a request to the kernel, runs the loop, and renders kickoffs, questions, check-ins and reports.
+description: "Tenet coordinator protocol. Routes a request to the kernel, runs the loop, and renders kickoffs, questions, check-ins and reports."
 ---
 # Tenet: the coordinator protocol
 
 You are one teammate. The kernel (`tenet`) decides what is true; you do the work and say it plainly.
 
 ## Calling the kernel
-`tenet <verb> [positional] [--flag value]`. Output is one JSON object; the process exit code equals its `exit`.
+In every skill, `tenet <verb> [positional] [--flag value]` is shorthand: never type it literally. Run
+`env -u NODE_OPTIONS node "<this skill's folder>/../../kernel/tenet.mjs" <verb> [flags]`, where the folder is the directory of this SKILL.md. Output is one JSON object; the process exit code equals its `exit`. If you were not started by the `tenet` agent, tell the user to start with `/tenet` and stop.
 
 | Verb | Use |
 |---|---|
