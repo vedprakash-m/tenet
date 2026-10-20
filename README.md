@@ -31,7 +31,7 @@ npm run ci     # typecheck, architecture and skill lints, traceability, bundle, 
 
 ## Layout
 
-- `packages/kernel/src` is the kernel: a pure `core/`, six ports, one `pipeline.ts` for every verb, and the adapters behind the ports.
+- `packages/kernel/src` is the kernel: a pure `core/`, one `pipeline.ts` for every verb, and the adapters behind the ports for the store, Git, the process runner, the Node/Vitest stack, the project folder, recipes, the clock and randomness.
 - `plugin/` is the payload: the coordinator and reviewer agents, two commands, five skills, and (after `npm run build`) the bundled kernel.
 - `tools/` holds the build, the architecture and skill lints, and the requirement-to-fixture traceability report.
 

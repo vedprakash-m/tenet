@@ -593,7 +593,7 @@ Verb modules contain only their own logic. A front-end translates its transport 
 
 ### 6.2 Module map
 
-Line budgets are planning targets checked by `tools/coverage`; a module that exceeds its budget by more than 25% needs a decision before it grows further.
+Line budgets are set by the owner and checked by `tools/lint-quality`: a module over its budget may not grow past its recorded ceiling, and the ceiling only falls. Raising a budget is an owner decision.
 
 | Module | Responsibility | PRD | Lines |
 |---|---|---|---|
@@ -1193,7 +1193,8 @@ The inventory is exclusion-aware **before** any content-capable operation, never
 
 ```text
 inventory():
-  require consent for executable Git filters if any are configured           (filter-consent-needed)
+  configured Git filters are switched off for every read (-c filter.<name>.clean=, .smudge=, .process=, .required=false); none runs
+  a filter that applies to a file is noted once (filters-not-run); a commit that would run it needs consent first (§10.3, filter-consent-needed)
   git = inspection profile: -c core.fsmonitor=false -c diff.external= --no-ext-diff --no-textconv,
         --no-color --no-relative -c diff.noprefix=false -c diff.mnemonicPrefix=false, -z, GIT_OPTIONAL_LOCKS=0
   xs  = exclusion patterns as pathspecs ':(exclude,glob)<pattern>'
@@ -2189,6 +2190,9 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `work-busy` | 2 | A check is running for this work |
 |  | `owned-by-other-work` | 2 | Another contract owns the workspace |
 |  | `stale-session` | 4 | Older generation of this contract |
+|  | `handle-required` | 1 | This call needs a contract handle |
+|  | `handle-unknown` | 1 | That handle does not name a contract here |
+|  | `not-a-repository` | 3 | This folder is not a Git repository |
 |  | `takeover-check` | 3 | The previous generation may still be working |
 |  | `revision-conflict` | 2 | Expected revision differs |
 |  | `marker-mismatch` | 3 | Copied, imported or marker-less state; quarantine decision |
@@ -2218,6 +2222,8 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `branch-switch-needed` | 3 | Integration will switch the editor branch |
 |  | `repo-state-readonly` | 2 | Rebase, merge, conflicts or detached HEAD |
 |  | `filter-consent-needed` | 3 | Executable Git filters configured |
+|  | `filters-not-run` | 0 | Git filters apply here; reading never runs them, so a file a filter rewrites can look modified |
+|  | `hook-consent-needed` | 3 | Commit hooks need consent |
 | Authority, configuration and budget | `capability-missing` | 2 | A required host capability is absent |
 |  | `continue-required` | 2 | Policy requires more work before finishing |
 |  | `approval-gate` | 3 | Question required under auto-approve or unknown mode |
