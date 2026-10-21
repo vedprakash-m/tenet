@@ -149,7 +149,7 @@ function addRecovery(plan: Plan, reasons: Reason[], recovered: Recovered | null)
 }
 
 /** Everything that happens inside the first lock: recovery, envelope, the verb's own plan, and publishing its state. */
-async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: { world: unknown }): Promise<Stamped> {
+async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: { world: unknown; startedAt: string }): Promise<Stamped> {
   if (verb.name !== "stop") configurePolicy(ports, tx.state);
   const recovered = tx.state ? await recover(ports, tx, tx.state, { effects: verb.name !== "stop" }) : null;
   let current = recovered?.state ?? tx.state;
@@ -174,7 +174,7 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
   const prepared = plan.job && ownerOf(plan.state, plan.job.id)?.session.inCall;
   if (prepared?.runDir) ports.store.writeArtifact(prepared.runDir, "run.json", JSON.stringify({ prepared: true }));
   // A job's provisional response is never returned: only the finalized one leaves the process.
-  return { res: stamp(ports, verb, input, held.world, tx, plan.state, plan.resp, !plan.job), plan };
+  return { res: stamp(ports, verb, input, held.world, tx, plan.state, plan.resp, !plan.job, held.startedAt), plan };
 }
 
 /** A job still wanted: the contract exists at the same generation, runs this job, and was not cancelled. */
@@ -209,7 +209,8 @@ async function publishResult(
   first: Stamped,
   job: Job,
   result: unknown,
-  worldValue: unknown
+  worldValue: unknown,
+  startedAt: string
 ) {
   return ports.store.transaction(verb.name, async (tx) => {
     if (!tx.state) throw new KernelError("marker-mismatch", "state vanished while a job ran");
@@ -231,12 +232,12 @@ async function publishResult(
       const { sourceOwner: _owner, ...rest } = out.state;
       out.state = rest;
     }
-    return stamp(ports, verb, input, worldValue, tx, out.state, out.resp, true);
+    return stamp(ports, verb, input, worldValue, tx, out.state, out.resp, true, startedAt);
   });
 }
 
 export async function mutate(ports: Ports, verb: Verb, input: Input): Promise<KernelResponse> {
-  const held = { world: null as unknown };
+  const held = { world: null as unknown, startedAt: ports.clock.now() };
   await verb.preLock?.(ports, input);
   const first = await ports.store.transaction(verb.name, (tx) => planInLock(ports, verb, input, tx, held));
   const job = first.plan?.job;
@@ -248,5 +249,5 @@ export async function mutate(ports: Ports, verb: Verb, input: Input): Promise<Ke
   } catch (e) {
     result = { error: e instanceof Error ? e.message : String(e) };
   }
-  return publishResult(ports, verb, input, first, job, result, held.world);
+  return publishResult(ports, verb, input, first, job, result, held.world, held.startedAt);
 }

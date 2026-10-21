@@ -3,14 +3,15 @@ import { AccountingCheckpoint } from "./schemas.ts";
 import type { BudgetState, Lane, Reservation, State, StopReason } from "./schemas.ts";
 import { sha256 } from "./ids.ts";
 
-export const LIMITS: Record<Lane, { attempts: number; rounds: number; delegations: number; retries: number }> = {
-  quick: { attempts: 3, rounds: 1, delegations: 2, retries: 2 },
-  standard: { attempts: 3, rounds: 2, delegations: 6, retries: 2 },
-  deep: { attempts: 4, rounds: 2, delegations: 12, retries: 2 },
+export const LIMITS: Record<Lane, { attempts: number; rounds: number; delegations: number; retries: number; minutes: number }> = {
+  quick: { attempts: 3, rounds: 1, delegations: 2, retries: 2, minutes: 15 },
+  standard: { attempts: 3, rounds: 2, delegations: 6, retries: 2, minutes: 60 },
+  deep: { attempts: 4, rounds: 2, delegations: 12, retries: 2, minutes: 120 },
 };
 
 export const newBudget = (): BudgetState => ({
   attempts: 0, reviewRounds: 0, rechecks: 0, reservations: [], delegations: 0, checksLaunched: 0, tenetTokens: 0, signatures: [],
+  activeMinutesSinceCheckIn: 0, activeMinutesTotal: 0,
 });
 
 const frac = (n: number, max: number) => `${n}/${max}`;
@@ -22,7 +23,26 @@ export function summarize(b: BudgetState, lane: Lane): { attempts: string; round
 /** True at or above 80% of any counter (WRK-12): the handoff is written proactively. */
 export function nearLimit(b: BudgetState, lane: Lane): boolean {
   const l = LIMITS[lane];
-  return b.attempts >= l.attempts * 0.8 || b.reviewRounds >= l.rounds * 0.8 || b.delegations + b.reservations.length >= l.delegations * 0.8;
+  const used = b.delegations + b.reservations.length;
+  return b.attempts >= l.attempts * 0.8 || b.reviewRounds >= l.rounds * 0.8 || used >= l.delegations * 0.8 ||
+    b.activeMinutesSinceCheckIn >= l.minutes * 0.8;
+}
+
+/** Active time: call durations plus the gap after a call that said to keep working; the wait after a question is not work (TS §8.6). */
+export function accrueTime(b: BudgetState, call: { startedAt: string; endedAt: string; exit: number; checkIn: boolean }): BudgetState {
+  const start = Date.parse(call.startedAt), end = Date.parse(call.endedAt);
+  const gap = b.lastCall?.exit === 0 ? Math.max(0, start - Date.parse(b.lastCall.at)) : 0;
+  const minutes = (Math.max(0, end - start) + gap) / 60_000;
+  return {
+    ...b, activeMinutesTotal: b.activeMinutesTotal + minutes,
+    activeMinutesSinceCheckIn: call.checkIn ? 0 : b.activeMinutesSinceCheckIn + minutes, lastCall: { at: call.endedAt, exit: call.exit },
+  };
+}
+
+/** Checked before a new attempt, counting the gap since the last call; a step already running is never stopped (PRD 4.4.2). */
+export function timeUp(b: BudgetState, lane: Lane, now: string): boolean {
+  const gap = b.lastCall?.exit === 0 ? Math.max(0, Date.parse(now) - Date.parse(b.lastCall.at)) / 60_000 : 0;
+  return b.activeMinutesSinceCheckIn + gap >= LIMITS[lane].minutes;
 }
 
 export const attemptsLeft = (b: BudgetState, lane: Lane): number => Math.max(0, LIMITS[lane].attempts - b.attempts);
@@ -118,6 +138,7 @@ export function recoverAccounting(state: State, records: readonly unknown[]): { 
         delegations: Math.max(b.delegations, observed.delegations),
         checksLaunched: Math.max(b.checksLaunched, observed.checksLaunched),
         tenetTokens: Math.max(b.tenetTokens, observed.tenetTokens),
+        activeMinutesTotal: Math.max(b.activeMinutesTotal, observed.activeMinutesTotal),
         signatures: observed.attempts >= b.attempts ? observed.signatures : b.signatures,
       };
       const stopReason = stopFor(budget, w.lane) ?? w.stopReason;

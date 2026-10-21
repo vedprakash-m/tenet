@@ -203,6 +203,8 @@ export const BudgetState = z.object({
   attempts: z.number().int().nonnegative(), reviewRounds: z.number().int().nonnegative(), rechecks: z.number().int().nonnegative(),
   reservations: z.array(Reservation), delegations: z.number().int().nonnegative(), checksLaunched: z.number().int().nonnegative(), tenetTokens: z.number().int().nonnegative(),
   signatures: z.array(z.string()), // recent failure signatures, newest last
+  activeMinutesSinceCheckIn: z.number().nonnegative().default(0), activeMinutesTotal: z.number().nonnegative().default(0),
+  lastCall: z.object({ at: z.string(), exit: z.number() }).optional(), // when the last call ended and how (active time)
 });
 export type BudgetState = z.infer<typeof BudgetState>;
 

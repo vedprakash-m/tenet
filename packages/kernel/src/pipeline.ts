@@ -28,6 +28,7 @@ export interface Resp {
   data?: unknown;
   work?: string;
   kernel?: boolean;
+  checkIn?: boolean; // the call is a check-in with the user, so active time starts again
 }
 
 /** Work that spawns a process runs between two transactions and never holds the lock (TS §7.3). */

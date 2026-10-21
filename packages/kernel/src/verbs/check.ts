@@ -1,7 +1,7 @@
 // `check`: run the obligations and turn what happened into receipts, counters, attention items and the next step.
 // The run happens outside the lock (prepare, execute, finalize); the response is rebuilt from the observed result.
 import { join } from "node:path";
-import { attemptsLeft } from "../core/budget.ts";
+import { attemptsLeft, LIMITS, timeUp } from "../core/budget.ts";
 import { allowed } from "../core/exclusions.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
@@ -62,6 +62,13 @@ function admit(ports: Ports, cur: State, w: WorkContract, input: CheckInput, inp
       "No candidate attempt remains. Finish with the current evidence and handoff.",
       { exit: 2 }
     );
+  }
+  if (input.stage === "candidate" && !input.targeted && timeUp(w.budget, w.lane, ports.clock.now())) {
+    const n = LIMITS[w.lane].minutes;
+    const ask = `Tell the user what is done and what remains, and propose another ${n} minutes; record their yes with decide extend.`;
+    throw new KernelError("budget-exhausted", `Active work time reached ${n} minutes since the last check-in.`, {
+      exit: 2, next: [nx("ask", ask, true)],
+    });
   }
 }
 

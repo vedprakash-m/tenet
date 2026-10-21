@@ -1,11 +1,12 @@
 // How a response is built and recorded: handles, the rendered envelope, the call identity and the publish step.
-import { summarize } from "./core/budget.ts";
+import { accrueTime, summarize } from "./core/budget.ts";
 import { formatHandle, hashOf, parseHandle } from "./core/ids.ts";
 import { KernelError } from "./core/errors.ts";
 import { redactDeep } from "./core/redact.ts";
 import type { KernelResponse, State, WorkContract } from "./core/schemas.ts";
 import type { Ports, Tx } from "./ports/types.ts";
 import type { Plan, Resp, Verb } from "./pipeline.ts";
+import { settingsFor } from "./verbs/reconcile.ts";
 
 export type Stamped = { res: KernelResponse; plan?: Plan };
 
@@ -68,6 +69,17 @@ export const inputHash = (verb: string, input: unknown, world: unknown): string 
   return hashOf({ verb, rest, world });
 };
 
+/** A check-in is a call that asks the user something, ends or pauses the work, or reaches a boundary the cadence setting speaks at. */
+function withActiveTime(ports: Ports, verb: string, next: State, resp: Resp, startedAt: string): State {
+  const w = next.work[resp.work!]!;
+  const cadence = settingsFor(ports, next, w).checkpoints;
+  const boundary = resp.progress?.boundary;
+  const checkIn = !!resp.checkIn || !!resp.questions?.length || ["finish", "stop"].includes(verb) ||
+    (cadence === "each-phase" && !!boundary) || (cadence === "milestones" && boundary === "milestone");
+  const budget = accrueTime(w.budget, { startedAt, endedAt: ports.clock.now(), exit: resp.exit ?? 0, checkIn });
+  return { ...next, work: { ...next.work, [w.id]: { ...w, budget } } };
+}
+
 /**
  * Renders the response for the revision about to be published and, for a final response, caches it on the contract in
  * the same publish. A job's provisional response is never cached: were the process to die mid-job, a retry would be
@@ -81,9 +93,11 @@ export function stamp(
   tx: Tx,
   next: State,
   resp: Resp,
-  final: boolean
+  final: boolean,
+  startedAt: string
 ): KernelResponse {
   const revision = (tx.state?.revision ?? 0) + 1;
+  if (final && resp.work && next.work[resp.work]) next = withActiveTime(ports, verb.name, next, resp, startedAt);
   const res = render(ports, verb.name, resp, { ...next, revision });
   const w = resp.work ? next.work[resp.work] : undefined;
   if (final && w && verb.name !== "open")
