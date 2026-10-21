@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-21 — Project charter in review manifests (`◐`, local)
+
+**Changed.** The Reviewer's manifest carries the project's own charter when `AGENTS.md` or `.github/copilot-instructions.md` has one valid marked block, and the default charter otherwise. Adopting a charter is not built; it waits for SP-02.
+
+**Files.** `core/charter.ts` (new), `verbs/manifest.ts`, `tools/lint-quality.ts`, specs (TS §6.2, §7.8).
+
+**Tests.** `charter.test.ts` added (3).
+
 ## 2026-10-21 — Active work time (`✅`, local)
 
 **Changed.** The kernel counts active work time between check-ins (call durations plus the gap after a call that said to keep working), warns at 80% of 15, 60 or 120 minutes, and refuses a new full candidate check at the bound with a proposal to extend. `decide extend --quote <words>` records the user's yes and restarts the count. The tenet skill has the steering row.

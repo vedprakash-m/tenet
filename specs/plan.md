@@ -732,6 +732,10 @@ Source: the progress review of 2026-10-20 (gaps G1–G16). Owner direction: exec
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
 
+### 2026-10-21 (project charter, reading half of QLT-09) — `◐` local CI; not yet committed when written
+
+Review manifests now carry the project's own charter when `AGENTS.md` (first) or `.github/copilot-instructions.md` holds exactly one balanced `<!-- tenet:charter:begin -->` … `end` block of non-empty text within 300 tokens; otherwise the default charter, as before. A malformed, repeated or oversized block is ignored, not repaired. **Not built:** adopting a charter (`decide adopt --target charter`, with the preview), which needs SP-02 to say which instruction file the host loads (TS §7.8). Ceiling for pipeline, verbs and decisions: 3,764 lines. `charter.test.ts` (3).
+
 ### 2026-10-21 (active time, WRK-08) — `✅` local CI; not yet committed when written
 
 `BudgetState` now counts active work time: each final response adds its duration plus the gap since the previous call when that call ended with exit 0 (a wait after a question or refusal is not work). A response that asks the user, finishes or stops the work, or reaches a boundary the `checkpoints` setting speaks at starts the count again. At 80% of 15, 60 or 120 minutes the result carries the existing budget warning; at the bound a new full candidate `check` is refused (`budget-exhausted`, a required `ask` that proposes another stretch), and `decide extend --quote <words>` records the user's yes and restarts the count. A step already running is never stopped. Ceilings: `core/schemas` 455 lines, pipeline, verbs and decisions 3,758. `active-time.test.ts` (3). **Open for the owner:** a long gap after exit 0 counts in full (§12.3).
