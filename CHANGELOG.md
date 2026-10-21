@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-21 — No function over the limits (`✅`, local)
+
+**Changed.** `judgeReview`, `verdict`, `comparePolicy`, `effectivePolicy` and `resolveSetting` are split into short functions. Behaviour is unchanged; the recorded function offenders go from five to none. 287 over-wide lines remain recorded (296 before).
+
+**Files.** `core/{verdict,policy,config}.ts`, `tools/quality-baseline.json`.
+
+**Tests.** None added or changed: the existing suites are the proof.
+
 ## 2026-10-21 — Host port and capability descriptor (`◐`, local)
 
 **Changed.** The plugin ships a capability descriptor and a `Host` port reads it. `inspect doctor` shows it; the review-independence control says what the host binding observed, and nothing it did not; the charter reader takes its candidate files from the descriptor. A host name in core, verbs, decisions or the pipeline now fails `lint-arch`.

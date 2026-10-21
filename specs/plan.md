@@ -733,6 +733,10 @@ Source: the progress review of 2026-10-20 (gaps G1–G16). Owner direction: exec
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
 
+### 2026-10-21 (quality: the last five function offenders are gone) — `✅` local CI; not yet committed when written
+
+`judgeReview` and `verdict` (`core/verdict.ts`), `comparePolicy` and `effectivePolicy` (`core/policy.ts`) and `resolveSetting` (`core/config.ts`) are split into short single-purpose functions, with no change in behaviour: the existing tests pass unmodified. The ratchet records **no** function over the size, complexity or nesting limits now. **Still recorded:** 287 lines wider than 140 characters in 49 files (296 before). They stay a ratchet: a mechanical reformat of that many lines would bury real changes in churn, so they are cleaned in the files a change touches anyway.
+
 ### 2026-10-21 (capability descriptor and Host port, ENG-02) — `◐` local CI; not yet committed when written
 
 The host binding now ships `plugin/com.github.copilot/descriptor.json` (ten capabilities, each with a value and a source; an observation carries its evidence), and a `Host` port reads it. Only what the plan records as observed is marked `observed` (a reviewer subagent was dispatched on VS Code 1.142.0 on 2026-10-19; isolation, tool list, parallel dispatch and cancelled children are not claimed); the rest is `static` (declared by the binding) or `unknown`. Three consumers exist: `inspect doctor` shows it, the review-independence control says what was observed, and the charter reader takes its candidate files from `instructionFiles`. `lint-arch` now fails a host name in `core/`, `verbs/`, `decisions/` or the pipeline. **Not done:** probes that fill `probe` values at run time, and deriving control classes from capabilities (no class changes with an observation yet). Ceiling: 3,768 lines. `host-descriptor.test.ts` (4).
