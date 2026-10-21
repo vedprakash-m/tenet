@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-21 — Deep evidence (`✅`, local)
+
+**Changed.** Deep work finishes `checked-local` only after a complete native architect pass and security pass on the current candidate. Before, the verdict ignored Analyst results and Deep could never get there. After the review is recorded, the result lists the passes still owed. The plugin has the spec's `tenet-analyst` agent; `tenet-reviewer` is for reviews only. The size ceiling for pipeline, verbs and decisions is 3,720 lines (+10).
+
+**Files.** `core/verdict.ts`, `verbs/{facts,findings,manifest}.ts`, `plugin/com.github.copilot/agents/{tenet-analyst,tenet,tenet-reviewer}.agent.md`, `plugin/skills/tenet/SKILL.md`, `tools/lint-quality.ts`, specs (TS §6.2).
+
+**Tests.** `deep.test.ts` added (2); `verdict.test.ts` (+2); the lint-skills fixture follows the new agents line. 662 tests.
+
 ## 2026-10-20 — Build TDD-03: test-alongside with a negative control (`✅`, local)
 
 Implemented the protocol proposed and approved earlier: a new `disposition` outcome, `alongside`, lets the user record why a behavioral red is infeasible for an obligation (a reason is still required, like every other disposition). A new `--alongside <paths>` flag on `check` (mirroring the existing `--scaffold` flag) exempts named existing source paths from the baseline contamination check, but only once some obligation has a recorded `alongsideReason` — an undeclared `--alongside` bypasses nothing, and the seeded fault still has to genuinely fail the test for the baseline to be proved. Once proved, the verdict discloses `reason("test-alongside", ...)` as a non-blocking note (a reason code that existed in the registry but was previously dead code). Four new tests cover the refusal, the no-bypass-without-a-reason case, a non-failing seeded fault granting no false proof, and the full protocol reaching `checked-local` with the disclosure.
