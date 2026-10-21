@@ -145,4 +145,25 @@ describe("integrate [GIT-11]", () => {
     const r = await p.call("integrate", { h: o.handle! });
     assert.equal(r.exit, 2);
   });
+
+  it("has nothing to integrate for an editing contract that stayed on its base branch by setting [GIT-11]", async () => {
+    const p = fresh();
+    const main = p.git("branch", "--show-current");
+    const o = await p.call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts"], lane: "quick" });
+    const h = o.handle!;
+    await p.call("decide", { h, kind: "config", target: "branching", propose: { value: "current", scope: "task" } });
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    assert.equal(p.git("branch", "--show-current"), main, "no work branch was created");
+    p.write("src/greet.test.ts", GREET_TEST);
+    await p.call("check", { h, stage: "baseline" });
+    p.write("src/greet.ts", GREET_IMPL);
+    await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    const f = await finishFixture(p, { h, subject: "Add greet" });
+    assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
+    assert.equal(p.git("branch", "--show-current"), main, "finish committed directly to the base branch");
+    const r = await p.call("integrate", { h });
+    assert.equal(r.exit, 2, JSON.stringify(r));
+    assert.ok(r.reasons.some((x) => x.code === "capability-missing" && /committed on the base branch itself/.test(x.message)));
+    assert.equal(p.git("branch", "--show-current"), main, "no branch switch was attempted");
+  });
 });

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20 — Verify `branching: current` through `integrate`; correct stale progress notes (`✅`, local)
+
+Added the missing end-to-end test: an editing contract set to `branching: current` stays on its base branch through basis, check and finish, then `integrate` correctly refuses ("committed on the base branch itself") instead of erroring or switching branches. The one existing "nothing to integrate" test used a non-editing profile, which never takes a branch regardless of this setting, so it didn't actually prove this path. Also corrected three stale "not done" notes in the plan: `exclusions`/`required_checks`/`dependency_policy` already have real consumers; `commands` and `resource_mode` consumers genuinely remain open but for different, more current reasons (execution envelopes and an R1 Should, respectively, not "no analyst yet").
+
+Changed `integrate.test.ts`. Full `npm run ci` green: **654 tests / 135 suites**; built-bundle UAT green.
+
 ## 2026-10-20 — Reduce `buildPlan`'s complexity below the quality gate's limit (`✅`, local)
 
 Behavior-preserving refactor: split `core/plan.ts#buildPlan` (complexity 35) into `assignIds` (ID validation/assignment), `buildItem` (one proposed item's construction and same-vs-changed check) and a much shorter orchestrating `buildPlan` (complexity 12). No test changed; the full suite passes unmodified.
