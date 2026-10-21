@@ -8,7 +8,7 @@ import { handoffText } from "../core/handoff.ts";
 import { verdict, headline } from "../core/verdict.ts";
 import { InspectInput } from "../core/schemas.ts";
 import type { State } from "../core/schemas.ts";
-import { assistanceLevel } from "../core/risk.ts";
+import { assistanceLevel, readinessReport } from "../core/risk.ts";
 import type { Plan, Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
 import { nodeOk, readinessOf, workOf } from "./common.ts";
@@ -44,7 +44,10 @@ function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>)
   ];
   const { level, why } = assistanceLevel(readinessOf(ports, probe), "feature");
   const detected = { language: d.language, typescript: d.typescript, packageManager: d.packageManager, runner: d.runner ?? null, depsInstalled: d.depsInstalled, hooks: !!probe.hooks, git: probe.isRepo };
-  return { checks, detected, capabilities: ports.host.capabilities(), level, ...(why ? { why } : {}), ok: checks.every((c) => c.ok) };
+  const readiness = readinessReport(readinessOf(ports, probe));
+  return {
+    checks, detected, capabilities: ports.host.capabilities(), level, ...(why ? { why } : {}), ok: checks.every((c) => c.ok), readiness,
+  };
 }
 
 const statusOf = (st: State | null) => ({
@@ -78,7 +81,19 @@ export const inspect: Verb<InspectInput> = {
         if (!w.basis && w.profile !== "plan" && w.profile !== "investigate") return { resp: { work: w.id, data: { why: "No basis is recorded yet, so there is nothing to judge." } } };
         const facts = await gather(ports, w, state!.locks);
         const v = verdict(verdictInput(ports, state!, w, facts));
-        return { resp: { work: w.id, reasons: v.reasons, data: { endpoint: v.endpoint, scope: v.scope ?? null, label: headline(v, { profile: w.profile, branch: w.git.branch }), ...controlsFor(w, v.endpoint, ports.host.capabilities()) } } };
+        const tiers = readinessReport(readinessOf(ports, await ports.git.probe()));
+        // every reason a mere note (the same test endpointOf applies) means nothing is currently outstanding
+        const blocking = v.reasons.filter((r) => !r.note).map((r) => r.code);
+        const action = blocking.length ? { ready: false, blockedBy: blocking } : { ready: true };
+        const readiness = {
+          action, ...(tiers.plugin.ready ? {} : { plugin: tiers.plugin }), ...(tiers.project.ready ? {} : { project: tiers.project }),
+        };
+        return {
+          resp: {
+            work: w.id, reasons: v.reasons,
+            data: { endpoint: v.endpoint, scope: v.scope ?? null, label: headline(v, { profile: w.profile, branch: w.git.branch }), readiness, ...controlsFor(w, v.endpoint, ports.host.capabilities()) },
+          },
+        };
       }
       case "settings": {
         const w = input.h ? workOf(state, input.h) : undefined;

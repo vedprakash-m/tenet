@@ -6,7 +6,7 @@ import { formatHandle, hashOf, highestSeq, parseHandle, stableStringify } from "
 import { REASONS, exitFor, isReasonCode } from "../src/core/reasons.ts";
 import { carryDispositions, netAttention } from "../src/core/review.ts";
 import type { AttentionPattern, FileChange } from "../src/core/review.ts";
-import { assistanceLevel, ceiling, chooseLane, laneFloor, raise } from "../src/core/risk.ts";
+import { assistanceLevel, ceiling, chooseLane, laneFloor, raise, readinessReport } from "../src/core/risk.ts";
 import type { Readiness } from "../src/core/risk.ts";
 import { allowed } from "../src/core/exclusions.ts";
 import { deriveObligations, wantsRed } from "../src/core/obligations.ts";
@@ -74,6 +74,14 @@ describe("risk", () => {
   });
   it("caps the endpoint a level can reach", () => {
     assert.deepEqual(["L0", "L1", "L2", "L3", "L4"].map((l) => ceiling(l as never)), ["blocked", "findings-only", "findings-only", "implemented-unverified", "checked-local"]);
+  });
+  it("distinguishes plugin-ready from project-ready, each from the readiness probes that already gate the assistance level [INS-04]", () => {
+    assert.deepEqual(readinessReport(ok), { plugin: { ready: true }, project: { ready: true } });
+    assert.deepEqual(readinessReport({ ...ok, policyBlocks: true }), { plugin: { ready: false, blockedBy: ["policy"] }, project: { ready: true } });
+    assert.deepEqual(readinessReport({ ...ok, stateWritable: false, platformOk: false }), { plugin: { ready: false, blockedBy: ["state writable", "platform"] }, project: { ready: true } });
+    assert.deepEqual(readinessReport({ ...ok, language: "other" }), { plugin: { ready: true }, project: { ready: false, blockedBy: ["language"] } });
+    assert.deepEqual(readinessReport({ ...ok, runnerSupported: false, depsInstalled: false }), { plugin: { ready: true }, project: { ready: false, blockedBy: ["dependencies installed", "test runner"] } });
+    assert.deepEqual(readinessReport({ ...ok, policyBlocks: true, experimental: true }), { plugin: { ready: false, blockedBy: ["policy"] }, project: { ready: false, blockedBy: ["not experimental"] } });
   });
 });
 

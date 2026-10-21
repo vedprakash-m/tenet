@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-21 — INS-04: plugin-ready, project-ready, action-ready reporting (`✅`, local)
+
+**Changed.** INS-04 had no tech-spec or ux-spec section at all, only a one-line PRD requirement — a genuine spec gap, now backfilled (TS §8.2). A new pure `readinessReport` in `core/risk.ts` groups the existing readiness probes `assistanceLevel` already gates into two tiers (plugin-ready: Tenet's own prerequisites; project-ready: this project's stack/state) with zero change to any existing gating logic. `inspect doctor` reports both; `inspect why` additionally reports action-ready (every current verdict reason that is not a disclosure note), repeating plugin/project there only when not ready.
+
+**Files.** `core/risk.ts`, `verbs/inspect.ts`, `tech-spec.md` §8.2, `readiness-report.test.ts`.
+
+**Tests.** 4 new tests: a healthy project, a project missing dependencies, action-ready true at `checked-local`, action-ready false naming an unauthorized protected-path edit.
+
 ## 2026-10-21 — RSC-01/RSC-03 tagged by a structural-absence proof (`✅`, local)
 
 **Changed.** RSC-01 ("the Reviewer and an analyst always inherit the active model, with no path to request a different one") and RSC-03 ("no mechanism exists to switch models, fund, purchase or enable overage") are now T1-tagged in `model-record.test.ts` — by a structural scan proving the mechanism is absent from the source, not a scenario, since these are absence claims a behavioral test cannot demonstrate any better. RSC-01 reuses an existing test (no field exists to request a model, so inheriting it is the only possible outcome). RSC-03 is two new tests scanning the `VERBS`/`DECISIONS` registries and the closed `ActionClass` vocabulary for any funding/model-switch-related name.

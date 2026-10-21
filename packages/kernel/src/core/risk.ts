@@ -66,5 +66,23 @@ export function assistanceLevel(r: Readiness, profile: Profile): { level: Level;
 export const ceiling = (level: Level): "blocked" | "findings-only" | "implemented-unverified" | "checked-local" =>
   level === "L0" ? "blocked" : level === "L1" || level === "L2" ? "findings-only" : level === "L3" ? "implemented-unverified" : "checked-local";
 
+export interface ReadinessTier { ready: boolean; blockedBy?: string[] }
+
+/** Splits the readiness probes doctor already computes into the two tiers reportable before any task is open
+ * (INS-04: plugin-ready, project-ready). `assistanceLevel`'s own gating is unchanged; this only labels its
+ * root causes for display, so a user told "L2" also learns whether the cause is Tenet itself or this project. */
+export function readinessReport(r: Readiness): { plugin: ReadinessTier; project: ReadinessTier } {
+  const tier = (checks: Array<[boolean, string]>): ReadinessTier => {
+    const blockedBy = checks.filter(([ok]) => !ok).map(([, name]) => name);
+    return blockedBy.length ? { ready: false, blockedBy } : { ready: true };
+  };
+  return {
+    plugin: tier([[!r.policyBlocks, "policy"], [r.stateWritable, "state writable"], [r.platformOk, "platform"],
+      [r.nodeOk, "node version"]]),
+    project: tier([[r.gitState === "ok", "git"], [r.language === "ts-js", "language"], [r.depsInstalled, "dependencies installed"],
+      [r.runnerSupported, "test runner"], [r.typescript, "typescript"], [!r.experimental, "not experimental"]]),
+  };
+}
+
 /** Profiles that never edit source never take source ownership (TS §6.3). */
 export const isEditingProfile = (p: Profile): boolean => !["plan", "investigate"].includes(p);
