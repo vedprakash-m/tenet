@@ -102,6 +102,7 @@ async function draft(c: Ctx, probe: RepoProbe, level: Level) {
     label: workLabel(state.workSeq + 1),
     profile: input.profile,
     request: input.request,
+    ...(input.model ? { model: input.model } : {}),
     lane,
     floor,
     level,

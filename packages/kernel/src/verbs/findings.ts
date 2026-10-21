@@ -5,6 +5,7 @@ import { recordDelegation, settleReservation } from "../core/budget.ts";
 import { reason } from "../core/reasons.ts";
 import { applyAnalystResult, applyResult, checkAnalystResult, checkResult } from "../core/review.ts";
 import { FindingsInput } from "../core/schemas.ts";
+import { modelRecord } from "../core/state.ts";
 import type { AnalystResult, Finding, ReviewResult, State, WorkContract } from "../core/schemas.ts";
 import type { Plan, Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
@@ -12,7 +13,7 @@ import { nx, withWork, workOf } from "./common.ts";
 import { gather } from "./facts.ts";
 import { deepPasses } from "./manifest.ts";
 
-async function recordAnalyst(ports: Ports, state: State, w: WorkContract, r: AnalystResult): Promise<Plan> {
+async function recordAnalyst(ports: Ports, state: State, w: WorkContract, r: AnalystResult, model?: string): Promise<Plan> {
   const chk = checkAnalystResult(w, r);
   if (!chk.reservation) {
     const dispatched = r.dispatchMode === "same-session" ? w.budget : recordDelegation(w.budget);
@@ -25,7 +26,7 @@ async function recordAnalyst(ports: Ports, state: State, w: WorkContract, r: Ana
   const applied = applyAnalystResult(r, chk.reservation, currentCandidate);
   const settled = { countRound: false, recheck: false, native: r.dispatchMode === "subagent-fresh" };
   const budget = settleReservation(w.budget, chk.reservation.id, settled);
-  const nw = { ...w, analyses: [...w.analyses, applied.link], budget, updatedAt: now };
+  const nw = { ...w, analyses: [...w.analyses, { ...applied.link, model: modelRecord(model) }], budget, updatedAt: now };
   // Partial output never counts as a completed answer (AGT-05): dispatch again, never proceed as if settled.
   const next = r.status !== "completed"
     ? [nx("analyst", `The analyst's result is ${r.status}, not complete; request a retry with packet analyst.`, true)]
@@ -46,7 +47,7 @@ async function recordAnalyst(ports: Ports, state: State, w: WorkContract, r: Ana
   };
 }
 
-function recordReview(ports: Ports, state: State, w: WorkContract, r: ReviewResult): Plan {
+function recordReview(ports: Ports, state: State, w: WorkContract, r: ReviewResult, model?: string): Plan {
   const chk = checkResult(w, r, w.lane);
   // Every reported native dispatch counts, including a stale result; a same-session pass is never a delegation.
   if (!chk.reservation) {
@@ -72,7 +73,7 @@ function recordReview(ports: Ports, state: State, w: WorkContract, r: ReviewResu
   const settled = { countRound: applied.countRound, recheck: r.mode === "recheck", native: r.dispatchMode === "subagent-fresh" };
   const budget = settleReservation(w.budget, chk.reservation.id, settled);
   const nw = {
-    ...w, findings: all, attention: applied.attention, reviews: [...w.reviews, applied.link], budget,
+    ...w, findings: all, attention: applied.attention, reviews: [...w.reviews, { ...applied.link, model: modelRecord(model) }], budget,
     focusedReview: undefined, updatedAt: now,
   };
   const isBlocking = (f: Finding) =>
@@ -107,6 +108,7 @@ export const findings: Verb<FindingsInput> = {
 
   run(ports, state, input) {
     const w = workOf(state, input.h);
-    return input.result.kind === "analyst" ? recordAnalyst(ports, state!, w, input.result) : recordReview(ports, state!, w, input.result);
+    const { result, model } = input;
+    return result.kind === "analyst" ? recordAnalyst(ports, state!, w, result, model) : recordReview(ports, state!, w, result, model);
   },
 };

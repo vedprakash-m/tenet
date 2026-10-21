@@ -49,7 +49,7 @@ function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>)
 
 const statusOf = (st: State | null) => ({
   initialized: !!st, revision: st?.revision ?? 0,
-  work: Object.values(st?.work ?? {}).map((w) => ({ label: w.label, profile: w.profile, state: w.state, lane: w.lane, outcome: w.outcome.slice(0, 80), budget: summarize(w.budget, w.lane) })),
+  work: Object.values(st?.work ?? {}).map((w) => ({ label: w.label, profile: w.profile, state: w.state, lane: w.lane, ...(w.model ? { model: w.model } : {}), outcome: w.outcome.slice(0, 80), budget: summarize(w.budget, w.lane) })),
   pending: (st?.pending ?? []).map((q) => q.id), sourceOwner: st?.sourceOwner?.work ?? null,
   plan: { items: (st?.project.intent.plan ?? []).map((i) => ({ id: i.id, outcome: i.outcome, state: i.state, dependsOn: i.dependsOn })), next: nextItem(st?.project.intent.plan ?? [])?.id ?? null },
 });

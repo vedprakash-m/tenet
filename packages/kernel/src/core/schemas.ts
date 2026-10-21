@@ -154,13 +154,20 @@ export const ReviewCoverage = z.strictObject({
   sampled: z.array(z.strictObject({ symbol: z.string(), callers: z.number().int().min(0), opened: z.number().int().min(0), semantic: z.boolean(), why: z.string().min(1) })),
 });
 
+// The model an assignment ran on, as reported; what is not known stays unknown (RSC-02, TS §4.8).
+export const ModelRecord = z.strictObject({
+  requested: z.string(), resolved: z.string().optional(), source: z.enum(["reported", "observed", "unknown"]),
+  qualification: z.enum(["qualified", "unqualified", "not-evaluated", "unknown"]),
+});
+export type ModelRecord = z.infer<typeof ModelRecord>;
+
 export const ReviewLink = z.object({
   reservation: z.string(), mode: z.enum(["full", "recheck"]), candidate: z.string(), basisHash: z.string(),
   basedOn: z.string().optional(), uncovered: z.array(z.string()), verified: z.array(z.string()),
   independence: z.enum(["subagent-fresh", "same-session"]), status: z.string(),
   files: z.record(z.string(), z.string()).default({}), // blob of each Tenet file when this review was issued
   axes: z.object({ behavior: z.enum(["pass", "fail"]), structure: z.enum(["pass", "fail"]) }).optional(), // the reviewer's judgment, never edited
-  coverage: ReviewCoverage.optional(), openDependencies: z.array(z.string()).optional(),
+  coverage: ReviewCoverage.optional(), openDependencies: z.array(z.string()).optional(), model: ModelRecord.optional(),
 });
 export type ReviewLink = z.infer<typeof ReviewLink>;
 
@@ -178,6 +185,7 @@ export const AnalystLink = z.object({
   artifacts: z.array(z.string()), findings: z.array(AnalystFinding), openDependencies: z.array(z.string()),
   stale: z.boolean().optional(), // the candidate moved after this analyst observed its revision (AGT-11)
   sketch: z.string().optional(), decisionRecord: z.string().optional(), // architect only
+  model: ModelRecord.optional(),
 });
 export type AnalystLink = z.infer<typeof AnalystLink>;
 
@@ -225,7 +233,7 @@ export type Reason = z.infer<typeof Reason>;
 
 export const WorkContract = z.object({
   id: z.string(), label: z.string(), profile: Profile, request: z.string(),
-  lane: Lane, floor: Lane, level: Level, state: WorkState,
+  lane: Lane, floor: Lane, level: Level, state: WorkState, model: ModelRecord.optional(),
   lastValidPhase: WorkState.optional(), stopReason: StopReason.optional(),
   session: z.object({
     generation: z.number(),
@@ -449,7 +457,8 @@ export const CheckInput = z.object({
 export type CheckInput = z.infer<typeof CheckInput>;
 
 export const FindingsInput = z.object({
-  h: Handle, result: z.discriminatedUnion("kind", [ReviewResult, AnalystResult]), again: z.boolean().optional(),
+  h: Handle, result: z.discriminatedUnion("kind", [ReviewResult, AnalystResult]),
+  again: z.boolean().optional(), model: z.string().optional(),
 });
 export type FindingsInput = z.infer<typeof FindingsInput>;
 

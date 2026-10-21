@@ -25,6 +25,7 @@ export function describe(ports: Ports, state: State, w: WorkContract) {
     next: state.pending.length ? [nx("ask", "Answer the open question first.", true)] : [first],
     data: {
       settings: { style, checkpoints, resource_mode },
+      ...(w.model ? { model: w.model } : {}),
       label: w.label,
       handle: formatHandle(Number(w.label.slice(2)), w.session.generation, state.tag),
       profile: w.profile,

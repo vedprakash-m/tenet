@@ -54,6 +54,7 @@ function result(w: WorkContract, v: Verdict, facts: Facts, extra: Reason[], sett
       acceptance: w.acceptance,
       checks,
       usage: summarize(w.budget, w.lane),
+      ...(w.model ? { model: w.model } : {}),
       ...controlsFor(w, v.endpoint),
       review,
       commits: w.git.commits,
