@@ -1,31 +1,5 @@
 {
- "functions": {
-  "core/config.ts#resolveSetting": {
-   "lines": 56,
-   "cc": 26,
-   "nest": 4
-  },
-  "core/policy.ts#comparePolicy": {
-   "lines": 36,
-   "cc": 29,
-   "nest": 3
-  },
-  "core/policy.ts#effectivePolicy": {
-   "lines": 21,
-   "cc": 27,
-   "nest": 2
-  },
-  "core/verdict.ts#judgeReview": {
-   "lines": 32,
-   "cc": 32,
-   "nest": 2
-  },
-  "core/verdict.ts#verdict": {
-   "lines": 29,
-   "cc": 28,
-   "nest": 2
-  }
- },
+ "functions": {},
  "wide": {
   "adapters/project-fs.ts": 6,
   "adapters/recipes-fs.ts": 1,
@@ -34,7 +8,7 @@
   "core/authority.ts": 2,
   "core/budget.ts": 4,
   "core/config.ts": 18,
-  "core/controls.ts": 5,
+  "core/controls.ts": 4,
   "core/dependencies.ts": 10,
   "core/exclusions.ts": 2,
   "core/handoff.ts": 3,
@@ -42,7 +16,7 @@
   "core/intent-md.ts": 9,
   "core/obligations.ts": 7,
   "core/plan.ts": 4,
-  "core/policy.ts": 9,
+  "core/policy.ts": 8,
   "core/receipts.ts": 2,
   "core/redact.ts": 2,
   "core/review.ts": 21,
@@ -50,11 +24,10 @@
   "core/schemas.ts": 13,
   "core/state.ts": 1,
   "core/trust.ts": 1,
-  "core/verdict.ts": 18,
+  "core/verdict.ts": 12,
   "decisions/adopt.ts": 6,
   "decisions/decision-record.ts": 8,
   "decisions/grant.ts": 6,
-  "decisions/index.ts": 1,
   "decisions/overview.ts": 1,
   "decisions/plan.ts": 10,
   "decisions/quarantine.ts": 3,

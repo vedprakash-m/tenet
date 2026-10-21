@@ -56,6 +56,49 @@ export function validateSetting(key: SettingKey, value: unknown, scope: Scope): 
 const union = <T>(lists: readonly (readonly T[] | undefined)[]): T[] => [...new Set(lists.flatMap((l) => l ?? []))];
 const json = (v: unknown) => JSON.stringify(v);
 
+type Merged = { value: unknown; limits: string[] };
+
+const mergeExclusions = (a: unknown, b: unknown): unknown => {
+  const m = new Map<string, string[]>();
+  for (const x of [...((a as { pattern: string; kinds: string[] }[]) ?? []), ...((b as { pattern: string; kinds: string[] }[]) ?? [])]) {
+    m.set(x.pattern, union([m.get(x.pattern), x.kinds]));
+  }
+  return [...m].map(([pattern, kinds]) => ({ pattern, kinds }));
+};
+
+/** Checks compose by id; a second, different definition of an id is kept out and blocks checking until reconciled. */
+const mergeChecks = (a: unknown, b: unknown): Merged => {
+  const m = new Map<string, { id: string }>(), limits: string[] = [];
+  for (const c of [...((a as { id: string }[]) ?? []), ...((b as { id: string }[]) ?? [])]) {
+    const had = m.get(c.id);
+    if (!had) m.set(c.id, c);
+    else if (json(had) !== json(c)) limits.push(`"${c.id}" is defined differently; checking and checked-local are blocked until reconciled`);
+  }
+  return { value: [...m.values()], limits };
+};
+
+/** Each dependency field takes the strictest stated value: the longest age, the strictest rule. */
+const mergeDependency = (a: unknown, b: unknown): unknown => {
+  const stated = [a, b].filter(Boolean) as Record<string, string | number>[];
+  const pick = (f: keyof typeof DEFAULT_DEPENDENCY) => {
+    const vals = stated.map((s) => s[f]).filter((v) => v !== undefined);
+    if (!vals.length) return DEFAULT_DEPENDENCY[f];
+    return f === "min_release_age_days" ? Math.max(...(vals as number[])) : (vals as (keyof typeof STRICT)[]).reduce((x, y) => (STRICT[y] > STRICT[x] ? y : x));
+  };
+  return { min_release_age_days: pick("min_release_age_days"), urgent_exception: pick("urgent_exception"), unknown_age: pick("unknown_age") };
+};
+
+/** A shared and a project value combine by the setting's own rule: stricter wins, never the looser. */
+function mergeLayers(key: SettingKey, a: unknown, b: unknown): Merged {
+  switch (key) {
+    case "protected_paths": return { value: union([a as string[], b as string[]]), limits: [] };
+    case "exclusions": return { value: mergeExclusions(a, b), limits: [] };
+    case "required_checks": return mergeChecks(a, b);
+    case "dependency_policy": return { value: mergeDependency(a, b), limits: [] };
+    default: return { value: { ...((a as object) ?? {}), ...((b as object) ?? {}) }, limits: [] }; // commands: per check name, the project's own win
+  }
+}
+
 export function resolveSetting(key: SettingKey, l: Layers): Resolved {
   const e: Entry = CATALOG[key];
   const howToChange = key === "shared_memory" ? "tenet decide adopt --h <handle> --target intent (preview, then answer adopt-confirm)" : `tenet decide config --h <handle> --target ${key} with JSON stdin {"propose":{"value":<value>,"scope":"${e.scopes[0]}"}}; {"propose":{"reset":true,"scope":"${e.scopes[0]}"}} removes the override`;
@@ -75,42 +118,10 @@ export function resolveSetting(key: SettingKey, l: Layers): Resolved {
   const from = (src: Record<string, unknown>) => src[key] as never;
   const sources = ([["shared policy", from(shared)], ["project", from(l.local)]] as [Source, unknown][]).filter(([, v]) => v !== undefined);
   const contributions = sources.map(([source, value]) => ({ source, value }));
-  const [a, b] = [from(shared), from(l.local)] as unknown[];
-  const limits = base.limits;
-  let value: unknown;
-  switch (key) {
-    case "protected_paths": value = union([a as string[], b as string[]]); break;
-    case "exclusions": {
-      const m = new Map<string, string[]>();
-      for (const x of [...((a as { pattern: string; kinds: string[] }[]) ?? []), ...((b as { pattern: string; kinds: string[] }[]) ?? [])]) m.set(x.pattern, union([m.get(x.pattern), x.kinds]));
-      value = [...m].map(([pattern, kinds]) => ({ pattern, kinds }));
-      break;
-    }
-    case "required_checks": {
-      const m = new Map<string, { id: string }>();
-      for (const c of [...((a as { id: string }[]) ?? []), ...((b as { id: string }[]) ?? [])]) {
-        const had = m.get(c.id);
-        if (!had) m.set(c.id, c);
-        else if (json(had) !== json(c)) limits.push(`"${c.id}" is defined differently; checking and checked-local are blocked until reconciled`);
-      }
-      value = [...m.values()];
-      break;
-    }
-    case "dependency_policy": {
-      const stated = [a, b].filter(Boolean) as Record<string, string | number>[];
-      const pick = (f: keyof typeof DEFAULT_DEPENDENCY) => {
-        const vals = stated.map((s) => s[f]).filter((v) => v !== undefined);
-        if (!vals.length) return DEFAULT_DEPENDENCY[f];
-        return f === "min_release_age_days" ? Math.max(...(vals as number[])) : (vals as (keyof typeof STRICT)[]).reduce((x, y) => (STRICT[y] > STRICT[x] ? y : x));
-      };
-      value = { min_release_age_days: pick("min_release_age_days"), urgent_exception: pick("urgent_exception"), unknown_age: pick("unknown_age") };
-      break;
-    }
-    default: value = { ...((a as object) ?? {}), ...((b as object) ?? {}) }; // commands: per check name, the project's own win
-  }
+  const { value, limits } = mergeLayers(key, from(shared), from(l.local));
   const sharedUsed = sources.some(([s]) => s === "shared policy");
   if (declaredButNotRun(key, value)) limits.push(STORED_ONLY);
-  return { ...base, value, source: sources.map(([s]) => s).join(" + ") || "default", adoption: sharedUsed ? l.adoption.policy : "n/a", overridden: [], contributions };
+  return { ...base, value, limits, source: sources.map(([s]) => s).join(" + ") || "default", adoption: sharedUsed ? l.adoption.policy : "n/a", overridden: [], contributions };
 }
 
 const STORED_ONLY = "Stored declaration only: configured execution is unavailable; checks and checked-local are blocked until it is implemented or the declaration is removed.";

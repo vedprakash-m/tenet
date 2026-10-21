@@ -102,37 +102,51 @@ function judgeRed(i: VerdictInput): Reason[] {
   return out;
 }
 
-export function judgeReview(i: VerdictInput): Reason[] {
+/** The review (and its parent, for a recheck) that speaks for this candidate, or the reason it cannot. */
+function reviewChain(i: VerdictInput): { chain: ReviewLink[] } | { stale: Reason[] } {
   const link = i.reviews.at(-1);
-  if (!link) return [reason("review-missing")];
-  if (link.candidate !== i.candidate || link.basisHash !== i.basisHash) return [reason("review-stale")];
-  if (i.reviewFiles && Object.entries(i.reviewFiles).some(([p, h]) => link.files[p] !== h)) {
-    return [reason("review-stale")];
+  if (!link) return { stale: [reason("review-missing")] };
+  const moved = i.reviewFiles && Object.entries(i.reviewFiles).some(([p, h]) => link.files[p] !== h);
+  if (link.candidate !== i.candidate || link.basisHash !== i.basisHash || moved) return { stale: [reason("review-stale")] };
+  if (link.mode !== "recheck") return { chain: [link] };
+  const parent = i.reviews.slice(0, -1).find((l) => l.reservation === link.basedOn);
+  if (!parent || parent.mode !== "full" || parent.basisHash !== i.basisHash) {
+    return { stale: [reason("review-stale", "the recheck has no matching full review")] };
   }
-  const chain = [link];
-  if (link.mode === "recheck") {
-    const parent = i.reviews.slice(0, -1).find(l => l.reservation === link.basedOn);
-    if (!parent || parent.mode !== "full" || parent.basisHash !== i.basisHash) return [reason("review-stale", "the recheck has no matching full review")];
-    chain.unshift(parent);
-  }
-  const fullTypes = i.obligations.some(ob => {
+  return { chain: [parent, link] };
+}
+
+/** Whether a full, passing type check of this candidate lets the reviewer rely on types for callers it did not open. */
+const fullTypesPassed = (i: VerdictInput): boolean =>
+  i.obligations.some((ob) => {
     const rc = fresh(i.receipts, ob.id, i.checkInputId);
-    return ob.kind === "static" && ["tsc", "typescript", "types"].includes(ob.tool ?? "") && rc?.status === "pass" && rc.scope === "full" && rc.candidate === i.candidate;
+    const types = ob.kind === "static" && ["tsc", "typescript", "types"].includes(ob.tool ?? "");
+    return types && rc?.status === "pass" && rc.scope === "full" && rc.candidate === i.candidate;
   });
+
+/** One review's own reasons: independence, and whether it covered what changed since the review before it. */
+function judgeLink(review: ReviewLink, before: ReviewLink["files"] | undefined, i: VerdictInput, fullTypes: boolean): Reason[] {
   const out: Reason[] = [];
-  for (const [index, review] of chain.entries()) {
-    if (review.independence !== "subagent-fresh") out.push(reason("reduced-independence", undefined, i.lane === "quick" ? { note: true } : {}));
-    const coverage = review.coverage;
-    const before = chain[index - 1]?.files;
-    const required = Object.keys({ ...before, ...review.files }).filter(p => !before || before[p] !== review.files[p]);
-    const missing = required.filter(p => !coverage?.inspected.some(x => x === p || x.startsWith(`${p}:`)));
-    const sampled = coverage?.sampled.filter(s => s.opened < s.callers && (s.semantic || !fullTypes)) ?? [];
-    if (review.status !== "completed" || !coverage || !coverage.crossCutting.trim() || review.uncovered.length || missing.length || sampled.length || review.openDependencies?.length) {
-      const gaps = [...review.uncovered, ...missing, ...sampled.map(s => `${s.symbol}: unopened callers`), ...(review.openDependencies ?? [])];
-      out.push(reason("review-partial-coverage", gaps.slice(0, 3).join(", ") || "review coverage is incomplete"));
-    }
+  if (review.independence !== "subagent-fresh") {
+    out.push(reason("reduced-independence", undefined, i.lane === "quick" ? { note: true } : {}));
+  }
+  const coverage = review.coverage;
+  const required = Object.keys({ ...before, ...review.files }).filter((p) => !before || before[p] !== review.files[p]);
+  const missing = required.filter((p) => !coverage?.inspected.some((x) => x === p || x.startsWith(`${p}:`)));
+  const sampled = coverage?.sampled.filter((s) => s.opened < s.callers && (s.semantic || !fullTypes)) ?? [];
+  const open = review.openDependencies ?? [];
+  if (review.status !== "completed" || !coverage || !coverage.crossCutting.trim() || review.uncovered.length || missing.length || sampled.length || open.length) {
+    const gaps = [...review.uncovered, ...missing, ...sampled.map((s) => `${s.symbol}: unopened callers`), ...open];
+    out.push(reason("review-partial-coverage", gaps.slice(0, 3).join(", ") || "review coverage is incomplete"));
   }
   return out;
+}
+
+export function judgeReview(i: VerdictInput): Reason[] {
+  const found = reviewChain(i);
+  if ("stale" in found) return found.stale;
+  const fullTypes = fullTypesPassed(i);
+  return found.chain.flatMap((review, index) => judgeLink(review, found.chain[index - 1]?.files, i, fullTypes));
 }
 
 const FINDING_DONE = new Set(["verified", "withdrawn"]);
@@ -171,7 +185,8 @@ function judgeDeepPasses(i: VerdictInput): Reason[] {
   });
 }
 
-export function verdict(i: VerdictInput): Verdict {
+/** Every reason the evidence gives, the blocking ones and the notes. */
+function reasonsOf(i: VerdictInput): Reason[] {
   const r: Reason[] = [];
   if (i.lane === "deep") r.push(...judgeDeepPasses(i));
   if (i.authorityAvailable === false) r.push(reason("authority-needed", "this contract's routine authority is suspended or expired"));
@@ -179,23 +194,32 @@ export function verdict(i: VerdictInput): Verdict {
   for (const ob of i.obligations) r.push(...judgeObligation(ob, i));
   for (const el of i.elements) r.push(...judgeElement(el, i));
   for (const p of i.changedLocks) r.push(reason("locked-test-changed", p));
-  if (i.unauthorized.length) r.push(reason("authority-needed", `protected path${i.unauthorized.length === 1 ? "" : "s"} ${i.unauthorized.slice(0, 3).join(", ")}`, { refs: [...i.unauthorized] }));
+  if (i.unauthorized.length) {
+    const paths = i.unauthorized.slice(0, 3).join(", ");
+    r.push(reason("authority-needed", `protected path${i.unauthorized.length === 1 ? "" : "s"} ${paths}`, { refs: [...i.unauthorized] }));
+  }
   if (i.behavioralChange) r.push(...judgeRed(i));
   if (i.reviewRequired) r.push(...judgeReview(i));
   r.push(...judgeFindings(i), ...judgeAttention(i));
   for (const d of i.declined) r.push(reason("declined-step", d));
   if (i.integratedStale) r.push(reason("integration-unvalidated"));
+  return r;
+}
 
-  const blocking = r.filter((x) => !x.note);
+/** The highest endpoint the reasons allow, never above the level's ceiling, and what the checked tree was (PRD 4.5.2). */
+function endpointOf(i: VerdictInput, r: readonly Reason[]): { endpoint: Endpoint; scope?: Scope } {
   const reviewOnly = i.profile === "review" || i.profile === "plan" || i.profile === "investigate";
-  let rank = reviewOnly ? 1 : blocking.length === 0 ? 3 : i.implementationExists ? 2 : 0;
-  rank = Math.min(rank, RANK[ceiling(i.level)]!);
+  const unblocked = r.every((x) => x.note);
+  const rank = Math.min(reviewOnly ? 1 : unblocked ? 3 : i.implementationExists ? 2 : 0, RANK[ceiling(i.level)]!);
   const endpoint: Endpoint = i.prototypeRequested && rank > 0 ? "prototype" : ENDPOINT_BY_RANK[rank]!;
-  const scope: Scope | undefined = endpoint !== "checked-local" ? undefined
-    : i.commitExists && i.committedTreeChecked ? "committed"
-    : i.checkedIncludesHumanEdits ? "working-tree-with-your-edits" : "working-tree-uncommitted";
-  const out: Verdict = { endpoint, reasons: r };
-  if (scope) out.scope = scope;
+  if (endpoint !== "checked-local") return { endpoint };
+  if (i.commitExists && i.committedTreeChecked) return { endpoint, scope: "committed" };
+  return { endpoint, scope: i.checkedIncludesHumanEdits ? "working-tree-with-your-edits" : "working-tree-uncommitted" };
+}
+
+export function verdict(i: VerdictInput): Verdict {
+  const reasons = reasonsOf(i);
+  const out: Verdict = { reasons, ...endpointOf(i, reasons) };
   if (i.stopReason) out.stopReason = i.stopReason;
   return out;
 }
