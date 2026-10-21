@@ -3,12 +3,14 @@ import { CATALOG, isSettingKey, validateSetting } from "../core/config.ts";
 import type { Scope } from "../core/config.ts";
 import { KernelError } from "../core/errors.ts";
 import { reason } from "../core/reasons.ts";
-import type { BasisElement, Finding } from "../core/schemas.ts";
+import type { BasisElement, Finding, State, WorkContract } from "../core/schemas.ts";
 import { undecidedDirty } from "../verbs/dirty.ts";
 import { factsHash, nx, withWork } from "../verbs/common.ts";
 import { gather } from "../verbs/facts.ts";
 import { integrationSetting, startIntegrate, switchFacts } from "../verbs/integrate.ts";
 import type { Decision } from "./types.ts";
+import type { Plan } from "../pipeline.ts";
+import type { Ports } from "../ports/types.ts";
 
 /** Answers the dirty-overlap question: the question's facts must still be the current facts. */
 export const dirtyOverlap: Decision = {
@@ -50,6 +52,62 @@ export const acceptance: Decision = {
 };
 
 const FINDING_USER = ["deferred", "risk-accepted", "wont-fix"] as const;
+
+/** A lock's test is revised with a new definition; permission to revise never proves the new definition against the
+ * baseline (INT-06) — the obligations it supports are marked unproved until a fresh baseline establishes it. */
+async function reviseLock(ports: Ports, state: State, work: WorkContract, id: string, why: string, now: string): Promise<Plan> {
+  const blob = (await gather(ports, work)).inv.entries.get(id)?.blob;
+  if (!blob) throw new KernelError("revision-conflict", `${id} no longer exists; a deleted locked test needs a basis change`, { exit: 2 });
+  const locks = state.locks.map((l) => {
+    if (l.path !== id && !(id in l.supportInputs)) return l;
+    const patch = l.path === id ? { hash: blob } : { supportInputs: { ...l.supportInputs, [id]: blob } };
+    const rev = { path: id, from: l.path === id ? l.hash : l.supportInputs[id]!, to: blob, reason: why, at: now };
+    return { ...l, ...patch, revisions: [...(l.revisions ?? []), rev] };
+  });
+  const obligations = work.obligations.map((o) =>
+    o.testFile === id || id in (o.baselineInputs ?? {}) ? { ...o, state: "revised" as const, baselineMatched: false } : o,
+  );
+  return {
+    state: withWork({ ...state, locks }, { ...work, obligations }),
+    resp: { work: work.id, next: [nx("test", "The revision is authorized. Re-establish baseline and candidate proof before claiming checked-local.", true)] },
+  };
+}
+
+function dispositionAttention(state: State, work: WorkContract, id: string, outcome: string | undefined, why: string): Plan {
+  const o = outcome === "finding" ? "finding" as const : "accepted" as const;
+  const w = { ...work, attention: work.attention.map((a) => (a.id === id ? { ...a, disposition: { by: "user" as const, outcome: o, reason: why } } : a)) };
+  return { state: withWork(state, w), resp: { work: work.id, next: [nx("check", "Re-check; the item is dispositioned.")] } };
+}
+
+function dispositionFinding(state: State, work: WorkContract, f: Finding, outcome: string | undefined, why: string, now: string): Plan {
+  if (f.severity === "blocker") throw new KernelError("blocker-open", "a blocker is closed by a fix or by changing the basis, not by a disposition", { exit: 2 });
+  const to = outcome as Finding["state"];
+  if (!FINDING_USER.includes(to as (typeof FINDING_USER)[number])) throw new KernelError("revision-conflict", `outcome must be one of ${FINDING_USER.join(", ")}`, { exit: 1 });
+  const w = { ...work, findings: work.findings.map((x) => (x.id === f.id ? { ...x, state: to, history: [...x.history, { to, by: "user" as const, reason: why, at: now }] } : x)) };
+  return { state: withWork(state, w), resp: { work: w.id, next: [nx("finish", "The finding is dispositioned.")] } };
+}
+
+function dispositionElement(state: State, work: WorkContract, el: BasisElement, why: string): Plan {
+  const upd: BasisElement = { ...el, verifiedBy: { notApplicable: why } };
+  const intent = { ...state.project.intent, revision: state.project.intent.revision + 1, elements: state.project.intent.elements.map((e) => (e.id === el.id ? upd : e)) };
+  return {
+    state: withWork({ ...state, project: { ...state.project, intent } }, work),
+    resp: { work: work.id, reasons: [reason("assumption-unresolved", el.id, { note: true })], next: [nx("finish", "The element is dispositioned.")] },
+  };
+}
+
+/** TDD-03: a behavioral red is infeasible, so the user records why a seeded fault stands in for it. The obligation
+ * still has to genuinely fail with the fault in place; this only authorizes the negative-control exemption. */
+function recordAlongside(state: State, work: WorkContract, id: string, why: string): Plan {
+  const ob = work.obligations.find((o) => o.id === id || o.testFile === id);
+  if (!ob) throw new KernelError("revision-conflict", `nothing called ${id} in this contract`, { exit: 1 });
+  const w = { ...work, obligations: work.obligations.map((o) => (o === ob ? { ...o, alongsideReason: why } : o)) };
+  return {
+    state: withWork(state, w),
+    resp: { work: w.id, next: [nx("check", "Baseline it as a negative control: --alongside the seeded-fault file, fault in place.")] },
+  };
+}
+
 /** The user's disposition of an attention item, a finding or an assumption. */
 export const disposition: Decision = {
   kind: "disposition",
@@ -60,45 +118,15 @@ export const disposition: Decision = {
     if (!why) throw new KernelError("revision-conflict", "a disposition needs a reason", { exit: 1 });
     const now = ports.clock.now();
 
-    // Permission to revise a test never proves its new definition against the baseline (INT-06).
     const lock = state.locks.find((l) => l.path === id || id in l.supportInputs);
-    if (lock) {
-      const blob = (await gather(ports, work)).inv.entries.get(id)?.blob;
-      if (!blob) throw new KernelError("revision-conflict", `${id} no longer exists; a deleted locked test needs a basis change`, { exit: 2 });
-      const locks = state.locks.map((l) => {
-        if (l.path !== id && !(id in l.supportInputs)) return l;
-        const patch = l.path === id ? { hash: blob } : { supportInputs: { ...l.supportInputs, [id]: blob } };
-        const rev = { path: id, from: l.path === id ? l.hash : l.supportInputs[id]!, to: blob, reason: why, at: now };
-        return { ...l, ...patch, revisions: [...(l.revisions ?? []), rev] };
-      });
-      const obligations = work.obligations.map((o) =>
-        o.testFile === id || id in (o.baselineInputs ?? {}) ? { ...o, state: "revised" as const, baselineMatched: false } : o,
-      );
-      return {
-        state: withWork({ ...state, locks }, { ...work, obligations }),
-        resp: { work: work.id, next: [nx("test", "The revision is authorized. Re-establish baseline and candidate proof before claiming checked-local.", true)] },
-      };
-    }
+    if (lock) return reviseLock(ports, state, work, id, why, now);
     const att = work.attention.find((a) => a.id === id);
-    if (att) {
-      const outcome = body.outcome === "finding" ? "finding" as const : "accepted" as const;
-      const w = { ...work, attention: work.attention.map((a) => (a.id === id ? { ...a, disposition: { by: "user" as const, outcome, reason: why } } : a)) };
-      return { state: withWork(state, w), resp: { work: work.id, next: [nx("check", "Re-check; the item is dispositioned.")] } };
-    }
+    if (att) return dispositionAttention(state, work, id, body.outcome, why);
     const f = work.findings.find((x) => x.id === id);
-    if (f) {
-      if (f.severity === "blocker") throw new KernelError("blocker-open", "a blocker is closed by a fix or by changing the basis, not by a disposition", { exit: 2 });
-      const to = body.outcome as Finding["state"];
-      if (!FINDING_USER.includes(to as (typeof FINDING_USER)[number])) throw new KernelError("revision-conflict", `outcome must be one of ${FINDING_USER.join(", ")}`, { exit: 1 });
-      const w = { ...work, findings: work.findings.map((x) => (x.id === id ? { ...x, state: to, history: [...x.history, { to, by: "user" as const, reason: why, at: now }] } : x)) };
-      return { state: withWork(state, w), resp: { work: w.id, next: [nx("finish", "The finding is dispositioned.")] } };
-    }
+    if (f) return dispositionFinding(state, work, f, body.outcome, why, now);
     const el = state.project.intent.elements.find((e) => e.id === id && work.basis?.elementIds.includes(e.id));
-    if (el) {
-      const upd: BasisElement = { ...el, verifiedBy: { notApplicable: why } };
-      const intent = { ...state.project.intent, revision: state.project.intent.revision + 1, elements: state.project.intent.elements.map((e) => (e.id === id ? upd : e)) };
-      return { state: withWork({ ...state, project: { ...state.project, intent } }, work), resp: { work: work.id, reasons: [reason("assumption-unresolved", id, { note: true })], next: [nx("finish", "The element is dispositioned.")] } };
-    }
+    if (el) return dispositionElement(state, work, el, why);
+    if (body.outcome === "alongside") return recordAlongside(state, work, id, why);
     throw new KernelError("revision-conflict", `nothing called ${id} in this contract`, { exit: 1 });
   },
 };

@@ -238,6 +238,56 @@ describe("declared scaffolding", () => {
   });
 });
 
+describe("test-alongside: a negative control stands in for a behavioral red (TDD-03)", () => {
+  async function brownfield() {
+    const p = fresh({ "src/greet.ts": GREET_IMPL }); // the implementation already exists: a behavioral red is infeasible
+    const h = (await p.call("open", { profile: "feature", request: "add a greeting", scopePaths: ["src/greet.ts"], lane: "standard" })).handle!;
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    p.write("src/greet.test.ts", GREET_TEST);
+    return { p, h };
+  }
+
+  it("refuses the disposition without a reason", async () => {
+    const { p, h } = await brownfield();
+    const r = await p.call("decide", { h, kind: "disposition", target: "src/greet.test.ts", propose: { outcome: "alongside" } });
+    assert.equal(r.exit, 1);
+  });
+
+  it("an undeclared --alongside bypasses nothing: the existing implementation is still no distinguishing red", async () => {
+    const { p, h } = await brownfield();
+    const r = await p.call("check", { h, stage: "baseline", alongside: ["src/greet.ts"] });
+    assert.ok(r.reasons.some((x) => x.code === "no-distinguishing-red"), JSON.stringify(r.reasons));
+  });
+
+  it("a seeded fault that does not actually fail the test grants no false proof", async () => {
+    const { p, h } = await brownfield();
+    await p.call("decide", { h, kind: "disposition", target: "src/greet.test.ts", propose: { outcome: "alongside", reason: "greet() predates this task; a seeded fault stands in for a behavioral red" } });
+    const r = await p.call("check", { h, stage: "baseline", alongside: ["src/greet.ts"], again: true }); // no fault seeded: the existing implementation still passes
+    assert.ok(r.reasons.some((x) => x.code === "no-distinguishing-red"), JSON.stringify(r.reasons));
+  });
+
+  it("once declared, a genuine seeded-fault red proves the baseline, and the verdict discloses the negative control [TDD-03]", async () => {
+    const { p, h } = await brownfield();
+    const reason = "greet() predates this task; a seeded fault stands in for a behavioral red";
+    const disp = await p.call("decide", { h, kind: "disposition", target: "src/greet.test.ts", propose: { outcome: "alongside", reason } });
+    assert.equal(disp.exit, 0, JSON.stringify(disp));
+    assert.equal(disp.next[0]!.action, "check");
+
+    p.write("src/greet.ts", 'export const greet = (name: string): string => `Hi, ${name}!`;\n'); // the seeded fault
+    const seeded = await p.call("check", { h, stage: "baseline", alongside: ["src/greet.ts"], again: true });
+    assert.equal(seeded.next[0]!.action, "implement", JSON.stringify(seeded));
+    const baseline = Object.values(p.ports().store.read()!.state.work)[0]!.receipts.find((r) => r.stage === "baseline")!;
+    assert.match(baseline.limitations.join(), /negative control declared in existing files: src\/greet\.ts/);
+
+    p.write("src/greet.ts", GREET_IMPL); // revert the fault
+    const candidate = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"], again: true });
+    await p.call("findings", { h, result: reviewResult(d(candidate)) });
+    const f = await finishFixture(p, { h, noCommit: true });
+    assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
+    assert.ok(f.reasons.some((r) => r.code === "test-alongside" && r.note && r.message.endsWith(reason)), JSON.stringify(f.reasons));
+  });
+});
+
 describe("review binding", () => {
   it("rejects a result for a stale reservation, counting the dispatch, and a late result for a replaced attempt [AGT-02, REV-01]", async () => {
     const p = fresh();

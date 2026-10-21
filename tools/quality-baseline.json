@@ -24,11 +24,6 @@
    "lines": 29,
    "cc": 28,
    "nest": 2
-  },
-  "decisions/simple.ts#run#3": {
-   "lines": 48,
-   "cc": 26,
-   "nest": 2
   }
  },
  "wide": {
@@ -63,7 +58,7 @@
   "decisions/overview.ts": 1,
   "decisions/plan.ts": 10,
   "decisions/quarantine.ts": 3,
-  "decisions/simple.ts": 24,
+  "decisions/simple.ts": 23,
   "decisions/takeover.ts": 3,
   "frontends/cli.ts": 4,
   "ports/types.ts": 10,

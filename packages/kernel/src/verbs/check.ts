@@ -65,14 +65,17 @@ function admit(ports: Ports, cur: State, w: WorkContract, input: CheckInput, inp
   }
 }
 
-/** The files this call declares as Tenet's, and the existing files it declares as baseline scaffolding (declared, never inferred). */
+/** The files this call declares as Tenet's, the existing files it declares as baseline scaffolding, and any it
+ * declares as a TDD-03 negative control (declared, never inferred). */
 function declare(w: WorkContract, input: CheckInput): WorkContract {
   const touched = (input.touched ?? []).filter(safePath).filter((p) => !w.touched.some((t) => t.path === p));
   const scaffold = (input.scaffold ?? []).filter(safePath);
+  const alongside = (input.alongside ?? []).filter(safePath);
   return {
     ...w,
     touched: [...w.touched, ...touched.map((path) => ({ path }))],
     ...(scaffold.length ? { scaffolding: [...new Set([...(w.scaffolding ?? []), ...scaffold])] } : {}),
+    ...(alongside.length ? { alongside: [...new Set([...(w.alongside ?? []), ...alongside])] } : {}),
   };
 }
 

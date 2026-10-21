@@ -105,6 +105,7 @@ export const Obligation = z.object({
   baselineTestHash: z.string().optional(), // hash of the test file at its red run (red-invalidated, TS §8.1)
   baselineMatched: z.boolean().optional(),
   baselineInputs: z.record(z.string(), z.string()).optional(),
+  alongsideReason: z.string().optional(), // TDD-03: a behavioral red was infeasible; the red is a declared negative control instead
 });
 export type Obligation = z.infer<typeof Obligation>;
 
@@ -253,6 +254,7 @@ export const WorkContract = z.object({
   }),
   scopedTo: z.array(z.string()).optional(), // `fix`: where the named findings are; a change elsewhere needs a disposition
   scaffolding: z.array(z.string()).optional(), // existing files declared as baseline scaffolding; each is an attention item
+  alongside: z.array(z.string()).optional(), // TDD-03: existing source paths exempt from contamination for a negative control
   settings: settingsSchema("task").optional(), // task-scope overrides (PRD §7.1): they end with the contract
   // A dependency change resolved and waiting for the user's answer: what the files were, and what the resolution wrote (TS §9.11).
   dependency: z.object({
@@ -441,6 +443,7 @@ export const CheckInput = z.object({
   targeted: z.boolean().optional(),
   touched: z.array(z.string()).optional(),
   scaffold: z.array(z.string()).optional(), // existing files holding the minimal stubs a new interface needs; allowed to differ at baseline
+  alongside: z.array(z.string()).optional(), // TDD-03: existing source paths exempt at baseline for a declared negative-control run
   again: z.boolean().optional(),
 });
 export type CheckInput = z.infer<typeof CheckInput>;

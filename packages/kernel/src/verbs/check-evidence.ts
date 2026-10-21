@@ -71,15 +71,22 @@ export function receiptsOf(run: Run, cw: WorkContract, o: Executed): Receipt[] {
   receipts.push(...staticReceipts(run, o, tests.length));
   if (!run.baseline) return receipts;
   // The baseline may differ from the start only by tests and new files (the minimal scaffolding a new interface needs);
-  // a pre-existing source file that changed means the red was not taken on the starting behavior.
+  // a pre-existing source file that changed means the red was not taken on the starting behavior. A path named with
+  // `--alongside` is exempt the same way, but only once a disposition has recorded why a behavioral red was
+  // infeasible (TDD-03) — the seeded fault still has to make the test actually fail; nothing else is weakened.
   const isNew = (p: string) => facts.inv.status.some((s) => s.path === p && (s.untracked || s.xy.startsWith("A")));
   const wasDirty = (p: string) => cw.git.start.dirty.some((d) => d.path === p && d.blob === facts.inv.entries.get(p)?.blob);
+  const alongsideDeclared = cw.obligations.some((ob) => ob.alongsideReason);
+  const exempt = (p: string) => (cw.scaffolding ?? []).includes(p) || (alongsideDeclared && (cw.alongside ?? []).includes(p));
   const contaminated = facts.inv.status
     .map((s) => s.path)
-    .filter((p) => ports.stack.classify(p) === "source" && !isNew(p) && !wasDirty(p) && !(cw.scaffolding ?? []).includes(p));
+    .filter((p) => ports.stack.classify(p) === "source" && !isNew(p) && !wasDirty(p) && !exempt(p));
   if (cw.scaffolding?.length)
     for (const r of receipts)
       r.limitations.push(`scaffolding declared in existing files: ${cw.scaffolding.slice(0, 3).join(", ")}`);
+  if (alongsideDeclared && cw.alongside?.length)
+    for (const r of receipts)
+      r.limitations.push(`negative control declared in existing files: ${cw.alongside.slice(0, 3).join(", ")}`);
   if (contaminated.length) {
     for (const r of receipts) {
       r.status = "inconclusive";
