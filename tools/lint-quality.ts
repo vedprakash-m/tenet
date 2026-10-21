@@ -28,7 +28,7 @@ export const BUDGETS: Record<string, { match: RegExp; lines: number }> = {
   "adapters/git-cli": { match: /^adapters\/git-cli\.ts$/, lines: 650 },
   "adapters/runner": { match: /^adapters\/runner\.ts$/, lines: 350 },
   "adapters/node-ts": { match: /^adapters\/node-ts\.ts$/, lines: 350 },
-  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 3844 }, // +10 Deep passes (WRK-04), +5 model record (RSC-02), +33 active time and decide extend (WRK-08), +6 project charter reading (QLT-09), +4 Host port consumers (ENG-02), +7 support-overlaps-scope basis validation, +25 pnpm dependency verification, +2 readiness-tier reporting (INS-04), +42 e2e obligation wiring (EVD-13: runE2e, e2eReceipts, withE2e/wantsE2e call sites), 2026-10
+  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 3848 }, // +10 Deep passes (WRK-04), +5 model record (RSC-02), +33 active time and decide extend (WRK-08), +6 project charter reading (QLT-09), +4 Host port consumers (ENG-02), +7 support-overlaps-scope basis validation, +25 pnpm dependency verification, +2 readiness-tier reporting (INS-04), +42 e2e obligation wiring (EVD-13: runE2e, e2eReceipts, withE2e/wantsE2e call sites), +4 prototype promotion lane-floor (WRK-07), 2026-10
 };
 
 const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => {

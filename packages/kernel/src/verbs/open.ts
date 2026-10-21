@@ -29,7 +29,7 @@ async function begin(ports: Ports, before: State | null, input: OpenInput, tx: T
       throw new KernelError("capability-missing", `duplicate finding number ${dup.n}: each named finding must be distinct`, { exit: 1 });
     }
   }
-  if (["promote", "recipe-upgrade", "continue"].includes(input.profile)) {
+  if (["recipe-upgrade", "continue"].includes(input.profile)) {
     throw new KernelError(
       "capability-missing",
       `the ${input.profile} workflow is not implemented; resume an existing contract with its original profile and --resume`,

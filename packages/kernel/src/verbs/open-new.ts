@@ -5,7 +5,7 @@ import { matches } from "../core/exclusions.ts";
 import { workId, workLabel } from "../core/ids.ts";
 import { planBlock } from "../core/plan.ts";
 import { reason } from "../core/reasons.ts";
-import { assistanceLevel, chooseLane, isEditingProfile, laneFloor, raise } from "../core/risk.ts";
+import { assistanceLevel, chooseLane, isEditingProfile, laneFloor, maxLane, raise } from "../core/risk.ts";
 import type { OpenInput } from "../core/schemas.ts";
 import type { Lane, Level, Question, State } from "../core/schemas.ts";
 import { isLive, newContract } from "../core/state.ts";
@@ -76,13 +76,16 @@ function admitNew(c: Ctx, editing: boolean) {
   return item;
 }
 
-/** The assessment, the lane floor and the lane: raised freely, lowered only to the floor (WRK-04). */
+/** The assessment, the lane floor and the lane: raised freely, lowered only to the floor (WRK-04). A prototype
+ * promotion's floor never drops below Standard, so the lane table's own fresh-review requirement (never
+ * same-session for Standard or Deep) is what makes WRK-07's "require a fresh review before checked-local" hold —
+ * no separate rule is needed. */
 function lanePlan(c: Ctx, scope: string[], protectedPaths: string[], prefs: ReturnType<typeof settingsFor>) {
   const { input, state } = c;
   const protectedHit = scope.some((p) => protectedPaths.some((x) => matches(x, p)));
   const assessment = raise(input.assessment ?? {}, [...scope, ...(input.signals ?? [])], state.project.traits, protectedHit);
-  const floor = laneFloor(assessment);
-  const recommended = ["feature", "bug"].includes(input.profile) ? "standard" : floor;
+  const floor = input.profile === "promote" ? maxLane(laneFloor(assessment), "standard") : laneFloor(assessment);
+  const recommended = ["feature", "bug", "promote"].includes(input.profile) ? "standard" : floor;
   const wanted = input.lane ?? (prefs.lane === "auto" ? undefined : (prefs.lane as Lane));
   return { assessment, floor, ...chooseLane(wanted, floor, recommended) };
 }

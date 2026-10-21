@@ -50,7 +50,7 @@ PRD owns meaning. Tech Spec owns mechanism. UX Spec owns wording. This plan owns
 | Phase 1 — Feasibility spikes & discovery | ◐ In progress | 2026-10-19 | SP-01/02/08 partially observed; no complete qualified tuple or M0 spike disposition (audit, §13) |
 | Phase 2 — M0 walking skeleton | ◐ In progress | 2026-10-18 | 0 / 34 Musts qualified · 30 / 34 have a T1 fixture · 4 need the real host · 0 unreachable (SEC-13 exemption removed; §13 corrective batch) |
 | Phase 3 — Alpha | ◐ Started ahead of its gate (M0 exit and SP-12 are not met) | 2026-10-19 | 0 / 66 Musts qualified; cumulative M0+A: 89 / 100 Musts tagged, 9 host-only buckets, 2 unmapped (EVD-13 newly mapped — a free-port allocator, a run-token-verified server and a dedicated test database, a new Stack-port Playwright adapter, a real tsx IPC-socket defect found and fixed — 2026-10-21; §13). Tags include partial safeguards; see the October 20 reassessment and remaining C0 work. |
-| Phase 4 — Beta | ☐ Not started | — | 0 / 58 Musts (0 / 158 cumulative) |
+| Phase 4 — Beta | ◐ Started ahead of its gate (Alpha and SP-12 are not yet complete) | 2026-10-21 | 0 / 58 Musts qualified; cumulative M0+A+B: 103 / 158 Musts tagged, 13 host-only buckets, 42 unmapped (WRK-07 newly mapped — prototype promotion floors the lane at Standard, relying on the existing independence check rather than new verdict code; §13) |
 | Phase 5 — R1 | ☐ Not started | — | 0 / 23 Musts + 0 / 16 Shoulds (0 / 181 cumulative) |
 | Phase 6 — Post-R1 operations | ☐ Not started | — | — |
 
@@ -461,7 +461,7 @@ Status: ◐ In progress — `undo`, `integrate` and the first setting are ✅ im
 
 - [ ] `check --stage baseline` / `--stage committed` via the shared temporary-index helper (TD-15)
 - [ ] Honest `introduced` vs. `pre-existing` classification — **or**, per the cut list, `classification-unknown` if this is cut
-- [ ] **Prototype promotion (WRK-07, a Beta Must — not cuttable, and not the same item as R1's recipe upgrades in §9.2):** when an unhardened prototype is promoted, inventory its shortcuts, characterize working behavior, add distinguishing checks for missing safeguards, and require independent review before any `checked-local` verdict
+- [x] **Prototype promotion (WRK-07, a Beta Must — not cuttable, and not the same item as R1's recipe upgrades in §9.2):** when an unhardened prototype is promoted, inventory its shortcuts, characterize working behavior, add distinguishing checks for missing safeguards, and require independent review before any `checked-local` verdict (`promote.test.ts`; the `promote` profile floors the lane at Standard, so a same-session review already blocks `checked-local` via the existing `reduced-independence` reason — no new verdict code; `tenet` SKILL.md documents reading `docs/hardening.md` as proposed requirements and writing preservation + distinguishing tests)
 
 ### 8.3 Continuity & storage
 
@@ -745,6 +745,18 @@ Source: the progress review of 2026-10-20 (gaps G1–G16). Owner direction: exec
 **C0 triage (D8).** Refuse with a clear reason: quarantine record-content adoption. Do the minimum: backup reconfirmation as one question. Defer to Beta: branch/init/shadow launch-versus-stop races, manual `repair-lock` races, the filesystem race matrix, export escalation. Do: crash recovery for commit, index sync, scaffold, undo and integrate (already tested); bounded project reads and case-insensitive matching on macOS; split review rounds and packet bounds; the policy, authority, risk and budget consumers as Alpha features; a milestone-aware coverage report that fails on regression.
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
+
+### 2026-10-21 (WRK-07 built, first Beta item, started ahead of its gate: prototype promotion) — `✅` 711 tests, 150 suites, not yet committed
+
+Owner authorized starting Beta-scoped work ahead of its own gate (Alpha not yet exited, SP-12 unresolved), mirroring how Alpha itself was started ahead of its gate earlier — the same judgment, applied consistently.
+
+**What changed, additive only:** `"promote"` was a valid `Profile` enum value already but hard-refused in `verbs/open.ts` ("the promote workflow is not implemented") — removed from the refusal list. `verbs/open-new.ts#lanePlan` now forces `profile === "promote"`'s floor to `maxLane(laneFloor(assessment), "standard")` (never lower, recommended too) — the same `maxLane` composition every other floor uses, no new primitive. This one change is sufficient for the PRD's full requirement: `core/verdict.ts#judgeLink` already treats a same-session review as a *blocking* (not a note) `reduced-independence` reason for any lane but Quick, so flooring at Standard alone guarantees a fresh review before `checked-local` — no new verdict code was needed.
+
+Tech-spec §12.9's "inventory `docs/hardening.md` shortcuts as proposed requirements" and "characterize behavior with preservation tests" are coordinator-level workflow guidance over a free-form prose document, not new kernel validation (parsing a free-form Markdown file into structured obligations would be the over-engineering this project's principles warn against); `tenet` SKILL.md gained a short "Promoting a prototype" section instructing the coordinator to read `docs/hardening.md` before the basis, propose each shortcut as a requirement or constraint for the user to confirm, and write preservation tests for kept behavior plus a distinguishing test per missing safeguard, alongside the ordinary TDD-04 cycle.
+
+New `packages/kernel/test/promote.test.ts` (3 tests, tagged `[WRK-07]`): profile no longer refused, recommends Standard with no risk signals; an explicit `lane: quick` request is clamped to Standard with a `budget-warning` note; a full flow proves a same-session review's result records (`findings` exits 0) but `inspect why` never reaches `checked-local` and surfaces `reduced-independence` as a non-note blocking reason, while a second, fresh-dispatched review (via `packet --role reviewer --retry`) does reach `checked-local`. Removed `"promote"` from `audit-regressions.test.ts`'s blanket specialized-profile-refusal loop (`recipe-upgrade` and `continue` remain genuinely unimplemented and stay refused there).
+
+`npm run ci` green (typecheck; both lints — `pipeline + verbs + decisions` budget raised 3,844→3,848 lines for the lane-floor branch, 0 recorded offenders; M0 coverage unaffected; build within budget; 711 tests/150 suites). Built-bundle UAT green, privacy clean. `node tools/coverage.ts --milestone B`: 102→103/158 tagged, 13 host-only, 43→42 unmapped — WRK-07 newly mapped, first Beta requirement proven. Plan dashboard's Phase 4 row moves from "☐ Not started" to "◐ Started ahead of its gate."
 
 ### 2026-10-21 (PH0-4 closed: a real branch switch proves the existing reconciliation, no new mechanism) — `✅` 708 tests, 149 suites, not yet committed
 

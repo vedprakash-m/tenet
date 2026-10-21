@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-21 — WRK-07 built: prototype promotion, the first Beta item (`✅`, local)
+
+**Changed.** Owner authorized starting Beta-scoped work ahead of its own gate (Alpha not yet exited, SP-12 unresolved), the same judgment already applied to start Alpha early. `open promote` ("promote" was already a valid `Profile` value but hard-refused) now proceeds and floors its lane at Standard — never lower, using the same `maxLane` composition every other floor uses. This one change delivers WRK-07's full requirement: `core/verdict.ts#judgeLink` already treats a same-session review as a *blocking* `reduced-independence` reason outside Quick, so flooring at Standard alone guarantees a fresh review before `checked-local`, with no new verdict code.
+
+**Not built, by design.** Tech-spec §12.9's "inventory `docs/hardening.md` shortcuts" and "characterize behavior with preservation tests" are coordinator workflow guidance over a free-form prose document, not kernel-enforced validation; parsing `docs/hardening.md` into structured obligations would be the over-engineering this project's principles warn against. Instead, `tenet` SKILL.md gained a short "Promoting a prototype" section instructing the coordinator to read it, propose each shortcut as a requirement or constraint for the user to confirm, and write preservation tests plus a distinguishing test per missing safeguard.
+
+**Files.** `verbs/open.ts`, `verbs/open-new.ts`, `plugin/skills/tenet/SKILL.md`, `tech-spec.md` §12.9.
+
+**Tests.** `packages/kernel/test/promote.test.ts` (3 new tests, tagged `[WRK-07]`); `test/audit-regressions.test.ts` updated (`"promote"` removed from the blanket specialized-profile-refusal loop; `recipe-upgrade`/`continue` remain refused there).
+
 ## 2026-10-21 — PH0-4 closed: a real branch switch confirms the existing reconciliation (`✅`, local)
 
 **Changed.** The Phase 0 decision that branch reconciliation needs no new engine (`open`'s existing trust-comparison already re-reads shared files on every call) now has a fixture with a *real* `git checkout -b`, not just a same-branch edit. Confirms a branch with its own divergent committed `INTENT.md` and `tenet.policy.json` is treated as an ordinary external edit on `open`, with nothing carried over from the old branch's paused contract.
