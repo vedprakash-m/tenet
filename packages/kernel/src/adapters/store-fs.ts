@@ -280,12 +280,17 @@ export class FsStore implements Store {
     const path = this.p("log");
     if (!existsSync(path)) return;
     const text = readFileSync(path, "utf8");
-    if (!text || text.endsWith("\n")) {
-      const lines = text.split("\n").filter(Boolean);
-      if (!lines.length) return;
-      try { JSON.parse(lines.at(-1)!); return; } catch { /* torn line that happens to end in a newline */ }
+    if (!text) return;
+    if (text.endsWith("\n")) {
+      const body = text.slice(0, -1);
+      if (!body) return;
+      const start = body.lastIndexOf("\n") + 1;
+      try { JSON.parse(body.slice(start)); return; } catch { /* torn line that happens to end in a newline */ }
+      // Keep every complete line before the torn one; a single torn line leaves nothing.
+      writeSynced(path, body.slice(0, start));
+      return;
     }
-    // A final line that does not parse is a torn write: truncate it; its effect is treated as intent-only.
+    // A final line with no trailing newline is a torn write: truncate it; its effect is treated as intent-only.
     const keep = text.slice(0, text.lastIndexOf("\n") + 1);
     writeSynced(path, keep);
   }

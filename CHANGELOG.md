@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20 — Bounded project-file reads and a log-repair fix (`◐`, local)
+
+A bounded slice of R07 (storage bounds): project-file reads (policy, intent, manifest, lockfile) now refuse past 20 MB instead of loading unbounded. Found and fixed a real defect: `repairLogTail` never actually truncated a torn log line that happened to end in a newline — the keep-prefix calculation used the file's own trailing newline instead of the newline before the bad line, so corrupted bytes accumulated in `.tenet/log` forever (harmless to past recovery, since `readLog()` already drops the line per-entry, but wasteful and re-parsed every transaction).
+
+Changed `adapters/project-fs.ts`, `adapters/store-fs.ts`, `core/reasons.ts` (new code `project-file-too-large`). New tests in `store.test.ts` and `project-boundary.test.ts`. Full `npm run ci` green: **650 tests / 135 suites**; built-bundle UAT green. R07 remains open: log-entry schema validation, bounded blob/log-tail reads, a total `.tenet` ceiling, and a real `sweepTemp` retention protocol.
+
 ## 2026-10-20 — Analyst agent, first slice (`◐`, local)
 
 `packet analyst` dispatches a read-only researcher/architect/security assignment with no basis precondition; `findings` records its result via a new `kind`-discriminated `AnalystResult`/`ReviewResult` union. Several analysts can be live at once on one declared revision (AGT-03), reusing the existing reservation mechanism unchanged. A moved revision between dispatch and result is disclosed as a non-blocking note (AGT-11); non-completed status is never treated as a finished answer (AGT-05). Reuses the existing `tenet-reviewer` subagent; adds `architect.md`/`security.md` rubric resources.

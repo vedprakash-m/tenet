@@ -81,6 +81,7 @@ export const REASONS = {
   "disk-full": [2, "No space left"],
   "snapshot-too-large": [2, "A prototype snapshot exceeds 20 MB"],
   "inventory-too-large": [2, "Untracked files exceed limits"],
+  "project-file-too-large": [2, "A project file exceeds the bounded read limit"],
   "observation-incomplete": [0, "The hook spool overflowed or a hook failed; cooperative labels apply"],
   "ended-without-finish": [0, "A turn ended while work was active without finish"],
   // git

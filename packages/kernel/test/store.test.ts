@@ -163,4 +163,18 @@ describe("store: effect log", () => {
     });
     assert.ok(readFileSync(log, "utf8").split("\n").filter(Boolean).every((l) => { JSON.parse(l); return true; }));
   });
+  it("truncates a final line that is invalid JSON even though it ends in a newline", async () => {
+    const root = fresh();
+    const store = await initState(root);
+    await store.transaction("t", async (tx) => { tx.intent("commit", "c1", { parent: "a" }); });
+    const log = join(root, ".tenet/log");
+    // A torn write can still end in a newline (e.g. the newline byte landed before the crash truncated the rest).
+    writeFileSync(log, `${readFileSync(log, "utf8")}{"t":"x","kind":"intent","effect":"co\n`);
+    await store.transaction("t", async (tx) => {
+      assert.deepEqual(tx.unresolved().map((u) => u.id), ["c1"], "the torn line is dropped, not misread as a second intent");
+    });
+    const lines = readFileSync(log, "utf8").split("\n").filter(Boolean);
+    assert.ok(lines.every((l) => { JSON.parse(l); return true; }), "every remaining line is valid JSON");
+    assert.ok(!lines.some((l) => l.includes('"t":"x"')), "the torn line itself was actually removed, not just reported as unresolved");
+  });
 });

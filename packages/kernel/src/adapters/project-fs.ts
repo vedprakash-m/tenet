@@ -7,6 +7,10 @@ import { allowed } from "../core/exclusions.ts";
 import type { Exclusion, Op } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
 
+// Bounded project-file reads (TS §7.4, CON-03): a config file Tenet reads (policy, intent, manifest, lockfile) is
+// never loaded past this size, so a huge or hostile file cannot be pulled fully into memory.
+const MAX_READ_BYTES = 20 * 1024 * 1024;
+
 export class FsProject implements Project {
   private root: string;
   private exclusions: readonly Exclusion[] = [];
@@ -47,7 +51,12 @@ export class FsProject implements Project {
     let fd = -1;
     try {
       fd = openSync(this.at(rel, "read"), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
-      if (!fstatSync(fd).isFile()) throw new KernelError("capability-missing", `${rel} is not a regular project file`, { exit: 2 });
+      const st = fstatSync(fd);
+      if (!st.isFile()) throw new KernelError("capability-missing", `${rel} is not a regular project file`, { exit: 2 });
+      if (st.size > MAX_READ_BYTES) {
+        const mb = MAX_READ_BYTES / (1024 * 1024);
+        throw new KernelError("project-file-too-large", `${rel} exceeds the ${mb} MB bounded read limit`, { exit: 2 });
+      }
       return readFileSync(fd);
     } catch (e) { if ((e as NodeJS.ErrnoException).code === "ENOENT") return null; throw e; }
     finally { if (fd >= 0) closeSync(fd); }

@@ -88,4 +88,10 @@ describe("project filesystem boundaries [SEC-06, SEC-14, CON-03]", () => {
     p.writeNew([{ path: "script", content: "#!/bin/sh\n", mode: 0o755 }]);
     assert.equal(lstatSync(join(root, "script")).mode & 0o777, 0o755);
   });
+  it("refuses to read a project file past the bounded size, rather than loading it unbounded [CON-03]", () => {
+    const { root, p } = fresh();
+    write(root, "package-lock.json", "x".repeat(21 * 1024 * 1024));
+    assert.throws(() => p.read("package-lock.json"), /project-file-too-large|exceeds/i);
+    assert.throws(() => p.hashes(["package-lock.json"]), /project-file-too-large|exceeds/i);
+  });
 });
