@@ -222,6 +222,33 @@ describe("open reconciles the shared files with what was adopted [PH0-4, PRD §7
     assert.equal(o.exit, 0);
     assert.ok(o.reasons.some((r) => r.code === "intent-markers-invalid"), JSON.stringify(o.reasons));
   });
+
+  it("a real branch switch to divergent adopted files is an ordinary external edit, carrying nothing from the old branch's work [PH0-4]", async () => {
+    const p = fresh({ "tenet.policy.json": JSON.stringify({ protected_paths: ["db/**"] }) });
+    const h = await withBasis(p);
+    await p.call("decide", { h, kind: "adopt", target: "intent" });
+    await p.call("decide", { h, kind: "adopt", target: "intent", answers: ask });
+    await p.call("decide", { h, kind: "adopt", target: "policy" });
+    await p.call("decide", { h, kind: "adopt", target: "policy", answers: ask });
+    await p.call("stop", { h, mode: "pause" });
+    if (p.git("status", "--porcelain")) { p.git("add", "-A"); p.git("commit", "-qm", "baseline"); }
+    const mainWorkIds = Object.keys(state(p).work);
+
+    p.git("checkout", "-qb", "feature-x");
+    p.write("INTENT.md", read(p, "INTENT.md").replace("Hello, Ada!", "Hi from feature-x!"));
+    p.write("tenet.policy.json", JSON.stringify({ protected_paths: ["db/**", "ops/**"] })); // a tightening, applies at once
+    p.git("add", "-A"); p.git("commit", "-qm", "divergent on feature-x");
+
+    const o = await p.call("open", { profile: "investigate", request: "look around on the new branch" });
+    assert.equal(o.exit, 0, JSON.stringify(o));
+    assert.ok(o.reasons.some((r) => r.code === "intent-edited-outside"), "the diverged block is reported, not silently inherited");
+    assert.ok(o.reasons.some((r) => /tighten/i.test(r.message)), "the branch's own tightened policy is applied");
+    assert.deepEqual(protectedOf(p).sort(), ["db/**", "ops/**"]);
+    assert.match(read(p, "INTENT.md"), /Hi from feature-x!/, "feature-x's own text stays as written, not overwritten by main's");
+    const afterWorkIds = Object.keys(state(p).work);
+    assert.ok(!mainWorkIds.every((id) => afterWorkIds.includes(id)) || afterWorkIds.length > mainWorkIds.length,
+      "the new branch's open starts its own work, never silently reusing the paused main-branch contract");
+  });
 });
 
 describe("adoption crash recovery (the file write has the effect protocol's steps)", () => {

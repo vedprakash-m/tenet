@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-21 — PH0-4 closed: a real branch switch confirms the existing reconciliation (`✅`, local)
+
+**Changed.** The Phase 0 decision that branch reconciliation needs no new engine (`open`'s existing trust-comparison already re-reads shared files on every call) now has a fixture with a *real* `git checkout -b`, not just a same-branch edit. Confirms a branch with its own divergent committed `INTENT.md` and `tenet.policy.json` is treated as an ordinary external edit on `open`, with nothing carried over from the old branch's paused contract.
+
+**Files.** `adopt.test.ts`.
+
+**Tests.** 1 new test.
+
 ## 2026-10-21 — EVD-13: a free port, a verified server, a dedicated test database (`✅`, local)
 
 **Changed.** EVD-13 is now T1-tagged: a global `OB-e2e` obligation runs Playwright against a server Tenet starts and verifies for the current candidate, on a dedicated test database, never the developer's own. New: `Runner#allocatePort` (bind 0, read, release, retried on `EADDRINUSE`), `adapters/playwright.ts` (a new Stack-port adapter normalizing Playwright's JSON report into the same shape Vitest's uses), `core/obligations.ts#wantsE2e`/`withE2e`. The free port, a run token and a dedicated database path are generated per run and passed as environment; Playwright's own `webServer` starts the real server as its child, so no new server-lifecycle code was needed in the runner. The starter recipe pins `@playwright/test`, adds `playwright.config.ts` and one real e2e spec (server-identity + database-isolation).
