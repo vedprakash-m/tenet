@@ -3,7 +3,7 @@
 import { addTokens, canReserve, LIMITS, recordDelegation, releaseStale, reserve } from "../core/budget.ts";
 import { reason } from "../core/reasons.ts";
 import type { FileChange } from "../core/review.ts";
-import { buildAnalystManifest, buildManifest, deltaSince, isManifest, reviewMode } from "../core/review.ts";
+import { buildAnalystManifest, buildManifest, DEFAULT_CHARTER, deltaSince, isManifest, reviewMode } from "../core/review.ts";
 import type { BasisElement, Reason, State, WorkContract } from "../core/schemas.ts";
 import type { Ports } from "../ports/types.ts";
 import { nx } from "./common.ts";
@@ -59,7 +59,7 @@ export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Fac
   const attempt = live ? live.attempt + (retry ? 1 : 0) : focused ? budget.reviewRounds + budget.rechecks + 1 : budget.delegations + budget.reservations.length + 1;
   const m = buildManifest({
     work: nw, elements: st.project.intent.elements.filter((e) => basis.elementIds.includes(e.id)), changes: shown, candidate: facts.candidate, basisHash: basis.hash,
-    attempt, mode, ...(basedOn ? { basedOn } : {}), recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused), id: nw.label, files,
+    attempt, mode, ...(basedOn ? { basedOn } : {}), recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused), id: nw.label, files, charter: DEFAULT_CHARTER,
   });
   if (!isManifest(m)) return { work: nw, next: [nx("ask", "The basis is too large to review in one pass; narrow the increment.", true)], reasons: [m] };
 

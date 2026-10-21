@@ -65,7 +65,7 @@ describe("the work contract", () => {
 });
 
 describe("the review manifest is self-sufficient (SP-08, observed on Copilot CLI)", () => {
-  it("carries the rubric from the tenet-review skill and a result template with the identity already filled in, so a reviewer that cannot load skills can answer correctly", async () => {
+  it("carries the rubric from the tenet-review skill and a result template with the identity already filled in, so a reviewer that cannot load skills can answer correctly [QLT-09]", async () => {
     const p = fresh();
     const o = await p.call("open", { profile: "feature", request: "x", scopePaths: ["src/greet.ts"], lane: "standard" });
     const h = o.handle!;
@@ -78,6 +78,7 @@ describe("the review manifest is self-sufficient (SP-08, observed on Copilot CLI
     assert.match(manifest.rubric, /Stage A \(behavior and intent\)/);
     assert.match(manifest.rubric, /resultTemplate/);
     assert.doesNotMatch(manifest.rubric, /^---/, "front matter is stripped");
+    assert.match(manifest.charter, /behavioral TDD/, "the default engineering charter is carried until a project adopts its own [QLT-09]");
     const t = manifest.resultTemplate;
     assert.deepEqual([t.manifest, t.reservation, t.attempt, t.mode], [d(g).review.hash, d(g).review.reservation, d(g).review.attempt, "full"]);
     // A reviewer that fills the template in (keeping the identity) is accepted as is.

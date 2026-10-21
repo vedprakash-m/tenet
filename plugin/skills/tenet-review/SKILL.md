@@ -16,7 +16,8 @@ could an absence check pass vacuously? What required behavior has no example or 
 coverage.uncovered)? Flag changes outside the requested scope (out-of-scope-change).
 
 Stage B (structure, security, charter): design, readability, duplication, suppressions, dependency changes, network
-destinations, credentials, test or CI weakening, and the charter. Ask what happens on a rerun, a half-finished run
+destinations, credentials, test or CI weakening, and the charter (the manifest's `charter` field — judge against it
+literally, not from memory). Ask what happens on a rerun, a half-finished run
 or a race between check and act; whether new entry points are authorized; whether errors are swallowed or secrets
 logged. Name the fact that makes the change safe and its evidence; look for consumers symbol search misses (stored
 or serialized formats, configuration keys, flags, other languages, scripts parsing output). Changeability: one

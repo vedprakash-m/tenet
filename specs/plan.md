@@ -49,7 +49,7 @@ PRD owns meaning. Tech Spec owns mechanism. UX Spec owns wording. This plan owns
 | Phase 0 — Alignment | ✅ Exit criteria met | 2026-10-18 | All ten PH0 decision rows resolved; named ownership recorded in §3.1 (2026-10-20). PH0-10's mechanism is fixed; its measurement still awaits SP-12 (tracked separately, not a Phase 0 blocker) |
 | Phase 1 — Feasibility spikes & discovery | ◐ In progress | 2026-10-19 | SP-01/02/08 partially observed; no complete qualified tuple or M0 spike disposition (audit, §13) |
 | Phase 2 — M0 walking skeleton | ◐ In progress | 2026-10-18 | 0 / 34 Musts qualified · 30 / 34 have a T1 fixture · 4 need the real host · 0 unreachable (SEC-13 exemption removed; §13 corrective batch) |
-| Phase 3 — Alpha | ◐ Started ahead of its gate (M0 exit and SP-12 are not met) | 2026-10-19 | 0 / 66 Musts qualified; cumulative M0+A: 77 / 100 Musts tagged, 9 host-only buckets, 14 unmapped (TDD-03 and EVD-13 corrected from mis-tagged to honestly unmapped, 2026-10-20; AGT-03/AGT-05 newly mapped by the Analyst agent, 2026-10-20; §13). Tags include partial safeguards; see the October 20 reassessment and remaining C0 work. |
+| Phase 3 — Alpha | ◐ Started ahead of its gate (M0 exit and SP-12 are not met) | 2026-10-19 | 0 / 66 Musts qualified; cumulative M0+A: 78 / 100 Musts tagged, 9 host-only buckets, 13 unmapped (TDD-03 and EVD-13 corrected from mis-tagged to honestly unmapped, 2026-10-20; AGT-03/AGT-05 newly mapped by the Analyst agent, QLT-09 newly mapped by the default charter, 2026-10-20; §13). Tags include partial safeguards; see the October 20 reassessment and remaining C0 work. |
 | Phase 4 — Beta | ☐ Not started | — | 0 / 58 Musts (0 / 158 cumulative) |
 | Phase 5 — R1 | ☐ Not started | — | 0 / 23 Musts + 0 / 16 Shoulds (0 / 181 cumulative) |
 | Phase 6 — Post-R1 operations | ☐ Not started | — | — |
@@ -689,7 +689,11 @@ Source: the progress review of 2026-10-20 (gaps G1–G16). Owner direction: exec
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
 
-### 2026-10-20 (R08: guard `repair-lock` against a race it hadn't been proven against) — `◐` 653 tests, 135 suites, not committed
+### 2026-10-20 (QLT-09: default engineering charter reaches the Reviewer) — `◐` 653 tests, 135 suites, not committed
+
+The review manifest now carries a `charter` field — PRD §1.8's default engineering charter (115 of its 300-token budget) — and `tenet-review/SKILL.md`'s Stage B is told explicitly to judge against it literally rather than from memory. This is the first time the Reviewer has any charter awareness at all; before this, Stage B's "charter" criterion existed only as unanchored rubric prose. **Scope, stated plainly:** this is the default-charter half of QLT-09 only. The project-specific half — parsing an adopted project's own `<!-- tenet:charter:begin -->` block from `AGENTS.md`/`.github/copilot-instructions.md`, falling back to the default only when none is adopted, and the preview/consent adoption flow itself (matching `decide adopt --target intent`/`policy`) — remains unbuilt; `core/intent-md.ts` still explicitly ignores charter markers. `npm run ci` green (653 tests/135 suites, small line-wrap fixes for the quality gate), built-bundle UAT green, privacy clean. Alpha coverage: QLT-09 newly T1-mapped (78/100).
+
+### 2026-10-20 (R08: guard `repair-lock` against a race it hadn't been proven against) — `◐` 653 tests, 135 suites, committed (`39230c3`)
 
 Code-reviewed (not race-reproduced) defensive fix in R08's "scheduled real-process races" bucket: `repairLock` checked both lock files for liveness in one pass, then unconditionally removed whatever existed in a second pass, unlike the already-safe `breakStale` path, which re-reads and compares the nonce immediately before removing. Fixed to match that exact pattern — a fresh live claim landing between the two passes now survives instead of being deleted. Added an idempotency test (`store.test.ts`) proving repeated calls are safe and nothing is wrongly left behind; the narrower concurrent-claim race itself remains unreproduced by a dedicated test, which this entry says plainly rather than implying otherwise. `npm run ci` green (653 tests/135 suites, no quality-gate changes needed), built-bundle UAT green, privacy clean.
 

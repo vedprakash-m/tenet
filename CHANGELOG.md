@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20 — Default engineering charter reaches the Reviewer (`◐`, local)
+
+The review manifest now carries a `charter` field (PRD §1.8's default engineering charter, 115/300 tokens), and the reviewer's Stage B is told to judge against it literally. This is the first charter awareness the Reviewer has had at all. Scope: only the default-charter half of QLT-09; a project's own adopted charter (parsed from `AGENTS.md`/`copilot-instructions.md`) remains unbuilt.
+
+Changed `core/review.ts`, `verbs/manifest.ts`, `plugin/skills/tenet-review/SKILL.md`. New assertion in `contract.test.ts` (tagged `[QLT-09]`). Full `npm run ci` green: **653 tests / 135 suites**; built-bundle UAT green. Alpha coverage: QLT-09 newly T1-mapped (78/100).
+
 ## 2026-10-20 — Guard `repair-lock` against an unreproduced race (`◐`, local)
 
 `repairLock` checked both lock files for liveness, then unconditionally removed whatever existed in a second pass — unlike the already-safe `breakStale` path, which re-reads and compares the nonce immediately before removing. A fresh live claim landing between the two passes would have been deleted. Fixed to match the existing safe pattern exactly. This is a code-reviewed defensive fix, not one proven by a reproduced race (R08's real-process races remain scheduled, not closed).

@@ -19,7 +19,7 @@ async function context() {
 describe("review admission [WRK-08, REV-05]", () => {
   it("bounds the entire assignment including its rubric [AGT-04]", async () => {
     const { work, facts } = await context();
-    const result = buildManifest({ work, elements: [], changes: [], candidate: facts.candidate, basisHash: work.basis!.hash, attempt: 1, mode: "full", recheckFindings: [], rubric: "x".repeat(80_000), id: work.label, files: {} });
+    const result = buildManifest({ work, elements: [], changes: [], candidate: facts.candidate, basisHash: work.basis!.hash, attempt: 1, mode: "full", recheckFindings: [], rubric: "x".repeat(80_000), id: work.label, files: {}, charter: "" });
     assert.ok("code" in result && result.code === "narrow-increment");
   });
   it("refuses a third Standard full round before issuing a manifest", async () => {
