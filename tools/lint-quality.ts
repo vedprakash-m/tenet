@@ -28,7 +28,7 @@ export const BUDGETS: Record<string, { match: RegExp; lines: number }> = {
   "adapters/git-cli": { match: /^adapters\/git-cli\.ts$/, lines: 650 },
   "adapters/runner": { match: /^adapters\/runner\.ts$/, lines: 350 },
   "adapters/node-ts": { match: /^adapters\/node-ts\.ts$/, lines: 350 },
-  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 3645 },
+  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 3650 },
 };
 
 const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => {

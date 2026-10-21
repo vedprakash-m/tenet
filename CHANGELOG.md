@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20 — Selected-fix integrity fixes (`◐`, local)
+
+`open fix` now refuses duplicate finding numbers instead of silently colliding two findings on the same synthesized ID. `attentionOf`'s stray-file exemption now compares a vetted file's current content hash to its recorded one, instead of exempting any path merely present in `vetted`: an edit to a scaffolded file outside the named findings is no longer silently invisible to review.
+
+Changed `verbs/open.ts`, `verbs/check-evidence.ts`. New tests in `fix.test.ts` (2 added, 6 total). Full `npm run ci` green: **652 tests / 135 suites**; built-bundle UAT green. R09 remains open: review-identity retention, stale-review-context detection, explicit scope extension.
+
 ## 2026-10-20 — Bounded project-file reads and a log-repair fix (`◐`, local)
 
 A bounded slice of R07 (storage bounds): project-file reads (policy, intent, manifest, lockfile) now refuse past 20 MB instead of loading unbounded. Found and fixed a real defect: `repairLogTail` never actually truncated a torn log line that happened to end in a newline — the keep-prefix calculation used the file's own trailing newline instead of the newline before the bad line, so corrupted bytes accumulated in `.tenet/log` forever (harmless to past recovery, since `readLog()` already drops the line per-entry, but wasteful and re-parsed every transaction).

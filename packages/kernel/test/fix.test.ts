@@ -25,6 +25,14 @@ describe("fixing named findings [RES-06]", () => {
     assert.match(r.reasons[0]!.message, /findings/);
   });
 
+  it("refuses duplicate finding numbers instead of silently dropping one [R09]", async () => {
+    const p = fresh();
+    const duplicated = [FINDINGS[0]!, { ...FINDINGS[1]!, n: 1 }];
+    const r = await openFix(p, duplicated);
+    assert.equal(r.exit, 1, JSON.stringify(r));
+    assert.match(r.reasons[0]!.message, /duplicate/i);
+  });
+
   it("makes the named findings the contract's open findings, scoped to where they are", async () => {
     const p = fresh();
     const o = await openFix(p);
@@ -61,5 +69,29 @@ describe("fixing named findings [RES-06]", () => {
     await p.call("check", { h, touched: ["src/greet.ts"] });
     const f = await finishFixture(p, { h });
     assert.ok(f.reasons.some((r) => r.code === "major-undisposed" && /greet ignores its argument/.test(r.message)), JSON.stringify(f.reasons));
+  });
+
+  it("raises attention for an edit to a vetted file outside the named findings, but not while it is unchanged [R09]", async () => {
+    const p = project({ "src/other.ts": "export const other = 1;\n", "src/vetted.ts": "export const vetted = 1;\n" });
+    roots.push(p.root);
+    const h = (await openFix(p)).handle!;
+    const hash = p.ports().project.hashes(["src/vetted.ts"])["src/vetted.ts"]!;
+    await p.ports().store.transaction("test", async (tx) => {
+      const id = Object.keys(tx.state!.work)[0]!;
+      const w = tx.state!.work[id]!;
+      tx.publish({ ...tx.state!, work: { ...tx.state!.work, [id]: { ...w, vetted: { "src/vetted.ts": hash } } } });
+    });
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    p.write("src/greet.test.ts", GREET_TEST);
+    await p.call("check", { h, stage: "baseline" });
+    p.write("src/greet.ts", GREET_IMPL);
+    const unchanged = await p.call("check", { h, touched: ["src/greet.ts"] });
+    const wUnchanged = Object.values(p.ports().store.read()!.state.work)[0]!;
+    assert.deepEqual(wUnchanged.attention.filter((a) => a.pattern === "outside the named findings").map((a) => a.path), [], JSON.stringify(unchanged.reasons));
+
+    p.write("src/vetted.ts", "export const vetted = 2;\n"); // a vetted file, now actually edited
+    const edited = await p.call("check", { h, touched: ["src/greet.ts", "src/vetted.ts"] });
+    const wEdited = Object.values(p.ports().store.read()!.state.work)[0]!;
+    assert.deepEqual(wEdited.attention.filter((a) => a.pattern === "outside the named findings").map((a) => a.path), ["src/vetted.ts"], JSON.stringify(edited.reasons));
   });
 });

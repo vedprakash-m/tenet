@@ -22,6 +22,13 @@ async function begin(ports: Ports, before: State | null, input: OpenInput, tx: T
   if (input.profile === "fix" && !input.findings) {
     throw new KernelError("capability-missing", "name the findings to fix: pass them as findings, as the review gave them", { exit: 1 });
   }
+  if (input.findings) {
+    const seen = new Set<number>();
+    const dup = input.findings.find((f) => { if (seen.has(f.n)) return true; seen.add(f.n); return false; });
+    if (dup) {
+      throw new KernelError("capability-missing", `duplicate finding number ${dup.n}: each named finding must be distinct`, { exit: 1 });
+    }
+  }
   if (["promote", "recipe-upgrade", "continue"].includes(input.profile)) {
     throw new KernelError(
       "capability-missing",

@@ -181,7 +181,10 @@ export async function attentionOf(run: Run, cw: WorkContract): Promise<{ changes
     .filter((c) => c.kind === "config" && vetted[c.path] !== cw.vetted[c.path])
     .map((c) => item(hashOf(["cfg", c.path, c.hunks]), c.path, c.hunks[0]?.line ?? 1, "test or build configuration"));
   const allowed = new Set([...(cw.scopedTo ?? []), ...cw.obligations.flatMap((o) => o.testFile ?? [])]);
-  const outside = (cw.scopedTo ? facts.reviewPaths : []).filter((p) => !allowed.has(p) && !(p in cw.vetted));
+  // A vetted path is only exempt while its content still matches what the recipe wrote; an edit to it is a real
+  // change outside the named findings like any other, not a free pass because the path was once vetted (R09).
+  const stillVetted = (p: string) => p in cw.vetted && vetted[p] === cw.vetted[p];
+  const outside = (cw.scopedTo ? facts.reviewPaths : []).filter((p) => !allowed.has(p) && !stillVetted(p));
   const stray = outside.map((path) => item(hashOf(["outside", path]), path, 1, "outside the named findings"));
   const declared = (cw.scaffolding ?? []).map((path) => item(hashOf(["scaffold", path]), path, 1, "declared scaffolding"));
   const weakened = netAttention(
