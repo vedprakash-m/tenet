@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import fc from "fast-check";
 import { continueRequired, headline, verdict } from "../src/core/verdict.ts";
 import type { VerdictInput } from "../src/core/verdict.ts";
-import type { BasisElement, Finding, Obligation, Receipt, ReviewLink } from "../src/core/schemas.ts";
+import type { AnalystLink, BasisElement, Finding, Obligation, Receipt, ReviewLink } from "../src/core/schemas.ts";
 
 const CHECK = "chk1";
 const ob: Obligation = { id: "OB-EX-1", kind: "test", category: "acceptance", testFile: "a.test.ts", test: "distinguishing", expectation: "fail", baselineMatched: true, baselineTestHash: "h1", baselineInputs: {} };
@@ -20,10 +20,15 @@ const coverage = { inspected: ["a.ts"], uncovered: [], crossCutting: "a calls th
 const link: ReviewLink = { reservation: "RV", mode: "full", candidate: "cand", basisHash: "bh", uncovered: [], verified: [], independence: "subagent-fresh", status: "completed", files: { "a.ts": "a" }, coverage };
 const finding = (over: Partial<Finding>): Finding => ({ id: "F1", n: 1, severity: "major", axis: "behavior", location: { path: "a.ts" }, claim: "c", evidence: "e", state: "valid", history: [], ...over });
 
+const pass = (role: AnalystLink["role"], over: Partial<AnalystLink> = {}): AnalystLink => ({
+  reservation: `AN-${role}`, role, question: "q", revision: "cand", status: "completed", independence: "subagent-fresh",
+  artifacts: [], findings: [], openDependencies: [], ...over,
+});
+
 const base = (): VerdictInput => ({
   profile: "feature", level: "L4", implementationExists: true, prototypeRequested: false, behavioralChange: true, reviewRequired: true,
   candidate: "cand", checkInputId: CHECK, basisHash: "bh", elements: [req, ex], obligations: [ob, suite], receipts: [rc("OB-EX-1"), rc("OB-suite")],
-  baselineFailures: [], excludedScope: [], testHashes: { "a.test.ts": "h1" }, changedLocks: [], unauthorized: [], reviews: [link], findings: [], attention: [], declined: [],
+  baselineFailures: [], excludedScope: [], testHashes: { "a.test.ts": "h1" }, changedLocks: [], unauthorized: [], reviews: [link], analyses: [], findings: [], attention: [], declined: [],
   attemptsLeft: 2, commitExists: true, committedTreeChecked: true, checkedIncludesHumanEdits: false, integratedStale: false,
 });
 const codes = (i: VerdictInput) => verdict(i).reasons.filter((r) => !r.note).map((r) => r.code);
@@ -34,6 +39,24 @@ describe("verdict table [RES-02, EVD-01]", () => {
     assert.notEqual(v.endpoint, "checked-local");
     assert.ok(v.reasons.some(r => r.code === "review-missing" && /architecture/.test(r.message)));
     assert.ok(v.reasons.some(r => r.code === "review-missing" && /security/.test(r.message)));
+  });
+  it("reaches checked-local in Deep once native architect and security passes cover the current candidate [WRK-04]", () => {
+    const deep = { ...base(), lane: "deep" as const, analyses: [pass("architect"), pass("security")] };
+    assert.equal(verdict(deep).endpoint, "checked-local", JSON.stringify(verdict(deep).reasons));
+    const noSecurity = verdict({ ...deep, analyses: [pass("architect")] });
+    assert.notEqual(noSecurity.endpoint, "checked-local");
+    assert.ok(noSecurity.reasons.some((r) => r.code === "review-missing" && /security/.test(r.message)));
+    assert.ok(!noSecurity.reasons.some((r) => /architecture/.test(r.message)));
+  });
+  it("does not count a Deep pass that is stale, partial, open or not native [WRK-04]", () => {
+    const deep = { ...base(), lane: "deep" as const };
+    const only = (a: AnalystLink) => codes({ ...deep, analyses: [a, pass("security")] });
+    assert.ok(only(pass("architect", { revision: "older" })).includes("review-stale"));
+    assert.ok(only(pass("architect", { status: "partial" })).includes("review-partial-coverage"));
+    assert.ok(only(pass("architect", { openDependencies: ["x"] })).includes("review-partial-coverage"));
+    assert.ok(only(pass("architect", { independence: "same-session" })).includes("reduced-independence"));
+    const retried = codes({ ...deep, analyses: [pass("architect", { status: "failed" }), pass("architect"), pass("security")] });
+    assert.ok(!retried.includes("review-partial-coverage"), "the latest pass of a role is the one that counts");
   });
   it("requires the full review chain, including coverage of the recheck delta [REV-01]", () => {
     const root = { ...link, reservation: "root", candidate: "old" };

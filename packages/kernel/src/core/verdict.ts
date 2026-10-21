@@ -3,7 +3,7 @@
 import { ceiling } from "./risk.ts";
 import { reason } from "./reasons.ts";
 import { baselineDefinitionMatches, wantsRed } from "./obligations.ts";
-import type { AttentionItem, BasisElement, Endpoint, Finding, Lane, Level, Obligation, Profile, Reason, Receipt, ReviewLink, Scope, StopReason } from "./schemas.ts";
+import type { AnalystLink, AttentionItem, BasisElement, Endpoint, Finding, Lane, Level, Obligation, Profile, Reason, Receipt, ReviewLink, Scope, StopReason } from "./schemas.ts";
 
 export interface VerdictInput {
   profile: Profile | "review";
@@ -28,6 +28,7 @@ export interface VerdictInput {
   changedLocks: readonly string[]; // locked paths changed without disposition
   unauthorized: readonly string[]; // edits in protected paths that no grant covers (WRK-03)
   reviews: readonly ReviewLink[];
+  analyses: readonly AnalystLink[];
   reviewFiles?: Readonly<Record<string, string>>;
   findings: readonly Finding[];
   attention: readonly AttentionItem[];
@@ -158,10 +159,21 @@ function judgeAttention(i: VerdictInput): Reason[] {
   return out;
 }
 
+/** Deep needs native architect and security passes; the latest of each must be complete and on the current candidate (TS §5.3). */
+function judgeDeepPasses(i: VerdictInput): Reason[] {
+  return ([["architect", "architecture"], ["security", "security"]] as const).flatMap(([role, name]) => {
+    const pass = i.analyses.filter((a) => a.role === role).at(-1);
+    const why = (code: Parameters<typeof reason>[0], what: string) => [reason(code, `the Deep ${name} pass ${what}`)];
+    if (!pass) return why("review-missing", "has not run");
+    if (pass.revision !== i.candidate) return why("review-stale", "observed an earlier candidate");
+    if (pass.status !== "completed" || pass.openDependencies.length) return why("review-partial-coverage", "is not complete");
+    return pass.independence === "subagent-fresh" ? [] : why("reduced-independence", "was not a native subagent");
+  });
+}
+
 export function verdict(i: VerdictInput): Verdict {
   const r: Reason[] = [];
-  // The Analyst protocol is not implemented yet; a Reviewer cannot stand in for Deep's required passes.
-  if (i.lane === "deep") for (const role of ["architecture", "security"]) r.push(reason("review-missing", `the required Deep ${role} pass is unavailable`));
+  if (i.lane === "deep") r.push(...judgeDeepPasses(i));
   if (i.authorityAvailable === false) r.push(reason("authority-needed", "this contract's routine authority is suspended or expired"));
   for (const check of i.unsupportedChecks ?? []) r.push(reason("evidence-missing", `${check}: its execution consumer is unavailable`));
   for (const ob of i.obligations) r.push(...judgeObligation(ob, i));

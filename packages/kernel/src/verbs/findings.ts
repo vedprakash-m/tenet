@@ -10,6 +10,7 @@ import type { Plan, Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
 import { nx, withWork, workOf } from "./common.ts";
 import { gather } from "./facts.ts";
+import { deepPasses } from "./manifest.ts";
 
 async function recordAnalyst(ports: Ports, state: State, w: WorkContract, r: AnalystResult): Promise<Plan> {
   const chk = checkAnalystResult(w, r);
@@ -82,7 +83,7 @@ function recordReview(ports: Ports, state: State, w: WorkContract, r: ReviewResu
     ? [nx(action, "The review left parts uncovered; request a follow-up manifest for the uncovered list.", true)]
     : r.status !== "completed" ? [nx(action, `The review ${r.status}; request a retry with packet reviewer --retry.`, true)]
     : blocking.length ? [nx("implement", "Fix the blockers and majors, then check; one focused recheck follows.", true)]
-    : [nx("finish", "The review reached this candidate with nothing blocking.")];
+    : [...deepPasses(nw, applied.link.candidate), nx("finish", "The review reached this candidate with nothing blocking.")];
   const failedAxis = r.axes.behavior === "fail" ? "behavior" : "structure";
   return {
     state: withWork(state, nw),

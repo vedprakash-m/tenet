@@ -1,6 +1,6 @@
 ---
 name: tenet-reviewer
-description: "Fresh-context reviewer or analyst for a Tenet review or analyst packet. Read-only; returns one JSON result."
+description: "Fresh-context reviewer for a Tenet review manifest. Read-only; returns one JSON result."
 tools: ['read', 'search']
 user-invocable: false
 ---

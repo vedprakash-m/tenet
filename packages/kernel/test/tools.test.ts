@@ -39,7 +39,7 @@ describe("lint-skills [ENG-03]", () => {
   it("fails a body over budget, a dispatch outside the allowlist, a missing resource and an unknown skill name", () => {
     const d = copy();
     edit(d, "skills/tenet-build/SKILL.md", (s) => `${s}\n${"word ".repeat(17000)}\nSee resources/missing.md and load \`tenet-ghost\`.\n`);
-    edit(d, "com.github.copilot/agents/tenet.agent.md", (s) => s.replace("agents: ['tenet-reviewer']", "agents: ['tenet-reviewer', 'rogue']"));
+    edit(d, "com.github.copilot/agents/tenet.agent.md", (s) => s.replace("'tenet-analyst']", "'tenet-analyst', 'rogue']"));
     const p = lintPayload(d).join("\n");
     assert.match(p, /tenet-build\/SKILL.md: body is \d+ tokens, budget 4000/);
     assert.match(p, /"rogue", which is not on the allowlist/);

@@ -40,7 +40,7 @@ The kernel names the next action. Do the one marked `required`, or a permitted a
 | `test`, `implement` | Load `tenet-build`; edit natively; declare edited files |
 | `check` | Run `tenet check` with the stage named |
 | `review`, `recheck` | Dispatch `tenet-reviewer` with the manifest path and hash, then pass its JSON to `tenet findings` |
-| `analyst` | Dispatch `tenet-reviewer` with the analyst packet's path and hash (same read-only subagent, a different packet), then pass its JSON to `tenet findings` |
+| `analyst` | Dispatch `tenet-analyst` with the analyst packet's path and hash, then pass its JSON to `tenet findings` |
 | `focused-review` | Reread the diff yourself against the basis, then `tenet findings`; it will count as reduced independence |
 | `commit`, `finish` | Run the verb |
 | `reconcile`, `revalidate` | Follow the reasons, then run the verb `next` names |

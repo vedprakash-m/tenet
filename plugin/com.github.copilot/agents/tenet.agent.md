@@ -2,7 +2,7 @@
 name: tenet
 description: "Governed, test-first engineering loop. Use for /tenet requests to build, fix, refactor, plan, review or continue work."
 tools: ['edit', 'read', 'search', 'execute', 'todos', 'vscode/askQuestions', 'agent']
-agents: ['tenet-reviewer']
+agents: ['tenet-reviewer', 'tenet-analyst']
 ---
 # How you work
 You coordinate. The Tenet kernel records every binding fact. Load the `tenet` skill first: it says how to run the

@@ -75,6 +75,15 @@ function reserveIssued(
   };
 }
 
+/** The native passes a Deep contract still owes on this candidate, as required next actions (TS §5.3). */
+export function deepPasses(w: WorkContract, candidate: string): Array<ReturnType<typeof nx>> {
+  if (w.lane !== "deep") return [];
+  const done = (role: string) =>
+    w.analyses.some((a) => a.role === role && a.status === "completed" && a.revision === candidate && a.independence === "subagent-fresh");
+  return (["architect", "security"] as const).filter((role) => !done(role)).map((role) =>
+    nx("analyst", `Deep needs a native ${role} pass: packet analyst --analyst-role ${role} --question <text>, then dispatch.`, true));
+}
+
 export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Facts, changes: readonly FileChange[], retry = false): Issued {
   const basis = w.basis!;
   const focused = w.lane === "quick";

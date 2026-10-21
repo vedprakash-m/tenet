@@ -99,7 +99,7 @@ export function verdictInput(ports: Ports, st: State, w: WorkContract, facts: Fa
       ...(inv.entries.get(l.path)?.blob !== l.hash ? [l.path] : []),
       ...Object.entries(l.supportInputs).filter(([p, h]) => (inv.entries.get(p)?.blob ?? "") !== h).map(([p]) => p),
     ]),
-    reviews: w.reviews,
+    reviews: w.reviews, analyses: w.analyses,
     reviewFiles: Object.fromEntries(facts.reviewPaths.map((p) => [p, inv.entries.get(p)?.blob ?? ""])),
     findings: w.findings,
     attention: w.attention,
