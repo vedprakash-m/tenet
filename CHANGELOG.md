@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-21 — Model record (`✅`, local)
+
+**Changed.** The contract and each review and analyst result record the model the coordinator reported (`--model` on `open` and `findings`), or `inherited` with source `unknown`; `open`, `inspect status` and `finish` show it. Nothing is inferred. The tenet skill says to pass `--model` only when the host reports it.
+
+**Files.** `core/{schemas,state}.ts`, `verbs/{open-new,open-context,findings,inspect,finish}.ts`, `plugin/skills/tenet/SKILL.md`, `tools/lint-quality.ts`, specs (TS §4.8, §6.2).
+
+**Tests.** `model-record.test.ts` added (3).
+
 ## 2026-10-21 — Deep evidence (`✅`, local)
 
 **Changed.** Deep work finishes `checked-local` only after a complete native architect pass and security pass on the current candidate. Before, the verdict ignored Analyst results and Deep could never get there. After the review is recorded, the result lists the passes still owed. The plugin has the spec's `tenet-analyst` agent; `tenet-reviewer` is for reviews only. The size ceiling for pipeline, verbs and decisions is 3,720 lines (+10).

@@ -716,7 +716,8 @@ Source: the progress review of 2026-10-20 (gaps G1–G16). Owner direction: exec
 - [ ] A1b Required checks of other kinds and configured commands (consumers); execution envelopes (SEC-04); Jest — G5
 - [x] A2a The starter scaffold reaches `checked-local` and a commit: a recipe's unchanged vetted files no longer raise the lane to Deep (`starter.test.ts`, `scaffold.test.ts`) — G2
 - [x] A2b-i Deep evidence (WRK-04): the verdict needs the latest native architect and security pass, complete and on the current candidate; the review result names the passes still owed; the spec's `tenet-analyst` agent exists (`verdict.test.ts`, `deep.test.ts`) — G10
-- [ ] A2b-ii Model record (RSC-01/02/03) — G10
+- [x] A2b-ii Model record (RSC-02): the contract and each review and analyst link carry a `ModelRecord`, reported by the coordinator or `unknown`; shown by `open`, `inspect status` and `finish` (`model-record.test.ts`) — G10
+- [ ] A2b-iii RSC-01 and RSC-03 stay unmapped: they are host behaviour (no model switching asked of the user, no spending without authority) and the kernel has no path that does either; RSC-08's Deep warning waits for the qualification table (R1)
 - [x] A3a Declared steps: `decide decline --target tests|review --quote` records the user's words, stops with `declined`, and the verdict names the step (`decline.test.ts`) — G4
 - [x] A3c Scoped fixes (RES-06): `open fix` with the named findings makes them the contract's open findings, scoped to where they are; a change elsewhere needs a disposition (`fix.test.ts`) — G4
 - [x] A3d Boundary-example check (INT-15): `decide basis` notes each requirement with neither a boundary example nor an invariant, outside Quick (`boundary-example.test.ts`)
@@ -728,6 +729,10 @@ Source: the progress review of 2026-10-20 (gaps G1–G16). Owner direction: exec
 **C0 triage (D8).** Refuse with a clear reason: quarantine record-content adoption. Do the minimum: backup reconfirmation as one question. Defer to Beta: branch/init/shadow launch-versus-stop races, manual `repair-lock` races, the filesystem race matrix, export escalation. Do: crash recovery for commit, index sync, scaffold, undo and integrate (already tested); bounded project reads and case-insensitive matching on macOS; split review rounds and packet bounds; the policy, authority, risk and budget consumers as Alpha features; a milestone-aware coverage report that fails on regression.
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
+
+### 2026-10-21 (model record, RSC-02) — `✅` local CI; not yet committed when written
+
+The contract and each review and analyst result now carry a model record: what the coordinator reported with `--model` on `open` and `findings`, or `requested: inherited` with source `unknown`. It is never inferred, and qualification stays `unknown` until the qualification table exists (RSC-08, R1). `open`, `inspect status` and the `finish` result show it. The ceilings rise 445 to 451 lines for `core/schemas` and 3,720 to 3,725 for pipeline, verbs and decisions. RSC-01 and RSC-03 stay unmapped (host behaviour; the kernel has no path that asks for a switch or spends). `model-record.test.ts` (3).
 
 ### 2026-10-21 (Deep evidence, reconciliation) — `✅` local CI 662 tests; not yet committed when written
 
