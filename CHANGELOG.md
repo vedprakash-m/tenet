@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-21 — RSC-01/RSC-03 tagged by a structural-absence proof (`✅`, local)
+
+**Changed.** RSC-01 ("the Reviewer and an analyst always inherit the active model, with no path to request a different one") and RSC-03 ("no mechanism exists to switch models, fund, purchase or enable overage") are now T1-tagged in `model-record.test.ts` — by a structural scan proving the mechanism is absent from the source, not a scenario, since these are absence claims a behavioral test cannot demonstrate any better. RSC-01 reuses an existing test (no field exists to request a model, so inheriting it is the only possible outcome). RSC-03 is two new tests scanning the `VERBS`/`DECISIONS` registries and the closed `ActionClass` vocabulary for any funding/model-switch-related name.
+
+**Files.** `model-record.test.ts`.
+
+**Tests.** 2 new tests plus 1 retagged existing test. Alpha coverage: 83 → 85 Musts tagged, unmapped 8 → 6.
+
 ## 2026-10-20 — pnpm dependency verification; corrected a tech-spec claim (`✅`, local)
 
 **Changed.** Dependency verification (SEC-05) extends from npm-only to npm and pnpm: a hand-rolled line scanner reads pnpm-lock.yaml's narrow shape (no new kernel dependency, no general YAML parser). Generating real pnpm lockfiles found tech-spec's claim that pnpm records lifecycle-script evidence via `requiresBuild` was wrong — it records none at all, so pnpm's script status is honestly `"unknown"` (disclosed, never blocking, never silently treated as "no script"). Same for license: pnpm's lockfile has no license field, so license-policy checks stay unavailable for pnpm. Yarn remains refused.
