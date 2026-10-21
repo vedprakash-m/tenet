@@ -5,11 +5,6 @@
    "cc": 26,
    "nest": 4
   },
-  "core/plan.ts#buildPlan": {
-   "lines": 42,
-   "cc": 35,
-   "nest": 3
-  },
   "core/policy.ts#comparePolicy": {
    "lines": 36,
    "cc": 29,

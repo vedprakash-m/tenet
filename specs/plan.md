@@ -689,7 +689,11 @@ Source: the progress review of 2026-10-20 (gaps G1–G16). Owner direction: exec
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
 
-### 2026-10-20 (quality: `issueReview` no longer an offender) — `✅` 653 tests, 135 suites, not committed
+### 2026-10-20 (quality: `buildPlan` no longer an offender) — `✅` 653 tests, 135 suites, not committed
+
+Second behavior-preserving complexity refactor: `core/plan.ts#buildPlan` (complexity 35, lines 42) split into `assignIds` (ID validation/assignment pass), `buildItem` (one proposed item's construction and same-vs-changed check) and the now-much-shorter `buildPlan` orchestration (complexity 12, lines 23). No test changed; the full suite (653 tests) still passes unmodified. 6 recorded offenders left, was 7. No module budget change needed this time (the extraction was closer to size-neutral). `npm run ci` green, built-bundle UAT green, privacy clean.
+
+### 2026-10-20 (quality: `issueReview` no longer an offender) — `✅` 653 tests, 135 suites, committed (`438d728`)
 
 Behavior-preserving refactor of `verbs/manifest.ts#issueReview` (complexity 47, the single highest of the 8 recorded offenders): extracted `admissionGate` (retry/capacity refusals), `nextAttempt`, `dispatchNext` and `reserveIssued` (the reservation/budget settlement and final response shape). `issueReview` is now 30 lines, complexity 21, nesting 1 — fully within the per-function limits, no longer recorded as an offender (7 left, was 8). No test changed; the full suite (653 tests) still passes unmodified, proving the refactor preserved behavior exactly. Module budget bumped by a small recorded increment (3,650→3,670 lines) for the extracted functions' own declarations/docs, which is quality-refactor growth, not new scope. `npm run ci` green, built-bundle UAT green, privacy clean.
 

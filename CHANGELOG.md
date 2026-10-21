@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20 — Reduce `buildPlan`'s complexity below the quality gate's limit (`✅`, local)
+
+Behavior-preserving refactor: split `core/plan.ts#buildPlan` (complexity 35) into `assignIds` (ID validation/assignment), `buildItem` (one proposed item's construction and same-vs-changed check) and a much shorter orchestrating `buildPlan` (complexity 12). No test changed; the full suite passes unmodified.
+
+Changed `core/plan.ts`. Full `npm run ci` green: **653 tests / 135 suites**; built-bundle UAT green. 6 recorded quality offenders left, was 7.
+
 ## 2026-10-20 — Reduce `issueReview`'s complexity below the quality gate's limit (`✅`, local)
 
 Behavior-preserving refactor: extracted `admissionGate`, `nextAttempt`, `dispatchNext` and `reserveIssued` out of `verbs/manifest.ts#issueReview`, the single highest-complexity function recorded by the quality ratchet (47). It is now 30 lines, complexity 21, within the per-function limit and no longer an offender (7 left, was 8). No test changed; the full suite passes unmodified.
