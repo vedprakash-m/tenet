@@ -723,7 +723,8 @@ Source: the progress review of 2026-10-20 (gaps G1–G16). Owner direction: exec
 - [x] A3c Scoped fixes (RES-06): `open fix` with the named findings makes them the contract's open findings, scoped to where they are; a change elsewhere needs a disposition (`fix.test.ts`) — G4
 - [x] A3d Boundary-example check (INT-15): `decide basis` notes each requirement with neither a boundary example nor an invariant, outside Quick (`boundary-example.test.ts`)
 - [x] A3e Active time (WRK-08): counted, warned at 80%, refused at the bound until `decide extend` (`active-time.test.ts`) — G4
-- [ ] A3 Readiness states (needs the owner's definition, §12.3); checkpoints (WRK-10 second clause); intent re-projection; Host port; starter fixes (restore tool, UI shell) — G4, G10, G15
+- [x] A3f Host port and capability descriptor (ENG-02): descriptor shipped, three consumers, host names banned from core by lint (`host-descriptor.test.ts`); probes not built — G10
+- [ ] A3 Readiness states (needs the owner's definition, §12.3); checkpoints (WRK-10 second clause); intent re-projection; charter adoption (waits for SP-02); starter fixes (restore tool, UI shell) — G4, G10, G15
 - [x] A3b Starter: a pre-migration backup is taken next to the database by default (QLT-07), and secrets are compared by bytes so a multibyte CSRF token is a 403, not an error (`migrate.test.ts`, `platform.test.ts`, run by the kernel in the starter's suite) — G15 (part)
 - [ ] H Host qualification (SP-08, SP-01/02, SP-12, SP-06/10 dispositions) — needs authorization (D1) — G6
 - [ ] E Owners, licence, evaluation account, `eval/` replay, ten golden tasks, six UX sessions, pilot recruiting — G11, G16
@@ -731,6 +732,10 @@ Source: the progress review of 2026-10-20 (gaps G1–G16). Owner direction: exec
 **C0 triage (D8).** Refuse with a clear reason: quarantine record-content adoption. Do the minimum: backup reconfirmation as one question. Defer to Beta: branch/init/shadow launch-versus-stop races, manual `repair-lock` races, the filesystem race matrix, export escalation. Do: crash recovery for commit, index sync, scaffold, undo and integrate (already tested); bounded project reads and case-insensitive matching on macOS; split review rounds and packet bounds; the policy, authority, risk and budget consumers as Alpha features; a milestone-aware coverage report that fails on regression.
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
+
+### 2026-10-21 (capability descriptor and Host port, ENG-02) — `◐` local CI; not yet committed when written
+
+The host binding now ships `plugin/com.github.copilot/descriptor.json` (ten capabilities, each with a value and a source; an observation carries its evidence), and a `Host` port reads it. Only what the plan records as observed is marked `observed` (a reviewer subagent was dispatched on VS Code 1.142.0 on 2026-10-19; isolation, tool list, parallel dispatch and cancelled children are not claimed); the rest is `static` (declared by the binding) or `unknown`. Three consumers exist: `inspect doctor` shows it, the review-independence control says what was observed, and the charter reader takes its candidate files from `instructionFiles`. `lint-arch` now fails a host name in `core/`, `verbs/`, `decisions/` or the pipeline. **Not done:** probes that fill `probe` values at run time, and deriving control classes from capabilities (no class changes with an observation yet). Ceiling: 3,768 lines. `host-descriptor.test.ts` (4).
 
 ### 2026-10-21 (project charter, reading half of QLT-09) — `◐` local CI; not yet committed when written
 

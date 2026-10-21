@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-21 — Host port and capability descriptor (`◐`, local)
+
+**Changed.** The plugin ships a capability descriptor and a `Host` port reads it. `inspect doctor` shows it; the review-independence control says what the host binding observed, and nothing it did not; the charter reader takes its candidate files from the descriptor. A host name in core, verbs, decisions or the pipeline now fails `lint-arch`.
+
+**Files.** `core/{capabilities,controls}.ts`, `adapters/host-plugin.ts`, `ports/types.ts`, `wire.ts`, `verbs/{finish,inspect,manifest}.ts`, `plugin/com.github.copilot/descriptor.json`, `tools/{lint-arch,lint-quality}.ts`, specs (TS §4.4, §6.2).
+
+**Tests.** `host-descriptor.test.ts` added (4).
+
 ## 2026-10-21 — Project charter in review manifests (`◐`, local)
 
 **Changed.** The Reviewer's manifest carries the project's own charter when `AGENTS.md` or `.github/copilot-instructions.md` has one valid marked block, and the default charter otherwise. Adopting a charter is not built; it waits for SP-02.
