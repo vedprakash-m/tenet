@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-21 — Starter restore tool; CI security checks (`✅`, local)
+
+**Changed.** The starter can restore a verified backup (`npm run restore -- <backup>`): it refuses a corrupt backup, one from newer code, or a busy database, keeps the replaced file aside, and says which code the data needs. A test fails if the CI workflow gains a privileged trigger, a secret, a wider token or persisted checkout credentials. A verdict test proves a recheck is chained to the basis of its full review.
+
+**Files.** Starter `server/src/platform/restore.ts`, `server/src/restore-cli.ts`, `package.json`, `eslint.config.js`, docs and skill text; `packages/kernel/test/{ci-security,verdict}.test.ts`.
+
+**Tests.** Four starter tests, `ci-security.test.ts` (5), one verdict test.
+
 ## 2026-10-21 — No function over the limits (`✅`, local)
 
 **Changed.** `judgeReview`, `verdict`, `comparePolicy`, `effectivePolicy` and `resolveSetting` are split into short functions. Behaviour is unchanged; the recorded function offenders go from five to none. 287 over-wide lines remain recorded (296 before).
