@@ -3,6 +3,7 @@
 import { addTokens, canReserve, LIMITS, recordDelegation, releaseStale, reserve } from "../core/budget.ts";
 import { reason } from "../core/reasons.ts";
 import type { FileChange, Manifest } from "../core/review.ts";
+import { projectCharter } from "../core/charter.ts";
 import { buildAnalystManifest, buildManifest, DEFAULT_CHARTER, deltaSince, isManifest, reviewMode } from "../core/review.ts";
 import type { BasisElement, BudgetState, Reason, Reservation, State, WorkContract } from "../core/schemas.ts";
 import type { Ports } from "../ports/types.ts";
@@ -84,6 +85,12 @@ export function deepPasses(w: WorkContract, candidate: string): Array<ReturnType
     nx("analyst", `Deep needs a native ${role} pass: packet analyst --analyst-role ${role} --question <text>, then dispatch.`, true));
 }
 
+/** The project's charter from the instruction file that has one (AGENTS.md first), else the default (QLT-09). */
+function charterOf(ports: Ports): string {
+  const text = (path: string) => { try { return ports.project.read(path); } catch { return null; } };
+  return projectCharter([text("AGENTS.md"), text(".github/copilot-instructions.md")]) ?? DEFAULT_CHARTER;
+}
+
 export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Facts, changes: readonly FileChange[], retry = false): Issued {
   const basis = w.basis!;
   const focused = w.lane === "quick";
@@ -108,7 +115,7 @@ export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Fac
   const m = buildManifest({
     work: nw, elements: st.project.intent.elements.filter((e) => basis.elementIds.includes(e.id)), changes: shown, candidate: facts.candidate, basisHash: basis.hash,
     attempt: nextAttempt(live, retry, focused, budget), mode, ...(basedOn ? { basedOn } : {}),
-    recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused), id: nw.label, files, charter: DEFAULT_CHARTER,
+    recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused), id: nw.label, files, charter: charterOf(ports),
   });
   if (!isManifest(m)) return { work: nw, next: [nx("ask", "The basis is too large to review in one pass; narrow the increment.", true)], reasons: [m] };
   const path = ports.store.writeArtifact(ports.store.tempDir("manifests"), `${m.hash}.json`, m.text);
