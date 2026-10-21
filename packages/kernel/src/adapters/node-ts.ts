@@ -9,7 +9,7 @@ import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
 import { FsProject } from "./project-fs.ts";
 
-const ADAPTER = "node-ts@1";
+const ADAPTER = "node-ts@2";
 const readJson = (p: string): Record<string, any> | null => {
   try {
     return JSON.parse(readFileSync(p, "utf8"));
@@ -237,60 +237,122 @@ const TSC_CONFIG_ERROR = /^error (TS\d+): (.*)$/;
 const MAX_EXAMPLES = 5;
 const staticInvalid = (problem: string): StaticNorm => ({ status: "invalid", failures: [], problem });
 /** The first error of each kind is kept, up to five, in report order. */
-const verdictOf = (failures: StaticNorm["failures"]): StaticNorm => ({
+const verdictOf = (failures: StaticNorm["failures"], files: string[]): StaticNorm => ({
   status: failures.length ? "fail" : "pass",
   failures: failures.slice(0, MAX_EXAMPLES),
+  files,
 });
 
-function normalizeTsc(exit: number | undefined, raw: string | null): StaticNorm {
-  if (raw === null || exit === undefined) return staticInvalid("tsc left no output to read");
-  const failures: StaticNorm["failures"] = [];
-  let unread = 0;
-  for (const line of raw.split("\n").filter((l) => l.trim())) {
-    const at = TSC_ERROR.exec(line);
-    const config = at ? null : TSC_CONFIG_ERROR.exec(line);
-    if (at) failures.push({ test: `${at[1]}:${at[2]}`, kind: "type-error", message: `${at[3]} ${at[4]}`.slice(0, 500) });
-    else if (config) failures.push({ test: "tsconfig", kind: "configuration", message: `${config[1]} ${config[2]}`.slice(0, 500) });
-    else if (!/^\s/.test(line)) unread++; // continuation lines of a message are indented
-  }
-  if ((exit === 0) !== (failures.length === 0)) return staticInvalid("tsc's exit status and its diagnostics disagree");
-  if (failures.length === 0 && unread > 0) return staticInvalid("tsc printed output that is not a diagnostic");
-  return verdictOf(failures);
+/** A normalized workspace identity, null for compiler dependencies, undefined for an unsupported path. */
+function staticPath(path: string, root: string, dependencies = false): string | null | undefined {
+  if (!path || path.includes("\0")) return undefined;
+  if (/(^|[\\/])node_modules[\\/]/.test(path)) return dependencies ? null : undefined;
+  const p = root ? relative(resolve(root), resolve(root, path)) : path;
+  return !p || p === ".." || p.startsWith("../") || (!root && isAbsolute(p)) ? undefined : p;
 }
 
-function normalizeEslint(exit: number | undefined, raw: string | null): StaticNorm {
+function tscDiagnostic(
+  line: string, root: string,
+): { failure: StaticNorm["failures"][number]; length: number } | { problem: string } | null {
+  const at = TSC_ERROR.exec(line), config = at ? null : TSC_CONFIG_ERROR.exec(line);
+  if (!at && !config) return null;
+  const path = at ? staticPath(at[1]!, root) : "tsconfig";
+  if (!path) return { problem: "a diagnostic path leaves the workspace" };
+  const text = at ? at[4]! : config![2]!;
+  if (text.length > 2000) return { problem: "tsc diagnostic exceeds its message bound" };
+  return { length: text.length, failure: at
+    ? { test: `${path}:${at[2]}`, kind: "type-error", message: `${at[3]} ${text}`.slice(0, 500) }
+    : { test: "tsconfig", kind: "configuration", message: `${config![1]} ${text}`.slice(0, 500) } };
+}
+
+function normalizeTsc(exit: number | undefined, raw: string | null, root: string): StaticNorm {
+  if (raw === null || ![0, 1, 2].includes(exit ?? -1) || Buffer.byteLength(raw) > 10 * 1024 * 1024)
+    return staticInvalid("tsc did not finish normally or exceeded its output bound");
+  const failures: StaticNorm["failures"] = [];
+  const files = new Set<string>();
+  let continuation = false, messageLength = 0;
+  for (const line of raw.split("\n").filter((l) => l.trim())) {
+    const diagnostic = tscDiagnostic(line, root);
+    if (diagnostic) {
+      if ("problem" in diagnostic) return staticInvalid(diagnostic.problem);
+      if (failures.length >= 2000) return staticInvalid("too many tsc diagnostics");
+      failures.push(diagnostic.failure);
+      continuation = true; messageLength = diagnostic.length;
+    } else if (/^\s/.test(line) && continuation) {
+      messageLength += line.length + 1;
+      if (messageLength > 2000) return staticInvalid("tsc diagnostic continuations exceed the message bound");
+    }
+    else {
+      if (!/\.(?:[cm]?[jt]sx?|json)$/.test(line)) return staticInvalid("tsc printed unrecognized or truncated output");
+      const path = staticPath(line, root, true);
+      if (path === undefined || (path && files.has(path))) return staticInvalid("tsc reported an outside or duplicate file");
+      if (path) files.add(path);
+      if (files.size > 2000) return staticInvalid("too many analyzed workspace files");
+      continuation = false;
+    }
+  }
+  if ((exit === 0) !== (failures.length === 0)) return staticInvalid("tsc's exit status and its diagnostics disagree");
+  if (!failures.length && !files.size) return staticInvalid("tsc reported no analyzed workspace files");
+  return verdictOf(failures, [...files]);
+}
+
+const nonnegative = (n: unknown): n is number => Number.isSafeInteger(n) && Number(n) >= 0;
+
+function lintMessageValid(m: any): boolean {
+  return !!m && [1, 2].includes(m.severity) && typeof m.message === "string" && m.message.length <= 2000
+    && [m.line, m.column].every(n => n === undefined || (Number.isSafeInteger(n) && n >= 1))
+    && (m.ruleId == null || typeof m.ruleId === "string")
+    && (m.fatal === undefined || typeof m.fatal === "boolean") && (!m.fatal || m.severity === 2);
+}
+
+/** Validate a whole file before bounding its displayed diagnostics. */
+function lintFile(f: any, root: string): { path: string; errors: number; failures: StaticNorm["failures"] } | { problem: string } {
+  if (!f || typeof f.filePath !== "string" || !Array.isArray(f.messages) || f.messages.length > 20000
+    || !nonnegative(f.errorCount) || !nonnegative(f.warningCount)) return { problem: "invalid lint file record" };
+  const path = staticPath(f.filePath, root);
+  if (!path) return { problem: "a lint path is outside or excluded" };
+  const failures: StaticNorm["failures"] = [];
+  let errors = 0, warnings = 0, fatal = 0;
+  for (const m of f.messages) {
+    if (!lintMessageValid(m)) return { problem: "invalid lint diagnostic" };
+    if (m.severity !== 2) { warnings++; continue; }
+    errors++;
+    if (m.fatal) fatal++;
+    if (failures.length < MAX_EXAMPLES)
+      failures.push({ test: `${path}:${m.line ?? 0}`, kind: "lint-error", message: `${m.ruleId ?? "error"} ${m.message}`.slice(0, 500) });
+  }
+  if (errors !== f.errorCount || warnings !== f.warningCount || (f.fatalErrorCount !== undefined && f.fatalErrorCount !== fatal))
+    return { problem: "lint counts and diagnostic population disagree" };
+  return { path, errors, failures };
+}
+
+function normalizeEslint(exit: number | undefined, raw: string | null, root: string): StaticNorm {
   if (raw === null || (exit !== 0 && exit !== 1)) return staticInvalid("eslint did not finish normally or left no report");
   if (Buffer.byteLength(raw) > 10 * 1024 * 1024) return staticInvalid("the lint report exceeds 10 MB");
   let files: any;
-  try {
-    files = JSON.parse(raw);
-  } catch {
-    return staticInvalid("the lint report is not valid JSON");
+  try { files = JSON.parse(raw); } catch { return staticInvalid("the lint report is not valid JSON"); }
+  if (!Array.isArray(files) || !files.length || files.length > 2000 || nestsTooDeep(files))
+    return staticInvalid("invalid lint population bounds");
+  const failures: StaticNorm["failures"] = [], population = new Set<string>();
+  let errors = 0;
+  for (const file of files) {
+    const f = lintFile(file, root);
+    if ("problem" in f) return staticInvalid(f.problem);
+    if (population.has(f.path)) return staticInvalid("duplicate lint file identity");
+    population.add(f.path); errors += f.errors;
+    failures.push(...f.failures.slice(0, MAX_EXAMPLES - failures.length));
   }
-  if (!Array.isArray(files)) return staticInvalid("the lint report is not a list");
-  if (files.length === 0) return staticInvalid("no file was linted");
-  const failures: StaticNorm["failures"] = [];
-  for (const f of files) {
-    if (!f || typeof f.filePath !== "string" || !Array.isArray(f.messages) || typeof f.errorCount !== "number") {
-      return staticInvalid("a lint file record is invalid");
-    }
-    for (const m of f.messages) {
-      if (m?.severity !== 2 || failures.length >= MAX_EXAMPLES) continue;
-      const message = `${m.ruleId ?? "error"} ${String(m.message)}`.slice(0, 500);
-      failures.push({ test: `${f.filePath}:${m.line ?? 0}`, kind: "lint-error", message });
-    }
-  }
-  const errors = files.reduce((n: number, f: { errorCount: number }) => n + f.errorCount, 0);
   if ((exit === 0) !== (errors === 0)) return staticInvalid("eslint's exit status and its report disagree");
-  return verdictOf(failures);
+  return verdictOf(failures, [...population]);
 }
 
 /** Pure: a static tool's exit status and output to a pass, a bounded list of errors, or `invalid` when they prove nothing. */
-export function normalizeStatic(tool: StaticTool, out: { exit: number | undefined; raw: string | null }): StaticNorm {
-  return tool === "tsc" ? normalizeTsc(out.exit, out.raw) : normalizeEslint(out.exit, out.raw);
+export function normalizeStatic(tool: StaticTool, out: { exit: number | undefined; raw: string | null }, root = ""): StaticNorm {
+  return tool === "tsc" ? normalizeTsc(out.exit, out.raw, root) : normalizeEslint(out.exit, out.raw, root);
 }
 
 const STATIC_SCRIPT: Record<StaticTool, string> = { tsc: "typescript/bin/tsc", eslint: "eslint/bin/eslint.js" };
+const STATIC_VERSION: Record<StaticTool, string> = { tsc: "5.9.3", eslint: "9.39.1" };
 
 export function createStack(): Stack {
   let exclusions: readonly Exclusion[] = [];
@@ -313,10 +375,17 @@ export function createStack(): Stack {
     },
     normalize,
     staticArgv: (root, tool, report) => {
+      const meta = metadata(root, exclusions);
+      if (meta.json(`node_modules/${tool === "tsc" ? "typescript" : "eslint"}/package.json`)?.version !== STATIC_VERSION[tool]) return null;
       if (!existsSync(join(root, "node_modules", STATIC_SCRIPT[tool]))) return null;
+      if (tool === "tsc") {
+        const config = meta.json("tsconfig.json");
+        if (!config || config.extends !== undefined || config.references?.length || config.compilerOptions?.composite
+          || config.compilerOptions?.tsBuildInfoFile !== undefined) return null;
+      }
       const script = join("node_modules", STATIC_SCRIPT[tool]); // a direct binary, never npx (TS §9.3)
       return tool === "tsc"
-        ? [process.execPath, script, "--noEmit", "--pretty", "false"]
+        ? [process.execPath, script, "--noEmit", "--pretty", "false", "--project", "tsconfig.json", "--incremental", "false", "--listFiles"]
         : [process.execPath, script, "--format", "json", "--output-file", report, "--no-color", "."];
     },
     staticOutput: (tool, r) => (tool === "tsc" ? r.stdout : r.report),

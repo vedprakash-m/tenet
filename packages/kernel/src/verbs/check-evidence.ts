@@ -40,10 +40,13 @@ function staticReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
     const tool = ob.tool as StaticTool;
     const argv = ports.stack.staticArgv(ports.root, tool, staticReport(runDir, tool)) ?? [];
     const candidate = facts.candidate;
-    const ctx = { stage, scope, id: run.id, candidate, runId, runDir, argv, versions, before: candidate, missing: new Set<string>() };
+    const ctx = {
+      stage, scope, id: run.id, candidate, runId, runDir, argv, versions, before: candidate,
+      missing: new Set<string>(), population: facts.inv.entries,
+    };
     const notRun: RunFacts = { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, after: candidate, ran: false };
     const ran = o.statics[ob.id] ?? notRun;
-    const norm = ports.stack.normalizeStatic(tool, { exit: ran.exit, raw: ran.raw });
+    const norm = ports.stack.normalizeStatic(tool, { exit: ran.exit, raw: ran.raw }, ports.root);
     return staticReceipt(ran, norm, ob, firstIndex + i, ctx);
   });
 }

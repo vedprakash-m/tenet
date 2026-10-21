@@ -86,7 +86,7 @@ describe("resolving a restriction: sources only add [PRD §7.4 items 2, 14, 15]"
     const r = resolveSetting("exclusions", layers({ shared: { exclusions: [{ pattern: "s/**", kinds: ["no-read"] }] }, local: { exclusions: [{ pattern: "s/**", kinds: ["no-edit"] }, { pattern: "t/**", kinds: ["no-export"] }] } }));
     assert.deepEqual(r.value, [{ pattern: "s/**", kinds: ["no-read", "no-edit"] }, { pattern: "t/**", kinds: ["no-export"] }]);
   });
-  it("required checks are the union by ID; on the same ID the shared definition stands and the conflict is named", () => {
+  it("required checks are the union by ID; conflicting projections are named and block evidence", () => {
     const r = resolveSetting("required_checks", layers({ shared: { required_checks: [{ id: "unit", property: "behavior" }] }, local: { required_checks: [{ id: "unit", property: "other" }, { id: "e2e", property: "journeys" }] } }));
     assert.deepEqual((r.value as { id: string; property: string }[]).map((c) => [c.id, c.property]), [["unit", "behavior"], ["e2e", "journeys"]]);
     assert.ok(r.limits.some((l) => /unit/.test(l)));

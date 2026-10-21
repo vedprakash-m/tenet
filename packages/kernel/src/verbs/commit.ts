@@ -86,9 +86,11 @@ interface Run {
   runId: string;
   paths: readonly string[];
 }
-const KNOWN_FAILURES = ["hook-failed", "signing-unavailable", "git-identity-missing", "git-locked"];
+const KNOWN_FAILURES = [
+  "hook-failed", "signing-unavailable", "git-identity-missing", "git-locked", "capability-missing", "filter-consent-needed",
+];
 
-/** What the finished commit process turns into: an uncertain effect, a failure to report, or the commit recorded on the contract. */
+/** Settle an uncertain, failed or verified commit. */
 async function settle(run: Run, tx: Tx, st: State, result: unknown, done: Done): Promise<{ state: State; resp: Resp }> {
   const { w, runId, paths } = run;
   const cw = st.work[w.id]!;
@@ -186,7 +188,7 @@ export async function startCommit(
   const indexJournal = indexJournalFor(ports, w, runId);
   const job: Job = {
     id: runId,
-    execute: () => ports.git.commit({ paths, deleted: [], message, parent, timeoutMs: 120_000, runDir, indexJournal }),
+    execute: () => ports.git.commit({ paths, deleted: [], message, parent, expectedTree, timeoutMs: 120_000, runDir, indexJournal }),
     finalize: async (tx2, st2, result) => settle({ w, runId, paths }, tx2, st2, result, done),
   };
   return { state: withWork(st, prepared), resp: { work: w.id, next: [] }, job };

@@ -1,6 +1,5 @@
-// Git through argument arrays only (TS §10). Read-only calls use the inspection profile so user configuration cannot
-// change what Tenet parses; blob identities for dirty files are computed in Node; the user's index is never rewritten
-// except by the exact, locked sync after a commit.
+// Git argument arrays (TS §10). Inspection disables programs and hashes dirty blobs in Node.
+// Only exact, locked post-commit sync writes the user's index.
 import { execFile } from "node:child_process";
 import {
   closeSync,
@@ -28,6 +27,7 @@ import { allowed, isKernelFile } from "../core/exclusions.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
+import { filterConfig, filterOverrides, usedFilters } from "../core/git-filters.ts";
 import type { FileChange, Hunk } from "../core/review.ts";
 import type {
   CommitOutcome,
@@ -39,6 +39,7 @@ import type {
   Inventory,
   RepoProbe,
   Runner,
+  RunResult,
   StatusEntry,
 } from "../ports/types.ts";
 import { IndexSyncRecord } from "../core/schemas.ts";
@@ -85,6 +86,9 @@ interface Out {
   stderr: string;
 }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const gitConfigEnv = () => Object.fromEntries(
+  ["GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"].flatMap(k => process.env[k] === undefined ? [] : [[k, process.env[k]!]]),
+);
 const sameFile = (path: string, id: { dev: number; ino: number }) => {
   try {
     const st = lstatSync(path);
@@ -206,7 +210,7 @@ export class GitCli implements Git {
     args: string[],
     o: { env?: Record<string, string>; input?: string; inspect?: boolean; cwd?: string; filters?: boolean } = {},
   ): Promise<Out> {
-    // Filters are programs: only a call the user consented to may run them, every other call gets them switched off.
+    // Inspection disables configured filter programs.
     const neutral = o.filters ? [] : await this.neutralArgs();
     const env = {
       ...process.env,
@@ -218,7 +222,7 @@ export class GitCli implements Git {
       const where = this.shadow ? ["--git-dir", this.shadowDir, "--work-tree", this.root] : [];
       const c = execFile(
         "git",
-        [...where, ...neutral, ...(o.inspect === false ? ["--no-pager"] : INSPECT), ...args],
+        [...where, ...neutral, ...INSPECT, ...args],
         { cwd: o.cwd ?? this.root, env, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" },
         (err, stdout, stderr) => resolve({ code: err ? ((err as { code?: number }).code ?? 1) : 0, stdout, stderr }),
       );
@@ -281,48 +285,31 @@ export class GitCli implements Git {
   }
 
   // ------------------------------------------------------------ filters (GIT-12)
-  /** Every configured filter's commands, by name. Read with the raw profile: this is what neutralizing is built from. */
+  /** Read commands without invoking them. */
   private async filterConfig(): Promise<Map<string, string[]>> {
-    const out = new Map<string, string[]>();
     const r = await this.run(["config", "--null", "--get-regexp", "^filter\\."], { inspect: false, filters: true });
-    for (const rec of r.stdout.split("\0").filter(Boolean)) {
-      const nl = rec.indexOf("\n");
-      const key = rec.slice(0, nl).split("."), name = key.slice(1, -1).join("."), field = key.at(-1)!;
-      if (name && ["clean", "smudge", "process", "required"].includes(field)) {
-        out.set(name, [...(out.get(name) ?? []), `${field}=${rec.slice(nl + 1)}`]);
-      }
-    }
-    return out;
+    return filterConfig(r.stdout);
   }
 
-  /** `-c` overrides that make every configured filter a no-op, so reading never runs a user or project program. */
+  /** Disable programs during inspection. */
   private neutralArgs(): Promise<string[]> {
-    const off = (n: string) => [
-      ...["clean", "smudge", "process"].flatMap((k) => ["-c", `filter.${n}.${k}=`]),
-      ...["-c", `filter.${n}.required=false`],
-    ];
-    this.neutral ??= this.filterConfig().then((f) => [...f.keys()].flatMap(off));
+    this.neutral ??= this.filterConfig().then(config => filterOverrides(config));
     return this.neutral;
   }
 
-  /** The configured filters that some file in this repository actually uses, or null when none applies (Git LFS installed but unused). */
+  /** Unused filters need no consent. */
   filterGate(): Promise<FilterGate | null> {
     this.gate ??= this.findGate();
     return this.gate;
   }
 
-  private async findGate(): Promise<FilterGate | null> {
-    const config = await this.filterConfig();
-    if (![...config.values()].some((f) => f.some((x) => /^(clean|process)=./.test(x)))) return null;
+  private async findGate(config = this.filterConfig()): Promise<FilterGate | null> {
+    const filters = await config;
+    if (![...filters.values()].some((f) => f.some((x) => /^(clean|process)=./.test(x)))) return null;
     const listed = await this.ok(["ls-files", "-z", "--cached", "--others", "--exclude-standard"]);
     const paths = listed.split("\0").filter((p) => p && !isKernelFile(p));
     const attrs = await this.run(["check-attr", "-z", "--stdin", "filter"], { input: paths.join("\0"), filters: true });
-    const used = new Set<string>();
-    const rec = attrs.stdout.split("\0");
-    for (let i = 0; i + 2 < rec.length; i += 3) if (config.has(rec[i + 2]!)) used.add(rec[i + 2]!);
-    if (!used.size) return null;
-    const names = [...used].sort();
-    return { names, hash: sha256(JSON.stringify(names.map((n) => [n, [...config.get(n)!].sort()]))).slice(0, 16) };
+    return usedFilters(filters, attrs.stdout);
   }
 
   allowFilters(hashes: readonly string[]): void {
@@ -582,21 +569,43 @@ export class GitCli implements Git {
   }
 
   // ------------------------------------------------------------ commit (temporary index, TS §10.3)
-  /** Builds the tree a commit of exactly these paths would have, in a temporary index the user never sees. */
-  private async buildTree(plan: Pick<CommitPlan, "paths" | "deleted" | "parent">, env: Record<string, string>): Promise<string> {
+  /** Revalidate and pin consented commands. */
+  private async commitFilters(): Promise<string[]> {
+    const config = await this.filterConfig(), gate = await this.findGate(Promise.resolve(config));
+    if (gate && !this.consented.has(gate.hash))
+      throw new KernelError("filter-consent-needed", "Git filter configuration changed or lacks consent; retry the commit", { exit: 3 });
+    return filterOverrides(config, gate?.names);
+  }
+
+  /** Guard configured program execution. */
+  private program(args: string[], plan: CommitPlan, env: Record<string, string>): Promise<RunResult> {
+    const where = this.shadow ? ["--git-dir", this.shadowDir, "--work-tree", this.root] : [];
+    return this.runner.run({
+      argv: ["git", ...where, ...INSPECT, ...args], cwd: this.root,
+      runDir: plan.runDir!, timeoutMs: plan.timeoutMs, env: { ...env, ...gitConfigEnv(), GIT_TERMINAL_PROMPT: "0" },
+    });
+  }
+
+  /** Build a private index; only job staging may run filters. */
+  private async buildTree(
+    plan: Pick<CommitPlan, "paths" | "deleted" | "parent">,
+    env: Record<string, string>,
+    execution?: { plan: CommitPlan; filters: string[] },
+  ): Promise<string> {
     await this.objectFormatSafe();
-    const gate = await this.filterGate();
-    const filters = !!gate && this.consented.has(gate.hash);
-    if (gate && !filters)
-      throw new KernelError(
-        "filter-consent-needed",
-        `Git filters (${gate.names.join(", ")}) would run on this commit and were not consented to`,
-        { exit: 3 },
-      );
     if (plan.parent) await this.ok(["read-tree", plan.parent], { env, inspect: false });
     else await this.ok(["read-tree", "--empty"], { env, inspect: false });
     const live = plan.paths.filter((p) => this.workBlob(p));
-    if (live.length) await this.ok(["add", "--", ...live.map((p) => `:(literal)${p}`)], { env, inspect: false, filters });
+    if (live.length) {
+      const args = ["add", "--", ...live.map(p => `:(literal)${p}`)];
+      if (execution) {
+        const r = await this.program([...execution.filters, ...args], execution.plan, env);
+        if (r.exit !== 0 || r.signal || r.timedOut)
+          throw new KernelError("hook-failed", r.timedOut
+            ? "Git filter preparation timed out; its process group was stopped"
+            : `Git filter preparation failed: ${r.stderr.trim().slice(-400)}`);
+      } else await this.ok(args, { env, inspect: false });
+    }
     const gone = [...plan.deleted, ...plan.paths.filter((p) => !this.workBlob(p))];
     if (gone.length) await this.ok(["update-index", "--force-remove", "--", ...gone], { env, inspect: false });
     return (await this.ok(["write-tree"], { env, inspect: false })).trim();
@@ -611,7 +620,7 @@ export class GitCli implements Git {
     }
   }
 
-  /** A commit run that exited non-zero, was signalled or timed out: uncertain if HEAD moved, else classified from what Git printed. */
+  /** A failed program is uncertain if HEAD moved. */
   private async failedCommit(
     plan: CommitPlan,
     r: { stdout: string; stderr: string; timedOut: boolean },
@@ -632,7 +641,7 @@ export class GitCli implements Git {
     };
   }
 
-  /** Paths whose blob or mode differ across the commit, or whose stat changed while excluded from scanning. */
+  /** Blob/mode changes, or excluded paths with changed stat. */
   private changedPaths(before: Inventory, after: Inventory, excludedBefore: Map<string, string>): string[] {
     return [...new Set([...before.entries.keys(), ...after.entries.keys()])].filter((p) => {
       const a = before.entries.get(p),
@@ -644,6 +653,7 @@ export class GitCli implements Git {
   async commit(plan: CommitPlan): Promise<CommitOutcome> {
     const fail = commitFail;
     const dir = mkdtempSync(join(tmpdir(), "tenet-idx-"));
+    plan = { ...plan, runDir: plan.runDir ?? join(dir, "run") };
     const env = { GIT_INDEX_FILE: join(dir, "index") };
     let expectedTree: string | undefined,
       launched = false;
@@ -657,21 +667,18 @@ export class GitCli implements Git {
       const excludedBefore = new Map(
         [...before.entries.keys()].filter((p) => !allowed("scan", p, this.exclusions)).map((p) => [p, this.stat(p)]),
       );
-      expectedTree = await this.buildTree(plan, env);
+      expectedTree = plan.expectedTree ?? await this.expectedTree(plan);
+      const filters = await this.commitFilters();
+      const preparedTree = await this.buildTree(plan, env, { plan, filters });
+      if ((await this.refCommit("HEAD")) !== plan.parent) return fail("effect-uncertain", "HEAD moved during Git filter preparation");
+      if (this.changedPaths(before, await this.inventory([]), excludedBefore).length)
+        return fail("hook-failed", "Git filter preparation changed working files; preserve the edits and check again");
+      if (preparedTree !== expectedTree)
+        return fail("capability-missing", "Git filters changed checked content; committed-tree checks are unavailable");
       const baseTree = plan.parent ? (await this.ok(["rev-parse", `${plan.parent}^{tree}`])).trim() : null;
       if (expectedTree === baseTree) return { ...fail("nothing-to-commit"), expectedTree };
-      const gitConfig = Object.fromEntries(
-        ["GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"].flatMap((k) => (process.env[k] === undefined ? [] : [[k, process.env[k]!]])),
-      );
-      const where = this.shadow ? ["--git-dir", this.shadowDir, "--work-tree", this.root] : [];
       launched = true;
-      const r = await this.runner.run({
-        argv: ["git", ...where, "--no-pager", "commit", "-m", plan.message, "--allow-empty-message"],
-        cwd: this.root,
-        runDir: plan.runDir ?? join(dir, "run"),
-        timeoutMs: plan.timeoutMs,
-        env: { ...env, ...gitConfig, GIT_TERMINAL_PROMPT: "0" },
-      });
+      const r = await this.program([...filters, "commit", "-m", plan.message, "--allow-empty-message"], plan, env);
       if (r.exit !== 0 || r.signal || r.timedOut) return this.failedCommit(plan, r, expectedTree);
       const commit = (await this.ok(["rev-parse", "HEAD"])).trim();
       const parent = (await this.tryOut(["rev-parse", `${commit}^`])) ?? null;
@@ -697,7 +704,9 @@ export class GitCli implements Git {
       );
       return { ok: true, commit, tree, expectedTree, foreign, indexSync: sync, syncPaths: sync === "untouched" ? [...mine] : [] };
     } catch (e) {
-      if (!launched) throw e;
+      if (!launched && e instanceof KernelError && await this.refCommit("HEAD") === plan.parent)
+        return fail(e.reasons[0]!.code, e.message);
+      if (!launched && !(e instanceof KernelError)) throw e;
       const head = await this.refCommit("HEAD");
       return {
         ...fail("effect-uncertain", `commit execution or postcondition inspection could not be verified: ${String(e)}`),
@@ -713,14 +722,18 @@ export class GitCli implements Git {
     parent: string | null,
     expectedTree: string,
     tenetPaths: readonly string[],
+    label?: string,
   ): Promise<{ completed: boolean; commit?: string }> {
     const head = await this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]);
     if (!head || head === parent) return { completed: false };
     if ((await this.tryOut(["rev-parse", `${head}^`])) !== parent) return { completed: false };
+    if (label && !(await this.tryOut(["show", "-s", "--format=%B", head]))?.split("\n").includes(`Tenet-Work: ${label}`))
+      return { completed: false };
     const tree = await this.tryOut(["rev-parse", `${head}^{tree}`]);
     if (tree === expectedTree) return { completed: true, commit: head };
     // A hook may have reformatted Tenet files: the trees may differ only on Tenet paths.
-    const diff = (await this.tryOut(["diff-tree", "-r", "--name-only", "-z", expectedTree, head])) ?? "";
+    const diff = await this.tryOut(["diff-tree", "-r", "--name-only", "-z", expectedTree, head]);
+    if (diff === null) return { completed: false };
     const only = diff
       .split("\0")
       .filter(Boolean)
@@ -902,9 +915,7 @@ export class GitCli implements Git {
     } finally {
       closeSync(fd);
     }
-    const env = Object.fromEntries(
-      ["GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"].flatMap((k) => (process.env[k] === undefined ? [] : [[k, process.env[k]!]])),
-    );
+    const env = gitConfigEnv();
     const r = await this.runner.run({
       argv: ["git", ...INSPECT, "apply", "--whitespace=nowarn", ...include.map((p) => `--include=${p}`), "--", file],
       cwd: this.root,
@@ -965,9 +976,7 @@ export class GitCli implements Git {
         { exit: 2 },
       );
     const runDir = options?.runDir ?? mkdtempSync(join(tmpdir(), "tenet-integrate-"));
-    const env = Object.fromEntries(
-      ["GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM"].flatMap((k) => (process.env[k] === undefined ? [] : [[k, process.env[k]!]])),
-    );
+    const env = gitConfigEnv();
     let launched = false;
     const run = (args: string[]) => {
       launched = true;

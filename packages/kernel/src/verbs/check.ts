@@ -169,6 +169,7 @@ export const check: Verb<CheckInput> = {
 
 /** What the process did, whatever it was. `raw` is the output the tool's own report format is read from. */
 const observed = (r: RunResult, raw: string | null): Omit<RunFacts, "after"> => ({
+  outputTruncated: r.outputTruncated,
   ...(r.exit !== undefined ? { exit: r.exit } : {}),
   ...(r.signal ? { signal: r.signal } : {}),
   timedOut: r.timedOut,

@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-10-20 — Static populations and required-check conflicts (`◐`, local)
+
+Conflicting required-check definitions now block checking and verdicts instead of silently selecting one. Doctor applies metadata exclusions before reading. Default static receipts retain bounded analyzed workspace files and reject unknown, linked, stat-only, malformed or incomplete proof. Supported local TypeScript/ESLint profiles are explicit; unsupported versions/configuration graphs do not execute. TypeScript names the project and disables incremental writes. Runner output is bounded by bytes, preserves UTF-8 across chunks and reports truncation as inconclusive. Adapter `node-ts@2` stales older evidence.
+
+Changed configuration/receipt/schema/pipeline consumers, Node/process adapters, regression suites and built-CLI UAT. Final CI: **641 tests / 134 suites pass**, including 34 new controls. **45 UAT scenarios pass on Node 26.3.0 and minimum 22.12.0 against one 713,587-byte artifact**. [Evidence, fixture corrections and remaining work](docs/audits/2026-10-20/static-integrity.md). No ceiling raised, host run, commit or push. Effective configuration/dependency graphs and composite/reference isolation remain open before broader execution support.
+
+## 2026-10-20 — Guarded Git filter preparation (`◐`, local)
+
+Filter execution now stages through the published, guarded commit job with a recorded process group, minimal environment, timeout and cancellation. Intent preparation disables filters and filesystem monitors. Current consent preserves duplicate command order. Mutations or moved HEAD prevent an ordinary commit result; transformations refuse until committed-tree checks exist. Recovery checks the known work trailer and fails closed on unreadable trees.
+
+Changed `adapters/git-cli.ts`, new pure `core/git-filters.ts`, commit/recovery ports and consumers, `filter-jobs.test.ts`, built-CLI UAT and canonical progress/mechanism docs. **607 tests / 131 suites pass; 38 built-CLI scenarios pass on Node 26.3.0 and 22.12.0** against the same 710,549-byte artifact. Sixteen new real Git/process controls. [Evidence and remaining work](docs/audits/2026-10-20/filter-jobs.md). No quality ceiling raised, host run, commit or push. R05/R06 static population and obligation composition are next; full Git qualification stays open.
+
+## 2026-10-20 — GitHub reassessment and policy/static-evidence corrections (`◐`, local)
+
+Reviewed the twelve cloud commits through `d457714` and their successful GitHub CI; added a current audit, all F01–F22 dispositions, a 200-requirement inventory and an ordered completion plan. Tightened adopted restrictions now apply before recovery/read-only admission. Contradictory ESLint populations are inconclusive, and unsupported static configuration/population/pass/alternatives refuse default substitution.
+
+Changed `verbs/reconcile.ts`, `core/obligations.ts`, `adapters/node-ts.ts`, three regression suites, built-CLI UAT and canonical progress/mechanism documentation. Full CI: **591 tests / 130 suites pass**; **33 UAT scenarios pass on Node 26.3.0 and 22.12.0** against the same 709,447-byte bundle. No quality ceiling changed. Configured-filter preparation and the report's remaining gaps stay open. No host run, new commit or push.
+
 ## 2026-10-20 — Boundary-example note (`✅` T1; review plan A3d)
 
 **Changed.** `decide basis` now says which requirement has neither a boundary example nor an invariant (`boundary-example-missing`, a note), except in Quick, so the coordinator proposes one as its own addition (INT-15). The intake skill says what to do with the note.

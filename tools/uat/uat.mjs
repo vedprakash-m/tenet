@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { chmodSync, cpSync, mkdtempSync, mkdirSync, writeFileSync, symlinkSync, readFileSync, rmSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -42,6 +42,20 @@ const basis = { outcome: 'Return a greeting', scopePaths: ['src/'], elements: [
  { ref: 'e', kind: 'example', origin: 'request', of: 'r', text: 'greet Ada', testFile: 'src/greet.test.ts', test: 'distinguishing', expect: 'fail' }
 ] };
 const observations = [];
+const staticCandidate = (root, request) => {
+ const h = call(root, 'open', { profile: 'feature', request, lane: 'quick' }).handle;
+ assert.equal(call(root, 'decide', { h, kind: 'basis', propose: basis }).exit, 0);
+ write(root, 'src/greet.test.ts', 'import { expect, it } from "vitest"; import { greet } from "./greet.ts"; it("greets", () => expect(greet("Ada")).toBe("Hello, Ada!"));\n');
+ assert.equal(call(root, 'check', { h, stage: 'baseline' }).data.receipts[0].status, 'fail');
+ write(root, 'src/greet.ts', 'export const greet = (name: string): string => `Hello, ${name}!`;\n');
+ const checked = call(root, 'check', { h, stage: 'candidate' }, ['--touched=src/greet.ts']);
+ const w = Object.values(JSON.parse(readFileSync(join(root, '.tenet/state'), 'utf8')).work)[0];
+ return { h, checked, receipt: w.receipts.find(r => r.obligation === 'OB-types') };
+};
+const waitUntil = async (fn, what) => {
+ const end = Date.now() + 15000;
+ for (;;) { const found = fn(); if (found) return found; assert.ok(Date.now() < end, `timed out: ${what}`); await new Promise(r => setTimeout(r, 25)); }
+};
 try {
  const root = create();
  const opened = call(root, 'open', { request: 'greeting', scopePaths: ['src/'] }, ['--profile=feature', '--lane=quick']); assert.equal(opened.exit, 0);
@@ -199,11 +213,17 @@ try {
  assert.equal(aliasRefusal.exit, 2); assert.ok(aliasRefusal.reasons.some(r => r.code === 'capability-missing'));
  assert.equal(JSON.stringify(aliasRefusal).includes('PRIVATE_ALIAS_CANARY'), false);
  observations.push({ scenario: 'built secret alias is refused before adoption preview', exit: aliasRefusal.exit, canaryDisclosed: false });
+ for (const adopted of [false, true]) {
  const scaffoldStop = mkdtempSync(join(tmpdir(), 'tenet-c0-partial-scaffold-')); roots.push(scaffoldStop);
  git(scaffoldStop, 'init', '-q', '-b', 'main'); git(scaffoldStop, 'config', 'user.name', 'Test'); git(scaffoldStop, 'config', 'user.email', 'test@example.com'); git(scaffoldStop, 'config', 'commit.gpgsign', 'false');
  write(scaffoldStop, 'NOTES.txt', 'preserve my note\n'); git(scaffoldStop, 'add', '-A'); git(scaffoldStop, 'commit', '-qm', 'initial');
  const ssh = call(scaffoldStop, 'open', { profile: 'feature', request: 'new app', lane: 'quick' }).handle;
  assert.equal(call(scaffoldStop, 'decide', { h: ssh, kind: 'basis', propose: { outcome: 'starter platform', elements: [{ ref: 'r', kind: 'requirement', origin: 'request', text: 'starter platform' }] } }).exit, 0);
+ if (adopted) {
+  write(scaffoldStop, 'tenet.policy.json', '{}');
+  assert.equal(call(scaffoldStop, 'decide', { h: ssh, kind: 'adopt', target: 'policy' }).exit, 3);
+  assert.equal(call(scaffoldStop, 'decide', { h: ssh, kind: 'adopt', target: 'policy', answers: { 'adopt-confirm': 'confirm' } }).exit, 0);
+ }
  const killedScaffold = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle, 'after-first-link', '-', 'decide'], { cwd: scaffoldStop, env, input: JSON.stringify({ h: ssh, kind: 'scaffold' }), encoding: 'utf8' });
  assert.equal(killedScaffold.signal, 'SIGKILL', killedScaffold.stderr + killedScaffold.stdout);
  const intent = readFileSync(join(scaffoldStop, '.tenet/log'), 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)).find(e => e.kind === 'intent' && e.effect === 'scaffold');
@@ -215,7 +235,43 @@ try {
  assert.deepEqual(readFileSync(join(scaffoldStop, first)), firstBytes);
  assert.equal(call(scaffoldStop, 'open', { profile: 'investigate', request: 'policy-aware reconciliation' }).exit, 2);
  assert.deepEqual(readFileSync(join(scaffoldStop, first)), firstBytes);
- observations.push({ scenario: 'built stop preserves interrupted scaffold under tighter policy', exit: stopScaffold.exit, partialFilePreserved: true, pendingEffectRetained: true, installLaunched: false });
+ observations.push({ scenario: `built stop preserves interrupted scaffold under tighter ${adopted ? 'adopted ' : ''}policy`, exit: stopScaffold.exit, partialFilePreserved: true, pendingEffectRetained: true, installLaunched: false });
+ }
+ const hostileLint = create();
+ rmSync(join(hostileLint, 'node_modules')); mkdirSync(join(hostileLint, 'node_modules'));
+ symlinkSync(join(source, 'node_modules/vitest'), join(hostileLint, 'node_modules/vitest'));
+ write(hostileLint, 'node_modules/eslint/package.json', '{"type":"module","version":"9.39.1"}');
+ write(hostileLint, 'node_modules/eslint/bin/eslint.js', 'import fs from "node:fs"; const report=process.argv[process.argv.indexOf("--output-file")+1]; fs.writeFileSync(report,JSON.stringify([{filePath:"src/greet.ts",errorCount:1,messages:[]}])); process.exitCode=1;\n');
+ write(hostileLint, 'tenet.policy.json', JSON.stringify({ required_checks: [{ id: 'lint', tool: 'eslint', property: 'no lint errors' }] }));
+ const lh = call(hostileLint, 'open', { profile: 'feature', request: 'lint report integrity', lane: 'quick' }).handle;
+ assert.equal(call(hostileLint, 'decide', { h: lh, kind: 'basis', propose: basis }).exit, 0);
+ write(hostileLint, 'src/greet.test.ts', 'import { expect, it } from "vitest"; import { greet } from "./greet.ts"; it("greets", () => expect(greet("Ada")).toBe("Hello, Ada!"));\n');
+ write(hostileLint, 'src/greet.ts', 'export const greet = (name: string): string => `Hello, ${name}!`;\n');
+ const checkedLint = call(hostileLint, 'check', {}, [`--h=${lh}`, '--touched=src/greet.ts']);
+ assert.equal(checkedLint.data.receipts.find(r => r.obligation === 'OB-suite').status, 'pass');
+ const lintReceipt = checkedLint.data.receipts.find(r => r.obligation === 'OB-lint');
+ assert.equal(lintReceipt.status, 'inconclusive'); assert.ok(lintReceipt.reasons.includes('report-invalid'));
+ assert.equal(checkedLint.data.review, undefined);
+ observations.push({ scenario: 'built contradictory lint child cannot produce a passing receipt', syntheticTool: true, programExit: 1, reportedErrors: 1, diagnosticMessages: 0, receipt: lintReceipt.status, reason: 'report-invalid' });
+ const configuredTypes = create();
+ const compilerOptions = { strict: true, module: 'NodeNext', target: 'ES2023', noEmit: true, skipLibCheck: true, types: [] };
+ write(configuredTypes, 'tsconfig.json', JSON.stringify({ compilerOptions, include: ['src/greet.ts'] }));
+ write(configuredTypes, 'tsconfig.required.json', JSON.stringify({ compilerOptions, include: ['server/**/*.ts'] }));
+ write(configuredTypes, 'server/broken.ts', 'export const n: number = "not a number";\n');
+ write(configuredTypes, 'tenet.policy.json', JSON.stringify({ required_checks: [
+  { id: 'types', tool: 'tsc', property: 'server compiles', configuration: 'tsconfig.required.json', population: 'server/**/*.ts' },
+ ] }));
+ const tsc = join(configuredTypes, 'node_modules/typescript/bin/tsc');
+ const defaultConfig = spawnSync(process.execPath, [tsc, '--noEmit', '--pretty', 'false', '-p', 'tsconfig.json'], { cwd: configuredTypes, env });
+ const requiredConfig = spawnSync(process.execPath, [tsc, '--noEmit', '--pretty', 'false', '-p', 'tsconfig.required.json'], { cwd: configuredTypes, env });
+ assert.equal(defaultConfig.status, 0); assert.equal(requiredConfig.status, 2);
+ const th = call(configuredTypes, 'open', { profile: 'feature', request: 'check the required configuration', lane: 'quick' }).handle;
+ assert.equal(call(configuredTypes, 'decide', { h: th, kind: 'basis', propose: basis }).exit, 0);
+ const refusedTypes = call(configuredTypes, 'check', { h: th, stage: 'candidate' });
+ assert.equal(refusedTypes.exit, 2); assert.ok(refusedTypes.reasons.some(r => r.code === 'capability-missing' && /types/.test(r.message)));
+ const typesWork = Object.values(JSON.parse(readFileSync(join(configuredTypes, '.tenet/state'), 'utf8')).work)[0];
+ assert.equal(typesWork.budget.checksLaunched, 0); assert.equal(typesWork.receipts.length, 0);
+ observations.push({ scenario: 'built named static configuration refuses substitution', defaultConfigExit: 0, requiredConfigExit: 2, admissionExit: 2, substituteLaunched: false, receiptIssued: false });
  for (const custom of [false, true]) {
   const hooked = create(), dir = custom ? '.githooks' : '.git/hooks';
   if (custom) git(hooked, 'config', 'core.hooksPath', dir);
@@ -273,6 +329,121 @@ try {
  assert.equal(lfsOpen.exit, 0, JSON.stringify(lfsOpen)); assert.equal(lfsRun('review', {}).exit, 0);
  rmSync(lfsConfig, { force: true });
  observations.push({ scenario: 'user-level Git LFS filter configuration', openExit: lfsOpen.exit, filterRan: false });
+ for (const mode of ['pass', 'transform', 'mutate', 'stop', 'killed']) {
+  const filtered = create(), scripts = mkdtempSync(join(tmpdir(), 'tenet-filter-uat-')); roots.push(scripts);
+  write(filtered, '.gitattributes', 'src/greet.ts filter=audit\n'); write(filtered, 'human.txt', 'human initial\n');
+  git(filtered, 'add', '-A'); git(filtered, 'commit', '-qm', 'attributes');
+  write(filtered, 'human.txt', 'human staged\n'); git(filtered, 'add', 'human.txt');
+  const marker = join(scripts, 'observed'), script = join(scripts, 'filter.cjs');
+  const body = mode === 'transform' ? "process.stdin.resume();process.stdin.on('end',()=>process.stdout.write('untested transformed bytes'));"
+   : mode === 'mutate' ? "require('fs').writeFileSync('human.txt','filter changed human bytes');process.stdin.pipe(process.stdout);"
+   : ['stop', 'killed'].includes(mode) ? "process.on('SIGTERM',()=>{});setInterval(()=>{},1000);" : 'process.stdin.pipe(process.stdout);';
+  writeFileSync(script, `require('fs').appendFileSync(${JSON.stringify(marker)},JSON.stringify({CI:process.env.CI,canary:process.env.TENET_FILTER_CANARY})+'\\n');${body}`);
+  git(filtered, 'config', 'filter.audit.clean', `"${process.execPath}" "${script}"`); git(filtered, 'config', 'filter.audit.required', 'true');
+  const fh = call(filtered, 'open', { profile: 'feature', request: 'guarded filter', lane: 'quick' }).handle;
+  assert.equal(call(filtered, 'decide', { h: fh, kind: 'basis', propose: basis }).exit, 0);
+  write(filtered, 'src/greet.test.ts', 'import { expect, it } from "vitest"; import { greet } from "./greet.ts"; it("greets", () => expect(greet("Ada")).toBe("Hello, Ada!"));\n');
+  assert.equal(call(filtered, 'check', { h: fh, stage: 'baseline' }).data.receipts[0].status, 'fail');
+  write(filtered, 'src/greet.ts', 'export const greet = (name: string): string => `Hello, ${name}!`;\n');
+  const candidate = call(filtered, 'check', { h: fh, stage: 'candidate' }, ['--touched=src/greet.ts']);
+  assert.equal(candidate.data.receipts[0].status, 'pass'); focused(filtered, fh, candidate);
+  assert.equal(call(filtered, 'finish', { h: fh }).questions[0].id, 'filter-consent'); assert.equal(existsSync(marker), false);
+  assert.equal(call(filtered, 'decide', { h: fh, kind: 'filter-consent', answers: { 'filter-consent': 'allow-filters' } }).exit, 0);
+  const head = git(filtered, 'rev-parse', 'HEAD'), index = readFileSync(join(filtered, '.git/index'));
+  if (['stop', 'killed'].includes(mode)) {
+   const child = spawn(process.execPath, [bundle, 'finish', `--h=${fh}`], { cwd: filtered, env, stdio: ['ignore', 'pipe', 'pipe'] });
+   let stdout = ''; child.stdout.on('data', b => { stdout += b; }); child.stderr.resume();
+   const done = new Promise(resolve => child.on('close', (code, signal) => resolve({ code, signal })));
+   let record;
+   try {
+    await waitUntil(() => existsSync(marker), 'filter launch');
+    const state = JSON.parse(readFileSync(join(filtered, '.tenet/state'), 'utf8'));
+    const inCall = Object.values(state.work).find(w => w.session.inCall)?.session.inCall;
+    assert.equal(inCall.verb, 'commit'); record = JSON.parse(readFileSync(join(inCall.runDir, 'run.json'), 'utf8')); assert.ok(record.pid && record.procStart);
+    if (mode === 'killed') { child.kill('SIGKILL'); assert.equal((await done).signal, 'SIGKILL'); }
+    const stopped = call(filtered, 'stop', { h: fh, mode: 'cancel' });
+    assert.equal(stopped.exit, 2); assert.ok(stopped.reasons.some(r => r.code === 'effect-uncertain'));
+    if (mode === 'stop') { await done; assert.ok(JSON.parse(stdout).reasons.some(r => r.code === 'run-superseded')); }
+    await waitUntil(() => { try { process.kill(record.pid, 0); return false; } catch { return true; } }, 'filter group stopped');
+    const recovered = call(filtered, 'open', { profile: 'feature', request: 'guarded filter', resume: true });
+    assert.ok(recovered.effects.completed.some(e => /did not happen/.test(e)), JSON.stringify(recovered));
+    assert.equal(git(filtered, 'rev-parse', 'HEAD'), head); assert.deepEqual(readFileSync(join(filtered, '.git/index')), index);
+    assert.equal(readFileSync(marker, 'utf8').trim().split('\n').length, 1);
+    assert.equal(readFileSync(join(filtered, 'human.txt'), 'utf8'), 'human staged\n');
+    observations.push({ scenario: `built guarded filter ${mode}`, processRecorded: true, stoppedBeforeCommit: true, recoveryDidNotReplay: true, humanStagingPreserved: true });
+   } finally { child.kill('SIGKILL'); if (record) try { process.kill(-record.pid, 'SIGKILL'); } catch { /* already gone */ } }
+  } else {
+   env.TENET_FILTER_CANARY = 'synthetic-do-not-pass';
+   let finished;
+   try { finished = call(filtered, 'finish', { h: fh }); } finally { delete env.TENET_FILTER_CANARY; }
+   const ran = readFileSync(marker, 'utf8').trim().split('\n').map(s => JSON.parse(s));
+   assert.ok(ran.length && ran.every(e => e.CI === '1' && e.canary === undefined));
+   if (mode === 'pass') {
+    assert.equal(finished.data.endpoint, 'checked-local', JSON.stringify(finished));
+    assert.deepEqual(git(filtered, 'show', '--name-only', '--format=', 'HEAD').split('\n').sort(), ['src/greet.test.ts', 'src/greet.ts']);
+   } else {
+    assert.equal(git(filtered, 'rev-parse', 'HEAD'), head); assert.deepEqual(readFileSync(join(filtered, '.git/index')), index);
+    assert.ok(finished.reasons.some(r => r.code === (mode === 'transform' ? 'capability-missing' : 'hook-failed')), JSON.stringify(finished));
+    if (mode === 'mutate') assert.notEqual(finished.data.endpoint, 'checked-local');
+   }
+   assert.equal(readFileSync(join(filtered, 'human.txt'), 'utf8'), mode === 'mutate' ? 'filter changed human bytes' : 'human staged\n');
+   observations.push({ scenario: `built guarded filter ${mode}`, endpoint: finished.data.endpoint, scope: finished.data.scope, minimalEnvironment: true, headChanged: git(filtered, 'rev-parse', 'HEAD') !== head, humanBytesPreserved: mode !== 'mutate', filterMutationPreserved: mode === 'mutate' });
+  }
+ }
+ const doctorPolicy = create();
+ write(doctorPolicy, 'tenet.policy.json', JSON.stringify({ exclusions: [{ pattern: 'package.json', kinds: ['no-read'] }] }));
+ const doctorRefusal = call(doctorPolicy, 'inspect', { view: 'doctor' });
+ assert.equal(doctorRefusal.exit, 2); assert.ok(doctorRefusal.reasons.some(r => r.code === 'capability-missing'));
+ assert.equal(existsSync(join(doctorPolicy, '.tenet')), false);
+ write(doctorPolicy, 'tenet.policy.json', 'invalid'); assert.equal(call(doctorPolicy, 'inspect', { view: 'help' }).exit, 0);
+ observations.push({ scenario: 'built stateless doctor honors metadata exclusions', exit: doctorRefusal.exit, metadataRefused: true, noStateWritten: true, helpIndependent: true });
+ const conflict = create(), required = { id: 'types', property: 'project compiles', tool: 'tsc' };
+ write(conflict, 'tenet.policy.json', JSON.stringify({ required_checks: [required] }));
+ const conflictHandle = call(conflict, 'open', { profile: 'feature', request: 'required check conflict', lane: 'quick' }).handle;
+ assert.equal(call(conflict, 'decide', { h: conflictHandle, kind: 'basis', propose: basis }).exit, 0);
+ assert.equal(call(conflict, 'decide', { h: conflictHandle, kind: 'config', target: 'required_checks', propose: { value: [{ ...required, population: 'server/**/*.ts' }] } }).exit, 0);
+ const conflictCheck = call(conflict, 'check', { h: conflictHandle, stage: 'baseline' });
+ assert.equal(conflictCheck.exit, 2); assert.ok(conflictCheck.reasons.some(r => /defined differently/.test(r.message)));
+ const conflictWork = Object.values(JSON.parse(readFileSync(join(conflict, '.tenet/state'), 'utf8')).work)[0];
+ assert.equal(conflictWork.budget.checksLaunched, 0); assert.equal(conflictWork.receipts.length, 0);
+ observations.push({ scenario: 'built conflicting required definitions refuse before launch', exit: conflictCheck.exit, launched: 0, receipts: 0 });
+ for (const mode of ['default', 'ignored-input', 'references']) {
+  const typed = create();
+  write(typed, 'tenet.policy.json', JSON.stringify({ required_checks: [required] }));
+  const config = { compilerOptions: { strict: true, module: 'NodeNext', target: 'ES2023', allowImportingTsExtensions: true, skipLibCheck: true, types: [], incremental: true }, include: ['src', 'ignored.ts'] };
+  write(typed, 'tsconfig.json', JSON.stringify(mode === 'references' ? { files: [], references: [{ path: './server' }] } : config));
+  write(typed, 'tsconfig.tsbuildinfo', 'human build info');
+  if (mode === 'references') { write(typed, 'server/tsconfig.json', '{"compilerOptions":{"composite":true}}'); write(typed, 'server/bad.ts', 'export const n: number = "bad";'); }
+  if (mode === 'ignored-input') { write(typed, '.gitignore', 'node_modules\n.tenet/\nignored.ts\n'); write(typed, 'ignored.ts', 'export const hidden = 1;'); }
+  git(typed, 'add', '-A'); git(typed, 'commit', '-qm', 'static profile setup');
+  const { h, checked, receipt } = staticCandidate(typed, `static ${mode}`);
+  assert.ok(receipt, JSON.stringify(checked));
+  if (mode === 'default') {
+   assert.equal(receipt.status, 'pass', JSON.stringify(receipt));
+   assert.deepEqual(receipt.analyzedFiles.slice().sort(), ['src/greet.test.ts', 'src/greet.ts']);
+   assert.ok(receipt.argv.includes('--listFiles')); assert.ok(receipt.argv.includes('--project'));
+   focused(typed, h, checked); assert.equal(call(typed, 'finish', { h }, ['--no-commit']).data.endpoint, 'checked-local');
+  } else {
+   assert.equal(receipt.status, 'inconclusive', JSON.stringify(receipt));
+   assert.ok(receipt.reasons.includes(mode === 'references' ? 'not-executed' : 'population-mismatch'));
+   assert.notEqual(call(typed, 'finish', { h }, ['--no-commit']).data.endpoint, 'checked-local');
+  }
+  assert.equal(readFileSync(join(typed, 'tsconfig.tsbuildinfo'), 'utf8'), 'human build info');
+  observations.push({ scenario: `built TypeScript ${mode} population`, receipt: receipt.status, analyzedFiles: receipt.analyzedFiles || [], reasons: receipt.reasons, buildInfoPreserved: true });
+ }
+ for (const version of ['99.0.0', '5.9.3']) {
+  const fakeTypes = create(); rmSync(join(fakeTypes, 'node_modules'));
+  mkdirSync(join(fakeTypes, 'node_modules')); symlinkSync(join(source, 'node_modules/vitest'), join(fakeTypes, 'node_modules/vitest'));
+  write(fakeTypes, 'node_modules/typescript/package.json', JSON.stringify({ version }));
+  write(fakeTypes, 'node_modules/typescript/bin/tsc', "require('fs').writeFileSync('node_modules/compiler-invoked','yes');process.stdout.write(process.cwd()+'/src/greet.ts\\n'+' '.repeat(11*1024*1024));");
+  write(fakeTypes, 'tenet.policy.json', JSON.stringify({ required_checks: [required] }));
+  const { h, receipt } = staticCandidate(fakeTypes, `static version ${version}`);
+  assert.equal(receipt.status, 'inconclusive', JSON.stringify(receipt));
+  assert.ok(receipt.reasons.includes(version === '99.0.0' ? 'not-executed' : 'report-invalid'));
+  assert.equal(existsSync(join(fakeTypes, 'node_modules/compiler-invoked')), version === '5.9.3');
+  assert.notEqual(call(fakeTypes, 'finish', { h }, ['--no-commit']).data.endpoint, 'checked-local');
+  observations.push({ scenario: `built synthetic compiler ${version === '99.0.0' ? 'unsupported version' : 'truncated valid prefix'}`, receipt: receipt.status, reasons: receipt.reasons, childLaunched: version === '5.9.3', syntheticTool: true });
+ }
  const linked = create(), outside = mkdtempSync(join(tmpdir(), 'tenet-c0-outside-')); roots.push(outside);
  symlinkSync(outside, join(linked, '.tenet'));
  const refusal = call(linked, 'open', { profile: 'feature', request: 'greeting' }); assert.notEqual(refusal.exit, 0); assert.deepEqual(readdirSync(outside), []);

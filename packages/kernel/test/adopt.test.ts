@@ -171,6 +171,18 @@ describe("open reconciles the shared files with what was adopted [PH0-4, PRD §7
     assert.ok(o.reasons.some((r) => /tighten/i.test(r.message)), JSON.stringify(o.reasons));
   });
 
+  it("shows tightened adopted policy on a read-only call without publishing state [SEC-12, CON-09]", async () => {
+    const p = await adoptedPolicy({ exclusions: [{ pattern: "old", kinds: ["no-edit"] }] });
+    const before = read(p, ".tenet/state");
+    p.write("tenet.policy.json", JSON.stringify({ exclusions: [{ pattern: "new", kinds: ["no-read"] }] }));
+    const r = await p.call("inspect", { view: "settings" });
+    const data = r.data as { settings: { exclusions: unknown[] } };
+    assert.deepEqual(data.settings.exclusions, [
+      { pattern: "old", kinds: ["no-edit"] }, { pattern: "new", kinds: ["no-read"] },
+    ]);
+    assert.equal(read(p, ".tenet/state"), before);
+  });
+
   it("keeps the previous rules for a loosening and asks, until the user accepts the diff [SEC-12]", async () => {
     const p = await adoptedPolicy({ protected_paths: ["db/**", "infra/**"] });
     p.write("tenet.policy.json", JSON.stringify({ protected_paths: ["db/**"] }));

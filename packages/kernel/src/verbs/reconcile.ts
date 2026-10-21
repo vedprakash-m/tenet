@@ -1,9 +1,9 @@
 // `open` re-reads the shared files and compares them with what was adopted, every time (TS §7.8, PH0-4). A change is an
 // ordinary external edit, never a silent carry-over: a tightened policy applies at once, anything looser or not
 // comparable waits for the user's acceptance, and a block someone edited stays as they wrote it.
-import { effectiveSettings, layersOf } from "../core/config.ts";
-import { isStaticCheck, wantedStatic, withStatic } from "../core/obligations.ts";
-import { parsePolicy } from "../core/policy.ts";
+import { effectiveSettings, layersOf, unavailableExecution } from "../core/config.ts";
+import { wantedStatic, withStatic } from "../core/obligations.ts";
+import { effectivePolicy, parsePolicy } from "../core/policy.ts";
 import type { Change, Policy } from "../core/policy.ts";
 import { reason } from "../core/reasons.ts";
 import { KernelError } from "../core/errors.ts";
@@ -51,7 +51,7 @@ export function reconcileShared(ports: Ports, state: State): Shared {
   return { state: next, reasons, ...(ask ? { question: ask } : {}), policy: inForce };
 }
 
-/** The shared policy in force: the adopted one, or the file as it stands when its restrictions are all there is to go on. */
+/** Tightening applies before recovery and reads; loosening still needs acceptance. */
 export function sharedPolicy(ports: Ports, state: State | null): Policy {
   const t = state?.trust.find((x) => x.file === POLICY_FILE);
   const text = ports.project.read(POLICY_FILE);
@@ -59,7 +59,7 @@ export function sharedPolicy(ports: Ports, state: State | null): Policy {
   let r;
   try { r = parsePolicy(JSON.parse(text)); } catch { throw new KernelError("restriction-key-unknown", `${POLICY_FILE} is not valid JSON`, { exit: 2 }); }
   if (!r.ok) throw new KernelError("restriction-key-unknown", `${POLICY_FILE}: ${r.message}`, { exit: 2 });
-  return t ? t.restrictions as Policy : r.policy;
+  return t ? effectivePolicy(t.restrictions as Policy, r.policy, false).policy : r.policy;
 }
 
 /** What every verb that reads a setting sees: the shared policy, the project's local settings and, with a contract, its task overrides. */
@@ -67,11 +67,10 @@ export const settingsFor = (ports: Ports, state: State | null, w?: WorkContract)
 
 /** Declared execution consumers that do not exist yet must block evidence, rather than silently use defaults. */
 export function unsupportedExecution(ports: Ports, state: State | null, w?: WorkContract): string[] {
-  const settings = settingsFor(ports, state, w);
-  return [...Object.keys(settings.commands as object).map(id => `configured command ${id}`), ...(settings.required_checks as { id: string; tool?: string }[]).filter(c => !isStaticCheck(c)).map(c => `required check ${c.id}`)];
+  return unavailableExecution(layersOf(state, w, sharedPolicy(ports, state)));
 }
 
-/** The contract with the static checks its recipe and the required checks owe now: a restriction applies before the next action. */
+/** Attach required static checks, preserving the contract when none are added. */
 export function withRequiredChecks(ports: Ports, state: State, w: WorkContract): WorkContract {
   if (!w.basis) return w;
   const required = settingsFor(ports, state, w).required_checks as Array<{ id: string; tool?: string }>;

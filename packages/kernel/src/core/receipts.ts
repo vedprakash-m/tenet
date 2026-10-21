@@ -7,6 +7,7 @@ import type { Normalized, StaticNorm, ToolVersions } from "../ports/types.ts";
 
 /** What was observed about the process, independent of what the report says. */
 export interface RunFacts {
+  outputTruncated?: boolean;
   exit?: number;
   signal?: string;
   timedOut: boolean;
@@ -29,6 +30,7 @@ export interface ReceiptContext {
   before: string;
   versions: ToolVersions;
   missing: ReadonlySet<string>;
+  population?: ReadonlyMap<string, { mode: string; blob: string }>;
 }
 
 type FileCounts = NonNullable<ReturnType<Normalized["files"]["get"]>>;
@@ -65,6 +67,7 @@ function runProblem(o: RunFacts, c: ReceiptContext): string | undefined {
   if (!o.ran) return "not-executed";
   if (o.timedOut) return "timeout";
   if (o.signal || o.exit === undefined) return "not-executed";
+  if (o.outputTruncated) return "report-invalid";
   if (o.after !== c.before) return "concurrent-edit";
   return undefined;
 }
@@ -134,10 +137,17 @@ export function staticReceipt(o: RunFacts, norm: StaticNorm, ob: Obligation, i: 
     if (limit) rec.limitations.push(limit);
     return rec;
   };
-  if (!o.ran) return stop("not-executed", `${tool} did not run; is it installed in the project?`);
+  if (!o.ran) return stop("not-executed", `${tool} requires a supported installed version and configuration`);
   const early = runProblem(o, c);
   if (early) return stop(early);
   if (norm.status === "invalid") return stop("report-invalid", norm.problem);
+  rec.analyzedFiles = norm.files ?? [];
+  const unknown = rec.analyzedFiles.some(path => {
+    const entry = c.population?.get(path);
+    return c.population && (!entry || entry.mode === "120000" || !/^[a-f0-9]{40}$/.test(entry.blob));
+  });
+  if (norm.status === "pass" && (!rec.analyzedFiles.length || unknown))
+    return stop("population-mismatch", "the analyzed workspace population is empty or absent from the checked candidate");
   rec.failures = norm.failures.map((f) => ({ ...f, message: redact(f.message) }));
   rec.failureKinds = [...new Set(norm.failures.map((f) => f.kind))];
   rec.status = norm.status;

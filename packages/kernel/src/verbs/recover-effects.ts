@@ -51,8 +51,8 @@ async function indexSync(r: Recovery, u: Unresolved) {
 
 async function commit(r: Recovery, u: Unresolved) {
   const op = u.op as { work: string; parent: string | null; expectedTree: string; paths: string[]; subject: string };
-  const res = await r.ports.git.reconcileCommit(op.parent, op.expectedTree, op.paths);
   const w = r.state.work[op.work];
+  const res = await r.ports.git.reconcileCommit(op.parent, op.expectedTree, op.paths, w?.label);
   if (res.completed && res.commit) {
     if (w) addCommit(r, w, res.commit, op.paths);
     r.tx.result("commit", u.id, { completed: true, commit: res.commit });

@@ -7,10 +7,18 @@ export const FULL_SUITE = "OB-suite";
 
 const STATIC: Record<StaticTool, string> = { tsc: "OB-types", eslint: "OB-lint" };
 const ALIASES: Record<string, StaticTool> = { types: "tsc", typecheck: "tsc", lint: "eslint" };
+type StaticRequirement = {
+  id: string; tool?: string; configuration?: string; population?: string; pass?: string; alternatives?: string[];
+};
 
 /** The static checks a contract owes: both after a starter scaffold, otherwise those a required check names (by tool, or by id). */
-export function wantedStatic(recipe: readonly StaticTool[], required: readonly { id: string; tool?: string }[]): StaticTool[] {
-  const toolOf = (c: { id: string; tool?: string }) => (c.tool ? (c.tool in STATIC ? (c.tool as StaticTool) : undefined) : ALIASES[c.id]);
+export function wantedStatic(recipe: readonly StaticTool[], required: readonly StaticRequirement[]): StaticTool[] {
+  const toolOf = (c: StaticRequirement) => {
+    // The fixed invocation cannot prove custom configuration, population, criteria or alternatives.
+    if (c.configuration !== undefined || c.population !== undefined || c.pass !== undefined || c.alternatives?.length)
+      return undefined;
+    return c.tool ? (c.tool in STATIC ? (c.tool as StaticTool) : undefined) : ALIASES[c.id];
+  };
   const named = new Set(required.map(toolOf));
   return (Object.keys(STATIC) as StaticTool[]).filter((t) => recipe.includes(t) || named.has(t));
 }
@@ -31,7 +39,7 @@ export const withoutBoundary = (elements: readonly BasisElement[]): string[] =>
     .map((r) => r.id);
 
 /** Whether a required check is one the kernel runs itself; every other one is still only a stored declaration. */
-export const isStaticCheck = (c: { id: string; tool?: string }): boolean => wantedStatic([], [c]).length > 0;
+export const isStaticCheck = (c: StaticRequirement): boolean => wantedStatic([], [c]).length > 0;
 
 /** Whether the obligation's test must fail on the baseline. The default follows the test kind (deriveObligations sets the same one). */
 export const wantsRed = (ob: Pick<Obligation, "test" | "expectation">): boolean =>

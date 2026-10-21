@@ -33,4 +33,15 @@ describe("execution readiness at the check boundary", () => {
     assert.equal(r.exit, 2, JSON.stringify(r));
     assert.ok(r.reasons.some(r => r.code === "capability-missing" && /policy|excluded/.test(r.message)));
   });
+
+  it("applies policy before stateless doctor metadata reads, while help remains file-independent [SEC-14, CON-09]", async () => {
+    const p = project(); roots.push(p.root);
+    p.write("tenet.policy.json", JSON.stringify({ exclusions: [{ pattern: "package.json", kinds: ["no-read"] }] }));
+    const r = await p.call("inspect", { view: "doctor" });
+    assert.equal(r.exit, 2, JSON.stringify(r));
+    assert.ok(r.reasons.some(x => x.code === "capability-missing" && /exclud.*metadata/.test(x.message)));
+    assert.equal(existsSync(join(p.root, ".tenet")), false);
+    p.write("tenet.policy.json", "invalid policy");
+    assert.equal((await p.call("inspect", { view: "help" })).exit, 0);
+  });
 });

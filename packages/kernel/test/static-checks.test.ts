@@ -17,7 +17,7 @@ const d = (r: { data?: unknown }) => r.data as Record<string, any>;
 
 describe("normalizing typecheck output [EVD-05]", () => {
   it("passes a clean run and names each error with its file, line and code", () => {
-    assert.deepEqual(normalizeStatic("tsc", { exit: 0, raw: "" }), { status: "pass", failures: [] });
+    assert.deepEqual(normalizeStatic("tsc", { exit: 0, raw: "src/a.ts\n" }), { status: "pass", failures: [], files: ["src/a.ts"] });
     const out = "src/a.ts(3,7): error TS2322: Type 'string' is not assignable to type 'number'.\nerror TS5083: Cannot read file 'x'.\n";
     const r = normalizeStatic("tsc", { exit: 2, raw: out });
     assert.equal(r.status, "fail");
@@ -33,28 +33,56 @@ describe("normalizing typecheck output [EVD-05]", () => {
 
 describe("normalizing lint output [EVD-05]", () => {
   const file = (errors: number, over: Record<string, unknown> = {}) => ({
-    filePath: "/p/src/a.ts", errorCount: errors, warningCount: 1,
+    filePath: "/p/src/a.ts", errorCount: errors, warningCount: errors ? 0 : 1,
     messages: errors ? [{ ruleId: "no-undef", severity: 2, message: "x is not defined", line: 4 }] : [{ ruleId: "x", severity: 1, message: "warn", line: 1 }], ...over,
   });
   it("fails on errors, ignores warnings, and keeps rule, file and line", () => {
-    assert.deepEqual(normalizeStatic("eslint", { exit: 0, raw: JSON.stringify([file(0)]) }), { status: "pass", failures: [] });
-    const r = normalizeStatic("eslint", { exit: 1, raw: JSON.stringify([file(1)]) });
+    assert.deepEqual(normalizeStatic("eslint", { exit: 0, raw: JSON.stringify([file(0)]) }, "/p"), { status: "pass", failures: [], files: ["src/a.ts"] });
+    const r = normalizeStatic("eslint", { exit: 1, raw: JSON.stringify([file(1)]) }, "/p");
     assert.equal(r.status, "fail");
-    assert.deepEqual(r.failures[0], { test: "/p/src/a.ts:4", kind: "lint-error", message: "no-undef x is not defined" });
+    assert.deepEqual(r.failures[0], { test: "src/a.ts:4", kind: "lint-error", message: "no-undef x is not defined" });
   });
   it("is invalid when nothing was linted, the report is malformed, or exit status and report disagree", () => {
     for (const [exit, raw] of [[0, "[]"], [0, "not json"], [0, JSON.stringify({ not: "an array" })], [1, JSON.stringify([file(0)])], [0, JSON.stringify([file(1)])], [2, JSON.stringify([file(0)])], [0, null]] as const) {
       assert.equal(normalizeStatic("eslint", { exit, raw }).status, "invalid", `${exit} ${raw}`);
     }
   });
+  for (const over of [
+    { messages: [] },
+    { messages: [{ severity: 1, message: "warning" }] },
+    { errorCount: -1, messages: [] },
+    { errorCount: 0.5, messages: [] },
+    { messages: [{ severity: 2, message: { nested: "not a diagnostic" } }] },
+  ]) it(`rejects contradictory or malformed error population ${JSON.stringify(over)} [EVD-02, EVD-05]`, () => {
+    const raw = JSON.stringify([file(1, over)]);
+    assert.equal(normalizeStatic("eslint", { exit: 1, raw }).status, "invalid");
+  });
+  it("validates errors after the diagnostic example cap [EVD-05]", () => {
+    const messages = Array.from({ length: 6 }, (_, i) => ({ severity: 2, message: `error ${i}`, line: i + 1 }));
+    const valid = [file(6, { messages })];
+    const normalized = normalizeStatic("eslint", { exit: 1, raw: JSON.stringify(valid) }, "/p");
+    assert.equal(normalized.status, "fail"); assert.equal(normalized.failures.length, 5);
+    messages[5]!.severity = 7;
+    assert.equal(normalizeStatic("eslint", { exit: 1, raw: JSON.stringify(valid) }, "/p").status, "invalid");
+  });
 });
 
 describe("static receipts", () => {
   const ob: Obligation = { id: "OB-types", kind: "static", category: "boundary", tool: "tsc" };
   const ctx: ReceiptContext = { stage: "candidate", scope: "full", id: "chk", candidate: "c", runId: "r", runDir: "/d", argv: ["tsc"], before: "d0", versions: { node: "v", tool: "5", reporter: "tsc", adapter: "a", static: { tsc: "5.9.3" } }, missing: new Set() };
-  const run = (over: Partial<RunFacts> = {}): RunFacts => ({ exit: 0, timedOut: false, durationMs: 5, startedAt: "t", raw: "", after: "d0", ran: true, ...over });
+  const run = (over: Partial<RunFacts> = {}): RunFacts => ({ exit: 0, timedOut: false, durationMs: 5, startedAt: "t", raw: "src/a.ts\n", after: "d0", ran: true, ...over });
   it("passes only a completed run on an unchanged tree", () => {
-    assert.equal(staticReceipt(run(), normalizeStatic("tsc", { exit: 0, raw: "" }), ob, 0, ctx).status, "pass");
+    assert.equal(staticReceipt(run(), normalizeStatic("tsc", { exit: 0, raw: "src/a.ts\n" }), ob, 0, ctx).status, "pass");
+  });
+  it("refuses a truncated stream or analyzed inputs absent from the candidate [EVD-05]", () => {
+    const n = normalizeStatic("tsc", { exit: 0, raw: "src/a.ts\n" });
+    const truncated = staticReceipt(run({ outputTruncated: true }), n, ob, 0, ctx);
+    assert.deepEqual([truncated.status, truncated.reasons], ["inconclusive", ["report-invalid"]]);
+    const unknown = staticReceipt(run(), n, ob, 0, { ...ctx, population: new Map() });
+    assert.deepEqual([unknown.status, unknown.reasons], ["inconclusive", ["population-mismatch"]]);
+    assert.deepEqual(unknown.analyzedFiles, ["src/a.ts"]);
+    for (const entry of [{ mode: "120000", blob: "f".repeat(40) }, { mode: "100644", blob: "stat:private" }])
+      assert.equal(staticReceipt(run(), n, ob, 0, { ...ctx, population: new Map([["src/a.ts", entry]]) }).status, "inconclusive");
   });
   it("turns failures into a failed receipt and everything unprovable into an inconclusive one", () => {
     const failed = staticReceipt(run({ exit: 2, raw: "a.ts(1,1): error TS1: bad\n" }), normalizeStatic("tsc", { exit: 2, raw: "a.ts(1,1): error TS1: bad\n" }), ob, 0, ctx);
@@ -62,12 +90,16 @@ describe("static receipts", () => {
     assert.equal(failed.failures![0]!.kind, "type-error");
     const cases: Array<[RunFacts, string]> = [[run({ ran: false }), "not-executed"], [run({ timedOut: true }), "timeout"], [run({ after: "d1" }), "concurrent-edit"], [run({ exit: undefined, signal: "SIGKILL" }), "not-executed"]];
     for (const [facts, why] of cases) {
-      const r = staticReceipt(facts, normalizeStatic("tsc", { exit: 0, raw: "" }), ob, 0, ctx);
+      const r = staticReceipt(facts, normalizeStatic("tsc", { exit: 0, raw: "src/a.ts\n" }), ob, 0, ctx);
       assert.equal(r.status, "inconclusive");
       assert.deepEqual(r.reasons, [why]);
     }
     const bad = staticReceipt(run(), normalizeStatic("tsc", { exit: 2, raw: "?" }), ob, 0, ctx);
     assert.deepEqual([bad.status, bad.reasons], ["inconclusive", ["report-invalid"]]);
+    const contradictory = JSON.stringify([{ filePath: "src/a.ts", errorCount: 1, messages: [] }]);
+    const lint = staticReceipt(run({ exit: 1, raw: contradictory }),
+      normalizeStatic("eslint", { exit: 1, raw: contradictory }), { ...ob, id: "OB-lint", tool: "eslint" }, 0, ctx);
+    assert.deepEqual([lint.status, lint.reasons], ["inconclusive", ["report-invalid"]]);
   });
 });
 
@@ -122,6 +154,8 @@ describe("a contract with a required type check", () => {
     assert.equal(types.status, "pass", JSON.stringify(g));
     const receipt = Object.values(p.ports().store.read()!.state.work)[0]!.receipts.find((r) => r.obligation === "OB-types")!;
     assert.equal(receipt.kind, "static");
+    assert.ok(receipt.analyzedFiles?.includes("src/greet.ts"));
+    assert.ok(receipt.argv.includes("--project"));
     assert.equal(receipt.scope, "full");
     assert.ok(receipt.argv.some((a) => /tsc/.test(a)));
     await focusFixture(p, h);
@@ -137,6 +171,23 @@ describe("a contract with a required type check", () => {
     const check = await p.call("check", { h, stage: "candidate" });
     assert.equal(check.exit, 2);
     assert.ok(check.reasons.some((r) => r.code === "capability-missing" && /perf/.test(r.message)), JSON.stringify(check.reasons));
+  });
+
+  for (const declaration of [
+    { configuration: "tsconfig.required.json" }, { population: "server/**/*.ts" },
+    { pass: "no warnings" }, { alternatives: ["custom-verifier"] },
+  ]) it(`refuses unsupported static semantics before launching ${JSON.stringify(declaration)} [EVD-01, QLT-06]`, async () => {
+    const p = project({ "tenet.policy.json": JSON.stringify({ required_checks: [
+      { id: "types", tool: "tsc", property: "the required population compiles", ...declaration },
+    ] }) });
+    roots.push(p.root);
+    const h = (await p.call("open", { profile: "feature", request: "required typecheck", lane: "quick" })).handle!;
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    const r = await p.call("check", { h, stage: "candidate" });
+    assert.equal(r.exit, 2, JSON.stringify(r));
+    assert.ok(r.reasons.some(x => x.code === "capability-missing" && /types/.test(x.message)));
+    const w = Object.values(p.ports().store.read()!.state.work)[0]!;
+    assert.equal(w.budget.checksLaunched, 0); assert.equal(w.receipts.length, 0);
   });
 
   it("leaves a project without a required check exactly as before [WRK-02]", async () => {

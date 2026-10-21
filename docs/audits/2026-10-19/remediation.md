@@ -1,5 +1,7 @@
 # Corrective implementation progress
 
+**Current follow-up:** see the [October 20 local/GitHub reassessment](../2026-10-20/reassessment.md), [completion plan](../2026-10-20/completion-plan.md) and [current evidence](../2026-10-20/reassessment-evidence.json). The checkpoint below predates the cloud agent's later commits.
+
 October 20, 2026 · uncommitted · follows [the audit](report.md) and [completion plan C0](completion-plan.md).
 
 The audit and `observations.json` describe baseline `5a022e3`; they remain historical evidence. Their reproduction driver intentionally asserts the old defects. The regression tests in `packages/kernel/test` now assert the corrected behavior. No milestone or host tuple is qualified by this batch.

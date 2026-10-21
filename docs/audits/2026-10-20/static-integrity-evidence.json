@@ -1,0 +1,881 @@
+{
+  "date": "2026-10-20",
+  "base": "d457714d7ba321b8b5bf533dcf8e9d46e930c22f",
+  "status": "local-uncommitted-validated",
+  "findings": [
+    "R05",
+    "R06"
+  ],
+  "report": "static-integrity.md",
+  "github": {
+    "main": "d457714d7ba321b8b5bf533dcf8e9d46e930c22f",
+    "cloudBranch": "claude/beautiful-fermat-v2mtbl",
+    "cloudHead": "d457714d7ba321b8b5bf533dcf8e9d46e930c22f",
+    "tipsRecheckedAfterCorrections": true,
+    "remoteWrites": false,
+    "newCommits": false,
+    "remoteCIForBaseOnly": "https://github.com/vedprakash-m/tenet/actions/runs/39511805902"
+  },
+  "source": {
+    "typescriptModules": 88,
+    "sha256SortedPathsNullContentsNull": "9488d5949f279c04aa79f2e13c71d7ffe2b3edb2cc0f97d52893cd8c1132eff4"
+  },
+  "finalCI": {
+    "command": "npm run ci",
+    "exit": 0,
+    "tests": 641,
+    "suites": 134,
+    "pass": 641,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "durationMs": 174787.282375,
+    "stdoutLog": "/tmp/tenet-static-final-ci.log"
+  },
+  "bundle": {
+    "bytes": 713587,
+    "sha256": "38b3ef982e228d10b98f42c24d72c604ccbc54c1d5ab1750999b708c8a4ad4e3",
+    "budgetBytes": 768000
+  },
+  "localStaticProfile": {
+    "adapter": "node-ts@2",
+    "typescript": "5.9.3",
+    "eslint": "9.39.1",
+    "defaultTscArgv": [
+      "--noEmit",
+      "--pretty",
+      "false",
+      "--project",
+      "tsconfig.json",
+      "--incremental",
+      "false",
+      "--listFiles"
+    ],
+    "unsupportedTscConfigurations": [
+      "extends",
+      "references",
+      "composite",
+      "opaque JSONC",
+      "explicit tsBuildInfoFile"
+    ],
+    "customDeclarationSemantics": "unavailable; no substitution",
+    "population": "nonempty unique workspace list, bounded to 2000, matched against ordinary content-hashed candidate inputs",
+    "olderEvidence": "adapter fingerprint changes checkInputId; optional analyzedFiles preserves state readability"
+  },
+  "quality": {
+    "moduleCharacters": {
+      "adapters/git-cli": 37423,
+      "adapters/node-ts": 15801,
+      "adapters/runner": 6890,
+      "adapters/store-fs": 14128,
+      "core/budget": 6911,
+      "core/review": 10349,
+      "core/risk": 3719,
+      "core/schemas": 23029,
+      "core/verdict": 10803,
+      "pipeline + verbs + decisions": 204717
+    },
+    "sourceGroupCeiling": 204790,
+    "sourceGroupTarget": 172800,
+    "schemasBudget": 23040,
+    "nodeAdapterBudget": 20160,
+    "functionOffenders": 8,
+    "wideLines": 307,
+    "ceilingsRaised": false
+  },
+  "regressions": {
+    "newCases": 34,
+    "redControls": [
+      {
+        "log": "/tmp/tenet-static-composition-red.log",
+        "kind": "shared/local conflict and doctor original controls",
+        "failed": 5,
+        "passed": 4
+      },
+      {
+        "log": "/tmp/tenet-static-existing-red.log",
+        "kind": "unchanged green conflict after fixture correction",
+        "failed": 1,
+        "passed": 0
+      },
+      {
+        "log": "/tmp/tenet-static-population-red.log",
+        "kind": "static conformance controls before implementation",
+        "failed": 17,
+        "passed": 2
+      },
+      {
+        "log": "/tmp/tenet-static-truncated-red.log",
+        "kind": "truncation signal and receipt admission",
+        "failed": 3,
+        "passed": 0
+      },
+      {
+        "log": "/tmp/tenet-static-utf8-red.log",
+        "kind": "multibyte boundary defect in first byte-cap implementation",
+        "failed": 2,
+        "passed": 2
+      },
+      {
+        "log": "/tmp/tenet-static-continuation-red.log",
+        "kind": "cumulative TypeScript diagnostic bound",
+        "failed": 1,
+        "passed": 5
+      }
+    ],
+    "intermediateCI": {
+      "tests": 640,
+      "passed": 640,
+      "failed": 0,
+      "log": "/tmp/tenet-static-ci.log",
+      "supersededByFinalCI": true
+    },
+    "finalTargeted": {
+      "tests": 64,
+      "passed": 64,
+      "failed": 0,
+      "log": "/tmp/tenet-static-final-targeted.log"
+    },
+    "fixtureAndImplementationCorrections": [
+      "doctor wording assertion corrected from excluded to excludes",
+      "runner stream type narrowed for TypeScript indexing",
+      "first byte cap split multibyte characters; real UTF-8 controls reproduced it and strict streaming decoding replaced it",
+      "cumulative diagnostic continuation bound added after first green full CI; final 641-test run includes it"
+    ],
+    "uatDriverCorrection": {
+      "log": "/tmp/tenet-static-uat-driver-failure.log",
+      "kind": "driver supplied noCommit as string true; CLI rejected; changed driver to bare --no-commit",
+      "kernelChanged": false,
+      "fullDevelopmentRerunExit": 0
+    }
+  },
+  "uat": [
+    {
+      "runtime": "v26.3.0",
+      "exit": 0,
+      "scenarioCount": 45,
+      "bundle": {
+        "bytes": 713587,
+        "sha256": "38b3ef982e228d10b98f42c24d72c604ccbc54c1d5ab1750999b708c8a4ad4e3"
+      },
+      "allObservations": [
+        {
+          "scenario": "built CLI red-green-finish with concurrent human file inside predicted scope",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "committed": [
+            "src/greet.test.ts",
+            "src/greet.ts"
+          ],
+          "humanFilePreserved": true,
+          "cliEqualsSyntax": true,
+          "focusedPassReported": true,
+          "nativeDelegations": 0
+        },
+        {
+          "scenario": "unimplemented committed-tree stage",
+          "exit": 2,
+          "reason": "capability-missing"
+        },
+        {
+          "scenario": "built guarded local integration with carried human file",
+          "exit": 0,
+          "mode": "fast-forward",
+          "humanFilePreserved": true
+        },
+        {
+          "scenario": "built guarded working-tree undo",
+          "exit": 0,
+          "humanFilePreserved": true,
+          "newContractRequiresChecks": true
+        },
+        {
+          "scenario": "built readiness reprobe after runner version change",
+          "exit": 2,
+          "reason": "adapter-unsupported-version",
+          "childLaunched": false
+        },
+        {
+          "scenario": "built ignored acceptance and new ignored configuration",
+          "baseline": "fail",
+          "introducedConfigInvalidatesRed": true
+        },
+        {
+          "scenario": "passing unrelated suite without baseline proof",
+          "exit": 2,
+          "reason": "no-distinguishing-red",
+          "checkedLocal": false
+        },
+        {
+          "scenario": "built active-chat takeover",
+          "question": "takeover-check",
+          "oldHandleFenced": true,
+          "chatConfirmationRequired": true
+        },
+        {
+          "scenario": "built abandonment preview, cancel and confirm",
+          "previewExit": 3,
+          "channel": "chat",
+          "cancelExit": 0,
+          "confirmExit": 0,
+          "finalState": "cancelled"
+        },
+        {
+          "scenario": "built copied-state quarantine and metadata review",
+          "exit": 3,
+          "originalBytesPreserved": true,
+          "importedSettingsActive": false,
+          "importedAuthorityActive": false,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built markerless-state quarantine and fresh-start choice",
+          "exit": 0,
+          "entriesPreserved": true,
+          "importedLockIgnored": true
+        },
+        {
+          "scenario": "built backup recovery conserves real candidate costs",
+          "attemptsBefore": 3,
+          "attemptsAfter": 3,
+          "checksBefore": 7,
+          "checksAfter": 7,
+          "accounting": "verified",
+          "authoritySuspended": true,
+          "additionalAttemptLaunched": false
+        },
+        {
+          "scenario": "built unknown legacy accounting fences new editing authority",
+          "exit": 3,
+          "handleIssued": false,
+          "branchUnchanged": true,
+          "recordsUnchanged": true
+        },
+        {
+          "scenario": "built atomic project write predictable-temp-link",
+          "killedAtBoundary": false,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-temp-fsync",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-publish",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-dir-fsync",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built unreadable adoption remains uncertain through stop",
+          "exit": 2,
+          "authorityRetainedAsFence": true,
+          "outsideBytesPreserved": true,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built secret alias is refused before adoption preview",
+          "exit": 2,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built stop preserves interrupted scaffold under tighter policy",
+          "exit": 2,
+          "partialFilePreserved": true,
+          "pendingEffectRetained": true,
+          "installLaunched": false
+        },
+        {
+          "scenario": "built stop preserves interrupted scaffold under tighter adopted policy",
+          "exit": 2,
+          "partialFilePreserved": true,
+          "pendingEffectRetained": true,
+          "installLaunched": false
+        },
+        {
+          "scenario": "built contradictory lint child cannot produce a passing receipt",
+          "syntheticTool": true,
+          "programExit": 1,
+          "reportedErrors": 1,
+          "diagnosticMessages": 0,
+          "receipt": "inconclusive",
+          "reason": "report-invalid"
+        },
+        {
+          "scenario": "built named static configuration refuses substitution",
+          "defaultConfigExit": 0,
+          "requiredConfigExit": 2,
+          "admissionExit": 2,
+          "substituteLaunched": false,
+          "receiptIssued": false
+        },
+        {
+          "scenario": "built default checkout-hook admission",
+          "exit": 2,
+          "hookLaunched": false,
+          "branchUnchanged": true,
+          "explicitCurrentBranchAccepted": true
+        },
+        {
+          "scenario": "built configured checkout-hook admission",
+          "exit": 2,
+          "hookLaunched": false,
+          "branchUnchanged": true,
+          "explicitCurrentBranchAccepted": true
+        },
+        {
+          "scenario": "built index recovery before-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery after-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery before-rename",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery after-rename",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery manual-after-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery failed-directory-sync",
+          "killedAtBoundary": false,
+          "directorySyncFailure": true,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "user-level Git LFS filter configuration",
+          "openExit": 0,
+          "filterRan": false
+        },
+        {
+          "scenario": "built guarded filter pass",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "minimalEnvironment": true,
+          "headChanged": true,
+          "humanBytesPreserved": true,
+          "filterMutationPreserved": false
+        },
+        {
+          "scenario": "built guarded filter transform",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "minimalEnvironment": true,
+          "headChanged": false,
+          "humanBytesPreserved": true,
+          "filterMutationPreserved": false
+        },
+        {
+          "scenario": "built guarded filter mutate",
+          "endpoint": "implemented-unverified",
+          "minimalEnvironment": true,
+          "headChanged": false,
+          "humanBytesPreserved": false,
+          "filterMutationPreserved": true
+        },
+        {
+          "scenario": "built guarded filter stop",
+          "processRecorded": true,
+          "stoppedBeforeCommit": true,
+          "recoveryDidNotReplay": true,
+          "humanStagingPreserved": true
+        },
+        {
+          "scenario": "built guarded filter killed",
+          "processRecorded": true,
+          "stoppedBeforeCommit": true,
+          "recoveryDidNotReplay": true,
+          "humanStagingPreserved": true
+        },
+        {
+          "scenario": "built stateless doctor honors metadata exclusions",
+          "exit": 2,
+          "metadataRefused": true,
+          "noStateWritten": true,
+          "helpIndependent": true
+        },
+        {
+          "scenario": "built conflicting required definitions refuse before launch",
+          "exit": 2,
+          "launched": 0,
+          "receipts": 0
+        },
+        {
+          "scenario": "built TypeScript default population",
+          "receipt": "pass",
+          "analyzedFiles": [
+            "src/greet.ts",
+            "src/greet.test.ts"
+          ],
+          "reasons": [],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built TypeScript ignored-input population",
+          "receipt": "inconclusive",
+          "analyzedFiles": [
+            "src/greet.ts",
+            "src/greet.test.ts",
+            "ignored.ts"
+          ],
+          "reasons": [
+            "population-mismatch"
+          ],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built TypeScript references population",
+          "receipt": "inconclusive",
+          "analyzedFiles": [],
+          "reasons": [
+            "not-executed"
+          ],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built synthetic compiler unsupported version",
+          "receipt": "inconclusive",
+          "reasons": [
+            "not-executed"
+          ],
+          "childLaunched": false,
+          "syntheticTool": true
+        },
+        {
+          "scenario": "built synthetic compiler truncated valid prefix",
+          "receipt": "inconclusive",
+          "reasons": [
+            "report-invalid"
+          ],
+          "childLaunched": true,
+          "syntheticTool": true
+        },
+        {
+          "scenario": "symlinked state directory",
+          "exit": 3,
+          "reason": "marker-mismatch",
+          "outsideWrites": false
+        }
+      ],
+      "stdoutLog": "/tmp/tenet-static-uat-node26.json"
+    },
+    {
+      "runtime": "v22.12.0",
+      "exit": 0,
+      "scenarioCount": 45,
+      "bundle": {
+        "bytes": 713587,
+        "sha256": "38b3ef982e228d10b98f42c24d72c604ccbc54c1d5ab1750999b708c8a4ad4e3"
+      },
+      "allObservations": [
+        {
+          "scenario": "built CLI red-green-finish with concurrent human file inside predicted scope",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "committed": [
+            "src/greet.test.ts",
+            "src/greet.ts"
+          ],
+          "humanFilePreserved": true,
+          "cliEqualsSyntax": true,
+          "focusedPassReported": true,
+          "nativeDelegations": 0
+        },
+        {
+          "scenario": "unimplemented committed-tree stage",
+          "exit": 2,
+          "reason": "capability-missing"
+        },
+        {
+          "scenario": "built guarded local integration with carried human file",
+          "exit": 0,
+          "mode": "fast-forward",
+          "humanFilePreserved": true
+        },
+        {
+          "scenario": "built guarded working-tree undo",
+          "exit": 0,
+          "humanFilePreserved": true,
+          "newContractRequiresChecks": true
+        },
+        {
+          "scenario": "built readiness reprobe after runner version change",
+          "exit": 2,
+          "reason": "adapter-unsupported-version",
+          "childLaunched": false
+        },
+        {
+          "scenario": "built ignored acceptance and new ignored configuration",
+          "baseline": "fail",
+          "introducedConfigInvalidatesRed": true
+        },
+        {
+          "scenario": "passing unrelated suite without baseline proof",
+          "exit": 2,
+          "reason": "no-distinguishing-red",
+          "checkedLocal": false
+        },
+        {
+          "scenario": "built active-chat takeover",
+          "question": "takeover-check",
+          "oldHandleFenced": true,
+          "chatConfirmationRequired": true
+        },
+        {
+          "scenario": "built abandonment preview, cancel and confirm",
+          "previewExit": 3,
+          "channel": "chat",
+          "cancelExit": 0,
+          "confirmExit": 0,
+          "finalState": "cancelled"
+        },
+        {
+          "scenario": "built copied-state quarantine and metadata review",
+          "exit": 3,
+          "originalBytesPreserved": true,
+          "importedSettingsActive": false,
+          "importedAuthorityActive": false,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built markerless-state quarantine and fresh-start choice",
+          "exit": 0,
+          "entriesPreserved": true,
+          "importedLockIgnored": true
+        },
+        {
+          "scenario": "built backup recovery conserves real candidate costs",
+          "attemptsBefore": 3,
+          "attemptsAfter": 3,
+          "checksBefore": 7,
+          "checksAfter": 7,
+          "accounting": "verified",
+          "authoritySuspended": true,
+          "additionalAttemptLaunched": false
+        },
+        {
+          "scenario": "built unknown legacy accounting fences new editing authority",
+          "exit": 3,
+          "handleIssued": false,
+          "branchUnchanged": true,
+          "recordsUnchanged": true
+        },
+        {
+          "scenario": "built atomic project write predictable-temp-link",
+          "killedAtBoundary": false,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-temp-fsync",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-publish",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-dir-fsync",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built unreadable adoption remains uncertain through stop",
+          "exit": 2,
+          "authorityRetainedAsFence": true,
+          "outsideBytesPreserved": true,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built secret alias is refused before adoption preview",
+          "exit": 2,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built stop preserves interrupted scaffold under tighter policy",
+          "exit": 2,
+          "partialFilePreserved": true,
+          "pendingEffectRetained": true,
+          "installLaunched": false
+        },
+        {
+          "scenario": "built stop preserves interrupted scaffold under tighter adopted policy",
+          "exit": 2,
+          "partialFilePreserved": true,
+          "pendingEffectRetained": true,
+          "installLaunched": false
+        },
+        {
+          "scenario": "built contradictory lint child cannot produce a passing receipt",
+          "syntheticTool": true,
+          "programExit": 1,
+          "reportedErrors": 1,
+          "diagnosticMessages": 0,
+          "receipt": "inconclusive",
+          "reason": "report-invalid"
+        },
+        {
+          "scenario": "built named static configuration refuses substitution",
+          "defaultConfigExit": 0,
+          "requiredConfigExit": 2,
+          "admissionExit": 2,
+          "substituteLaunched": false,
+          "receiptIssued": false
+        },
+        {
+          "scenario": "built default checkout-hook admission",
+          "exit": 2,
+          "hookLaunched": false,
+          "branchUnchanged": true,
+          "explicitCurrentBranchAccepted": true
+        },
+        {
+          "scenario": "built configured checkout-hook admission",
+          "exit": 2,
+          "hookLaunched": false,
+          "branchUnchanged": true,
+          "explicitCurrentBranchAccepted": true
+        },
+        {
+          "scenario": "built index recovery before-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery after-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery before-rename",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery after-rename",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery manual-after-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery failed-directory-sync",
+          "killedAtBoundary": false,
+          "directorySyncFailure": true,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "user-level Git LFS filter configuration",
+          "openExit": 0,
+          "filterRan": false
+        },
+        {
+          "scenario": "built guarded filter pass",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "minimalEnvironment": true,
+          "headChanged": true,
+          "humanBytesPreserved": true,
+          "filterMutationPreserved": false
+        },
+        {
+          "scenario": "built guarded filter transform",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "minimalEnvironment": true,
+          "headChanged": false,
+          "humanBytesPreserved": true,
+          "filterMutationPreserved": false
+        },
+        {
+          "scenario": "built guarded filter mutate",
+          "endpoint": "implemented-unverified",
+          "minimalEnvironment": true,
+          "headChanged": false,
+          "humanBytesPreserved": false,
+          "filterMutationPreserved": true
+        },
+        {
+          "scenario": "built guarded filter stop",
+          "processRecorded": true,
+          "stoppedBeforeCommit": true,
+          "recoveryDidNotReplay": true,
+          "humanStagingPreserved": true
+        },
+        {
+          "scenario": "built guarded filter killed",
+          "processRecorded": true,
+          "stoppedBeforeCommit": true,
+          "recoveryDidNotReplay": true,
+          "humanStagingPreserved": true
+        },
+        {
+          "scenario": "built stateless doctor honors metadata exclusions",
+          "exit": 2,
+          "metadataRefused": true,
+          "noStateWritten": true,
+          "helpIndependent": true
+        },
+        {
+          "scenario": "built conflicting required definitions refuse before launch",
+          "exit": 2,
+          "launched": 0,
+          "receipts": 0
+        },
+        {
+          "scenario": "built TypeScript default population",
+          "receipt": "pass",
+          "analyzedFiles": [
+            "src/greet.ts",
+            "src/greet.test.ts"
+          ],
+          "reasons": [],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built TypeScript ignored-input population",
+          "receipt": "inconclusive",
+          "analyzedFiles": [
+            "src/greet.ts",
+            "src/greet.test.ts",
+            "ignored.ts"
+          ],
+          "reasons": [
+            "population-mismatch"
+          ],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built TypeScript references population",
+          "receipt": "inconclusive",
+          "analyzedFiles": [],
+          "reasons": [
+            "not-executed"
+          ],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built synthetic compiler unsupported version",
+          "receipt": "inconclusive",
+          "reasons": [
+            "not-executed"
+          ],
+          "childLaunched": false,
+          "syntheticTool": true
+        },
+        {
+          "scenario": "built synthetic compiler truncated valid prefix",
+          "receipt": "inconclusive",
+          "reasons": [
+            "report-invalid"
+          ],
+          "childLaunched": true,
+          "syntheticTool": true
+        },
+        {
+          "scenario": "symlinked state directory",
+          "exit": 3,
+          "reason": "marker-mismatch",
+          "outsideWrites": false
+        }
+      ],
+      "stdoutLog": "/tmp/tenet-static-uat-node22.json"
+    }
+  ],
+  "uatExpectedScenarios": 45,
+  "hostRuns": false,
+  "hostAuthorization": "deferred",
+  "newCommits": false,
+  "pushes": false,
+  "milestoneQualified": false,
+  "remaining": [
+    "effective TypeScript and ESLint configuration/dependency graph proof",
+    "composite/reference scratch-build isolation and broader version conformance",
+    "custom populations, configurations, alternatives and pass criteria",
+    "nonstatic checks and configured command/envelope consumers",
+    "R07/R08 bounded storage/journal and recovery; remaining R09-R12",
+    "host/milestone qualification under separate authorization"
+  ],
+  "sameObservationsAndArtifactOnBothRuntimes": true,
+  "gitignoreAudited": {
+    "bundleIgnored": true,
+    "workspaceStateIgnored": true,
+    "dependenciesIgnored": true,
+    "auditFilesIntentionallyVisible": true
+  }
+}

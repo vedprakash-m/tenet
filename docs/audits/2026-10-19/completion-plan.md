@@ -1,5 +1,7 @@
 # Plan to complete Tenet
 
+**Current follow-up:** the [October 20 reassessment](../2026-10-20/reassessment.md) includes the GitHub/cloud commits through `d457714`; its [updated completion plan](../2026-10-20/completion-plan.md) refines the sequence below. This document's checkpoint counts are historical.
+
 October 19, 2026 · follows [specs/plan.md](../../../specs/plan.md), with the [audit](report.md) supplying corrective work and the [200-row requirement ledger](requirements.md) supplying the full due-by-R1 inventory.
 
 This sequences work already specified by the canonical documents. It does not approve spec changes, new scope, release waivers or paid host experiments. Each host spike keeps its separate authorization requirement. The owner decisions listed in C1 can be resolved while deterministic fixes proceed; they need not block writing counterexample tests.

@@ -91,7 +91,7 @@ export function resolveSetting(key: SettingKey, l: Layers): Resolved {
       for (const c of [...((a as { id: string }[]) ?? []), ...((b as { id: string }[]) ?? [])]) {
         const had = m.get(c.id);
         if (!had) m.set(c.id, c);
-        else if (json(had) !== json(c)) limits.push(`"${c.id}" is defined differently in two sources; the first (shared policy before project) applies`);
+        else if (json(had) !== json(c)) limits.push(`"${c.id}" is defined differently; checking and checked-local are blocked until reconciled`);
       }
       value = [...m.values()];
       break;
@@ -120,6 +120,17 @@ const declaredButNotRun = (key: string, value: unknown): boolean => {
   if (key === "commands") return Object.keys(value as object).length > 0;
   return key === "required_checks" && (value as { id: string; tool?: string }[]).some((c) => !isStaticCheck(c));
 };
+
+/** Conflicts and unavailable consumers block admission and verdicts through the same resolved layers. */
+export function unavailableExecution(l: Layers): string[] {
+  const checks = resolveSetting("required_checks", l);
+  const commands = resolveSetting("commands", l).value as object;
+  return [
+    ...checks.limits.filter(limit => limit !== STORED_ONLY),
+    ...Object.keys(commands).map(id => `configured command ${id}`),
+    ...(checks.value as { id: string; tool?: string }[]).filter(c => !isStaticCheck(c)).map(c => `required check ${c.id}`),
+  ];
+}
 
 export const effectiveSettings = (l: Layers): Record<SettingKey, unknown> =>
   Object.fromEntries((Object.keys(CATALOG) as SettingKey[]).map((k) => [k, resolveSetting(k, l).value])) as Record<SettingKey, unknown>;

@@ -12,6 +12,13 @@ const fresh = () => { const root = tmp(); roots.push(root); return root; };
 const runner = () => new ProcessRunner(systemClock, { PATH: process.env.PATH });
 
 describe("run-bound report admission [EVD-05]", () => {
+  for (const stream of ["stdout", "stderr"] as const) for (const char of ["é", "€"]) it(`bounds ${stream} ${char} by bytes and marks truncation explicitly`, async () => {
+    const root = fresh(), runDir = join(root, "run");
+    const r = await runner().run({ argv: [process.execPath, "-e", `process.${stream}.write('${char}'.repeat(6*1024*1024))`], cwd: root, runDir, timeoutMs: 5000 });
+    assert.equal(r.exit, 0);
+    assert.equal(r.outputTruncated, true);
+    assert.ok(Buffer.byteLength(r[stream]) <= 10 * 1024 * 1024);
+  });
   it("refuses a linked process record before spawn and preserves its target [SEC-06]", async () => {
     const root = fresh(), runDir = join(root, "run"), outside = join(root, "outside");
     mkdirSync(runDir); writeFileSync(outside, "preserve me"); symlinkSync(outside, join(runDir, "run.json"));

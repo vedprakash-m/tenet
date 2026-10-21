@@ -1,0 +1,611 @@
+{
+  "date": "2026-10-20",
+  "base": "d457714d7ba321b8b5bf533dcf8e9d46e930c22f",
+  "status": "local-uncommitted-corrections",
+  "github": {
+    "repository": "https://github.com/vedprakash-m/tenet",
+    "initialLocalHead": "e0bc1a0c7818d3e7176f349f5d0c41618c5db73c",
+    "commitsFetched": 12,
+    "mainAndCloudHead": "d457714d7ba321b8b5bf533dcf8e9d46e930c22f",
+    "cloudBranch": "claude/beautiful-fermat-v2mtbl",
+    "pullRequestsReturnedByDirectApi": 0,
+    "remoteTipsRechecked": true,
+    "fastForwardOnly": true,
+    "remoteWrites": false,
+    "ci": {
+      "url": "https://github.com/vedprakash-m/tenet/actions/runs/39511805902",
+      "conclusion": "success",
+      "jobs": [
+        "t1 (ubuntu-latest)",
+        "t1 (macos-latest)"
+      ],
+      "stepsObserved": [
+        "npm run ci",
+        "built CLI UAT on development Node",
+        "built CLI UAT on minimum Node 22.12.0"
+      ],
+      "scope": "Cloud base commit only; subsequent local corrections have not been pushed."
+    }
+  },
+  "ci": {
+    "command": "npm run ci",
+    "exit": 0,
+    "tests": 591,
+    "suites": 130,
+    "passed": 591,
+    "failed": 0,
+    "skipped": 0,
+    "durationMs": 166572.606417,
+    "runtime": "v26.3.0",
+    "scope": "local; real Git, processes, SIGKILL and actual starter install/tests/types/lint"
+  },
+  "bundle": {
+    "path": "plugin/kernel/tenet.mjs",
+    "budgetBytes": 768000,
+    "bytes": 709447,
+    "sha256": "3fb2f15d15e529a70cf698bf71988ad9989e675d652265979d6ffd132a6dcf1e"
+  },
+  "uat": {
+    "command": "node tools/uat/uat.mjs",
+    "runtimes": [
+      "v26.3.0",
+      "v22.12.0"
+    ],
+    "scenariosPerRuntime": 33,
+    "bundle": {
+      "bytes": 709447,
+      "sha256": "3fb2f15d15e529a70cf698bf71988ad9989e675d652265979d6ffd132a6dcf1e"
+    },
+    "observations": [
+      {
+        "scenario": "built CLI red-green-finish with concurrent human file inside predicted scope",
+        "endpoint": "checked-local",
+        "scope": "working-tree-with-your-edits",
+        "committed": [
+          "src/greet.test.ts",
+          "src/greet.ts"
+        ],
+        "humanFilePreserved": true,
+        "cliEqualsSyntax": true,
+        "focusedPassReported": true,
+        "nativeDelegations": 0
+      },
+      {
+        "scenario": "unimplemented committed-tree stage",
+        "exit": 2,
+        "reason": "capability-missing"
+      },
+      {
+        "scenario": "built guarded local integration with carried human file",
+        "exit": 0,
+        "mode": "fast-forward",
+        "humanFilePreserved": true
+      },
+      {
+        "scenario": "built guarded working-tree undo",
+        "exit": 0,
+        "humanFilePreserved": true,
+        "newContractRequiresChecks": true
+      },
+      {
+        "scenario": "built readiness reprobe after runner version change",
+        "exit": 2,
+        "reason": "adapter-unsupported-version",
+        "childLaunched": false
+      },
+      {
+        "scenario": "built ignored acceptance and new ignored configuration",
+        "baseline": "fail",
+        "introducedConfigInvalidatesRed": true
+      },
+      {
+        "scenario": "passing unrelated suite without baseline proof",
+        "exit": 2,
+        "reason": "no-distinguishing-red",
+        "checkedLocal": false
+      },
+      {
+        "scenario": "built active-chat takeover",
+        "question": "takeover-check",
+        "oldHandleFenced": true,
+        "chatConfirmationRequired": true
+      },
+      {
+        "scenario": "built abandonment preview, cancel and confirm",
+        "previewExit": 3,
+        "channel": "chat",
+        "cancelExit": 0,
+        "confirmExit": 0,
+        "finalState": "cancelled"
+      },
+      {
+        "scenario": "built copied-state quarantine and metadata review",
+        "exit": 3,
+        "originalBytesPreserved": true,
+        "importedSettingsActive": false,
+        "importedAuthorityActive": false,
+        "canaryDisclosed": false
+      },
+      {
+        "scenario": "built markerless-state quarantine and fresh-start choice",
+        "exit": 0,
+        "entriesPreserved": true,
+        "importedLockIgnored": true
+      },
+      {
+        "scenario": "built backup recovery conserves real candidate costs",
+        "attemptsBefore": 3,
+        "attemptsAfter": 3,
+        "checksBefore": 7,
+        "checksAfter": 7,
+        "accounting": "verified",
+        "authoritySuspended": true,
+        "additionalAttemptLaunched": false
+      },
+      {
+        "scenario": "built unknown legacy accounting fences new editing authority",
+        "exit": 3,
+        "handleIssued": false,
+        "branchUnchanged": true,
+        "recordsUnchanged": true
+      },
+      {
+        "scenario": "built atomic project write predictable-temp-link",
+        "killedAtBoundary": false,
+        "adoptedOnce": true,
+        "outsideBytesPreserved": true
+      },
+      {
+        "scenario": "built atomic project write after-temp-fsync",
+        "killedAtBoundary": true,
+        "adoptedOnce": true,
+        "outsideBytesPreserved": true
+      },
+      {
+        "scenario": "built atomic project write after-publish",
+        "killedAtBoundary": true,
+        "adoptedOnce": true,
+        "outsideBytesPreserved": true
+      },
+      {
+        "scenario": "built atomic project write after-dir-fsync",
+        "killedAtBoundary": true,
+        "adoptedOnce": true,
+        "outsideBytesPreserved": true
+      },
+      {
+        "scenario": "built unreadable adoption remains uncertain through stop",
+        "exit": 2,
+        "authorityRetainedAsFence": true,
+        "outsideBytesPreserved": true,
+        "canaryDisclosed": false
+      },
+      {
+        "scenario": "built secret alias is refused before adoption preview",
+        "exit": 2,
+        "canaryDisclosed": false
+      },
+      {
+        "scenario": "built stop preserves interrupted scaffold under tighter policy",
+        "exit": 2,
+        "partialFilePreserved": true,
+        "pendingEffectRetained": true,
+        "installLaunched": false
+      },
+      {
+        "scenario": "built stop preserves interrupted scaffold under tighter adopted policy",
+        "exit": 2,
+        "partialFilePreserved": true,
+        "pendingEffectRetained": true,
+        "installLaunched": false
+      },
+      {
+        "scenario": "built contradictory lint child cannot produce a passing receipt",
+        "syntheticTool": true,
+        "programExit": 1,
+        "reportedErrors": 1,
+        "diagnosticMessages": 0,
+        "receipt": "inconclusive",
+        "reason": "report-invalid"
+      },
+      {
+        "scenario": "built named static configuration refuses substitution",
+        "defaultConfigExit": 0,
+        "requiredConfigExit": 2,
+        "admissionExit": 2,
+        "substituteLaunched": false,
+        "receiptIssued": false
+      },
+      {
+        "scenario": "built default checkout-hook admission",
+        "exit": 2,
+        "hookLaunched": false,
+        "branchUnchanged": true,
+        "explicitCurrentBranchAccepted": true
+      },
+      {
+        "scenario": "built configured checkout-hook admission",
+        "exit": 2,
+        "hookLaunched": false,
+        "branchUnchanged": true,
+        "explicitCurrentBranchAccepted": true
+      },
+      {
+        "scenario": "built index recovery before-lock",
+        "killedAtBoundary": true,
+        "directorySyncFailure": false,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "built index recovery after-lock",
+        "killedAtBoundary": true,
+        "directorySyncFailure": false,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "built index recovery before-rename",
+        "killedAtBoundary": true,
+        "directorySyncFailure": false,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "built index recovery after-rename",
+        "killedAtBoundary": true,
+        "directorySyncFailure": false,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "built index recovery manual-after-lock",
+        "killedAtBoundary": true,
+        "directorySyncFailure": false,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "built index recovery failed-directory-sync",
+        "killedAtBoundary": false,
+        "directorySyncFailure": true,
+        "commitCount": 2,
+        "duplicateCommit": false,
+        "humanStagingPreserved": true,
+        "indexSyncRecovered": true
+      },
+      {
+        "scenario": "user-level Git LFS filter configuration",
+        "openExit": 0,
+        "filterRan": false
+      },
+      {
+        "scenario": "symlinked state directory",
+        "exit": 3,
+        "reason": "marker-mismatch",
+        "outsideWrites": false
+      }
+    ],
+    "scope": "Disposable local repositories. Existing Quick review responses are synthetic reported protocol data; the malformed ESLint child is a deliberately synthetic hostile tool. No host/model qualification."
+  },
+  "regressionEvidence": {
+    "R01": {
+      "before": {
+        "exit": 0,
+        "partialFilePreserved": false,
+        "effect": "interrupted scaffold rolled back after adopted policy tightened"
+      },
+      "after": "Real SIGKILL source and built CLI preserve the file and unresolved fence; read-only settings expose tightening without publication."
+    },
+    "R02": {
+      "before": {
+        "toolExit": 1,
+        "declaredErrors": 1,
+        "messages": 0,
+        "normalized": "pass"
+      },
+      "after": "Contradictions/malformed diagnostics, including after example cap, are report-invalid/inconclusive; actual synthetic child tested through the bundle."
+    },
+    "R03": {
+      "before": {
+        "receipt": "pass",
+        "endpoint": "checked-local",
+        "requiredConfigurationExit": 2
+      },
+      "after": "Unsupported configuration/population/pass/alternatives refuse before check launch. Built actual tsc comparison: default exit 0, required exit 2; no substitute receipt."
+    }
+  },
+  "coverage": {
+    "M0": {
+      "tagged": 30,
+      "hostOnly": [
+        "INS-01",
+        "INS-03",
+        "INT-01",
+        "SEC-01"
+      ],
+      "unmapped": [],
+      "reasons": {
+        "referenced": 76,
+        "total": 110
+      }
+    },
+    "A": {
+      "tagged": 76,
+      "hostOnly": [
+        "INS-01",
+        "INS-03",
+        "INS-09",
+        "INS-10",
+        "INT-01",
+        "WRK-05",
+        "REV-06",
+        "RES-03",
+        "SEC-01"
+      ],
+      "unmapped": [
+        "INS-04",
+        "INT-03",
+        "WRK-10",
+        "AGT-03",
+        "AGT-05",
+        "SEC-04",
+        "RSC-01",
+        "RSC-02",
+        "RSC-03",
+        "QLT-01",
+        "QLT-09",
+        "QLT-12",
+        "ENG-02",
+        "ENG-04",
+        "ENG-10"
+      ],
+      "reasons": {
+        "referenced": 76,
+        "total": 110
+      }
+    },
+    "B": {
+      "tagged": 90,
+      "hostOnly": [
+        "INS-01",
+        "INS-03",
+        "INS-09",
+        "INS-10",
+        "INT-01",
+        "WRK-05",
+        "WRK-11",
+        "REV-06",
+        "RES-03",
+        "RES-07",
+        "SEC-01",
+        "SEC-16",
+        "NFR-02"
+      ],
+      "unmapped": [
+        "INS-04",
+        "INS-05",
+        "INS-11",
+        "INT-03",
+        "INT-08",
+        "INT-09",
+        "WRK-06",
+        "WRK-10",
+        "AGT-03",
+        "AGT-05",
+        "AGT-06",
+        "AGT-07",
+        "AGT-10",
+        "AGT-11",
+        "AGT-12",
+        "TDD-06",
+        "EVD-04",
+        "EVD-08",
+        "EVD-09",
+        "EVD-11",
+        "REV-09",
+        "RES-05",
+        "GIT-09",
+        "GIT-13",
+        "CON-07",
+        "CON-08",
+        "SEC-04",
+        "SEC-09",
+        "CFG-01",
+        "CFG-03",
+        "CFG-04",
+        "CFG-08",
+        "CFG-09",
+        "CFG-10",
+        "RSC-01",
+        "RSC-02",
+        "RSC-03",
+        "RSC-04",
+        "LRN-02",
+        "LRN-05",
+        "LFC-03",
+        "QLT-01",
+        "QLT-09",
+        "QLT-10",
+        "QLT-11",
+        "QLT-12",
+        "QLT-13",
+        "QLT-14",
+        "QLT-17",
+        "ENG-02",
+        "ENG-04",
+        "ENG-09",
+        "ENG-10",
+        "NFR-05",
+        "NFR-07"
+      ],
+      "reasons": {
+        "referenced": 76,
+        "total": 110
+      }
+    },
+    "R1": {
+      "tagged": 91,
+      "hostOnly": [
+        "INS-01",
+        "INS-03",
+        "INS-09",
+        "INS-10",
+        "INT-01",
+        "INT-11",
+        "WRK-05",
+        "WRK-11",
+        "REV-06",
+        "RES-03",
+        "RES-07",
+        "SEC-01",
+        "SEC-16",
+        "OSS-02",
+        "NFR-02",
+        "NFR-06"
+      ],
+      "unmapped": [
+        "INS-02",
+        "INS-04",
+        "INS-05",
+        "INS-11",
+        "INT-03",
+        "INT-08",
+        "INT-09",
+        "WRK-06",
+        "WRK-10",
+        "AGT-03",
+        "AGT-05",
+        "AGT-06",
+        "AGT-07",
+        "AGT-10",
+        "AGT-11",
+        "AGT-12",
+        "TDD-06",
+        "EVD-04",
+        "EVD-08",
+        "EVD-09",
+        "EVD-11",
+        "REV-09",
+        "RES-05",
+        "GIT-09",
+        "GIT-13",
+        "CON-07",
+        "CON-08",
+        "SEC-04",
+        "SEC-09",
+        "CFG-01",
+        "CFG-03",
+        "CFG-04",
+        "CFG-08",
+        "CFG-09",
+        "CFG-10",
+        "RSC-01",
+        "RSC-02",
+        "RSC-03",
+        "RSC-04",
+        "RSC-08",
+        "LRN-02",
+        "LRN-05",
+        "LFC-01",
+        "LFC-02",
+        "LFC-03",
+        "LFC-05",
+        "QLT-01",
+        "QLT-02",
+        "QLT-03",
+        "QLT-04",
+        "QLT-05",
+        "QLT-07",
+        "QLT-09",
+        "QLT-10",
+        "QLT-11",
+        "QLT-12",
+        "QLT-13",
+        "QLT-14",
+        "QLT-16",
+        "QLT-17",
+        "ENG-02",
+        "ENG-04",
+        "ENG-05",
+        "ENG-07",
+        "ENG-08",
+        "ENG-09",
+        "ENG-10",
+        "ENG-11",
+        "OSS-01",
+        "OSS-04",
+        "OSS-05",
+        "NFR-01",
+        "NFR-05",
+        "NFR-07"
+      ],
+      "reasons": {
+        "referenced": 76,
+        "total": 110
+      }
+    }
+  },
+  "inventory": {
+    "sources": 87,
+    "testFiles": 57,
+    "requirements": 200,
+    "path": "docs/audits/2026-10-20/requirement-inventory.json",
+    "meaning": "Structural references only; not qualification."
+  },
+  "quality": {
+    "ceilingsChanged": false,
+    "groupCharacters": 204780,
+    "groupCeiling": 204790,
+    "groupTarget": 172800,
+    "recordedFunctionOffenders": 8,
+    "wideLines": 308
+  },
+  "validationHistory": [
+    {
+      "scope": "Initial local e0bc1a0 before GitHub refresh",
+      "tests": 545,
+      "suites": 118,
+      "failed": 0,
+      "durationMs": 154396.442833
+    },
+    {
+      "scope": "First corrected full run before R03 guard",
+      "tests": 587,
+      "suites": 130,
+      "passed": 586,
+      "failed": 1,
+      "durationMs": 164542.030875,
+      "cause": "Local helper simplification changed unchanged-contract identity and published on a finished-work query. Restored identity-preserving return; existing regression and final full suite pass."
+    },
+    {
+      "scope": "New red controls before fixes",
+      "failures": 12,
+      "detail": "7 recovery/lint failures, one read-only policy failure, four unsupported-static-semantics failures."
+    },
+    {
+      "scope": "Final targeted correction controls",
+      "tests": 53,
+      "suites": 11,
+      "failed": 0,
+      "durationMs": 19506.176291
+    }
+  ],
+  "remaining": "See reassessment.md R04\u2013R12 and completion-plan.md. No milestone qualified; C0 remains open.",
+  "hostRuns": "Deferred by owner; none performed.",
+  "newCommit": null,
+  "push": false,
+  "remoteCiForLocalChanges": null,
+  "laterFollowUpEvidence": "filter-jobs-evidence.json",
+  "latestFollowUpEvidence": "static-integrity-evidence.json"
+}

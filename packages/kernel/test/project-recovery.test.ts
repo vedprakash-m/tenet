@@ -13,11 +13,17 @@ async function killAt(file: string, root: string, input: object, point: string) 
   const child = spawn(process.execPath, [join(import.meta.dirname, `fixtures/${file}.ts`), root, JSON.stringify(input), point], { stdio: ["ignore", "ignore", "inherit"] });
   assert.equal(await new Promise(resolve => child.on("exit", (_code, signal) => resolve(signal))), "SIGKILL");
 }
-async function partialScaffold() {
+async function partialScaffold(adoptPolicy = false) {
   const root = tmp(); roots.push(root); initRepo(root); write(root, "NOTES.txt", "mine\n");
   git(root, "add", "-A"); git(root, "commit", "-qm", "initial");
   const call = callWith(root, fakeRecipes()), h = (await call("open", { profile: "feature", request: "a new app", lane: "quick" })).handle!;
   await call("decide", { h, kind: "basis", propose: { ...BASIS, elements: BASIS.elements.filter(e => e.kind !== "example") } });
+  if (adoptPolicy) {
+    write(root, "tenet.policy.json", "{}");
+    await call("decide", { h, kind: "adopt", target: "policy" });
+    const accepted = await call("decide", { h, kind: "adopt", target: "policy", answers: { "adopt-confirm": "confirm" } });
+    assert.equal(accepted.exit, 0, JSON.stringify(accepted));
+  }
   await killAt("crash-scaffold", root, { h, kind: "scaffold" }, "mid-write");
   assert.equal(existsSync(join(root, "package.json")), true);
   return { root, call, h, ports: createPorts(root) };
@@ -63,5 +69,15 @@ describe("unreadable project effect recovery [CON-03, SEC-06, SEC-14]", () => {
     assert.equal(r.exit, 2, JSON.stringify(r)); assert.ok(r.reasons.some(r => r.code === "effect-uncertain"));
     assert.deepEqual(readFileSync(join(p.root, "package.json")), initial);
     await p.ports.store.transaction("test", async tx => { assert.ok(tx.unresolved().some(e => e.effect === "scaffold")); assert.ok(tx.state!.sourceOwner); });
+  });
+  it("applies tightened adopted restrictions before reconciling a killed scaffold [SEC-08, SEC-12]", async () => {
+    const p = await partialScaffold(true), path = join(p.root, "package.json");
+    const initial = readFileSync(path);
+    write(p.root, "tenet.policy.json", JSON.stringify({ exclusions: [{ pattern: "package.json", kinds: ["no-read", "no-edit"] }] }));
+    const r = await p.call("open", { profile: "investigate", request: "recover with tightened adopted policy" });
+    assert.equal(r.exit, 2, JSON.stringify(r));
+    assert.ok(r.reasons.some(r => r.code === "effect-uncertain"));
+    assert.deepEqual(readFileSync(path), initial);
+    await p.ports.store.transaction("test", async tx => assert.ok(tx.unresolved().some(e => e.effect === "scaffold")));
   });
 });

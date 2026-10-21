@@ -98,7 +98,7 @@ export async function runVerb(ports: Ports, verbs: Record<string, Verb>, name: s
   const cls = verb.class(input);
   try {
     if (cls === "stateless") {
-      if (name === "review") configurePolicy(ports, null);
+      if (name === "review" || input.view === "doctor") configurePolicy(ports, null);
       return render(ports, name, (await verb.run(ports, null, input)).resp, null);
     }
     if (cls === "read-only") {

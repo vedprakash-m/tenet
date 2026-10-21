@@ -121,6 +121,7 @@ export const Receipt = z.object({
   }).optional(),
   failures: z.array(z.object({ test: z.string(), kind: z.string(), message: z.string() })).optional(),
   failureKinds: z.array(z.string()).optional(), // complete population classification, independent of bounded diagnostics
+  analyzedFiles: z.array(z.string()).max(2000).optional(),
   versions: z.object({ tool: z.string(), reporter: z.string(), adapter: z.string() }),
   provenance: z.object({ runId: z.string(), runDir: z.string(), startedAt: z.string(), pid: z.number().optional() }),
   status: z.enum(["pass", "fail", "inconclusive", "skipped"]),

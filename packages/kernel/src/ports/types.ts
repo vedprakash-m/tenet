@@ -69,7 +69,7 @@ export interface IndexJournal {
   intent(record: IndexSyncRecord): Promise<void>;
   result(status: CommitOutcome["indexSync"]): Promise<void>;
 }
-export interface CommitPlan { paths: string[]; deleted: string[]; message: string; parent: string | null; timeoutMs: number; runDir?: string; indexJournal?: IndexJournal }
+export interface CommitPlan { paths: string[]; deleted: string[]; message: string; parent: string | null; timeoutMs: number; runDir?: string; indexJournal?: IndexJournal; expectedTree?: string }
 export interface CommitOutcome {
   ok: boolean; commit?: string; tree?: string; expectedTree?: string; foreign: string[]; reason?: string; detail?: string;
   indexSync: "synced" | "untouched" | "not-needed"; syncPaths: string[];
@@ -86,11 +86,11 @@ export interface Git {
   inventory(exclude: readonly string[], declaredInputs?: readonly string[]): Promise<Inventory>;
   /** Working-tree changes of `paths` against `base` as hunks of added and removed lines. */
   changes(base: string | null, paths: readonly string[], classify: (p: string) => FileChange["kind"]): Promise<FileChange[]>;
-  /** The tree a commit of exactly these paths would have; logged with the intent so recovery can verify the postcondition. */
+  /** Program-neutral tree of exactly these paths, logged before the guarded commit job for recovery. */
   expectedTree(plan: Pick<CommitPlan, "paths" | "deleted" | "parent">): Promise<string>;
   commit(plan: CommitPlan): Promise<CommitOutcome>;
   /** Postcondition for crash recovery: did a commit with this parent and tree land? */
-  reconcileCommit(parent: string | null, expectedTree: string, tenetPaths: readonly string[]): Promise<{ completed: boolean; commit?: string }>;
+  reconcileCommit(parent: string | null, expectedTree: string, tenetPaths: readonly string[], label?: string): Promise<{ completed: boolean; commit?: string }>;
   syncIndex(paths: readonly string[], oldHead: string | null, journal?: IndexJournal, head?: string): Promise<CommitOutcome["indexSync"]>;
   /** Reconcile a journalled lock of a dead process, then rerun only the exact recorded sync. */
   recoverIndexSync(record: unknown, journal: IndexJournal): Promise<CommitOutcome["indexSync"] | "uncertain">;
@@ -134,6 +134,7 @@ export interface RunSpec {
   report?: string;
 }
 export interface RunResult {
+  outputTruncated?: boolean;
   exit?: number; signal?: string; timedOut: boolean; durationMs: number; pid?: number; stdout: string; stderr: string; startedAt: string;
   report: string | null;
 }
@@ -153,6 +154,7 @@ export type StaticTool = "tsc" | "eslint";
 export interface StaticNorm {
   status: "pass" | "fail" | "invalid";
   failures: Array<{ test: string; kind: string; message: string }>;
+  files?: string[];
   problem?: string;
 }
 export interface Detection {
@@ -172,7 +174,7 @@ export interface Stack {
   staticArgv(root: string, tool: StaticTool, report: string): string[] | null;
   /** Where a static tool reports: tsc prints its diagnostics, ESLint writes its JSON report. */
   staticOutput(tool: StaticTool, r: Pick<RunResult, "stdout" | "report">): string | null;
-  normalizeStatic(tool: StaticTool, out: { exit: number | undefined; raw: string | null }): StaticNorm;
+  normalizeStatic(tool: StaticTool, out: { exit: number | undefined; raw: string | null }, root?: string): StaticNorm;
   fingerprint(root: string): ToolVersions;
   patterns: readonly AttentionPattern[];
   classify(path: string): FileChange["kind"];

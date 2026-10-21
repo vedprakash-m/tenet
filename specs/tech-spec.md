@@ -591,6 +591,8 @@ runVerb(verb, rawInput, frontEnd):
 
 Verb modules contain only their own logic. A front-end translates its transport into `runVerb`, so front-ends cannot diverge. **Dependency rules** (lint): `core/` imports no adapter and does no I/O; front-ends hold no verdict, authority or budget logic; adapters normalize observations and never decide acceptance; recipes and traits declare obligations and never bypass rules; only `core/verdict` produces an endpoint and only `core/budget` changes a counter.
 
+`core/git-filters.ts` parses configuration/attribute records, hashes ordered command assignments and constructs program-neutral or enabled overrides. The Git adapter owns queries, consent admission and guarded execution; the helper does no I/O.
+
 ### 6.2 Module map
 
 Budgets are set by the owner in lines and checked by `tools/lint-quality` in non-whitespace characters, at 57.6 per budgeted line (the density of the pipeline, verbs and decisions when their 3,000-line budget was set), so wrapping a line or splitting a function is not growth (owner decision, October 20). A module over its budget may not grow past its recorded ceiling, and the ceiling only falls. Raising a budget is an owner decision.
@@ -1061,6 +1063,8 @@ The rendered summary is at most about 10 lines; everything else is reached throu
 - **Trust comparison** is automatic only for structurally comparable fields of `tenet.policy.json`: `protected_paths` and `exclusions` (superset or not), `required_checks` (obligations added or removed by ID), `dependency_policy` (field by field). Anything else (changed globs or populations, commands, `INTENT.md` blocks, the charter) needs acceptance through a diff; there is no implication solver.
 - **Mid-work changes:** presentation applies at once and invalidates nothing; restrictions apply before the next affected action; command or obligation changes invalidate dependent receipts; widening needs authority (PRD Section 7.6). A predicted path list is an estimate: a newly relevant file is not a scope change unless the user made the paths a constraint (PRD Section 5.3.2).
 
+Adapter admission resolves the structural effective policy from the adopted restrictions and the current file before recovery or read-only views. Recovery must not replay against the old adopted snapshot and apply a newly tightened exclusion afterward. Read-only resolution does not publish the tightened trust record; loosenings still await acceptance.
+
 | # | Catalog setting (CFG-02; PRD Section 7.3) | Consumer |
 |---|---|---|
 | 1, 2 | `style`, `checkpoints` | `presentation` and `progress` (§6.6); `guided.md`, `concise.md` |
@@ -1173,6 +1177,10 @@ Each kind is a registered module with its own validation.
 - **Acceptance test files** live in dedicated files, `<module>/<req-id>.acceptance.test.ts` by default following project conventions; examples accepted in one basis revision share a file, and examples added after that file is locked go into a new file (`<req-id>.<n>.acceptance.test.ts`), so amending the basis never edits a locked file.
 - **Discharge:** only a receipt of the obligation's kind that passes the kind's validation and matches the declared population; a renamed or filtered command never discharges it.
 
+The current fixed TypeScript/ESLint consumers support their default intrinsic checks only. A required declaration with an explicit configuration, population, pass criterion or nonempty alternatives is unavailable and blocks dependent checking rather than being replaced by the default invocation. Supporting those fields requires matching invocation and receipt population evidence; recognizing a tool or check ID alone is insufficient.
+
+Required checks compose by ID across shared/project layers. Different definitions of the same ID are an unresolved conflict: the projection retains a definition for inspection, but both check admission and the verdict block until the definitions agree or an override is explicitly removed. A disclosed limit does not authorize silently selecting the weaker definition. Stateless `inspect doctor` applies the current shared exclusions before reading stack metadata; `inspect help` remains independent of project files.
+
 ### 9.3 Runner and execution envelopes
 
 - **Binaries:** the project's installed tool (`<moduleRoot>/node_modules/.bin/<tool>`) with argument arrays and no shell; **never** `npx` or `npm exec`, which can fetch tools; a missing tool is a readiness item and installing it is a separately consented action (§9.11).
@@ -1220,7 +1228,7 @@ inventory():
 | `no-export` | yes | yes | yes | yes | no |
 | `no-routine-scan` | stat only | only on explicit request | only on explicit request | yes | yes |
 
-- **Inspection profile:** read-only Git calls disable filesystem monitors, external diff and text conversion and pin the output Tenet parses or applies (above), so user configuration cannot change what a manifest shows or what undo applies. Git can still run **clean filters** inside `git status` for stat-dirty files; that is why filter configuration needs consent first. Without that consent, stateless review reads only HEAD and staged content and says working-tree changes were not inspected. Commands that legitimately run configured programs (hooks, filters, signing) use the authorized profile under recorded consent (§10.3).
+- **Inspection profile:** Git queries and program-neutral tree preparation disable filesystem monitors, external diff, text conversion and configured filters and pin the output Tenet parses or applies. Working files are inspected without running their filters; `filters-not-run` discloses that transformed files may look modified. Consent gates executable staging/commit, not inspection. Configured programs use the authorized profile under recorded consent and guarded job admission (§10.3).
 - **Literal paths:** concrete paths are passed as `:(literal)<path>`; only exclusions use glob pathspecs. Flagged index entries (assume-unchanged, skip-worktree, outside a sparse checkout) are hashed directly. Declared ignored inputs (for example `.env.test`) enter the inventory, or their stat if excluded; presence alone never proves a secret-dependent input unchanged.
 - **Toolchain fingerprint:** `node --version`, the package-manager version, the `NODE_OPTIONS` hash, the adapter's normalization version, and runner versions read from `node_modules/<tool>/package.json` (read, never executed); this detects version changes, not arbitrary edits inside `node_modules`.
 - **Drift during a run:** the inventory is taken before and after every check, excluding declared outputs; a difference makes the receipt `inconclusive` with `concurrent-edit` (EVD-11). Non-Git folders run the same commands against the shadow repository (§10.9).
@@ -1236,10 +1244,11 @@ The adapter is mostly data: detection rules and invocations per tool, plus one p
 | Jest | `jest --ci --json --outputFile=<run>/jest.json [--findRelatedTests <files>]` | test |
 | Playwright | `playwright test --reporter=json`, `PLAYWRIGHT_JSON_OUTPUT_NAME=<run>/e2e.json` | test |
 | ESLint | `eslint --format json --output-file <run>/eslint.json <paths>` | static |
-| TypeScript | `tsc --noEmit --pretty false -p <tsconfig> --incremental false` (build information redirected to the run directory when `composite` requires it) | static |
+| TypeScript | `tsc --noEmit --pretty false --project <tsconfig> --incremental false --listFiles` (build information redirected to the run directory when `composite` requires it) | static |
 | Audit | `npm audit --json`; `pnpm audit --json`; Yarn 1 reported `unavailable` | audit |
 
 - **TypeScript output** is text, so it has its own bounded parser: lines matching `path(line,col): error TSnnnn: message`, at most 2,000 diagnostics and 2,000 characters per message; an unparsable or truncated stream with a non-zero exit is `report-invalid`, never a pass.
+- **Current local static profile:** TypeScript 5.9.3 and ESLint 9.39.1, with adapter identity `node-ts@2`. Other installed versions do not execute. TypeScript requires a standalone JSON `tsconfig.json`; inherited, referenced, composite, opaque JSONC and explicit build-info destinations are currently unavailable. Its invocation names the project, disables incremental writes and reports the analyzed inputs. Implementing composite/reference/configuration graphs requires its own matching population and scratch build-info handling; a silent root invocation does not verify its referenced projects. This is local conformance evidence, not milestone/host qualification.
 - **Failure kinds:** `assertion`, `compile-or-import`, `runtime-error`, `timeout`, from reporter fields; only `assertion` counts as a behavioral red (TDD-02). A project configuration that conflicts with the injected reporter is `adapter-unsupported-config`. Custom `commands` are judged by exit status plus their declared report, or are inconclusive.
 - **Attention patterns** (data, §8.7): `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`, `eslint-disable`, `as any`, `as unknown as`, `.only` and `.skip` variants, `vi.mock` and `jest.mock`, snapshot files, empty catch handlers (`catch {}`, `catch (e) {}`, `.catch(() => {})`), assertion calls (for removals), test-discovery configuration and CI files. Annotations such as `: any` are left to the project's own lint rules.
 - **Standard formats** (PRD Section 3.8.3): normalized results are serialized as JUnit XML and SARIF 2.1.0 in the `evidence` export (`inspect export`); audit findings use OSV fields. R1 collects no coverage (LCOV when it does).
@@ -1253,6 +1262,7 @@ type Receipt = {
   argv: string[]; cwd: string; exit?: number; signal?: string; durationMs: number;
   counts?: { discovered: number; executed: number; passed: number; failed: number; skipped: number; focused: number };
   failures?: Array<{ test: string; kind: FailureKind; message: string }>;   // bounded
+  analyzedFiles?: string[];                                                 // static workspace inputs, at most 2,000
   versions: { tool: string; reporter: string; adapter: string }; provenance: RunProvenance;   // 8.8
   rawOutput?: string;                                                         // run-directory reference; may expire
   status: "pass" | "fail" | "inconclusive" | "skipped";
@@ -1272,6 +1282,12 @@ type Receipt = {
 Reports are untrusted: their paths must resolve inside the workspace or run directory and embedded text is data. File reports must be regular, in the prepared run directory, newer than spawn and within the bound before allocation; linked, outside or stale artifacts are inconclusive. A model-written summary is never a receipt (EVD-12).
 
 Diagnostic examples may be bounded, but population facts must remain complete: receipts retain the set of failure kinds across the entire normalized population independently of the displayed failures. Baseline matching uses that complete set; an unshown runtime or import failure can never become an assertion-only distinguishing red.
+
+ESLint's per-file error counts must be nonnegative integers and match the complete severity-2 diagnostic population. All diagnostics are validated even after the five displayed examples are filled. A malformed diagnostic or contradictory count is inconclusive (`report-invalid`), never a passing static receipt.
+
+Static normalization retains unique relative workspace file identities (at most 2,000). Duplicate/outside lint paths, inconsistent warning/fatal counts, malformed locations and messages over 2,000 characters are invalid; the whole lint JSON is bounded by 10 MB and depth 64. TypeScript parses its diagnostics and `--listFiles` output together, rejects unrecognized/truncated records and cannot pass on silence or dependency libraries alone. Compiler `node_modules` inputs are dependencies, not workspace population proof. A passing receipt requires a nonempty workspace list whose entries are regular, content-hashed inputs in the prepared candidate; unknown/ignored, linked or stat-only inputs yield `population-mismatch`. `analyzedFiles` records this workspace list; argv identifies the fixed configuration invocation. This does not yet prove complete effective ESLint configuration/dependency closure or support custom populations.
+
+The runner bounds stdout/stderr independently by raw bytes (10 MB each), decodes UTF-8 incrementally and marks discarded/truncated or invalidly encoded output. That marker becomes `report-invalid` before a receipt can pass, including when the retained prefix looks valid. Ordinary short output preserves its exact characters across chunk boundaries. The adapter identity change invalidates prior check-input identities, so older static receipts without population proof cannot silently retain freshness.
 
 ### 9.7 Locks
 
@@ -1338,9 +1354,9 @@ All Git calls go through `git-cli` with argument arrays, `GIT_TERMINAL_PROMPT=0`
 
 1. **Preconditions:** the repository state allows commits (§10.8); receipts are fresh; the Tenet file set is non-empty; **consent** exists for the current hook, filter and signing configuration hash (one question per project per configuration). The hook inventory covers `core.hooksPath`, the hooks directory, husky, lefthook, simple-git-hooks and lint-staged.
 2. **Hooks beside human-dirty files:** a hook can stage files itself, and consent to run a hook is not consent to commit what it stages. When hooks exist and human-dirty files are present, one question per contract (or a project-level consent) offers: commit with hooks (foreign paths are detected, step 6), keep the work uncommitted, or commit after the user commits or sets aside their changes. Hooks are never bypassed.
-3. **Build** through the **temporary-index helper** (shared with sealed baselines, committed-tree checks and undo): `GIT_INDEX_FILE=$tmp git read-tree HEAD` (or `--empty`); `git add -- <Tenet files as literal pathspecs>` and `update-index --force-remove` for deletions; `expectedTree = git write-tree`.
+3. **Program-neutral intent tree** through the **temporary-index helper**: `GIT_INDEX_FILE=$tmp git read-tree HEAD` (or `--empty`); `git add -- <Tenet files as literal pathspecs>` with filters and filesystem monitors disabled, and `update-index --force-remove` for deletions; `expectedTree = git write-tree`. This stage may write Git objects and a private index, but runs no configured programs.
 4. **Message:** the coordinator drafts the subject in the project's visible convention; the kernel checks length and appends the `Tenet-Work` and `Tenet-Req` trailers (configurable).
-5. **Effect intent** with old HEAD, `expectedTree` and message; then `GIT_INDEX_FILE=$tmp git commit -m <message>`. Hooks run normally and inherit the temporary index, so they cannot change the user's index.
+5. **Effect intent** with old HEAD, program-neutral `expectedTree` and subject; publish `inCall` and the prepared run sentinel before executing programs. Outside the transaction, revalidate the filter-configuration hash and pin its commands; rebuild the private index through guarded `runner.run` staging. Staging and commit each use a recorded process group, the minimal runner environment, a 120-second timeout and a fresh launch-admission check. Stop before either spawn prevents it; stop during staging kills its group and keeps the unresolved commit fence until a policy-aware call checks HEAD. A killed job is reconciled, never automatically replayed. Filter failure leaves the candidate uncommitted; working-file mutations are preserved and refuse the commit. A moved HEAD is uncertain. Until committed-tree checks exist, a filtered tree differing from the neutral intent tree refuses with `capability-missing`; this includes transforming LFS filters. Then `GIT_INDEX_FILE=$tmp git commit -m <message>` runs in the guarded job. Hooks inherit the private index; their other effects still require the postconditions below. Git itself can invoke a filter repeatedly within one admitted command; the kernel dispatches staging once, not an extra pre-intent filter run.
 6. **Verify:** the parent is the old HEAD; changed paths are a subset of the Tenet files; no non-Tenet path changed in the working tree (inventory before and after). A foreign path keeps the commit and reports `hook-staged-foreign-path` (exit 3), offering to keep it or move the branch back to the old HEAD (`git update-ref`, working tree untouched) after review, because moving back would not undo the hook's other effects. If the commit tree differs from `expectedTree` only on Tenet files, dependent evidence is stale, affected obligations rerun before any claim, and the hook's delta gets a recheck (§8.7).
 7. **Index sync under Git's own lock** (exact, GIT-03): (a) create `.git/index.lock` exclusively, the lock every Git client honors, and record its inode in the commit effect, so a concurrent stage waits or fails visibly instead of being overwritten; (b) copy the index to a scratch file; (c) on the copy, for each committed path whose entry still equals the old HEAD's entry, set the new blob with `GIT_INDEX_FILE=<scratch> git update-index --index-info`, so Git writes the format and Tenet never parses it; (d) re-read the copy, write it into `index.lock`, fsync, and rename it over the index (Git's atomic update); on any failure remove only Tenet's own `index.lock` and leave the index untouched. An entry that differs from the old HEAD (the user staged something) is never changed. **Fallback:** if another process holds the lock after 3 short retries, or the repository uses a split index, the index is left untouched and the result reports `index-sync-needed` with the exact paths and a one-step "sync my index", which reruns this step. The kernel never stages anything else. Before writing or publishing the lock, compare its device/inode with the acquired descriptor; cleanup removes only that same lock. A different client's lock created after the rename remains untouched.
 
@@ -1350,6 +1366,8 @@ All Git calls go through `git-cli` with argument arrays, `GIT_TERMINAL_PROMPT=0`
 
    A rename observed before a directory-fsync error is `effect-uncertain`; it never receives an untouched/success result record. Recovery establishes the current postcondition on the next call. This covers local filesystem failure without claiming that an unsynced rename was durable.
 8. **Effect result;** publish.
+
+Recovery checks the recorded parent/tree/path postcondition and, when the contract is present, its exact `Tenet-Work` trailer. A foreign commit with the same parent and paths is insufficient evidence of Tenet's commit. Unknown outcomes retain their fence. These local safeguards do not qualify all configured-program races, hook rechecks or committed-tree consumers.
 
 **Failures:** a failed hook, unavailable signing or missing identity leaves the candidate uncommitted (`hook-failed`, `signing-unavailable`, `git-identity-missing`; GIT-15) and the endpoint says "working tree, uncommitted". Hooks are never bypassed and signing never disabled.
 
@@ -1390,7 +1408,7 @@ The local branch helper resolves `hooks/post-checkout` through `git rev-parse --
 | Detached HEAD | `symbolic-ref -q HEAD` fails | Offer a branch; otherwise read-only |
 | Rebase, merge or cherry-pick in progress; conflicts | Git-directory markers; `u` status entries | Read-only (`repo-state-readonly`) |
 | Shallow clone | `rev-parse --is-shallow-repository` | Allowed; undo limited to available history |
-| Submodules; LFS | `.gitmodules`; `filter=lfs` | Edits inside submodules unsupported; LFS needs installation and filter consent |
+| Submodules; LFS | `.gitmodules`; `filter=lfs` | Edits inside submodules unsupported; executable filters need consent and guarded staging; transforming LFS commits refuse until committed-tree checks exist |
 | Linked worktree | `--git-common-dir` differs from `--git-dir` | Experimental; ownership scoped to the worktree |
 
 ### 10.9 Prototypes without Git
@@ -1692,7 +1710,7 @@ Single-rule behavior is covered by §17.2's reason-code fixtures; these are the 
 |---|---|
 | A long check while another chat resumes the contract; an old chat after a takeover | No concurrent writer; the old generation is stale; its edits surface as unexplained; a takeover question if it may still be working |
 | An implementation is active while another chat investigates | Separate identities; the investigation gains no write authority |
-| A dirty tracked `.env`, an untracked key, a `no-read` path and a clean filter together | No prohibited read; nothing excluded passed to Git; a changed `.env` stales receipts; no filter without consent; stateless review says working-tree changes were not inspected |
+| A dirty tracked `.env`, an untracked key, a `no-read` path and a clean filter together | No prohibited read; nothing excluded passed to Git; a changed `.env` stales receipts; stateless inspection disables the filter and reports `filters-not-run`; executable staging requires current consent |
 | A support file weakened after locking; a `vi.mock` added to a locked file; a locked file replaced by a symlink or renamed in case only | Blockers |
 | A rebase rewrites the lock's anchor commit; a branch switch to a branch without the test; a lock verified before the first commit | Re-anchored; inactive there and back when branches meet; provisional, then anchored at commit |
 | A hook runs `git add -A`, stages dirty content, or changes whitespace inside a string literal after review | Foreign paths detected and the commit kept with recovery offered; the pre-commit question applies; the earlier review does not cover the new candidate and the hook's delta is rechecked |

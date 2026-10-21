@@ -69,9 +69,18 @@ export class ProcessRunner implements Runner {
       const [cmd, ...args] = spec.argv;
       const child = spawn(cmd!, args, { cwd: spec.cwd, env: { ...checkEnv(this.env, spec.runDir), ...spec.env }, detached: true, stdio: ["ignore", "pipe", "pipe"] });
       let stdout = "", stderr = "", timedOut = false, done = false;
-      const cap = (cur: string, chunk: Buffer) => (cur.length < MAX_OUTPUT ? cur + chunk.toString("utf8") : cur);
-      child.stdout.on("data", (c: Buffer) => { stdout = cap(stdout, c); });
-      child.stderr.on("data", (c: Buffer) => { stderr = cap(stderr, c); });
+      const sizes = { stdout: 0, stderr: 0 };
+      const decoders = { stdout: new TextDecoder("utf-8", { fatal: true }), stderr: new TextDecoder("utf-8", { fatal: true }) };
+      let outputTruncated = false;
+      const cap = (cur: string, chunk: Buffer, stream: keyof typeof sizes) => {
+        const left = Math.max(0, MAX_OUTPUT - sizes[stream]);
+        sizes[stream] += chunk.length;
+        if (chunk.length > left) outputTruncated = true;
+        try { return cur + decoders[stream].decode(chunk.subarray(0, left), { stream: true }); }
+        catch { outputTruncated = true; return cur; }
+      };
+      child.stdout.on("data", (c: Buffer) => { stdout = cap(stdout, c, "stdout"); });
+      child.stderr.on("data", (c: Buffer) => { stderr = cap(stderr, c, "stderr"); });
       // Told to stop (the host cancelled, the terminal closed): take the check's whole process group down first.
       const onSignal = (sig: NodeJS.Signals) => { if (child.pid) killGroup(child.pid, "SIGKILL"); process.exit(128 + (sig === "SIGINT" ? 2 : sig === "SIGHUP" ? 1 : 15)); };
       const signals: NodeJS.Signals[] = ["SIGINT", "SIGTERM", "SIGHUP"];
@@ -88,7 +97,8 @@ export class ProcessRunner implements Runner {
         if (child.pid) killGroup(child.pid, "SIGKILL"); // the whole tree dies with the check, not just the leader
         let report: string | null = null;
         if (spec.report) report = reportFrom(spec.report, spec.runDir, started);
-        const r: RunResult = { timedOut, durationMs: this.clock.ms() - started, stdout, stderr, startedAt, report };
+        try { stdout += decoders.stdout.decode(); stderr += decoders.stderr.decode(); } catch { outputTruncated = true; }
+        const r: RunResult = { timedOut, outputTruncated, durationMs: this.clock.ms() - started, stdout, stderr, startedAt, report };
         if (exit !== null) r.exit = exit;
         if (signal) r.signal = signal;
         if (child.pid) r.pid = child.pid;
