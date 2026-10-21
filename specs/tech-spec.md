@@ -1281,6 +1281,8 @@ type Receipt = {
 
 Reports are untrusted: their paths must resolve inside the workspace or run directory and embedded text is data. File reports must be regular, in the prepared run directory, newer than spawn and within the bound before allocation; linked, outside or stale artifacts are inconclusive. A model-written summary is never a receipt (EVD-12).
 
+**Matching an obligation to its own evidence, not the whole file:** an acceptance obligation's receipt is normally the aggregate of every assertion in its `testFile` — correct when one file holds one example. When several examples share one file (a common pattern: a new distinguishing example added beside existing preservation examples), a test whose title names its own example id (the id `decide basis` returned, e.g. `[EX-006-5ze.1]`) is matched to only its own tagged assertions, so a passing example is never marked unproven merely because a sibling in the same file is still red. Without a tag match, the whole file still speaks for every obligation that names it, exactly as when only one example uses that file.
+
 Diagnostic examples may be bounded, but population facts must remain complete: receipts retain the set of failure kinds across the entire normalized population independently of the displayed failures. Baseline matching uses that complete set; an unshown runtime or import failure can never become an assertion-only distinguishing red.
 
 ESLint's per-file error counts must be nonnegative integers and match the complete severity-2 diagnostic population. All diagnostics are validated even after the five displayed examples are filled. A malformed diagnostic or contradictory count is inconclusive (`report-invalid`), never a passing static receipt.

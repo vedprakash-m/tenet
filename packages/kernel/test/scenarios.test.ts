@@ -192,6 +192,38 @@ describe("misleading-success traps (AC-07)", () => {
   });
 });
 
+describe("tagged assertions disambiguate a shared test file", () => {
+  it("a passing preservation example is proved even while a sibling distinguishing example in the same file is still red", async () => {
+    const p = fresh();
+    const basis = {
+      outcome: "greet() defaults to a greeting for an omitted name",
+      scopePaths: ["src/greet.ts"],
+      elements: [
+        { ref: "r1", kind: "requirement", origin: "request", text: "greet() with no name returns 'Hello, world!'" },
+        { ref: "e1", kind: "example", origin: "request", of: "r1", text: "greet() is 'Hello, world!'", testFile: "src/greet.test.ts", test: "distinguishing", expect: "fail" },
+        { ref: "e2", kind: "example", origin: "request", of: "r1", text: "keeps greet('Ada') is 'Hello, Ada!'", testFile: "src/greet.test.ts", test: "preservation", expect: "pass" },
+      ],
+    };
+    const h = (await p.call("open", { profile: "feature", request: "default greeting", scopePaths: ["src/greet.ts"], lane: "standard" })).handle!;
+    const b = await p.call("decide", { h, kind: "basis", propose: basis });
+    const ids = d(b).ids as Record<string, string>;
+    p.write(
+      "src/greet.test.ts",
+      `import { expect, it } from "vitest";\nimport { greet } from "./greet.ts";\n` +
+        `it("[${ids.e1}] greet() is Hello, world!", () => { expect((greet as (n?: string) => string)()).toBe("Hello, world!"); });\n` +
+        `it("[${ids.e2}] keeps greet('Ada')", () => { expect(greet("Ada")).toBe("Hello, Ada!"); });\n`,
+    );
+    p.write("src/greet.ts", GREET_IMPL); // only the named-greeting behavior exists yet; the default is not implemented
+    const base = await p.call("check", { h, stage: "baseline", scaffold: ["src/greet.ts"] });
+    assert.equal(base.next[0]!.action, "implement", JSON.stringify(base));
+    const receipts = Object.values(p.ports().store.read()!.state.work)[0]!.receipts;
+    const e1r = receipts.find((r) => r.obligation === `OB-${ids.e1}`)!;
+    const e2r = receipts.find((r) => r.obligation === `OB-${ids.e2}`)!;
+    assert.equal(e1r.status, "fail");
+    assert.equal(e2r.status, "pass", "the preservation example must prove at baseline, not inherit its sibling's red because they share a file");
+  });
+});
+
 describe("declared scaffolding", () => {
   const basis = { outcome: "double(n) doubles", scopePaths: ["src/index.ts"], elements: [
     { ref: "r", kind: "requirement", origin: "request", text: "double(n) returns n * 2" },

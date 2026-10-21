@@ -36,6 +36,21 @@ export interface ReceiptContext {
 type FileCounts = NonNullable<ReturnType<Normalized["files"]["get"]>>;
 type Sum = { executed: number; passed: number; failed: number; skipped: number; focused: number };
 
+/** When an assertion's title names an obligation's own example (e.g. `[EX-006-5ze.1]`), several obligations can
+ * share one test file without inheriting each other's result: the file still speaks for all of them when none
+ * of their assertions are tagged this way, exactly as before (never less precise than the whole file, only
+ * sometimes more). */
+function taggedOnly(per: readonly FileCounts[], tag: string): FileCounts[] | null {
+  const tests = per.flatMap((p) => p.tests).filter((t) => t.includes(tag));
+  if (!tests.length) return null;
+  const failures = per.flatMap((p) => p.failures).filter((f) => f.test.includes(tag));
+  return [{
+    executed: tests.length, passed: tests.length - failures.length, failed: failures.length, skipped: 0,
+    focused: failures.filter((f) => f.kind === "focused").length,
+    tests, failureKinds: [...new Set(failures.map((f) => f.kind))], failures,
+  }];
+}
+
 /** The receipt before any judgement: inconclusive, with the identity and provenance of the run. */
 function blank(o: RunFacts, ob: Obligation, i: number, c: ReceiptContext): Receipt {
   const rec: Receipt = {
@@ -107,8 +122,11 @@ function receiptFor(o: RunFacts, norm: Normalized | null, ob: Obligation, i: num
   if (norm.invalid) return stop("report-invalid");
   // An acceptance test is one file; the suite is every file the report names.
   const files = ob.testFile ? [ob.testFile] : [...norm.files.keys()];
-  const per = files.flatMap((f) => norm.files.get(f) ?? []);
-  if (per.length !== files.length) return stop("population-mismatch");
+  const whole = files.flatMap((f) => norm.files.get(f) ?? []);
+  if (whole.length !== files.length) return stop("population-mismatch");
+  const tagged = ob.example ? taggedOnly(whole, ob.example) : null;
+  const per = tagged ?? whole;
+  if (tagged) rec.limitations.push(`matched by its own tagged assertions, not every test in ${ob.testFile}`);
   const sum = sumOf(per);
   rec.counts = { discovered: sum.executed + sum.skipped, ...sum };
   rec.failures = per

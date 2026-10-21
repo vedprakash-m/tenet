@@ -110,4 +110,29 @@ describe("receipts", () => {
     const r = one(ob, run(), norm(report([{ status: "passed" }])), { ...ctx, missing: new Set(["OB-1"]) });
     assert.deepEqual([r.status, r.reasons, r.limitations], ["inconclusive", ["not-executed"], ["the test file does not exist yet"]]);
   });
+  it("matches each obligation to its own tagged assertions when examples share a test file, instead of the whole file's aggregate", () => {
+    const raw = JSON.stringify({
+      testResults: [{
+        name: "/p/a.test.ts",
+        status: "failed",
+        assertionResults: [
+          { fullName: "[EX-1] new behavior", status: "failed", failureMessages: ["AssertionError: expected x"] },
+          { fullName: "[EX-2] keeps old behavior", status: "passed", failureMessages: [] },
+        ],
+      }],
+    });
+    const distinguishing: Obligation = { id: "OB-a", kind: "test", category: "acceptance", testFile: "a.test.ts", example: "EX-1" };
+    const preservation: Obligation = { id: "OB-b", kind: "test", category: "acceptance", testFile: "a.test.ts", example: "EX-2" };
+    const [ra, rb] = receiptsFrom(run({ exit: 1 }), norm(raw), [distinguishing, preservation], ctx);
+    assert.equal(ra!.status, "fail");
+    assert.equal(rb!.status, "pass", "a passing preservation example must not inherit a sibling's failure just because they share a file");
+  });
+  it("falls back to the whole file's aggregate when no assertion names an obligation's example, unchanged from before", () => {
+    const a: Obligation = { id: "OB-a", kind: "test", category: "acceptance", testFile: "a.test.ts", example: "EX-9" };
+    const b: Obligation = { id: "OB-b", kind: "test", category: "acceptance", testFile: "a.test.ts", example: "EX-10" };
+    const n = norm(report([{ status: "failed", failure: "AssertionError: x" }, { status: "passed" }], "/p/a.test.ts", false));
+    const [ra, rb] = receiptsFrom(run({ exit: 1 }), n, [a, b], ctx);
+    assert.equal(ra!.status, "fail");
+    assert.equal(rb!.status, "fail", "with no tag naming either obligation, both still see the shared file's aggregate result");
+  });
 });

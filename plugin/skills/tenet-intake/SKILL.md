@@ -20,7 +20,8 @@ Every element has an `origin`: `request` only when it is literally in the user's
 `tenet decide basis --h <handle>` with this JSON on stdin:
 `{"propose": {"outcome": "...", "scopePaths": ["src/a.ts"], "design": "...", "designCommitment": false, "elements": [{"ref": "r1", "kind": "requirement", "origin": "request", "text": "..."}, {"ref": "e1", "kind": "example", "origin": "request", "of": "r1", "text": "...", "testFile": "src/a.test.ts", "test": "distinguishing", "expect": "fail", "support": ["src/helpers.ts"]}]}}`
 
-- `support` lists the helpers and fixtures the test depends on; they are locked with it, as is the runner configuration.
+- `support` lists the helpers, fixtures and mocks the test depends on, locked with it along with the runner configuration — never the file you are about to implement or change; that file is expected to differ between baseline and candidate.
+- When two or more examples share one `testFile`, name each test's own example id in its title (e.g. `it("[EX-006-5ze.1] greet() returns Hello, world!", ...)`, the id from `decide basis`'s response) so each is proved on its own assertions, not the whole file's aggregate result.
 - Exit 0: the basis is recorded; follow `next`.
 - Exit 3 with a `basis-confirm` question: show the kickoff with your additions labeled "(added)" and ask once. On "ok" send the identical proposal again with `--answer basis-confirm=confirm`; to change something, revise and propose again.
 - A bug fix, a refactor, selected review fixes and requests that state their own boundaries have no additions, so there is no stop.
