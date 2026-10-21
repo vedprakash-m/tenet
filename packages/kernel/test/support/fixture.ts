@@ -45,7 +45,7 @@ export const BASIS = {
 };
 
 export const reviewResult = (data: Record<string, any>, over: Record<string, unknown> = {}) => ({
-  manifest: data.review.hash, reservation: data.review.reservation, attempt: data.review.attempt, mode: data.review.mode,
+  kind: "review", manifest: data.review.hash, reservation: data.review.reservation, attempt: data.review.attempt, mode: data.review.mode,
   status: "completed", dispatchMode: data.review.dispatchMode ?? "subagent-fresh", axes: { behavior: "pass", structure: "pass" },
   coverage: { inspected: data.review.files ?? ["src/greet.ts", "src/greet.test.ts"], uncovered: [], crossCutting: "no other callers", sampled: [] },
   attention: [], findings: [], basisGaps: [], ...over,

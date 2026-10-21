@@ -19,11 +19,11 @@ const tokens = (s: string) => Math.ceil(s.length / 4);
 
 const PLACEHOLDERS: Record<string, string> = {
   handle: "W1.1.abcd", profile: "feature", text: "text", paths: "src/a.ts,src/b.ts", path: "src/a.ts", subject: "subject",
-  stage: "candidate", mode: "pause", kind: "basis", role: "reviewer", scope: "working-tree", view: "status",
+  stage: "candidate", mode: "pause", kind: "basis", role: "reviewer", "analyst-role": "researcher", scope: "working-tree", view: "status",
 };
 /** A minimal valid body for verbs whose structured input arrives on stdin, so the line parses as it will run. */
 const BODIES: Record<string, Record<string, unknown>> = {
-  findings: { result: { manifest: "m", reservation: "r", attempt: 1, mode: "full", status: "completed", dispatchMode: "subagent-fresh", axes: { behavior: "pass", structure: "pass" }, coverage: { inspected: [], uncovered: [], crossCutting: "", sampled: [] }, attention: [], findings: [], basisGaps: [] } },
+  findings: { result: { kind: "review", manifest: "m", reservation: "r", attempt: 1, mode: "full", status: "completed", dispatchMode: "subagent-fresh", axes: { behavior: "pass", structure: "pass" }, coverage: { inspected: [], uncovered: [], crossCutting: "", sampled: [] }, attention: [], findings: [], basisGaps: [] } },
   decide: {},
 };
 

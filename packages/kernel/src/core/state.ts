@@ -28,7 +28,7 @@ export const newContract = (n: NewContract): WorkContract => ({
   id: n.id, label: n.label, profile: n.profile, request: n.request, lane: n.lane, floor: n.floor, level: n.level,
   state: "proposed", session: { generation: n.generation }, outcome: "",
   scope: { paths: n.scopePaths, protected: n.protectedPaths },
-  grants: [], obligations: [], receipts: [], attention: [], findings: [], reviews: [], declined: [],
+  grants: [], obligations: [], receipts: [], attention: [], findings: [], reviews: [], analyses: [], declined: [],
   git: { mode: n.gitMode, base: n.base, branch: n.branch, start: n.start, commits: [], committed: [] },
   touched: [], vetted: {}, includeDirty: [], keepOut: [], budget: newBudget(), acceptance: "pending", assessment: n.assessment,
   pinned: { tenet: n.version, schema: SCHEMA_VERSION }, createdAt: n.now, updatedAt: n.now,

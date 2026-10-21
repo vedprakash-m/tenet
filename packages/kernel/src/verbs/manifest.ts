@@ -3,8 +3,8 @@
 import { addTokens, canReserve, LIMITS, recordDelegation, releaseStale, reserve } from "../core/budget.ts";
 import { reason } from "../core/reasons.ts";
 import type { FileChange } from "../core/review.ts";
-import { buildManifest, deltaSince, isManifest, reviewMode } from "../core/review.ts";
-import type { Reason, State, WorkContract } from "../core/schemas.ts";
+import { buildAnalystManifest, buildManifest, deltaSince, isManifest, reviewMode } from "../core/review.ts";
+import type { BasisElement, Reason, State, WorkContract } from "../core/schemas.ts";
 import type { Ports } from "../ports/types.ts";
 import { nx } from "./common.ts";
 import type { Facts } from "./facts.ts";
@@ -15,6 +15,21 @@ const FALLBACK_RUBRIC = "Stage A: does the change satisfy each basis element and
 function rubric(ports: Ports, focused: boolean): string {
   const text = ports.recipes.text(focused ? "skills/tenet/resources/focused-review.md" : "skills/tenet-review/SKILL.md");
   return text ? text.replace(/^---\n[\s\S]*?\n---\n/, "").trim() : FALLBACK_RUBRIC;
+}
+
+type AnalystRole = "researcher" | "architect" | "security";
+const RESEARCHER_RUBRIC = "Answer the question using evidence from the repository. Cite path:line for every claim. "
+  + "Report what you could not find as an open dependency, never a guess.";
+const ROLE_RESOURCE: Record<AnalystRole, string | undefined> = {
+  researcher: undefined, architect: "skills/tenet-review/resources/architect.md", security: "skills/tenet-review/resources/security.md",
+};
+
+/** An analyst's rubric: the researcher default, or a role-specific resource file, one source each (TS §5.1). */
+function analystRubric(ports: Ports, role: AnalystRole): string {
+  const path = ROLE_RESOURCE[role];
+  if (!path) return RESEARCHER_RUBRIC;
+  const text = ports.recipes.text(path);
+  return text ? text.replace(/^---\n[\s\S]*?\n---\n/, "").trim() : RESEARCHER_RUBRIC;
 }
 
 export interface Issued { work: WorkContract; next: Array<ReturnType<typeof nx>>; reasons: Reason[]; data?: Record<string, unknown> }
@@ -59,5 +74,35 @@ export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Fac
     work: nw, reasons: [],
     next: [nx(focused ? "focused-review" : mode === "recheck" ? "recheck" : "review", focused ? "Reread this manifest and diff in this session, then record findings as same-session." : "Dispatch a fresh-context reviewer on the manifest.", true)],
     data: { review: { manifest: path, hash: m.hash, reservation: rv.id, attempt: rv.attempt, mode, tokens: m.tokens, files: rv.requiredPaths ?? Object.keys(files), dispatchMode: focused ? "same-session" : "subagent-fresh" } },
+  };
+}
+
+/** `packet analyst`: a researcher, architect or security assignment (AGT-03). No basis precondition, no "already
+ * answered" cache — each question is a fresh dispatch, bounded only by the lane's delegation capacity, so several
+ * analysts can be live on one declared revision at once (AGT-03's "in parallel"). */
+export function issueAnalyst(
+  ports: Ports, w: WorkContract, elements: readonly BasisElement[], candidate: string, role: AnalystRole, question: string,
+): Issued {
+  let budget = releaseStale(w.budget, candidate, w.basis?.hash ?? "none");
+  if (!canReserve(budget, w.lane)) {
+    return { work: { ...w, budget }, next: [nx("stop", "No delegation capacity is left for an analyst dispatch.", true)], reasons: [] };
+  }
+  const attempt = budget.delegations + budget.reservations.length + 1;
+  const m = buildAnalystManifest({ work: w, elements, candidate, attempt, role, question, rubric: analystRubric(ports, role) });
+  if (!isManifest(m)) {
+    return { work: { ...w, budget }, next: [nx("ask", "The question is too large to answer in one pass; narrow it.", true)], reasons: [m] };
+  }
+  const path = ports.store.writeArtifact(ports.store.tempDir("manifests"), `${m.hash}.json`, m.text);
+  const rv = { ...m.reservation, manifest: path };
+  budget = addTokens(reserve(budget, rv), m.tokens);
+  return {
+    work: { ...w, budget }, reasons: [],
+    next: [nx("analyst", "Dispatch a fresh-context analyst on the packet.", true)],
+    data: {
+      analyst: {
+        manifest: path, hash: m.hash, reservation: rv.id, attempt: rv.attempt, role, question, tokens: m.tokens,
+        dispatchMode: w.lane === "quick" ? "same-session" : "subagent-fresh",
+      },
+    },
   };
 }

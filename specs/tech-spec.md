@@ -599,7 +599,7 @@ Budgets are set by the owner in lines and checked by `tools/lint-quality` in non
 
 | Module | Responsibility | PRD | Lines |
 |---|---|---|---|
-| `core/schemas` | zod inputs, records, outputs; limits | CON-04, SEC-06 | 400 |
+| `core/schemas` | zod inputs, records, outputs; limits | CON-04, SEC-06 | 440 (re-baselined October 20, owner decision, after the analyst-packet schemas: `AnalystResult`, `AnalystLink`, `AnalystFinding`, and the `FindingsInput` discriminated union) |
 | `core/lifecycle` | Work, plan item, requirement, example, test, finding, effect state machines | WRK-07 | 150 |
 | `core/risk` | Risk, lane floors, assistance level | WRK-04, INS-12 | 150 |
 | `core/authority` | Grants, action classes, scope, decision binding | WRK-02, WRK-03 | 150 |
@@ -609,7 +609,7 @@ Budgets are set by the owner in lines and checked by `tools/lint-quality` in non
 | `core/obligations`, `core/findings` | Obligations, applicability, trait composition; finding dispositions | QLT-06, REV-04 | 250 |
 | `core/config` | Resolution, restriction parsing, trust comparison | CFG, SEC-12 | 250 |
 | `core/attribution`, `core/ids`, `core/retention` | File attribution; IDs and reconciliation; admission and eviction | GIT-03, INT-10, CON-08 | 300 |
-| `pipeline`, `verbs/*`, `decisions/*` | The pipeline; one module per verb and per decision kind. Re-baselined October 19 (owner decision) from 1,050 to 2,200 after `integrate`, `undo`, the starter scaffold, crash recovery and the dirty-file, hook and index decisions were added, then to 3,000 the same day after `decide adopt`, shared-file reconciliation and the settings catalog left 17 lines free and the remaining decision kinds were still to build; no verb or decision file exceeds 250 lines (`tools/coverage` fails the build otherwise) | — | 3,000 |
+| `pipeline`, `verbs/*`, `decisions/*` | The pipeline; one module per verb and per decision kind. Re-baselined October 19 (owner decision) from 1,050 to 2,200 after `integrate`, `undo`, the starter scaffold, crash recovery and the dirty-file, hook and index decisions were added, then to 3,000 the same day after `decide adopt`, shared-file reconciliation and the settings catalog left 17 lines free and the remaining decision kinds were still to build; re-baselined again October 20 (owner decision, S1) to 3,560 after a scan for cuttable duplication found none — every oversized piece traced to a requirement (effect recovery CON-12, dependency verification SEC-05, quarantine CON-06, takeover, adoption) — so the ceiling now reflects what the built behavior actually needs, not an estimate made before it existed; re-baselined again October 20 to 3,645 as a recorded feature increment for the Analyst agent (AGT-03/05/11: `packet analyst`, `issueAnalyst`, the analyst branch of `findings`); no verb or decision file exceeds 250 lines (`tools/coverage` fails the build otherwise) | — | 3,645 |
 | `adapters/store-fs` | State document, lock, log, observations, blobs, marker | §7 | 450 |
 | `adapters/git-cli` | Git with argument arrays; the inspection profile; one temporary-index helper; the shadow repository | §10 | 650 |
 | `adapters/runner` | Envelopes, environment, process groups, run directories, ports | §9.3 | 350 |

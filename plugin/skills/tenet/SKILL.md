@@ -16,7 +16,8 @@ In every skill, `tenet <verb> [positional] [--flag value]` is shorthand: never t
 | `tenet decide <kind> --h <handle>` | Record a decision. Kinds: `basis`, `scaffold`, `sync-index`, `config`, `branch-switch`, `undo-confirm`, `abandon-confirm`, `takeover-check`, `dirty-overlap`, `unexplained`, `hook-consent`, `filter-consent`, `decline`, `acceptance`, `disposition`, `repair-lock`, `overview`, `plan`, `grant`, `decision-record`, `dependency`, `adopt` (`--target intent` or `policy`; it previews first, then `--answer adopt-confirm=confirm` or `decline`). `config` sets one of the twelve settings: `--target <setting>` with `{"propose": {"value": ..., "scope": "task"|"project"}}`, or `{"propose": {"reset": true, "scope": "task"}}`; a plain request ("be brief") is task scope, only "always" or "in this project" is project scope. `tenet inspect --view settings [--topic <setting>]` answers "why" for a setting. Content goes in JSON on stdin as `{"propose": ...}`; answers are `--answer <id>=<choice>` |
 | `tenet check --h <handle> --stage candidate` | Run the obligations. `--stage baseline` for the planned red, `--targeted` while iterating, `--touched <paths>` for every file you edited |
 | `tenet packet reviewer --h <handle> --retry` | A fresh manifest attempt. `packet handoff` and `packet resume` read the state back |
-| `tenet findings --h <handle>` | Record a reviewer's result, JSON on stdin as `{"result": ...}` |
+| `tenet packet analyst --h <handle> --analyst-role <analyst-role> --question <text>` | A read-only researcher, architect or security assignment; no basis needed first. Several may be live at once on the same revision |
+| `tenet findings --h <handle>` | Record a reviewer's or an analyst's result, JSON on stdin as `{"result": {"kind": "review", ...}}` or `{"result": {"kind": "analyst", ...}}` |
 | `tenet commit --h <handle> --subject <text>` | A checkpoint commit |
 | `tenet integrate --h <handle>` | Merge the work branch into its base locally, when the user says "integrate". It predicts conflicts first and switches the editor to the base; a merge onto a moved base needs `tenet check --h <handle> --stage integrated` before it is called checked |
 | `tenet finish --h <handle>` | Verdict, final commit, result. `--no-commit` when the user said not to commit |
@@ -39,6 +40,7 @@ The kernel names the next action. Do the one marked `required`, or a permitted a
 | `test`, `implement` | Load `tenet-build`; edit natively; declare edited files |
 | `check` | Run `tenet check` with the stage named |
 | `review`, `recheck` | Dispatch `tenet-reviewer` with the manifest path and hash, then pass its JSON to `tenet findings` |
+| `analyst` | Dispatch `tenet-reviewer` with the analyst packet's path and hash (same read-only subagent, a different packet), then pass its JSON to `tenet findings` |
 | `focused-review` | Reread the diff yourself against the basis, then `tenet findings`; it will count as reduced independence |
 | `commit`, `finish` | Run the verb |
 | `reconcile`, `revalidate` | Follow the reasons, then run the verb `next` names |

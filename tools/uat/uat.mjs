@@ -34,7 +34,7 @@ const focused = (root, h, response) => {
  assert.equal(rv.dispatchMode, 'same-session');
  const manifest = JSON.parse(readFileSync(rv.manifest, 'utf8'));
  for (const path of manifest.investigation) readFileSync(join(root, path), 'utf8');
- const r = call(root, 'findings', { h, result: { manifest: rv.hash, reservation: rv.reservation, attempt: rv.attempt, mode: rv.mode, status: 'completed', dispatchMode: 'same-session', axes: { behavior: 'pass', structure: 'pass' }, coverage: { inspected: rv.files, uncovered: [], crossCutting: 'greeting test imports the implementation; unrelated human file remains outside this work', sampled: [] }, attention: [], findings: [], basisGaps: [], openDependencies: [] } });
+ const r = call(root, 'findings', { h, result: { kind: 'review', manifest: rv.hash, reservation: rv.reservation, attempt: rv.attempt, mode: rv.mode, status: 'completed', dispatchMode: 'same-session', axes: { behavior: 'pass', structure: 'pass' }, coverage: { inspected: rv.files, uncovered: [], crossCutting: 'greeting test imports the implementation; unrelated human file remains outside this work', sampled: [] }, attention: [], findings: [], basisGaps: [], openDependencies: [] } });
  assert.equal(r.exit, 0, JSON.stringify(r)); assert.equal(r.budget.delegations, '0/2');
 };
 const basis = { outcome: 'Return a greeting', scopePaths: ['src/'], elements: [

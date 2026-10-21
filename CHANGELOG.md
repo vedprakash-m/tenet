@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20 — Analyst agent, first slice (`◐`, local)
+
+`packet analyst` dispatches a read-only researcher/architect/security assignment with no basis precondition; `findings` records its result via a new `kind`-discriminated `AnalystResult`/`ReviewResult` union. Several analysts can be live at once on one declared revision (AGT-03), reusing the existing reservation mechanism unchanged. A moved revision between dispatch and result is disclosed as a non-blocking note (AGT-11); non-completed status is never treated as a finished answer (AGT-05). Reuses the existing `tenet-reviewer` subagent; adds `architect.md`/`security.md` rubric resources.
+
+Changed `core/schemas.ts`, `core/review.ts`, `core/state.ts`, `verbs/{packet,findings,manifest}.ts`, `plugin/skills/tenet/SKILL.md`, `plugin/com.github.copilot/agents/tenet-reviewer.agent.md`, `tools/lint-skills.ts`, `tools/uat/uat.mjs`. Module budgets re-baselined as recorded feature increments: `core/schemas` 400→440 lines, `pipeline+verbs+decisions` 3,560→3,645 lines (TS §6.2). New: `analyst.test.ts` (7 tests). Full `npm run ci` green: **648 tests / 135 suites**; built-bundle UAT green. Alpha coverage: AGT-03, AGT-05 newly T1-mapped (77/100). Not committed; not observed on a real host (SP-08 remains deferred).
+
 ## 2026-10-20 — Static populations and required-check conflicts (`◐`, local)
 
 Conflicting required-check definitions now block checking and verdicts instead of silently selecting one. Doctor applies metadata exclusions before reading. Default static receipts retain bounded analyzed workspace files and reject unknown, linked, stat-only, malformed or incomplete proof. Supported local TypeScript/ESLint profiles are explicit; unsupported versions/configuration graphs do not execute. TypeScript names the project and disables incremental writes. Runner output is bounded by bytes, preserves UTF-8 across chunks and reports truncation as inconclusive. Adapter `node-ts@2` stales older evidence.

@@ -2,7 +2,7 @@
  "functions": {
   "core/config.ts#resolveSetting": {
    "lines": 56,
-   "cc": 28,
+   "cc": 26,
    "nest": 4
   },
   "core/plan.ts#buildPlan": {
@@ -87,13 +87,11 @@
   "verbs/integrate.ts": 2,
   "verbs/manifest.ts": 13,
   "verbs/packet.ts": 4,
-  "verbs/reconcile.ts": 11,
+  "verbs/reconcile.ts": 10,
   "verbs/review.ts": 3,
   "verbs/stop.ts": 1,
   "verbs/undo.ts": 5,
   "wire.ts": 2
  },
- "modules": {
-  "pipeline + verbs + decisions": 204790
- }
+ "modules": {}
 }

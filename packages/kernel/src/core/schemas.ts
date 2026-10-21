@@ -33,7 +33,7 @@ export const ActionClass = z.enum([
 
 /** The closed `next` vocabulary (TS §5.2). lint-skills checks every action is handled. */
 export const ACTIONS = [
-  "ask", "basis", "plan", "decision", "research", "test", "implement", "check", "review", "recheck",
+  "ask", "basis", "plan", "decision", "research", "analyst", "test", "implement", "check", "review", "recheck",
   "focused-review", "commit", "finish", "reconcile", "revalidate", "integrate", "publish", "stop",
 ] as const;
 export const Action = z.enum(ACTIONS);
@@ -163,12 +163,30 @@ export const ReviewLink = z.object({
 });
 export type ReviewLink = z.infer<typeof ReviewLink>;
 
+export const AnalystFinding = z.object({
+  location: z.object({ path: z.string(), line: z.number().optional() }), claim: z.string(), evidence: z.string(),
+});
+export type AnalystFinding = z.infer<typeof AnalystFinding>;
+
+// An analyst packet's settled result (TS §5.4): read-only, no severity or disposition state machine — the coordinator
+// and the user judge it, the kernel only records what was asked, observed and found (AGT-03, AGT-05, AGT-11).
+export const AnalystLink = z.object({
+  reservation: z.string(), role: z.enum(["researcher", "architect", "security"]), question: z.string(),
+  revision: z.string(), status: z.enum(["completed", "partial", "blocked", "failed", "cancelled"]),
+  independence: z.enum(["subagent-fresh", "same-session"]),
+  artifacts: z.array(z.string()), findings: z.array(AnalystFinding), openDependencies: z.array(z.string()),
+  stale: z.boolean().optional(), // the candidate moved after this analyst observed its revision (AGT-11)
+  sketch: z.string().optional(), decisionRecord: z.string().optional(), // architect only
+});
+export type AnalystLink = z.infer<typeof AnalystLink>;
+
 export const Reservation = z.object({
   id: z.string(), role: z.enum(["reviewer", "analyst"]), manifest: z.string(), manifestHash: z.string(),
   candidate: z.string(), basisHash: z.string(), attempt: z.number(), mode: z.enum(["full", "recheck"]),
   files: z.record(z.string(), z.string()).default({}),
   retries: z.number().int().min(0).optional(),
   basedOn: z.string().optional(), requiredPaths: z.array(z.string()).optional(),
+  analystRole: z.enum(["researcher", "architect", "security"]).optional(), question: z.string().optional(),
 });
 export type Reservation = z.infer<typeof Reservation>;
 
@@ -222,7 +240,7 @@ export const WorkContract = z.object({
   }).optional(),
   grants: z.array(Grant), obligations: z.array(Obligation), receipts: z.array(Receipt),
   focusedReview: Reservation.optional(), // same-session binding, not a native delegation reservation
-  attention: z.array(AttentionItem), findings: z.array(Finding), reviews: z.array(ReviewLink),
+  attention: z.array(AttentionItem), findings: z.array(Finding), reviews: z.array(ReviewLink), analyses: z.array(AnalystLink).default([]),
   declined: z.array(z.string()),
   git: z.object({
     mode: z.enum(["git", "shadow", "none"]),
@@ -304,6 +322,7 @@ export type State = z.infer<typeof State>;
 // ---------------------------------------------------------------- review result (TS §5.4)
 
 export const ReviewResult = z.strictObject({
+  kind: z.literal("review"),
   manifest: z.string(), reservation: z.string(), attempt: z.number().int(), mode: z.enum(["full", "recheck"]),
   status: z.enum(["completed", "partial", "blocked", "failed", "cancelled"]),
   dispatchMode: z.enum(["subagent-fresh", "same-session"]),
@@ -322,6 +341,23 @@ export const ReviewResult = z.strictObject({
   openDependencies: z.array(z.string()).optional(),
 });
 export type ReviewResult = z.infer<typeof ReviewResult>;
+
+// An analyst packet's result (TS §5.4): a role, a neutral question and a revision in; status, findings with
+// path:line evidence, artifacts inspected and the revision observed out (AGT-03, AGT-05). No severity or
+// disposition state machine: the analyst only reports, the coordinator and user judge it (AGT-07).
+export const AnalystResult = z.strictObject({
+  kind: z.literal("analyst"),
+  manifest: z.string(), reservation: z.string(), attempt: z.number().int(),
+  role: z.enum(["researcher", "architect", "security"]),
+  status: z.enum(["completed", "partial", "blocked", "failed", "cancelled"]),
+  dispatchMode: z.enum(["subagent-fresh", "same-session"]),
+  revision: z.string(),
+  artifacts: z.array(z.string()),
+  findings: z.array(AnalystFinding),
+  openDependencies: z.array(z.string()).optional(),
+  sketch: z.string().optional(), decisionRecord: z.string().optional(), // architect only
+});
+export type AnalystResult = z.infer<typeof AnalystResult>;
 
 // ---------------------------------------------------------------- response envelope (TS §6.6)
 
@@ -409,7 +445,9 @@ export const CheckInput = z.object({
 });
 export type CheckInput = z.infer<typeof CheckInput>;
 
-export const FindingsInput = z.object({ h: Handle, result: ReviewResult, again: z.boolean().optional() });
+export const FindingsInput = z.object({
+  h: Handle, result: z.discriminatedUnion("kind", [ReviewResult, AnalystResult]), again: z.boolean().optional(),
+});
 export type FindingsInput = z.infer<typeof FindingsInput>;
 
 export const FinishInput = z.object({
@@ -425,7 +463,8 @@ export type StopInput = z.infer<typeof StopInput>;
 
 export const PacketInput = z.object({
   h: Handle.optional(), role: z.enum(["reviewer", "analyst", "handoff", "resume"]),
-  retry: z.boolean().optional(), question: z.string().optional(), again: z.boolean().optional(),
+  retry: z.boolean().optional(), question: z.string().min(1).max(500).optional(),
+  analystRole: z.enum(["researcher", "architect", "security"]).optional(), again: z.boolean().optional(),
 });
 export type PacketInput = z.infer<typeof PacketInput>;
 
