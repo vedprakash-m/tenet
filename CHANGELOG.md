@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20 — Guard `repair-lock` against an unreproduced race (`◐`, local)
+
+`repairLock` checked both lock files for liveness, then unconditionally removed whatever existed in a second pass — unlike the already-safe `breakStale` path, which re-reads and compares the nonce immediately before removing. A fresh live claim landing between the two passes would have been deleted. Fixed to match the existing safe pattern exactly. This is a code-reviewed defensive fix, not one proven by a reproduced race (R08's real-process races remain scheduled, not closed).
+
+Changed `adapters/store-fs.ts`. New idempotency test in `store.test.ts`. Full `npm run ci` green: **653 tests / 135 suites**; built-bundle UAT green.
+
 ## 2026-10-20 — Selected-fix integrity fixes (`◐`, local)
 
 `open fix` now refuses duplicate finding numbers instead of silently colliding two findings on the same synthesized ID. `attentionOf`'s stray-file exemption now compares a vetted file's current content hash to its recorded one, instead of exempting any path merely present in `vetted`: an edit to a scaffolded file outside the named findings is no longer silently invisible to review.

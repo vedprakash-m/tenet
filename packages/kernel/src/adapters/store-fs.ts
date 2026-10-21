@@ -200,12 +200,22 @@ export class FsStore implements Store {
   }
 
   async repairLock(): Promise<{ removed: string[] }> {
-    const removed: string[] = [];
+    const dead: Record<string, LockInfo> = {};
     for (const f of ["lock", "lock.break"]) {
       const h = this.readLock(f);
       if (h && isAlive(h.pid, h.procStart)) throw new KernelError("kernel-busy", `${f} is held by a live process`);
+      if (h) dead[f] = h;
     }
-    for (const f of ["lock", "lock.break"]) if (existsSync(this.p(f))) { rmSync(this.p(f)); removed.push(f); }
+    const removed: string[] = [];
+    // Re-read each file immediately before removing it rather than trusting the check above: if a fresh claim
+    // landed between the two loops, its nonce differs from the one just confirmed dead, and it is left alone
+    // (the same guard `breakStale` uses), so a manual repair can never remove a live process's lock (AGT-08).
+    for (const f of ["lock", "lock.break"]) {
+      const was = dead[f];
+      if (!was) continue;
+      const now = this.readLock(f);
+      if (now && now.nonce === was.nonce) { rmSync(this.p(f)); removed.push(f); }
+    }
     return { removed };
   }
 

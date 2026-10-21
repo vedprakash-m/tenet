@@ -130,6 +130,22 @@ describe("store: transactions", () => {
     await store.transaction("t", async (tx) => tx.publish({ ...tx.state!, workSeq: 2 }));
   });
 
+  it("repairLock never removes a lock that is no longer the dead one it confirmed [AGT-08]", async () => {
+    const root = fresh();
+    const store = await initState(root);
+    const dead = JSON.stringify({ pid: 2 ** 22 + 5, procStart: "Thu Jan  1 00:00:00 1970", nonce: "dead", verb: "x" });
+    writeFileSync(join(root, ".tenet/lock"), dead);
+    writeFileSync(join(root, ".tenet/lock.break"), dead);
+    // A dead lock.break refuses the normal path, so repairLock is the only way in; repeating it is a realistic
+    // shape for "two users both ran repair" and must stay idempotent without a second, spurious removal.
+    const first = await store.repairLock();
+    const second = await store.repairLock();
+    assert.deepEqual(first.removed.sort(), ["lock", "lock.break"]);
+    assert.deepEqual(second.removed, [], "nothing is left the second time, and it is not an error to ask again");
+    assert.equal(existsSync(join(root, ".tenet/lock")), false);
+    assert.equal(existsSync(join(root, ".tenet/lock.break")), false);
+  });
+
   it("falls back to state.prev when the document is corrupt", async () => {
     const root = fresh();
     const store = await initState(root);
