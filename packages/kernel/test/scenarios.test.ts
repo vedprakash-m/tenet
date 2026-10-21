@@ -432,7 +432,7 @@ describe("injected failure 1: a human's edits on the files Tenet needs", () => {
 });
 
 describe("injected failure 2: SIGKILL during a check", () => {
-  it("recovers on the next call: orphans are stopped, the run is discarded, a clean rerun passes [CON-03, NFR-04]", async () => {
+  it("recovers on the next call: orphans are stopped, the run is discarded, a clean rerun passes [CON-03, NFR-04, WRK-10]", async () => {
     const p = fresh();
     const { h } = await toRed(p, { lane: "quick" });
     p.write("src/greet.test.ts", SLOW_TEST);

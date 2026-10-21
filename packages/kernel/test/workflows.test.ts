@@ -361,7 +361,7 @@ describe("things that must not trip it", () => {
 });
 
 describe("parking, resuming and non-editing work", () => {
-  it("pauses with a handoff, releases source ownership, and resumes into a new generation", async () => {
+  it("pauses with a handoff, releases source ownership, and resumes into a new generation [WRK-10]", async () => {
     const p = fresh();
     const { h } = await toGreen(p);
     const s = await p.call("stop", { h, mode: "pause" });

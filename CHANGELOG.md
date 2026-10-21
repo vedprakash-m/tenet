@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20 — Tag WRK-10's checkpoint clause honestly, partial (`◐`, local)
+
+WRK-10 has two distinct clauses: checkpointing so a pause or interruption loses at most the work since the last checkpoint (T1-capable, already proven by two existing tests), and never auto-confirming a host pause (kernel has no concept of this; host territory, unobserved). Tagged only the first clause, on the existing pause/resume and SIGKILL-during-check tests. Considered INS-04 (three-tier readiness) too and left it untagged: the current single-scale assistance level does not actually report three separate tiers, so tagging it would repeat the mis-tagging pattern corrected earlier.
+
+Changed `workflows.test.ts`, `scenarios.test.ts` (test-title tags only, no production code). Full `npm run ci` green: **654 tests / 135 suites**; built-bundle UAT green. Alpha coverage: WRK-10 newly T1-mapped, partial (79/100).
+
 ## 2026-10-20 — Verify `branching: current` through `integrate`; correct stale progress notes (`✅`, local)
 
 Added the missing end-to-end test: an editing contract set to `branching: current` stays on its base branch through basis, check and finish, then `integrate` correctly refuses ("committed on the base branch itself") instead of erroring or switching branches. The one existing "nothing to integrate" test used a non-editing profile, which never takes a branch regardless of this setting, so it didn't actually prove this path. Also corrected three stale "not done" notes in the plan: `exclusions`/`required_checks`/`dependency_policy` already have real consumers; `commands` and `resource_mode` consumers genuinely remain open but for different, more current reasons (execution envelopes and an R1 Should, respectively, not "no analyst yet").
