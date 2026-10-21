@@ -5,7 +5,7 @@
 export type Source = "registry" | "git" | "file" | "link" | "unknown";
 export interface Observation {
   key: string; name: string; version: string; previous?: string; direct: boolean; source: Source; resolved: string;
-  integrity?: string; license?: string; hasInstallScript: boolean;
+  integrity?: string; license?: string; hasInstallScript: boolean | "unknown";
 }
 export interface LockDiff { added: Observation[]; changed: Observation[]; removed: string[] }
 
@@ -50,6 +50,96 @@ export function diffLockfile(before: string | null, after: string): LockDiff {
   return { added, changed, removed: [...gone].filter((n) => ![...a.keys()].some((k) => nameOf(k) === n)).sort() };
 }
 
+// ---------------------------------------------------------------- pnpm (pnpm-lock.yaml): a narrow line scan, never a
+// general YAML parse — only the shape pnpm actually emits: quoted or bare `name@version:` keys under `packages:`,
+// a one-line flow-mapped `resolution: {...}`, and root dependency names (the line before any `specifier:`).
+
+interface PnpmEntry { name: string; version: string; resolution: Record<string, string> }
+
+/** Split a pnpm package key on the `@` that separates its name from its version or source URL: the first one after
+ * an optional leading `@scope/`, not the last, so a version/URL that itself contains `@` (an SSH git remote) does
+ * not shift the boundary. */
+function splitPnpmKey(key: string): { name: string; version: string } | null {
+  const from = key.startsWith("@") ? key.indexOf("/") + 1 : 0;
+  if (key.startsWith("@") && from === 0) return null;
+  const at = key.indexOf("@", from);
+  return at === -1 ? null : { name: key.slice(0, at), version: key.slice(at + 1) };
+}
+
+function parsePnpmLock(text: string): { byKey: Map<string, PnpmEntry>; roots: Set<string> } {
+  const lines = text.split("\n");
+  if (!lines.includes("packages:")) throw new Error("the pnpm lockfile has no packages: section");
+  const roots = new Set<string>();
+  const keyLine = /^\s+(?:'([^']+)'|([^\s:'].*)):\s*$/;
+  for (let i = 0; i < lines.length - 1; i++) {
+    const m = keyLine.exec(lines[i]!);
+    if (m && /^\s+specifier:/.test(lines[i + 1] ?? "")) roots.add((m[1] ?? m[2])!);
+  }
+  const byKey = new Map<string, PnpmEntry>();
+  let inPackages = false, current: string | null = null;
+  for (const line of lines) {
+    if (line === "packages:") { inPackages = true; continue; }
+    if (inPackages && line !== "" && !line.startsWith(" ")) { inPackages = false; current = null; continue; }
+    if (!inPackages) continue;
+    const pkg = /^ {2}(?:'([^']+)'|([^\s:'].*)):\s*$/.exec(line);
+    if (pkg) {
+      const key = (pkg[1] ?? pkg[2])!;
+      const split = splitPnpmKey(key);
+      current = split && byKey.set(key, { ...split, resolution: {} }) ? key : null;
+      continue;
+    }
+    const res = current && /^ {4}resolution: \{(.*)\}\s*$/.exec(line);
+    if (res) {
+      const fields: Record<string, string> = {};
+      for (const part of res[1]!.split(/,\s*(?=[a-zA-Z]+:)/)) {
+        const kv = /^([a-zA-Z]+):\s*(.*)$/.exec(part.trim());
+        if (kv) fields[kv[1]!] = kv[2]!.trim();
+      }
+      byKey.get(current!)!.resolution = fields;
+    }
+  }
+  if (!byKey.size) throw new Error("the pnpm lockfile's packages: section has no entries I recognize");
+  return { byKey, roots };
+}
+
+/** `type: git` is explicit; `tarball`/`integrity` are pnpm's registry and direct-URL markers (SEC-05: never guessed
+ * from the version string the way a key alone could be spoofed to look like). */
+function pnpmSource(r: Record<string, string>): Source {
+  if (r.type === "git" || r.commit) return "git";
+  if (r.integrity) return "registry";
+  if (r.tarball) return /^https?:\/\//.test(r.tarball) ? "registry" : "file";
+  if (r.directory) return "link";
+  return "unknown";
+}
+
+/** Same shape as `diffLockfile`, for pnpm-lock.yaml. A key embeds its own version (unlike npm's path-keyed lockfile),
+ * so an upgrade is two different keys, not one changed entry; a same-name match in the prior lockfile is counted as
+ * `changed` only when it is the single candidate, never guessed when several versions of one name coexist (pnpm
+ * allows that). pnpm's lockfile does not record whether a package has an install script at all (unlike npm's), so
+ * that fact is always `"unknown"` here — disclosed, never claimed as false. */
+export function diffPnpmLock(before: string | null, after: string): LockDiff {
+  const b = before === null ? { byKey: new Map<string, PnpmEntry>(), roots: new Set<string>() } : parsePnpmLock(before);
+  const a = parsePnpmLock(after);
+  const obs = (e: PnpmEntry, previous?: string): Observation => ({
+    key: `${e.name}@${e.version}`, name: e.name, version: e.version, ...(previous ? { previous } : {}),
+    direct: a.roots.has(e.name), source: pnpmSource(e.resolution), resolved: e.resolution.tarball ?? e.resolution.repo ?? "",
+    ...(e.resolution.integrity ? { integrity: e.resolution.integrity } : {}), hasInstallScript: "unknown",
+  });
+  const beforeByName = new Map<string, PnpmEntry[]>();
+  for (const e of b.byKey.values()) beforeByName.set(e.name, [...(beforeByName.get(e.name) ?? []), e]);
+  const consumed = new Set<string>();
+  const added: Observation[] = [], changed: Observation[] = [];
+  for (const [k, e] of a.byKey) {
+    if (b.byKey.has(k)) { consumed.add(k); continue; } // the identical key exists on both sides: unchanged
+    const priors = (beforeByName.get(e.name) ?? []).filter((p) => !consumed.has(`${p.name}@${p.version}`));
+    if (priors.length === 1) { changed.push(obs(e, priors[0]!.version)); consumed.add(`${priors[0]!.name}@${priors[0]!.version}`); }
+    else added.push(obs(e));
+  }
+  const gone = new Set<string>();
+  for (const [k, e] of b.byKey) if (!consumed.has(k) && !a.byKey.has(k)) gone.add(e.name);
+  return { added, changed, removed: [...gone].sort() };
+}
+
 export type Strictness = "allow" | "require-approval" | "deny";
 export interface Policy { min_release_age_days: number; urgent_exception: Strictness; unknown_age: Strictness }
 export interface Issue { package: string; kind: "age" | "unknown-age" | "script" | "source" | "license"; severity: "blocked" | "decision" | "note"; message: string }
@@ -75,7 +165,8 @@ export function judgeDependencies(obs: readonly Observation[], ages: Readonly<Re
         else add("age", "blocked", `${id} was published ${age} days ago; your policy needs ${o.policy.min_release_age_days}`);
       }
     }
-    if (p.hasInstallScript) { scripts.push(id); add("script", "decision", `${id} runs an install script`); }
+    if (p.hasInstallScript === true) { scripts.push(id); add("script", "decision", `${id} runs an install script`); }
+    else if (p.hasInstallScript === "unknown") add("script", "note", `${id}'s install-script status cannot be verified from this lockfile`);
     if (o.allowedLicenses) {
       if (!p.license) add("license", "decision", `${id} declares no license`);
       else if (!o.allowedLicenses.includes(p.license)) add("license", "blocked", `${id} is ${p.license}, which is not on the allowed list`);

@@ -1,8 +1,8 @@
 // `decide dependency`, first phase: resolve without installing (a remote read that writes only package.json and the lockfile),
-// judge the diff against the policy and ask. Only npm is built: a pnpm or Yarn project is refused.
+// judge the diff against the policy and ask. npm and pnpm are built; Yarn is refused.
 import { z } from "zod";
-import { diffLockfile, judgeDependencies } from "../core/dependencies.ts";
-import type { Issue, Observation } from "../core/dependencies.ts";
+import { diffLockfile, diffPnpmLock, judgeDependencies } from "../core/dependencies.ts";
+import type { Issue, LockDiff, Observation } from "../core/dependencies.ts";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
 import { reason } from "../core/reasons.ts";
@@ -11,7 +11,8 @@ import type { Plan } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
 import { nx, withWork } from "../verbs/common.ts";
 import { settingsFor } from "../verbs/reconcile.ts";
-import { LOCK, MANIFEST, TIMEOUT_MS, jobFor, previewQuestion, restore, restoreFiles } from "./dependency-job.ts";
+import { MANIFEST, TIMEOUT_MS, jobFor, lockFileOf, previewQuestion, restore, restoreFiles } from "./dependency-job.ts";
+import type { Manager } from "./dependency-job.ts";
 import type { DecisionCtx } from "./types.ts";
 
 const MAX_LOOKUPS = 50;
@@ -26,6 +27,7 @@ type Saved = { manifest: string | null; lock: string | null };
 interface Request {
   specs: string[];
   urgent: boolean;
+  manager: Manager;
   quote: string;
   before: Saved;
   wasLock: string | null;
@@ -33,13 +35,13 @@ interface Request {
 interface Resolution {
   failed?: string;
   error?: string;
-  diff?: ReturnType<typeof diffLockfile>;
+  diff?: LockDiff;
   ages?: Record<string, number | undefined>;
   after?: { manifest: string; lock: string };
 }
 
-/** Everything refused before the first process runs: no quote, a bad spec, another package manager, a change already waiting. */
-function admitStart(c: DecisionCtx): { specs: string[]; urgent: boolean } {
+/** Everything refused before the first process runs: no quote, a bad spec, Yarn, a change already waiting. */
+function admitStart(c: DecisionCtx): { specs: string[]; urgent: boolean; manager: Manager } {
   const { ports, work, input } = c;
   if (!input.quote?.trim())
     throw new KernelError("authority-needed", "a dependency change records the user's own words: pass them as the quote", {
@@ -54,15 +56,10 @@ function admitStart(c: DecisionCtx): { specs: string[]; urgent: boolean } {
     );
   }
   const other = ports.project.hashes(["pnpm-lock.yaml", "yarn.lock"]);
-  const manager = other["pnpm-lock.yaml"] ? "pnpm" : other["yarn.lock"] ? "yarn" : null;
-  if (manager)
-    throw new KernelError(
-      "capability-missing",
-      `${manager} projects are not built; an npm check is not a stand-in for ${manager}'s`,
-      { exit: 2 },
-    );
+  if (other["yarn.lock"] && !other["pnpm-lock.yaml"])
+    throw new KernelError("capability-missing", "yarn projects are not built; an npm check is not a stand-in for yarn's", { exit: 2 });
   if (work.dependency) throw new KernelError("continue-required", "a dependency change is waiting for your answer", { exit: 2 });
-  return body.data;
+  return { ...body.data, manager: other["pnpm-lock.yaml"] ? "pnpm" : "npm" };
 }
 
 /** Days since each added or changed registry version was published; an age that cannot be read stays unknown. */
@@ -85,19 +82,25 @@ async function releaseAges(ports: Ports, runDir: string, observed: Observation[]
   return ages;
 }
 
+const RESOLVE_ARGV: Record<Manager, (specs: string[]) => string[]> = {
+  npm: (specs) => ["npm", "install", "--package-lock-only", "--ignore-scripts", ...specs],
+  pnpm: (specs) => ["pnpm", "add", "--lockfile-only", "--ignore-scripts", ...specs], // "add": package.json does not list these specs yet
+};
+const DIFF_OF: Record<Manager, (before: string | null, after: string) => LockDiff> = { npm: diffLockfile, pnpm: diffPnpmLock };
+
 /** Resolve without installing, then diff the lockfile and look up the age of what it adds. */
 async function resolve(ports: Ports, runDir: string, req: Request): Promise<Resolution> {
   const r = await ports.runner.run({
-    argv: ["npm", "install", "--package-lock-only", "--ignore-scripts", ...req.specs],
+    argv: RESOLVE_ARGV[req.manager](req.specs),
     cwd: ports.root,
     runDir,
     timeoutMs: TIMEOUT_MS,
   });
   if (r.exit !== 0) return { failed: (r.stderr || r.stdout).trim().split("\n").slice(-4).join("\n") };
-  const after = { manifest: ports.project.read(MANIFEST) ?? "", lock: ports.project.read(LOCK) ?? "" };
+  const after = { manifest: ports.project.read(MANIFEST) ?? "", lock: ports.project.read(lockFileOf(req.manager)) ?? "" };
   let diff;
   try {
-    diff = diffLockfile(req.wasLock, after.lock);
+    diff = DIFF_OF[req.manager](req.wasLock, after.lock);
   } catch (e) {
     return { failed: (e as Error).message, after };
   }
@@ -129,11 +132,12 @@ function afterResolve(
   r: Resolution,
 ): { state: State; resp: Plan["resp"] } {
   const { ports } = c;
-  const { specs, urgent, before } = req;
+  const { specs, urgent, manager, before } = req;
   const dep = r.after
     ? {
         specs,
         urgent,
+        manager,
         quote: req.quote.slice(0, 200),
         scripts: [] as string[],
         before,
@@ -141,7 +145,7 @@ function afterResolve(
       }
     : undefined;
   if (r.failed || r.error || !r.diff || !dep) {
-    restoreFiles(ports, before);
+    restoreFiles(ports, before, manager);
     const msg = r.failed ?? r.error ?? "no result";
     return refused(tx, runId, st, cw, "install-failed", `resolving ${specs.join(", ")}: ${msg}; your files are as they were`, [
       nx("reconcile", "Fix the cause (network, spelling of the package), then ask again.", true),
@@ -186,16 +190,16 @@ function afterResolve(
 
 export function start(c: DecisionCtx): Plan {
   const { ports, input } = c;
-  const { specs, urgent } = admitStart(c);
-  const was = { manifest: ports.project.read(MANIFEST), lock: ports.project.read(LOCK) };
+  const { specs, urgent, manager } = admitStart(c);
+  const was = { manifest: ports.project.read(MANIFEST), lock: ports.project.read(lockFileOf(manager)) };
   const before = {
     manifest: was.manifest === null ? null : ports.store.putBlob(was.manifest),
     lock: was.lock === null ? null : ports.store.putBlob(was.lock),
   };
-  const req: Request = { specs, urgent, quote: input.quote!, before, wasLock: was.lock };
+  const req: Request = { specs, urgent, manager, quote: input.quote!, before, wasLock: was.lock };
   return jobFor(
     c,
-    { phase: "resolve", before },
+    { phase: "resolve", manager, before },
     (runDir) => resolve(ports, runDir, req),
     async (tx2, runId, st, cw, result) => afterResolve(c, req, tx2, runId, st, cw, result as Resolution),
   );

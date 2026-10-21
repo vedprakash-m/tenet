@@ -19,7 +19,7 @@ export const budgetChars = (name: string): number => Math.round(BUDGETS[name]!.l
 
 /** Budgets set by the owner (TS §6.2) in lines, enforced as characters. A module is a file, or a group of files (a directory, or files matching a pattern). */
 export const BUDGETS: Record<string, { match: RegExp; lines: number }> = {
-  "core/schemas": { match: /^core\/schemas\.ts$/, lines: 455 }, // +6 ModelRecord (RSC-02), +4 active-time fields (WRK-08), 2026-10
+  "core/schemas": { match: /^core\/schemas\.ts$/, lines: 460 }, // +6 ModelRecord (RSC-02), +4 active-time fields (WRK-08), +5 dependency.manager (pnpm), 2026-10
   "core/risk": { match: /^core\/risk\.ts$/, lines: 150 },
   "core/budget": { match: /^core\/budget\.ts$/, lines: 150 },
   "core/verdict": { match: /^core\/verdict\.ts$/, lines: 300 },
@@ -28,7 +28,7 @@ export const BUDGETS: Record<string, { match: RegExp; lines: number }> = {
   "adapters/git-cli": { match: /^adapters\/git-cli\.ts$/, lines: 650 },
   "adapters/runner": { match: /^adapters\/runner\.ts$/, lines: 350 },
   "adapters/node-ts": { match: /^adapters\/node-ts\.ts$/, lines: 350 },
-  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 3775 }, // +10 Deep passes (WRK-04), +5 model record (RSC-02), +33 active time and decide extend (WRK-08), +6 project charter reading (QLT-09), +4 Host port consumers (ENG-02), +7 support-overlaps-scope basis validation, 2026-10
+  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 3800 }, // +10 Deep passes (WRK-04), +5 model record (RSC-02), +33 active time and decide extend (WRK-08), +6 project charter reading (QLT-09), +4 Host port consumers (ENG-02), +7 support-overlaps-scope basis validation, +25 pnpm dependency verification, 2026-10
 };
 
 const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => {

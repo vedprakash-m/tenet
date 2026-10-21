@@ -7,20 +7,23 @@ import { factsHash, question, withWork } from "../verbs/common.ts";
 import type { DecisionCtx } from "./types.ts";
 
 export const MANIFEST = "package.json";
-export const LOCK = "package-lock.json";
+export const LOCK_FILES = { npm: "package-lock.json", pnpm: "pnpm-lock.yaml" } as const;
+export type Manager = keyof typeof LOCK_FILES;
+export const lockFileOf = (manager: Manager): string => LOCK_FILES[manager];
 export const TIMEOUT_MS = 10 * 60_000;
 
 export interface DependencyOp {
   work: string;
   phase: "resolve" | "install";
+  manager: Manager;
   before?: { manifest: string | null; lock: string | null };
   scripts?: string[];
 }
 
-export function restoreFiles(ports: Ports, before: { manifest: string | null; lock: string | null }): void {
+export function restoreFiles(ports: Ports, before: { manifest: string | null; lock: string | null }, manager: Manager = "npm"): void {
   for (const [file, blob] of [
     [MANIFEST, before.manifest],
-    [LOCK, before.lock],
+    [lockFileOf(manager), before.lock],
   ] as const) {
     if (blob === null) ports.project.remove([file]);
     else ports.project.write(file, ports.store.readBlob(blob) ?? "");
@@ -59,9 +62,10 @@ export function jobFor(
 }
 
 export const restore = (ports: Ports, dep: NonNullable<WorkContract["dependency"]>): boolean => {
-  const now = ports.project.hashes([MANIFEST, LOCK]);
-  if (now[MANIFEST] !== dep.after.manifest || now[LOCK] !== dep.after.lock) return false;
-  restoreFiles(ports, dep.before);
+  const lock = lockFileOf(dep.manager);
+  const now = ports.project.hashes([MANIFEST, lock]);
+  if (now[MANIFEST] !== dep.after.manifest || now[lock] !== dep.after.lock) return false;
+  restoreFiles(ports, dep.before, dep.manager);
   return true;
 };
 

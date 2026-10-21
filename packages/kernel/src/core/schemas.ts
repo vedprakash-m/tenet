@@ -269,6 +269,7 @@ export const WorkContract = z.object({
   // A dependency change resolved and waiting for the user's answer: what the files were, and what the resolution wrote (TS §9.11).
   dependency: z.object({
     specs: z.array(z.string()), urgent: z.boolean(), quote: z.string(), scripts: z.array(z.string()),
+    manager: z.enum(["npm", "pnpm"]).default("npm"), // which lockfile and install command this change resolved against
     before: z.object({ manifest: z.string().nullable(), lock: z.string().nullable() }), // blob hashes of the files as they were
     after: z.object({ manifest: z.string(), lock: z.string() }), // sha256 of the files as the resolution wrote them
   }).optional(),

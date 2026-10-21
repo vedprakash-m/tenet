@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-20 — pnpm dependency verification; corrected a tech-spec claim (`✅`, local)
+
+**Changed.** Dependency verification (SEC-05) extends from npm-only to npm and pnpm: a hand-rolled line scanner reads pnpm-lock.yaml's narrow shape (no new kernel dependency, no general YAML parser). Generating real pnpm lockfiles found tech-spec's claim that pnpm records lifecycle-script evidence via `requiresBuild` was wrong — it records none at all, so pnpm's script status is honestly `"unknown"` (disclosed, never blocking, never silently treated as "no script"). Same for license: pnpm's lockfile has no license field, so license-policy checks stay unavailable for pnpm. Yarn remains refused.
+
+**Files.** `core/dependencies.ts`, `decisions/{dependency,dependency-start,dependency-job}.ts`, `core/schemas.ts`, `verbs/recover-effects.ts`, `tech-spec.md` §9.11, `dependencies.test.ts`, `dependency.test.ts`.
+
+**Tests.** 3 new pure-parser tests, 1 policy test, 1 end-to-end pnpm resolve-preview-install test, 1 yarn-refusal test.
+
 ## 2026-10-20 — `decide basis` refuses a support input that overlaps its own scope (`✅`, local)
 
 **Changed.** A real VS Code host run found that listing the file being implemented as a locked `support` input guarantees a self-inflicted `red-invalidated`, no matter how correct the implementation is, discovered only after a full implement-review-check cycle. `decide basis` now refuses this at proposal time, before anything is recorded (new reason code `support-overlaps-scope`, exit 1).

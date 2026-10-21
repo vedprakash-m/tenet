@@ -1,7 +1,7 @@
 // Dependency verification before anything installs (SEC-05, TS §9.11): the lockfile diff and the policy check. Pure.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { diffLockfile, judgeDependencies } from "../src/core/dependencies.ts";
+import { diffLockfile, diffPnpmLock, judgeDependencies } from "../src/core/dependencies.ts";
 import type { Observation } from "../src/core/dependencies.ts";
 
 const pkg = (version: string, over: Record<string, unknown> = {}) => ({ version, resolved: `https://registry.npmjs.org/x/-/x-${version}.tgz`, integrity: "sha512-abc", license: "MIT", ...over });
@@ -38,6 +38,30 @@ describe("the lockfile diff [SEC-05]", () => {
   });
 });
 
+describe("the pnpm lockfile diff [SEC-05]", () => {
+  const PNPM_BEFORE = `lockfileVersion: '9.0'\n\nimporters:\n\n  .:\n    dependencies:\n      lodash:\n        specifier: ^4.17.21\n        version: 4.18.0\n\npackages:\n\n  lodash@4.18.0:\n    resolution: {integrity: sha512-aaa==}\n`;
+  const PNPM_AFTER = `lockfileVersion: '9.0'\n\nimporters:\n\n  .:\n    dependencies:\n      left-pad:\n        specifier: github:x/left-pad\n        version: git+https://github.com/x/left-pad.git#abc\n      lodash:\n        specifier: ^4.18.1\n        version: 4.18.1\n\npackages:\n\n  left-pad@git+https://github.com/x/left-pad.git#abc:\n    resolution: {commit: abc, repo: https://github.com/x/left-pad.git, type: git}\n    version: 1.3.0\n\n  lodash@4.18.1:\n    resolution: {integrity: sha512-bbb==}\n\n  '@esbuild/aix-ppc64@0.28.2':\n    resolution: {integrity: sha512-ccc==}\n    cpu: [ppc64]\n`;
+  it("lists new and changed packages, direct or transitive, scoped names, and what went away", () => {
+    const d = diffPnpmLock(PNPM_BEFORE, PNPM_AFTER);
+    assert.deepEqual(d.changed.map((o) => [o.name, o.previous, o.version, o.direct]), [["lodash", "4.18.0", "4.18.1", true]]);
+    const by = Object.fromEntries(d.added.map((o) => [o.name, o]));
+    assert.deepEqual([by["left-pad"]!.direct, by["@esbuild/aix-ppc64"]!.direct], [true, false]);
+  });
+  it("classifies a git resolution by its explicit type, not a guess from the version string", () => {
+    const d = diffPnpmLock(null, PNPM_AFTER);
+    const by = Object.fromEntries(d.added.map((o) => [o.name, o]));
+    assert.deepEqual([by["left-pad"]!.source, by.lodash!.source], ["git", "registry"]);
+  });
+  it("never claims a package has no install script: pnpm's lockfile does not record this, so it is always unknown", () => {
+    const d = diffPnpmLock(null, PNPM_AFTER);
+    assert.ok(d.added.every((o) => o.hasInstallScript === "unknown"));
+  });
+  it("rejects a pnpm lockfile it cannot read rather than guessing", () => {
+    assert.throws(() => diffPnpmLock(null, "not: yaml: at: all: :"), /pnpm/);
+    assert.throws(() => diffPnpmLock(null, "lockfileVersion: '9.0'\n"), /packages/);
+  });
+});
+
 describe("judging the diff against the policy [SEC-05, dependency_policy]", () => {
   const obs = (name: string, over: Partial<Observation> = {}): Observation => ({ key: `node_modules/${name}`, name, version: "1.0.0", direct: true, source: "registry", resolved: "https://registry.npmjs.org/x", hasInstallScript: false, license: "MIT", ...over });
   const j = (o: Observation[], ages: Record<string, number | undefined>, over: Partial<Parameters<typeof judgeDependencies>[2]> = {}) => judgeDependencies(o, ages, { policy: { ...POLICY }, urgent: false, ...over });
@@ -66,6 +90,12 @@ describe("judging the diff against the policy [SEC-05, dependency_policy]", () =
     const r = j([obs("s", { hasInstallScript: true })], { "s@1.0.0": 30 });
     assert.equal(r.verdict, "needs-decision");
     assert.deepEqual(r.scripts, ["s@1.0.0"]);
+  });
+  it("an unverifiable install-script status (pnpm) is disclosed but never blocks or demands consent on its own", () => {
+    const r = j([obs("p", { hasInstallScript: "unknown" })], { "p@1.0.0": 30 });
+    assert.equal(r.verdict, "ok");
+    assert.ok(r.issues.some((i) => i.kind === "script" && i.severity === "note"));
+    assert.deepEqual(r.scripts, []);
   });
   it("a git, link or unknown source is unverifiable and needs an explicit decision", () => {
     for (const source of ["git", "file", "link", "unknown"] as const) assert.equal(j([obs("g", { source })], {}).verdict, "needs-decision", source);

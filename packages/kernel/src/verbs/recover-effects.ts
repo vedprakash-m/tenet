@@ -164,7 +164,7 @@ async function dependency(r: Recovery, u: Unresolved) {
   const op = u.op as DependencyOp;
   if (op.phase === "resolve" && op.before) {
     try {
-      restoreFiles(r.ports, op.before);
+      restoreFiles(r.ports, op.before, op.manager);
       r.tx.result("dependency", u.id, { completed: false });
       r.completed.push("an interrupted dependency resolution was rolled back");
     } catch {

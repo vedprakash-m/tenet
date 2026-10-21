@@ -16,6 +16,12 @@ after(() => { for (const r of roots) cleanup(r); });
 
 interface Scenario { packages: Record<string, { version?: string; ageDays?: number; script?: boolean; resolved?: string; license?: string }>; failResolve?: boolean }
 const pkg = (name: string, s: Scenario["packages"][string]) => ({ version: s.version ?? "1.0.0", resolved: s.resolved ?? `https://registry.npmjs.org/${name}/-/${name}-1.0.0.tgz`, integrity: "sha512-x", license: s.license ?? "MIT", ...(s.script ? { hasInstallScript: true } : {}) });
+const pnpmLock = (sc: Scenario): string => {
+  const names = Object.keys(sc.packages);
+  const importer = names.map((n) => `      ${n}:\n        specifier: ^1.0.0\n        version: ${sc.packages[n]!.version ?? "1.0.0"}\n`).join("");
+  const pkgs = names.map((n) => `  ${n}@${sc.packages[n]!.version ?? "1.0.0"}:\n    resolution: {integrity: sha512-x}\n`).join("\n");
+  return `lockfileVersion: '9.0'\n\nimporters:\n\n  .:\n    dependencies:\n${importer}\npackages:\n\n${pkgs}`;
+};
 
 function setup(sc: Scenario, files: Record<string, string> = {}) {
   const p: Project = project(files);
@@ -26,11 +32,17 @@ function setup(sc: Scenario, files: Record<string, string> = {}) {
   const simulated = {
     async run(spec: RunSpec): Promise<RunResult> {
       calls.push(spec.argv);
-      const [, sub, flag] = spec.argv;
-      if (sub === "install" && flag === "--package-lock-only") {
+      const [tool, sub, flag] = spec.argv;
+      if (tool === "npm" && sub === "install" && flag === "--package-lock-only") {
         writeFileSync(join(p.root, "package.json"), JSON.stringify({ name: "fx", type: "module", private: true, dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }));
         writeFileSync(join(p.root, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: { "": { dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }, ...Object.fromEntries(Object.entries(sc.packages).map(([n, s]) => [`node_modules/${n}`, pkg(n, s)])) } }));
         if (sc.failResolve) return done({ exit: 1, stderr: "E404 not found" });
+        return done();
+      }
+      if (tool === "pnpm" && sub === "add" && flag === "--lockfile-only") {
+        writeFileSync(join(p.root, "package.json"), JSON.stringify({ name: "fx", type: "module", private: true, dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }));
+        writeFileSync(join(p.root, "pnpm-lock.yaml"), pnpmLock(sc));
+        if (sc.failResolve) return done({ exit: 1, stderr: "ERR_PNPM_FETCH_404" });
         return done();
       }
       if (sub === "view") {
@@ -38,7 +50,7 @@ function setup(sc: Scenario, files: Record<string, string> = {}) {
         const s = sc.packages[name!];
         return done({ stdout: s?.ageDays === undefined ? "{}" : JSON.stringify({ [s.version ?? "1.0.0"]: new Date(Date.now() - s.ageDays * 864e5).toISOString() }) });
       }
-      if (sub === "ci") writeFileSync(join(p.root, "node_modules-installed"), "1");
+      if (sub === "ci" || (tool === "pnpm" && sub === "install" && flag === "--frozen-lockfile")) writeFileSync(join(p.root, "node_modules-installed"), "1");
       return done();
     },
   };
@@ -77,6 +89,24 @@ describe("verifying before installing [SEC-05]", () => {
     assert.equal(w.grants.find((g) => g.actions.includes("dependency"))!.quote, "please add left-pad");
     assert.equal(w.dependency, undefined);
     assert.ok(["package.json", "package-lock.json"].every((f) => w.touched.some((x) => x.path === f)));
+  });
+
+  it("verifies a pnpm project the same way: resolves without installing, previews, and installs only after the answer", async () => {
+    const t = setup({ packages: { "left-pad": { ageDays: 90 } } }, { "pnpm-lock.yaml": "lockfileVersion: '9.0'\n\nimporters:\n\n  .:\n    dependencies: {}\n\npackages:\n\n  placeholder@1.0.0:\n    resolution: {integrity: sha512-x}\n" });
+    const h = await open(t);
+    const pre = await t.call("decide", { h, ...ask(["left-pad@1.0.0"]) });
+    assert.equal(pre.exit, 3, JSON.stringify(pre));
+    assert.match(pre.questions![0]!.question, /left-pad@1\.0\.0/);
+    assert.ok(ran(t, "add", "--lockfile-only", "--ignore-scripts"), "resolved with pnpm, scripts off");
+    assert.equal(ran(t, "install", "--frozen-lockfile"), false, "nothing installed before the answer");
+    assert.match(t.read("pnpm-lock.yaml")!, /left-pad/);
+
+    const done = await t.call("decide", { h, kind: "dependency", answers: confirm });
+    assert.equal(done.exit, 0, JSON.stringify(done));
+    assert.ok(ran(t, "install", "--frozen-lockfile", "--ignore-scripts"), JSON.stringify(t.calls));
+    const w = Object.values(t.state().work)[0]!;
+    assert.deepEqual(w.grants.find((g) => g.actions.includes("dependency"))!.paths, ["package.json", "pnpm-lock.yaml"]);
+    assert.equal(w.dependency, undefined);
   });
 
   it("restores both files and installs nothing when a package is younger than the policy allows", async () => {
@@ -135,13 +165,13 @@ describe("verifying before installing [SEC-05]", () => {
     assert.equal(ran(t, "ci"), false);
   });
 
-  it("refuses what it cannot check: a pnpm project, a flag as a spec, and a failed resolution that leaves the files alone", async () => {
-    const pn = setup({ packages: { a: {} } }, { "pnpm-lock.yaml": "lockfileVersion: 9\n" });
-    const h = await open(pn);
-    const r = await pn.call("decide", { h, ...ask(["a@1.0.0"]) });
+  it("refuses what it cannot check: a yarn project, a flag as a spec, and a failed resolution that leaves the files alone", async () => {
+    const yn = setup({ packages: { a: {} } }, { "yarn.lock": "# yarn lockfile v1\n" });
+    const h = await open(yn);
+    const r = await yn.call("decide", { h, ...ask(["a@1.0.0"]) });
     assert.equal(r.reasons[0]!.code, "capability-missing");
-    assert.match(r.reasons[0]!.message, /pnpm/);
-    assert.equal(pn.calls.length, 0);
+    assert.match(r.reasons[0]!.message, /yarn/);
+    assert.equal(yn.calls.length, 0);
 
     const t = setup({ packages: { a: {} } });
     const h2 = await open(t);

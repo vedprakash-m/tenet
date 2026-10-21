@@ -8,7 +8,8 @@ import type { State, WorkContract } from "../core/schemas.ts";
 import type { Plan } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
 import { factsHash, nx, readinessOf, withWork } from "../verbs/common.ts";
-import { LOCK, MANIFEST, TIMEOUT_MS, jobFor, restore } from "./dependency-job.ts";
+import { MANIFEST, TIMEOUT_MS, jobFor, lockFileOf, restore } from "./dependency-job.ts";
+import type { Manager } from "./dependency-job.ts";
 import { start } from "./dependency-start.ts";
 import type { Decision, DecisionCtx } from "./types.ts";
 
@@ -36,8 +37,9 @@ function decline(c: DecisionCtx, dep: Waiting): Plan {
 /** The files no longer equal what the preview showed: ask again instead of installing something else. */
 function changedSincePreview(c: DecisionCtx, dep: Waiting): Plan | undefined {
   const { ports, state, work } = c;
-  const here = ports.project.hashes([MANIFEST, LOCK]);
-  if (here[MANIFEST] === dep.after.manifest && here[LOCK] === dep.after.lock) return undefined;
+  const lock = lockFileOf(dep.manager);
+  const here = ports.project.hashes([MANIFEST, lock]);
+  if (here[MANIFEST] === dep.after.manifest && here[lock] === dep.after.lock) return undefined;
   const waiting = state.pending.find((q) => q.id === "dependency-confirm");
   const why = "package.json or the lockfile changed after the preview; decline to restore them, or ask for the change again";
   return {
@@ -68,14 +70,20 @@ function approvedScripts(c: DecisionCtx, dep: Waiting): string[] {
 const lastLines = (r: { stderr: string; stdout: string }, n: number) =>
   (r.stderr || r.stdout).trim().split("\n").slice(-n).join("\n");
 
-/** `npm ci` with scripts off, then a rebuild of each package whose scripts the user approved. */
-async function install(ports: Ports, runDir: string, approved: string[]): Promise<{ ok?: boolean; failed?: string }> {
+const CI_ARGV: Record<Manager, string[]> = {
+  npm: ["npm", "ci", "--ignore-scripts"],
+  pnpm: ["pnpm", "install", "--frozen-lockfile", "--ignore-scripts"],
+};
+const rebuildArgv = (manager: Manager, name: string): string[] => [manager, "rebuild", name];
+
+/** The exact install matching the resolved lockfile, scripts off, then a rebuild of each package whose scripts the user approved. */
+async function install(ports: Ports, runDir: string, manager: Manager, approved: string[]): Promise<{ ok?: boolean; failed?: string }> {
   const run = (argv: string[]) => ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: TIMEOUT_MS });
-  const ci = await run(["npm", "ci", "--ignore-scripts"]);
-  if (ci.exit !== 0) return { failed: `npm ci: ${lastLines(ci, 4)}` };
+  const ci = await run(CI_ARGV[manager]);
+  if (ci.exit !== 0) return { failed: `${manager} install: ${lastLines(ci, 4)}` };
   for (const id of approved) {
-    const r = await run(["npm", "rebuild", nameOf(id)]);
-    if (r.exit !== 0) return { failed: `npm rebuild ${nameOf(id)}: ${lastLines(r, 3)}` };
+    const r = await run(rebuildArgv(manager, nameOf(id)));
+    if (r.exit !== 0) return { failed: `${manager} rebuild ${nameOf(id)}: ${lastLines(r, 3)}` };
   }
   return { ok: true };
 }
@@ -89,17 +97,18 @@ async function installed(
   cw: WorkContract,
 ): Promise<{ state: State; resp: Plan["resp"] }> {
   const { ports } = c;
+  const lock = lockFileOf(dep.manager);
   const g = {
     id: `GR-${cw.grants.length + 1}`,
     actions: ["dependency" as const],
-    paths: [MANIFEST, LOCK],
+    paths: [MANIFEST, lock],
     source: "decide" as const,
     capture: "reported" as const,
     quote: dep.quote,
     bind: { factsHash: factsHash(dep.after) },
   };
   const { dependency: _d, ...bare } = cw;
-  const touched = [MANIFEST, LOCK].filter((f) => !bare.touched.some((t) => t.path === f)).map((path) => ({ path }));
+  const touched = [MANIFEST, lock].filter((f) => !bare.touched.some((t) => t.path === f)).map((path) => ({ path }));
   const probe = await ports.git.probe();
   const level = assistanceLevel(readinessOf(ports, probe), bare.profile).level;
   return {
@@ -127,8 +136,8 @@ function settle(c: DecisionCtx): Plan {
   const approved = approvedScripts(c, dep);
   return jobFor(
     c,
-    { phase: "install", scripts: approved },
-    (runDir) => install(ports, runDir, approved),
+    { phase: "install", manager: dep.manager, scripts: approved },
+    (runDir) => install(ports, runDir, dep.manager, approved),
     async (tx2, runId, st, cw, result) => {
       const r = result as { ok?: boolean; failed?: string; error?: string };
       tx2.result("dependency", runId, { completed: !!r.ok });
