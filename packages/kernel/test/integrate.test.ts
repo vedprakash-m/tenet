@@ -28,7 +28,7 @@ async function finished(p: Project) {
 }
 
 describe("integrate [GIT-11]", () => {
-  it("refuses unconsented integration hooks before switching the editor [SEC-15, GIT-11]", async () => {
+  it("refuses unconsented integration hooks before switching the editor [GIT-11]", async () => {
     const p = fresh(); const { h, work } = await finished(p);
     p.write(".git/hooks/post-checkout", "#!/bin/sh\nprintf unsafe > integration-hook-ran\n");
     chmodSync(join(p.root, ".git/hooks/post-checkout"), 0o755);

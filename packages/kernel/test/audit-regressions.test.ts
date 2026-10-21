@@ -44,7 +44,7 @@ describe("audit: common mutation boundaries", () => {
     assert.ok((check.data as { receipts: Array<{ obligation: string }> }).receipts.some(r => r.obligation === "OB-types"), "the new requirement is run, not ignored");
     assert.ok(Object.values(p.ports().store.read()!.state.work)[0]!.budget.checksLaunched > before);
   });
-  it("does not lock a changed support definition as if the earlier red still proved it [TDD-03, EVD-10]", async () => {
+  it("does not lock a changed support definition as if the earlier red still proved it [EVD-10]", async () => {
     const p = project({ "src/helper.ts": "export const helper = 1;\n" }); roots.push(p.root);
     const h = (await p.call("open", { profile: "feature", request: "support binding", lane: "quick" })).handle!;
     const basis = { ...BASIS, elements: BASIS.elements.map(e => e.kind === "example" ? { ...e, support: ["src/helper.ts"] } : e) };
@@ -156,7 +156,7 @@ describe("audit: common mutation boundaries", () => {
     assert.equal(r.questions, undefined, "no grant question may weaken a no-edit restriction");
     assert.equal(Object.values(p.ports().store.read()!.state.work)[0]!.budget.checksLaunched, 0);
   });
-  it("refuses specialized profiles that lack their safeguards [WRK-07]", async () => {
+  it("refuses specialized profiles that lack their safeguards", async () => {
     const p = fresh();
     for (const profile of ["promote", "recipe-upgrade", "continue"]) {
       const r = await p.call("open", { profile, request: "first" });
@@ -280,7 +280,7 @@ describe("audit: common mutation boundaries", () => {
     assert.equal(after.baselineMatched, false);
     assert.equal(after.baselineTestHash, before.baselineTestHash, "the historical baseline hash remains historical");
   });
-  it("refuses the unimplemented committed-tree stage before running [EVD-13]", async () => {
+  it("refuses the unimplemented committed-tree stage before running", async () => {
     const p = fresh();
     const h = (await p.call("open", { profile: "feature", request: "first" })).handle!;
     await p.call("decide", { h, kind: "basis", propose: BASIS });

@@ -60,7 +60,7 @@ describe("verdict table [RES-02, EVD-01]", () => {
   it("does not treat a fabricated manual reference as evidence [EVD-12]", () => {
     assert.ok(codes({ ...base(), elements: [{ ...req, verifiedBy: [{ method: "manual", ref: "someone said it works" }] }] }).includes("basis-element-unverified"));
   });
-  it("invalidates red when a declared support input changes or disappears [TDD-03]", () => {
+  it("invalidates red when a declared support input changes or disappears [EVD-03]", () => {
     const obligations = [{ ...ob, baselineInputs: { "helper.ts": "old" } }, suite];
     assert.ok(codes({ ...base(), obligations, testHashes: { "a.test.ts": "h1", "helper.ts": "new" } }).includes("red-invalidated"));
     assert.ok(codes({ ...base(), obligations }).includes("red-invalidated"));

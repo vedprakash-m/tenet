@@ -202,7 +202,7 @@ describe("guarded Git filter preparation", () => {
     assert.equal(existsSync(marker), false); assert.equal(git(root, "rev-parse", "HEAD"), plan.parent);
   });
 
-  it("binds consent to duplicate command order because Git uses the last assignment [GIT-12, SEC-15]", async () => {
+  it("binds consent to duplicate command order because Git uses the last assignment [GIT-12]", async () => {
     const marker = join(scratch(), "marker");
     const { root, g, plan } = await repository(`require('fs').writeFileSync(${JSON.stringify(marker)},process.argv.at(-1));${passthrough}`);
     const first = git(root, "config", "filter.audit.clean"), second = `${first} changed`;

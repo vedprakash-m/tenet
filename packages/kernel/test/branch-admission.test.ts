@@ -15,7 +15,7 @@ function fixture(custom = false) {
   chmodSync(join(p.root, dir, "post-checkout"), 0o755);
   return p;
 }
-describe("branch creation admission [GIT-02, GIT-12, SEC-15]", () => {
+describe("branch creation admission [GIT-02, GIT-12]", () => {
   for (const custom of [false, true]) it(`refuses ${custom ? "configured" : "default"} checkout hooks before creating the work branch`, async () => {
     const p = fixture(custom), h = (await p.call("open", { profile: "feature", request: "branch hook safety", lane: "quick" })).handle!;
     const r = await p.call("decide", { h, kind: "basis", propose: BASIS });
