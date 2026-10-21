@@ -1,0 +1,2 @@
+// The loans feature's only public face: another feature, or app.ts, reaches it only through this file (TS §12.3).
+export { registerLoanRoutes } from "./routes.ts";

@@ -1,0 +1,20 @@
+-- Items and loans (the equipment-loan example, PRD §3.5/5.16): one active loan per item, enforced by the database
+-- itself (a unique partial index), not just application code. Forward-only like 0001: fix forward in 0003+.
+CREATE TABLE items (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE loans (
+  id TEXT PRIMARY KEY,
+  item_id TEXT NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('active', 'returned')),
+  reserved_at INTEGER NOT NULL,
+  returned_at INTEGER
+);
+CREATE INDEX loans_item ON loans (item_id);
+CREATE INDEX loans_user ON loans (user_id);
+-- At most one active loan per item; a second reservation attempt hits this constraint, reported as 409 (TS §12.5).
+CREATE UNIQUE INDEX loans_active_item ON loans (item_id) WHERE status = 'active';

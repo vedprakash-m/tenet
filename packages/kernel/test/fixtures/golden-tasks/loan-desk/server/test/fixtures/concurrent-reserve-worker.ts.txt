@@ -1,0 +1,15 @@
+// A worker process for the concurrent-reservation race test: its own connection to the same database file,
+// used because concurrent HTTP calls into one synchronous connection would pass without ever racing (TS §12.5).
+import { openDb, writeTx } from "../../src/platform/db.ts";
+import { insertLoan } from "../../src/features/loans/loans.repository.ts";
+
+const [dbPath, itemId, userId] = process.argv.slice(2);
+const db = openDb(dbPath!);
+try {
+  await writeTx(db, () => insertLoan(db, { id: `${userId}-loan`, item_id: itemId!, user_id: userId!, reserved_at: Date.now() }));
+  process.stdout.write("ok");
+} catch (e) {
+  process.stdout.write((e as { code?: string }).code === "SQLITE_CONSTRAINT_UNIQUE" ? "conflict" : `error:${String(e)}`);
+} finally {
+  db.close();
+}

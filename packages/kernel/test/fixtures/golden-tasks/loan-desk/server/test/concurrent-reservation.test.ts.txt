@@ -1,0 +1,42 @@
+// TS §12.5: "the no-double-booking test races 5 reservations from separate processes with their own connections,
+// which exercises the transaction and index (concurrent HTTP calls into one synchronous connection would pass
+// without them)." This is that test: a real file-backed database, 5 real OS processes, no mocked concurrency.
+import { execFile } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
+import { afterEach, describe, expect, it } from "vitest";
+import { insertItem } from "../src/features/loans/items.repository.ts";
+import { openDb } from "../src/platform/db.ts";
+import { migrate } from "../src/platform/migrate.ts";
+import { insertUser } from "../src/platform/users.repository.ts";
+
+const run = promisify(execFile);
+const dirs: string[] = [];
+afterEach(() => { for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
+
+describe("the one-active-loan-per-item invariant under real concurrency", () => {
+  it("lets exactly one of 5 simultaneously-started reservations from separate processes win; the rest see the conflict, not a torn write", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "starter-race-")); dirs.push(dir);
+    const dbPath = join(dir, "app.db");
+    const db = openDb(dbPath);
+    migrate(db);
+    insertItem(db, { id: "race-item", name: "Contested Microscope", created_at: 0 });
+    for (let n = 1; n <= 5; n++) insertUser(db, { id: `user${n}`, email: `user${n}@example.test`, role: "member", password_hash: "x", created_at: 0 });
+    db.close();
+
+    const worker = join(import.meta.dirname, "fixtures/concurrent-reserve-worker.ts");
+    // All 5 processes are launched before any of them is awaited, so they genuinely overlap, not run in turn.
+    const started = [1, 2, 3, 4, 5].map((n) => run(process.execPath, ["--import", "tsx/esm", worker, dbPath, "race-item", `user${n}`]));
+    const results = await Promise.all(started.map((p) => p.then((r) => r.stdout)));
+
+    expect(results.filter((r) => r === "ok")).toHaveLength(1);
+    expect(results.filter((r) => r === "conflict")).toHaveLength(4);
+
+    const check = openDb(dbPath);
+    const active = check.prepare("SELECT COUNT(*) AS n FROM loans WHERE item_id = 'race-item' AND status = 'active'").get() as { n: number };
+    expect(active.n).toBe(1);
+    check.close();
+  });
+});

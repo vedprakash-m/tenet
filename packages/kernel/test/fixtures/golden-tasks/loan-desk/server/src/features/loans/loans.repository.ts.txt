@@ -1,0 +1,19 @@
+// Loans: reservations (checkout) and returns. The one-active-loan-per-item invariant lives in the database
+// itself (migration 0002's unique partial index), not here — this repository only surfaces the conflict.
+import type { Db } from "../../platform/db.ts";
+
+export interface LoanRow { id: string; item_id: string; user_id: string; status: "active" | "returned"; reserved_at: number; returned_at: number | null }
+
+export const findLoanById = (db: Db, id: string): LoanRow | undefined => db.prepare("SELECT * FROM loans WHERE id = ?").get(id) as LoanRow | undefined;
+
+/** Throws the driver's own unique-constraint error when the item already has an active loan; the caller maps it to 409. */
+export const insertLoan = (db: Db, l: { id: string; item_id: string; user_id: string; reserved_at: number }): void =>
+  void db.prepare("INSERT INTO loans (id, item_id, user_id, status, reserved_at, returned_at) VALUES (@id, @item_id, @user_id, 'active', @reserved_at, NULL)").run(l);
+
+export const returnLoan = (db: Db, id: string, returnedAt: number): void =>
+  void db.prepare("UPDATE loans SET status = 'returned', returned_at = ? WHERE id = ? AND status = 'active'").run(returnedAt, id);
+
+export interface LoanWithItem extends LoanRow { item_name: string }
+export const listAllLoans = (db: Db, limit: number, offset: number): LoanWithItem[] =>
+  db.prepare("SELECT l.*, i.name AS item_name FROM loans l JOIN items i ON i.id = l.item_id ORDER BY l.reserved_at DESC LIMIT ? OFFSET ?").all(limit, offset) as LoanWithItem[];
+export const countAllLoans = (db: Db): number => (db.prepare("SELECT COUNT(*) AS n FROM loans").get() as { n: number }).n;

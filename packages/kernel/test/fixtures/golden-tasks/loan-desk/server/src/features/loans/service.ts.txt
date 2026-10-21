@@ -1,0 +1,53 @@
+// Loan operations and invariants: availability without naming a borrower, the one-active-loan-per-item conflict,
+// and who may return what. The database driver itself lives behind the repositories; this file never imports it.
+import { randomUUID } from "node:crypto";
+import type { Actor } from "../../platform/actor.ts";
+import type { Db } from "../../platform/db.ts";
+import { writeTx } from "../../platform/db.ts";
+import { AppError } from "../../platform/errors.ts";
+import { findUserById } from "../../platform/users.repository.ts";
+import type { AdminLoanResponse, ItemResponse, LoanResponse } from "../../../../shared/schemas.ts";
+import { activeLoanItemIds, countItems, findItemById, listItems } from "./items.repository.ts";
+import { countAllLoans, findLoanById, insertLoan, listAllLoans, returnLoan } from "./loans.repository.ts";
+import { canReturn, canViewBorrowers } from "./policy.ts";
+
+const isUniqueViolation = (e: unknown): boolean => (e as { code?: string } | undefined)?.code === "SQLITE_CONSTRAINT_UNIQUE";
+interface Paged<T> { items: T[]; limit: number; offset: number; total: number }
+
+/** Availability, never who has it (the borrower-privacy invariant, PRD §3.5/5.16). */
+export function browseItems(db: Db, limit: number, offset: number): Paged<ItemResponse> {
+  const onLoan = activeLoanItemIds(db);
+  return { items: listItems(db, limit, offset).map((i) => ({ id: i.id, name: i.name, available: !onLoan.has(i.id) })), limit, offset, total: countItems(db) };
+}
+
+export async function reserveItem(db: Db, actor: Actor, itemId: string, now: number): Promise<LoanResponse> {
+  const item = findItemById(db, itemId);
+  if (!item) throw new AppError(404, "item-not-found", "That item does not exist.");
+  const id = randomUUID();
+  try {
+    await writeTx(db, () => insertLoan(db, { id, item_id: itemId, user_id: actor.user.id, reserved_at: now }));
+  } catch (e) {
+    if (isUniqueViolation(e)) throw new AppError(409, "item-on-loan", "That item is already on loan.");
+    throw e;
+  }
+  return { id, itemId, itemName: item.name, reservedAt: now, returnedAt: null };
+}
+
+export async function returnItem(db: Db, actor: Actor, loanId: string, now: number): Promise<LoanResponse> {
+  const loan = findLoanById(db, loanId);
+  if (!loan) throw new AppError(404, "loan-not-found", "That loan does not exist.");
+  if (!canReturn(actor, loan)) throw new AppError(403, "forbidden", "You may only return your own loan.");
+  if (loan.status === "returned") throw new AppError(409, "already-returned", "That loan was already returned.");
+  await writeTx(db, () => returnLoan(db, loanId, now));
+  const item = findItemById(db, loan.item_id);
+  return { id: loan.id, itemId: loan.item_id, itemName: item?.name ?? "", reservedAt: loan.reserved_at, returnedAt: now };
+}
+
+export function adminListLoans(db: Db, actor: Actor, limit: number, offset: number): Paged<AdminLoanResponse> {
+  if (!canViewBorrowers(actor)) throw new AppError(403, "forbidden", "Only an admin can see borrower identity.");
+  const items = listAllLoans(db, limit, offset).map((r) => ({
+    id: r.id, itemId: r.item_id, itemName: r.item_name, reservedAt: r.reserved_at, returnedAt: r.returned_at,
+    borrower: { id: r.user_id, email: findUserById(db, r.user_id)?.email ?? "" },
+  }));
+  return { items, limit, offset, total: countAllLoans(db) };
+}

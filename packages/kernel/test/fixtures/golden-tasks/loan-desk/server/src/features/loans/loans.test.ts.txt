@@ -1,0 +1,74 @@
+// The equipment-loan journeys (PRD §3.5/5.16): browse, reserve, return, admin overview. Sign-in is platform/auth's.
+import { describe, expect, it } from "vitest";
+import { signIn, testApp } from "../../../test/helpers.ts";
+
+const auth = (csrf: string, sid: string) => ({ cookies: { sid }, headers: { "x-csrf-token": csrf } });
+
+describe("loans: browse, reserve, return, admin overview", () => {
+  it("refuses to browse while signed out", async () => {
+    const { app } = await testApp();
+    expect((await app.inject({ method: "GET", url: "/api/items" })).statusCode).toBe(401);
+  });
+
+  it("lists items with availability, naming no borrower, until one is reserved", async () => {
+    const { app } = await testApp();
+    const member = await signIn(app);
+    const before = (await app.inject({ method: "GET", url: "/api/items", cookies: { sid: member.sid! } })).json();
+    expect(before.items).toEqual([{ id: "i1", name: "Microscope A", available: true }, { id: "i2", name: "Microscope B", available: true }]);
+    const reserved = await app.inject({ method: "POST", url: "/api/items/i1/reserve", ...auth(member.csrf!, member.sid!) });
+    expect(reserved.statusCode).toBe(200);
+    expect(reserved.json()).toMatchObject({ itemId: "i1", itemName: "Microscope A", returnedAt: null });
+    const after = (await app.inject({ method: "GET", url: "/api/items", cookies: { sid: member.sid! } })).json();
+    expect(after.items.find((i: { id: string }) => i.id === "i1").available).toBe(false);
+    expect(after.items.find((i: { id: string }) => i.id === "i2").available).toBe(true);
+    expect(JSON.stringify(after)).not.toMatch(/ada@example\.test|admin@example\.test/);
+  });
+
+  it("refuses a second reservation of an item already on loan, and 404s an unknown item", async () => {
+    const { app } = await testApp();
+    const ada = await signIn(app);
+    const ben = await signIn(app, "ben@example.test");
+    await app.inject({ method: "POST", url: "/api/items/i1/reserve", ...auth(ada.csrf!, ada.sid!) });
+    const conflict = await app.inject({ method: "POST", url: "/api/items/i1/reserve", ...auth(ben.csrf!, ben.sid!) });
+    expect(conflict.statusCode).toBe(409);
+    expect(conflict.json().type).toBe("urn:problem:item-on-loan");
+    const missing = await app.inject({ method: "POST", url: "/api/items/no-such-item/reserve", ...auth(ada.csrf!, ada.sid!) });
+    expect(missing.statusCode).toBe(404);
+  });
+
+  it("lets the borrower return their own loan; a second return conflicts, naming it so", async () => {
+    const { app } = await testApp();
+    const ada = await signIn(app);
+    const loan = (await app.inject({ method: "POST", url: "/api/items/i1/reserve", ...auth(ada.csrf!, ada.sid!) })).json();
+    const first = await app.inject({ method: "POST", url: `/api/loans/${loan.id}/return`, ...auth(ada.csrf!, ada.sid!) });
+    expect(first.statusCode).toBe(200);
+    expect(first.json().returnedAt).not.toBeNull();
+    const again = await app.inject({ method: "POST", url: `/api/loans/${loan.id}/return`, ...auth(ada.csrf!, ada.sid!) });
+    expect(again.statusCode).toBe(409);
+    expect(again.json().type).toBe("urn:problem:already-returned");
+  });
+
+  it("refuses a return by a different member who is neither the borrower nor an admin, but lets an admin return it", async () => {
+    const { app } = await testApp();
+    const ada = await signIn(app);
+    const ben = await signIn(app, "ben@example.test");
+    const admin = await signIn(app, "admin@example.test");
+    const loan = (await app.inject({ method: "POST", url: "/api/items/i1/reserve", ...auth(ada.csrf!, ada.sid!) })).json();
+    const forbidden = await app.inject({ method: "POST", url: `/api/loans/${loan.id}/return`, ...auth(ben.csrf!, ben.sid!) });
+    expect(forbidden.statusCode).toBe(403);
+    const asAdmin = await app.inject({ method: "POST", url: `/api/loans/${loan.id}/return`, ...auth(admin.csrf!, admin.sid!) });
+    expect(asAdmin.statusCode).toBe(200);
+  });
+
+  it("refuses admin overview to a member, and shows the admin borrower identity and item name", async () => {
+    const { app } = await testApp();
+    const ada = await signIn(app);
+    const admin = await signIn(app, "admin@example.test");
+    await app.inject({ method: "POST", url: "/api/items/i1/reserve", ...auth(ada.csrf!, ada.sid!) });
+    const asMember = await app.inject({ method: "GET", url: "/api/admin/loans", cookies: { sid: ada.sid! } });
+    expect(asMember.statusCode).toBe(403);
+    const asAdmin = await app.inject({ method: "GET", url: "/api/admin/loans", cookies: { sid: admin.sid! } });
+    expect(asAdmin.statusCode).toBe(200);
+    expect(asAdmin.json().items).toMatchObject([{ itemId: "i1", itemName: "Microscope A", borrower: { email: "ada@example.test" } }]);
+  });
+});

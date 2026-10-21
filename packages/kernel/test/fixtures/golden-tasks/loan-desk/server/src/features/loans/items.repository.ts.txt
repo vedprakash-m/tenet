@@ -1,0 +1,11 @@
+// Items: read-only for this slice (seeded by the scaffold's dev fixtures, not created through the API yet).
+import type { Db } from "../../platform/db.ts";
+
+export interface ItemRow { id: string; name: string; created_at: number }
+
+export const findItemById = (db: Db, id: string): ItemRow | undefined => db.prepare("SELECT * FROM items WHERE id = ?").get(id) as ItemRow | undefined;
+export const listItems = (db: Db, limit: number, offset: number): ItemRow[] => db.prepare("SELECT * FROM items ORDER BY name LIMIT ? OFFSET ?").all(limit, offset) as ItemRow[];
+export const countItems = (db: Db): number => (db.prepare("SELECT COUNT(*) AS n FROM items").get() as { n: number }).n;
+export const insertItem = (db: Db, i: ItemRow): void => void db.prepare("INSERT INTO items (id, name, created_at) VALUES (@id, @name, @created_at)").run(i);
+/** Item ids with a currently active loan, for availability without naming the borrower. */
+export const activeLoanItemIds = (db: Db): Set<string> => new Set((db.prepare("SELECT item_id FROM loans WHERE status = 'active'").all() as Array<{ item_id: string }>).map((r) => r.item_id));

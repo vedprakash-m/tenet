@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-21 — Golden task: the equipment-loan feature built by the real loop (`✅`, local)
+
+**Changed.** QLT-01 (persistence, validation, server-side object/role authorization, a real local journey) and QLT-12 (identity, exposure and data model per PRD §5.16) are now T1-tagged, proven by a golden-task test: a real starter scaffold, a real Standard-lane feature task for PRD's equipment-loan example (items, reservations, borrower privacy), a genuine baseline red, a genuine green with persistence/validation/object-role-authorization, a 5-process database concurrency race (TS §12.5's own stated test), and the Deep lane's native architect and security passes (the migration raises reversibility and compatibility) reaching `checked-local`, committed.
+
+**A caught mistake.** The feature was first written directly into the shipped recipe template, contradicting TS §12.2's explicit "`features/<f>/` starts empty." Reverted before commit; rebuilt as a kernel-side golden-task fixture instead (inert `.txt` files, never `.ts`, so this repo's own typecheck and test glob never pick them up).
+
+**Files.** `packages/kernel/test/golden-task-loan-desk.test.ts`, `packages/kernel/test/fixtures/golden-tasks/loan-desk/**`, `tech-spec.md` §12.2.
+
+**Tests.** 1 new golden-task test (scaffold → basis → red → green → review → architect/security → finish).
+
 ## 2026-10-21 — INS-04: plugin-ready, project-ready, action-ready reporting (`✅`, local)
 
 **Changed.** INS-04 had no tech-spec or ux-spec section at all, only a one-line PRD requirement — a genuine spec gap, now backfilled (TS §8.2). A new pure `readinessReport` in `core/risk.ts` groups the existing readiness probes `assistanceLevel` already gates into two tiers (plugin-ready: Tenet's own prerequisites; project-ready: this project's stack/state) with zero change to any existing gating logic. `inspect doctor` reports both; `inspect why` additionally reports action-ready (every current verdict reason that is not a disclosure note), repeating plugin/project there only when not ready.

@@ -1,0 +1,9 @@
+// Object-level authorization for this feature (TS §12.4: `policy.ts` exports `can<Action>(actor, resource)`).
+import type { Actor } from "../../platform/actor.ts";
+import type { LoanRow } from "./loans.repository.ts";
+
+/** Only an admin sees who has an item on loan (the borrower-privacy invariant, PRD §3.5/5.16). */
+export const canViewBorrowers = (actor: Actor): boolean => actor.user.role === "admin";
+
+/** A member returns only their own loan; an admin returns any loan. */
+export const canReturn = (actor: Actor, loan: LoanRow): boolean => actor.user.role === "admin" || loan.user_id === actor.user.id;
