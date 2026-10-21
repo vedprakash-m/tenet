@@ -1,9 +1,10 @@
 // Obligations derived from the accepted basis (TS §9.2). Recipes and traits declare; they never bypass rules.
-import type { StaticTool } from "../ports/types.ts";
+import type { CheckTool, StaticTool } from "../ports/types.ts";
 import type { BasisElement, Obligation } from "./schemas.ts";
 
 export const obligationId = (elementId: string): string => `OB-${elementId}`;
 export const FULL_SUITE = "OB-suite";
+export const E2E_SUITE = "OB-e2e";
 
 const STATIC: Record<StaticTool, string> = { tsc: "OB-types", eslint: "OB-lint" };
 const ALIASES: Record<string, StaticTool> = { types: "tsc", typecheck: "tsc", lint: "eslint" };
@@ -12,7 +13,7 @@ type StaticRequirement = {
 };
 
 /** The static checks a contract owes: both after a starter scaffold, otherwise those a required check names (by tool, or by id). */
-export function wantedStatic(recipe: readonly StaticTool[], required: readonly StaticRequirement[]): StaticTool[] {
+export function wantedStatic(recipe: readonly CheckTool[], required: readonly StaticRequirement[]): StaticTool[] {
   const toolOf = (c: StaticRequirement) => {
     // The fixed invocation cannot prove custom configuration, population, criteria or alternatives.
     if (c.configuration !== undefined || c.population !== undefined || c.pass !== undefined || c.alternatives?.length)
@@ -30,6 +31,18 @@ export const withStatic = (obligations: readonly Obligation[], tools: readonly S
     .filter((t) => !obligations.some((o) => o.id === STATIC[t]))
     .map((t): Obligation => ({ id: STATIC[t], kind: "static", category: "boundary", tool: t })),
 ];
+
+/** The recipe names "e2e" (EVD-13): integration/end-to-end checks against a Tenet-started server and a dedicated test database. */
+export const wantsE2e = (recipe: readonly CheckTool[]): boolean => recipe.includes("e2e");
+
+/** Adds the e2e obligation when wanted and not already present; routed like a static tool (its own separate run,
+ * its own report), but normalized with real test counts, not diagnostics — so it keeps `kind: "static"` for
+ * dispatch while `tool: "playwright"` tells the receipt layer to use test-count normalization instead. */
+export const withE2e = (obligations: readonly Obligation[], wanted: boolean): Obligation[] =>
+  wanted && !obligations.some((o) => o.id === E2E_SUITE)
+    ? [...obligations, { id: E2E_SUITE, kind: "static", category: "affected", tool: "playwright" }]
+    : [...obligations];
+
 
 /** Requirements that have neither a boundary example nor an invariant (a negative statement) to go with them (INT-15). */
 export const withoutBoundary = (elements: readonly BasisElement[]): string[] =>

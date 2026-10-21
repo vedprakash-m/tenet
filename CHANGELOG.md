@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-21 — EVD-13: a free port, a verified server, a dedicated test database (`✅`, local)
+
+**Changed.** EVD-13 is now T1-tagged: a global `OB-e2e` obligation runs Playwright against a server Tenet starts and verifies for the current candidate, on a dedicated test database, never the developer's own. New: `Runner#allocatePort` (bind 0, read, release, retried on `EADDRINUSE`), `adapters/playwright.ts` (a new Stack-port adapter normalizing Playwright's JSON report into the same shape Vitest's uses), `core/obligations.ts#wantsE2e`/`withE2e`. The free port, a run token and a dedicated database path are generated per run and passed as environment; Playwright's own `webServer` starts the real server as its child, so no new server-lifecycle code was needed in the runner. The starter recipe pins `@playwright/test`, adds `playwright.config.ts` and one real e2e spec (server-identity + database-isolation).
+
+**Two real defects found and fixed, not style choices.** `tsx`'s own IPC socket path exceeds the platform's socket-path length limit inside Tenet's run directory, failing the server with `EINVAL` — the recipe now starts its server with plain `node --experimental-strip-types`. Playwright's default `test-results/` output directory landed inside the project tree, correctly tripping the kernel's own concurrent-edit guard — `playwright.config.ts` now redirects it into the run's own `TMPDIR`.
+
+**One test adjusted, not weakened.** `requirements.test.ts`'s SEC-03 network-import scan now permits `node:net` in exactly `adapters/runner.ts`, for the port allocator's bind-and-release only (a separate assertion confirms no client/`.connect(` usage appears) — this makes no network connection and carries no data, so it does not touch what SEC-03 forbids.
+
+**Files.** `adapters/runner.ts`, `adapters/playwright.ts` (new), `adapters/report-bounds.ts` (new), `adapters/node-ts.ts`, `core/obligations.ts`, `verbs/check.ts`, `verbs/check-evidence.ts`, `decisions/{basis,scaffold}.ts`, `verbs/reconcile.ts`, `ports/types.ts`, `core/schemas.ts`, `test/requirements.test.ts`, the starter template (`package.json`, `playwright.config.ts`, `server/test/e2e/server-identity.e2e.spec.ts`, `.gitignore`), `recipe.json`, `tech-spec.md` §12.7.
+
+**Tests.** 8 new `playwright-adapter.test.ts` unit tests (pass/fail/skip counting, nested suites, malformed reports, path traversal); `starter.test.ts` extended with real `OB-e2e` assertions (a real `npm ci`, a real Playwright run against a real started server).
+
 ## 2026-10-21 — Golden task: the equipment-loan feature built by the real loop (`✅`, local)
 
 **Changed.** QLT-01 (persistence, validation, server-side object/role authorization, a real local journey) and QLT-12 (identity, exposure and data model per PRD §5.16) are now T1-tagged, proven by a golden-task test: a real starter scaffold, a real Standard-lane feature task for PRD's equipment-loan example (items, reservations, borrower privacy), a genuine baseline red, a genuine green with persistence/validation/object-role-authorization, a 5-process database concurrency race (TS §12.5's own stated test), and the Deep lane's native architect and security passes (the migration raises reversibility and compatibility) reaching `checked-local`, committed.

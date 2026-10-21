@@ -308,7 +308,7 @@ export const State = z.strictObject({
       records: z.array(DecisionRecord).default([]), // decisions with their context and consequences (INT-10)
     }),
     moduleRoot: z.string(), traits: z.array(z.string()),
-    recipe: z.object({ id: z.string(), version: z.string(), installed: z.boolean(), checks: z.array(z.enum(["tsc", "eslint"])).optional() }).optional(), // the starter this project was scaffolded from
+    recipe: z.object({ id: z.string(), version: z.string(), installed: z.boolean(), checks: z.array(z.enum(["tsc", "eslint", "e2e"])).optional() }).optional(), // the starter this project was scaffolded from
     adoption: z.object({
       intent: z.enum(["undecided", "adopted", "declined"]),
       policy: z.enum(["undecided", "adopted", "declined"]),

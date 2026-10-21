@@ -48,12 +48,19 @@ describe("helpers stay inside the workspace [SEC-06]", () => {
 });
 
 describe("what ships makes no network connection and bundles no MCP [SEC-03, SEC-07]", () => {
-  it("has no network client in the bundle or the source", () => {
+  it("has no network client in the bundle or the source, except a loopback bind-and-release for a free port (EVD-13)", () => {
     const bundle = join(ROOT, "plugin/kernel/tenet.mjs");
-    const sources = walk(join(ROOT, "packages/kernel/src")).filter((f) => f.endsWith(".ts")).map((f) => readFileSync(f, "utf8"));
-    const net = /from ["']node:(?:net|http|https|http2|dgram|tls|dns|inspector)["']|require\(["'](?:node:)?(?:net|http|https|dgram|tls|dns)["']\)|\bfetch\(|new WebSocket\(/;
-    for (const s of sources) assert.doesNotMatch(s, net);
-    if (existsSync(bundle)) assert.doesNotMatch(readFileSync(bundle, "utf8"), /from ["']node:(?:net|http|https|http2|dgram|tls)["']|import\(["']node:(?:net|http|https)["']\)/);
+    const sources = walk(join(ROOT, "packages/kernel/src")).filter((f) => f.endsWith(".ts")).map((f) => [f, readFileSync(f, "utf8")] as const);
+    const net = /from ["']node:(?:http|https|http2|dgram|tls|dns|inspector)["']|require\(["'](?:node:)?(?:http|https|dgram|tls|dns)["']\)|\bfetch\(|new WebSocket\(/;
+    const client = /\.connect\(|new (?:net\.)?Socket\(/; // node:net itself also has client APIs; only the server side (bind, read, release) is allowed
+    for (const [f, s] of sources) {
+      assert.doesNotMatch(s, net, f);
+      if (/from ["']node:net["']/.test(s)) {
+        assert.doesNotMatch(s, client, `${f}: node:net is for the EVD-13 port allocator only, never a client`);
+        assert.match(f, /adapters\/runner\.ts$/, `${f}: node:net is reserved for the EVD-13 port allocator in adapters/runner.ts`);
+      }
+    }
+    if (existsSync(bundle)) assert.doesNotMatch(readFileSync(bundle, "utf8"), /from ["']node:(?:http|https|http2|tls)["']|import\(["']node:(?:net|http|https)["']\)/);
   });
 
   it("ships no MCP server or configuration in the plugin", () => {

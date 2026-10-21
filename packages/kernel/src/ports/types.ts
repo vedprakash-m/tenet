@@ -145,6 +145,8 @@ export interface Runner {
   run(spec: RunSpec): Promise<RunResult>;
   /** Stops the recorded process group if its identity still matches (TS §7.4 Check run). */
   stopRun(runDir: string): Promise<"stopped" | "gone" | "unknown">;
+  /** A free loopback port: bind 0 on 127.0.0.1, read the assigned port, release it (EVD-13, TS §9.3 Servers). */
+  allocatePort(): Promise<number>;
 }
 
 // ---------------------------------------------------------------- stack (Node/TypeScript adapter)
@@ -176,6 +178,9 @@ export interface Stack {
   /** Where a static tool reports: tsc prints its diagnostics, ESLint writes its JSON report. */
   staticOutput(tool: StaticTool, r: Pick<RunResult, "stdout" | "report">): string | null;
   normalizeStatic(tool: StaticTool, out: { exit: number | undefined; raw: string | null }, root?: string): StaticNorm;
+  /** A direct binary, never npx; null when Playwright is not installed or not configured (EVD-13, TS §9.3 Servers). */
+  e2eArgv(root: string, report: string): string[] | null;
+  normalizeE2e(out: { exit: number | undefined; raw: string | null }, root?: string): Normalized;
   fingerprint(root: string): ToolVersions;
   patterns: readonly AttentionPattern[];
   classify(path: string): FileChange["kind"];
@@ -183,11 +188,12 @@ export interface Stack {
 }
 
 // ---------------------------------------------------------------- recipes and the project folder (starter scaffold)
+export type CheckTool = StaticTool | "e2e";
 export interface RecipeFile { path: string; content: string; mode: number }
 export interface Recipe {
   id: string; version: string; sentinel: string; lockfileSha256: string; protectedPaths: string[]; install: string[][]; files: RecipeFile[];
-  /** The static checks every project from this recipe owes (typecheck, lint). */
-  checks?: StaticTool[];
+  /** The checks every project from this recipe owes (typecheck, lint, end-to-end). */
+  checks?: CheckTool[];
 }
 export interface Recipes {
   load(id: string): Recipe | null;

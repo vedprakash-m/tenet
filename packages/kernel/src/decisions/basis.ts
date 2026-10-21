@@ -5,7 +5,7 @@ import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
 import { build } from "../core/basis-build.ts";
 import { hashOf } from "../core/ids.ts";
-import { deriveObligations, wantedStatic, withoutBoundary, withStatic } from "../core/obligations.ts";
+import { deriveObligations, wantedStatic, wantsE2e, withE2e, withoutBoundary, withStatic } from "../core/obligations.ts";
 import { reason } from "../core/reasons.ts";
 import { BasisProposal } from "../core/schemas.ts";
 import type { DecideInput, State, WorkContract } from "../core/schemas.ts";
@@ -86,9 +86,13 @@ function draftBasis(
     elements: elements.map(({ verifiedBy: _v, ...rest }) => rest),
   });
   const required = settingsFor(ports, state, work).required_checks as Array<{ id: string; tool?: string }>;
-  const obligations = withStatic(
-    deriveObligations(elements, ports.stack.detect(ports.root).runner ?? "vitest", work.obligations),
-    wantedStatic(state.project.recipe?.checks ?? [], required)
+  const checks = state.project.recipe?.checks ?? [];
+  const obligations = withE2e(
+    withStatic(
+      deriveObligations(elements, ports.stack.detect(ports.root).runner ?? "vitest", work.obligations),
+      wantedStatic(checks, required)
+    ),
+    wantsE2e(checks)
   );
   const grant = {
     id: "GR-basis",

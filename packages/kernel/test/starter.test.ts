@@ -1,6 +1,6 @@
 // The real starter recipe, installed from its pinned lockfile. Needs the network (npm ci); set TENET_OFFLINE=1 to skip.
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -23,7 +23,7 @@ describe("the ts-web-api recipe", () => {
     assert.deepEqual(recipe.install[0], ["npm", "ci", "--ignore-scripts"]);
   });
 
-  it("scaffolds, and receipts the starter's tests, types and lint, all run by the kernel", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
+  it("scaffolds, and receipts the starter's tests, types and lint and a real end-to-end run against its own dedicated database [EVD-13], all run by the kernel", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
     const root = tmp("tenet-starter-"); roots.push(root);
     initRepo(root);
     const call = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
@@ -50,6 +50,10 @@ describe("the ts-web-api recipe", () => {
       const receipt = d(c).receipts.find((r: { obligation: string }) => r.obligation === id);
       assert.equal(receipt?.status, "pass", `${id}: ${JSON.stringify(receipt)}`);
     }
+    const e2e = d(c).receipts.find((r: { obligation: string }) => r.obligation === "OB-e2e");
+    assert.equal(e2e?.status, "pass", `OB-e2e: ${JSON.stringify(e2e)}`);
+    assert.equal(e2e.counts.executed, 2, "the server-identity.e2e.spec.ts journeys both ran");
+    assert.ok(!existsSync(join(root, "data", "app.db")), "the e2e obligation never touched the developer's own database (EVD-13)");
     assert.equal(c.next[0]!.action, "focused-review", "the recipe's own vetted auth and session files do not raise the lane to Deep");
     await call("findings", { h, result: reviewResult(d(c)) });
 

@@ -27,16 +27,18 @@ export interface Run {
   id: string;
 }
 
-/** What a check run observed: the test runner, and each static tool by obligation. */
+/** What a check run observed: the test runner, and each static tool (including the e2e obligation) by obligation. */
 export interface Executed extends RunFacts { statics: Record<string, RunFacts> }
 export const isStatic = (ob: Obligation): boolean => ob.kind === "static";
+export const isE2e = (ob: Obligation): boolean => ob.tool === "playwright";
 export const staticReport = (runDir: string, tool: string): string => join(runDir, `${tool}.json`);
+export const e2eReport = (runDir: string): string => join(runDir, "playwright.json");
 
 /** A static check is judged by its own run, on the same candidate as the tests. */
 function staticReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
   const { ports, facts, runId, runDir, stage, scope } = run;
   const versions = ports.stack.fingerprint(ports.root);
-  return run.toRun.filter(isStatic).map((ob, i) => {
+  return run.toRun.filter((ob) => isStatic(ob) && !isE2e(ob)).map((ob, i) => {
     const tool = ob.tool as StaticTool;
     const argv = ports.stack.staticArgv(ports.root, tool, staticReport(runDir, tool)) ?? [];
     const candidate = facts.candidate;
@@ -49,6 +51,22 @@ function staticReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
     const norm = ports.stack.normalizeStatic(tool, { exit: ran.exit, raw: ran.raw }, ports.root);
     return staticReceipt(ran, norm, ob, firstIndex + i, ctx);
   });
+}
+
+/** The e2e obligation is judged like a test (real pass/fail counts), but from its own separate Playwright run,
+ * never the shared Vitest report (EVD-13). */
+function e2eReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
+  const { ports, facts, runId, runDir, stage, scope } = run;
+  const e2eObs = run.toRun.filter(isE2e);
+  if (!e2eObs.length) return [];
+  const candidate = facts.candidate;
+  const notRun: RunFacts = { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, after: candidate, ran: false };
+  const ran = o.statics[e2eObs[0]!.id] ?? notRun;
+  const norm = ports.stack.normalizeE2e({ exit: ran.exit, raw: ran.raw }, ports.root);
+  return receiptsFrom(ran, norm, e2eObs, {
+    stage, scope, id: run.id, candidate, runId, runDir, argv: ports.stack.e2eArgv(ports.root, e2eReport(runDir)) ?? [],
+    before: candidate, versions: ports.stack.fingerprint(ports.root), missing: new Set<string>(),
+  }).map((r, i) => ({ ...r, id: `RC-${runId}-${firstIndex + i + 1}` }));
 }
 
 export function receiptsOf(run: Run, cw: WorkContract, o: Executed): Receipt[] {
@@ -69,6 +87,7 @@ export function receiptsOf(run: Run, cw: WorkContract, o: Executed): Receipt[] {
     missing: new Set(run.missing.map((m) => m.id)),
   });
   receipts.push(...staticReceipts(run, o, tests.length));
+  receipts.push(...e2eReceipts(run, o, tests.length + run.toRun.filter((ob) => isStatic(ob) && !isE2e(ob)).length));
   if (!run.baseline) return receipts;
   // The baseline may differ from the start only by tests and new files (the minimal scaffolding a new interface needs);
   // a pre-existing source file that changed means the red was not taken on the starting behavior. A path named with

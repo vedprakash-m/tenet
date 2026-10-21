@@ -58,6 +58,7 @@ function setup(sc: Scenario, files: Record<string, string> = {}) {
   const runner: Runner = {
     guardRun: (dir, admit) => { guards.set(dir, admit); },
     stopRun: dir => base.runner.stopRun(dir),
+    allocatePort: () => base.runner.allocatePort(),
     run: spec => guards.has(spec.runDir) ? guards.get(spec.runDir)!(() => simulated.run(spec)) : simulated.run(spec),
   };
   const ports = { ...base, runner };

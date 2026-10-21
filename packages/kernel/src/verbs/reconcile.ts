@@ -2,7 +2,7 @@
 // ordinary external edit, never a silent carry-over: a tightened policy applies at once, anything looser or not
 // comparable waits for the user's acceptance, and a block someone edited stays as they wrote it.
 import { effectiveSettings, layersOf, unavailableExecution } from "../core/config.ts";
-import { wantedStatic, withStatic } from "../core/obligations.ts";
+import { wantedStatic, wantsE2e, withE2e, withStatic } from "../core/obligations.ts";
 import { effectivePolicy, parsePolicy } from "../core/policy.ts";
 import type { Change, Policy } from "../core/policy.ts";
 import { reason } from "../core/reasons.ts";
@@ -74,7 +74,8 @@ export function unsupportedExecution(ports: Ports, state: State | null, w?: Work
 export function withRequiredChecks(ports: Ports, state: State, w: WorkContract): WorkContract {
   if (!w.basis) return w;
   const required = settingsFor(ports, state, w).required_checks as Array<{ id: string; tool?: string }>;
-  const obligations = withStatic(w.obligations, wantedStatic(state.project.recipe?.checks ?? [], required));
+  const checks = state.project.recipe?.checks ?? [];
+  const obligations = withE2e(withStatic(w.obligations, wantedStatic(checks, required)), wantsE2e(checks));
   return obligations.length === w.obligations.length ? w : { ...w, obligations };
 }
 

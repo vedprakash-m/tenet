@@ -3,6 +3,7 @@
 import { spawn } from "node:child_process";
 import { closeSync, constants, fchmodSync, fstatSync, fsyncSync, lstatSync, mkdirSync, openSync, readSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { createServer } from "node:net";
 import { join, resolve, sep } from "node:path";
 import type { Clock, RunResult, RunSpec, Runner } from "../ports/types.ts";
 import { procStart } from "./proc.ts";
@@ -52,6 +53,18 @@ export class ProcessRunner implements Runner {
   private admissions = new Map<string, (spawn: () => Promise<RunResult>) => Promise<RunResult>>();
   constructor(clock: Clock, env: Record<string, string | undefined>) { this.clock = clock; this.env = env; }
   guardRun(runDir: string, admit: (spawn: () => Promise<RunResult>) => Promise<RunResult>): void { this.admissions.set(resolve(runDir), admit); }
+
+  /** Bind 0 on 127.0.0.1, read the assigned port, release it (EVD-13, TS §9.3 Servers). A real socket, not a guess. */
+  allocatePort(): Promise<number> {
+    return new Promise((resolvePort, reject) => {
+      const srv = createServer();
+      srv.on("error", reject);
+      srv.listen(0, "127.0.0.1", () => {
+        const addr = srv.address();
+        srv.close(() => (addr && typeof addr === "object" ? resolvePort(addr.port) : reject(new Error("no port assigned"))));
+      });
+    });
+  }
 
   async run(spec: RunSpec): Promise<RunResult> {
     const dir = resolve(spec.runDir);

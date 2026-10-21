@@ -5,10 +5,10 @@ import { basename } from "node:path";
 import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
-import { wantedStatic, withStatic } from "../core/obligations.ts";
+import { wantedStatic, wantsE2e, withE2e, withStatic } from "../core/obligations.ts";
 import { reason } from "../core/reasons.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
-import type { Recipe, StaticTool } from "../ports/types.ts";
+import type { CheckTool, Recipe } from "../ports/types.ts";
 import type { Job } from "../pipeline.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 import { assistanceLevel } from "../core/risk.ts";
@@ -36,7 +36,7 @@ const projectName = (root: string) =>
 /** What the scaffold effect's intent records, so recovery can verify and finish it. */
 export interface ScaffoldOp {
   work: string;
-  recipe: { id: string; version: string; checks?: StaticTool[] };
+  recipe: { id: string; version: string; checks?: CheckTool[] };
   expected: Record<string, string>;
   protect: string[];
 }
@@ -46,11 +46,12 @@ export const scaffolded = (
   w: WorkContract,
   expected: Readonly<Record<string, string>>,
   protect: readonly string[],
-  checks: readonly StaticTool[]
+  checks: readonly CheckTool[]
 ): WorkContract => ({
   ...w,
   vetted: { ...w.vetted, ...expected },
-  obligations: withStatic(w.obligations, wantedStatic(checks, [])), // the recipe names the static checks its projects owe
+  // the recipe names the checks its projects owe
+  obligations: withE2e(withStatic(w.obligations, wantedStatic(checks, [])), wantsE2e(checks)),
   touched: [
     ...w.touched,
     ...Object.keys(expected)

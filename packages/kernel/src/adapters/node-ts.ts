@@ -8,6 +8,8 @@ import { allowed } from "../core/exclusions.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
 import { FsProject } from "./project-fs.ts";
+import { nestsTooDeep } from "./report-bounds.ts";
+import { normalizePlaywright, playwrightArgv } from "./playwright.ts";
 
 const ADAPTER = "node-ts@2";
 const readJson = (p: string): Record<string, any> | null => {
@@ -118,17 +120,6 @@ const invalid = (message: string): Normalized => ({ files: new Map(), discovered
 const FILE_STATUS = ["passed", "failed", "pending", "skipped"];
 const ASSERTION_STATUS = ["passed", "failed", "pending", "skipped", "todo", "disabled"];
 type Counts = NonNullable<ReturnType<Normalized["files"]["get"]>>;
-
-/** True when any value in the report nests deeper than 64 levels. */
-function nestsTooDeep(report: unknown): boolean {
-  const stack: Array<[unknown, number]> = [[report, 0]];
-  while (stack.length) {
-    const [value, depth] = stack.pop()!;
-    if (depth > 64) return true;
-    if (value && typeof value === "object") for (const item of Object.values(value)) stack.push([item, depth + 1]);
-  }
-  return false;
-}
 
 /** The report as an object with a `testResults` array, or the reason it cannot be used. */
 function parseReport(raw: string): { d: any } | { problem: string } {
@@ -390,6 +381,8 @@ export function createStack(): Stack {
     },
     staticOutput: (tool, r) => (tool === "tsc" ? r.stdout : r.report),
     normalizeStatic,
+    e2eArgv: (root, report) => playwrightArgv(root, report),
+    normalizeE2e: (out, root) => normalizePlaywright(out.raw, root),
     fingerprint: (root): ToolVersions => ({
       node: process.version,
       tool: String(metadata(root, exclusions).json("node_modules/vitest/package.json")?.version ?? "none"),
