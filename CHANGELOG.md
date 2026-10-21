@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-21 — Active work time (`✅`, local)
+
+**Changed.** The kernel counts active work time between check-ins (call durations plus the gap after a call that said to keep working), warns at 80% of 15, 60 or 120 minutes, and refuses a new full candidate check at the bound with a proposal to extend. `decide extend --quote <words>` records the user's yes and restarts the count. The tenet skill has the steering row.
+
+**Files.** `core/{budget,schemas}.ts`, `pipeline{,-render,-mutate}.ts`, `verbs/check.ts`, `decisions/{extend,index}.ts`, `plugin/skills/tenet/SKILL.md`, `tools/lint-quality.ts`, specs (TS §6.2, §8.6).
+
+**Tests.** `active-time.test.ts` added (3).
+
 ## 2026-10-21 — Model record (`✅`, local)
 
 **Changed.** The contract and each review and analyst result record the model the coordinator reported (`--model` on `open` and `findings`), or `inherited` with source `unknown`; `open`, `inspect status` and `finish` show it. Nothing is inferred. The tenet skill says to pass `--model` only when the host reports it.
