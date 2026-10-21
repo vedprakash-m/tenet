@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-20 — `decide basis` refuses a support input that overlaps its own scope (`✅`, local)
+
+**Changed.** A real VS Code host run found that listing the file being implemented as a locked `support` input guarantees a self-inflicted `red-invalidated`, no matter how correct the implementation is, discovered only after a full implement-review-check cycle. `decide basis` now refuses this at proposal time, before anything is recorded (new reason code `support-overlaps-scope`, exit 1).
+
+**Files.** `decisions/basis.ts`, `core/reasons.ts`, `declared-inputs.test.ts`, `tenet-intake/SKILL.md`.
+
+**Tests.** One new test: refuses the basis and records nothing when `support` names a `scopePaths` path.
+
+## 2026-10-20 — Fix the shared-testFile receipt-matching bug found in the live spike (`✅`, local)
+
+**Changed.** The same VS Code run found that a passing preservation example sharing a test file with a failing distinguishing example was wrongly marked unproven at baseline — `core/receipts.ts` aggregated by file, not by the obligation's own assertions. A test whose title names its own example id (`[EX-006-5ze.1]`, the id `decide basis` returns) is now matched to only its own tagged assertions; untagged behavior is unchanged.
+
+**Files.** `core/receipts.ts`, `receipts.test.ts`, `scenarios.test.ts`, `tenet-intake/SKILL.md`, `tech-spec.md` §9.6.
+
+**Tests.** Two unit tests (precise match when tagged; unchanged fallback when not) and one end-to-end scenario reproducing the live failure shape.
+
 ## 2026-10-21 — Starter restore tool; CI security checks (`✅`, local)
 
 **Changed.** The starter can restore a verified backup (`npm run restore -- <backup>`): it refuses a corrupt backup, one from newer code, or a busy database, keeps the replaced file aside, and says which code the data needs. A test fails if the CI workflow gains a privileged trigger, a secret, a wider token or persisted checkout credentials. A verdict test proves a recheck is chained to the basis of its full review.

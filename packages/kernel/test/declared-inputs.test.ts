@@ -53,6 +53,16 @@ describe("declared ignored evidence inputs", () => {
     assert.ok(why.reasons.some(r => r.code === "red-invalidated"), JSON.stringify(why));
   });
 
+  it("refuses a basis whose support names a path the same basis expects to change, before anything is recorded", async () => {
+    const p = fresh();
+    const h = (await p.call("open", { profile: "feature", request: "greet", scopePaths: ["src/greet.ts"], lane: "quick" })).handle!;
+    const proposal = { ...BASIS, elements: BASIS.elements.map(e => e.kind === "example" ? { ...e, support: ["src/greet.ts"] } : e) };
+    const r = await p.call("decide", { h, kind: "basis", propose: proposal });
+    assert.equal(r.exit, 1, JSON.stringify(r));
+    assert.ok(r.reasons.some(x => x.code === "support-overlaps-scope" && /src\/greet\.ts/.test(x.message)), JSON.stringify(r.reasons));
+    assert.equal(Object.values(p.ports().store.read()!.state.work)[0]!.basis, undefined, "nothing is recorded when the basis is refused");
+  });
+
   it("does not convert excluded support into baseline proof using stat alone [SEC-14]", async () => {
     const p = fresh();
     const h = (await p.call("open", { profile: "feature", request: "secret support", lane: "quick" })).handle!;

@@ -156,6 +156,11 @@ export const basis: Decision = {
       throw new KernelError("stale-session", `a basis cannot change while the work is ${work.state}`, { exit: 2 });
     }
     const proposal = BasisProposal.parse(input.propose);
+    const scopePaths = new Set(proposal.scopePaths ?? work.scope.paths);
+    const trapped = [...new Set(proposal.elements.flatMap((e) => (e.support ?? []).filter((p) => scopePaths.has(p))))];
+    if (trapped.length) {
+      throw new KernelError("support-overlaps-scope", `${trapped.join(", ")}: it is expected to change, not a fixed input`, { exit: 1 });
+    }
     const facts = factsHash(proposal);
     const needsConfirm = proposal.elements.some((e) => e.origin === "tenet") || proposal.designCommitment;
     const answer = input.answers?.["basis-confirm"];
