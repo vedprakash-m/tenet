@@ -30,4 +30,4 @@ Config, database (WAL, foreign keys, immediate write transactions), forward-only
 - Checks: `npm test`, `npm run typecheck`, `npm run lint`; the kernel runs the tests through `tenet check`.
 
 ## Not in this starter yet
-A web UI, browser journeys with accessibility checks, a load workload, the restore tool, and OpenAPI generation. Say so when the user asks for them; do not improvise a substitute.
+A web UI, browser journeys with accessibility checks, a load workload, and OpenAPI generation. Say so when the user asks for them; do not improvise a substitute.

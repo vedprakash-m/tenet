@@ -7,6 +7,6 @@ What this project is **not**, yet. Every shortcut and every prototype adds to th
 - **No TLS.** Cookies are not marked `Secure` outside production.
 - **One node.** SQLite in WAL mode is a single-node envelope. Writes that protect an invariant use immediate transactions; a busy database is retried for a second and then answers 503.
 - **No email.** There is no password reset by email and no verification.
-- **Backups are manual.** `platform/backup.ts` makes and verifies a copy and migrations take one before changing a database that has data; there is no schedule, and a restore tool does not exist yet.
+- **Backups are manual.** `platform/backup.ts` makes and verifies a copy and migrations take one before changing a database that has data; there is no schedule. `npm run restore -- <backup>` puts a verified copy back (stop the app first); the replaced database is kept beside it, and a copy written by newer code is refused. Restore never touches anything but the database file: uploads and other external state are not covered.
 - **Production secrets.** `COOKIE_SECRET` (32+ characters) is required in production and is never committed.
 - **Deployment checklist.** Not written: this project does not deploy anything.

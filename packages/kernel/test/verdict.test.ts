@@ -66,6 +66,13 @@ describe("verdict table [RES-02, EVD-01]", () => {
     assert.ok(codes({ ...base(), reviews: [{ ...root, uncovered: ["unread.ts"] }, recheck] }).includes("review-partial-coverage"));
     assert.ok(codes({ ...base(), reviews: [root, { ...recheck, coverage: { ...coverage, inspected: [] } }] }).includes("review-partial-coverage"));
   });
+  it("does not chain a recheck to a full review of an earlier basis, or to another recheck [REV-05]", () => {
+    const root = { ...link, reservation: "root", candidate: "old" };
+    const recheck: ReviewLink = { ...link, reservation: "delta", mode: "recheck", basedOn: "root", files: { "a.ts": "new" } };
+    assert.ok(codes({ ...base(), reviews: [{ ...root, basisHash: "older" }, recheck] }).includes("review-stale"));
+    const another: ReviewLink = { ...root, reservation: "root", mode: "recheck", basedOn: "x" };
+    assert.ok(codes({ ...base(), reviews: [another, recheck] }).includes("review-stale"));
+  });
   it("requires inspection, cross-module evidence and no open review dependencies [REV-08]", () => {
     assert.ok(codes({ ...base(), reviews: [{ ...link, coverage: undefined }] }).includes("review-partial-coverage"));
     assert.ok(codes({ ...base(), reviews: [{ ...link, coverage: { ...coverage, crossCutting: "" } }] }).includes("review-partial-coverage"));

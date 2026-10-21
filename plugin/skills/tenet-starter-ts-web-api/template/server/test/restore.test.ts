@@ -1,0 +1,69 @@
+import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import Database from "better-sqlite3";
+import { afterEach, describe, expect, it } from "vitest";
+import { backup } from "../src/platform/backup.ts";
+import { openDb } from "../src/platform/db.ts";
+import { migrate } from "../src/platform/migrate.ts";
+import { restore } from "../src/platform/restore.ts";
+
+const dirs: string[] = [];
+const scratch = () => { const d = mkdtempSync(join(tmpdir(), "starter-restore-")); dirs.push(d); return d; };
+afterEach(() => { for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
+
+/** A migrated database file with one user, a verified backup of it, and then a destructive change to the live file. */
+function damaged() {
+  const dir = scratch(), path = join(dir, "app.db"), copy = join(dir, "good.bak");
+  const db = openDb(path);
+  migrate(db);
+  db.prepare("INSERT INTO users (id, email, password_hash, role, created_at) VALUES ('u1', 'a@example.com', 'x', 'member', 1)").run();
+  backup(db, copy);
+  db.prepare("DELETE FROM users").run();
+  db.close();
+  return { dir, path, copy };
+}
+const users = (path: string) => { const d = new Database(path, { readonly: true }); try { return d.prepare("SELECT id FROM users").all(); } finally { d.close(); } };
+
+describe("restore", () => {
+  it("puts a verified backup back, keeps the replaced database aside, and says which code it needs", () => {
+    const { dir, path, copy } = damaged();
+    expect(users(path)).toEqual([]);
+    const r = restore(copy, path);
+    expect(users(path)).toEqual([{ id: "u1" }]);
+    expect(r.schemaVersion).toBe("0001_init.sql");
+    expect(r.compatibleWith).toMatch(/0001_init\.sql/);
+    expect(r.keptAside && existsSync(r.keptAside)).toBe(true);
+    expect(users(r.keptAside!)).toEqual([]);
+    expect(readdirSync(dir).filter((f) => f === "app.db-wal" || f === "app.db-shm"), "no log of the replaced database is left beside the restored one").toEqual([]);
+  });
+
+  it("refuses a backup that fails its integrity check, and changes nothing", () => {
+    const { path, copy } = damaged();
+    writeFileSync(copy, "this is not a database");
+    expect(() => restore(copy, path)).toThrow(/backup/);
+    expect(users(path)).toEqual([]);
+  });
+
+  it("refuses a backup written by newer code than this one", () => {
+    const { path, copy } = damaged();
+    const d = new Database(copy);
+    d.prepare("INSERT INTO schema_migrations (version, checksum, applied_at) VALUES ('9999_future.sql', 'x', 1)").run();
+    d.close();
+    expect(() => restore(copy, path)).toThrow(/newer/);
+    expect(users(path)).toEqual([]);
+  });
+
+  it("refuses to replace a database another connection is writing", () => {
+    const { path, copy } = damaged();
+    const busy = new Database(path);
+    busy.exec("BEGIN EXCLUSIVE");
+    try {
+      expect(() => restore(copy, path)).toThrow(/in use/);
+    } finally {
+      busy.exec("ROLLBACK");
+      busy.close();
+    }
+    expect(users(path)).toEqual([]);
+  });
+});

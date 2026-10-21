@@ -12,9 +12,9 @@ export default tseslint.config(
   { files: ["shared/**/*.ts"], rules: restrict([{ group: ["**/server/**", "**/web/**"], message: "shared/ must not import server or web code" }]) },
   // The browser never imports server code.
   { files: ["web/**/*.{ts,tsx}"], rules: restrict([{ group: ["**/server/**"], message: "web/ must not import server code" }]) },
-  // Only platform/db, the migration runner, backup and repositories touch the database driver.
+  // Only platform/db, the migration runner, backup, restore and repositories touch the database driver.
   {
-    files: ["server/src/**/*.ts"], ignores: ["server/src/platform/db.ts", "server/src/platform/migrate.ts", "server/src/platform/backup.ts", "server/src/**/*.repository.ts"],
+    files: ["server/src/**/*.ts"], ignores: ["server/src/platform/db.ts", "server/src/platform/migrate.ts", "server/src/platform/backup.ts", "server/src/platform/restore.ts", "server/src/**/*.repository.ts"],
     rules: { "no-restricted-imports": ["error", { paths: [DRIVER] }] },
   },
   // A feature reaches another feature only through its index.ts (and, like all code here, never the driver directly).
