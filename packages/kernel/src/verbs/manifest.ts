@@ -85,10 +85,11 @@ export function deepPasses(w: WorkContract, candidate: string): Array<ReturnType
     nx("analyst", `Deep needs a native ${role} pass: packet analyst --analyst-role ${role} --question <text>, then dispatch.`, true));
 }
 
-/** The project's charter from the instruction file that has one (AGENTS.md first), else the default (QLT-09). */
+/** The project's charter from the first instruction file the host binding names that has one, else the default (QLT-09). */
 function charterOf(ports: Ports): string {
   const text = (path: string) => { try { return ports.project.read(path); } catch { return null; } };
-  return projectCharter([text("AGENTS.md"), text(".github/copilot-instructions.md")]) ?? DEFAULT_CHARTER;
+  const names = ports.host.capabilities().instructionFiles;
+  return projectCharter(names.source === "unknown" ? [] : names.value.split(",").map(text)) ?? DEFAULT_CHARTER;
 }
 
 export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Facts, changes: readonly FileChange[], retry = false): Issued {

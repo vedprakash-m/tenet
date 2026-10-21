@@ -2,6 +2,7 @@
 //  - core/ imports no adapter, no verb, no pipeline, and does no I/O (only zod, node:crypto, ports types);
 //  - only adapters/, wire.ts and main.ts touch the filesystem, processes, OS or network;
 //  - nothing evaluates code: no vm, worker_threads, eval, new Function, computed import();
+//  - core, verbs, decisions and the pipeline name no host (ENG-02);
 //  - only core/verdict.ts sets an endpoint, only core/budget.ts changes a counter.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -15,6 +16,7 @@ const listFiles = (dir: string): string[] => readdirSync(dir).flatMap((f) => {
 const IO = /^node:(fs|fs\/promises|child_process|os|net|http|https|http2|dgram|tls|dns|cluster|readline|stream|process)$/;
 const ALWAYS_BANNED = /^node:(vm|worker_threads)$/;
 const ADAPTER_SIDE = (rel: string) => rel.startsWith("adapters/") || rel === "wire.ts" || rel === "main.ts";
+const HOST_NAMES = /\b(vs ?code|vscode|copilot)\b/i; // ENG-02: core logic reads capabilities, never a host's name
 const COUNTERS = /\b(attempts|reviewRounds|rechecks|delegations|checksLaunched)\s*[:=]\s*\w+\.(attempts|reviewRounds|rechecks|delegations|checksLaunched)\s*\+/;
 
 export function lintArch(SRC: string): { problems: string[]; files: number } {
@@ -27,6 +29,7 @@ for (const file of all) {
   text.split("\n").forEach((src, i) => {
     const n = i + 1;
     const code = src.replace(/\/\/.*$/, "");
+    if ((/^(core|verbs|decisions)\//.test(rel) || /^pipeline[\w-]*\.ts$/.test(rel)) && HOST_NAMES.test(code)) add(rel, n, "names a host: read a capability from the descriptor instead (ENG-02)");
     for (const m of code.matchAll(/(?:from|import)\s*\(?\s*["']([^"']+)["']/g)) {
       const spec = m[1]!;
       if (ALWAYS_BANNED.test(spec)) add(rel, n, `${spec} is banned everywhere`);

@@ -1,0 +1,18 @@
+{
+  "harness": { "value": "local", "source": "static" },
+  "subagents": {
+    "value": "dispatch", "source": "observed",
+    "evidence": "VS Code 1.142.0, 2026-10-19: a reviewer subagent was dispatched and its result accepted; context isolation, its tool list, parallel dispatch and cancelled children were not observed on that host"
+  },
+  "hooks": { "value": "unknown", "source": "unknown" },
+  "approvalMode": { "value": "unknown", "source": "unknown" },
+  "model": { "value": "requested-only", "source": "static" },
+  "usage": { "value": "unknown", "source": "unknown" },
+  "storage": { "value": "unknown", "source": "unknown" },
+  "checkpoints": { "value": "chat-edit-checkpoints", "source": "static" },
+  "questions": { "value": "askQuestions", "source": "static" },
+  "instructionFiles": {
+    "value": "AGENTS.md,.github/copilot-instructions.md", "source": "static",
+    "evidence": "the files a charter may live in, in preference order; which of them the host loads is not observed (SP-02)"
+  }
+}

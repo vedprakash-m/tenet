@@ -1,10 +1,18 @@
 // Every consequential control states its mechanism class and the claim stays within it (PRD 5.4, EVD-07).
 // Derived from what happened; nothing here is stored. The assurance word follows the endpoint (PRD 5.3.4, TS §0.7).
+import type { Descriptor } from "./capabilities.ts";
 import type { Endpoint, WorkContract } from "./schemas.ts";
 
 export interface Control { control: string; class: string; note: string }
 
-export function controlsFor(w: WorkContract, endpoint: Endpoint): { assurance: string; controls: Control[] } {
+/** What the host binding has actually observed about dispatch, in the words its source allows. */
+function dispatchSeen({ subagents }: Descriptor): string {
+  if (subagents.source !== "observed") return "the host dispatch is not observed here";
+  const what = subagents.value === "isolated" ? "isolation" : "dispatch";
+  return `${what} was observed (${subagents.evidence})`;
+}
+
+export function controlsFor(w: WorkContract, endpoint: Endpoint, host: Descriptor): { assurance: string; controls: Control[] } {
   const assurance = endpoint === "checked-local" ? "Checked local" : endpoint === "findings-only" ? "Advisory review" : "Advisory";
   const review = w.reviews.at(-1);
   const controls: Control[] = [
@@ -19,7 +27,9 @@ export function controlsFor(w: WorkContract, endpoint: Endpoint): { assurance: s
   if (review) {
     controls.push({
       control: "review independence", class: review.independence === "subagent-fresh" ? "cooperative" : "reduced",
-      note: review.independence === "subagent-fresh" ? "the coordinator reports a fresh-context reviewer; the host dispatch is not observed here" : "the review ran in the same session, so it is not independent",
+      note: review.independence === "subagent-fresh"
+        ? `the coordinator reports a fresh-context reviewer; ${dispatchSeen(host)}`
+        : "the review ran in the same session, so it is not independent",
     });
   }
   return { assurance, controls };

@@ -4,6 +4,7 @@ import type { AttentionPattern, FileChange } from "../core/review.ts";
 import type { Random } from "../core/ids.ts";
 import type { IndexSyncRecord, State } from "../core/schemas.ts";
 import type { Exclusion } from "../core/exclusions.ts";
+import type { Descriptor } from "../core/capabilities.ts";
 
 export type { Random };
 export interface Clock { now(): string; ms(): number }
@@ -206,8 +207,11 @@ export interface Project {
   remove(paths: readonly string[]): void;
 }
 
+/** What the host binding says the host can do; core reads capabilities, never host names (ENG-02). */
+export interface Host { capabilities(): Descriptor }
+
 export interface Ports {
   root: string; version: string; store: Store; git: Git; runner: Runner; stack: Stack; clock: Clock; rand: Random;
-  recipes: Recipes; project: Project;
+  recipes: Recipes; project: Project; host: Host;
 }
 

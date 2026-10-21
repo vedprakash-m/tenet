@@ -22,7 +22,9 @@ import type { IntegrationSetting } from "./integrate.ts";
 const MAX_REASONS = 8;
 
 /** The result the user reads: outcome first, then checks, limits and the next action (RES-01). */
-function result(w: WorkContract, v: Verdict, facts: Facts, extra: Reason[], setting: IntegrationSetting, offer = false): Resp {
+function result(
+  ports: Ports, w: WorkContract, v: Verdict, facts: Facts, extra: Reason[], setting: IntegrationSetting, offer = false,
+): Resp {
   const humanFiles = facts.att.human.length + facts.att.concurrent.length + facts.att.unexplained.length;
   const label = headline(v, { profile: w.profile, branch: w.git.branch, humanFiles });
   const reasons = [...v.reasons.filter((r) => !r.note), ...v.reasons.filter((r) => r.note), ...extra];
@@ -55,7 +57,7 @@ function result(w: WorkContract, v: Verdict, facts: Facts, extra: Reason[], sett
       checks,
       usage: summarize(w.budget, w.lane),
       ...(w.model ? { model: w.model } : {}),
-      ...controlsFor(w, v.endpoint),
+      ...controlsFor(w, v.endpoint, ports.host.capabilities()),
       review,
       commits: w.git.commits,
       branch: w.git.branch,
@@ -75,7 +77,7 @@ function close(ports: Ports, st: State, nw: WorkContract, f: Facts, v: Verdict, 
   const out: State = sourceOwner && sourceOwner.work !== nw.id ? { ...rest, sourceOwner } : rest;
   const offer =
     v.endpoint === "checked-local" && isEditing(nw) && st.project.adoption.intent === "undecided" && !st.project.adoption.offered;
-  const resp = result(closed, v, f, extra, integrationSetting(ports, st, closed), offer);
+  const resp = result(ports, closed, v, f, extra, integrationSetting(ports, st, closed), offer);
   // The plan item this contract worked on is done when it reached checked-local, otherwise available again (INT-12).
   const plan = releaseItem(out.project.intent.plan, nw.id, v.endpoint === "checked-local");
   const settled: State = { ...out, project: { ...out.project, intent: { ...out.project.intent, plan } } };
@@ -89,7 +91,7 @@ async function answerEarly(ports: Ports, cur: State, w: WorkContract): Promise<P
     // Already closed: report the verdict as it stands now, change nothing, commit nothing.
     const f = await gather(ports, w, cur.locks);
     const v = verdict(verdictInput(ports, cur, w, f));
-    return { resp: result(w, v, f, [], integrationSetting(ports, cur, w)) };
+    return { resp: result(ports, w, v, f, [], integrationSetting(ports, cur, w)) };
   }
   if (!cur.pending.length) return undefined;
   return { resp: { work: w.id, exit: 3, questions: cur.pending, next: [nx("ask", "Answer the open question first.", true)] } };

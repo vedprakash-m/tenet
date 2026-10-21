@@ -6,6 +6,7 @@ import { GitCli } from "./adapters/git-cli.ts";
 import { createStack } from "./adapters/node-ts.ts";
 import { ProcessRunner } from "./adapters/runner.ts";
 import { FsProject } from "./adapters/project-fs.ts";
+import { PluginHost } from "./adapters/host-plugin.ts";
 import { FsRecipes } from "./adapters/recipes-fs.ts";
 import { FsStore } from "./adapters/store-fs.ts";
 import { systemClock, systemRandom } from "./adapters/system.ts";
@@ -30,8 +31,9 @@ function pluginRoot(): string {
 export function createPorts(cwd: string, env: Record<string, string | undefined> = process.env): Ports {
   const root = workspaceRoot(cwd);
   const runner = new ProcessRunner(systemClock, env);
+  const recipes = new FsRecipes(pluginRoot());
   return {
     root, version: KERNEL_VERSION, clock: systemClock, rand: systemRandom,
-    recipes: new FsRecipes(pluginRoot()), project: new FsProject(root), store: new FsStore(root, systemClock, systemRandom), git: new GitCli(root, runner), runner, stack: createStack(),
+    recipes, host: new PluginHost(recipes), project: new FsProject(root), store: new FsStore(root, systemClock, systemRandom), git: new GitCli(root, runner), runner, stack: createStack(),
   };
 }
