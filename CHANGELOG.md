@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20 — Reduce `issueReview`'s complexity below the quality gate's limit (`✅`, local)
+
+Behavior-preserving refactor: extracted `admissionGate`, `nextAttempt`, `dispatchNext` and `reserveIssued` out of `verbs/manifest.ts#issueReview`, the single highest-complexity function recorded by the quality ratchet (47). It is now 30 lines, complexity 21, within the per-function limit and no longer an offender (7 left, was 8). No test changed; the full suite passes unmodified.
+
+Changed `verbs/manifest.ts`. Module budget bumped by a small recorded increment (3,650→3,670 lines) for the extracted functions' own declarations — quality-refactor growth, not new scope. Full `npm run ci` green: **653 tests / 135 suites**; built-bundle UAT green.
+
 ## 2026-10-20 — Default engineering charter reaches the Reviewer (`◐`, local)
 
 The review manifest now carries a `charter` field (PRD §1.8's default engineering charter, 115/300 tokens), and the reviewer's Stage B is told to judge against it literally. This is the first charter awareness the Reviewer has had at all. Scope: only the default-charter half of QLT-09; a project's own adopted charter (parsed from `AGENTS.md`/`copilot-instructions.md`) remains unbuilt.

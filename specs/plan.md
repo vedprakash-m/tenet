@@ -689,7 +689,11 @@ Source: the progress review of 2026-10-20 (gaps G1–G16). Owner direction: exec
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
 
-### 2026-10-20 (QLT-09: default engineering charter reaches the Reviewer) — `◐` 653 tests, 135 suites, not committed
+### 2026-10-20 (quality: `issueReview` no longer an offender) — `✅` 653 tests, 135 suites, not committed
+
+Behavior-preserving refactor of `verbs/manifest.ts#issueReview` (complexity 47, the single highest of the 8 recorded offenders): extracted `admissionGate` (retry/capacity refusals), `nextAttempt`, `dispatchNext` and `reserveIssued` (the reservation/budget settlement and final response shape). `issueReview` is now 30 lines, complexity 21, nesting 1 — fully within the per-function limits, no longer recorded as an offender (7 left, was 8). No test changed; the full suite (653 tests) still passes unmodified, proving the refactor preserved behavior exactly. Module budget bumped by a small recorded increment (3,650→3,670 lines) for the extracted functions' own declarations/docs, which is quality-refactor growth, not new scope. `npm run ci` green, built-bundle UAT green, privacy clean.
+
+### 2026-10-20 (QLT-09: default engineering charter reaches the Reviewer) — `◐` 653 tests, 135 suites, committed (`99c0f95`)
 
 The review manifest now carries a `charter` field — PRD §1.8's default engineering charter (115 of its 300-token budget) — and `tenet-review/SKILL.md`'s Stage B is told explicitly to judge against it literally rather than from memory. This is the first time the Reviewer has any charter awareness at all; before this, Stage B's "charter" criterion existed only as unanchored rubric prose. **Scope, stated plainly:** this is the default-charter half of QLT-09 only. The project-specific half — parsing an adopted project's own `<!-- tenet:charter:begin -->` block from `AGENTS.md`/`.github/copilot-instructions.md`, falling back to the default only when none is adopted, and the preview/consent adoption flow itself (matching `decide adopt --target intent`/`policy`) — remains unbuilt; `core/intent-md.ts` still explicitly ignores charter markers. `npm run ci` green (653 tests/135 suites, small line-wrap fixes for the quality gate), built-bundle UAT green, privacy clean. Alpha coverage: QLT-09 newly T1-mapped (78/100).
 

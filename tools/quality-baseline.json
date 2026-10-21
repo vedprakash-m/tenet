@@ -34,11 +34,6 @@
    "lines": 48,
    "cc": 26,
    "nest": 2
-  },
-  "verbs/manifest.ts#issueReview": {
-   "lines": 42,
-   "cc": 47,
-   "nest": 1
   }
  },
  "wide": {
@@ -84,7 +79,7 @@
   "verbs/index.ts": 1,
   "verbs/inspect.ts": 8,
   "verbs/integrate.ts": 2,
-  "verbs/manifest.ts": 13,
+  "verbs/manifest.ts": 12,
   "verbs/packet.ts": 4,
   "verbs/reconcile.ts": 10,
   "verbs/review.ts": 3,
