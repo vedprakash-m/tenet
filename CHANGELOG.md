@@ -1,5 +1,45 @@
 # Changelog
 
+## 2026-10-21 - RC0 evidence ledger and requirement qualification gate (local)
+
+**Changed.** `tools/coverage.ts` now reports structural mapping separately from sparse semantic disposition, uncovered AC IDs, evidence tiers/references, and qualification. It validates strict JSON v1 ledger/history, content hashes, repository-contained evidence paths, and campaign tuple/protocol/artifact bindings, failing closed on stale records. Added a separate `tools/release-audit.ts` gate requiring all due Musts to qualify on one tuple/artifact; its output explicitly does not certify the other PRD Section 4.7 conditions. Added the tracked empty `docs/audits/evidence-ledger.json`; no requirement status or qualification was invented.
+
+**Files.** `tools/coverage.ts`, `tools/release-audit.ts`, `docs/audits/evidence-ledger.json`, `packages/kernel/test/coverage.test.ts`, `specs/tech-spec.md` §19.2, `specs/plan.md`.
+
+**Verification.** Focused ledger tests pass 8/8. Full local `npm run ci` passes 733 tests/150 suites, zero failures/skips. `npm run uat` passes. The R1 requirement-qualification command correctly blocks all 181 current due Musts. Local-only evidence; no campaign, host action, commit, or push.
+
+## 2026-10-21 - Analyst guidance and npm install audit separation (local)
+
+**Changed.** Reviewer and Analyst packet guidance now specifies that `openDependencies` contains plain strings with evidence inline, and provides a string example. The existing strict schemas remain unchanged; object-shaped values are still rejected. npm's implicit advisory request is disabled for lockfile resolution/install in the dependency flow, starter recipe, root CI and generated starter CI; explicit normalized auditing remains separate and open. The SP-08 evidence records actual results without rewriting them.
+
+**Files.** `core/review.ts`, dependency command paths, starter recipe/workflow/docs, root CI workflow, existing Analyst/dependency/starter/workflow/hook tests, built-CLI UAT driver, tech spec, plan and SP-08 evidence.
+
+**Verification.** Red-first dependency guidance and npm-command regressions pass; hook test passes 1/1. Full CI passes 725 tests/150 suites, zero failures/skips. Starter scaffold and golden-task integration pass in 11s and 20s. All 47 built-CLI scenarios pass on Node 26.3.0 and 22.12.0 against the same 740,734-byte artifact, SHA-256 `a1e6d195488232c9bd5bdb38b02bc6a73f6bfab86a3031512ac2e96968b673e5`. A disposable same-lockfile probe measured 1.4s with `--no-audit` versus the earlier 301s advisory timeout. Explicit normalized dependency auditing remains unimplemented; local-only, no host dispatch, commit or push.
+
+## 2026-10-21 - Readable, exclusion-aware review packets (local)
+
+**Changed.** Owner-approved single JSON packets carry the exact rubric as bounded ordered text parts, explicit sampled-item guidance, and canonical default/effective exclusions. Reviewer, Analyst and focused-pass instructions apply restrictions before native reads/searches and never use kernel records as substitute evidence. Stored review schemas remain strict; cooperative guidance is not a sandbox claim.
+
+**Files.** Core review/exclusion helpers; Reviewer/Analyst/stateless packet callers; two agent bindings and review guidance; existing contract/Analyst tests and UAT driver; technical specification, plan and SP-08 evidence.
+
+**Verification.** Red-first packet controls; full local CI passes 723 tests/150 suites. All 47 built-CLI UAT scenarios pass on Node 26.3.0 and 22.12.0 against one 740,396-byte bundle. Quality ceilings unchanged. Native behavior on this payload remains unobserved; exhausted SP-08 authorization was not extended. No commit or push.
+
+## 2026-10-21 - Subcommand help cannot open work (local)
+
+**Changed.** A live SP-08 attempt found `open investigate --help` created a Quick contract instead of displaying help. CLI help now routes to stateless inspection before command parsing or stdin reads; preload admission remains unchanged.
+
+**Files.** CLI frontend, existing CLI-input test, built-UAT driver, technical specification §4.5, plan and SP-08 evidence report.
+
+**Verification.** Red-first real-pipeline regression; full local CI passes 720 tests/150 suites. All 46 built-CLI UAT scenarios pass on Node 26.3.0 and 22.12.0; the new case checks four mutating commands create no state and leave Git unchanged. Host spike remains incomplete; no commit/push or release claim.
+
+## 2026-10-21 - Evidence-integrity repairs and release-plan reassessment (local)
+
+**Changed.** Tagged acceptance receipts now use complete per-test outcomes rather than capped failure diagnostics, preserve skipped/file-level/focused failures, and match complete example tags. Playwright reports validate nested records, actual outcomes, complete totals and identities; malformed, contradictory, interrupted or unsupported retry/expected-failure evidence cannot pass. Adapter `node-ts@3` invalidates earlier receipts. The plan now records measured progress, partial requirements, data-recovery risks and the ordered remaining implementation/qualification work.
+
+**Files.** Kernel receipt core, Node/Playwright adapters and normalized port type; existing receipt/parser tests; technical specification §9.5/9.6 and implementation plan. No stored receipt schema, quality ceiling or host claim changed.
+
+**Verification.** Eight red-first tests; full local CI passes 719 tests/150 suites. All 45 built-CLI UAT scenarios pass on Node 26.3.0 and 22.12.0 against the same 738,644-byte artifact. Unstaged privacy scan finds no likely leaks. Host qualification and the complete release plan remain open; no commit or push.
+
 ## 2026-10-21 — WRK-07 built: prototype promotion, the first Beta item (`✅`, local)
 
 **Changed.** Owner authorized starting Beta-scoped work ahead of its own gate (Alpha not yet exited, SP-12 unresolved), the same judgment already applied to start Alpha early. `open promote` ("promote" was already a valid `Profile` value but hard-refused) now proceeds and floors its lane at Standard — never lower, using the same `maxLane` composition every other floor uses. This one change delivers WRK-07's full requirement: `core/verdict.ts#judgeLink` already treats a same-session review as a *blocking* `reduced-independence` reason outside Quick, so flooring at Standard alone guarantees a fresh review before `checked-local`, with no new verdict code.
