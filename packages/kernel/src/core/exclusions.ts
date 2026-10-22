@@ -14,8 +14,30 @@ export const glob = (g: string): RegExp => {
 
 /** PRD 5.10.2 defaults: a secret file is stat-only to Tenet and never read, sent, edited or exported. */
 const SECRET = [/^(?:.*\/)?\.env(?:\..+)?$/, /\.(?:pem|key|p12)$/, /(?:^|\/)id_(?:rsa|ed25519)[^/]*$/, /(?:^|\/)\.npmrc$/, /(?:^|\/)\.(?:aws|azure|config\/gcloud)(?:\/|$)/].map((r) => r);
-const isSecret = (p: string): boolean => !/(?:^|\/)\.env\.example$/.test(p) && SECRET.some((r) => r.test(p));
-export const isKernelFile = (p: string): boolean => p === ".tenet" || p.startsWith(".tenet/") || /(?:^|\/)\.tenet-write-[a-f0-9-]{36}\.tmp$/.test(p);
+const SECRET_EXCEPTION = /(?:^|\/)\.env\.example$/;
+const KERNEL_ONLY = /^\.tenet(?:\/|$)|(?:^|\/)\.tenet-write-[a-f0-9-]{36}\.tmp$/;
+const isSecret = (p: string): boolean => !SECRET_EXCEPTION.test(p) && SECRET.some((r) => r.test(p));
+export const isKernelFile = (p: string): boolean => KERNEL_ONLY.test(p);
+
+export function packetExclusions(effective: readonly Exclusion[] = []) {
+  return {
+    mechanism: "cooperative",
+    defaults: {
+      kernelOnly: KERNEL_ONLY.source, secretPatterns: SECRET.map(pattern => pattern.source),
+      secretException: SECRET_EXCEPTION.source,
+    },
+    effective: effective.map(rule => ({ pattern: rule.pattern, kinds: [...rule.kinds] })),
+    guidance: [
+      "Apply these restrictions before any read or search, including native tools; tool availability is not permission.",
+      "Defaults are regular expressions; effective patterns are workspace-relative globs. Union every restriction.",
+      ".tenet and reserved atomic temporaries are kernel-only: never open, search, quote or attach their contents.",
+      "Default secret patterns forbid content reads/searches; the secretException applies only to secret patterns.",
+      "no-read, no-model-send and no-routine-scan prohibit affected model reads/searches; report needed evidence as unavailable.",
+      "no-edit forbids modification and no-export forbids export. A read-only assignment never writes, executes or delegates.",
+      "Use this packet's evidence summaries, not local kernel records. Do not inspect unrelated histories or sibling projects.",
+    ],
+  };
+}
 
 export function allowed(op: Op, path: string, extra: readonly Exclusion[] = []): boolean {
   if (isSecret(path)) return false;

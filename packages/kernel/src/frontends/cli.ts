@@ -82,7 +82,7 @@ export async function main(argv: readonly string[], ports: Ports, verbs: Record<
   let response: KernelResponse;
   const verb = argv[0] ?? "";
   if (preloadPresent(env, execArgv)) response = failure(verb, 4, "preload-present", "A preload flag reached the kernel; run it without --require, --import or --loader.");
-  else if (!verb || verb === "--help" || verb === "-h") response = await runVerb(ports, verbs, "inspect", { view: "help" });
+  else if (!verb || verb === "-h" || argv.includes("--help")) response = await runVerb(ports, verbs, "inspect", { view: "help" });
   else {
     try {
       const { verb: v, input } = parseArgs(argv);

@@ -9,7 +9,7 @@ Use for a new project in an empty folder, and when extending a project that came
 ## Scaffold (its own contract)
 1. `tenet open feature --request <text> --lane quick` in the empty folder. If there is no Git repository, the kernel asks; with the user's yes, repeat with `--init-git`.
 2. Record a basis with one requirement ("the starter's platform tests pass") and one example, `test: preservation`, `expect: pass`, `testFile: server/test/platform.test.ts`. Nothing needs a red here: the platform is vetted, pinned content.
-3. `tenet decide scaffold --h <handle>` writes the platform layer and installs the pinned lockfile (`npm ci --ignore-scripts`, then `npm rebuild better-sqlite3`). Add `{"propose": {"name": "<project>"}}` on stdin to name it, or `"protectDefaults": false` if the user declines the protected paths. Say in the kickoff that this writes files and needs the network.
+3. `tenet decide scaffold --h <handle>` writes the platform layer and installs the pinned lockfile (`npm ci --ignore-scripts --no-audit`, then `npm rebuild better-sqlite3`). Package auditing is a separate check; install output is not audit evidence. Add `{"propose": {"name": "<project>"}}` on stdin to name it, or `"protectDefaults": false` if the user declines the protected paths. Say in the kickoff that this writes files and needs the network.
    - Exit 2 `scaffold-target-not-empty`: a file the starter would write exists; name it and stop, never overwrite.
    - Exit 2 `install-failed`: the files are kept; fix the cause (network, proxy, disk) and run the same decision again, which repeats only the install.
 4. `tenet check --h <handle> --stage candidate`, then `tenet finish --h <handle>`. The scaffold is committed as the first checkpoint.

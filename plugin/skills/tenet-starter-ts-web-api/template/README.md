@@ -3,7 +3,7 @@
 A small TypeScript API with the platform pieces already in place: sessions, CSRF, password hashing, migrations, errors, logging.
 
 ```bash
-npm ci --ignore-scripts && npm rebuild better-sqlite3
+npm ci --ignore-scripts --no-audit && npm rebuild better-sqlite3
 npm test            # unit and integration tests (the server is exercised through app.inject)
 npm run e2e         # real end-to-end checks against a server Playwright starts and verifies, its own database
 npm run typecheck && npm run lint

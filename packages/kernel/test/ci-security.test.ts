@@ -7,9 +7,11 @@ import { parse } from "yaml";
 
 const dir = join(import.meta.dirname, "../../../.github/workflows");
 const workflows = readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).map((f) => ({ f, text: readFileSync(join(dir, f), "utf8"), doc: parse(readFileSync(join(dir, f), "utf8")) }));
+const starterWorkflow = readFileSync(join(import.meta.dirname, "../../../plugin/skills/tenet-starter-ts-web-api/template/.github/workflows/ci.yml"), "utf8");
 
 describe("workflows keep the untrusted tier untrusted [ENG-10]", () => {
   it("there is a workflow to check", () => assert.ok(workflows.length > 0));
+  it("the starter CI install disables npm's implicit audit", () => assert.match(starterWorkflow, /npm ci --ignore-scripts --no-audit/));
   for (const { f, text, doc } of workflows) {
     it(`${f}: standard pull_request trigger, never a privileged one`, () => {
       const triggers = Object.keys(doc.on ?? {});
@@ -28,7 +30,7 @@ describe("workflows keep the untrusted tier untrusted [ENG-10]", () => {
     });
     it(`${f}: installs only the locked dependencies, without install scripts`, () => {
       assert.doesNotMatch(text, /npm (install|i)\b/);
-      assert.match(text, /npm ci --ignore-scripts/);
+      assert.match(text, /npm ci --ignore-scripts --no-audit/);
     });
   }
 });

@@ -18,7 +18,7 @@ describe("husky and lint-staged [GIT-03]", { skip: process.env.TENET_OFFLINE ===
     write(root, "package.json", JSON.stringify({ name: "hk", private: true, scripts: { prepare: "husky" }, "lint-staged": { "*.txt": "node fmt.cjs" } }));
     write(root, "fmt.cjs", 'const fs=require("fs");for(const f of process.argv.slice(2))fs.writeFileSync(f,fs.readFileSync(f,"utf8").toUpperCase());\n');
     write(root, ".gitignore", "node_modules\n");
-    execFileSync("npm", ["install", "-D", "husky@9", "lint-staged@16"], { cwd: root, stdio: "pipe" });
+    execFileSync("npm", ["install", "-D", "husky@9", "lint-staged@16", "--no-audit"], { cwd: root, stdio: "pipe" });
     execFileSync("npx", ["husky", "init"], { cwd: root, stdio: "pipe" });
     writeFileSync(join(root, ".husky/pre-commit"), "npx lint-staged\n");
     for (const f of ["a.txt", "b.txt", "c.txt"]) write(root, f, "base\n");

@@ -20,7 +20,7 @@ describe("the ts-web-api recipe", () => {
     const recipe = JSON.parse(readFileSync(join(PLUGIN, "recipe.json"), "utf8"));
     assert.equal(createHash("sha256").update(readFileSync(join(PLUGIN, "template/package-lock.json"))).digest("hex"), recipe.lockfileSha256, "re-lock the recipe: update recipe.json with the new hash");
     assert.deepEqual(recipe.protectedPaths, ["server/src/platform/auth/*", "server/src/platform/session/*", "server/migrations/*"]);
-    assert.deepEqual(recipe.install[0], ["npm", "ci", "--ignore-scripts"]);
+    assert.deepEqual(recipe.install[0], ["npm", "ci", "--ignore-scripts", "--no-audit"]);
   });
 
   it("scaffolds, and receipts the starter's tests, types and lint and a real end-to-end run against its own dedicated database [EVD-13], all run by the kernel", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {

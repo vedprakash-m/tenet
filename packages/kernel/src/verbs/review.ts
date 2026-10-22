@@ -1,10 +1,12 @@
 // `review`: a review-only manifest for the working tree. Stateless: nothing is written to the project, including
 // Git objects and traces (TS §6.3). The manifest goes to the OS temp directory and the response names it.
 import { KernelError } from "../core/errors.ts";
-import { netAttention, reviewOnlyManifest } from "../core/review.ts";
+import { netAttention, reviewOnlyManifest, REVIEW_ONLY_RUBRIC } from "../core/review.ts";
 import { ReviewInput } from "../core/schemas.ts";
 import { nx } from "./common.ts";
 import type { Verb } from "../pipeline.ts";
+import type { Exclusion } from "../core/exclusions.ts";
+import { settingsFor } from "./reconcile.ts";
 
 export const review: Verb<ReviewInput> = {
   name: "review",
@@ -19,7 +21,11 @@ export const review: Verb<ReviewInput> = {
     const base = probe.head;
     const changes = await ports.git.changes(base, inv.status.map((s) => s.path), ports.stack.classify);
     const attention = netAttention(changes, ports.stack.patterns).map((a) => ({ ...a }));
-    const m = reviewOnlyManifest(changes, attention, "Review the change for correctness, structure and security. Return findings with path:line evidence.", base);
+    const exclusions = settingsFor(ports, null).exclusions as Exclusion[];
+    const m = reviewOnlyManifest(
+      changes, attention, REVIEW_ONLY_RUBRIC,
+      base, exclusions,
+    );
     const path = ports.store.writeArtifact(ports.store.tempDir("review"), `${m.hash}.json`, m.text);
     return {
       resp: {

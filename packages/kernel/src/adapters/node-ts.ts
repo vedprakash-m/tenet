@@ -11,7 +11,7 @@ import { FsProject } from "./project-fs.ts";
 import { nestsTooDeep } from "./report-bounds.ts";
 import { normalizePlaywright, playwrightArgv } from "./playwright.ts";
 
-const ADAPTER = "node-ts@2";
+const ADAPTER = "node-ts@3";
 const readJson = (p: string): Record<string, any> | null => {
   try {
     return JSON.parse(readFileSync(p, "utf8"));
@@ -163,6 +163,9 @@ function admitAssertion(a: any, seen: Set<string>): string | undefined {
 /** Add one admitted assertion to its file's counts; a failure keeps its kind and up to five examples. */
 function count(f: Counts, a: any): void {
   f.tests.push(a.fullName);
+  const status = a.status === "passed" || a.status === "failed" ? a.status : "skipped";
+  const kind = status === "failed" ? failureKind(message(a)) : undefined;
+  f.outcomes!.push({ test: a.fullName, status, ...(kind ? { kind } : {}) });
   if (a.status === "passed") {
     f.executed++;
     f.passed++;
@@ -174,17 +177,18 @@ function count(f: Counts, a: any): void {
   }
   f.executed++;
   f.failed++;
-  const m = message(a),
-    kind = failureKind(m);
-  if (!f.failureKinds.includes(kind)) f.failureKinds.push(kind);
+  const m = message(a);
+  if (!f.failureKinds.includes(kind!)) f.failureKinds.push(kind!);
   if (kind === "focused") f.focused++;
-  if (f.failures.length < 5) f.failures.push({ test: a.fullName, kind, message: m });
+  if (f.failures.length < 5) f.failures.push({ test: a.fullName, kind: kind!, message: m });
 }
 
 /** Counts for one admitted file, or the reason an assertion in it is invalid. */
 function countFile(t: any, path: string): Counts | string {
   const identities = new Set<string>();
-  const f: Counts = { executed: 0, passed: 0, failed: 0, skipped: 0, focused: 0, tests: [], failureKinds: [], failures: [] };
+  const f: Counts = {
+    executed: 0, passed: 0, failed: 0, skipped: 0, focused: 0, tests: [], outcomes: [], failureKinds: [], failures: [],
+  };
   for (const a of t.assertionResults) {
     const problem = admitAssertion(a, identities);
     if (problem) return problem;

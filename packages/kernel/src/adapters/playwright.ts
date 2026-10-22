@@ -4,6 +4,7 @@
 // it never decides acceptance.
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
+import { z } from "zod";
 import type { Normalized } from "../ports/types.ts";
 import { nestsTooDeep } from "./report-bounds.ts";
 
@@ -28,18 +29,39 @@ function readPkg(p: string): Record<string, any> | null {
 const invalid = (message: string): Normalized => ({ files: new Map(), discovered: 0, invalid: message });
 type Counts = NonNullable<ReturnType<Normalized["files"]["get"]>>;
 
-interface PwResult { status: string; errors?: Array<{ message?: string }> }
-interface PwTest { status: string; results: PwResult[] }
-interface PwSpec { title: string; ok: boolean; tests: PwTest[] }
+const resultSchema = z.object({
+  status: z.enum(["passed", "failed", "skipped", "timedOut", "interrupted"]),
+  errors: z.array(z.object({ message: z.string().max(2000).optional() })).max(2000).optional(),
+});
+const testSchema = z.object({
+  status: z.enum(["expected", "unexpected", "flaky", "skipped"]),
+  expectedStatus: z.enum(["passed", "failed", "skipped"]).optional(),
+  projectName: z.string().max(2000).optional(),
+  results: z.array(resultSchema).min(1).max(3),
+});
+const specSchema = z.object({ title: z.string().max(2000), ok: z.boolean(), tests: z.array(testSchema).min(1).max(2000) });
+type PwSpec = z.infer<typeof specSchema>;
 interface PwSuite { file?: string; title: string; specs: PwSpec[]; suites?: PwSuite[] }
-interface PwReport { suites: PwSuite[]; stats: { expected: number; skipped: number; unexpected: number; flaky: number } }
+const suiteSchema: z.ZodType<PwSuite> = z.lazy(() => z.object({
+  file: z.string().min(1).max(4000).optional(), title: z.string().max(2000),
+  specs: z.array(specSchema).max(20000), suites: z.array(suiteSchema).max(2000).optional(),
+}));
+const totalSchema = z.number().int().nonnegative().max(20000);
+const reportSchema = z.object({
+  suites: z.array(suiteSchema).max(2000),
+  stats: z.object({ expected: totalSchema, skipped: totalSchema, unexpected: totalSchema, flaky: totalSchema }),
+  errors: z.array(z.unknown()).max(2000).optional(),
+});
 
 /** Every spec in a suite tree, each tagged with the file it belongs to (nested `describe` blocks share their file). */
-function flatten(suites: readonly PwSuite[], file: string | undefined, out: Array<{ file: string; spec: PwSpec }>): void {
+function flatten(
+  suites: readonly PwSuite[], file: string | undefined, out: Array<{ file: string; title: string; spec: PwSpec }>, prefix = "",
+): void {
   for (const s of suites) {
     const f = s.file ?? file;
-    for (const spec of s.specs ?? []) if (f) out.push({ file: f, spec });
-    if (s.suites?.length) flatten(s.suites, f, out);
+    const title = `${prefix}${s.title} > `;
+    for (const spec of s.specs) out.push({ file: f ?? "", title: title + spec.title, spec });
+    if (s.suites?.length) flatten(s.suites, f, out, title);
   }
 }
 
@@ -49,42 +71,71 @@ const firstError = (spec: PwSpec): string => {
   }
   return "the test did not pass";
 };
-const specStatus = (spec: PwSpec): "passed" | "failed" | "skipped" => {
-  if (spec.tests.every((t) => t.results.every((r) => r.status === "skipped"))) return "skipped";
-  return spec.ok ? "passed" : "failed";
-};
+function countSpec(counts: Counts, spec: PwSpec, title: string): string | undefined {
+  for (const test of spec.tests) {
+    if (test.results.length !== 1 || test.status === "flaky" || test.expectedStatus === "failed")
+      return "retries and expected failures cannot establish passing behavior";
+    const observed = test.results[0]!;
+    if (observed.status === "interrupted") return "the test was interrupted";
+    const status = observed.status === "timedOut" ? "failed" : observed.status;
+    const expected = status === "skipped" ? "skipped" : status === "passed" ? "expected" : "unexpected";
+    if (test.status !== expected) return "the test summary and its execution disagree";
+    const identity = `${title} [project:${test.projectName ?? ""}]`;
+    if (counts.tests.includes(identity)) return "duplicate test identity";
+    const message = firstError({ ...spec, tests: [test] });
+    const kind = observed.status === "timedOut" ? "timeout" : /expect\(|AssertionError/.test(message) ? "assertion" : "runtime-error";
+    counts.tests.push(identity);
+    counts.outcomes!.push({ test: identity, status, ...(status === "failed" ? { kind } : {}) });
+    if (status === "skipped") { counts.skipped++; continue; }
+    counts.executed++;
+    if (status === "passed") { counts.passed++; continue; }
+    counts.failed++;
+    if (!counts.failureKinds.includes(kind)) counts.failureKinds.push(kind);
+    if (counts.failures.length < 5) counts.failures.push({ test: identity, kind, message });
+  }
+  const ok = spec.tests.every(test => ["expected", "skipped"].includes(test.status));
+  return spec.ok === ok ? undefined : "the spec summary and its tests disagree";
+}
+
+function reportPath(file: string, root: string): string | null {
+  const path = root ? relative(resolve(root), resolve(root, file)) : file;
+  return !file || !path || file.includes("\0") || path === ".." || path.startsWith("../") || (!root && isAbsolute(path))
+    ? null : path;
+}
 
 /** Pure: Playwright's JSON report to the same per-file counts Vitest's normalizer produces. */
 export function normalizePlaywright(raw: string | null, root = ""): Normalized {
   if (raw === null) return invalid("no report was produced");
   if (Buffer.byteLength(raw) > 10 * 1024 * 1024) return invalid("the report exceeds 10 MB");
-  let d: PwReport;
-  try { d = JSON.parse(raw); } catch { return invalid("the report is not valid JSON"); }
-  if (!d || !Array.isArray(d.suites) || !d.stats) return invalid("the report has no suites or stats");
-  if (nestsTooDeep(d)) return invalid("the report exceeds depth 64");
-  const flat: Array<{ file: string; spec: PwSpec }> = [];
+  let data: unknown;
+  try { data = JSON.parse(raw); } catch { return invalid("the report is not valid JSON"); }
+  if (!data || typeof data !== "object" || !("suites" in data) || !("stats" in data))
+    return invalid("the report has no suites or stats");
+  if (nestsTooDeep(data)) return invalid("the report exceeds depth 64");
+  const parsed = reportSchema.safeParse(data);
+  if (!parsed.success) return invalid("invalid Playwright report structure");
+  const d = parsed.data;
+  if (d.errors?.length) return invalid("the report contains global errors");
+  const flat: Array<{ file: string; title: string; spec: PwSpec }> = [];
   flatten(d.suites, undefined, flat);
   if (flat.length > 20000) return invalid("too many specs; the report was not fully normalized");
 
   const files = new Map<string, Counts>();
-  for (const { file, spec } of flat) {
-    const path = root ? relative(resolve(root), resolve(root, file)) : file;
-    if (path === ".." || path.startsWith("../") || (!root && isAbsolute(path))) return invalid("a report path leaves the workspace");
+  for (const { file, title, spec } of flat) {
+    const path = reportPath(file, root);
+    if (!path) return invalid("a report path leaves the workspace");
     const f: Counts = files.get(path) ?? {
-      executed: 0, passed: 0, failed: 0, skipped: 0, focused: 0, tests: [], failureKinds: [], failures: [],
+      executed: 0, passed: 0, failed: 0, skipped: 0, focused: 0, tests: [], outcomes: [], failureKinds: [], failures: [],
     };
-    f.tests.push(spec.title);
-    const status = specStatus(spec);
-    if (status === "skipped") { f.skipped++; files.set(path, f); continue; }
-    f.executed++;
-    if (status === "passed") { f.passed++; files.set(path, f); continue; }
-    f.failed++;
-    if (!f.failureKinds.includes("assertion")) f.failureKinds.push("assertion");
-    if (f.failures.length < 5) f.failures.push({ test: spec.title, kind: "assertion", message: firstError(spec) });
+    const problem = countSpec(f, spec, title);
+    if (problem) return invalid(problem);
     files.set(path, f);
   }
-  const discovered = [...files.values()].reduce((n, f) => n + f.executed + f.skipped, 0);
-  const hasFailure = [...files.values()].some((f) => f.failed > 0);
-  if ((d.stats.unexpected > 0) !== hasFailure) return invalid("the report's stats and its specs disagree");
+  const counts = [...files.values()];
+  const sum = (key: "passed" | "failed" | "skipped") => counts.reduce((total, file) => total + file[key], 0);
+  const discovered = sum("passed") + sum("failed") + sum("skipped");
+  if (discovered > 20000 || files.size > 2000) return invalid("the report population exceeds its bound");
+  if (d.stats.expected !== sum("passed") || d.stats.unexpected !== sum("failed") || d.stats.skipped !== sum("skipped") || d.stats.flaky)
+    return invalid("the report's stats and its specs disagree");
   return { files, discovered };
 }

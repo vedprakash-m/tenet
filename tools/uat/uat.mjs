@@ -33,9 +33,21 @@ const focused = (root, h, response) => {
  const rv = response.data.review;
  assert.equal(rv.dispatchMode, 'same-session');
  const manifest = JSON.parse(readFileSync(rv.manifest, 'utf8'));
+ assert.ok(Array.isArray(manifest.rubric));
+ assert.ok(manifest.rubric.every(part => typeof part === 'string' && JSON.stringify(part).length < 1500));
+ assert.match(manifest.rubric.join(''), /Stage A|basis/);
+ assert.equal(manifest.exclusions.mechanism, 'cooperative');
+ assert.ok(new RegExp(manifest.exclusions.defaults.kernelOnly).test('.tenet/state'));
+ assert.ok(manifest.exclusions.defaults.secretPatterns.some(pattern => new RegExp(pattern).test('.env.local')));
+ assert.equal(typeof manifest.resultGuidance.sampledItem.semantic, 'boolean');
+ assert.equal(typeof manifest.resultGuidance.sampledItem.callers, 'number');
+ assert.match(manifest.resultGuidance.sampled, /empty|\[\]/i);
+ assert.match(manifest.resultGuidance.openDependencies, /plain strings/);
+ assert.equal(typeof manifest.resultGuidance.openDependencyItem, 'string');
  for (const path of manifest.investigation) readFileSync(join(root, path), 'utf8');
  const r = call(root, 'findings', { h, result: { kind: 'review', manifest: rv.hash, reservation: rv.reservation, attempt: rv.attempt, mode: rv.mode, status: 'completed', dispatchMode: 'same-session', axes: { behavior: 'pass', structure: 'pass' }, coverage: { inspected: rv.files, uncovered: [], crossCutting: 'greeting test imports the implementation; unrelated human file remains outside this work', sampled: [] }, attention: [], findings: [], basisGaps: [], openDependencies: [] } });
  assert.equal(r.exit, 0, JSON.stringify(r)); assert.equal(r.budget.delegations, '0/2');
+ return manifest;
 };
 const basis = { outcome: 'Return a greeting', scopePaths: ['src/'], elements: [
  { ref: 'r', kind: 'requirement', origin: 'request', text: 'greet returns Hello, Ada!' },
@@ -57,6 +69,19 @@ const waitUntil = async (fn, what) => {
  for (;;) { const found = fn(); if (found) return found; assert.ok(Date.now() < end, `timed out: ${what}`); await new Promise(r => setTimeout(r, 25)); }
 };
 try {
+ const helpRoot = create();
+ const helpCommands = [
+  ['open', ['investigate', '--help']], ['decide', ['config', '--help']],
+  ['finish', ['--help']], ['stop', ['abandon', '--help']],
+ ];
+ for (const [verb, flags] of helpCommands) {
+  const response = call(helpRoot, verb, {}, flags);
+  assert.equal(response.exit, 0, JSON.stringify(response));
+  assert.equal(response.verb, 'inspect'); assert.equal(response.handle, undefined);
+  assert.equal(existsSync(join(helpRoot, '.tenet')), false);
+ }
+ assert.equal(git(helpRoot, 'status', '--porcelain'), '');
+ observations.push({ scenario: 'built mutating-subcommand help is stateless', commands: helpCommands.length, stateCreated: false, gitUnchanged: true });
  const root = create();
  const opened = call(root, 'open', { request: 'greeting', scopePaths: ['src/'] }, ['--profile=feature', '--lane=quick']); assert.equal(opened.exit, 0);
  const h = opened.handle;
@@ -67,7 +92,8 @@ try {
  const personal = 'export const personal = "leave me alone";\n'; write(root, 'src/personal.ts', personal);
  const green = call(root, 'check', {}, [`--h=${h}`, '--stage=candidate', '--touched=src/greet.ts']); assert.equal(green.data.receipts[0].status, 'pass');
  assert.equal(green.next[0].action, 'focused-review');
- focused(root, h, green);
+ const reviewedPacket = focused(root, h, green);
+ observations.push({ scenario: 'built reviewer packet is readable and exclusion-aware', rubricParts: reviewedPacket.rubric.length, cooperativeExclusions: true, typedSampleGuidance: true });
  const blocked = call(root, 'finish', {}, [`--h=${h}`, '--subject=Greeting']); assert.equal(blocked.exit, 3); assert.equal(blocked.questions[0].id, 'unexplained');
  assert.equal(call(root, 'decide', { h, kind: 'unexplained', answers: { unexplained: 'not-mine' } }).exit, 0);
  const final = call(root, 'finish', {}, [`--h=${h}`, '--subject=Greeting']); assert.equal(final.data.endpoint, 'checked-local');

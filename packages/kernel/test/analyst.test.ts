@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { cleanup } from "./helpers.ts";
 import { project } from "./support/fixture.ts";
+import { AnalystResult } from "../src/core/schemas.ts";
 
 const roots: string[] = [];
 const fresh = () => { const p = project(); roots.push(p.root); return p; };
@@ -20,6 +21,28 @@ const analystResult = (t: Record<string, any>, over: Record<string, unknown> = {
 const templateOf = (path: string) => JSON.parse(readFileSync(path, "utf8")).resultTemplate;
 
 describe("packet analyst [AGT-03]", () => {
+  it("describes string dependencies and accepts a valid partial result without weakening validation", async () => {
+    const fixture = fresh();
+    const handle = (await fixture.call("open", { profile: "investigate", request: "dependency guidance" })).handle!;
+    const issued = await fixture.call("packet", {
+      h: handle, role: "analyst", analystRole: "researcher", question: "What remains unverified?",
+    });
+    assert.equal(issued.exit, 0, JSON.stringify(issued));
+    const packet = JSON.parse(readFileSync(d(issued).analyst.manifest, "utf8"));
+    assert.match(packet.resultGuidance.openDependencies, /string/);
+    assert.equal(typeof packet.resultGuidance.openDependencyItem, "string");
+    const result = analystResult(packet.resultTemplate, {
+      status: "partial", openDependencies: [packet.resultGuidance.openDependencyItem],
+    });
+    assert.equal(AnalystResult.safeParse(result).success, true);
+    assert.equal(AnalystResult.safeParse({ ...result, openDependencies: [{ claim: "missing", evidence: "src/greet.ts:1" }] }).success, false);
+    const recorded = await fixture.call("findings", { h: handle, result });
+    assert.equal(recorded.exit, 0, JSON.stringify(recorded));
+    assert.equal(d(recorded).status, "partial");
+    assert.ok(recorded.next.some(next => next.action === "analyst" && next.required));
+    assert.deepEqual(d(recorded).openDependencies, result.openDependencies);
+  });
+
   it("dispatches a researcher without a basis, and findings records the result", async () => {
     const p = fresh();
     const o = await p.call("open", { profile: "investigate", request: "how are greetings tested?" });
@@ -30,7 +53,7 @@ describe("packet analyst [AGT-03]", () => {
     assert.ok(r.next.some((n) => n.action === "analyst" && n.required));
     const manifest = JSON.parse(readFileSync(d(r).analyst.manifest, "utf8"));
     assert.equal(manifest.question, "How is greet() tested today?");
-    assert.match(manifest.rubric, /evidence from the repository/);
+    assert.match(manifest.rubric.join(""), /evidence from the repository/);
     assert.equal(manifest.resultTemplate.kind, "analyst");
 
     const f = await p.call("findings", { h, result: analystResult(templateOf(d(r).analyst.manifest)) });
@@ -78,9 +101,9 @@ describe("packet analyst [AGT-03]", () => {
     const sec = await p.call("packet", { h, role: "analyst", analystRole: "security", question: "Any exposure here?" });
     const archManifest = JSON.parse(readFileSync(d(arch).analyst.manifest, "utf8"));
     const secManifest = JSON.parse(readFileSync(d(sec).analyst.manifest, "utf8"));
-    assert.match(archManifest.rubric, /decision record/);
+    assert.match(archManifest.rubric.join(""), /decision record/);
     assert.ok("sketch" in archManifest.resultTemplate);
-    assert.match(secManifest.rubric, /threat note/);
+    assert.match(secManifest.rubric.join(""), /threat note/);
     assert.ok(!("sketch" in secManifest.resultTemplate));
   });
 

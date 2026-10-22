@@ -165,7 +165,11 @@ export interface Detection {
   runnerVersion?: string; packageManager: "npm" | "pnpm" | "yarn" | "unknown"; moduleRoot: string; experimental: boolean;
 }
 export interface Normalized {
-  files: Map<string, { executed: number; passed: number; failed: number; skipped: number; focused: number; tests: string[]; failureKinds: string[]; failures: Array<{ test: string; kind: string; message: string }> }>;
+  files: Map<string, {
+    executed: number; passed: number; failed: number; skipped: number; focused: number; tests: string[];
+    outcomes?: Array<{ test: string; status: "passed" | "failed" | "skipped"; kind?: string }>;
+    failureKinds: string[]; failures: Array<{ test: string; kind: string; message: string }>;
+  }>;
   invalid?: string; discovered: number;
 }
 export interface Stack {

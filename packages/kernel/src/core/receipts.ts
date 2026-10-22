@@ -41,13 +41,19 @@ type Sum = { executed: number; passed: number; failed: number; skipped: number; 
  * of their assertions are tagged this way, exactly as before (never less precise than the whole file, only
  * sometimes more). */
 function taggedOnly(per: readonly FileCounts[], tag: string): FileCounts[] | null {
-  const tests = per.flatMap((p) => p.tests).filter((t) => t.includes(tag));
-  if (!tests.length) return null;
-  const failures = per.flatMap((p) => p.failures).filter((f) => f.test.includes(tag));
+  if (per.some(p => !p.outcomes || p.focused || p.failed > p.outcomes.filter(test => test.status === "failed").length))
+    return null;
+  const matches = (test: string) => test.includes(`[${tag}]`);
+  const outcomes = per.flatMap(p => p.outcomes!).filter(test => matches(test.test));
+  if (!outcomes.length) return null;
+  const passed = outcomes.filter(test => test.status === "passed").length;
+  const failed = outcomes.filter(test => test.status === "failed").length;
+  const skipped = outcomes.filter(test => test.status === "skipped").length;
+  const failures = per.flatMap(p => p.failures).filter(failure => matches(failure.test));
   return [{
-    executed: tests.length, passed: tests.length - failures.length, failed: failures.length, skipped: 0,
-    focused: failures.filter((f) => f.kind === "focused").length,
-    tests, failureKinds: [...new Set(failures.map((f) => f.kind))], failures,
+    executed: passed + failed, passed, failed, skipped, focused: 0,
+    tests: outcomes.map(test => test.test), outcomes,
+    failureKinds: [...new Set(outcomes.flatMap(test => test.kind ?? []))], failures,
   }];
 }
 

@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
+import { ReviewCoverage } from "../src/core/schemas.ts";
+import { buildManifest, isManifest } from "../src/core/review.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
@@ -75,9 +77,16 @@ describe("the review manifest is self-sufficient (SP-08, observed on Copilot CLI
     p.write("src/greet.ts", GREET_IMPL);
     const g = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     const manifest = JSON.parse(readFileSync(d(g).review.manifest, "utf8"));
-    assert.match(manifest.rubric, /Stage A \(behavior and intent\)/);
-    assert.match(manifest.rubric, /resultTemplate/);
-    assert.doesNotMatch(manifest.rubric, /^---/, "front matter is stripped");
+    assert.ok(Array.isArray(manifest.rubric), "rubric must not be one tool-truncated JSON string");
+    const rubric = manifest.rubric.join("");
+    assert.match(rubric, /Stage A \(behavior and intent\)/);
+    assert.match(rubric, /resultTemplate/);
+    assert.doesNotMatch(rubric, /^---/, "front matter is stripped");
+    for (const part of manifest.rubric) assert.ok(JSON.stringify(part).length < 1500);
+    assert.match(manifest.resultGuidance.sampled, /empty|\[\]/i);
+    const sampled = ReviewCoverage.shape.sampled.element.parse(manifest.resultGuidance.sampledItem);
+    assert.deepEqual(Object.keys(sampled).sort(), ["callers", "opened", "semantic", "symbol", "why"]);
+    assert.equal(ReviewCoverage.shape.sampled.safeParse(["prose is not a sampled-item object"]).success, false);
     assert.match(manifest.charter, /behavioral TDD/, "the default engineering charter is carried until a project adopts its own [QLT-09]");
     const t = manifest.resultTemplate;
     assert.deepEqual([t.manifest, t.reservation, t.attempt, t.mode], [d(g).review.hash, d(g).review.reservation, d(g).review.attempt, "full"]);
@@ -85,6 +94,59 @@ describe("the review manifest is self-sufficient (SP-08, observed on Copilot CLI
     const filled = { ...t, status: "completed", axes: { behavior: "pass", structure: "pass" }, coverage: { inspected: ["src/greet.ts:1"], uncovered: [], crossCutting: "none", sampled: [] }, attention: [], findings: [], basisGaps: [] };
     const r = await p.call("findings", { h, result: filled });
     assert.equal(r.exit, 0, JSON.stringify(r));
+  });
+
+  it("carries default and effective exclusions into reviewer and analyst packets [SEC-08]", async () => {
+    const exclusions = [
+      { pattern: "private/**", kinds: ["no-model-send"] },
+      { pattern: "vault/**", kinds: ["no-read"] },
+      { pattern: "archives/**", kinds: ["no-routine-scan"] },
+    ];
+    const fixture = fresh({ "tenet.policy.json": JSON.stringify({ exclusions }) });
+    const opened = await fixture.call("open", { profile: "bug", request: "greeting", lane: "standard" });
+    const handle = opened.handle!;
+    await fixture.call("decide", { h: handle, kind: "basis", propose: BASIS });
+    fixture.write("src/greet.test.ts", GREET_TEST);
+    await fixture.call("check", { h: handle, stage: "baseline" });
+    fixture.write("src/greet.ts", GREET_IMPL);
+    const checked = await fixture.call("check", { h: handle, stage: "candidate", touched: ["src/greet.ts"] });
+    const analyst = await fixture.call("packet", {
+      h: handle, role: "analyst", analystRole: "researcher", question: "Where is the greeting formatted?",
+    });
+    for (const path of [d(checked).review.manifest, d(analyst).analyst.manifest]) {
+      const packet = JSON.parse(readFileSync(path, "utf8"));
+      assert.equal(packet.exclusions.mechanism, "cooperative");
+      assert.ok(new RegExp(packet.exclusions.defaults.kernelOnly).test(".tenet/state"));
+      assert.ok(packet.exclusions.defaults.secretPatterns.some((pattern: string) => new RegExp(pattern).test(".env.local")));
+      assert.ok(new RegExp(packet.exclusions.defaults.secretException).test(".env.example"));
+      assert.deepEqual(packet.exclusions.effective, exclusions);
+      assert.match(packet.exclusions.guidance.join(" "), /before.*read|before.*search/i);
+      assert.ok(Array.isArray(packet.rubric));
+    }
+  });
+
+  it("keeps stateless review packet restrictions consistent with shared policy [CON-09, SEC-08]", async () => {
+    const exclusions = [{ pattern: "private/**", kinds: ["no-model-send"] }];
+    const fixture = fresh({ "tenet.policy.json": JSON.stringify({ exclusions }) });
+    const response = await fixture.call("review", {});
+    assert.equal(response.exit, 0, JSON.stringify(response));
+    const packet = JSON.parse(readFileSync(d(response).manifest, "utf8"));
+    assert.deepEqual(packet.exclusions.effective, exclusions);
+    assert.equal(fixture.ports().store.exists(), false);
+  });
+
+  it("preserves the exact rubric even when logical lines contain escaped characters or long text", async () => {
+    const fixture = fresh();
+    await fixture.call("open", { profile: "investigate", request: "packet transport" });
+    const rubric = String.fromCharCode(1).repeat(450) + String.fromCodePoint(0x1f642).repeat(150) + "\n" + "text".repeat(300);
+    const packet = buildManifest({
+      work: work(fixture), elements: [], changes: [], candidate: "candidate", basisHash: "basis", attempt: 1,
+      mode: "full", recheckFindings: [], rubric, id: "W-0001", files: {}, charter: "default",
+    });
+    assert.ok(isManifest(packet));
+    const decoded = JSON.parse(packet.text);
+    assert.equal(decoded.rubric.join(""), rubric);
+    for (const part of decoded.rubric) assert.ok(JSON.stringify(part).length < 1500);
   });
 });
 

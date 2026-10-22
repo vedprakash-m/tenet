@@ -135,4 +135,44 @@ describe("receipts", () => {
     assert.equal(ra!.status, "fail");
     assert.equal(rb!.status, "fail", "with no tag naming either obligation, both still see the shared file's aggregate result");
   });
+
+  it("retains a tagged failure beyond the diagnostic cap [EVD-02, EVD-05]", () => {
+    const data = JSON.parse(report(Array.from({ length: 6 }, () => ({ status: "failed", failure: "AssertionError: expected x" }))));
+    data.testResults[0].assertionResults[5].fullName = "[EX-6] sixth failure";
+    const receipt = one({ ...ob, example: "EX-6" }, run({ exit: 1 }), norm(JSON.stringify(data)));
+    assert.equal(receipt.status, "fail");
+    assert.equal(receipt.counts?.failed, 1);
+    assert.deepEqual(receipt.failureKinds, ["assertion"]);
+  });
+
+  it("never turns a tagged skipped test into an executed pass [EVD-02]", () => {
+    const data = JSON.parse(report([{ status: "passed" }, { status: "skipped" }]));
+    data.testResults[0].assertionResults[1].fullName = "[EX-2] skipped example";
+    const receipt = one({ ...ob, example: "EX-2" }, run(), norm(JSON.stringify(data)));
+    assert.equal(receipt.status, "inconclusive");
+    assert.equal(receipt.counts?.executed, 0);
+    assert.equal(receipt.counts?.skipped, 1);
+  });
+
+  it("does not narrow away a file-level failure or focused sibling [EVD-02, EVD-05]", () => {
+    for (const focused of [false, true]) {
+      const assertions = [{ fullName: "[EX-1] passing example", status: "passed", failureMessages: [] as string[] }];
+      if (focused) assertions.push({
+        fullName: "another test", status: "failed", failureMessages: ["Error: [Vitest] Unexpected .only modifier."],
+      });
+      const raw = JSON.stringify({ testResults: [{
+        name: "/p/a.test.ts", status: "failed", message: "Cannot find module './setup'", assertionResults: assertions,
+      }] });
+      assert.notEqual(one({ ...ob, example: "EX-1" }, run({ exit: 1 }), norm(raw)).status, "pass");
+    }
+  });
+
+  it("matches the full example tag rather than another example's numeric prefix [EVD-05]", () => {
+    const data = JSON.parse(report([{ status: "failed", failure: "AssertionError: expected x" }, { status: "passed" }]));
+    data.testResults[0].assertionResults[0].fullName = "[EX-1] first";
+    data.testResults[0].assertionResults[1].fullName = "[EX-10] tenth";
+    const receipt = one({ ...ob, example: "EX-1" }, run({ exit: 1 }), norm(JSON.stringify(data)));
+    assert.equal(receipt.counts?.executed, 1);
+    assert.equal(receipt.counts?.failed, 1);
+  });
 });

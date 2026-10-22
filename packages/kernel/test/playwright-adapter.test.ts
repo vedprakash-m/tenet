@@ -5,7 +5,10 @@ import { describe, it } from "node:test";
 import { normalizePlaywright, playwrightArgv } from "../src/adapters/playwright.ts";
 
 const result = (status: string, errors: Array<{ message?: string }> = []) => ({ status, errors });
-const spec = (title: string, ok: boolean, results: Array<ReturnType<typeof result>>) => ({ title, ok, tests: [{ status: ok ? "expected" : "unexpected", results }] });
+const spec = (title: string, ok: boolean, results: Array<ReturnType<typeof result>>) => ({
+  title, ok, tests: [{ status: results.length && results.every(item => item.status === "skipped")
+    ? "skipped" : ok ? "expected" : "unexpected", results }],
+});
 interface Suite { file: string; title: string; specs: Array<ReturnType<typeof spec>>; suites: Suite[] }
 const suite = (file: string, specs: Array<ReturnType<typeof spec>>, nested: Suite[] = []): Suite => ({ file, title: file, specs, suites: nested });
 const report = (suites: Suite[], stats: Partial<{ expected: number; skipped: number; unexpected: number; flaky: number }> = {}) =>
@@ -26,7 +29,7 @@ describe("Playwright report normalization [EVD-13]", () => {
     const norm = normalizePlaywright(raw);
     const f = norm.files.get("e2e/a.spec.ts")!;
     assert.equal(f.failed, 1);
-    assert.equal(f.failureKinds[0], "assertion");
+    assert.equal(f.failureKinds[0], "runtime-error");
     assert.ok(f.failures[0]!.message.length <= 500);
   });
 
@@ -66,5 +69,45 @@ describe("Playwright report normalization [EVD-13]", () => {
 
   it("argv is null when Playwright is not installed, a direct binary when it is", () => {
     assert.equal(playwrightArgv("/does/not/exist", "/tmp/out.json"), null);
+  });
+
+  it("rejects malformed nested records without throwing [EVD-05]", () => {
+    const good = JSON.parse(report([suite("a.spec.ts", [spec("one", true, [result("passed")])])], { expected: 1 }));
+    const variants = [
+      { ...good, suites: [null] },
+      { ...good, suites: [{ ...good.suites[0], specs: {} }] },
+      { ...good, suites: [suite("a.spec.ts", [{ ...spec("one", true, []), tests: null } as never])] },
+      { ...good, suites: [suite("a.spec.ts", [spec("one", true, [result("invented")])])] },
+      { ...good, stats: { ...good.stats, expected: -1 } },
+    ];
+    for (const variant of variants) {
+      let normalized: ReturnType<typeof normalizePlaywright> | undefined;
+      assert.doesNotThrow(() => { normalized = normalizePlaywright(JSON.stringify(variant)); });
+      assert.ok(normalized?.invalid, JSON.stringify(variant));
+    }
+  });
+
+  it("cannot use an ok summary to conceal failed or missing execution [EVD-02, EVD-05]", () => {
+    for (const results of [[result("failed")], [], [result("interrupted")]]) {
+      const raw = report([suite("a.spec.ts", [spec("one", true, results)])], { expected: 1 });
+      assert.ok(normalizePlaywright(raw).invalid, JSON.stringify(results));
+    }
+  });
+
+  it("does not accept retries or expected failures as passing behavior [EVD-05]", () => {
+    const flaky = spec("one", true, [result("failed"), result("passed")]);
+    flaky.tests[0]!.status = "flaky";
+    assert.ok(normalizePlaywright(report([suite("a.spec.ts", [flaky])], { flaky: 1 })).invalid);
+    const expectedFailure = spec("one", true, [result("failed")]);
+    assert.ok(normalizePlaywright(report([suite("a.spec.ts", [expectedFailure])], { expected: 1 })).invalid);
+  });
+
+  it("rejects duplicate identities, global errors and inconsistent totals [EVD-05]", () => {
+    const passing = spec("one", true, [result("passed")]);
+    assert.ok(normalizePlaywright(report([suite("a.spec.ts", [passing, passing])], { expected: 2 })).invalid);
+    assert.ok(normalizePlaywright(report([suite("a.spec.ts", [passing])], { expected: 2 })).invalid);
+    const globalError = JSON.parse(report([suite("a.spec.ts", [passing])], { expected: 1 }));
+    globalError.errors = [{ message: "teardown failed" }];
+    assert.ok(normalizePlaywright(JSON.stringify(globalError)).invalid);
   });
 });

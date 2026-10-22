@@ -78,13 +78,13 @@ describe("verifying before installing [SEC-05]", () => {
     assert.equal(pre.exit, 3, JSON.stringify(pre));
     assert.equal(pre.questions![0]!.id, "dependency-confirm");
     assert.match(pre.questions![0]!.question, /left-pad@1\.0\.0/);
-    assert.ok(ran(t, "install", "--package-lock-only", "--ignore-scripts"), "resolved with scripts off");
+    assert.deepEqual(t.calls.find((args) => args[0] === "npm" && args[1] === "install"), ["npm", "install", "--package-lock-only", "--ignore-scripts", "--no-audit", "left-pad@1.0.0"]);
     assert.equal(ran(t, "ci"), false, "nothing installed before the answer");
     assert.match(t.read("package-lock.json")!, /left-pad/);
 
     const done = await t.call("decide", { h, kind: "dependency", answers: confirm });
     assert.equal(done.exit, 0, JSON.stringify(done));
-    assert.ok(ran(t, "ci", "--ignore-scripts"), JSON.stringify(t.calls));
+    assert.deepEqual(t.calls.find((args) => args[0] === "npm" && args[1] === "ci"), ["npm", "ci", "--ignore-scripts", "--no-audit"]);
     const w = Object.values(t.state().work)[0]!;
     assert.deepEqual(w.grants.find((g) => g.actions.includes("dependency"))!.paths, ["package.json", "package-lock.json"]);
     assert.equal(w.grants.find((g) => g.actions.includes("dependency"))!.quote, "please add left-pad");

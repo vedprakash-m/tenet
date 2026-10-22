@@ -4,23 +4,24 @@ import { addTokens, canReserve, LIMITS, recordDelegation, releaseStale, reserve 
 import { reason } from "../core/reasons.ts";
 import type { FileChange, Manifest } from "../core/review.ts";
 import { projectCharter } from "../core/charter.ts";
-import { buildAnalystManifest, buildManifest, DEFAULT_CHARTER, deltaSince, isManifest, reviewMode } from "../core/review.ts";
+import {
+  buildAnalystManifest, buildManifest, DEFAULT_CHARTER, DEFAULT_REVIEW_RUBRIC,
+  RESEARCHER_RUBRIC, deltaSince, isManifest, reviewMode,
+} from "../core/review.ts";
 import type { BasisElement, BudgetState, Reason, Reservation, State, WorkContract } from "../core/schemas.ts";
 import type { Ports } from "../ports/types.ts";
+import type { Exclusion } from "../core/exclusions.ts";
 import { nx } from "./common.ts";
 import type { Facts } from "./facts.ts";
-
-const FALLBACK_RUBRIC = "Stage A: does the change satisfy each basis element and follow the design sketch? Stage B: structure, security, charter. Give every attention item a disposition. Return one ReviewResult shaped like resultTemplate.";
+import { settingsFor } from "./reconcile.ts";
 
 /** The reviewer's rubric is the body of the tenet-review skill: one source, carried in the manifest. */
 function rubric(ports: Ports, focused: boolean): string {
   const text = ports.recipes.text(focused ? "skills/tenet/resources/focused-review.md" : "skills/tenet-review/SKILL.md");
-  return text ? text.replace(/^---\n[\s\S]*?\n---\n/, "").trim() : FALLBACK_RUBRIC;
+  return text ? text.replace(/^---\n[\s\S]*?\n---\n/, "").trim() : DEFAULT_REVIEW_RUBRIC;
 }
 
 type AnalystRole = "researcher" | "architect" | "security";
-const RESEARCHER_RUBRIC = "Answer the question using evidence from the repository. Cite path:line for every claim. "
-  + "Report what you could not find as an open dependency, never a guess.";
 const ROLE_RESOURCE: Record<AnalystRole, string | undefined> = {
   researcher: undefined, architect: "skills/tenet-review/resources/architect.md", security: "skills/tenet-review/resources/security.md",
 };
@@ -117,6 +118,7 @@ export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Fac
     work: nw, elements: st.project.intent.elements.filter((e) => basis.elementIds.includes(e.id)), changes: shown, candidate: facts.candidate, basisHash: basis.hash,
     attempt: nextAttempt(live, retry, focused, budget), mode, ...(basedOn ? { basedOn } : {}),
     recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused), id: nw.label, files, charter: charterOf(ports),
+    exclusions: settingsFor(ports, st, w).exclusions as Exclusion[],
   });
   if (!isManifest(m)) return { work: nw, next: [nx("ask", "The basis is too large to review in one pass; narrow the increment.", true)], reasons: [m] };
   const path = ports.store.writeArtifact(ports.store.tempDir("manifests"), `${m.hash}.json`, m.text);
@@ -127,14 +129,18 @@ export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Fac
  * answered" cache — each question is a fresh dispatch, bounded only by the lane's delegation capacity, so several
  * analysts can be live on one declared revision at once (AGT-03's "in parallel"). */
 export function issueAnalyst(
-  ports: Ports, w: WorkContract, elements: readonly BasisElement[], candidate: string, role: AnalystRole, question: string,
+  ports: Ports, st: State, w: WorkContract, elements: readonly BasisElement[], candidate: string,
+  role: AnalystRole, question: string,
 ): Issued {
   let budget = releaseStale(w.budget, candidate, w.basis?.hash ?? "none");
   if (!canReserve(budget, w.lane)) {
     return { work: { ...w, budget }, next: [nx("stop", "No delegation capacity is left for an analyst dispatch.", true)], reasons: [] };
   }
   const attempt = budget.delegations + budget.reservations.length + 1;
-  const m = buildAnalystManifest({ work: w, elements, candidate, attempt, role, question, rubric: analystRubric(ports, role) });
+  const m = buildAnalystManifest({
+    work: w, elements, candidate, attempt, role, question, rubric: analystRubric(ports, role),
+    exclusions: settingsFor(ports, st, w).exclusions as Exclusion[],
+  });
   if (!isManifest(m)) {
     return { work: { ...w, budget }, next: [nx("ask", "The question is too large to answer in one pass; narrow it.", true)], reasons: [m] };
   }

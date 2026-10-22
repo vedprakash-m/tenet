@@ -71,7 +71,7 @@ const lastLines = (r: { stderr: string; stdout: string }, n: number) =>
   (r.stderr || r.stdout).trim().split("\n").slice(-n).join("\n");
 
 const CI_ARGV: Record<Manager, string[]> = {
-  npm: ["npm", "ci", "--ignore-scripts"],
+  npm: ["npm", "ci", "--ignore-scripts", "--no-audit"],
   pnpm: ["pnpm", "install", "--frozen-lockfile", "--ignore-scripts"],
 };
 const rebuildArgv = (manager: Manager, name: string): string[] => [manager, "rebuild", name];

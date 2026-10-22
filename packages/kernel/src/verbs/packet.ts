@@ -29,7 +29,7 @@ export const packet: Verb<PacketInput> = {
         throw new KernelError("capability-missing", "an analyst packet needs --analyst-role and --question", { exit: 1 });
       }
       const elements = state!.project.intent.elements.filter((e) => w.basis?.elementIds.includes(e.id));
-      const issued = issueAnalyst(ports, w, elements, facts.candidate, input.analystRole, input.question);
+      const issued = issueAnalyst(ports, state!, w, elements, facts.candidate, input.analystRole, input.question);
       return {
         state: withWork(state!, issued.work),
         resp: { work: w.id, reasons: issued.reasons, next: issued.next, ...(issued.data ? { data: issued.data } : {}) },

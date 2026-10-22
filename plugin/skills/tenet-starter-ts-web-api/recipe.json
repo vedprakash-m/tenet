@@ -13,7 +13,8 @@
     [
       "npm",
       "ci",
-      "--ignore-scripts"
+      "--ignore-scripts",
+      "--no-audit"
     ],
     [
       "npm",

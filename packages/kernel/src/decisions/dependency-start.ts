@@ -83,7 +83,7 @@ async function releaseAges(ports: Ports, runDir: string, observed: Observation[]
 }
 
 const RESOLVE_ARGV: Record<Manager, (specs: string[]) => string[]> = {
-  npm: (specs) => ["npm", "install", "--package-lock-only", "--ignore-scripts", ...specs],
+  npm: (specs) => ["npm", "install", "--package-lock-only", "--ignore-scripts", "--no-audit", ...specs],
   pnpm: (specs) => ["pnpm", "add", "--lockfile-only", "--ignore-scripts", ...specs], // "add": package.json does not list these specs yet
 };
 const DIFF_OF: Record<Manager, (before: string | null, after: string) => LockDiff> = { npm: diffLockfile, pnpm: diffPnpmLock };
