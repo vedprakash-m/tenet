@@ -1,8 +1,9 @@
-NOTICE (DRAFT for owner review)
+NOTICE (third-party inventory draft; release review remains pending)
 
-PLACEHOLDER-NAME (working name: Tenet)
-Copyright (c) PLACEHOLDER-COPYRIGHT-HOLDER PLACEHOLDER-YEAR
-License of this project: PLACEHOLDER-LICENSE (not chosen; plan section 4.5)
+Tenet
+Copyright (c) 2026 Tenet contributors
+License of Tenet and its own starter-template code: MIT (see LICENSE).
+Third-party components retain their respective licenses and notices below.
 
 This file lists third-party software that Tenet distributes or that its
 starter template installs into a user's project. Licenses were read from each
@@ -85,8 +86,8 @@ the two could be compared.
 
 When a user asks Tenet to start a new application, the kernel writes this
 template into the user's project and installs its pinned lockfile. The
-template's own files are part of Tenet and fall under Tenet's license
-(PLACEHOLDER-LICENSE). The packages below are NOT copied into Tenet; they are
+template's own files are part of Tenet and fall under the MIT license in the
+template's LICENSE file. The packages below are NOT copied into Tenet; they are
 downloaded by the user's package manager into the user's project, and their
 licenses bind the user's project. Using Tenet does not require the user to
 disclose application source and gives Tenet no ownership of it.

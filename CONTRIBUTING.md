@@ -1,11 +1,11 @@
-<!-- DRAFT for owner review. Contribution terms (license of contributions, sign-off, code of conduct) wait on the license decision, plan section 4.5. -->
+<!-- DRAFT for owner review. MIT is selected; remaining contribution/sign-off and code-of-conduct decisions are still pending. -->
 # Contributing
 
 Tenet records what is true about engineering work, so changes to it are held to the same standard: nothing is called done on a claim alone. This file says how a change gets in. The project rules for people and agents are in [.github/copilot-instructions.md](.github/copilot-instructions.md); read that file first.
 
 ## Before you start
 
-- **License of contributions:** PLACEHOLDER-LICENSE. No license has been chosen, so contributions cannot be accepted yet. This line changes when the owner decides (plan section 4.5).
+- **License:** Tenet and its own starter-template code use [MIT](LICENSE), selected by the owner on 2026-10-24. Contributions must be compatible with that license; incorporated third-party code retains its applicable licenses/notices. Remaining contribution and release-process decisions are not settled by license selection.
 - **Code of conduct:** PLACEHOLDER-CODE-OF-CONDUCT. The release requires one (PRD OSS-01); it is not written yet.
 - **Security problems** go to the channel in [SECURITY.md](SECURITY.md), not to a public issue.
 - **Maintainers:** one person holds all maintainer roles today. There is no second maintainer, and independent review of consequential work is done by a fresh-context reviewer agent or by the owner (plan section 4.5).

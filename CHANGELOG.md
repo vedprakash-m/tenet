@@ -1,5 +1,193 @@
 # Changelog
 
+## 2026-10-25 - Owner decision: implement offline campaign reporting
+
+**Changed.** Under owner decisions 38 A and 39 A, implemented strict bounded report input validation, denominator-preserving aggregation, safety/review/cost metrics, exclusions and diagnostics, deterministic JSON/Markdown/JUnit rendering, and the stdout-only `npm run eval:report` CLI. Exact input-byte hashes remain distinct when reordered inputs produce the same derived results; only completed attempts establish known pass/fail. Seventeen focused report tests pass on Node 26.3.0 and 22.12.0; full CI passes 1,118 tests/184 suites. No live operation, capture or qualification.
+
+## 2026-10-25 - Owner decision: draft offline campaign report contract
+
+**Changed.** Owner selected A to draft and independently review `specs/eval-report.md`. The contract defines strict local input, retained slots/attempts/exclusions, explicit metrics/denominators/unknowns, cost scopes, deterministic JSON/Markdown/JUnit formats, and non-authoritative eligibility. Two read-only reviews' findings are dispositioned; JUnit importer compatibility remains explicitly limited. No report code or live operation was authorized.
+
+## 2026-10-25 - Owner decision: pure-helper offline replay
+
+**Changed.** Owner selected A to implement `ObservationReplayV1` over hand-authored synthetic events using pure `tools/host/evaluate.ts` helpers. Added bounded fixture validation, deterministic comparison, fail-closed selection attribution, `npm run eval:replay`, and ten replay tests. Final CI passes 1,101 tests/183 suites. No capture, full kernel replay, host, model, network, account or spend activity.
+
+## 2026-10-25 - Owner decision: draft offline observation replay contract
+
+**Changed.** Owner selected A to draft and independently review `specs/eval-replay.md` for hand-authored synthetic events through pure observation helpers only. Seven review precision findings were dispositioned; sample output matches current helpers. Replay implementation and all capture remain unapproved; no code or data was added.
+
+## 2026-10-25 - Owner decision: static protocol validator implementation
+
+**Changed.** Owner selected A and signed the static `StaticProtocolV1` contract for offline implementation. Added shared qualification-tuple schema, strict protocol validation, duplicate-key detection using existing `yaml`, bounded local reference/hash checks, CLI `tools/eval.ts` / `npm run eval:validate`, and eight focused tests. All eight protocol tests pass on Node 22.12.0 with strip-types; final CI passes 1,091 tests/182 suites on Node 26.3.0. No new dependency. Trusted authorization, subject-payload verification, native UI, replay execution, capture, account, network and spend remain out of scope.
+
+## 2026-10-25 - Owner decision: draft offline protocol contract
+
+**Changed.** Owner selected A to draft and independently review the offline protocol contract. Added `specs/eval-protocol.md` for static `StaticProtocolV1` validation only; six review precision findings incorporated. Decision 34 A later approved its static implementation. Trusted execution authorization remains deferred.
+
+## 2026-10-25 - Offline evaluation evidence corrections
+
+**Changed.** `tools/host/evaluate.ts` now requires explicit denial evidence, associates it with the exact tool-call ID, reports ambiguous attempts as unknown and incomplete/invalid concurrency intervals as null. Added three red-first SP-08 synthetic controls. Focused offline tests pass 5/5; full `npm run ci` passes 1,083 tests/181 suites. Native event-code meaning remains unobserved, and no host qualification is claimed. No live calls or capture.
+
+## 2026-10-25 - Owner decision: G0 offline implementation sign-off
+
+**Changed.** Owner selected A and signed the harness spec for bounded offline protocol/admission, synthetic replay and reporting implementation only. Native UI, model calls, capture, account/OS setup, spend and live CI remain unapproved; G1/G2 are not passed. Updated harness status, plan and audit.
+
+## 2026-10-25 - Owner decision: reviewed synthetic fixture eligibility
+
+**Changed.** Owner selected A: only minimized synthetic derivatives may be proposed as public fixtures after individual privacy/security review and explicit owner approval. Raw captures and reachable history are excluded; no automatic publication or history rewrite. Updated harness, plan and audit. Capture and publication remain unauthorized.
+
+## 2026-10-25 - Owner decision: local-only artifact destination
+
+**Changed.** Owner selected A: raw captures and reviewed metadata/replays are intended for encrypted, access-controlled local storage on the dedicated evaluation machine, excluded from repositories, sync, CI artifacts and backups. Actual encryption, ACL, isolation and deletion controls remain unverified and must be proven before capture. Updated harness, plan and audit. No setup or data collection authorized.
+
+## 2026-10-25 - Owner decision: least-privilege reviewed-artifact access
+
+**Changed.** Owner selected A: private reviewed metadata/replays are limited to the designated operator, privacy/security reviewer and specifically assigned engineers. CI may consume only individually reviewed fixtures approved for that use; it cannot browse the private archive. Updated harness, plan and audit. Destination and capture remain undecided/unapproved; no data collected.
+
+## 2026-10-25 - Owner decision: least-privilege raw-capture access
+
+**Changed.** Owner selected A: raw captures are limited to the named evaluation operator and designated privacy/security reviewer; protected graders receive only minimum case-specific inputs through D-06; no general agent/CI access to stored raw captures. Updated harness, plan and audit. Reviewed-artifact access and destination remain undecided. No capture or data access occurred.
+
+## 2026-10-25 - Owner decision: minimal evaluation-capture purpose
+
+**Changed.** Owner selected A: any separately authorized capture is limited to minimum synthetic evidence for independent grading or reproducible diagnosis of a named failure; no general analytics, model training or general session recording. Updated harness D-05 and plan/audit. Retention decisions 19/20 are unchanged. Access, destination, publication, capture and live execution remain unapproved; no data collected.
+
+## 2026-10-25 - Owner decision: shared-account policy alignment
+
+**Changed.** Owner selected B: amended PRD 5.9.3/6.4.3 and TS 17.5/17.6 to allow a shared existing account in bounded serialized windows with explicit attribution uncertainty. Included allowance only, no paid overages, and verified provider/organization hard blocking are mandatory; otherwise live runs stay blocked. Updated harness, plan and launch audit. No account access, spend, setup, capture, live execution or runtime implementation authorized.
+
+## 2026-10-24 - Owner decision: protected grading boundary
+
+**Changed.** Owner selected A: candidate code must remain unable to access hidden graders/canaries/credentials, alter controller or authoritative results, or use unapproved egress while grading probes execute. A separate process alone is insufficient. Updated harness D-06/HE-AC-04, plan and audit. OS-enforced mechanism and negative proof remain open; G2 blocked. No setup, account access, case, capture, spend or live execution authorized.
+
+## 2026-10-24 - Independent harness specification review
+
+**Changed.** Dispositioned six read-only review findings in harness, plan and audit: corrected tooling inventory, retention criteria, grading inputs and initial/formative batch distinction. Recorded the now-selected candidate-probe boundary requirement, plus the unresolved canonical account conflict and CLI observation inference risks. No runtime repair/test, canonical account amendment, G0 approval, host setup or live execution claimed.
+
+## 2026-10-24 - Owner decision: bounded initial feasibility limits
+
+**Changed.** Owner selected A: one worker, at most two initial cases, 20 minutes per ordinary case, no automatic retries. Replaced the draft multi-cycle proposal; further batches/special long-running cases need separate authorization. Updated harness, plan and launch audit only. No named case/call, capture, setup, implementation, live or spend approval; enforcement/isolation and finite usage/dispatch limits remain open.
+
+## 2026-10-24 - Owner decision: dedicated local evaluation OS user
+
+**Changed.** Owner selected A as isolation strategy: dedicated local OS user, existing approved identity after manual sign-in, no primary profile/keychain copying, synthetic fixtures only. Updated harness draft, plan and launch audit. Setup and filesystem/credential/network negative-boundary proof remain open; no containment claim or OS/account/host change, live/spend/capture or implementation authorization. Documentation only.
+
+## 2026-10-24 - Owner decision: no additional paid evaluation usage
+
+**Changed.** Owner selected A: included allowance only, no additional paid usage/overages, paid fallback, purchases or account switching. Verified provider/organization enforcement is required before separately approved live calls; absent proof keeps them blocked. Zero additional charges is not unlimited execution or free included credits. Updated harness, Q-16, plan and launch audit only; usage/case limits, identity/terms, isolation and live-run gates remain open.
+
+## 2026-10-24 - Owner decision: existing-account evaluation strategy
+
+**Changed.** Owner selected B: existing Copilot account in bounded serialized evaluation windows, with attribution uncertainty disclosed. Updated Q-16, harness D-02, plan and launch audit. Identification, permitted-use checks, external cap/enforcement, isolation and live-run approval remain open. No account access, purchase/creation/switch, credential collection, spend, execution or implementation authorization. Documentation only.
+
+## 2026-10-24 - Owner decision: reviewed synthetic metadata/replay retention
+
+**Changed.** Owner selected A: private reviewed synthetic metadata/replays retain 90 days after associated-run finalization. Raw capture/research/operational/migration policies remain separate; public fixtures require independent privacy review/publication approval. Updated harness draft, plan and launch audit only. No capture, harness implementation, public upload or paid execution authorization.
+
+## 2026-10-24 - Owner decision: raw synthetic capture retention
+
+**Changed.** Owner selected A: approved raw synthetic captures stay private and delete 14 days after finalization, earlier on withdrawal/incident where applicable. Failed/cancelled runs finalize with actual outcomes; unresolved safety references stay separate. Updated harness draft, plan and launch audit; D-05 only partly resolved. No capture, implementation, live/spend/publication authorization or runtime change.
+
+## 2026-10-24 - Owner decision: research-data retention
+
+**Changed.** Owner selected A: confirm research deletion 90 days after analysis unless participant separately agrees otherwise, retaining withdrawal deletion and limited access. Updated PRD §6.7, UX §14.3, plan and launch audit. Separate operational/capture/backup policies and all collection/recruitment/spend/publication authorizations remain open. Documentation only.
+
+## 2026-10-24 - Owner decision: limited discovery aggregate consent
+
+**Changed.** Owner selected A for Q-15: retain only the two documented totals and derived percentage with a single-user exploratory caveat. Removed project count, analysis dates and quoted prompt wording from the current PRD paragraph; raw data/scripts/identities remain private. Updated PRD, plan and launch audit. History/privacy audit remains required; no publication or history-rewrite authorization. Documentation only.
+
+## 2026-10-24 - Owner decision: MIT for Tenet and its starter
+
+**Changed.** Owner selected B: MIT for Tenet and Tenet-owned starter code. Added root/template LICENSE files; plugin metadata uses MIT; build copies LICENSE/NOTICE into the payload. Third-party terms/notices remain intact. Updated NOTICE, README/contribution/plugin guidance, canonical Q-03/spec wording and plan. No dependency, lockfile, kernel/runtime permission or budget change. Publication/name clearance remain unapproved.
+
+**Verification.** Red-first packaging test and independent review pass; full CI 1,083 tests/181 suites, zero failures/skips. All 129 CLI scenarios pass on Node 26.3.0/22.12.0, including real scaffold license delivery. First full run hit an empty-JSON fixture read in existing filter-timeout coverage; isolated and unchanged full reruns pass without test/timeout changes. Legal copies match; diagnostics/diff and actual unstaged/new-file likely-leak checks pass. No commit or push.
+
+## 2026-10-24 - Schema-1 compatibility admission hardening (local)
+
+**Changed.** Owner approved bounded stage 15 A. Added raw schema classification and owned-store admission before state fallback, direct mutations and pipeline preLock; waiting writers re-admit, and machine cleanup retains unproven candidates. Unsafe-read failures cannot silently become fallback permission; same-schema JSON/UTF-8 corruption recovery remains. Files: versions/store/pipeline/Store port, existing store/boundary/cleanup/scenario/pinning tests, UAT and technical specification §7.7. No new schema/format, migration, WIP import or budget increase.
+
+**Verification.** Red-first controls and independent review; full local CI 1,082 tests/180 suites, zero failures/skips (23 added tests). All 128 CLI scenarios pass on Node 26.3.0/22.12.0 against one 775,782-byte bundle. Unsafe-read/EIO, real waiting-writer and guard-bypass controls pass; actual unstaged/new-file likely-leak scan and diagnostics/diff checks pass. Store/shared budgets unchanged with 1,323/51 characters free. Large-record latency and host qualification remain unmeasured; no commit or push.
+
+## 2026-10-24 - Proposed protocol closure and bounded bridge-stage review
+
+**Changed.** Added proposed recovery/launch/replay and migration reference/rollback/privacy/terminal engineering tables. Focused independent review identifies schema-1 admission hardening as a separate first implementation stage under unchanged budgets. Recorded its exact scope, reserved sentinels, preservation tests and pending owner decision 15 in existing specs/plan. No runtime/schema activation, budget increase or implementation claim.
+
+## 2026-10-24 - Owner decision: retain minimal migration completion metadata
+
+**Changed.** Owner selected A: after backup deletion retain only operation ID, format versions, outcome and binding digest until explicit local-record removal. Exclude quotes/paths/lesson text/output/payloads; privacy overrides exact replay, and unverifiable retries refuse. Updated migration/binding drafts, plan and audit only. Concrete format/deletion/safety protocols, review, budget and final implementation sign-off remain; no runtime/schema/cleanup behavior changed.
+
+## 2026-10-24 - Owner decision: protected migration backup retention
+
+**Changed.** Owner selected A for migration R1: retain the protected recovery set until explicit previewed deletion, including after rollback becomes ineligible. Storage pressure refuses data-adding work rather than silently evicting it; confirmed forgetting overrides retention. Keeping a backup never authorizes unsafe rollback. Updated migration draft, plan and launch audit only; terminal metadata lifetime, deletion protocol/review and final implementation gates remain open.
+
+## 2026-10-24 - Proposed first migration and evidence-binding protocols reviewed
+
+**Changed.** Drafted finite upgrade/rollback/backup and evidence-binding protocols in existing specs. Combined independent review identified recovery validity, read-only observation, replay eligibility and launch-accounting gaps; all accepted, with legacy initialization reconciled and remaining mechanics explicitly blocked. Updated plan. Backup/terminal retention, focused protocol closure/re-review, budget and final sign-off remain. No runtime/schema/budget change or passing implementation claim.
+
+## 2026-10-24 - Owner decision: real state upgrade for existing workspaces
+
+**Changed.** Owner selected A for configuration D8: previewed/consented first schema upgrade with durable recovery, interrupted-transition tests and rollback that preserves newer work. A tested hardened rollback minimum is required; unsupported older development binaries cannot be retroactively fenced. Updated configuration/migration specs, plan and launch audit. No runtime/schema upgrade, budget change or implementation approval; concrete protocol/review/final sign-off remain.
+
+## 2026-10-24 - Evidence-binding compatibility and budget feasibility
+
+**Changed.** Read-only review identified older-state fallback and pre-admission writer limitations that optional binding fields/schema numbers alone cannot fix. Recorded real-upgrade versus new-workspace-only options, tested rollback minimum requirements and measured module headroom in configuration spec, plan and launch audit. No upgraded records, runtime/schema/budget change or implementation approval; compatibility boundary and concrete protocol remain pending.
+
+## 2026-10-24 - Owner decision: configuration-to-evidence binding prerequisite
+
+**Changed.** Owner selected A for configuration D7: include evidence-validity binding across receipts, baselines, reviews and Analyst results, preserving history without stale reuse and protecting against older-writer stripping. Updated feature draft, plan and launch audit. Scope approval only; concrete binding/schema/compatibility review, measured budget and final implementation sign-off remain. No runtime/schema/budget change.
+
+## 2026-10-24 - Configuration design reconciliation and independent review
+
+**Changed.** Concrete design/test ownership and review dispositions added to configuration spec: fresh pre-cache identities, transport errors, dependency-relevant confirmation bindings and monotone new-check declarations distinct from execution proof. Read-only WIP audit found admission/binding/partial-update defects and measured +9,187 runtime characters before repairs. Full configuration/evidence binding and compatibility is a new owner-controlled prerequisite; budget and final sign-off remain open. Files: feature spec, plan and launch audit. No runtime, schema or budget change.
+
+## 2026-10-24 - Owner decision: include restriction-only safe revisions
+
+**Changed.** Owner selected A for configuration D6: retain only valid tightening from mixed invalid updates, report applied/rejected parts, and never bypass command/check confirmation or relax held restrictions. Updated draft/acceptance text, plan and launch audit. All D1-D6 policy/scope choices are settled; concrete design/review/final implementation sign-off remain pending. Documentation only.
+
+## 2026-10-24 - Owner decision: report only recorded configuration revisions
+
+**Changed.** Owner selected A for configuration D5: label the recorded local counter layer-wide, retain contributing sources, and mark missing revision data unavailable. No invented per-source/setting history or new history state. Updated feature draft/acceptance text, plan and launch audit only; D6 and final sign-off remain before implementation.
+
+## 2026-10-24 - Owner decision: local configuration proofs before host qualification
+
+**Changed.** Owner selected A for configuration D4: proceed with locally testable privacy/coexistence work after design sign-off while personal-storage and actual host proofs remain open. CFG-08/CFG-09 stay partial; no release waiver or host/spend authorization. Updated feature draft, plan and launch audit only. D5-D6 and final sign-off remain before implementation.
+
+## 2026-10-24 - Owner decision: keep configuration guidance in the existing skill
+
+**Changed.** Owner selected A for configuration D3: remove redundant explanations to fit guidance within the existing skill budget, with no new resource or budget increase and no loss of mandatory controls. Updated feature draft, plan and launch audit only; actual skill edits remain gated on D4-D6 and final sign-off.
+
+## 2026-10-24 - Owner decision: confirm command and check-definition changes
+
+**Changed.** Owner selected A for configuration D2: preview/confirm all actual command add/remove/replace/reset and existing required-check invocation/configuration/population/pass-criteria changes. Equivalent reapplication stays a no-op; saving grants no execution authority. Updated PRD §7.5/7.6, UX §8.1, TS §8.5, configuration draft/acceptance text, plan and launch audit. Documentation only; D3-D6 and final sign-off remain before runtime implementation.
+
+## 2026-10-24 - Owner decision: configuration read-back and confirmation timing
+
+**Changed.** Owner selected conversation A (config spec B): save explicit durable preferences/provable tightening with read-back; preview and confirm before loosening/material restriction changes. Reconciled PRD CFG-01/§7.5, UX §8.1/8.2 and TS §8.5; updated feature draft, plan and launch audit. No runtime change or WIP import. Command/required-check classification and remaining design/sign-off gates stay open.
+
+## 2026-10-24 - Owner decision: workspace recovery confirmation
+
+**Changed.** Owner selected A for backup D3 interaction: one workspace-level confirmation, no required surviving contract handle, changed-fact invalidation and durable success acknowledgment preventing duplicate recovery publication or counter reset. CLI capture remains reported; no old authority returns. Updated recovery draft, plan and launch audit. All D1-D3 policy choices are resolved; concrete protocol review/dispositions and final sign-off remain before runtime implementation.
+
+## 2026-10-24 - Owner decision: bounded fail-closed recovery validation
+
+**Changed.** Owner selected A for backup D2 scope: bind required recovery facts and revalidate before publication; missing, unsupported, changed or uncertain facts prevent confirmation. Bounded neutral read-only Git inspection is allowed, not project execution/mutation. Updated recovery draft, plan and launch audit. No runtime/API/schema implementation; D3, concrete manifest/protocol review and final mechanism sign-off remain pending.
+
+## 2026-10-24 - Owner decision: recovery needs fresh authorization
+
+**Changed.** Owner selected A for backup-reconfirmation D1: acknowledgment cannot reactivate prior grants or execution consents. Updated the recovery draft, technical specification §15.2, plan and launch audit. No runtime, state schema or API change. Revalidation/binding scope, public confirmation contract and revised mechanism sign-off remain pending; no recovery implementation or qualification is claimed.
+
+## 2026-10-24 - Owner decision: inherited NODE_OPTIONS stays dropped
+
+**Changed.** Owner selected A: retain current project-check behavior and correct technical specification §9.3/9.4. Inherited options are not passed or hashed; projects depending on them need another supported configuration. Kernel-launch protection is unchanged. Files: technical specification, plan and launch audit. Existing real-process regression coverage verifies the drop; no runtime, permission, dependency or bundle change.
+
+## 2026-10-24 - Launch review and bounded safety corrections (local)
+
+**Changed.** Undo refuses foreign commits sharing a work label. Stateless reviews refuse complete over-budget packets; unchanged partial full reviews share a round without reusing Quick assignment identities. Repeated open reports version drift without duplicating work. Golden validation stops before executing rejected fixtures and refuses unsafe dirty paths/types. Live-run reservations reject invalid limits/corrupt counts. Qualification requires passing support for every required AC while retaining honest failed history.
+
+**Files.** Existing review/manifest/open/undo modules and tests; coverage, golden validator and host-runner tools/tests; built UAT; quality budget (+8 shared-module lines, 0.19%, existing pre-approval); plan and dated launch audit. Inherited work is inventoried without deletion or importing unsigned semantics.
+
+**Verification.** Red-first regressions and independent review; full local CI passes 1,059 tests/177 suites, zero failures/skips (76 added tests). All 122 built-CLI scenarios pass on Node 26.3.0/22.12.0 against one 774,754-byte bundle. Edited-file diagnostics, documentation/diff checks and unstaged/new-file likely-leak scan pass. R1 audit correctly blocks all 181 unqualified Musts. No native qualification, host/spend authorization, release claim, commit or push.
+
 ## 2026-10-24 - Version pinning and the pause (LFC-03, local)
 
 **Changed.** A contract pins the kernel, state schema and adapter versions it was created under (`pinned.adapter` is new; an older document is back-filled silently). A call under different ones (kernel major.minor or pre-release, any schema, any adapter) returns `version-changed` (exit 3) with one question after the fence has run; `stop`, read-only views and the answering decisions (`version-reconcile`, `abandon-confirm`, `takeover-check`, `repair-lock`, quarantine) still work, and read-only calls only add a note. `open --resume` returns its new handle together with the question. `decide version-reconcile` continues (re-pins that contract) or stops (parks it). A downgrade is named as one; a kernel patch release does not pause. Migration (LFC-04) is deferred with its design notes recorded in `specs/schema-migration.md`.

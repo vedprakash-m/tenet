@@ -19,3 +19,7 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 `/tenet <what you want>` builds, fixes, refactors, plans or investigates. `/tenet status`, `/tenet why` and `/tenet help` answer without starting work. `/tenet-review` reviews code without changing anything.
 
 To remove it, uninstall the plugin and delete `.tenet/` in the projects where you used it.
+
+## License
+
+Tenet and its own starter-template code use the [MIT License](LICENSE). Third-party components retain their respective licenses; the built payload includes [NOTICE](NOTICE). License selection does not qualify this preview or authorize publication.

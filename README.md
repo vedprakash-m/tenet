@@ -76,6 +76,18 @@ In Copilot Chat, agent mode:
 
 More on each: [docs/user/starter-requests.md](docs/user/starter-requests.md).
 
+## Offline evaluation tools
+
+Maintainers can validate static protocol files, replay hand-authored synthetic observations, or render a local campaign report:
+
+```bash
+npm run eval:validate -- --protocol <path>
+npm run eval:replay -- --capture <path>
+npm run eval:report -- --input <path> --format json|markdown|junit
+```
+
+`eval:report` reads a `CampaignReportInputV1` JSON file and writes the selected report to stdout. Exit codes are 0 for report eligibility `pass`, 3 for `fail` or `inconclusive`, 2 for invalid input, and 1 for usage errors. Eligibility is computed from untrusted local declarations; it does not authorize a run, qualify a requirement, or establish support. Validation and replay are local-only and do not execute graders, capture host sessions, or contact a model.
+
 ## Documentation
 
 - [What Tenet adds](docs/user/what-tenet-adds.md)
@@ -87,4 +99,4 @@ More on each: [docs/user/starter-requests.md](docs/user/starter-requests.md).
 
 ## License
 
-PLACEHOLDER-LICENSE: no license has been chosen (plan section 4.5). Until the owner chooses one and adds a license file, no permission to use, copy or distribute this code is granted by this repository. The plugin manifest currently says `UNLICENSED`. Using Tenet does not require you to disclose your application's source and gives Tenet no ownership of it; obligations of incorporated third-party code are listed in [NOTICE](NOTICE).
+Tenet and its own starter-template code are licensed under the [MIT License](LICENSE). Retain the required copyright and permission notice when copying or distributing substantial portions. Your application code remains yours; using Tenet does not require source disclosure or give Tenet ownership of it. Third-party components retain their own licenses and notices, listed in [NOTICE](NOTICE). License selection is not a claim of release readiness or approval to publish.

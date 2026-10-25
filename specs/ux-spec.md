@@ -521,8 +521,9 @@ Anything new from the user is handled before the next step (TS §5.2).
 ### 8.1 Principles
 
 - **Spoken first:** each of the 12 catalog settings (PRD Section 7.3) can be changed in words.
-- **Temporary unless said otherwise** (PRD Section 7.5): "be brief" applies to this task; "always …" or "… in this project" persists without re-asking (CFG-07), showing the interpreted scope.
+- **Temporary unless said otherwise** (PRD Section 7.5): "be brief" applies to this task. Explicit durable preferences ("always …" or "… in this project") and provably tighter restrictions save without re-asking, with the interpreted value, scope, effective difference, active-work effect and undo action in the same reply. Loosening or materially changing restrictions gets a preview and confirmation before saving. A saved setting never grants authority for a protected action. Owner approved this timing on 2026-10-24 (CFG-01/CFG-07).
 - **Visible and reversible:** every durable change says where it went and how to undo it; "what have I set?" lists every setting with its source; "why <setting>" explains one (CFG-04).
+- **Command/check changes:** use PRD Section 7.5's confirm-first exception, even when the change is described as stricter. The preview distinguishes saving the definition from permission to execute it; equivalent reapplication asks nothing. Owner approved this classification on 2026-10-24.
 - **Never shared by accident:** personal preferences never reach shared files (CFG-08).
 
 ### 8.2 Where a durable setting is saved (UX-D3)
@@ -530,7 +531,7 @@ Anything new from the user is handled before the next step (TS §5.2).
 | Said with "always" | Saved to | Reply |
 |---|---|---|
 | Style, check-ins, resource use | For the user, in every project (or this project if they say "here") | "Saved for you in every project. Undo: 'undo that setting'." |
-| Commands, protected paths, required checks, exclusions, dependency policy, default lane (never below the floor), branching, integration | This project, only on this machine; applied at once | "Saved for this project (only on your machine)." Sharing is offered later in the report queue, batched (§5.4) |
+| Commands, protected paths, required checks, exclusions, dependency policy, default lane (never below the floor), branching, integration | This project, only on this machine; saving follows §8.1 and effect timing follows PRD Section 7.6 | "Saved for this project (only on your machine)." Sharing is offered later in the report queue, batched (§5.4) |
 | A person edits an adopted `tenet.policy.json` | The file | Tightening applies at once; loosening and new commands need acceptance of the diff (PRD Section 7.5) |
 
 Interpretation guards:
@@ -722,10 +723,10 @@ The first prototype runs six sessions: a clear bug fix; an ambiguous new feature
 
 The consent form, written with the evaluation owner, states:
 - what is recorded (timings, kernel call logs and, only on synthetic fixtures in capture mode, redacted inputs and outputs; TS §17.4);
-- where it is stored, who can access it, and the retention period (PRD Section 6.7: deleted 90 days after analysis unless the participant separately agrees to longer);
+- where it is stored, who can access it, and the owner-confirmed research retention period (PRD Section 6.7: deleted 90 days after analysis unless the participant separately agrees otherwise; decision 18 A, 2026-10-24);
 - how to withdraw: delete a local bundle before upload, or request removal by participant ID afterwards.
 
-Product use never implies research consent, and raw recordings are never published.
+Product use never implies research consent, and raw recordings are never published. Withdrawal requires deletion of participant data and derived records within Tenet's control. This research policy is separate from operational state, product traces, synthetic evaluation-capture policy and migration-backup retention; its confirmation authorizes no collection, recruitment, paid run or publication.
 
 ---
 

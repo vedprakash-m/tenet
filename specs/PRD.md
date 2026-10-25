@@ -75,11 +75,9 @@ A user can get substantial implementation from a prompt, yet still acts as produ
 | Good practices are copied into repositories and go stale | Projects diverge; improvements need manual upkeep | Ship shared procedures centrally; keep project decisions in the project |
 | Long tasks stall on host iteration limits | The user babysits "continue" prompts | Checkpoint at boundaries so continuing resumes from saved state |
 
-**Discovery evidence.** The owner's own Copilot prompt history (1,693 prompts across 11 projects, July 2025 to February 2026) was analyzed locally by exact-string counting; the script and raw history stay private. It shows:
-- 219 prompts (about 13%) were "Continue to iterate?" confirmations.
-- Repeated session openers asked the agent to re-read the PRD, tech spec and status notes before resuming work.
+**Discovery evidence (limited consent).** The owner's reported local analysis counted 1,693 Copilot prompts, including 219 continuation confirmations (about 13%). The owner permits only those two totals and the derived percentage in public-facing documents (Q-15). Project identities, project count, dates, raw history and analysis scripts remain private.
 
-This supports the continuity and iteration-friction rows for one experienced user only. It does not establish prevalence; Section 6.6 and the discovery interviews in Section 11.2 test that. Publishing these aggregates in a public repository requires owner consent (Q-15).
+This is a single-user exploratory observation, not evidence of Tenet's value, broader demand or prevalence. It motivates the continuity and iteration-friction hypotheses only; Section 6.6 and the discovery interviews in Section 11.2 test them. The publication history/privacy audit remains required; this limited consent authorizes neither raw-data publication nor Git-history rewriting.
 
 ### 1.3 Vision and mission
 
@@ -923,7 +921,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 
 | ID | Requirement | Pri | Rel | AC |
 |---|---|---|---|---|
-| CFG-01 | Users shall change settings in ordinary language; for durable changes Tenet shall show the interpreted value and scope before saving. | Must | B | AC-23 |
+| CFG-01 | Users shall change settings in ordinary language and receive the interpreted value and scope; persistence, read-back and confirmation follow Section 7.5. | Must | B | AC-23 |
 | CFG-02 | R1 shall expose the catalog in Section 7.3 and no others. | Must | B | AC-23 |
 | CFG-03 | Tenet shall resolve settings as defined in Section 7.4; project commitments and external restrictions shall apply regardless of preference order. | Must | B | AC-23 |
 | CFG-04 | `/tenet why` shall explain the effective value, its source and adoption state, overridden values and capability limits. | Must | B | AC-23 |
@@ -1508,7 +1506,7 @@ Each link is a separate control with its own verification:
 | Tier | Trigger | Runs | Credentials and permissions |
 |---|---|---|---|
 | Untrusted validation | Every pull request, including forks | Deterministic tier: skill lint, context budgets, descriptor validation, helper unit and fault tests, adapter parser tests, replay checks against recorded traces | No secrets; read-only token; standard `pull_request` trigger, never privileged triggers with untrusted checkout |
-| Trusted live evaluation | Maintainer approval on a protected environment, release branches, scheduled drift runs | Live golden tasks (proxy or native host, Section 6.4.3) | Dedicated evaluation account with a spend cap; disposable runners; restricted egress; disposable fixtures; artifacts never trusted for release |
+| Trusted live evaluation | Maintainer approval on a protected environment, release branches, scheduled drift runs | Live golden tasks (proxy or native host, Section 6.4.3) | An existing account may be shared with other activity in bounded, serialized evaluation windows; disclose attribution uncertainty. Provider/organization controls must hard-block use beyond included allowance, with no paid overages; otherwise block live runs. Disposable runners; restricted egress; disposable fixtures; artifacts never trusted for release. |
 | Release | Signed tag on the protected branch | Packaging, provenance, publication | Release credentials scoped to this job only |
 
 Caches and artifacts from the untrusted tier are never consumed by the trusted or release tiers.
@@ -1862,10 +1860,10 @@ Contamination is tracked: repeated tuning against the public set is disclosed, a
 | Stage | Trigger | Content | Blocks |
 |---|---|---|---|
 | Deterministic tier (T1, replayed T2) | Every pull request and merge | Skill lint, context budgets, descriptor validation, helper and adapter tests, replayed traces | Merge on any failure |
-| Live smoke (T2 proxy or T3) | Maintainer-approved pull requests touching skills, agents, hooks or helpers | A subset of public golden tasks within a spend cap | Merge on safety regressions |
+| Live smoke (T2 proxy or T3) | Maintainer-approved pull requests touching skills, agents, hooks or helpers | A subset of public golden tasks within included allowance, with externally verified provider/organization blocking beyond it; no paid overages | Block live execution if enforcement cannot be verified; merge on safety regressions |
 | Full native-host suite (T3) | Before every release; monthly; on observed model change | All public tasks on the exact tuple, ≥ 5 runs per model stratum | Release on any regression beyond frozen tolerance |
 
-Whether T3 can run unattended is established by SP-11. If it cannot, maintainers run the T3 suite on a dedicated machine before each release and publish the traces. Live tiers run under the CI security tiers of Section 5.9.3 with a funded evaluation budget (Q-16), and their terms-of-service compliance is checked under SP-11.
+Whether T3 can run unattended is established by SP-11. If it cannot, maintainers run the T3 suite on a dedicated machine before each release and publish the traces. Live tiers run under the CI security tiers of Section 5.9.3 using included allowance only, with no additional paid usage or overages. Provider/organization enforcement must be verified before a live run; otherwise the run is blocked. Terms-of-service compliance is checked under SP-11. Shared-account totals carry attribution uncertainty and are not reported as per-run cost unless the source isolates that run.
 
 #### 6.4.4 Model strata and drift
 
@@ -1943,11 +1941,13 @@ Tenet reduces active human effort per accepted outcome, compared with the same u
 ### 6.7 Research ethics and data handling
 
 Pilot data (screen recordings, think-aloud transcripts, prompts, participant repositories) is sensitive and separate from product telemetry consent.
-- **Informed consent:** written and specific; it names what is recorded, who can access it, retention (deleted 90 days after analysis unless the participant agrees otherwise), redaction and withdrawal.
+- **Informed consent:** written and specific; it names what is recorded, who can access it, retention (deleted 90 days after analysis unless the participant separately agrees otherwise), redaction and withdrawal. The owner confirmed this research-data default on 2026-10-24 (conversation decision 18 A).
 - **Prefer synthetic or public repositories.** Private participant repositories are used only with explicit consent and never leave the participant's control without redaction.
 - **Withdrawal** at any time deletes the participant's data and its derived records within Tenet's control.
 - **Publication** includes only aggregated results and consented excerpts; no participant source or recordings are published by implication.
 - **Evaluator access** is limited to the named evaluation and UX owners.
+
+This policy concerns participant research data, not `.tenet` operational state, product traces or migration backups. It grants no permission to capture data, recruit participants, run research, spend credits or publish results; each requires its applicable consent/authorization. Confirmation of this default does not freeze the separate operational-retention values under Q-06.
 
 ### 6.8 Experience qualification
 
@@ -2145,7 +2145,8 @@ Additional rules:
 
 ### 7.5 Change, inspect and reset
 
-1. **Change:** interpret → determine scope → validate → show the material effective difference → persist if durable and authorized → apply. A temporary "be concise" applies immediately. A durable or consequential change shows the interpreted value and scope first. Project-only requests never become global preferences.
+1. **Change:** interpret → determine scope → validate → apply under the following confirmation rule. A temporary "be concise" applies to this task immediately. An explicit durable preference ("always …" or "… in this project") or provably tighter restriction saves without another question and reports the interpreted value, scope, effective difference, effect on active work and undo action in the same reply. Loosening or materially changing restrictions requires a preview and confirmation before saving; other consequential changes still show their material effective difference first. Configuration never grants authority for a protected action (Section 7.6). Project-only requests never become global preferences. [Validated: owner, 2026-10-24; configuration timing option B, conversation decision 5 option A.]
+  **Command/check-definition exception:** every actual command addition, removal, replacement or reset requires preview and confirmation before saving. Changes to an existing required check's invocation, configuration, population or pass criteria also require confirmation first, even when described as safer or stricter. Equivalent reapplication remains a no-op under item 4. Saving a definition never authorizes its execution; execution still requires its validated envelope and permissions. [Validated: owner, 2026-10-24; configuration D2, conversation decision 6 option A.]
 2. **Inspect:** `/tenet why <setting>` shows:
    - the effective value;
    - its source, adoption state and revision;
@@ -2165,7 +2166,7 @@ Additional rules:
 |---|---|---|
 | Style or checkpoints | Immediately | None |
 | Tighter exclusion, protected path or resource mode | Before the next affected dispatch or read | Stops new affected work; reports active and unknown effects |
-| Command or required-check change | After validation | Dependent evidence becomes stale; feasibility re-assessed against the obligation |
+| Command or required-check change | After validation and any confirmation required by Section 7.5 | Dependent evidence becomes stale; feasibility re-assessed against the obligation; saving alone never authorizes execution |
 | Lane raised | At the next phase boundary | Adds deeper steps; reuses valid evidence |
 | Branching or integration | Next work contract or acceptance | None |
 | Wider scope, destination or spend, or a loosened commitment | Only with sufficient explicit authority | Configuration alone cannot grant it |
@@ -2370,7 +2371,7 @@ The owner asked on October 14 to incorporate the review recommendations and, on 
 | Helper execution via the project's Node.js | Likely for R1 projects | Technical maintainer (SP-01) | Helper-dependent requirements |
 | Node/TypeScript adapter and fixtures | Not built | Technical maintainer (SP-10) | Starter and brownfield |
 | Tenet evaluation infrastructure: account, budget, runner, terms of service | Not established | Evaluation owner (SP-11, Q-16) | ENG-04, AC-26, AC-28 (Tenet's own qualification, not a user prerequisite) |
-| License | Not selected | Product owner (Q-03) | Publication |
+| License | MIT for Tenet and its own starter-template code, selected 2026-10-24; third-party licenses retained | Product owner (Q-03 license decision closed; distribution identity remains Q-13) | Publication still requires the other release gates |
 | User CI and delivery targets | External | Project owner, R1.1 | Nothing in R1 |
 
 ### 8.6 Constraints and owners
@@ -2457,15 +2458,15 @@ All entries are [Unknown: TBD] until resolved. Q-02, Q-05, Q-07, Q-08, Q-10 and 
 | ID | Open decision | Proposed resolution | Owner and gate |
 |---|---|---|---|
 | Q-01 | Exact qualification tuple, including harness (Local versus Copilot harness) and install path | VS Code stable desktop, Local harness, macOS arm64, install path chosen by SP-01 | Technical maintainer, after SP-01, SP-02, SP-08, before Tech Spec approval |
-| Q-03 | License and distribution identity | Apache-2.0 for Tenet; a permissive license (MIT or 0BSD) for the starter template so users can relicense | Product owner before publication |
+| Q-03 | License and distribution identity | **License resolved 2026-10-24:** owner selected MIT for Tenet and its own starter-template code (conversation decision 16 B); retain third-party license/notice obligations. Distribution identity/namespace clearance remains Q-13. | Product owner; license selection does not authorize publication |
 | Q-04 | Evaluation owners and pilot cohort | Section 6.6 design; 5 formative and 8–12 qualification technical builders; named evaluation and UX owners | Product owner before pilot |
 | Q-06 | Retention defaults | Freeze Sections 4.4.3 and 5.15 values | Product owner before Tech Spec approval |
 | Q-09 | Release stewardship owners | Name release and security owners for the Section 5.9.2 policy | Product owner before public beta |
 | Q-11 | Meaning of "100% utilization ceiling" | A spending ceiling (never exceed the authorized allowance), not a target to consume allowance; Tenet never creates work to use credits | Product owner before quota-aware accounting (Later) |
 | Q-13 | Name and namespace availability | Check "Tenet" against marketplace, npm, GitHub and trademark conflicts; keep a fallback name | Product owner before publication |
 | Q-14 | Staffing | Assign Section 8.6 roles to named people; seek a second maintainer | Product owner before phased plan |
-| Q-15 | Publish discovery aggregates (Section 1.2) | Publish only the two aggregate counts, with owner consent; otherwise remove from the public version | Product owner before publication |
-| Q-16 | Evaluation funding and account | A dedicated evaluation account with a monthly spend cap, owned by the evaluation owner | Product owner before alpha |
+| Q-15 | Publish discovery aggregates (Section 1.2) | **Limited consent resolved 2026-10-24:** owner chose conversation decision 17 A, permitting only the two stated totals and derived percentage with the single-user caveat. Omit project identities/count/dates, raw history and scripts. | Product owner; history/privacy audit remains required, no publication or history-rewrite authorization |
+| Q-16 | Evaluation funding and account | **Strategy/policy selected 2026-10-24:** owner chose 21 B, existing Copilot account in bounded serialized windows, and 22 A, included allowance only/no additional paid usage or overages. Attribution uncertainty remains explicit. Identifier, permitted-use checks, verified external enforcement, finite included-usage limits, isolation and live-run authorization remain unresolved; no paid fallback, purchase or automatic switch. | Product/evaluation owner before live evaluation; policy does not authorize calls or establish enforcement |
 
 ### 10.2 Feasibility register
 
