@@ -1,0 +1,5 @@
+{"archive":[{"id":"W-1","label":"review src","endpoint":"findings-only","blob":"b-1","finishedAt":"2026-01-01T00:00:00.000Z"}],"project":{"intent":{"plan":[]}},"work":{"W-1":{"state":"finished","findings":[
+  {"id":"F-1","n":1,"severity":"blocker","axis":"behavior","location":{"path":"src/uploads.mjs","line":8},"claim":"A client-chosen name containing .. reads files outside uploads/.","evidence":"join(ROOT, name) is not checked to stay under ROOT.","state":"open","history":[]},
+  {"id":"F-2","n":2,"severity":"major","axis":"behavior","location":{"path":"src/limits.mjs","line":4},"claim":"clamp returns hi - 1 for any value at or above hi, although hi is documented as included.","evidence":"clamp(10, 0, 10) returns 9.","state":"open","history":[]},
+  {"id":"F-3","n":3,"severity":"major","axis":"behavior","location":{"path":"src/retry.mjs","line":11},"claim":"When every attempt fails the error is dropped and undefined is returned.","evidence":"last is assigned and never thrown or returned.","state":"open","history":[]}
+]}}}

@@ -1,0 +1,5 @@
+[
+  { "id": "T1", "path": "src/uploads.mjs", "line": 8, "minSeverity": "major", "what": "path traversal through the client-chosen file name" },
+  { "id": "T2", "path": "src/limits.mjs", "line": 4, "minSeverity": "major", "what": "clamp returns hi - 1 at the included upper bound" },
+  { "id": "T3", "path": "src/retry.mjs", "line": 11, "minSeverity": "major", "what": "the last failure is swallowed" }
+]

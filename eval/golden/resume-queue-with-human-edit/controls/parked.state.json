@@ -1,0 +1,1 @@
+{"archive":[{"id":"W-2","label":"queue again","endpoint":"checked-local","blob":"b-2","finishedAt":"2026-01-01T00:00:00.000Z"}],"project":{"intent":{"plan":[]}},"work":{"W-1":{"state":"parked"},"W-2":{"state":"finished"}}}

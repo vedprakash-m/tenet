@@ -1,0 +1,5 @@
+{"archive":[{"id":"W-3","label":"summarize","endpoint":"checked-local","blob":"b-3","finishedAt":"2026-01-01T00:00:00.000Z"}],"work":{},"project":{"intent":{"plan":[
+  {"id":"P1","outcome":"Parse CSV text into numbered records","elementIds":["E1"],"dependsOn":[],"check":"node --test check.mjs","state":"done"},
+  {"id":"P2","outcome":"Validate each record and report bad lines","elementIds":["E2"],"dependsOn":["P1"],"check":"node --test check.mjs","state":"done"},
+  {"id":"P3","outcome":"Total valid orders per customer in cents","elementIds":["E3"],"dependsOn":["P2"],"check":"node --test check.mjs","state":"done"}
+]}}}

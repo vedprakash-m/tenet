@@ -1,0 +1,3 @@
+{"archive":[{"id":"W-1","label":"review src","endpoint":"findings-only","blob":"b-1","finishedAt":"2026-01-01T00:00:00.000Z"}],"project":{"intent":{"plan":[]}},"work":{"W-1":{"state":"finished","findings":[
+  {"id":"F-1","n":1,"severity":"blocker","axis":"behavior","location":{"path":"src/uploads.mjs","line":8},"claim":"A client-chosen name containing .. reads files outside uploads/.","evidence":"join(ROOT, name) is not checked to stay under ROOT.","state":"open","history":[]}
+]}}}
