@@ -1,0 +1,140 @@
+NOTICE (DRAFT for owner review)
+
+PLACEHOLDER-NAME (working name: Tenet)
+Copyright (c) PLACEHOLDER-COPYRIGHT-HOLDER PLACEHOLDER-YEAR
+License of this project: PLACEHOLDER-LICENSE (not chosen; plan section 4.5)
+
+This file lists third-party software that Tenet distributes or that its
+starter template installs into a user's project. Licenses were read from each
+package's own package.json in node_modules (kernel tooling) and from the
+"license" field of the starter's package-lock.json (starter dependencies; the
+starter's node_modules is not installed here, so those licenses were not
+checked against the package files). Full license texts are in each package.
+Re-run the listing before every release; versions below are those in the
+lockfiles on the date of this draft (2026-10-24).
+
+======================================================================
+1. Third-party code inside the shipped kernel bundle (plugin/kernel/tenet.mjs)
+======================================================================
+
+The bundle is built by tools/build.ts with esbuild and "legalComments: none",
+so the notice below is NOT preserved inside the bundle. This file must be
+shipped with the plugin so that the notice travels with the bundle.
+
+zod 4.6.7 -- MIT License
+https://github.com/colinhacks/zod
+
+  MIT License
+
+  Copyright (c) 2025 Colin McDonnell
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  DEALINGS IN THE SOFTWARE.
+
+zod is the only runtime dependency of the kernel (package.json "dependencies").
+The kernel bundle otherwise uses only Node.js built-in modules.
+
+======================================================================
+2. Development tools (used to build and test Tenet; not distributed)
+======================================================================
+
+Listed in package.json "devDependencies". None of this code is in the plugin.
+
+  Package        Version   License        Copyright holder read from the package
+  @types/node    24.19.2   MIT            Microsoft Corporation
+  esbuild        0.28.2    MIT            Evan Wallace
+  fast-check     4.10.2    MIT            Nicolas DUBIEN
+  typescript     5.9.3     Apache-2.0     (none stated in its license file)
+  vitest         5.0.5     MIT            VoidZero Inc. and Vitest contributors
+  yaml           2.9.1     ISC            Eemeli Aro
+
+package-lock.json lists 94 packages: zod (production) and 93 development
+packages, six of them the direct ones above. By their package.json "license"
+fields the 94 are MIT (76), MPL-2.0 (12), Apache-2.0 (3), ISC (2) and
+BSD-3-Clause (1).
+The 12 MPL-2.0 entries are lightningcss and its platform-specific binary
+packages. vite (a dependency of vitest) depends on lightningcss; the
+platform packages are optional. They are used only while running tests, are not modified, and are not
+distributed with Tenet.
+
+Not checked: the platform-specific optional packages for other operating
+systems (for example the other @esbuild/*, @rolldown/binding-* and
+lightningcss-* packages) are not installed on the machine that produced this
+draft, so their package.json files could not be read. Their license fields
+in package-lock.json agree with the installed packages of the same name where
+the two could be compared.
+
+======================================================================
+3. Starter template (plugin/skills/tenet-starter-ts-web-api/template)
+======================================================================
+
+When a user asks Tenet to start a new application, the kernel writes this
+template into the user's project and installs its pinned lockfile. The
+template's own files are part of Tenet and fall under Tenet's license
+(PLACEHOLDER-LICENSE). The packages below are NOT copied into Tenet; they are
+downloaded by the user's package manager into the user's project, and their
+licenses bind the user's project. Using Tenet does not require the user to
+disclose application source and gives Tenet no ownership of it.
+
+Direct dependencies of the starter (from the template package.json, versions
+and licenses from its package-lock.json):
+
+  Runtime
+    @fastify/cookie            11.1.3   MIT
+    @fastify/helmet            13.2.0   MIT
+    @fastify/rate-limit        11.2.1   MIT
+    better-sqlite3             12.11.1  MIT
+    fastify                    5.12.7   MIT
+    fastify-type-provider-zod  7.0.0    MIT
+    zod                        4.6.7    MIT
+  Development
+    @playwright/test           1.64.1   Apache-2.0
+    @types/better-sqlite3      7.6.13   MIT
+    @types/node                24.0.0   MIT
+    eslint                     9.39.1   MIT
+    tsx                        4.23.15  MIT
+    typescript                 5.9.3    Apache-2.0
+    typescript-eslint          8.71.2   MIT
+    vitest                     5.0.5    MIT
+
+The starter lockfile has 300 packages in all. By the lockfile's license
+fields: MIT 233, ISC 15, Apache-2.0 20, MPL-2.0 12 (lightningcss and its
+platform binaries, development only), BSD-3-Clause 10, BSD-2-Clause 6,
+BlueOak-1.0.0 1 (minimatch, development only), Python-2.0 1 (argparse,
+development only), "(MIT OR WTFPL)" 1 (expand-template) and
+"(BSD-2-Clause OR MIT OR Apache-2.0)" 1 (rc). 107 of the 300 are
+production dependencies: MIT 86, ISC 9, BSD-3-Clause 8, Apache-2.0 2,
+"(MIT OR WTFPL)" 1, "(BSD-2-Clause OR MIT OR Apache-2.0)" 1.
+
+better-sqlite3 downloads a prebuilt SQLite binary at install time; SQLite is
+in the public domain. The Playwright browser, when installed on the user's
+request, is downloaded from its publisher under that publisher's terms.
+Neither was reviewed for this draft.
+
+The starter lockfile is re-verified at each recipe release; this section must
+be regenerated then.
+
+======================================================================
+4. Other material
+======================================================================
+
+Tenet's skills, agents, commands and specifications are original text in this
+repository. This draft found no copied third-party text in them; that was not
+checked line by line. The JSON schema URLs in plugin.json and the schema
+files refer to https://agent-plugins.org/schemas/1.0.0/ and are references,
+not copies.
