@@ -1,5 +1,315 @@
 # Changelog
 
+## 2026-10-24 - Version pinning and the pause (LFC-03, local)
+
+**Changed.** A contract pins the kernel, state schema and adapter versions it was created under (`pinned.adapter` is new; an older document is back-filled silently). A call under different ones (kernel major.minor or pre-release, any schema, any adapter) returns `version-changed` (exit 3) with one question after the fence has run; `stop`, read-only views and the answering decisions (`version-reconcile`, `abandon-confirm`, `takeover-check`, `repair-lock`, quarantine) still work, and read-only calls only add a note. `open --resume` returns its new handle together with the question. `decide version-reconcile` continues (re-pins that contract) or stops (parks it). A downgrade is named as one; a kernel patch release does not pause. Migration (LFC-04) is deferred with its design notes recorded in `specs/schema-migration.md`.
+
+**Files.** `core/versions.ts`, `pipeline-version.ts`, `pipeline.ts`, `pipeline-mutate.ts`, `decisions/version-reconcile.ts`, `verbs/open.ts`, `ports/types.ts` (`Stack.adapterVersion`), `node-ts.ts`, `core/state.ts`, `core/schemas.ts`, `test/version-pin.test.ts`, `tools/lint-quality.ts` (+75 verbs lines at 1.8%, approved in advance by the owner).
+
+**Verification.** 12 new tests; full CI 965 tests; tags unchanged at 114 plus LFC-03 mapped. Not run: built-CLI UAT for this slice.
+
+## 2026-10-24 - Declared check outputs and named files in every concurrent-edit (EVD-09, local)
+
+**Changed.** An acceptance example may declare `outputs`: patterns (a literal leading directory, ending in `*`, `**` or a data file) for untracked data files its check writes. Matching untracked paths are omitted from the inventory, so creating, rewriting or deleting them no longer makes the run `concurrent-edit`; nothing about them is committed or reviewed except one attention item telling the reviewer an output is declared. Before every run a declared output is refused if it matches a tracked file, a file already present when the contract started, code, a test, configuration, an input or anything in scope. Every `concurrent-edit` receipt now names up to five files that moved (or "the installed toolchain") and says what to do. The execution helpers moved from `check.ts` to `check-execute.ts`.
+
+**Files.** `core/outputs.ts` (new), `verbs/check-outputs.ts`, `verbs/check-execute.ts`, `check.ts`, `check-evidence.ts`, `check-rerun.ts`, `check-finalize.ts`, `adapters/git-cli.ts` (third inventory parameter), `ports/types.ts`, `core/schemas.ts`, `core/basis-build.ts`, `core/obligations.ts`, `decisions/basis.ts`, `tenet-intake` skill, `test/evidence-outputs.test.ts`, TS drift rule, `tools/lint-quality.ts` (+41 verbs lines at 1.0%, +4 git-cli, +3 schemas, all within the pre-approval).
+
+**Verification.** 29 new tests (real Git and real test processes, a property test with 3,000 runs that found and fixed a hole where `a.ts/**` also matched a file named `a.ts`; a mutation check shows the declared-output test fails without the omission); full CI 953 tests; tags 114 of 181. Not done: tracked fixtures a test rewrites (EVD-09 stays partly met), the sealed baseline (EVD-04), the other qualifiers. Not run: built-CLI UAT for this slice.
+
+## 2026-10-24 - Flaky reruns and the end-of-run input comparison (EVD-08, EVD-11; local)
+
+**Changed.** A required test that fails at the candidate or integrated stage now reruns only the failing obligations' files, at most twice, on inputs that must still equal the candidate's. A pass after a failure keeps the first receipt's identity, gains the `flaky` qualifier and a bounded `history` (3 entries, 5 names), and can no longer reach `checked-local`, issue a review or lock an acceptance test; each rerun obligation counts as a launched check, and a failed attempt still feeds the repeated-failure signature. Planned reds, timeouts, kills, moved inputs, Playwright and static tools are never rerun. After every run the toolchain fingerprint is compared with the one taken before it: a change, or an unreadable fingerprint, makes the receipt inconclusive (`concurrent-edit`). The adapter is `node-ts@10`, so stored receipts go stale once.
+
+**Files.** `core/receipts.ts` (`settleReruns`), `core/schemas.ts` (`history`), `verbs/check-rerun.ts` (new), `check.ts`, `check-evidence.ts`, `check-finalize.ts`, `node-ts.ts`, `test/evidence-flaky.test.ts` (new), `test/receipts.test.ts`, TS §9.6/§9.9, the spec, `tools/lint-quality.ts`.
+
+**Verification.** Five pure and six real-process tests (real Git, real Vitest, a real process editing a file mid-run; a mutation check shows the toolchain test fails without the fix); full CI 921 tests; `npm run uat` (built CLI) completes; tags 113 of 181. Not done: declared outputs (EVD-09, slice 2), the sealed baseline (EVD-04 stays open), the qualifiers `simulated`, `partial` and `history-unavailable`. Budget: `pipeline + verbs + decisions` +80 lines (2.0%), above the 1% pre-approval and owner-confirmed on 2026-10-24; `core/schemas` +3 lines (0.58%).
+
+## 2026-10-24 - Impact shown in the plan preview (INT-08, local)
+
+**Changed.** `decide plan` now returns `data.impact` with its confirmation question: for the items an edit or drop changes, the plan items that depend on them, linked elements, decisions and contracts in flight, before anything is recorded. Files: `decisions/plan.ts`, `test/impact.test.ts`, `tools/lint-quality.ts` (+3 lines, 0.05%). Verification: one new test; full CI below. Not done: `decide basis` previews (a proposal adds new elements; no edit path to accepted ones exists yet) and `@tenet` test-tag scanning.
+
+## 2026-10-24 - Repository layouts named at open (GIT-13, local)
+
+**Changed.** The Git probe reads shallow history, submodule paths, LFS attributes and a linked worktree without running any repository program (`adapters/git-layout.ts`). `open` names each layout once as a non-blocking note (`repo-shallow`, `repo-submodule`, `repo-lfs`, `repo-linked-worktree`), and refuses an editing contract whose scope is inside a submodule. Detached HEAD, rebase, merge and conflicts were already refused.
+
+**Files.** `adapters/git-layout.ts` (new), `git-cli.ts`, `ports/types.ts` (`RepoProbe.layout`), `core/reasons.ts`, `verbs/open-new.ts`, `test/repo-layout.test.ts`, `tools/lint-quality.ts` (git-cli +3 lines, verbs +11 lines, both under the pre-approval).
+
+**Verification.** Five real-Git tests (shallow clone, submodule, LFS, linked worktree, plain); full CI 909 tests; tags 111 of 181. Not done: offering a branch on detached HEAD, a refusal of commits that would transform LFS files (waits for committed-tree checks).
+
+## 2026-10-24 - Bundle size budget raised to 800 KB (owner decision)
+
+**Changed.** The kernel bundle budget is 800 KB (was 750 KB): the bundle had reached 746 KB. Files: `tools/build.ts`, `invariants.test.ts`, tech-spec §3.2, plan §11.1 and §12.3.
+
+## 2026-10-24 - Bounded storage: journal reduction, run-file cap and ceiling (local)
+
+**Changed.** Independent review of `specs/storage-retention.md` (10 findings, 2 blockers) led to a smaller, safer v2: no journal segments and no new journal record kind. At `open` and `finish`, once `log` passes 5 MB, old calls, completed old pairs and old accounting records become monthly counts in `.tenet/summaries.json` (written first, keyed by the hash of the journal it came from, then the journal is replaced by rename); the newest 100 records, every unresolved intent and everything recovery reads are kept. Run files are capped per project, oldest first. `open` returns `storage-protected-full` naming the largest classes when protected data alone is over the ceiling; `stop` and `inspect` still work. One sentence reports a reduction.
+
+**Files.** `core/journal-reduce.ts` (new), store (`evict`, options, summaries), `Tx.evict`, `verbs/common.ts` (`reclaim`), `open.ts`, `finish.ts`, `test/storage-eviction.test.ts`, `test/fixtures/crash-evict.ts`, the spec (review dispositions, v2), TS §7.6 (implemented subset), `tools/lint-quality.ts` (+19 lines, 0.45%).
+
+**Verification.** 13 new tests including a real SIGKILL after the summaries write and a 10,000-record reduction in about 70 ms; full CI 904 tests; built-bundle scratch run: an 8 MB aged journal reduced to 9.5 KB during one `open` (0.78 s). Bundle is 746 of 750 KB. Not done: shadow-repository snapshot pruning, archive compaction, the per-machine cap, the PRD/TS eviction-order decision. Node 22.12.0 not run.
+
+## 2026-10-24 - Residue listing and previewed cleanup (local)
+
+**Changed.** `inspect --view residue` lists what Tenet leaves behind (`.tenet/` size, the run files in the OS temp folder, the adopted documents that stay, what is kept) without creating anything. `decide cleanup --target project|machine` previews and then removes Tenet's run folders: this workspace's, or every stale `tenet-ws_*` folder on the machine (a folder counts as recent if anything inside it was used in the last hour). It refuses while a review or analyst packet is open. It never removes `.tenet/` or project files: a call cannot safely delete the store it runs in, so the user is given the exact command.
+
+**Files.** `core/residue.ts` (new), `decisions/cleanup.ts`, store port and adapter (`residue`, `cleanTemp`), `verbs/inspect.ts`, `SKILL.md` (condensed to stay under its token budget), `test/residue.test.ts`, `tools/lint-quality.ts` (+23 lines, 0.57%, under the pre-approval).
+
+**Verification.** Six new tests; full CI 891 tests; structural tags 109 of 181 Musts. Not done: removing `.tenet/` itself, the "this machine" user directory (no plugin data path is known until SP-02), naming leftover test processes.
+
+## 2026-10-24 - SP-08 HC-04 passes: two analysts run in parallel (local)
+
+**Changed.** One authorized run of HC-04 (selection verified first with a zero budget). Two `tenet:tenet-analyst` children started 1 ms apart and overlapped for about 10 s; the kernel held two reservations. Report appended to `docs/audits/2026-10-24/sp08-cli.md`.
+
+**Verification.** Live: 1 run, 47.5 s, 1 premium request, 0 denials. Budget 8 of 8 spent. CLI tuple only.
+
+## 2026-10-24 - SP-08 retry: HC-02 reproduced, HC-04 not run (local)
+
+**Changed.** Authorized retry of HC-02 and HC-04. HC-02 reproduced its result (child attempted nothing, reported no write tools, wrote nothing). My test selector also matched the `describe` title, so HC-03 ran too and used the last run of the budget; HC-04 was refused by the ledger and did not run. The `describe` title no longer carries case IDs. This is disclosed in `docs/audits/2026-10-24/sp08-cli.md`.
+
+**Files.** `packages/kernel/test/host-sp08.test.ts`, the audit note.
+
+**Verification.** Live: 2 runs executed (HC-02, HC-03), about 40 s, 1 premium request reported (HC-03 killed before reporting). Run budget 7 of 7 spent; one run beyond the authorization.
+
+## 2026-10-24 - SP-08 live cases HC-02 to HC-04 on the Copilot CLI (local)
+
+**Changed.** One authorized live run each. HC-02 and HC-03 passed; HC-04 failed because its premise ignored the Quick lane's two-delegation limit. HC-02's evidence is weak (the child tried nothing), so its prompt now demands an attempt; HC-04 now dispatches two analysts. Neither changed case has been rerun. Findings in `docs/audits/2026-10-24/sp08-cli.md`.
+
+**Files.** `packages/kernel/test/host-sp08.test.ts`, the audit note.
+
+**Verification.** Live: 3 runs, about 82 s total, 2 premium requests reported (HC-03 was killed before reporting). Run budget 5 of 5 spent.
+
+## 2026-10-24 - SP-08 gated host tests, offline only (local)
+
+**Changed.** `tools/host/evaluate.ts` reads a headless transcript for SP-08: children with their declared tools, their own calls (matched by `parentToolCallId`), start and end; maximum concurrency; and a tool-enforcement verdict (`violated`, `enforced-by-host`, `cooperative`, `not-exercised`) that treats a file on disk as the evidence. The harness can kill a run at the first output line a condition accepts. `host-sp08.test.ts` holds five offline tests on synthetic streams and three gated live cases: HC-02 (declared vs enforced tools), HC-03 (a stopped child leaves the kernel consistent), HC-04 (three analysts in one batch, concurrent or queued).
+
+**Files.** `tools/host/evaluate.ts`, `tools/host/copilot-cli.ts`, `packages/kernel/test/host-sp08.test.ts`.
+
+**Verification.** Full CI 885 tests. The evaluator reproduced the real HC-01 coordinator's duration (17,033 ms) and call list from its transcript. **No live run was made.** Event types for a cancelled or failed child are unobserved, so the evaluator reports "no completion observed" rather than "cancelled".
+
+## 2026-10-24 - SP-11 run 2: HC-01 passes headlessly with an isolated config (local)
+
+**Changed.** The harness takes an isolated `COPILOT_HOME`; HC-01 states the kernel path and passes `--allow-all-paths`. The second authorized live run passed: the kernel created a plan contract and the coordinator stopped at the plan-confirmation gate. Report appended to `docs/audits/2026-10-24/sp11-hc01.md`.
+
+**Files.** `tools/host/copilot-cli.ts`, `packages/kernel/test/host-cli.test.ts`, the audit note.
+
+**Verification.** Live run 2: exit 0, 30 s, 1 premium request, 0 denials. One run, one task, CLI only; no qualification inferred.
+
+## 2026-10-24 - SP-11 feasibility run HC-01 and transcript summary (local)
+
+**Changed.** One authorized live run of HC-01 through the Copilot CLI. It finished but never reached the kernel (path permission denied in the subagent); findings are in `docs/audits/2026-10-24/sp11-hc01.md`. The harness now summarizes a transcript's events (skills, subagents with declared tools, tool counts, denials, premium requests) into each observation.
+
+**Files.** `tools/host/copilot-cli.ts`, `packages/kernel/test/host-cli.test.ts`, the audit note.
+
+**Verification.** One live run (1 premium request, 31 s); harness tests 6 pass. HC-01 itself failed on its own evidence rule.
+
+## 2026-10-24 - Automated host-test harness for the Copilot CLI (local)
+
+**Changed.** `tools/host/copilot-cli.ts` runs the Copilot CLI headlessly (`-p`, `--output-format json`, `--plugin-dir`) against a fixture and records an observation (tuple, arguments without the prompt, exit, timing, raw transcript path). A live run is counted against `TENET_HOST_RUNS` in a ledger and refused when the budget is spent. `host-cli.test.ts` tests the harness on every run against a fake binary (five tests) and holds one live case, HC-01, that decides from the kernel's own `.tenet/state`, never from the model's report. The live case is skipped unless `TENET_HOST=cli`.
+
+**Files.** `tools/host/copilot-cli.ts`, `packages/kernel/test/host-cli.test.ts`, `.gitignore` (`.host-runs/`).
+
+**Verification.** Full CI 879 tests. Not observed: any live run; it needs the owner's credit cap and time box (plan §4.1).
+
+## 2026-10-24 - Intent-change impact view (local)
+
+**Changed.** `inspect --view impact --topic <ids>` answers INT-08 from one pure `impact(state, ids)`: a requirement reaches its examples and invariants, an example reaches its requirement but not its siblings, then the plan items that carry them and their dependents, linked decision records, test files and live contracts that carry an affected element or plan item. Unknown IDs are named, never guessed. The `tenet` skill tells the coordinator to show this before changing accepted intent.
+
+**Files.** `core/impact.ts` (new), `verbs/inspect.ts`, schemas, `plugin/skills/tenet/SKILL.md`, `test/impact.test.ts`, `tools/lint-quality.ts` (+4 lines, under the 1% pre-approval).
+
+**Verification.** Four new tests; full CI 874 tests. Not done: calling impact from every `decide basis` / `decide plan` preview, and `@tenet` test-tag scanning.
+
+## 2026-10-24 - Crash-safe starter restore (local)
+
+**Changed.** The starter's database restore now follows tech-spec §12.5. The app and the restore tool each take `<db>.owner` by exclusive create (process ID and start time, so a dead holder is removed and a live one, even idle under WAL, blocks restore). Restore refuses a backup that is the live database or its -wal/-shm, writes a durable `.restore-in-progress` marker naming where the originals go, moves the database with its log files aside together, installs a verified copy by rename, and removes the marker last. While the marker exists the app will not start and a second restore is refused; `npm run restore -- --finish` or `--rollback` settles it.
+
+**Files.** Starter `platform/owner.ts` (new), `platform/restore.ts`, `platform/db.ts`, `server.ts`, `restore-cli.ts`, `docs/hardening.md`, `test/restore.test.ts`, `test/support/restore-child.ts`; golden-task fixture copy of `restore.test.ts`.
+
+**Verification.** Starter suite 39 tests, typecheck and lint clean in a scratch install. 11 new tests, including a real SIGKILL after each of the seven steps with both finish and rollback checked. Full CI 870 tests; bundle 738 KB of 750 KB. Not observed: a running server holding the owner file under the real host.
+
+## 2026-10-24 - Lessons and previewed forgetting (local)
+
+**Changed.** `decide lesson` keeps an explicit "always" correction as a scoped (task or project) lesson with the user's words as provenance; a new lesson can retire the ones it contradicts. `inspect --view lessons` lists them. Active lessons reach reviewer and analyst packets as advice within 1,500 tokens and never change obligations, grants, lane or floor (the proposal body is strict, so a field that would carry authority is refused). `decide forget` previews the exact text, then removes it from the state, publishes twice so `state.prev` lacks it, clears cached last responses and deletes packet files that contain it, and says that copies already sent to the host's model are outside Tenet's control. The state document gains `lessons` (default empty, schema version unchanged).
+
+**Files.** `core/lessons.ts` (new), `decisions/lesson.ts`, `decisions/forget.ts`, store `purge` port and adapter, manifest, inspect, schemas, state, `tenet` SKILL.md, `tools/lint-quality.ts` (pipeline+verbs+decisions budget +36 lines, awaiting owner confirmation), `test/lessons.test.ts`.
+
+**Verification.** 12 new tests (LRN-01/02/05, CON-10); full CI 870 tests / 154 suites; built-CLI scratch run on Node 26.3.0 (record, list, preview, confirm, no copy left). Not observed: Node 22.12.0 run, a native host.
+
+## 2026-10-24 - RC1 stable process-record admission (local)
+
+**Changed.** Process recovery reads only stable regular UTF-8 records through a no-follow/nonblocking bounded short-read loop before trusting the prepared sentinel or process identity. FIFO records cannot stall recovery; observed changes and malformed encoding retain uncertain ownership without signals. Valid short reads and Unicode remain usable. No schema, authority, reason vocabulary, dependency, runtime minimum, adapter identity, execution permission or budget changed.
+
+**Files.** Runner adapter, existing runner-ownership tests and shared process fixture, built-CLI fault/UAT drivers, technical specification §7.3 and implementation plan.
+
+**Verification.** Seven added source controls (five red-first); 39 focused tests and full CI (858 tests / 150 suites) pass without raising the complexity ceiling. All 119 CLI scenarios pass on Node 26.3.0 and 22.12.0 against the same artifact. Three added real-killed-preparation cases cover FIFO refusal, stable short reads and observed sentinel growth, preserving actual budget counters, grants and human source/Git facts. Unknown-process reconciliation, path races and broader recovery/host/release qualification remain open. No commit or push.
+
+## 2026-10-24 - RC1 nonblocking private-write admission (local)
+
+**Changed.** Synchronized private writes open no-follow/nonblocking and verify a regular descriptor before permissions, truncation or content changes. FIFO artifact leaves cannot block waiting for a reader or receive artifact bytes through an attached reader. Complete regular-file replacement, private permissions and fsync remain. No schema, authority, new effect/reason, dependency, runtime minimum, adapter identity, execution permission or budget changed.
+
+**Files.** Store adapter, existing store-boundary tests and process fixture, built-CLI fault/UAT drivers, technical specification §7.6 and implementation plan.
+
+**Verification.** Five added source controls (two red-first); all 76 focused tests and full CI (851 tests / 150 suites) pass. All 116 CLI scenarios pass on Node 26.3.0 and 22.12.0 against the same artifact. Five added controlled artifact-leaf cases cover four pre-launch refusals preserving exact state, leaf content/type, zero pipe bytes and human source/Git facts; ordinary files still permit launch. Parent-path races, aggregate retention and broader recovery/host/release qualification remain open. No commit or push.
+
+## 2026-10-24 - RC1 own-property recovery dispatch (local)
+
+**Changed.** Recovery settlement and result publication dispatch only explicitly declared handlers, not inherited object members. Unknown pending names retain uncertainty; completed unknown records remain readable without a state publisher. No schema, new effect/handler/reason, authority, dependency, runtime minimum, adapter identity, execution permission or budget changed.
+
+**Files.** Recovery verb, existing project-recovery tests and CLI UAT driver, technical specification §7.4 and implementation plan.
+
+**Verification.** Twelve added source controls (seven red-first); all 54 focused tests and full CI (846 tests / 150 suites) pass. The first quality-gate failure was repaired by removing a redundant local variable without changing its ceiling. All 111 CLI scenarios pass on Node 26.3.0 and 22.12.0 against the same final artifact. Twelve added synthetic-journal cases check repeated recovery, retained uncertainty and journal history, and ownership/authority/source/Git preservation. Unknown-effect reconciliation and broader recovery, retention and host/release qualification remain open. No commit or push.
+
+## 2026-10-24 - RC1 unresolved-effect tuple pairing (local)
+
+**Changed.** Store unresolved-intent discovery now pairs results by structured effect/ID tuples, matching pure replay. Delimiters within either field cannot let an unrelated result conceal a pending effect and release source ownership. Exact matching results retain their existing behavior. No schema, new effect, reason, dependency, runtime minimum, budget, adapter identity or execution permission changed.
+
+**Files.** Store adapter, existing store-boundary tests and CLI UAT driver, technical specification §7.4 and implementation plan.
+
+**Verification.** Three added source controls (two red-first) cover both collision directions, transaction reload and ordinary pairing. All 71 focused tests and full CI (834 tests / 150 suites) pass with no failures/skips. All 99 CLI scenarios pass on Node 26.3.0 and 22.12.0 against the same artifact. Three added synthetic-journal cases verify repeated stop retains uncertainty/source ownership until exact completion; journal history, grants, consents, source, index, HEAD and branch are preserved. Broader recovery, retention and host/release qualification remain open. No commit or push.
+
+## 2026-10-24 - RC1 conflicting accounting checkpoint admission (local)
+
+**Changed.** Accounting recovery rejects regressing usage/sequences and contradictory same-revision completeness/in-flight flags while retaining maximum observed facts. Timestamp-only retries and monotone progress after an unpublished checkpoint remain valid. No schema, dependency, runtime minimum, budget, adapter identity or execution permission changed.
+
+**Files.** Core budget recovery, existing backup-accounting tests and CLI UAT driver, technical specification §7.3 and implementation plan. Added a draft backup-reconfirmation specification with approval gates; no reconfirmation behavior or decision kind is implemented.
+
+**Verification.** Six added controls: four red-first cases, a timestamp-only positive retry, and a real-kill positive retry that exposed and corrected an over-restrictive first fix. All 61 focused tests and full CI (831 tests / 150 suites) pass with no failures/skips. All 96 CLI scenarios pass on Node 26.3.0 and 22.12.0 against the same artifact. Seven added synthetic-checkpoint cases retain record bytes, source, index and branch; regressions/conflicting flags block new editing authority while monotone retries remain verified. Backup reconfirmation, unknown-cost/process reconciliation and host/release qualification remain open. No commit or push.
+
+## 2026-10-24 - RC1 nonblocking report-type admission (local)
+
+**Changed.** Report opens now use `O_NONBLOCK` with the existing no-follow flag before descriptor-type validation. A FIFO substituted after path inspection cannot stall the kernel waiting for a writer. Directory and symlink substitutions remain unusable. No usable-report semantics, adapter identity, schema, dependency, runtime minimum, budget or execution permission changed.
+
+**Files.** Runner adapter, existing runner-artifact tests and read-race fixture, built-CLI fault/UAT drivers, technical specification §9.6 and implementation plan.
+
+**Verification.** Three added real-process controls, with the FIFO control initially timing out; all 64 focused tests pass. Full CI passes 825 tests / 150 suites, zero failures/skips; all 89 CLI scenarios pass on Node 26.3.0 and 22.12.0 against the same artifact. Three added built cases return inconclusive evidence and retain replacement types and exact original bytes. Complete path-race protection, other RC1 work and host/release qualification remain open. No commit or push.
+
+## 2026-10-24 - RC1 runner report-file admission (local)
+
+**Changed.** Runner reports use bounded short-read loops, reject observed byte-count/size/mtime/ctime changes and validate UTF-8 bytes before decoding. Unusable reports retain the existing inconclusive normalization; valid Unicode remains exact. Adapter identity advances to `node-ts@9`, invalidating older receipt identities. No schema, dependency, runtime minimum, budget or execution permission changed.
+
+**Files.** Runner and Node adapters, existing runner-artifact tests and read-race fixture, built-CLI fault/UAT drivers, technical specification §9.5/9.6 and implementation plan.
+
+**Verification.** Nine added source controls, six initially failing; all 61 focused tests pass. Full CI passes 822 tests / 150 suites, zero failures/skips; all 86 CLI scenarios pass on Node 26.3.0 and 22.12.0 against the same artifact. Three added synthetic Vitest controls distinguish stable success from invalid encoding and valid-JSON mutation while retaining report bytes. Snapshot/path-race guarantees, other RC1 work and host/release qualification remain open. No commit or push.
+
+## 2026-10-24 - RC1 strict private-record encoding (local)
+
+**Changed.** Private records validate UTF-8 bytes before decoding so corrupt complete records cannot become accepted replacement-character text. Journals validate their complete prefix while retaining torn multibyte-tail recovery. Valid Unicode, literal replacement characters and previous-state fallback remain supported. No schema, dependency, runtime minimum, budget, adapter identity or execution permission changed.
+
+**Files.** Store adapter, existing store-boundary tests and CLI UAT driver, technical specification §7.6 and implementation plan.
+
+**Verification.** Six added source controls, four initially failing; all 62 focused tests pass. Full CI passes 813 tests / 150 suites, zero failures/skips; all 83 CLI scenarios pass on Node 26.3.0 and 22.12.0. Three new corrupt-record CLI cases retain exact bytes and refuse without a transaction; a fourth preserves Unicode through torn-tail inspection and repair. Aggregate retention, remaining recovery races and host/release qualification remain open. No commit or push.
+
+## 2026-10-24 - RC1 private record read admission (local)
+
+**Changed.** Private JSON now shares the bounded no-follow record reader with journals/blobs. Short reads preserve complete records; observed byte-count/size/mtime changes refuse before parsing. Permission/hard-link ctime changes remain readable, and previous-state fallback is unchanged. No schema, dependency, runtime minimum, budget or execution permission changed.
+
+**Files.** Store adapter, existing read-race fixture and store-boundary tests, existing built-CLI fault/UAT drivers, technical specification §7.6 and implementation plan.
+
+**Verification.** Nine added controls cover real-process valid-JSON mutations, stable short reads and metadata-only changes. All 64 focused store/recovery/envelope tests pass. Final CI passes 807 tests / 150 suites, zero failures/skips; all 79 CLI scenarios pass on Node 26.3.0 and 22.12.0. Three new private-record cases refuse without a transaction and retain foreign bytes. An initial ctime-only false refusal was reproduced and repaired without weakening content assertions. Aggregate retention, full path-race and host/release qualification remain open. No commit or push.
+
+## 2026-10-24 - RC1 installed-metadata mutation admission (local)
+
+**Changed.** Installed-tool and dependency metadata reads handle legitimate short reads within the existing bounded allocation and refuse observed same-size valid-JSON mutations using post-read size/mtime/ctime checks. Adapter identity advances to `node-ts@8`; no stored schema, dependency, permission, runtime minimum or budget changed.
+
+**Files.** Node adapter, existing read-race fixture and static-conformance tests, existing built-CLI fault/UAT drivers, technical specification §9.5 and implementation plan.
+
+**Verification.** Four red-first controls; all 68 focused tests pass. Full CI passes 798 tests / 150 suites with no failures/skips; all 76 CLI scenarios pass on Node 26.3.0 and 22.12.0. Two added real-process mutation cases refuse before launch and retain prior state and foreign edits. Full graph/path-race and host/release qualification remain open. No commit or push.
+
+## 2026-10-23 - RC1 bounded project reads and metadata refusals (local)
+
+**Changed.** Project reads/hashes allocate only the admitted size plus one probe byte, handle legitimate short reads and refuse observed concurrent byte-count/size/time changes. Stack detection preserves filesystem admission errors instead of treating unsafe package inputs as absent. Adapter identity advances to `node-ts@7`; no schema, dependency, runtime minimum, permission or budget changed.
+
+**Files.** Project filesystem and Node adapters, existing boundary/static tests and new read-race fixture, existing built-CLI fault/UAT drivers, technical specification §7.4/9.5 and implementation plan.
+
+**Verification.** Thirteen added controls, including eight red-first real-process mutations, two positive short-read cases and three caller refusals. All 71 focused tests pass; full CI passes 794 tests / 150 suites, zero failures/skips. All 74 CLI scenarios pass on Node 26.3.0 and 22.12.0; seven added refusals preserve state and four retain foreign edits. Complete path-replacement qualification and other RC1/release gates remain open. No host qualification, commit or push is claimed.
+
+## 2026-10-23 - RC1 installed-tool metadata admission (local)
+
+**Changed.** Installed runner/static-tool package JSON now shares the bounded no-follow descriptor reader used by npm installed records. Unsafe files, invalid UTF-8, malformed/deep JSON and linked leaves refuse before execution; package-manager directory links remain supported. Adapter identity advances to `node-ts@6`. No dependency, runtime minimum, state schema, environment permission or quality budget changed.
+
+**Files.** Node adapter, existing static-conformance tests, CLI UAT driver, technical specification §9.5 and implementation plan.
+
+**Verification.** Four red-first controls; all 37 static-conformance tests pass. Full CI passes 781 tests / 150 suites with no failures/skips; all 67 built-CLI scenarios pass on Node 26.3.0 and 22.12.0, including four new pre-launch refusals preserving prior state. The earlier starter SIGSEGV did not recur in baseline/rebuilt minimum-runtime UAT or the complete scratch recipe; its cause remains unproved. No compatibility fix, host qualification, commit or push is claimed.
+
+## 2026-10-23 - RC1 scaffold replay guard; starter runtime blocker exposed (local)
+
+**Changed.** Historical scaffold replay now recognizes durable per-file vetting instead of transient touched paths cleared by commit, preserving finished contract and recipe bookkeeping. Added a strict real-starter CLI install/check/review/finish/recovery scenario; no recipe, dependency, engine range or authority changed.
+
+**Files.** Recovery publisher, existing scaffold test, CLI UAT driver, technical specification §7.4 and implementation plan.
+
+**Verification.** Source scaffold suite passes 15/15, including seven crash cases; full source CI passes 775 tests / 150 suites with no failures/skips. All 63 CLI scenarios pass on Node 26.3.0. The new real-starter journey fails on Node 22.12.0 with database-backed Vitest worker SIGSEGVs and inconclusive checks; cause remains unproved and both-runtime UAT is not green. The minimum-runtime compatibility blocker is recorded, with no skipped assertion or narrowed claim approved. Budgets unchanged; no host qualification, commit or push.
+
+## 2026-10-23 - RC1 adoption replay freshness (local)
+
+**Changed.** Completed adoption replay no longer replaces newer accepted trust/provenance and contract file attribution. New write intents bind the prior trust snapshot; replay applies only against that predecessor and skips already-applied results without relying on clock order. Conservative legacy handling preserves existing acceptance. No general intent reverse parsing/re-projection, new authority or environment forwarding was added.
+
+**Files.** Pure state recovery, adoption intent preparation and result replay, existing adoption tests, CLI UAT driver, technical specification §7.4 and implementation plan.
+
+**Verification.** Two new source controls cover real acceptance, clock order and legacy/idempotence; all adoption crash cases remain green. Adoption/accounting controls pass 41/41. Full CI: 774 tests / 150 suites, zero failures/skips; all 62 CLI scenarios pass on Node 26.3.0 and 22.12.0. Budgets unchanged; local-only evidence, no host qualification, commit or push.
+
+## 2026-10-23 - RC1 complete bounded-journal replay (local)
+
+**Changed.** Recovery no longer loses unpublished effects beyond a 400-entry journal tail. It uses the complete validated bounded journal and linear structured effect/ID pairing, preserving result order, first-intent semantics and diagnostic-tail views. No storage ceiling, retention policy, state schema or authority changed.
+
+**Files.** Pure state recovery, recovery verb, store transaction/port, existing backup-accounting tests and built-CLI fault/UAT drivers, technical specification §7.4 and implementation plan.
+
+**Verification.** Three added source cases include a real SIGKILL plus 450 later records, distant/cross-effect/duplicate identities and diagnostic views. Neighboring recovery/adoption/scaffold controls pass 53/53. Full CI: 772 tests / 150 suites, zero failures/skips; all 61 CLI scenarios pass on Node 26.3.0 and 22.12.0. Budgets unchanged. Aggregate retention, formal performance and host qualification remain open; no commit or push.
+
+## 2026-10-23 - RC1 durable foreign-path review replay (local)
+
+**Changed.** Successful commit results retain observed foreign paths. Recovery after a result-fsync/publication crash restores the landed commit and its review attention through shared pure attribution, preserving accepted dispositions and avoiding duplicate commits. Missing/malformed unpublished foreign metadata stays uncertain instead of being assumed clean; already-published history remains readable. No automatic rollback or new authority was introduced.
+
+**Files.** Pure attribution, commit result recording and recovery replay, existing backup-accounting tests, built-CLI/fault drivers, technical specification §10.3 and implementation plan.
+
+**Verification.** Two added source controls plus existing real commit-crash cases; three added CLI complete/legacy/malformed result-fsync cases preserve human staged/unstaged content. Full CI passes 769 tests / 150 suites, zero failures/skips. All 60 CLI scenarios pass on Node 26.3.0 and 22.12.0. Budgets unchanged; local-only evidence, no host qualification, commit or push.
+
+## 2026-10-22 - RC1 installed dependency identity (local)
+
+**Changed.** Node toolchain identity now includes a digest of npm's installed dependency record, invalidating evidence when that ignored record changes despite unchanged source/tool versions. Bounded no-follow reads, UTF-8/JSON/depth/shape admission and operation exclusions distinguish missing metadata from unsafe/corrupt records; only a digest is exposed. Adapter identity advances to `node-ts@4`. No dependency or stored receipt field was added. Full graph/configuration and package-content assurance remain pending; `NODE_OPTIONS` forwarding remains unchanged pending the recorded owner decision.
+
+**Files.** Node adapter, optional port fingerprint field, existing static-conformance tests, CLI UAT driver, technical specification and implementation plan.
+
+**Verification.** Nine source controls include a real compiler stale-evidence workflow; two CLI cases cover ignored-record changes and malformed pre-check refusal. Full CI passes 767 tests / 150 suites; all 57 CLI scenarios pass on Node 26.3.0/22.12.0. Budgets unchanged, local-only evidence. No host qualification, commit or push.
+
+## 2026-10-22 - RC1 interrupted-check replay consent (local)
+
+**Changed.** Prepared checks retain their admitted execution envelope. Confirmed termination after a crash or cancellation invalidates unknown-check consent even for an unchanged envelope; unrelated envelope/hook/filter consent remains. Missing legacy bindings are treated conservatively, cached responses are cleared, and no interruption is promoted to a receipt or new authority. Process termination and unknown external side effects are disclosed separately. Journal call records now accept documented kernel-error exit 5 while still rejecting invalid exits.
+
+**Files.** Execution-envelope core/schema and shared recovery helpers, check preparation, recovery/stop verbs, store validator, existing envelope/store tests, CLI UAT driver, technical specification and implementation plan.
+
+**Verification.** Real SIGKILL/cancel and consent-population controls; external scratch effects remain unchanged before fresh approval and on decline, then run once after approval. Full CI: 758 tests / 150 suites, zero failures/skips. All 55 built-CLI scenarios pass on Node 26.3.0 and 22.12.0 against one artifact. All budgets remain unchanged. Local evidence only; no qualification, host dispatch, commit or push.
+
+## 2026-10-22 - RC1 physical Git postconditions and foreign-path review (local)
+
+**Changed.** Commit finalization/recovery verify the complete physical parent list, so hook-created merges cannot masquerade as the planned commit. Kernel Git invocations ignore replacement-object views while preserving the refs themselves, preventing hidden foreign trees/paths. A known landed foreign-path commit is retained but returns exit 3 before contract closure, with persistent attention that survives checks/retries and supports the existing explicit disposition flow. Automatic reference rollback and full configured-program qualification remain open.
+
+**Files.** Git adapter, pure attribution/review helpers, shared commit finalization, existing Git/workflow tests, built-CLI UAT driver, technical specification §10 and implementation plan.
+
+**Verification.** Five added real-Git tests; strengthened check/retry/user-disposition workflow; 42 focused Git/filter tests pass. Full CI passes 754 tests / 150 suites, no failures or skips. All 53 CLI scenarios pass on Node 26.3.0 and 22.12.0. All quality ceilings remain unchanged; local-only evidence, no host qualification, commit or push.
+
+## 2026-10-22 - Staging and commit timeout contract aligned (local)
+
+**Changed.** Owner selected the existing 120-second limit for staging and commit individually, including their filters/hooks. Technical specification §15.2 now agrees with §10.3 instead of allowing 10-minute commit hooks. Production behavior is unchanged. The existing real-filter pipeline test asserts both runner dispatch deadlines; the plan records the resolved decision and remaining safeguards.
+
+**Files.** `packages/kernel/test/filter-jobs.test.ts`, `specs/tech-spec.md`, `specs/plan.md`, `CHANGELOG.md`.
+
+**Verification.** Focused real-filter test and full local CI pass: 749 tests / 150 suites, zero failures or skips. No host observation, qualification, commit or push.
+
+## 2026-10-22 - RC1 private record and cleanup boundaries (local)
+
+**Changed.** Journal/blob reads use bounded no-follow descriptors. Journal envelopes and depth are validated before recovery or torn-tail repair; corrupt complete records are preserved and refused. Appends cannot create an unreadable oversized journal. Blob writes enforce byte bounds, reads verify content hashes, and corruption is never reported as absence. Automatic cleanup skips linked workspace/manifest/review directories instead of deleting outside human files. Expired owned artifacts are still removed and explicit live paths retained. Aggregate storage admission, compaction, protected retention and concurrent path-replacement qualification remain pending.
+
+**Files.** Store filesystem adapter, existing store-boundary tests, built-CLI UAT driver, technical specification §7.6 and implementation plan.
+
+**Verification.** Eleven new controls; focused store/accounting tests pass 41/41. Full local CI passes 749 tests/150 suites, with no failures or skips. All 50 built-CLI UAT scenarios pass on Node 26.3.0 and 22.12.0. An initial scenarios-file import failure did not recur in isolated or subsequent full reruns and remains unclassified. No quality budget, host authorization, qualification, commit or push changed.
+
+## 2026-10-22 - RC1 project-check execution envelope (local)
+
+**Changed.** A project check now derives a hash-bound envelope for its planned test, static, and e2e commands before spawn. Unknown exposure asks for explicit consent once per project/envelope hash; decline launches nothing and a changed envelope asks again. Receipts retain the exact admitted envelope, with passed/dropped environment names only and normalized workspace/run paths; no environment values or absolute workspace path are recorded. This is initial check-command coverage only; configured commands and the rest of RC1 remain open.
+
+**Files.** `core/execution-envelope.ts`, check and runner adapters, shared consent decision, `execution-envelope.test.ts`, existing fixture/UAT harnesses, `tenet` skill, `specs/tech-spec.md` §9.3, `specs/plan.md`.
+
+**Verification.** Focused envelope, active-time, scaffold, and process-cancellation tests pass. Full `npm run ci` passes 738 tests / 150 suites with no failures or skips; `npm run uat` passes. Local T1 evidence only; no host, release, campaign, commit, or push.
+
 ## 2026-10-21 - RC0 evidence ledger and requirement qualification gate (local)
 
 **Changed.** `tools/coverage.ts` now reports structural mapping separately from sparse semantic disposition, uncovered AC IDs, evidence tiers/references, and qualification. It validates strict JSON v1 ledger/history, content hashes, repository-contained evidence paths, and campaign tuple/protocol/artifact bindings, failing closed on stale records. Added a separate `tools/release-audit.ts` gate requiring all due Musts to qualify on one tuple/artifact; its output explicitly does not certify the other PRD Section 4.7 conditions. Added the tracked empty `docs/audits/evidence-ledger.json`; no requirement status or qualification was invented.
