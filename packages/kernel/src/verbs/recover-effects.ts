@@ -4,21 +4,18 @@ import { adopted, type AdoptOp } from "../decisions/adopt.ts";
 import { restoreFiles, type DependencyOp } from "../decisions/dependency.ts";
 import { scaffolded, type ScaffoldOp } from "../decisions/scaffold.ts";
 import type { UndoOp } from "../decisions/undo.ts";
+import { recordCommit, replayCommit } from "../core/attribution.ts";
+import { adoptionReplayNeeded } from "../core/state.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 
 export interface IntegrationOp { work: string; base: string; baseBefore: string; workTip: string }
 export type Unresolved = ReturnType<Tx["unresolved"]>[number];
-export type Outcome = { completed?: boolean; commit?: string; mode?: string };
+export type Outcome = { completed?: boolean; commit?: string; mode?: string; foreign?: unknown };
 export interface Recovery { ports: Ports; tx: Tx; state: State; completed: string[]; uncertain: string[] }
 
 const put = (r: Recovery, w: WorkContract) => { r.state = { ...r.state, work: { ...r.state.work, [w.id]: w } }; };
 const withGit = (r: Recovery, w: WorkContract, git: Partial<WorkContract["git"]>) => put(r, { ...w, git: { ...w.git, ...git } });
-const addCommit = (r: Recovery, w: WorkContract, commit: string, paths: readonly string[]) =>
-  withGit(r, w, {
-    commits: w.git.commits.includes(commit) ? w.git.commits : [...w.git.commits, commit],
-    committed: [...new Set([...w.git.committed, ...paths])],
-  });
 const applyIntegration = (r: Recovery, w: WorkContract, op: IntegrationOp, commit: string, moved: boolean) =>
   withGit(r, w, { integrated: { into: op.base, commit, moved, validated: !moved } });
 function applyScaffold(r: Recovery, w: WorkContract, op: ScaffoldOp) {
@@ -54,8 +51,8 @@ async function commit(r: Recovery, u: Unresolved) {
   const w = r.state.work[op.work];
   const res = await r.ports.git.reconcileCommit(op.parent, op.expectedTree, op.paths, w?.label);
   if (res.completed && res.commit) {
-    if (w) addCommit(r, w, res.commit, op.paths);
-    r.tx.result("commit", u.id, { completed: true, commit: res.commit });
+    if (w) put(r, recordCommit(w, { commit: res.commit, foreign: [] }, op.paths));
+    r.tx.result("commit", u.id, { completed: true, commit: res.commit, foreign: [] });
     r.completed.push(`commit ${res.commit.slice(0, 8)} had landed before the result was recorded`);
   } else if ((await r.ports.git.refCommit("HEAD")) !== op.parent) {
     r.uncertain.push("an interrupted commit cannot be reconciled against the current HEAD");
@@ -202,13 +199,13 @@ export const SETTLE: Record<string, (r: Recovery, u: Unresolved) => Promise<void
 export const PUBLISH: Record<string, (r: Recovery, op: unknown, out: Outcome) => void> = {
   scaffold(r, o) {
     const op = o as ScaffoldOp, w = r.state.work[op.work];
-    if (!w || w.touched.some((t) => t.path in op.expected)) return;
+    if (!w || Object.keys(op.expected).every(path => path in w.vetted)) return;
     applyScaffold(r, w, op);
     r.completed.push("the scaffold was recorded as done but not yet in the contract; it is now");
   },
   adopt(r, o) {
     const op = o as AdoptOp;
-    if (r.state.trust.some((t) => t.file === op.file && t.hash === op.after)) return;
+    if (!adoptionReplayNeeded(r.state, op)) return;
     r.state = adopted(r.state, op);
     r.completed.push(`${op.file} was recorded as written but not yet adopted; it is now`);
   },
@@ -226,8 +223,12 @@ export const PUBLISH: Record<string, (r: Recovery, op: unknown, out: Outcome) =>
   },
   commit(r, o, out) {
     const op = o as { work: string; paths: string[] }, w = r.state.work[op.work];
-    if (!w || !out.commit || w.git.commits.includes(out.commit)) return;
-    addCommit(r, w, out.commit, op.paths);
-    r.completed.push(`commit ${out.commit.slice(0, 8)} was recorded as done but not yet in the contract; it is now`);
+    if (!w) return;
+    const next = replayCommit(w, out, op.paths);
+    if (!next) r.uncertain.push("recorded commit lacks foreign-path proof; inspect its effects");
+    else if (next !== w) {
+      put(r, next);
+      r.completed.push(`commit ${out.commit!.slice(0, 8)} was recorded as done but not yet in the contract; it is now`);
+    }
   },
 };

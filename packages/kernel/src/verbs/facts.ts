@@ -11,6 +11,7 @@ import type { Inventory, Ports } from "../ports/types.ts";
 import { settingsFor, unsupportedExecution } from "./reconcile.ts";
 import { isEditingProfile } from "../core/risk.ts";
 import { declaredInputs } from "../core/obligations.ts";
+import { declaredOutputs } from "../core/outputs.ts";
 
 export interface Facts {
   inv: Inventory;
@@ -38,7 +39,7 @@ export async function gather(ports: Ports, w: WorkContract, locks: State["locks"
   if (w.git.mode === "none") return { inv: NO_GIT, att: attribute(w, NO_GIT, () => false), candidate: NO_GIT.digest, tenetPaths: [], reviewPaths: [], lockAnchors: new Set() };
   const tests = new Set(w.obligations.map((o) => o.testFile).filter((p): p is string => !!p));
   const explained = (p: string) => tests.has(p) || p in w.vetted;
-  const inv = await ports.git.inventory([], declaredInputs(w.obligations));
+  const inv = await ports.git.inventory([], declaredInputs(w.obligations), declaredOutputs(w.obligations));
   const att = attribute(w, inv, explained);
   const keep = new Set(w.keepOut);
   const tenetPaths = [...new Set([...att.tenet, ...att.mixed.filter((p) => w.includeDirty.includes(p)), ...w.includeDirty])]

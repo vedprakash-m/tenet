@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-import { readFileSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { closeSync, ftruncateSync, mkdirSync, openSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { createStack, normalizeStatic } from "../src/adapters/node-ts.ts";
@@ -44,6 +46,132 @@ describe("static report population and bounds", () => {
 });
 
 describe("static adapter execution profile", () => {
+  for (const operation of ["tool", "dependency"] as const) {
+    for (const mode of ["overwrite-json", "short"] as const) {
+      it(`${mode === "short" ? "accepts short reads of stable" : "refuses same-size changes to"} installed ${operation} metadata [SEC-06, EVD-03]`, () => {
+        const p = project(); roots.push(p.root); rmSync(join(p.root, "node_modules"));
+        const path = operation === "tool" ? "node_modules/vitest/package.json" : "node_modules/.package-lock.json";
+        const text = operation === "tool" ? '{"version":"5.0.5","note":"a"}' : '{"lockfileVersion":3,"packages":{},"note":"a"}';
+        p.write(path, text);
+        const result = JSON.parse(execFileSync(process.execPath, [join(import.meta.dirname, "fixtures/race-project-read.ts"), p.root, mode, operation], { encoding: "utf8" }));
+        if (mode === "short") assert.equal(result.value, operation === "tool" ? "5.0.5" : createHash("sha256").update(text).digest("hex"), JSON.stringify(result));
+        else {
+          assert.equal(result.code, "capability-missing", JSON.stringify(result));
+          assert.equal(result.value, undefined);
+          assert.equal(readFileSync(join(p.root, path), "utf8"), text.replace('"note":"a"', '"note":"b"'));
+        }
+      });
+    }
+  }
+  for (const kind of ["oversized", "linked", "directory"] as const) {
+    it(`does not turn ${kind} project package metadata into absence [SEC-06, SEC-14]`, () => {
+      const p = project(); roots.push(p.root);
+      const file = join(p.root, "package.json");
+      if (kind === "oversized") {
+        const descriptor = openSync(file, "w");
+        try { ftruncateSync(descriptor, 20 * 1024 * 1024 + 1); }
+        finally { closeSync(descriptor); }
+      } else {
+        rmSync(file);
+        if (kind === "directory") mkdirSync(file);
+        else {
+          p.write("aliased-package.json", '{"type":"module"}');
+          symlinkSync(join(p.root, "aliased-package.json"), file);
+        }
+      }
+      assert.throws(() => createStack().detect(p.root), /exceeds|link|regular project file/i);
+    });
+  }
+  for (const kind of ["oversized", "linked", "invalid-utf8", "deep"] as const) {
+    it(`refuses ${kind} installed tool metadata before detecting a supported runner [SEC-06, SEC-14]`, () => {
+      const p = project(); roots.push(p.root); rmSync(join(p.root, "node_modules"));
+      const file = join(p.root, "node_modules/vitest/package.json");
+      mkdirSync(join(file, ".."), { recursive: true });
+      if (kind === "oversized") {
+        const descriptor = openSync(file, "w");
+        try { ftruncateSync(descriptor, 20 * 1024 * 1024 + 1); }
+        finally { closeSync(descriptor); }
+      } else if (kind === "linked") {
+        p.write("tool-metadata.json", '{"version":"5.0.5"}');
+        symlinkSync(join(p.root, "tool-metadata.json"), file);
+      } else if (kind === "invalid-utf8") {
+        writeFileSync(file, Buffer.concat([Buffer.from('{"version":"5.0.5","note":"'), Buffer.from([0xff]), Buffer.from('"}')]));
+      } else p.write("node_modules/vitest/package.json", `{"version":"5.0.5","nested":${"[".repeat(65)}0${"]".repeat(65)}}`);
+      assert.throws(() => createStack().detect(p.root), /metadata.*safely/i);
+    });
+  }
+  it("binds installed dependency metadata even when tool versions do not change [EVD-03]", () => {
+    const p = project(); roots.push(p.root); rmSync(join(p.root, "node_modules"));
+    for (const [name, version] of [["vitest", "5.0.5"], ["typescript", "5.9.3"], ["eslint", "9.39.1"]]) {
+      p.write(`node_modules/${name}/package.json`, JSON.stringify({ name, version }));
+    }
+    p.write("node_modules/.package-lock.json", JSON.stringify({ lockfileVersion: 3,
+      packages: { "node_modules/typescript": { version: "5.9.3", integrity: "original" } } }));
+    const stack = createStack(), before = stack.fingerprint(p.root);
+    p.write("node_modules/.package-lock.json", JSON.stringify({ lockfileVersion: 3,
+      packages: { "node_modules/typescript": { version: "5.9.3", integrity: "changed" } } }));
+    const after = stack.fingerprint(p.root);
+    assert.equal(after.tool, before.tool);
+    assert.deepEqual(after.static, before.static);
+    assert.notDeepEqual(after, before, "changed installed dependencies must invalidate evidence despite unchanged tool versions");
+  });
+  for (const data of ["{ broken", "null", "[]", '{"lockfileVersion":3}',
+    '{"lockfileVersion":3,"packages":[]}', '{"lockfileVersion":0,"packages":{}}']) {
+    it(`refuses malformed installed dependency metadata ${data} [EVD-03, SEC-06]`, () => {
+      const p = project(); roots.push(p.root); rmSync(join(p.root, "node_modules"));
+      p.write("node_modules/.package-lock.json", data);
+      assert.throws(() => createStack().fingerprint(p.root), /dependency metadata.*safely/i);
+    });
+  }
+  it("refuses linked, excluded and oversized installed dependency records [SEC-06, SEC-14]", () => {
+    const p = project(); roots.push(p.root); rmSync(join(p.root, "node_modules"));
+    mkdirSync(join(p.root, "node_modules"));
+    const file = join(p.root, "node_modules/.package-lock.json"), stack = createStack();
+    assert.equal(stack.fingerprint(p.root).dependencies, "absent");
+    p.write("outside-lock.json", '{"lockfileVersion":3,"packages":{},"canary":"PRIVATE_DEPENDENCY_METADATA"}');
+    symlinkSync(join(p.root, "outside-lock.json"), file);
+    assert.throws(() => stack.fingerprint(p.root), /dependency metadata.*safely/i);
+    rmSync(file);
+    const descriptor = openSync(file, "w");
+    try { ftruncateSync(descriptor, 20 * 1024 * 1024 + 1); }
+    finally { closeSync(descriptor); }
+    assert.throws(() => stack.fingerprint(p.root), /dependency metadata.*safely/i);
+    stack.setExclusions([{ pattern: "node_modules/.package-lock.json", kinds: ["no-read"] }]);
+    assert.throws(() => stack.fingerprint(p.root), /excludes stack metadata/i);
+    stack.setExclusions([]);
+    p.write("node_modules/.package-lock.json", '{"lockfileVersion":3,"packages":{},"canary":"PRIVATE_DEPENDENCY_METADATA"}');
+    const fingerprint = stack.fingerprint(p.root);
+    assert.match(fingerprint.dependencies!, /^[a-f0-9]{64}$/);
+    assert.equal(JSON.stringify(fingerprint).includes("PRIVATE_DEPENDENCY_METADATA"), false);
+    assert.equal(JSON.stringify(fingerprint).includes(p.root), false);
+  });
+  it("stales passing evidence after an ignored installed-record edit without changing source or tool versions [EVD-03]", async () => {
+    const p = project({ "tsconfig.json": JSON.stringify({ compilerOptions: {
+      strict: true, module: "NodeNext", skipLibCheck: true, types: [],
+    }, include: ["src/greet.ts"] }) }); roots.push(p.root);
+    rmSync(join(p.root, "node_modules")); mkdirSync(join(p.root, "node_modules"));
+    for (const name of ["vitest", "typescript"]) {
+      symlinkSync(join(import.meta.dirname, "../../../node_modules", name), join(p.root, "node_modules", name));
+    }
+    p.write("node_modules/.package-lock.json", '{"lockfileVersion":3,"packages":{},"generation":1}');
+    p.write("tenet.policy.json", JSON.stringify({ required_checks: [{ id: "types", tool: "tsc", property: "project compiles" }] }));
+    const h = (await p.call("open", { profile: "feature", request: "dependency evidence freshness", lane: "quick" })).handle!;
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    p.write("src/greet.test.ts", GREET_TEST); await p.call("check", { h, stage: "baseline" });
+    p.write("src/greet.ts", GREET_IMPL);
+    await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    const work = Object.values(p.ports().store.read()!.state.work)[0]!;
+    assert.equal(work.receipts.find(receipt => receipt.obligation === "OB-types")?.status, "pass");
+    const before = createStack().fingerprint(p.root), status = p.git("status", "--porcelain");
+    p.write("node_modules/.package-lock.json", '{"lockfileVersion":3,"packages":{},"generation":2}');
+    const after = createStack().fingerprint(p.root);
+    assert.equal(after.tool, before.tool); assert.deepEqual(after.static, before.static);
+    assert.equal(p.git("status", "--porcelain"), status);
+    const why = await p.call("inspect", { h, view: "why" });
+    assert.ok(why.reasons.some(reason => reason.code === "stale"), JSON.stringify(why));
+    const finished = await finishFixture(p, { h, noCommit: true });
+    assert.notEqual((finished.data as Record<string, unknown>)?.endpoint, "checked-local");
+  });
   for (const config of [
     '{"extends":"./base.json"}', '{"compilerOptions":{"composite":true}}',
     '{"compilerOptions":{"tsBuildInfoFile":"human-cache"}}', '{/* opaque JSONC */"compilerOptions":{}}',

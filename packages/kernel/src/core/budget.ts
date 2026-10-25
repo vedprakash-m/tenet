@@ -21,11 +21,14 @@ export function summarize(b: BudgetState, lane: Lane): { attempts: string; round
 }
 
 /** True at or above 80% of any counter (WRK-12): the handoff is written proactively. */
-export function nearLimit(b: BudgetState, lane: Lane): boolean {
+export function nearLimit(b: BudgetState, lane: Lane, now?: string): boolean {
   const l = LIMITS[lane];
   const used = b.delegations + b.reservations.length;
+  const activeGap = now && b.lastCall?.exit === 0
+    ? Math.max(0, Date.parse(now) - Date.parse(b.lastCall.at)) / 60_000
+    : 0;
   return b.attempts >= l.attempts * 0.8 || b.reviewRounds >= l.rounds * 0.8 || used >= l.delegations * 0.8 ||
-    b.activeMinutesSinceCheckIn >= l.minutes * 0.8;
+    b.activeMinutesSinceCheckIn + activeGap >= l.minutes * 0.8;
 }
 
 /** Active time: call durations plus the gap after a call that said to keep working; the wait after a question is not work (TS §8.6). */
@@ -125,11 +128,14 @@ export function recoverAccounting(state: State, records: readonly unknown[]): { 
     return parsed.data.workspaceId === state.workspaceId && parsed.data.revision > state.revision ? [parsed.data] : [];
   });
   for (const point of points) {
+    if (point.workSeq < next.workSeq || point.generationSeq < next.generationSeq) invalid = true;
     next = { ...next, workSeq: Math.max(next.workSeq, point.workSeq), generationSeq: Math.max(next.generationSeq, point.generationSeq) };
     for (const entry of point.entries) {
       const w = next.work[entry.work];
       if (!w || entry.generation < w.session.generation) continue;
       const b = w.budget, observed = privateBudget(entry.budget);
+      if ((["attempts", "reviewRounds", "rechecks", "delegations", "checksLaunched", "tenetTokens", "activeMinutesTotal"] as const)
+        .some(key => observed[key] < b[key])) invalid = true;
       const budget: BudgetState = {
         ...observed,
         attempts: Math.max(b.attempts, observed.attempts),
@@ -147,10 +153,12 @@ export function recoverAccounting(state: State, records: readonly unknown[]): { 
       next = { ...next, work: { ...next.work, [w.id]: updated }, ...owner };
     }
   }
-  let revision = state.revision, contiguous = true;
+  let revision = state.revision, contiguous = true, checkpoint = "";
   for (const point of points) {
-    if (point.revision !== revision && point.revision !== revision + 1) contiguous = false;
+    const signature = JSON.stringify({ complete: point.complete, inFlight: point.inFlight });
+    if (point.revision !== revision + 1 && (point.revision !== revision || signature !== checkpoint)) contiguous = false;
     revision = point.revision;
+    checkpoint = signature;
   }
   const latest = points.at(-1);
   const verified = !invalid && contiguous && !!latest?.complete && latest.inFlight.length === 0;

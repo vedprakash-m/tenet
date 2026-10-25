@@ -28,7 +28,7 @@ describe("the work contract", () => {
     assert.equal(w.budget.attempts, 0);
     assert.equal(w.git.base, p.git("rev-parse", "main"));
     assert.match(w.git.branch!, /^tenet\/w-0001-/);
-    assert.deepEqual(w.pinned, { tenet: "0.1.0-m0", schema: 1 });
+    assert.deepEqual(w.pinned, { tenet: "0.1.0-m0", schema: 1, adapter: p.ports().stack.adapterVersion() });
     assert.equal(w.git.start.head, w.git.base, "the starting HEAD is the recovery point");
   });
 

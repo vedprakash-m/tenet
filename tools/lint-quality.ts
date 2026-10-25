@@ -19,16 +19,16 @@ export const budgetChars = (name: string): number => Math.round(BUDGETS[name]!.l
 
 /** Budgets set by the owner (TS §6.2) in lines, enforced as characters. A module is a file, or a group of files (a directory, or files matching a pattern). */
 export const BUDGETS: Record<string, { match: RegExp; lines: number }> = {
-  "core/schemas": { match: /^core\/schemas\.ts$/, lines: 460 }, // +6 ModelRecord (RSC-02), +4 active-time fields (WRK-08), +5 dependency.manager (pnpm), 2026-10
+  "core/schemas": { match: /^core\/schemas\.ts$/, lines: 467 }, // +3 receipt history (EVD-08; 0.58%), +3 outputs fields (EVD-09; 0.6%), +1 pinned adapter (LFC-03); pre-approved 2026-10-24 // +6 ModelRecord (RSC-02), +4 active-time fields (WRK-08), +5 dependency.manager (pnpm), 2026-10
   "core/risk": { match: /^core\/risk\.ts$/, lines: 150 },
   "core/budget": { match: /^core\/budget\.ts$/, lines: 150 },
   "core/verdict": { match: /^core\/verdict\.ts$/, lines: 300 },
   "core/review": { match: /^core\/review\.ts$/, lines: 350 },
   "adapters/store-fs": { match: /^adapters\/store-fs\.ts$/, lines: 450 },
-  "adapters/git-cli": { match: /^adapters\/git-cli\.ts$/, lines: 650 },
+  "adapters/git-cli": { match: /^adapters\/git-cli\.ts$/, lines: 657 }, // +3 lines for the layout probe call (GIT-13; 0.38%), +4 for the declared-output parameter (EVD-09; 0.5%); both pre-approved 2026-10-24
   "adapters/runner": { match: /^adapters\/runner\.ts$/, lines: 350 },
   "adapters/node-ts": { match: /^adapters\/node-ts\.ts$/, lines: 350 },
-  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 3848 }, // +10 Deep passes (WRK-04), +5 model record (RSC-02), +33 active time and decide extend (WRK-08), +6 project charter reading (QLT-09), +4 Host port consumers (ENG-02), +7 support-overlaps-scope basis validation, +25 pnpm dependency verification, +2 readiness-tier reporting (INS-04), +42 e2e obligation wiring (EVD-13: runE2e, e2eReceipts, withE2e/wantsE2e call sites), +4 prototype promotion lane-floor (WRK-07), 2026-10
+  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 4176 }, // +36 lines (~2,073 chars) for hash-bound project-check envelopes and pre-spawn consent (RC1, owner-approved 2026-10-22), +36 lines for `decide lesson`/`forget`, the lessons view and packet excerpt (LRN-02, CON-10; owner-confirmed), +4 lines for `inspect --view impact` (INT-08; under the 1% pre-approval), +23 lines for `decide cleanup` and `inspect --view residue` (LFC-05; 0.57%, pre-approved), +19 lines for journal reduction, run-file cap and the ceiling at open/finish (CON-08; 0.45%, pre-approved), +11 lines for layout notes and the submodule refusal at open (GIT-13; 0.26%, pre-approved), +3 lines for impact in the plan preview (INT-08; 0.05%, pre-approved), +80 lines (2.0%) for check reruns, the flaky qualifier and the end-of-run toolchain comparison (EVD-08/EVD-11; owner-confirmed 2026-10-24, above the 1% pre-approval), +41 lines for declared outputs and named-file diagnostics (EVD-09; 1.0%, pre-approved), +75 lines (1.8%) for version pinning, the pause, the resume question and `decide version-reconcile` (LFC-03; approved in advance by the owner on 2026-10-24)
 };
 
 const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => {

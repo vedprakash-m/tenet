@@ -1,6 +1,7 @@
 // `decide plan`: an ordered, editable plan of independently checkable increments (INT-12). The user sees the numbered plan
 // once and answers; nothing is recorded before that. Items the proposal leaves out are dropped, and the question says so.
 import { z } from "zod";
+import { impact } from "../core/impact.ts";
 import { KernelError } from "../core/errors.ts";
 import { highestSeq } from "../core/ids.ts";
 import { buildPlan } from "../core/plan.ts";
@@ -33,7 +34,8 @@ export const plan: Decision = {
       const dropped = built.items.filter((i) => built.changed.includes(i.id) && i.state === "dropped");
       const q = question({ id: "plan-confirm", header: "Confirm the plan", bind: { factsHash: facts }, question: `${lines.join("\n")}${dropped.length ? `\nThis drops: ${dropped.map((i) => i.outcome).join("; ")}.` : ""}`,
         options: [{ label: "Yes, that plan", description: "Record it; each item then gets its own contract.", recommended: true }, { label: "Change something", description: "Tell me what to adjust; nothing is recorded yet." }] });
-      return { state: { ...state, pending: [...rest, q] }, resp: { work: work.id, exit: 3, questions: [q], next: [nx("ask", "Ask the user, then answer with --answer plan-confirm=confirm.", true)] } };
+      const shown = impact(state, built.changed); // INT-08: what an edit or drop reaches, before it is recorded
+      return { state: { ...state, pending: [...rest, q] }, resp: { work: work.id, exit: 3, questions: [q], data: { impact: shown }, next: [nx("ask", "Ask the user, then answer with --answer plan-confirm=confirm.", true)] } };
     }
     if (answer !== "confirm") return { state: { ...state, pending: rest }, resp: { work: work.id, next: [nx("plan", "Revise the plan as the user asked.", true)] } };
     if (!pending || pending.bind.factsHash !== facts) throw new KernelError("plan-invalid", "the proposal changed since the question was asked; ask again", { exit: 3 });

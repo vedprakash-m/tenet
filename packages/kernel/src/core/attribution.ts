@@ -1,6 +1,7 @@
 // File-level attribution by the last-check rule (TS §10.2). Pure over inventories and recorded facts.
 import { allowed } from "./exclusions.ts";
-import type { Inventory } from "../ports/types.ts";
+import { hashOf } from "./ids.ts";
+import type { CommitOutcome, Inventory } from "../ports/types.ts";
 import type { StartSnapshot, WorkContract } from "./schemas.ts";
 
 /** What `open` records about the starting tree: only differences from HEAD, so a clean tree costs nothing. */
@@ -49,4 +50,24 @@ export function changedSinceCheck(work: WorkContract, inv: Inventory, tenetPaths
     const h = last.get(p);
     return h !== undefined && (inv.entries.get(p)?.blob ?? "") !== h;
   });
+}
+
+export function recordCommit(work: WorkContract, out: Pick<CommitOutcome, "commit" | "foreign">, paths: readonly string[]): WorkContract {
+  const commits = out.commit && !work.git.commits.includes(out.commit) ? [...work.git.commits, out.commit] : work.git.commits;
+  return {
+    ...work, state: work.lastValidPhase ?? work.state,
+    git: { ...work.git, commits, committed: [...new Set([...work.git.committed, ...paths])] },
+    touched: [],
+    attention: [...work.attention, ...out.foreign.map(path => ({
+      id: `AT-${hashOf([out.commit, path]).slice(0, 8)}`, path, line: 1, marker: false, pattern: "hook-staged-foreign-path",
+    }))],
+  };
+}
+
+export function replayCommit(
+  work: WorkContract, out: { commit?: string; foreign?: unknown }, paths: readonly string[],
+): WorkContract | undefined {
+  if (!out.commit || work.git.commits.includes(out.commit)) return work;
+  if (!Array.isArray(out.foreign) || out.foreign.some(path => typeof path !== "string")) return;
+  return recordCommit(work, { commit: out.commit, foreign: out.foreign }, paths);
 }

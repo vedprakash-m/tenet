@@ -118,6 +118,7 @@ describe("guarded Git filter preparation", () => {
     const ports = p.ports(), original = ports.runner.run.bind(ports.runner);
     let staged = false;
     ports.runner.run = async spec => {
+      if (spec.argv.includes("add") || spec.argv.includes("commit")) assert.equal(spec.timeoutMs, 120_000);
       if (spec.argv.includes("add")) {
         staged = true;
         const state = ports.store.read()!.state;

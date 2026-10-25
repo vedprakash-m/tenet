@@ -1,6 +1,8 @@
 // Recovery before anything else touches a resource (TS §7.4): an intent without a result is uncertain, never "did not
 // happen", and is reconciled from its postcondition. Interrupted runs are stopped and discarded.
 import type { State, WorkContract } from "../core/schemas.ts";
+import { INTERRUPTED_CHECK, recoverStoppedCall } from "../core/execution-envelope.ts";
+import { recordedResults } from "../core/state.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 import { PUBLISH, SETTLE, type Outcome, type Recovery } from "./recover-effects.ts";
 
@@ -22,8 +24,9 @@ async function discardDeadRuns(r: Recovery, original: State) {
     }
     const how = stopped === "stopped" ? "its processes were stopped" : "its processes had ended";
     r.completed.push(`discarded the interrupted ${c.verb} (${how})`);
-    const phase = w.state === "checking" ? (w.lastValidPhase ?? "executing") : w.state;
-    put({ ...w, state: phase, session: { generation: w.session.generation, ...(w.session.last ? { last: w.session.last } : {}) } });
+    const next = recoverStoppedCall(r.state, w);
+    if (next.consents !== r.state.consents) r.completed.push(INTERRUPTED_CHECK);
+    r.state = next;
   }
 }
 
@@ -33,8 +36,7 @@ async function settleEffects(r: Recovery) {
     const running = r.state.work[(u.op as { work?: string } | null)?.work ?? ""]?.session.inCall;
     if (running?.cancelled) { r.uncertain.push(`the interrupted ${u.effect} still has uncertain process ownership`); continue; }
     if (running?.pid && running.procStart && (await r.ports.store.alive(running.pid, running.procStart))) continue;
-    const settle = SETTLE[u.effect];
-    if (settle) await settle(r, u);
+    if (Object.hasOwn(SETTLE, u.effect)) await SETTLE[u.effect]!(r, u);
     else r.uncertain.push(`${u.effect} ${u.id}`);
   }
 }
@@ -49,12 +51,9 @@ export async function recover(ports: Ports, tx: Tx, state: State, options: { eff
     return { state: r.state, completed: r.completed, uncertain: r.uncertain };
   }
   await settleEffects(r);
-  const log = tx.recent(400);
-  for (const res of log) {
+  for (const res of recordedResults(tx.recent())) {
     const out = res.outcome as Outcome | undefined;
-    if (res.kind !== "result" || !out?.completed) continue;
-    const intent = log.find((e) => e.kind === "intent" && e.effect === res.effect && e.id === res.id);
-    if (intent && res.effect) PUBLISH[res.effect]?.(r, intent.op, out);
+    if (out?.completed && Object.hasOwn(PUBLISH, res.effect)) PUBLISH[res.effect]?.(r, res.op, out);
   }
   return { state: r.state, completed: r.completed, uncertain: r.uncertain };
 }

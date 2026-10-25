@@ -2,11 +2,13 @@
 import { join } from "node:path";
 import { failureSignature, recordAttempt, recordLaunchedChecks, stopFor, withSignature } from "../core/budget.ts";
 import { hashOf } from "../core/ids.ts";
+import { declaredOutputs, movedNote } from "../core/outputs.ts";
 import { baselineDefinitionMatches, supportOf, wantsRed } from "../core/obligations.ts";
-import { receiptsFrom, staticReceipt } from "../core/receipts.ts";
+import { receiptsFrom, settleReruns, staticReceipt } from "../core/receipts.ts";
 import type { RunFacts } from "../core/receipts.ts";
 import { carryDispositions, netAttention } from "../core/review.ts";
 import type { FileChange } from "../core/review.ts";
+import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
 import type { AttentionItem, BudgetState, Obligation, Receipt, State, StopReason, WorkContract } from "../core/schemas.ts";
 import type { Normalized, Ports, StaticTool } from "../ports/types.ts";
 import type { Facts } from "./facts.ts";
@@ -15,6 +17,7 @@ import type { Facts } from "./facts.ts";
 export interface Run {
   ports: Ports;
   w: WorkContract;
+  executionEnvelope: ExecutionEnvelope;
   runId: string;
   runDir: string;
   stage: "baseline" | "candidate" | "integrated";
@@ -25,10 +28,15 @@ export interface Run {
   missing: Obligation[];
   facts: Facts;
   id: string;
+  /** Fingerprint of the toolchain when the run was prepared; a different one after the run means an input moved (EVD-11). */
+  toolchain?: string;
 }
 
+/** One rerun of failed required test files on unchanged inputs (EVD-08): what ran, which obligations it covers and where its report is. */
+export interface Rerun { facts: RunFacts; obligations: string[]; toExecute: "all" | string[]; report: string }
+
 /** What a check run observed: the test runner, and each static tool (including the e2e obligation) by obligation. */
-export interface Executed extends RunFacts { statics: Record<string, RunFacts> }
+export interface Executed extends RunFacts { statics: Record<string, RunFacts>; reruns?: Rerun[]; moved?: string[] }
 export const isStatic = (ob: Obligation): boolean => ob.kind === "static";
 export const isE2e = (ob: Obligation): boolean => ob.tool === "playwright";
 export const staticReport = (runDir: string, tool: string): string => join(runDir, `${tool}.json`);
@@ -44,6 +52,7 @@ function staticReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
     const candidate = facts.candidate;
     const ctx = {
       stage, scope, id: run.id, candidate, runId, runDir, argv, versions, before: candidate,
+      executionEnvelope: run.executionEnvelope,
       missing: new Set<string>(), population: facts.inv.entries,
     };
     const notRun: RunFacts = { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, after: candidate, ran: false };
@@ -65,29 +74,37 @@ function e2eReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
   const norm = ports.stack.normalizeE2e({ exit: ran.exit, raw: ran.raw }, ports.root);
   return receiptsFrom(ran, norm, e2eObs, {
     stage, scope, id: run.id, candidate, runId, runDir, argv: ports.stack.e2eArgv(ports.root, e2eReport(runDir)) ?? [],
-    before: candidate, versions: ports.stack.fingerprint(ports.root), missing: new Set<string>(),
+    before: candidate, versions: ports.stack.fingerprint(ports.root), executionEnvelope: run.executionEnvelope, missing: new Set<string>(),
   }).map((r, i) => ({ ...r, id: `RC-${runId}-${firstIndex + i + 1}` }));
 }
 
-export function receiptsOf(run: Run, cw: WorkContract, o: Executed): Receipt[] {
-  const { ports, facts, runId, runDir, stage, scope } = run;
-  const norm: Normalized | null = o.raw === null ? null : ports.stack.normalize(o.raw, ports.root);
-  const argv = ports.stack.argv(run.toExecute, join(runDir, "vitest.json"));
-  const tests = run.toRun.filter((ob) => !isStatic(ob));
-  const receipts = receiptsFrom(o, norm, tests, {
-    stage,
-    scope,
-    id: run.id,
-    candidate: facts.candidate,
-    runId,
-    runDir,
-    argv,
-    before: facts.candidate,
-    versions: ports.stack.fingerprint(ports.root),
-    missing: new Set(run.missing.map((m) => m.id)),
+/** The test obligations' receipts for one run of the test runner; a rerun is read the same way, over fewer obligations. */
+function testReceipts(run: Run, facts: RunFacts, tests: Obligation[], toExecute: "all" | string[], report: string): Receipt[] {
+  const { ports, facts: world, runId, runDir, stage, scope } = run;
+  const norm: Normalized | null = facts.raw === null ? null : ports.stack.normalize(facts.raw, ports.root);
+  return receiptsFrom(facts, norm, tests, {
+    stage, scope, id: run.id, candidate: world.candidate, runId, runDir, argv: ports.stack.argv(toExecute, report), before: world.candidate,
+    versions: ports.stack.fingerprint(ports.root), executionEnvelope: run.executionEnvelope, missing: new Set(run.missing.map((m) => m.id)),
   });
+}
+
+/** Which of `tests` failed in one run of the test runner: what a rerun would cover. */
+export function failedAmong(run: Run, facts: RunFacts, tests: Obligation[], toExecute: "all" | string[], report: string): Obligation[] {
+  const failed = new Set(testReceipts(run, facts, tests, toExecute, report).filter((r) => r.status === "fail").map((r) => r.obligation));
+  return tests.filter((ob) => failed.has(ob.id));
+}
+
+export function receiptsOf(run: Run, cw: WorkContract, o: Executed): Receipt[] {
+  const { ports, facts, runDir } = run;
+  const tests = run.toRun.filter((ob) => !isStatic(ob));
+  const reruns = (o.reruns ?? []).map((r) =>
+    testReceipts(run, r.facts, tests.filter((ob) => r.obligations.includes(ob.id)), r.toExecute, r.report));
+  const receipts = settleReruns(testReceipts(run, o, tests, run.toExecute, join(runDir, "vitest.json")), reruns);
   receipts.push(...staticReceipts(run, o, tests.length));
   receipts.push(...e2eReceipts(run, o, tests.length + run.toRun.filter((ob) => isStatic(ob) && !isE2e(ob)).length));
+  if (o.moved?.length)
+    for (const r of receipts.filter((x) => x.reasons.includes("concurrent-edit")))
+      r.limitations.push(movedNote(o.moved));
   if (!run.baseline) return receipts;
   // The baseline may differ from the start only by tests and new files (the minimal scaffolding a new interface needs);
   // a pre-existing source file that changed means the red was not taken on the starting behavior. A path named with
@@ -141,17 +158,20 @@ export function account(
   configFailed: boolean
 ): { budget: BudgetState; stop: StopReason | undefined } {
   const ranTests = o.ran ? run.toRun.filter((ob) => !isStatic(ob) && !run.missing.some((m) => m.id === ob.id)).length : 0;
-  const launched = ranTests + run.toRun.filter((ob) => isStatic(ob) && o.statics[ob.id]?.ran).length;
+  const reran = (o.reruns ?? []).reduce((n, r) => n + r.obligations.length, 0); // each rerun obligation is a launched check (PRD §4.4.1)
+  const launched = ranTests + reran + run.toRun.filter((ob) => isStatic(ob) && o.statics[ob.id]?.ran).length;
   let budget = recordLaunchedChecks(cw.budget, launched);
   if (run.stage === "candidate" && run.scope === "full" && !configFailed) {
     budget = recordAttempt(budget);
-    const first = receipts.find((r) => r.status === "fail");
+    // an attempt that failed before a flaky pass still counts as a failure for the repeated-failure signature
+    const first = receipts.find((r) => r.status === "fail") ?? receipts.find((r) => r.qualifiers.includes("flaky"));
+    const names = first?.status === "fail" ? (first.failures ?? []).map((f) => f.test) : (first?.history?.[0]?.failed ?? []);
     budget = first
       ? withSignature(
           budget,
           failureSignature(
             first.obligation,
-            (first.failures ?? []).map((f) => f.test),
+            names,
             first.failures?.[0]?.message ?? ""
           )
         )
@@ -173,7 +193,8 @@ export function applyLocks(run: Run, cw: WorkContract, locks: State["locks"], ob
     const same = baselineDefinitionMatches(ob, blobOf);
     if (ob.baselineMatched && !same) mark(ob.id, "revised");
     const blob = ob.testFile ? blobOf(ob.testFile) : undefined;
-    const passed = receipts.find((x) => x.obligation === ob.id)?.status === "pass";
+    const got = receipts.find((x) => x.obligation === ob.id);
+    const passed = got?.status === "pass" && !got.qualifiers.includes("flaky"); // a pass that needed a rerun proves no green to lock
     if (passed && ob.testFile && same && !held.some((l) => l.path === ob.testFile) && blob) {
       held = [
         ...held,
@@ -213,9 +234,10 @@ export async function attentionOf(run: Run, cw: WorkContract): Promise<{ changes
   const outside = (cw.scopedTo ? facts.reviewPaths : []).filter((p) => !allowed.has(p) && !stillVetted(p));
   const stray = outside.map((path) => item(hashOf(["outside", path]), path, 1, "outside the named findings"));
   const declared = (cw.scaffolding ?? []).map((path) => item(hashOf(["scaffold", path]), path, 1, "declared scaffolding"));
+  const outputs = declaredOutputs(cw.obligations).map((g) => item(hashOf(["output", g]), g, 1, "declared output"));
   const weakened = netAttention(
     changes.filter((c) => !cw.reverting?.includes(c.path)),
     ports.stack.patterns
   );
-  return { changes, attention: carryDispositions(cw.attention, [...declared, ...stray, ...weakened, ...cfg]) };
+  return { changes, attention: carryDispositions(cw.attention, [...declared, ...outputs, ...stray, ...weakened, ...cfg]) };
 }

@@ -59,6 +59,7 @@ async function revertContract(ports: Ports, tx: Tx, rest: State, work: WorkContr
     generation: gen,
     now,
     version: ports.version,
+    adapter: ports.stack.adapterVersion(),
     assessment: {},
     scopePaths: plan.paths,
     protectedPaths: work.scope.protected,

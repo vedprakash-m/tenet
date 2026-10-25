@@ -1,6 +1,8 @@
 // `inspect`: read-only views. `help` and `doctor` are stateless: they never create or read `.tenet/`.
 import { LIMITS, summarize } from "../core/budget.ts";
 import { isSettingKey, layersOf, resolveSetting } from "../core/config.ts";
+import { ADOPTED_FILES, residueView } from "../core/residue.ts";
+import { impact } from "../core/impact.ts";
 import { KernelError } from "../core/errors.ts";
 import { nextItem } from "../core/plan.ts";
 import { controlsFor } from "../core/controls.ts";
@@ -27,7 +29,7 @@ const VERBS = {
   undo: "undo --h <handle>   preview the inverse of the work's commits; apply with decide undo-confirm",
   stop: "stop --h <handle> --mode <pause|cancel|abandon>   always allowed",
   review: "review [--scope working-tree]   review-only manifest, nothing written to the project",
-  inspect: "inspect [--view status|why|doctor|help|settings [--topic <setting>]]   read-only views",
+  inspect: "inspect [--view status|why|doctor|help|settings [--topic <setting>]|lessons|impact --topic <ids>|residue]   read-only views",
 };
 
 function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>) {
@@ -102,6 +104,16 @@ export const inspect: Verb<InspectInput> = {
         if (!isSettingKey(input.topic)) throw new KernelError("restriction-key-unknown", `"${input.topic}" is not a setting`, { exit: 2 });
         return { resp: { data: { setting: resolveSetting(input.topic, layersOf(state, w, sharedPolicy(ports, state))), revision } } };
       }
+      case "impact": {
+        const ids = (input.topic ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+        if (!ids.length) throw new KernelError("capability-missing", "name the changed IDs: --topic REQ-001-abc,EX-001-abc.1", { exit: 1 });
+        return { resp: { data: { impact: impact(state!, ids) } } };
+      }
+      case "residue": {
+        const present = Object.fromEntries(ADOPTED_FILES.map((f) => [f, ports.project.hashes([f])[f] !== null]));
+        return { resp: { data: { residue: residueView(ports.store.residue(), present) } } };
+      }
+      case "lessons": return { resp: { data: { lessons: state?.lessons ?? [] } } };
       default:
         throw new KernelError("capability-missing", `the "${input.view}" view arrives after M0`, { exit: 1 });
     }

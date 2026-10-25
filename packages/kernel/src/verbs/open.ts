@@ -1,14 +1,14 @@
 // `open`: create or resume a contract (TS §6.5). Readiness, assistance level, lane floor, the starting snapshot,
 // source ownership and a new generation. Writes nothing to Git.
 import { KernelError, ownedByOther } from "../core/errors.ts";
-import { reason } from "../core/reasons.ts";
 import { isEditingProfile } from "../core/risk.ts";
 import { OpenInput } from "../core/schemas.ts";
 import type { Question, State, WorkContract } from "../core/schemas.ts";
 import { emptyState, isLive } from "../core/state.ts";
 import type { Plan, Verb } from "../pipeline.ts";
 import type { Ports, Tx } from "../ports/types.ts";
-import { nx, question, withWork } from "./common.ts";
+import { resumeAsk } from "../pipeline-version.ts";
+import { nx, question, reclaim, withWork } from "./common.ts";
 import { describe, surface } from "./open-context.ts";
 import type { Ctx } from "./open-context.ts";
 import { admitFolder, created } from "./open-new.ts";
@@ -51,13 +51,13 @@ async function begin(ports: Ports, before: State | null, input: OpenInput, tx: T
       { exit: 3 }
     );
   }
-  // Housekeeping at a boundary: day-old run directories and manifests go, except those a live run or reservation uses.
-  const keepDirs = Object.values(state.work).flatMap((w) =>
-    [w.session.inCall?.runDir, w.focusedReview?.manifest, ...w.budget.reservations.map((r) => r.manifest)].filter(
-      (x): x is string => !!x
-    )
-  );
-  ports.store.sweepTemp(24 * 3600_000, keepDirs);
+  const kept = reclaim(ports, tx, state);
+  if (kept.overCeiling) {
+    const big = kept.largest.map((c) => `${c.name} ${Math.round(c.bytes / 1024)} KB`).join(", ");
+    const why = `.tenet/ holds protected data past its ceiling (${big}); stop or finish work, or clean up, before adding more`;
+    throw new KernelError("storage-protected-full", why, { exit: 2 });
+  }
+  if (kept.message) rec.completed.push(kept.message);
   const shared = reconcileShared(ports, state);
   const effects =
     rec.completed.length || rec.uncertain.length ? { completed: rec.completed, uncertain: rec.uncertain } : undefined;
@@ -137,7 +137,9 @@ function resumed(c: Ctx): Plan | undefined {
   const takeover = !["parked", "finished"].includes(prev.state) && !awaitingAnswer;
   const owner = isEditingProfile(prev.profile) ? { sourceOwner: { work: prev.id, generation: gen } } : {};
   const q = takeover ? takeoverQuestion(w) : undefined;
-  const why = q ? "Ask in chat whether the earlier chat stopped; end your turn." : "Continue where the contract left off.";
+  const ask = resumeAsk(c.ports, w, q);
+  const asking = ask.question;
+  const why = ask.why ?? "Continue where the contract left off.";
   return {
     state: { ...withWork(state, w), generationSeq: gen, ...owner, ...(q ? { pending: [...state.pending, q] } : {}) },
     resp: {
@@ -146,14 +148,14 @@ function resumed(c: Ctx): Plan | undefined {
       kernel: true,
       ...(c.effects ? { effects: c.effects } : {}),
       ...surface(c.shared),
-      ...(q
+      ...(asking
         ? {
             exit: 3,
-            questions: [q],
-            reasons: [reason("takeover-check", "The earlier native chat must stop before this generation continues.")],
+            questions: [asking],
+            reasons: ask.reasons,
           }
         : {}),
-      next: [nx(q ? "ask" : w.state === "proposed" ? "basis" : "check", why, true)],
+      next: [nx(asking ? "ask" : w.state === "proposed" ? "basis" : "check", why, true)],
     },
   };
 }

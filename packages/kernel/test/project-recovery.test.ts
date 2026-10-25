@@ -4,6 +4,7 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { createPorts } from "../src/wire.ts";
+import { recover } from "../src/verbs/recover.ts";
 import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
 import { BASIS, callWith, fakeRecipes, project } from "./support/fixture.ts";
 
@@ -29,6 +30,39 @@ async function partialScaffold(adoptPolicy = false) {
   return { root, call, h, ports: createPorts(root) };
 }
 describe("unreadable project effect recovery [CON-03, SEC-06, SEC-14]", () => {
+  for (const effect of ["toString", "constructor", "__proto__", "hasOwnProperty", "__defineGetter__", "future-effect"]) {
+    it(`keeps unknown ${effect} effect name unresolved [CON-03]`, async () => {
+      const p = project(); roots.push(p.root);
+      await p.call("open", { profile: "feature", request: "unknown pending effect", lane: "quick" });
+      const ports = p.ports();
+      await ports.store.transaction("test", async tx => {
+        const state = tx.state!, work = Object.values(state.work)[0]!;
+        tx.intent(effect, "unknown-pending", { work: work.id });
+        const recovered = await recover(ports, tx, state);
+        assert.deepEqual(recovered.uncertain, [`${effect} unknown-pending`]);
+        assert.deepEqual(recovered.completed, []);
+        assert.deepEqual(recovered.state, state);
+        assert.deepEqual(tx.unresolved(), [{ effect, id: "unknown-pending", op: { work: work.id } }]);
+      });
+    });
+    it(`replays completed unknown ${effect} effect name without dispatching an inherited method [CON-03]`, async () => {
+      const p = project(); roots.push(p.root);
+      await p.call("open", { profile: "feature", request: "unknown completed effect", lane: "quick" });
+      const ports = p.ports();
+      await ports.store.transaction("test", async tx => {
+        const state = tx.state!, work = Object.values(state.work)[0]!;
+        tx.intent(effect, "unknown-completed", { work: work.id });
+        tx.result(effect, "unknown-completed", { completed: true });
+        for (let retry = 0; retry < 2; retry++) {
+          const recovered = await recover(ports, tx, state);
+          assert.deepEqual(recovered.uncertain, []);
+          assert.deepEqual(recovered.completed, []);
+          assert.deepEqual(recovered.state, state);
+          assert.deepEqual(tx.unresolved(), []);
+        }
+      });
+    });
+  }
   it("keeps orphaned atomic temporary files out of source identities and content access", async () => {
     const p = project(); roots.push(p.root);
     const ports = p.ports(), before = await ports.git.inventory([]);

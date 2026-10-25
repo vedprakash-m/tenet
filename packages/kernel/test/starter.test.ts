@@ -8,7 +8,7 @@ import { cleanup, git, initRepo, tmp } from "./helpers.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
-import { reviewResult } from "./support/fixture.ts";
+import { callWithEnvelopeConsent, reviewResult } from "./support/fixture.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -21,12 +21,16 @@ describe("the ts-web-api recipe", () => {
     assert.equal(createHash("sha256").update(readFileSync(join(PLUGIN, "template/package-lock.json"))).digest("hex"), recipe.lockfileSha256, "re-lock the recipe: update recipe.json with the new hash");
     assert.deepEqual(recipe.protectedPaths, ["server/src/platform/auth/*", "server/src/platform/session/*", "server/migrations/*"]);
     assert.deepEqual(recipe.install[0], ["npm", "ci", "--ignore-scripts", "--no-audit"]);
+    const template = JSON.parse(readFileSync(join(PLUGIN, "template/package.json"), "utf8"));
+    assert.equal(template.dependencies["better-sqlite3"], "12.11.1");
+    assert.equal(template.engines.node, ">=22.12.0");
   });
 
   it("scaffolds, and receipts the starter's tests, types and lint and a real end-to-end run against its own dedicated database [EVD-13], all run by the kernel", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
     const root = tmp("tenet-starter-"); roots.push(root);
     initRepo(root);
-    const call = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    const rawCall = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    const call = (v: string, i: Record<string, unknown>) => callWithEnvelopeConsent(rawCall, v, i);
     const o = await call("open", { profile: "feature", request: "a loan desk", scopePaths: [], lane: "quick", initGit: true });
     const h = o.handle!;
     await call("decide", { h, kind: "basis", propose: {

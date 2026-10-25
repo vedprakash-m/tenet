@@ -1,7 +1,7 @@
 // A receipt proves only what the observed run and its report together show (TS §9.6, EVD-02).
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { receiptsFrom } from "../src/core/receipts.ts";
+import { receiptsFrom, settleReruns } from "../src/core/receipts.ts";
 import type { ReceiptContext, RunFacts } from "../src/core/receipts.ts";
 import type { Obligation } from "../src/core/schemas.ts";
 import { normalize } from "../src/adapters/node-ts.ts";
@@ -174,5 +174,39 @@ describe("receipts", () => {
     const receipt = one({ ...ob, example: "EX-1" }, run({ exit: 1 }), norm(JSON.stringify(data)));
     assert.equal(receipt.counts?.executed, 1);
     assert.equal(receipt.counts?.failed, 1);
+  });
+});
+
+describe("settling reruns of a failed required check [EVD-08]", () => {
+  const failed = (id = "OB-1") => ({ ...one(ob, run({ exit: 1 }), norm(report([{ status: "failed", failure: "AssertionError: expected 1 to be 2" }]))), id: `RC-${id}` });
+  const passed = () => one(ob, run({ exit: 0 }), norm(report([{ status: "passed" }])));
+  const inconclusive = () => one(ob, run({ after: "d1" }), norm(report([{ status: "passed" }])));
+
+  it("a pass after a failure is flaky: it keeps the failing names, the first receipt's identity and the history", () => {
+    const [r] = settleReruns([failed()], [[passed()]]);
+    assert.deepEqual([r!.status, r!.qualifiers, r!.id], ["pass", ["flaky"], "RC-OB-1"]);
+    assert.deepEqual(r!.history!.map((h) => h.status), ["fail", "pass"]);
+    assert.ok(r!.history![0]!.failed.length >= 1);
+  });
+  it("a failure on every attempt stays a failure, with its history and no flaky qualifier", () => {
+    const [r] = settleReruns([failed()], [[failed()], [failed()]]);
+    assert.deepEqual([r!.status, r!.qualifiers, r!.history!.length], ["fail", [], 3]);
+  });
+  it("a rerun that is inconclusive (an input moved) never turns a failure into a pass", () => {
+    const [r] = settleReruns([failed()], [[inconclusive()], [passed()]]);
+    assert.equal(r!.status, "fail");
+    assert.deepEqual(r!.qualifiers, []);
+    assert.equal(r!.history![1]!.status, "inconclusive");
+  });
+  it("leaves a passing or inconclusive first receipt and unrelated obligations alone", () => {
+    const p = passed();
+    assert.deepEqual(settleReruns([p], [[passed()]]), [p]);
+    const other = { ...failed(), obligation: "OB-2" };
+    assert.deepEqual(settleReruns([other], [[passed()]]), [other], "a rerun of another obligation says nothing about this one");
+  });
+  it("keeps at most three history entries and five failing names", () => {
+    const many = one(ob, run({ exit: 1 }), norm(report(Array.from({ length: 9 }, () => ({ status: "failed", failure: "AssertionError: x" })))));
+    const [r] = settleReruns([many], [[many], [many], [many]]);
+    assert.ok(r!.history!.length <= 3 && r!.history!.every((h) => h.failed.length <= 5));
   });
 });

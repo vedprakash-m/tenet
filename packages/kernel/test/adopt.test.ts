@@ -7,6 +7,8 @@ import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
+import { adoptionReplayNeeded, emptyState } from "../src/core/state.ts";
+import { hashOf } from "../src/core/ids.ts";
 
 const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
@@ -22,6 +24,40 @@ async function withBasis(p: Project) {
 }
 
 describe("adopting the intent as INTENT.md [CON-01, INT-02]", () => {
+  it("binds replay to predecessor trust rather than clock order, preserving conservative legacy behavior [CON-03]", () => {
+    const initial = emptyState("ws_aaaaaaaaaa", "aaaa");
+    const previous = { file: "INTENT.md" as const, hash: "previous", adoptedAt: "2030-01-01T00:00:00Z", restrictions: { blocks: {} } };
+    const before = { ...initial, trust: [previous] };
+    const op = { file: "INTENT.md", after: "written", previousTrust: hashOf(previous) };
+    assert.equal(adoptionReplayNeeded(before, op), true);
+    for (const adoptedAt of [previous.adoptedAt, "2020-01-01T00:00:00Z"]) {
+      const current = { ...previous, hash: "newer-accepted", adoptedAt };
+      assert.equal(adoptionReplayNeeded({ ...initial, trust: [current] }, op), false);
+    }
+    assert.equal(adoptionReplayNeeded({ ...initial, trust: [{ ...previous, hash: op.after }] }, op), false);
+    assert.equal(adoptionReplayNeeded(initial, { ...op, previousTrust: null }), true);
+    assert.equal(adoptionReplayNeeded(initial, { file: op.file, after: op.after }), true);
+    assert.equal(adoptionReplayNeeded(before, { file: op.file, after: op.after }), false);
+    assert.equal(before.trust[0], previous);
+    assert.equal(previous.hash, "previous");
+  });
+  it("does not replay an old adoption over a newer explicitly accepted file [CON-03, INT-02]", async () => {
+    const p = fresh(), h = await withBasis(p);
+    await p.call("decide", { h, kind: "adopt", target: "intent" });
+    await p.call("decide", { h, kind: "adopt", target: "intent", answers: ask });
+    const first = state(p).trust.find(entry => entry.file === "INTENT.md")!;
+    p.write("INTENT.md", `${read(p, "INTENT.md")}\nHuman-owned notes accepted explicitly.\n`);
+    const accepted = await p.call("decide", { h, kind: "adopt", target: "intent" });
+    assert.equal(accepted.exit, 0, JSON.stringify(accepted));
+    const newer = state(p).trust.find(entry => entry.file === "INTENT.md")!;
+    assert.notEqual(newer.hash, first.hash);
+    const bytes = read(p, "INTENT.md");
+    const opened = await p.call("open", { profile: "investigate", request: "preserve accepted adoption" });
+    assert.equal(opened.exit, 0, JSON.stringify(opened));
+    assert.deepEqual(state(p).trust.find(entry => entry.file === "INTENT.md"), newer);
+    assert.equal(read(p, "INTENT.md"), bytes);
+    assert.equal(opened.effects?.completed.some(effect => /not yet adopted/.test(effect)) ?? false, false);
+  });
   it("previews first, writes nothing until the user answers, and then writes the blocks and remembers the answer", async () => {
     const p = fresh();
     const h = await withBasis(p);

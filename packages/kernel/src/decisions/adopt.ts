@@ -2,7 +2,7 @@
 // content (TS §7.8, CON-01). `intent` writes the managed blocks into INTENT.md; `policy` records a tenet.policy.json the
 // project already has, or the changes pulled into it. An explicit request is previewed once, never confirmed twice.
 import { KernelError } from "../core/errors.ts";
-import { sha256 } from "../core/ids.ts";
+import { hashOf, sha256 } from "../core/ids.ts";
 import { projectIntent } from "../core/intent-md.ts";
 import { comparePolicy, parsePolicy } from "../core/policy.ts";
 import type { Policy } from "../core/policy.ts";
@@ -23,6 +23,7 @@ export interface AdoptOp {
   after: string;
   blocks: Record<string, string>;
   at: string;
+  previousTrust?: string | null;
 }
 
 /** The trust entry and contract bookkeeping a finished INTENT.md write leaves behind. */
@@ -137,7 +138,8 @@ export const adopt: Decision = {
     if (!pr.ok) throw new KernelError("intent-markers-invalid", `line ${pr.line}${pr.id ? ` around ${pr.id}` : ""} (${pr.problem}):\n${pr.region}`, { exit: 2 });
     const after = sha256(pr.text);
     const at = ports.clock.now();
-    const op: AdoptOp = { work: work.id, file: INTENT_FILE, before: text === null ? null : sha256(text), after, blocks: pr.written, at };
+    const op: AdoptOp = { work: work.id, file: INTENT_FILE, before: text === null ? null : sha256(text), after,
+      blocks: pr.written, at, previousTrust: prev ? hashOf(prev) : null };
     if (pr.text === (text ?? null)) {
       return { state: adopted(state, op), resp: { work: work.id, next: [], data: { file: INTENT_FILE, message: `${INTENT_FILE} is up to date`, external: pr.external } } };
     }

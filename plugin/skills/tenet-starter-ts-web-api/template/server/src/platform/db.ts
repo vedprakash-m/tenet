@@ -4,11 +4,15 @@ import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { AppError } from "./errors.ts";
+import { pendingRestore } from "./restore.ts";
 
 export type Db = Database.Database;
 
 export function openDb(path: string): Db {
-  if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
+  if (path !== ":memory:") {
+    mkdirSync(dirname(path), { recursive: true });
+    if (pendingRestore(path)) throw new Error("A restore is unfinished: run `npm run restore -- --finish` or `--rollback` before starting.");
+  }
   const db = new Database(path);
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");

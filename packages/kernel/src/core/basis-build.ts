@@ -31,6 +31,7 @@ function shaped(e: Proposed, id: string, parent: string | undefined): BasisEleme
     el.test = e.test ?? "distinguishing";
     if (e.testFile) el.testFile = e.testFile;
     if (e.support?.length) el.support = e.support;
+    if (e.outputs?.length) el.outputs = e.outputs;
     if (e.expect) el.expect = e.expect;
   }
   return el;

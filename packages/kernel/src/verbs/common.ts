@@ -5,7 +5,7 @@ import { isEditingProfile } from "../core/risk.ts";
 import type { Readiness } from "../core/risk.ts";
 import type { Action, Question, State, WorkContract } from "../core/schemas.ts";
 import { handleOf, workByHandle } from "../pipeline.ts";
-import type { Ports, RepoProbe } from "../ports/types.ts";
+import type { EvictReport, Ports, RepoProbe, Tx } from "../ports/types.ts";
 
 export const nx = (action: Action, why: string, required = false) => ({ action, why, ...(required ? { required } : {}) });
 
@@ -40,3 +40,13 @@ export const factsHash = (v: unknown): string => hashOf(v).slice(0, 12);
 export const question = (q: Omit<Question, "channel"> & { channel?: Question["channel"] }): Question => ({ channel: "native", ...q });
 
 export { handleOf };
+
+/** Housekeeping at a boundary (CON-08): day-old run files go, old journal records become counts, run files stay under their cap.
+ *  Run folders a live run or reservation uses are never removed. Returns the one sentence to report, if anything changed. */
+export function reclaim(ports: Ports, tx: Tx, state: State): EvictReport {
+  const keep = Object.values(state.work).flatMap((w) =>
+    [w.session.inCall?.runDir, w.focusedReview?.manifest, ...w.budget.reservations.map((r) => r.manifest)].filter((x): x is string => !!x)
+  );
+  ports.store.sweepTemp(24 * 3600_000, keep);
+  return tx.evict(keep);
+}

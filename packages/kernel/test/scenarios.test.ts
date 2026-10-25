@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, SLOW_TEST, cli, isAlive, listFiles, project, reviewResult, runCli, runningCheck, waitFor, finishFixture } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, SLOW_TEST, cli, isAlive, listFiles, preconsentEnvelope, project, reviewResult, runCli, runningCheck, waitFor, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -518,6 +518,7 @@ describe("injected failure 2: SIGKILL during a check", () => {
     const p = fresh();
     const { h } = await toRed(p, { lane: "quick" });
     p.write("src/greet.test.ts", SLOW_TEST);
+    await preconsentEnvelope(p, h, { stage: "candidate" });
     const running = cli(p.root, ["check", "--h", h, "--stage", "candidate"]);
     const run = await waitFor(() => runningCheck(p), 30000, "the test runner to start");
     assert.ok(isAlive(run.pid), "the runner is up");
@@ -527,11 +528,15 @@ describe("injected failure 2: SIGKILL during a check", () => {
 
     p.write("src/greet.test.ts", GREET_TEST);
     p.write("src/greet.ts", GREET_IMPL);
-    const r = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
-    assert.equal(r.exit, 0, JSON.stringify(r));
-    assert.ok(r.effects?.completed.some((e) => /discarded the interrupted check/.test(e)), JSON.stringify(r.effects));
+    const r = await p.rawCall("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    assert.ok(r.effects?.completed.some((e) => /discarded the interrupted check/.test(e)), JSON.stringify(r));
+    assert.ok(r.questions?.some((question) => question.id === "envelope-consent"), JSON.stringify(r));
+    const consent = await p.call("decide", { h, kind: "envelope-consent", answers: { "envelope-consent": "allow-envelope" } });
+    assert.equal(consent.exit, 0, JSON.stringify(consent));
+    const rerun = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    assert.equal(rerun.exit, 0, JSON.stringify(rerun));
     await waitFor(() => !isAlive(run.pid), 5000, "the orphan to be stopped");
-    assert.equal(r.next[0]!.action, "focused-review");
+    assert.equal(rerun.next[0]!.action, "focused-review");
     const st = p.ports().store.read()!.state;
     assert.equal(Object.values(st.work)[0]!.session.inCall, undefined);
     assert.ok(Object.values(st.work)[0]!.receipts.every((x) => x.status !== "fail" || x.stage === "baseline"));
@@ -541,6 +546,7 @@ describe("injected failure 2: SIGKILL during a check", () => {
     const p = fresh();
     const { h } = await toRed(p, { lane: "quick" });
     p.write("src/greet.test.ts", SLOW_TEST);
+    await preconsentEnvelope(p, h, { stage: "candidate" });
     const running = cli(p.root, ["check", "--h", h, "--stage", "candidate"]);
     const run = await waitFor(() => runningCheck(p), 30000, "the test runner to start");
     running.child.kill("SIGTERM");
@@ -553,6 +559,7 @@ describe("injected failure 2: SIGKILL during a check", () => {
     const p = fresh();
     const { h } = await toRed(p, { lane: "quick" });
     p.write("src/greet.test.ts", SLOW_TEST);
+    await preconsentEnvelope(p, h, { stage: "candidate" });
     const running = cli(p.root, ["check", "--h", h, "--stage", "candidate"]);
     const run = await waitFor(() => runningCheck(p), 30000, "the test runner to start");
     const busy = await p.call("check", { h, stage: "candidate", again: true });

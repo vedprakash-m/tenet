@@ -36,7 +36,8 @@ export function netAttention(changes: readonly FileChange[], patterns: readonly 
 /** Dispositions follow an item while the same hunk stays; items that vanished are dropped. */
 export function carryDispositions(prev: readonly AttentionItem[], next: readonly AttentionItem[]): AttentionItem[] {
   const old = new Map(prev.map((a) => [a.id, a]));
-  return next.map((a) => (old.get(a.id)?.disposition ? { ...a, disposition: old.get(a.id)!.disposition! } : a));
+  const retained = prev.filter(item => item.pattern === "hook-staged-foreign-path" && !next.some(current => current.id === item.id));
+  return [...retained, ...next.map((a) => (old.get(a.id)?.disposition ? { ...a, disposition: old.get(a.id)!.disposition! } : a))];
 }
 
 // ---------------------------------------------------------------- manifest

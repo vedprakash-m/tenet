@@ -10,7 +10,7 @@ import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
-import { reviewResult } from "./support/fixture.ts";
+import { callWithEnvelopeConsent, reviewResult } from "./support/fixture.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -40,7 +40,8 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
   it("scaffolds the starter, then the real open/basis/check/review/finish loop builds the reservation feature with a real baseline red and a real green", { timeout: 300_000 }, async () => {
     const root = tmp("tenet-golden-loan-desk-"); roots.push(root);
     initRepo(root);
-    const call = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    const rawCall = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    const call = (v: string, i: Record<string, unknown>) => callWithEnvelopeConsent(rawCall, v, i);
 
     // 1. Scaffold the platform layer (same recipe path `starter.test.ts` exercises).
     const o = await call("open", { profile: "feature", request: "a loan desk", scopePaths: [], lane: "quick", initGit: true });

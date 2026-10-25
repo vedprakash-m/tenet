@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup, git, tmp, write } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, reviewResult } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, callWithEnvelopeConsent, reviewResult } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
@@ -20,7 +20,8 @@ function bare() {
   write(root, "src/greet.ts", "export const greet = (_n: string): string => '';\n");
   write(root, ".env", "TOKEN=hunter2hunter2\n"); // privacy-ok
   symlinkSync(join(import.meta.dirname, "../../../node_modules"), join(root, "node_modules"));
-  const call = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+  const rawCall = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+  const call = (v: string, i: Record<string, unknown>) => callWithEnvelopeConsent(rawCall, v, i);
   const shadow = (...a: string[]) => git(root, "--git-dir", join(root, ".tenet/git"), "--work-tree", root, ...a);
   return { root, call, shadow };
 }

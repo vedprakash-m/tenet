@@ -1,8 +1,9 @@
 // The six ports (TS §6.1): Store, Git, Runner, Host, Clock, Random. Everything with a side effect sits behind one.
 // A port exists only where there is a second implementation or a real test boundary; pure logic has no interface.
 import type { AttentionPattern, FileChange } from "../core/review.ts";
+import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
 import type { Random } from "../core/ids.ts";
-import type { IndexSyncRecord, State } from "../core/schemas.ts";
+import type { IndexSyncRecord, Obligation, State } from "../core/schemas.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import type { Descriptor } from "../core/capabilities.ts";
 
@@ -12,6 +13,8 @@ export interface Clock { now(): string; ms(): number }
 // ---------------------------------------------------------------- store
 export interface LogEntry { t: string; kind: "intent" | "result" | "call" | "accounting"; effect?: string; id?: string; [k: string]: unknown }
 export interface Quarantined { path: string; nonce: string; entries: number }
+
+export interface EvictReport { message?: string; overCeiling: boolean; largest: Array<{ name: string; bytes: number }> }
 
 export interface Tx {
   /** The current state, or null before the first mutating call created `.tenet/`. */
@@ -28,9 +31,13 @@ export interface Tx {
   result(effect: string, id: string, outcome: unknown): void;
   /** Unresolved effect intents, for reconciliation before anything else touches the resource. */
   unresolved(): Array<{ effect: string; id: string; op: unknown }>;
-  /** The most recent log entries, for applying a result that was logged but never published. */
-  recent(n: number): LogEntry[];
+  /** Reduces old journal records into monthly counts and caps run files, inside the lock (CON-08); `keep` paths are never removed. */
+  evict(keep: readonly string[]): EvictReport;
+  /** The validated bounded journal, optionally limited to its most recent entries for diagnostic views. */
+  recent(n?: number): LogEntry[];
 }
+
+export interface Footprint { path: string; files: number; bytes: number }
 
 export interface Store {
   exists(): boolean;
@@ -51,6 +58,12 @@ export interface Store {
   writeArtifact(dir: string, name: string, content: string): string;
   /** Removes this workspace's run directories and manifests older than `maxAgeMs`, except those under `keep` (TS §7.6). */
   sweepTemp(maxAgeMs: number, keep: readonly string[]): number;
+  /** Deletes this workspace's run, manifest and review files that contain any of these texts (CON-10); returns how many. */
+  purge(texts: readonly string[]): number;
+  /** What Tenet keeps for this workspace: the `.tenet` folder and the run files in the OS temp folder (null when absent). */
+  residue(): { tenet: Footprint | null; temp: Footprint | null };
+  /** Run folders named like Tenet's: this workspace's (`project`) or every stale one on the machine (`machine`, older than minAgeMs). */
+  cleanTemp(scope: "project" | "machine", minAgeMs: number, remove: boolean): { removed: string[]; kept: string[] };
   /** Whether the project folder accepts writes (doctor). */
   canWrite(): boolean;
 }
@@ -64,6 +77,8 @@ export interface Inventory {
 export interface RepoProbe {
   isRepo: boolean; /** the repository is the shadow repository in .tenet/git (a non-Git prototype) */ shadow: boolean; version: string; top: string | null; head: string | null; branch: string | null;
   state: "ok" | "none" | "readonly"; why?: string; identity: boolean; remotes: string[]; hooks: string | null;
+  /** Layouts that change what Tenet can promise (GIT-13, TS §10.8). */
+  layout: { shallow: boolean; submodules: string[]; lfs: boolean; linkedWorktree: boolean };
 }
 export interface IndexJournal {
   owner: { pid: number; procStart: string };
@@ -84,7 +99,8 @@ export interface Git {
   /** The filter-configuration hashes the user consented to; a commit under any other is refused. */
   allowFilters(hashes: readonly string[]): void;
   probe(): Promise<RepoProbe>;
-  inventory(exclude: readonly string[], declaredInputs?: readonly string[]): Promise<Inventory>;
+  /** `volatile` are declared output patterns (EVD-09): untracked paths that match them are omitted, as `exclude` omits paths. */
+  inventory(exclude: readonly string[], declaredInputs?: readonly string[], volatile?: readonly string[]): Promise<Inventory>;
   /** Working-tree changes of `paths` against `base` as hunks of added and removed lines. */
   changes(base: string | null, paths: readonly string[], classify: (p: string) => FileChange["kind"]): Promise<FileChange[]>;
   /** Program-neutral tree of exactly these paths, logged before the guarded commit job for recovery. */
@@ -142,6 +158,9 @@ export interface RunResult {
 export interface Runner {
   /** Bind a prepared run directory (including its child commands) to an atomic kernel spawn check. */
   guardRun(runDir: string, admit: (spawn: () => Promise<RunResult>) => Promise<RunResult>): void;
+  /** Report only the names the runner will pass and drop; never expose variable values. */
+  environmentNames(extra?: Record<string, string>): { passed: string[]; dropped: string[] };
+  planEnvelope(input: EnvelopePlanInput): ExecutionEnvelope;
   run(spec: RunSpec): Promise<RunResult>;
   /** Stops the recorded process group if its identity still matches (TS §7.4 Check run). */
   stopRun(runDir: string): Promise<"stopped" | "gone" | "unknown">;
@@ -151,7 +170,9 @@ export interface Runner {
 
 // ---------------------------------------------------------------- stack (Node/TypeScript adapter)
 /** `static` holds the installed version of each static tool ("none" when absent), so a tool upgrade makes earlier receipts stale. */
-export interface ToolVersions { node: string; tool: string; reporter: string; adapter: string; static: Record<string, string> }
+export interface ToolVersions {
+  node: string; tool: string; reporter: string; adapter: string; static: Record<string, string>; dependencies?: string;
+}
 export type StaticTool = "tsc" | "eslint";
 /** A static tool's output reduced to what a receipt needs: a pass, a fail with bounded examples, or a report that proves nothing. */
 export interface StaticNorm {
@@ -186,9 +207,15 @@ export interface Stack {
   e2eArgv(root: string, report: string): string[] | null;
   normalizeE2e(out: { exit: number | undefined; raw: string | null }, root?: string): Normalized;
   fingerprint(root: string): ToolVersions;
+  /** The adapter's own version (LFC-03): what a contract pins, unlike the fingerprint, which also holds node and dependencies. */
+  adapterVersion(): string;
   patterns: readonly AttentionPattern[];
   classify(path: string): FileChange["kind"];
   isTestPath(path: string): boolean;
+}
+
+export interface EnvelopePlanInput {
+  projectId: string; root: string; obligations: readonly Obligation[]; toExecute: readonly string[] | "all"; stack: Stack;
 }
 
 // ---------------------------------------------------------------- recipes and the project folder (starter scaffold)

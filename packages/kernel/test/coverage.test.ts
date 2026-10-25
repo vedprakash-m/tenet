@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { symlinkSync } from "node:fs";
-import { join } from "node:path";
+import { execFileSync } from "node:child_process";
+import { readFileSync, symlinkSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
 import { report } from "../../../tools/coverage.ts";
@@ -51,6 +52,21 @@ test("a malformed PRD requirement row is a report-integrity error", () => {
 
     assert.ok(result.integrityErrors.some((error) => error.includes("TST-02")));
     assert.equal(result.evidence.length, 1);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("removing the only tag for a T1-capable Must makes it structurally unmapped", () => {
+  const root = tmp("tenet-coverage-");
+  try {
+    fixture(root);
+    write(root, "packages/kernel/test/example.test.ts", 'it("no longer maps the requirement", () => {});\n');
+
+    const result = report(root, "M0");
+
+    assert.deepEqual(result.unmapped.map((requirement) => requirement.id), ["TST-01"]);
+    assert.equal(result.evidence[0]?.mapping, "unmapped");
   } finally {
     cleanup(root);
   }
@@ -273,4 +289,19 @@ test("a qualified disposition requires a passing manifest bound to the frozen pr
   } finally {
     cleanup(root);
   }
+});
+
+test("the report-integrity CLI does not modify requirements, evidence, or Git state", () => {
+  const root = resolve(import.meta.dirname, "../../..");
+  const readme = ["specs/PRD.md", "docs/audits/evidence-ledger.json"];
+  const hashes = readme.map((path) => createHash("sha256").update(readFileSync(join(root, path))).digest("hex"));
+  const statusBefore = git(root, "status", "--porcelain=v1", "--untracked-files=all");
+
+  const output = execFileSync(process.execPath, [join(root, "tools/coverage.ts"), "--milestone", "M0"], {
+    cwd: root, encoding: "utf8",
+  });
+
+  assert.match(output, /^coverage M0:/);
+  assert.deepEqual(readme.map((path) => createHash("sha256").update(readFileSync(join(root, path))).digest("hex")), hashes);
+  assert.equal(git(root, "status", "--porcelain=v1", "--untracked-files=all"), statusBefore);
 });

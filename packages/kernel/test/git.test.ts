@@ -125,6 +125,80 @@ describe("git: changes", () => {
 });
 
 describe("git: commit through a temporary index", () => {
+  it("refuses a hook-replaced merge commit before syncing the human index [GIT-03, GIT-12, CON-04]", async () => {
+    const { g, root } = repo(), parent = git(root, "rev-parse", "HEAD");
+    const side = git(root, "commit-tree", `${parent}^{tree}`, "-p", parent, "-m", "side history");
+    write(root, "src/b.ts", "human staged\n"); git(root, "add", "src/b.ts");
+    write(root, "src/b.ts", "human staged and unstaged\n");
+    const index = readFileSync(join(root, ".git/index"));
+    write(root, "src/a.ts", "export const a = 2;\n");
+    write(root, ".git/hooks/post-commit", `#!/bin/sh\ncurrent=$(git rev-parse HEAD)\ntree=$(git rev-parse HEAD^{tree})\nreplacement=$(git commit-tree "$tree" -p ${parent} -p ${side} -m replacement)\ngit update-ref HEAD "$replacement" "$current"\n`);
+    chmodSync(join(root, ".git/hooks/post-commit"), 0o755);
+    const out = await g.commit({ paths: ["src/a.ts"], deleted: [], message: "candidate", parent, timeoutMs: 5000 });
+    assert.equal(git(root, "show", "-s", "--format=%P", "HEAD").split(" ").length, 2);
+    assert.equal(out.ok, false, JSON.stringify(out));
+    assert.equal(out.reason, "effect-uncertain");
+    assert.equal(out.commit, git(root, "rev-parse", "HEAD"));
+    assert.deepEqual(readFileSync(join(root, ".git/index")), index);
+    assert.equal(readFileSync(join(root, "src/b.ts"), "utf8"), "human staged and unstaged\n");
+  });
+  it("never reconciles an extra-parent commit as the planned single-parent effect [CON-03, GIT-03]", async () => {
+    for (const changed of [false, true]) {
+      const { g, root } = repo(), parent = git(root, "rev-parse", "HEAD");
+      const side = git(root, "commit-tree", `${parent}^{tree}`, "-p", parent, "-m", "side history");
+      write(root, "src/a.ts", "export const a = 2;\n");
+      const expectedTree = await g.expectedTree({ paths: ["src/a.ts"], deleted: [], parent });
+      if (changed) write(root, "src/a.ts", "export const a = 3;\n");
+      const tree = changed ? await g.expectedTree({ paths: ["src/a.ts"], deleted: [], parent }) : expectedTree;
+      const merge = git(root, "commit-tree", tree, "-p", parent, "-p", side, "-m", "Tenet-Work: W-0001");
+      git(root, "update-ref", "HEAD", merge, parent);
+      const index = readFileSync(join(root, ".git/index"));
+      assert.deepEqual(await g.reconcileCommit(parent, expectedTree, ["src/a.ts"], "W-0001"), { completed: false });
+      assert.equal(git(root, "rev-parse", "HEAD"), merge);
+      assert.deepEqual(readFileSync(join(root, ".git/index")), index);
+    }
+  });
+  it("does not trust replacement history that hides a hook-created extra parent [GIT-03, CON-03]", async () => {
+    const { g, root } = repo(), parent = git(root, "rev-parse", "HEAD");
+    const side = git(root, "commit-tree", `${parent}^{tree}`, "-p", parent, "-m", "side history");
+    write(root, "src/a.ts", "export const a = 2;\n");
+    write(root, ".git/hooks/post-commit", `#!/bin/sh\ncurrent=$(git rev-parse HEAD)\ntree=$(git rev-parse HEAD^{tree})\nreplacement=$(git commit-tree "$tree" -p ${parent} -p ${side} -m replacement)\ngit replace "$replacement" "$current"\ngit update-ref HEAD "$replacement" "$current"\n`);
+    chmodSync(join(root, ".git/hooks/post-commit"), 0o755);
+    const index = readFileSync(join(root, ".git/index"));
+    const out = await g.commit({ paths: ["src/a.ts"], deleted: [], message: "candidate", parent, timeoutMs: 5000 });
+    assert.equal(git(root, "--no-replace-objects", "show", "-s", "--format=%P", "HEAD").split(" ").length, 2);
+    assert.equal(out.ok, false, JSON.stringify(out));
+    assert.equal(out.reason, "effect-uncertain");
+    assert.deepEqual(await g.reconcileCommit(parent, out.expectedTree!, ["src/a.ts"]), { completed: false });
+    assert.deepEqual(readFileSync(join(root, ".git/index")), index);
+  });
+  it("reports foreign committed paths even when replacement history hides their tree [GIT-03, GIT-12]", async () => {
+    const { g, root } = repo(), parent = git(root, "rev-parse", "HEAD");
+    write(root, "human.txt", "human uncommitted bytes\n");
+    write(root, "src/a.ts", "export const a = 2;\n");
+    const index = readFileSync(join(root, ".git/index"));
+    write(root, ".git/hooks/post-commit", `#!/bin/sh\ncurrent=$(git rev-parse HEAD)\ngit add human.txt\ntree=$(git write-tree)\nreplacement=$(git commit-tree "$tree" -p ${parent} -m replacement)\ngit replace "$replacement" "$current"\ngit update-ref HEAD "$replacement" "$current"\n`);
+    chmodSync(join(root, ".git/hooks/post-commit"), 0o755);
+    const out = await g.commit({ paths: ["src/a.ts"], deleted: [], message: "candidate", parent, timeoutMs: 5000 });
+    assert.equal(git(root, "--no-replace-objects", "show", "HEAD:human.txt"), "human uncommitted bytes");
+    assert.equal(out.ok, true, JSON.stringify(out));
+    assert.deepEqual(out.foreign, ["human.txt"]);
+    assert.notEqual(out.tree, out.expectedTree);
+    assert.equal(readFileSync(join(root, "human.txt"), "utf8"), "human uncommitted bytes\n");
+    assert.equal(git(root, "show", ":src/b.ts"), "export const b = 1;");
+    assert.equal(index.includes(Buffer.from("human.txt")), false);
+    assert.equal(git(root, "ls-files", "--", "human.txt"), "");
+    assert.deepEqual(await g.reconcileCommit(parent, out.expectedTree!, ["src/a.ts"]), { completed: false });
+  });
+  it("accepts and reconciles a genuine root commit with no parents [GIT-01, CON-03]", async () => {
+    const root = tmp(); dirs.push(root); initRepo(root);
+    const g = new GitCli(root);
+    write(root, "src/a.ts", "export const a = 1;\n");
+    const out = await g.commit({ paths: ["src/a.ts"], deleted: [], message: "first commit", parent: null, timeoutMs: 5000 });
+    assert.equal(out.ok, true, JSON.stringify(out));
+    assert.equal(git(root, "show", "-s", "--format=%P", "HEAD"), "");
+    assert.deepEqual(await g.reconcileCommit(null, out.expectedTree!, ["src/a.ts"]), { completed: true, commit: out.commit });
+  });
   it("never removes a different process's index lock after publishing its own index [GIT-03, CON-04]", () => {
     const { root } = repo(), parent = git(root, "rev-parse", "HEAD");
     write(root, "src/a.ts", "export const a = 2;\n"); git(root, "add", "src/a.ts"); git(root, "commit", "-qm", "new HEAD");

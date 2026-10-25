@@ -3,9 +3,13 @@
 import { spawn } from "node:child_process";
 import { closeSync, constants, fchmodSync, fstatSync, fsyncSync, lstatSync, mkdirSync, openSync, readSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { isUtf8 } from "node:buffer";
 import { createServer } from "node:net";
-import { join, resolve, sep } from "node:path";
+import { delimiter, dirname, join, resolve, sep } from "node:path";
 import type { Clock, RunResult, RunSpec, Runner } from "../ports/types.ts";
+import type { EnvelopePlanInput } from "../ports/types.ts";
+import { makeExecutionEnvelope, type EnvelopeCommand } from "../core/execution-envelope.ts";
+import type { StaticTool } from "../ports/types.ts";
 import { procStart } from "./proc.ts";
 
 const MAX_OUTPUT = 10 * 1024 * 1024;
@@ -38,11 +42,20 @@ function reportFrom(path: string, runDir: string, started: number): string | nul
     if (!lstatSync(path).isFile()) return null;
     const root = realpathSync(runDir), file = realpathSync(path);
     if (!file.startsWith(root + sep)) return null;
-    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+    fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
     const st = fstatSync(fd);
     if (!st.isFile() || st.size > MAX_OUTPUT || st.mtimeMs < started) return null;
-    const buf = Buffer.alloc(st.size + 1), n = readSync(fd, buf, 0, buf.length, 0);
-    return n > st.size ? null : buf.subarray(0, n).toString("utf8");
+    const buf = Buffer.alloc(st.size + 1);
+    let count = 0;
+    while (count < buf.length) {
+      const size = readSync(fd, buf, count, buf.length - count, count);
+      if (!size) break;
+      count += size;
+    }
+    const after = fstatSync(fd);
+    if (count !== st.size || after.size !== st.size || after.mtimeMs !== st.mtimeMs || after.ctimeMs !== st.ctimeMs) return null;
+    const content = buf.subarray(0, count);
+    return isUtf8(content) ? content.toString("utf8") : null;
   } catch { return null; }
   finally { if (fd >= 0) closeSync(fd); }
 }
@@ -53,6 +66,48 @@ export class ProcessRunner implements Runner {
   private admissions = new Map<string, (spawn: () => Promise<RunResult>) => Promise<RunResult>>();
   constructor(clock: Clock, env: Record<string, string | undefined>) { this.clock = clock; this.env = env; }
   guardRun(runDir: string, admit: (spawn: () => Promise<RunResult>) => Promise<RunResult>): void { this.admissions.set(resolve(runDir), admit); }
+
+  environmentNames(extra: Record<string, string> = {}): { passed: string[]; dropped: string[] } {
+    const passed = new Set([
+      "CI", "NO_COLOR", "FORCE_COLOR", "TERM", "TMPDIR", "PATH", ...PASS.filter((key) => this.env[key] !== undefined), ...Object.keys(extra),
+    ]);
+    const overridden = new Set(Object.keys(extra));
+    return {
+      passed: [...passed].sort(),
+      dropped: Object.keys(this.env).filter((key) => !PASS.includes(key) && !overridden.has(key)).sort(),
+    };
+  }
+
+  planEnvelope(input: EnvelopePlanInput) {
+    const runDir = "<runDir>";
+    const commands: EnvelopeCommand[] = [];
+    const relative = (value: string) => {
+      if (value === input.root) return ".";
+      return value.startsWith(`${input.root}${sep}`) ? `.${value.slice(input.root.length)}` : value;
+    };
+    const add = (kind: EnvelopeCommand["kind"], argv: string[], extra: Record<string, string>, outputs: string[]) => {
+      commands.push({
+        kind, argv: argv.map(relative), cwd: ".", environment: this.environmentNames(extra), outputs: outputs.map(relative),
+      });
+    };
+    if (input.toExecute === "all" || input.toExecute.length) {
+      const report = join(runDir, "vitest.json");
+      add("tests", input.stack.argv(input.toExecute, report), {}, [report]);
+    }
+    for (const ob of input.obligations.filter((item) => item.kind === "static" && item.tool !== "playwright")) {
+      const tool = ob.tool as StaticTool, report = join(runDir, `${tool}.json`);
+      const argv = input.stack.staticArgv(input.root, tool, report);
+      if (argv) add("static", argv, {}, [report]);
+    }
+    if (input.obligations.some((item) => item.tool === "playwright")) {
+      const report = join(runDir, "playwright.json"), argv = input.stack.e2eArgv(input.root, report);
+      if (argv) add("e2e", argv, {
+        PORT: "<allocated-port>", DATABASE_URL: join(runDir, "e2e.db"), TENET_RUN_TOKEN: "<generated>",
+        PLAYWRIGHT_JSON_OUTPUT_NAME: report,
+      }, [report, join(runDir, "e2e.db")]);
+    }
+    return makeExecutionEnvelope(input.projectId, commands);
+  }
 
   /** Bind 0 on 127.0.0.1, read the assigned port, release it (EVD-13, TS §9.3 Servers). A real socket, not a guess. */
   allocatePort(): Promise<number> {
@@ -74,13 +129,16 @@ export class ProcessRunner implements Runner {
 
   private async execute(spec: RunSpec): Promise<RunResult> {
     mkdirSync(join(spec.runDir, "tmp"), { recursive: true, mode: 0o700 });
+    const env = { ...checkEnv(this.env, spec.runDir), ...spec.env };
+    env.PATH = [...new Set([dirname(process.execPath), join(spec.cwd, "node_modules", ".bin"),
+      ...(env.PATH ?? "").split(delimiter).filter(Boolean)])].join(delimiter);
     const started = this.clock.ms();
     const startedAt = this.clock.now();
     // Replace the prepared sentinel before spawn. A crash here is uncertain, never "not started".
     writeRecord(spec.runDir, { starting: true });
     return new Promise<RunResult>((resolve) => {
       const [cmd, ...args] = spec.argv;
-      const child = spawn(cmd!, args, { cwd: spec.cwd, env: { ...checkEnv(this.env, spec.runDir), ...spec.env }, detached: true, stdio: ["ignore", "pipe", "pipe"] });
+      const child = spawn(cmd!, args, { cwd: spec.cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"] });
       let stdout = "", stderr = "", timedOut = false, done = false;
       const sizes = { stdout: 0, stderr: 0 };
       const decoders = { stdout: new TextDecoder("utf-8", { fatal: true }), stderr: new TextDecoder("utf-8", { fatal: true }) };
@@ -130,13 +188,22 @@ export class ProcessRunner implements Runner {
     let rec: { pid: number; procStart: string | null };
     let fd = -1;
     try {
-      fd = openSync(join(runDir, "run.json"), constants.O_RDONLY | constants.O_NOFOLLOW);
+      fd = openSync(join(runDir, "run.json"), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
       const st = fstatSync(fd);
       if (!st.isFile() || st.size > 64 * 1024) return "unknown";
-      const buffer = Buffer.alloc(64 * 1024 + 1), n = readSync(fd, buffer, 0, buffer.length, 0);
-      if (n > 64 * 1024) return "unknown";
-      rec = JSON.parse(buffer.subarray(0, n).toString("utf8"));
-      if (rec && Object.keys(rec).length === 1 && (rec as unknown as { prepared?: boolean }).prepared === true) return "gone";
+      const buffer = Buffer.alloc(st.size + 1);
+      let count = 0;
+      while (count < buffer.length) {
+        const size = readSync(fd, buffer, count, buffer.length - count, count);
+        if (!size) break;
+        count += size;
+      }
+      const after = fstatSync(fd);
+      if (count !== st.size || after.size !== st.size || after.mtimeMs !== st.mtimeMs || after.ctimeMs !== st.ctimeMs) return "unknown";
+      const content = buffer.subarray(0, count);
+      if (!isUtf8(content)) return "unknown";
+      rec = JSON.parse(content.toString("utf8"));
+      if (Object.keys(rec).length === 1 && (rec as unknown as { prepared?: boolean }).prepared === true) return "gone";
       if (!rec || !Number.isSafeInteger(rec.pid) || rec.pid <= 1 || typeof rec.procStart !== "string" || !rec.procStart.trim()) return "unknown";
     } catch { return "unknown"; }
     finally { if (fd >= 0) closeSync(fd); }

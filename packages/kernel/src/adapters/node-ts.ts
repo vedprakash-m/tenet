@@ -1,24 +1,53 @@
 // Node/TypeScript adapter (TS §9.5): detection, the Vitest invocation, one pure normalization of its JSON report
 // and the attention-pattern table. Mostly data. The adapter normalizes; it never decides acceptance.
-import { existsSync, readFileSync } from "node:fs";
+import { closeSync, constants, existsSync, fstatSync, openSync, readSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import type { AttentionPattern, FileChange } from "../core/review.ts";
 import type { Detection, Normalized, StaticNorm, StaticTool, Stack, ToolVersions } from "../ports/types.ts";
 import { allowed } from "../core/exclusions.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
+import { sha256 } from "../core/ids.ts";
 import { FsProject } from "./project-fs.ts";
 import { nestsTooDeep } from "./report-bounds.ts";
 import { normalizePlaywright, playwrightArgv } from "./playwright.ts";
 
-const ADAPTER = "node-ts@3";
-const readJson = (p: string): Record<string, any> | null => {
+const ADAPTER = "node-ts@10"; // 10: reruns of a failed required check can end flaky (EVD-08)
+function installedMetadata(path: string, kind: "tool" | "dependency"): { record: Record<string, any>; digest: string } | null {
+  let descriptor = -1;
   try {
-    return JSON.parse(readFileSync(p, "utf8"));
-  } catch {
-    return null;
-  }
-};
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    const info = fstatSync(descriptor);
+    if (!info.isFile() || info.size > 20 * 1024 * 1024) throw new Error("unsafe or oversized metadata");
+    const bytes = Buffer.alloc(info.size + 1);
+    let count = 0;
+    while (count < bytes.length) {
+      const size = readSync(descriptor, bytes, count, bytes.length - count, count);
+      if (!size) break;
+      count += size;
+    }
+    const after = fstatSync(descriptor);
+    if (count !== info.size || after.size !== info.size || after.mtimeMs !== info.mtimeMs || after.ctimeMs !== info.ctimeMs)
+      throw new Error("metadata changed during read");
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, count));
+    const record: unknown = JSON.parse(text);
+    if (!record || typeof record !== "object" || Array.isArray(record) || nestsTooDeep(record)) throw new Error("invalid metadata");
+    return { record, digest: sha256(bytes.subarray(0, count)) };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw new KernelError("capability-missing", `installed ${kind} metadata cannot be verified safely`, { exit: 2 });
+  } finally { if (descriptor >= 0) closeSync(descriptor); }
+}
+
+function installedDependencies(path: string): string {
+  const metadata = installedMetadata(path, "dependency");
+  if (!metadata) return "absent";
+  const lock = metadata.record;
+  if (!Number.isSafeInteger(lock.lockfileVersion) || Number(lock.lockfileVersion) < 1 ||
+    !lock.packages || typeof lock.packages !== "object" || Array.isArray(lock.packages))
+    throw new KernelError("capability-missing", "installed dependency metadata cannot be verified safely", { exit: 2 });
+  return metadata.digest;
+}
 
 /** Vitest majors the normalization was observed against (SP-10, local observation only). */
 const SUPPORTED = [2, 3, 4, 5];
@@ -58,6 +87,11 @@ function metadata(root: string, exclusions: readonly Exclusion[]) {
       });
   };
   return {
+    installed(): string {
+      const path = "node_modules/.package-lock.json";
+      permit(path);
+      return installedDependencies(join(root, path));
+    },
     present(path: string): boolean {
       permit(path);
       return existsSync(join(root, path));
@@ -65,9 +99,10 @@ function metadata(root: string, exclusions: readonly Exclusion[]) {
     json(path: string): Record<string, any> | null {
       permit(path);
       // Installed tool metadata can live behind the package manager's node_modules link. Project inputs cannot.
-      if (path.startsWith("node_modules/")) return readJson(join(root, path));
+      if (path.startsWith("node_modules/")) return installedMetadata(join(root, path), "tool")?.record ?? null;
+      const text = project.read(path);
       try {
-        return JSON.parse(project.read(path) ?? "null");
+        return JSON.parse(text ?? "null");
       } catch {
         return null;
       }
@@ -387,11 +422,13 @@ export function createStack(): Stack {
     normalizeStatic,
     e2eArgv: (root, report) => playwrightArgv(root, report),
     normalizeE2e: (out, root) => normalizePlaywright(out.raw, root),
+    adapterVersion: () => ADAPTER,
     fingerprint: (root): ToolVersions => ({
       node: process.version,
       tool: String(metadata(root, exclusions).json("node_modules/vitest/package.json")?.version ?? "none"),
       reporter: "vitest-json",
       adapter: ADAPTER,
+      dependencies: metadata(root, exclusions).installed(),
       static: Object.fromEntries(
         (["tsc", "eslint"] as const).map((t) => {
           const pkg = metadata(root, exclusions).json(`node_modules/${t === "tsc" ? "typescript" : "eslint"}/package.json`);

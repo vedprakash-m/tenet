@@ -2,7 +2,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_TEST, project } from "./support/fixture.ts";
+import { BASIS, GREET_TEST, callWithEnvelopeConsent, project } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
@@ -19,7 +19,8 @@ const rig = () => {
   const p = project();
   roots.push(p.root);
   const c = clock();
-  const call = (verb: string, input: Record<string, unknown> = {}) => runVerb({ ...p.ports(), clock: c }, VERBS, verb, input);
+  const rawCall = (verb: string, input: Record<string, unknown> = {}) => runVerb({ ...p.ports(), clock: c }, VERBS, verb, input);
+  const call = (verb: string, input: Record<string, unknown> = {}) => callWithEnvelopeConsent(rawCall, verb, input);
   const budget = () => Object.values(p.ports().store.read()!.state.work)[0]!.budget;
   return { p, c, call, budget };
 };
@@ -38,7 +39,8 @@ describe("active work time [WRK-08]", () => {
     r.p.write("src/greet.test.ts", GREET_TEST);
     r.c.advance(3);
     await r.call("check", { h, stage: "baseline" });
-    assert.equal(r.budget().activeMinutesSinceCheckIn, 3);
+    assert.equal(r.budget().activeMinutesTotal, 13);
+    assert.equal(r.budget().activeMinutesSinceCheckIn, 0, "answering the first-run execution consent is a check-in");
   });
 
   it("does not count the wait after a question, and a question starts a new interval", async () => {
@@ -67,11 +69,11 @@ describe("active work time [WRK-08]", () => {
     wrong("first");
     r.c.advance(13); // 80% of Quick's 15 minutes is 12
     await r.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] }); // red: not a milestone, so no check-in
-    r.c.advance(1);
+    r.c.advance(13); // the first candidate envelope consent was a check-in
     wrong("second");
     const warned = await r.call("check", { h, stage: "candidate", touched: ["src/greet.ts"], again: true });
-    assert.ok(warned.reasons.some((x) => x.code === "budget-warning"), JSON.stringify(warned));
-    r.c.advance(5);
+    assert.ok(warned.reasons.some((x) => x.code === "budget-warning"), JSON.stringify({ warned, budget: r.budget() }));
+    r.c.advance(2);
     wrong("third");
     const refused = await r.call("check", { h, stage: "candidate", touched: ["src/greet.ts"], again: true });
     assert.equal(refused.exit, 2, JSON.stringify(refused));

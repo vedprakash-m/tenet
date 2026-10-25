@@ -2,7 +2,7 @@
 // normalized the report; this decides what it proves. A receipt that cannot prove anything is inconclusive, never a pass.
 import { redact } from "./redact.ts";
 import { reason } from "./reasons.ts";
-import type { Obligation, Reason, Receipt } from "./schemas.ts";
+import type { ExecutionEnvelope, Obligation, Reason, Receipt } from "./schemas.ts";
 import type { Normalized, StaticNorm, ToolVersions } from "../ports/types.ts";
 
 /** What was observed about the process, independent of what the report says. */
@@ -29,6 +29,7 @@ export interface ReceiptContext {
   argv: string[];
   before: string;
   versions: ToolVersions;
+  executionEnvelope?: ExecutionEnvelope;
   missing: ReadonlySet<string>;
   population?: ReadonlyMap<string, { mode: string; blob: string }>;
 }
@@ -77,6 +78,7 @@ function blank(o: RunFacts, ob: Obligation, i: number, c: ReceiptContext): Recei
     reasons: [],
     limitations: [],
     candidate: c.candidate,
+    ...(c.executionEnvelope ? { executionEnvelope: c.executionEnvelope } : {}),
   };
   if (o.exit !== undefined) rec.exit = o.exit;
   if (o.signal) rec.signal = o.signal;
@@ -183,3 +185,25 @@ export const receiptsFrom = (o: RunFacts, norm: Normalized | null, obs: readonly
 
 export const receiptReasons = (r: Receipt): Reason[] =>
   r.reasons.map((c) => reason(c as never, r.obligation, { refs: [r.obligation] }));
+
+/** A failed required check that passes on a rerun with unchanged inputs is flaky (EVD-08, PRD §4.4.1, TS §9.9): the pass keeps the
+ * first receipt's identity, the qualifier and the attempts behind it. Reruns are read in order; a rerun that is not a failure
+ * (a pass, or an inconclusive one such as an input that moved) ends the sequence, and only a pass turns the failure into flaky. */
+export function settleReruns(first: readonly Receipt[], reruns: ReadonlyArray<readonly Receipt[]>): Receipt[] {
+  const entry = (r: Receipt) =>
+    ({ status: r.status, failed: (r.failures ?? []).map((f) => f.test).slice(0, 5), at: r.provenance.startedAt });
+  return first.map((f) => {
+    if (f.status !== "fail") return f;
+    const attempts: Receipt[] = [];
+    for (const set of reruns) {
+      const next = set.find((r) => r.obligation === f.obligation);
+      if (!next) break;
+      attempts.push(next);
+      if (next.status !== "fail") break;
+    }
+    if (!attempts.length) return f;
+    const history = [f, ...attempts].map(entry).slice(0, 3);
+    const last = attempts[attempts.length - 1]!;
+    return last.status === "pass" ? { ...last, id: f.id, qualifiers: [...last.qualifiers, "flaky" as const], history } : { ...f, history };
+  });
+}

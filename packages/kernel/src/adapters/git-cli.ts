@@ -1,5 +1,7 @@
 // Git argument arrays (TS §10). Inspection disables programs and hashes dirty blobs in Node.
 // Only exact, locked post-commit sync writes the user's index.
+import { outputMatcher } from "../core/outputs.ts";
+import { repoLayout } from "./git-layout.ts";
 import { execFile } from "node:child_process";
 import {
   closeSync,
@@ -69,6 +71,7 @@ const SHADOW_EXCLUDE = [
 ];
 const INSPECT = [
   "--no-pager",
+  "--no-replace-objects",
   "-c",
   "core.fsmonitor=false",
   "-c",
@@ -256,6 +259,7 @@ export class GitCli implements Git {
         identity: false,
         remotes: [],
         hooks: null,
+        layout: { shallow: false, submodules: [], lfs: false, linkedWorktree: false },
       };
     const head = await this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]);
     const branch = await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]);
@@ -273,7 +277,8 @@ export class GitCli implements Git {
     const remotes = ((await this.tryOut(["remote"])) ?? "").split("\n").filter(Boolean);
     const hooksDir = (await this.tryOut(["config", "core.hooksPath"])) ?? join(gitDir, "hooks");
     const hooks = hookInventory([hooksDir.startsWith("/") ? hooksDir : join(top, hooksDir), join(top, ".husky")]);
-    const probe: RepoProbe = { isRepo: true, shadow: this.shadow, version, top, head, branch, state, identity, remotes, hooks };
+    const layout = await repoLayout((args) => this.tryOut(args), top, gitDir);
+    const probe: RepoProbe = { isRepo: true, shadow: this.shadow, version, top, head, branch, state, identity, remotes, hooks, layout };
     if (why) probe.why = why;
     return probe;
   }
@@ -328,16 +333,22 @@ export class GitCli implements Git {
   }
 
   // ------------------------------------------------------------ inventory
-  async inventory(exclude: readonly string[] = [], declaredInputs: readonly string[] = []): Promise<Inventory> {
+  async inventory(
+    exclude: readonly string[] = [],
+    declaredInputs: readonly string[] = [],
+    volatile: readonly string[] = [],
+  ): Promise<Inventory> {
     await this.objectFormatSafe();
     const head = await this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]);
     const branch = await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]);
     const skip = (p: string) => isKernelFile(p) || exclude.some((x) => p === x || p.startsWith(`${x}/`));
     const index = await this.indexEntries(skip);
-    const status = await this.statusRows(skip, index);
+    const isOutput = outputMatcher(volatile);
+    const hide = (p: string) => skip(p) || (!index.has(p) && isOutput(p)); // a declared output is only ever untracked (EVD-09)
+    const status = await this.statusRows(hide, index);
     const entries = overlay(index, status);
     await this.hiddenChanges(skip, index, entries, status);
-    this.declaredChanges(skip, declaredInputs, index, entries, status);
+    this.declaredChanges(hide, declaredInputs, index, entries, status);
     return { head, branch, entries, status, digest: this.digestOf(entries) };
   }
 
@@ -681,10 +692,10 @@ export class GitCli implements Git {
       const r = await this.program([...filters, "commit", "-m", plan.message, "--allow-empty-message"], plan, env);
       if (r.exit !== 0 || r.signal || r.timedOut) return this.failedCommit(plan, r, expectedTree);
       const commit = (await this.ok(["rev-parse", "HEAD"])).trim();
-      const parent = (await this.tryOut(["rev-parse", `${commit}^`])) ?? null;
-      if (parent !== plan.parent)
+      const parents = (await this.ok(["show", "-s", "--format=%P", commit])).trim();
+      if (parents !== (plan.parent ?? ""))
         return {
-          ...fail("effect-uncertain", "HEAD moved during the commit; the observed commit has a different parent"),
+          ...fail("effect-uncertain", "unexpected commit parents"),
           expectedTree,
           commit,
         };
@@ -709,7 +720,7 @@ export class GitCli implements Git {
       if (!launched && !(e instanceof KernelError)) throw e;
       const head = await this.refCommit("HEAD");
       return {
-        ...fail("effect-uncertain", `commit execution or postcondition inspection could not be verified: ${String(e)}`),
+        ...fail("effect-uncertain", `commit outcome unverified: ${String(e)}`),
         expectedTree,
         ...(head ? { commit: head } : {}),
       };
@@ -726,7 +737,9 @@ export class GitCli implements Git {
   ): Promise<{ completed: boolean; commit?: string }> {
     const head = await this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]);
     if (!head || head === parent) return { completed: false };
-    if ((await this.tryOut(["rev-parse", `${head}^`])) !== parent) return { completed: false };
+    if ((await this.tryOut(["show", "-s", "--format=%P", head])) !== (parent ?? "")) {
+      return { completed: false };
+    }
     if (label && !(await this.tryOut(["show", "-s", "--format=%B", head]))?.split("\n").includes(`Tenet-Work: ${label}`))
       return { completed: false };
     const tree = await this.tryOut(["rev-parse", `${head}^{tree}`]);

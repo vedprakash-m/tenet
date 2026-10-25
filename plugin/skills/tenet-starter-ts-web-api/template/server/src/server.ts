@@ -2,9 +2,13 @@
 import { buildApp } from "./app.ts";
 import { loadConfig } from "./platform/config.ts";
 import { openDb } from "./platform/db.ts";
+import { takeOwner } from "./platform/owner.ts";
 import { seedDevIdentities } from "./platform/dev-identities.ts";
 
 const config = loadConfig();
+const release = config.databaseUrl === ":memory:" ? () => {} : takeOwner(config.databaseUrl);
+for (const sig of ["SIGINT", "SIGTERM"] as const) process.on(sig, () => { release(); process.exit(0); });
+process.on("exit", release);
 const db = openDb(config.databaseUrl);
 const app = await buildApp(config, { db });
 if (config.env !== "production") {

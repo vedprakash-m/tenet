@@ -11,6 +11,7 @@ import {
 import type { BasisElement, BudgetState, Reason, Reservation, State, WorkContract } from "../core/schemas.ts";
 import type { Ports } from "../ports/types.ts";
 import type { Exclusion } from "../core/exclusions.ts";
+import { activeLessons, lessonExcerpt } from "../core/lessons.ts";
 import { nx } from "./common.ts";
 import type { Facts } from "./facts.ts";
 import { settingsFor } from "./reconcile.ts";
@@ -117,7 +118,7 @@ export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Fac
   const m = buildManifest({
     work: nw, elements: st.project.intent.elements.filter((e) => basis.elementIds.includes(e.id)), changes: shown, candidate: facts.candidate, basisHash: basis.hash,
     attempt: nextAttempt(live, retry, focused, budget), mode, ...(basedOn ? { basedOn } : {}),
-    recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused), id: nw.label, files, charter: charterOf(ports),
+    recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused) + lessonExcerpt(activeLessons(st, nw, ports.clock.now())), id: nw.label, files, charter: charterOf(ports),
     exclusions: settingsFor(ports, st, w).exclusions as Exclusion[],
   });
   if (!isManifest(m)) return { work: nw, next: [nx("ask", "The basis is too large to review in one pass; narrow the increment.", true)], reasons: [m] };
@@ -138,7 +139,7 @@ export function issueAnalyst(
   }
   const attempt = budget.delegations + budget.reservations.length + 1;
   const m = buildAnalystManifest({
-    work: w, elements, candidate, attempt, role, question, rubric: analystRubric(ports, role),
+    work: w, elements, candidate, attempt, role, question, rubric: analystRubric(ports, role) + lessonExcerpt(activeLessons(st, w, ports.clock.now())),
     exclusions: settingsFor(ports, st, w).exclusions as Exclusion[],
   });
   if (!isManifest(m)) {

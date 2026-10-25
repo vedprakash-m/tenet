@@ -68,7 +68,7 @@ export function deriveObligations(elements: readonly BasisElement[], tool: strin
     const id = obligationId(el.id);
     const base: Obligation = {
       id, kind: "test", category: kind === "boundary" ? "boundary" : "acceptance", targeted: true, tool, example: el.id,
-      testFile: el.testFile, ...(el.support?.length ? { support: el.support } : {}), test: kind, expectation: el.expect ?? (kind === "distinguishing" ? "fail" : "pass"),
+      testFile: el.testFile, ...(el.support?.length ? { support: el.support } : {}), ...(el.outputs?.length ? { outputs: el.outputs } : {}), test: kind, expectation: el.expect ?? (kind === "distinguishing" ? "fail" : "pass"),
       state: "registered",
     };
     // A revised test keeps its earlier red only if the file is unchanged, so the prior record carries over by id.

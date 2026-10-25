@@ -7,6 +7,7 @@ import { KernelError } from "./core/errors.ts";
 import { reason } from "./core/reasons.ts";
 import { redact } from "./core/redact.ts";
 import { mutate } from "./pipeline-mutate.ts";
+import { versionNote } from "./pipeline-version.ts";
 import { render } from "./pipeline-render.ts";
 import { configurePolicy } from "./verbs/reconcile.ts";
 import type { KernelResponse, Question, Reason, State } from "./core/schemas.ts";
@@ -106,6 +107,7 @@ export async function runVerb(ports: Ports, verbs: Record<string, Verb>, name: s
       const read = ports.store.exists() ? ports.store.read() : null;
       configurePolicy(ports, read?.state ?? null);
       const plan = await verb.run(ports, read?.state ?? null, input);
+      if (input.h && read) plan.resp.reasons = [...versionNote(ports, read.state, input.h), ...(plan.resp.reasons ?? [])];
       return render(ports, name, plan.resp, read?.state ?? null);
     }
     return await mutate(ports, verb, input);

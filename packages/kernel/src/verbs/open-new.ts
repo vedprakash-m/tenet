@@ -58,6 +58,9 @@ async function repository(ports: Ports, input: OpenInput, editing: boolean): Pro
     probe = await ports.git.probe();
   }
   if (editing && probe.state === "readonly") throw new KernelError("repo-state-readonly", probe.why);
+  const mods = probe.layout.submodules;
+  const inside = editing ? (input.scopePaths ?? []).find((p) => mods.some((s) => p === s || p.startsWith(`${s}/`))) : undefined;
+  if (inside) throw new KernelError("capability-missing", `${inside} is inside a submodule; edits there are not supported`, { exit: 1 });
   return probe;
 }
 
@@ -112,6 +115,7 @@ async function draft(c: Ctx, probe: RepoProbe, level: Level) {
     generation: state.generationSeq + 1,
     now,
     version: ports.version,
+    adapter: ports.stack.adapterVersion(),
     assessment: assessment as Record<string, "low" | "high">,
     scopePaths: scope,
     protectedPaths,
@@ -152,6 +156,17 @@ const filtersNote = (names: string[]) =>
     note: true,
   });
 
+/** The layouts that narrow what Tenet promises, named once at open (GIT-13). */
+function layoutNotes(probe: RepoProbe) {
+  const l = probe.layout;
+  return [
+    ...(l.shallow ? [reason("repo-shallow", undefined, { note: true })] : []),
+    ...(l.submodules.length ? [reason("repo-submodule", l.submodules.slice(0, 3).join(", "), { note: true })] : []),
+    ...(l.lfs ? [reason("repo-lfs", undefined, { note: true })] : []),
+    ...(l.linkedWorktree ? [reason("repo-linked-worktree", undefined, { note: true })] : []),
+  ];
+}
+
 export async function created(c: Ctx): Promise<Plan> {
   const { ports, input } = c;
   const editing = isEditingProfile(input.profile);
@@ -182,6 +197,7 @@ export async function created(c: Ctx): Promise<Plan> {
       ? [reason("budget-warning", `the ${floor} lane is the floor for this change and cannot be lowered`, { note: true })]
       : []),
     ...(filters ? [filtersNote(filters.names)] : []),
+    ...layoutNotes(probe),
     ...(why && level !== "L4" ? [reason("capability-missing", why, { note: true })] : []),
   ];
   const asking = next.pending.find((q) => q.id === "dirty-overlap") ?? c.shared.question;

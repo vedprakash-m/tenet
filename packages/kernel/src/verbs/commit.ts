@@ -1,6 +1,6 @@
 // Commit protocol (TS §10.3), shared by `commit` (a checkpoint) and `finish` (the final commit): preconditions, the
 // effect intent with the expected tree, the commit as an external job, then verification and the result record.
-import { changedSinceCheck } from "../core/attribution.ts";
+import { changedSinceCheck, recordCommit } from "../core/attribution.ts";
 import { KernelError } from "../core/errors.ts";
 import { reason } from "../core/reasons.ts";
 import { CommitInput } from "../core/schemas.ts";
@@ -118,23 +118,24 @@ async function settle(run: Run, tx: Tx, st: State, result: unknown, done: Done):
     return done(withWork(st, base), base, null, [reason(code, o.detail ?? o.error)]);
   }
   const o = out as CommitOutcome;
-  tx.result("commit", runId, { completed: true, commit: o.commit ?? null, tree: o.tree ?? null });
+  tx.result("commit", runId, { completed: true, commit: o.commit ?? null, tree: o.tree ?? null, foreign: o.foreign });
   const reasons: Reason[] = [];
   if (o.foreign.length) reasons.push(reason("hook-staged-foreign-path", o.foreign.join(", ")));
   if (o.indexSync === "untouched" && o.syncPaths.length) {
     reasons.push(reason("index-sync-needed", `${o.syncPaths.join(", ")}; run: decide sync-index`, { note: true }));
   }
-  const commits = o.commit && !base.git.commits.includes(o.commit) ? [...base.git.commits, o.commit] : base.git.commits;
-  const nw: WorkContract = {
-    ...base,
-    state: base.lastValidPhase ?? base.state,
-    git: { ...base.git, commits, committed: [...new Set([...base.git.committed, ...paths])] },
-    touched: [],
-  };
+  const nw = recordCommit(base, o, paths);
   const locks = st.locks.map((l) =>
     "provisional" in l.anchor && l.anchor.provisional === w.id && o.commit ? { ...l, anchor: { commit: o.commit } } : l
   );
-  return done({ ...withWork(st, nw), locks }, nw, o, reasons);
+  const state = { ...withWork(st, nw), locks };
+  if (o.foreign.length) return {
+    state,
+    resp: { work: nw.id, exit: 3, reasons,
+      next: [nx("review", "Review foreign paths, then decide disposition.", true)],
+      data: { commit: o.commit, foreign: o.foreign } },
+  };
+  return done(state, nw, o, reasons);
 }
 
 /** The index sync inside the commit is journalled under the same run, and refused if the commit was cancelled meanwhile. */

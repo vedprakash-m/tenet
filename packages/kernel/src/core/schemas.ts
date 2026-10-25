@@ -1,6 +1,8 @@
 // zod schemas for every verb input, record and output (TS §6.2). Wire schemas use only JSON-compatible constructs (TS §3.3).
+import { Lesson } from "./lessons.ts";
 import { z } from "zod";
 import { settingsSchema } from "./config.ts";
+import { ExecutionEnvelope, InFlightCall } from "./execution-envelope.ts";
 import { Policy } from "./policy.ts";
 
 export const SCHEMA_VERSION = 1 as const;
@@ -61,6 +63,7 @@ export const BasisElement = z.object({
   expect: z.enum(["fail", "pass"]).optional(), // declared baseline expectation (boundary cases)
   testFile: z.string().optional(),
   support: z.array(z.string()).optional(), // helpers, fixtures and setup files the test depends on: locked with it
+  outputs: z.array(z.string()).max(20).optional(), // untracked data files its check writes (EVD-09)
   expiresAt: z.string().optional(),
   verifiedBy: z.union([
     z.array(z.object({ method: z.enum(["obligation", "review", "manual"]), ref: z.string() })),
@@ -99,6 +102,7 @@ export const Obligation = z.object({
   example: z.string().optional(),
   testFile: z.string().optional(),
   support: z.array(z.string()).optional(),
+  outputs: z.array(z.string()).max(20).optional(),
   test: z.enum(["distinguishing", "preservation", "boundary"]).optional(),
   expectation: z.enum(["fail", "pass"]).optional(), // declared baseline expectation
   state: z.enum(["registered", "verified", "locked", "revised"]).optional(),
@@ -108,6 +112,8 @@ export const Obligation = z.object({
   alongsideReason: z.string().optional(), // TDD-03: a behavioral red was infeasible; the red is a declared negative control instead
 });
 export type Obligation = z.infer<typeof Obligation>;
+
+export { ExecutionEnvelope };
 
 export const Receipt = z.object({
   id: z.string(), obligation: z.string(), kind: z.string(),
@@ -127,8 +133,11 @@ export const Receipt = z.object({
   provenance: z.object({ runId: z.string(), runDir: z.string(), startedAt: z.string(), pid: z.number().optional() }),
   status: z.enum(["pass", "fail", "inconclusive", "skipped"]),
   qualifiers: z.array(z.enum(["flaky", "simulated", "partial", "history-unavailable"])),
+  // The attempts behind a rerun result (EVD-08): at most 3, each with at most 5 failing test names.
+  history: z.array(z.object({ status: z.enum(["pass", "fail", "inconclusive", "skipped"]), failed: z.array(z.string()).max(5), at: z.string() })).max(3).optional(),
   reasons: z.array(z.string()), limitations: z.array(z.string()),
   candidate: z.string(),
+  executionEnvelope: ExecutionEnvelope.optional(),
 });
 export type Receipt = z.infer<typeof Receipt>;
 
@@ -237,10 +246,11 @@ export const WorkContract = z.object({
   id: z.string(), label: z.string(), profile: Profile, request: z.string(),
   lane: Lane, floor: Lane, level: Level, state: WorkState, model: ModelRecord.optional(),
   lastValidPhase: WorkState.optional(), stopReason: StopReason.optional(),
+  pendingEnvelope: ExecutionEnvelope.optional(),
   session: z.object({
     generation: z.number(),
     last: z.object({ inputHash: z.string(), response: z.unknown() }).optional(),
-    inCall: z.object({ runId: z.string(), pid: z.number().int().positive().optional(), procStart: z.string().optional(), verb: z.string(), since: z.string(), runDir: z.string().optional(), cancelled: z.boolean().optional() }).optional(),
+    inCall: InFlightCall.optional(),
   }),
   outcome: z.string(), planItem: z.string().optional(),
   scope: z.strictObject({ paths: z.array(z.string()), protected: z.array(z.string()) }),
@@ -283,7 +293,7 @@ export const WorkContract = z.object({
   assessment: z.record(z.string(), z.enum(["low", "high"])),
   lastCheck: z.object({ candidate: z.string(), at: z.string(), stage: z.string() }).optional(),
   handoff: z.string().optional(),
-  pinned: z.object({ tenet: z.string(), schema: z.number() }),
+  pinned: z.object({ tenet: z.string(), schema: z.number(), adapter: z.string().optional() }),
   createdAt: z.string(), updatedAt: z.string(),
 });
 export type WorkContract = z.infer<typeof WorkContract>;
@@ -324,6 +334,7 @@ export const State = z.strictObject({
     z.strictObject({ file: z.literal("INTENT.md"), hash: z.string(), adoptedAt: z.string(), restrictions: z.strictObject({ blocks: z.record(z.string(), z.string()) }) }),
   ])).default([]),
   locks: z.array(Lock), pending: z.array(Question),
+  lessons: z.array(Lesson).default([]), // advice for packets, never authority (TS §8.9)
   work: z.record(z.string(), WorkContract),
   archive: z.array(z.object({ id: z.string(), label: z.string(), endpoint: Endpoint, blob: z.string(), finishedAt: z.string() })),
   recovered: z.object({ from: z.literal("state.prev"), at: z.string(), accounting: z.enum(["verified", "unknown"]).optional() }).optional(),
@@ -426,6 +437,7 @@ export const BasisElementInput = z.object({
   expect: z.enum(["fail", "pass"]).optional(),
   testFile: z.string().optional(),
   support: z.array(z.string()).max(20).optional(),
+  outputs: z.array(z.string()).max(20).optional(),
 });
 
 export const BasisProposal = z.object({
@@ -493,7 +505,7 @@ export const UndoInput = z.object({ h: Handle, again: z.boolean().optional() });
 export type UndoInput = z.infer<typeof UndoInput>;
 
 export const InspectInput = z.object({
-  view: z.enum(["status", "why", "doctor", "help", "result", "impact", "residue", "settings"]).default("status"),
+  view: z.enum(["status", "why", "doctor", "help", "result", "impact", "residue", "settings", "lessons"]).default("status"),
   h: Handle.optional(), topic: z.string().optional(),
 });
 export type InspectInput = z.infer<typeof InspectInput>;

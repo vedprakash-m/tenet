@@ -10,6 +10,7 @@ import { inputHash, render, stamp, workByHandle } from "./pipeline-render.ts";
 import type { Stamped } from "./pipeline-render.ts";
 import type { Job, Plan, Verb } from "./pipeline.ts";
 import type { Ports, Tx } from "./ports/types.ts";
+import { versionGate } from "./pipeline-version.ts";
 import { recover } from "./verbs/recover.ts";
 import type { Recovered } from "./verbs/recover.ts";
 import { configurePolicy, reconcileShared, settingsFor, withRequiredChecks } from "./verbs/reconcile.ts";
@@ -120,6 +121,7 @@ async function envelope(ports: Ports, verb: Verb, input: Input, current0: State,
   const owed = withRequiredChecks(ports, current, w);
   if (owed !== w) ({ w, current } = { w: owed, current: { ...current, work: { ...current.work, [owed.id]: owed } } });
   fence(current, verb, input, w);
+  ({ w, state: current } = versionGate(ports, verb.name, input, w, current));
   if (changesSource(verb, input, current, w)) ({ w, current } = await claimSource(ports, verb, input, current, w));
   const last = w.session.last;
   const historical = last && !input.again && last.inputHash === inputHash(verb.name, input, world);

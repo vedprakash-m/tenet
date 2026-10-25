@@ -1,27 +1,27 @@
 // `check`: run the obligations and turn what happened into receipts, counters, attention items and the next step.
 // The run happens outside the lock (prepare, execute, finalize); the response is rebuilt from the observed result.
-import { join } from "node:path";
 import { attemptsLeft, LIMITS, timeUp } from "../core/budget.ts";
 import { allowed } from "../core/exclusions.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
 import { declaredInputs } from "../core/obligations.ts";
 import { reason } from "../core/reasons.ts";
-import type { RunFacts } from "../core/receipts.ts";
 import { CheckInput } from "../core/schemas.ts";
-import type { Obligation, Question, Reason, State, WorkContract } from "../core/schemas.ts";
+import type { Question, Reason, State, WorkContract } from "../core/schemas.ts";
 import type { Job, Plan, Verb } from "../pipeline.ts";
-import type { Ports, RunResult, StaticTool } from "../ports/types.ts";
+import type { Ports } from "../ports/types.ts";
 import { grantQuestion } from "./authority.ts";
 import { finalizeCheck } from "./check-finalize.ts";
-import { isE2e, isStatic, staticReport, e2eReport } from "./check-evidence.ts";
-import type { Executed, Run } from "./check-evidence.ts";
+import { checkEnvelopeGate } from "./check-envelope.ts";
+import type { Run } from "./check-evidence.ts";
+import { execute } from "./check-execute.ts";
+import { outputsProblem } from "./check-outputs.ts";
 import { nx, withWork, workOf } from "./common.ts";
+import { toolchainOf } from "./check-rerun.ts";
 import { dirtyQuestion, undecidedDirty } from "./dirty.ts";
 import { checkInputId, gather, unauthorizedEdits, worldDigest } from "./facts.ts";
 import { settingsFor, unsupportedExecution } from "./reconcile.ts";
 
-const TIMEOUT_MS = 10 * 60_000;
 const refuse = (code: "capability-missing" | "stale-session" | "continue-required", why: string): never => {
   throw new KernelError(code, why, { exit: 2 });
 };
@@ -140,6 +140,8 @@ export const check: Verb<CheckInput> = {
         "Ask the user what happens to their edits."
       );
     const facts = await gather(ports, w);
+    const unusable = await outputsProblem(ports, w);
+    if (unusable) refuse("capability-missing", unusable);
     const linked = inputs.filter((path) => facts.inv.entries.get(path)?.mode === "120000");
     if (linked.length)
       refuse(
@@ -156,17 +158,23 @@ export const check: Verb<CheckInput> = {
         "Ask the user; their words authorize the edits, or undo them."
       );
 
+    const shape = shapeRun(ports, w, input, facts);
+    const envelopeGate = checkEnvelopeGate(ports, cur, w, shape);
+    if (envelopeGate.plan) return envelopeGate.plan;
+    const executionEnvelope = envelopeGate.envelope;
+
     const now = ports.clock.now();
     const runId = `${w.label}-${ports.rand.base32(6)}`;
     const runDir = ports.store.tempDir(`run-${runId}`);
-    const run: Run = { ports, w, runId, runDir, stage: input.stage as Run["stage"], facts, ...shapeRun(ports, w, input, facts) };
+    const run: Run = { ports, w, runId, runDir, stage: input.stage as Run["stage"], facts, ...shape, executionEnvelope };
+    run.toolchain = toolchainOf(ports);
     // Prepare: record the run intent in the contract and release the lock (TS §7.3).
     const prepared: WorkContract = {
       ...w,
       lastValidPhase: w.state === "checking" ? w.lastValidPhase : w.state,
       state: "checking",
       updatedAt: now,
-      session: { ...w.session, inCall: { runId, ...ports.store.self(), verb: "check", since: now, runDir } },
+      session: { ...w.session, inCall: { runId, ...ports.store.self(), verb: "check", since: now, runDir, executionEnvelope } },
     };
     const job: Job = {
       id: runId,
@@ -176,65 +184,3 @@ export const check: Verb<CheckInput> = {
     return { state: withWork(cur, prepared), resp: { work: w.id, progress: { phase: "checking" }, next: [] }, job };
   },
 };
-
-/** What the process did, whatever it was. `raw` is the output the tool's own report format is read from. */
-const observed = (r: RunResult, raw: string | null): Omit<RunFacts, "after"> => ({
-  outputTruncated: r.outputTruncated,
-  ...(r.exit !== undefined ? { exit: r.exit } : {}),
-  ...(r.signal ? { signal: r.signal } : {}),
-  timedOut: r.timedOut,
-  durationMs: r.durationMs,
-  ...(r.pid ? { pid: r.pid } : {}),
-  startedAt: r.startedAt,
-  raw,
-  ran: r.exit !== undefined || !!r.signal,
-});
-
-/** One static tool over the whole project; a tool that is not installed did not run. */
-async function runStatic(run: Run, ob: Obligation): Promise<Omit<RunFacts, "after">> {
-  const { ports, runDir } = run;
-  const tool = ob.tool as StaticTool, report = staticReport(runDir, tool);
-  const argv = ports.stack.staticArgv(ports.root, tool, report);
-  if (!argv) return { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, ran: false };
-  const r = await ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: TIMEOUT_MS, report });
-  return observed(r, ports.stack.staticOutput(tool, r));
-}
-
-const E2E_TIMEOUT_MS = 10 * 60_000;
-
-/** Playwright over the whole project, against a server Tenet starts and verifies for this candidate, on a
- * dedicated test database — never the developer's own (EVD-13, TS §9.3 Servers). A lost port race is retried. */
-async function runE2e(run: Run): Promise<Omit<RunFacts, "after">> {
-  const { ports, runDir } = run;
-  const report = e2eReport(runDir);
-  const argv = ports.stack.e2eArgv(ports.root, report);
-  if (!argv) return { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, ran: false };
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const port = await ports.runner.allocatePort();
-    const env = {
-      PORT: String(port), DATABASE_URL: join(runDir, "e2e.db"), TENET_RUN_TOKEN: ports.rand.base32(16),
-      PLAYWRIGHT_JSON_OUTPUT_NAME: report,
-    };
-    const r = await ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: E2E_TIMEOUT_MS, report, env });
-    if (!/EADDRINUSE/.test(r.stderr)) return observed(r, r.report);
-  }
-  return { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, ran: false };
-}
-
-/** Runs the named test files (or everything) once, outside the lock, then each static check, and reports what the processes did. */
-async function execute(run: Run, inputs: readonly string[]): Promise<Executed> {
-  const { ports, runDir, toExecute, facts } = run;
-  if (toExecute !== "all" && !toExecute.length)
-    return { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, after: facts.candidate, ran: false, statics: {} };
-  const report = join(runDir, "vitest.json");
-  const r = await ports.runner.run({ argv: ports.stack.argv(toExecute, report), cwd: ports.root, runDir, timeoutMs: TIMEOUT_MS, report });
-  const statics: Record<string, Omit<RunFacts, "after">> = {};
-  for (const ob of run.toRun.filter((o) => isStatic(o) && !isE2e(o))) statics[ob.id] = await runStatic(run, ob);
-  for (const ob of run.toRun.filter(isE2e)) statics[ob.id] = await runE2e(run);
-  const after = (await ports.git.inventory([], inputs)).digest;
-  return {
-    ...observed(r, r.report),
-    after,
-    statics: Object.fromEntries(Object.entries(statics).map(([id, s]) => [id, { ...s, after }])),
-  };
-}

@@ -1,5 +1,6 @@
 // `stop`: pause at a safe boundary, cancel owned processes, or close the contract. Always allowed, even mid-check.
 import { handoffText } from "../core/handoff.ts";
+import { INTERRUPTED_CHECK, recoverStoppedCall } from "../core/execution-envelope.ts";
 import { releaseItem } from "../core/plan.ts";
 import { StopInput } from "../core/schemas.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
@@ -61,9 +62,9 @@ function abandonGate(state: State, w: WorkContract, input: StopInput): Step<Stat
 }
 
 /** Stops any process this contract owns and records that it was cancelled, so a late finalize is discarded. */
-async function stopProcess(ports: Ports, state: State, w: WorkContract): Promise<Step<{ w: WorkContract; effects: string[] }>> {
+async function stopProcess(ports: Ports, state: State, w: WorkContract): Promise<Step<{ state: State; effects: string[] }>> {
   const c = w.session.inCall;
-  if (!c) return { go: { w, effects: [] } };
+  if (!c) return { go: { state, effects: [] } };
   const how = c.runDir ? await ports.runner.stopRun(c.runDir) : "unknown";
   if (how === "unknown") {
     return {
@@ -90,8 +91,9 @@ async function stopProcess(ports: Ports, state: State, w: WorkContract): Promise
       : how === "gone"
         ? "the check had already ended"
         : "no process record for the running check";
-  const phase = w.lastValidPhase && w.state === "checking" ? w.lastValidPhase : w.state;
-  return { go: { w: { ...w, state: phase, session: { generation: w.session.generation } }, effects: [said] } };
+  const next = recoverStoppedCall(state, w);
+  const effects = next.consents !== state.consents ? [said, INTERRUPTED_CHECK] : [said];
+  return { go: { state: next, effects } };
 }
 
 /** The contract after stopping, with its handoff: parked (pause), cancelled (abandon) or open at its phase (cancel). */
@@ -135,7 +137,7 @@ export async function stopWork(ports: Ports, state0: State, input: StopInput, tx
   const proc = await stopProcess(ports, state, w0);
   if ("done" in proc) return proc.done;
   const effects = proc.go.effects;
-  const rec = await recover(ports, tx, withWork(state, proc.go.w), { effects: false });
+  const rec = await recover(ports, tx, proc.go.state, { effects: false });
   const w = rec.state.work[w0.id]!;
   effects.push(...rec.completed);
   if (rec.uncertain.length) {

@@ -1,5 +1,6 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, symlinkSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
@@ -93,5 +94,18 @@ describe("project filesystem boundaries [SEC-06, SEC-14, CON-03]", () => {
     write(root, "package-lock.json", "x".repeat(21 * 1024 * 1024));
     assert.throws(() => p.read("package-lock.json"), /project-file-too-large|exceeds/i);
     assert.throws(() => p.hashes(["package-lock.json"]), /project-file-too-large|exceeds/i);
+  });
+  for (const mode of ["grow", "oversized", "shrink", "overwrite"]) {
+    for (const operation of ["read", "hash"]) it(`refuses ${operation} when another process changes the admitted file: ${mode} [CON-03, SEC-06]`, () => {
+      const { root } = fresh(); write(root, "input", "original bytes\n");
+      const result = JSON.parse(execFileSync(process.execPath, [join(import.meta.dirname, "fixtures/race-project-read.ts"), root, mode, operation], { encoding: "utf8" }));
+      assert.ok(["capability-missing", "project-file-too-large"].includes(result.code), JSON.stringify(result));
+      assert.equal(result.value, undefined, "neither text nor a hash proves a file that changed during admission");
+    });
+  }
+  for (const operation of ["read", "hash"]) it(`handles short operating-system reads without truncating ${operation} [CON-03]`, () => {
+    const { root } = fresh(), content = "original bytes\n"; write(root, "input", content);
+    const result = JSON.parse(execFileSync(process.execPath, [join(import.meta.dirname, "fixtures/race-project-read.ts"), root, "short", operation], { encoding: "utf8" }));
+    assert.deepEqual(result, { value: operation === "hash" ? createHash("sha256").update(content).digest("hex") : content.length });
   });
 });

@@ -57,6 +57,8 @@ function setup(sc: Scenario, files: Record<string, string> = {}) {
   const guards = new Map<string, (spawn: () => Promise<RunResult>) => Promise<RunResult>>();
   const runner: Runner = {
     guardRun: (dir, admit) => { guards.set(dir, admit); },
+    environmentNames: extra => ({ passed: Object.keys(extra ?? {}), dropped: [] }),
+    planEnvelope: input => base.runner.planEnvelope(input),
     stopRun: dir => base.runner.stopRun(dir),
     allocatePort: () => base.runner.allocatePort(),
     run: spec => guards.has(spec.runDir) ? guards.get(spec.runDir)!(() => simulated.run(spec)) : simulated.run(spec),

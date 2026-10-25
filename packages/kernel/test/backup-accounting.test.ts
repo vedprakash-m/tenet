@@ -1,19 +1,155 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { failureSignature, recordAttempt, withSignature } from "../src/core/budget.ts";
+import { accountingCheckpoint, failureSignature, recordAttempt, recoverAccounting, withSignature } from "../src/core/budget.ts";
 import { BudgetState } from "../src/core/schemas.ts";
 import { newBudget } from "../src/core/budget.ts";
+import { replayCommit } from "../src/core/attribution.ts";
+import { recordedResults } from "../src/core/state.ts";
+import type { LogEntry } from "../src/ports/types.ts";
 import { cleanup, initState } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, finishFixture, project } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, finishFixture, focusFixture, project } from "./support/fixture.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 const fresh = () => { const p = project(); roots.push(p.root); return p; };
 
 describe("durable recovery accounting [WRK-08, CON-03]", () => {
+  for (const conflict of ["in-flight", "completeness", "budget", "sequence"]) {
+    it(`refuses same-revision ${conflict} conflicts or regressions while retaining observed usage [WRK-08, CON-03]`, async () => {
+      const p = fresh(); await p.call("open", { profile: "investigate", request: "conflicting accounting checkpoints" });
+      const before = p.ports().store.read()!.state, work = Object.values(before.work)[0]!;
+      const next = { ...before, revision: before.revision + 1,
+        work: { ...before.work, [work.id]: { ...work, budget: recordAttempt(work.budget) } } };
+      const point = { ...accountingCheckpoint(next, before), t: "first" };
+      const changed = conflict === "in-flight" ? { ...point, inFlight: [work.id] } :
+        conflict === "completeness" ? { ...point, complete: false } :
+        conflict === "sequence" ? { ...point, workSeq: point.workSeq + 1, generationSeq: point.generationSeq + 1 } :
+        { ...point, entries: point.entries.map(entry => ({ ...entry, budget: recordAttempt(entry.budget) })) };
+      for (const records of [[changed, { ...point, t: "retry" }], [point, { ...changed, t: "retry" }]]) {
+        const recovered = recoverAccounting(before, records);
+        assert.equal(recovered.verified, (conflict === "budget" || conflict === "sequence") && records[0] === point, conflict);
+        assert.equal(recovered.state.work[work.id]!.budget.attempts, conflict === "budget" ? 2 : 1);
+        assert.equal(recovered.state.workSeq, conflict === "sequence" ? before.workSeq + 1 : before.workSeq);
+        assert.equal(recovered.state.generationSeq, conflict === "sequence" ? before.generationSeq + 1 : before.generationSeq);
+      }
+    });
+  }
+  it("accepts an identical accounting checkpoint retry with a different timestamp [CON-03]", async () => {
+    const p = fresh(); await p.call("open", { profile: "investigate", request: "identical accounting retry" });
+    const before = p.ports().store.read()!.state, work = Object.values(before.work)[0]!;
+    const next = { ...before, revision: before.revision + 1,
+      work: { ...before.work, [work.id]: { ...work, budget: recordAttempt(work.budget) } } };
+    const point = accountingCheckpoint(next, before);
+    const recovered = recoverAccounting(before, [{ ...point, t: "first" }, { ...point, t: "retry" }]);
+    assert.equal(recovered.verified, true);
+    assert.equal(recovered.state.work[work.id]!.budget.attempts, 1);
+  });
+  it("keeps monotone same-revision progress after an unpublished checkpoint verifiable [CON-03]", async () => {
+    const p = fresh(); await p.call("open", { profile: "investigate", request: "unpublished checkpoint retry" });
+    const child = spawn(process.execPath, [join(import.meta.dirname, "fixtures/crash-budget-checkpoint.ts"), p.root], { stdio: ["ignore", "ignore", "inherit"] });
+    assert.equal(await new Promise(resolve => child.on("exit", (_code, signal) => resolve(signal))), "SIGKILL");
+    assert.equal(Object.values(p.ports().store.read()!.state.work)[0]!.budget.attempts, 1);
+    await p.ports().store.transaction("test", async tx => {
+      const state = tx.state!, work = Object.values(state.work)[0]!;
+      tx.publish({ ...state, work: { ...state.work, [work.id]: { ...work, budget: recordAttempt(work.budget) } } });
+    });
+    p.write(".tenet/state", "{ corrupt");
+    const recovered = p.ports().store.read()!.state;
+    assert.equal(recovered.recovered?.accounting, "verified");
+    assert.equal(Object.values(recovered.work)[0]!.budget.attempts, 2);
+  });
+  it("pairs distant results by effect and ID while retaining first-intent semantics [CON-03]", () => {
+    const commit = { work: "commit-work" }, scaffold = { work: "scaffold-work" }, colon = { work: "colon-work" };
+    const log: LogEntry[] = [
+      { t: "t", kind: "intent", effect: "commit", id: "shared", op: commit },
+      { t: "t", kind: "intent", effect: "scaffold", id: "shared", op: scaffold },
+      { t: "t", kind: "intent", effect: "commit:extra", id: "shared", op: colon },
+      { t: "t", kind: "intent", effect: "commit", id: "extra:shared", op: { work: "other-colon-work" } },
+      ...Array.from({ length: 1000 }, (): LogEntry => ({ t: "t", kind: "call", verb: "inspect", exit: 0, revision: 1 })),
+      { t: "t", kind: "intent", effect: "commit", id: "shared", op: { work: "later-duplicate" } },
+      { t: "t", kind: "result", effect: "scaffold", id: "shared", outcome: { completed: true } },
+      { t: "t", kind: "result", effect: "commit", id: "shared", outcome: { completed: true } },
+      { t: "t", kind: "result", effect: "commit:extra", id: "shared", outcome: { completed: false } },
+    ];
+    const replay = recordedResults(log);
+    assert.deepEqual(replay.map(item => item.effect), ["scaffold", "commit", "commit:extra"]);
+    assert.equal(replay[0]!.op, scaffold); assert.equal(replay[1]!.op, commit); assert.equal(replay[2]!.op, colon);
+    assert.deepEqual(replay[2]!.outcome, { completed: false });
+  });
+  it("keeps diagnostic tails separate from complete recovery history [CON-03]", async () => {
+    const p = fresh(); await p.call("open", { profile: "investigate", request: "journal views" });
+    await p.ports().store.transaction("test", async tx => {
+      tx.intent("commit", "view", { work: "test" });
+      tx.result("commit", "view", { completed: false });
+      const all = tx.recent();
+      assert.ok(all.length > 2);
+      assert.deepEqual(tx.recent(2), all.slice(-2));
+      assert.equal(recordedResults(all).at(-1)?.effect, "commit");
+      assert.equal(tx.unresolved().length, 0);
+    });
+  });
+  for (const noise of [0, 450]) it(`replays a foreign-path review gate after a commit result lands before state publication with ${noise} later records [CON-03, GIT-03]`, async () => {
+    const p = project({ "human.txt": "original human bytes\n" }); roots.push(p.root);
+    p.write("human.txt", "human staged\n"); p.git("add", "human.txt");
+    p.write("human.txt", "human staged and unstaged\n");
+    const humanIndex = p.git("ls-files", "-s", "--", "human.txt");
+    const h = (await p.call("open", { profile: "feature", request: "recover foreign hook review", lane: "quick" })).handle!;
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    p.write("src/greet.test.ts", GREET_TEST); await p.call("check", { h, stage: "baseline" });
+    p.write("src/greet.ts", GREET_IMPL); await p.call("check", { h, touched: ["src/greet.ts"] });
+    await focusFixture(p, h);
+    p.write(".git/hooks/pre-commit", "#!/bin/sh\ngit add human.txt\n");
+    chmodSync(join(p.root, ".git/hooks/pre-commit"), 0o755);
+    assert.equal((await p.call("finish", { h })).questions?.[0]?.id, "hook-consent");
+    await p.call("decide", { h, kind: "hook-consent", answers: { "hook-consent": "commit-with-hooks" } });
+    const workId = Object.values(p.ports().store.read()!.state.work)[0]!.id;
+    const count = Number(p.git("rev-list", "--count", "HEAD"));
+    const child = spawn(process.execPath, [join(import.meta.dirname, "fixtures/crash-commit.ts"), p.root, "finish",
+      JSON.stringify({ h, subject: "greeting" }), "after-result"], { stdio: ["ignore", "ignore", "inherit"] });
+    assert.equal(await new Promise(resolve => child.on("exit", (_code, signal) => resolve(signal))), "SIGKILL");
+    const landed = p.git("rev-parse", "HEAD");
+    assert.equal(Number(p.git("rev-list", "--count", "HEAD")), count + 1);
+    if (noise) await p.ports().store.transaction("test", async tx => {
+      for (let index = 0; index < noise; index++) tx.call({ verb: "inspect", exit: 0, revision: tx.state!.revision });
+    });
+    await p.call("open", { profile: "investigate", request: "recover the recorded commit" });
+    const recovered = p.ports().store.read()!.state.work[workId]!;
+    assert.deepEqual(recovered.git.commits, [landed]);
+    assert.ok(recovered.attention.some(item => item.path === "human.txt" && !item.disposition), "the foreign-path gate must survive the crash");
+    await p.call("open", { profile: "investigate", request: "repeat recorded recovery" });
+    const repeated = p.ports().store.read()!.state.work[workId]!;
+    assert.deepEqual(repeated.git.commits, recovered.git.commits);
+    assert.deepEqual(repeated.attention, recovered.attention);
+    const finished = await p.call("finish", { h, again: true });
+    assert.notEqual((finished.data as Record<string, unknown>)?.endpoint, "checked-local", JSON.stringify(finished));
+    const foreign = recovered.attention.find(item => item.path === "human.txt")!;
+    assert.equal((await p.call("decide", { h, kind: "disposition", target: foreign.id,
+      propose: { outcome: "accepted", reason: "I reviewed and chose to retain the hook's human-file commit." } })).exit, 0);
+    await p.call("open", { profile: "investigate", request: "retain reviewed recovery" });
+    const disposition = p.ports().store.read()!.state.work[workId]!.attention.find(item => item.id === foreign.id)?.disposition;
+    assert.equal(disposition?.outcome, "accepted");
+    assert.equal(disposition?.by, "user");
+    assert.equal(p.git("ls-files", "-s", "--", "human.txt"), humanIndex);
+    assert.equal(readFileSync(join(p.root, "human.txt"), "utf8"), "human staged and unstaged\n");
+    assert.equal(p.git("rev-parse", "HEAD"), landed);
+    assert.equal(Number(p.git("rev-list", "--count", "HEAD")), count + 1);
+  });
+  it("refuses legacy or malformed unpublished foreign-path metadata and keeps replay idempotent [CON-03]", async () => {
+    const p = fresh(); await p.call("open", { profile: "investigate", request: "replay admission" });
+    const work = Object.values(p.ports().store.read()!.state.work)[0]!;
+    for (const foreign of [undefined, null, "human.txt", [1], ["human.txt", false]]) {
+      assert.equal(replayCommit(work, { commit: "landed", foreign }, ["src/greet.ts"]), undefined);
+    }
+    const recovered = replayCommit(work, { commit: "landed", foreign: ["human.txt"] }, ["src/greet.ts"])!;
+    assert.deepEqual(recovered.budget, work.budget); assert.deepEqual(recovered.grants, work.grants);
+    assert.equal(recovered.attention[0]?.path, "human.txt");
+    assert.equal(replayCommit(recovered, { commit: "landed" }, ["src/greet.ts"]), recovered);
+    assert.equal(replayCommit(work, {}, []), work);
+    assert.deepEqual(work.git.commits, []); assert.deepEqual(work.attention, []);
+  });
   it("retains the three real candidate attempts after fallback, while suspending authority", async () => {
     const p = fresh(), h = (await p.call("open", { profile: "feature", request: "budget recovery", lane: "quick" })).handle!;
     await p.call("decide", { h, kind: "basis", propose: BASIS }); p.write("src/greet.test.ts", GREET_TEST);

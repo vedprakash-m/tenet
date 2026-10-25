@@ -25,6 +25,7 @@ interface Outcome {
 /** A failed receipt is a reason to fix, except on the baseline where a planned red is expected; others say why they proved nothing. */
 function evidenceReasons(receipts: Receipt[], baseline: boolean): Reason[] {
   return receipts.flatMap((r) => {
+    if (r.status === "pass" && r.qualifiers.includes("flaky")) return [reason("evidence-flaky", r.obligation, { refs: [r.obligation] })];
     if (r.status !== "fail") return receiptReasons(r);
     const tests = (r.failures ?? []).map((f) => f.test).slice(0, 3).join(", ");
     return baseline ? [] : [reason("evidence-failed", `${r.obligation}: ${tests}`, { refs: [r.obligation] })];
@@ -35,9 +36,13 @@ const receiptSummary = (receipts: Receipt[]) =>
   receipts.map((r) => ({
     obligation: r.obligation,
     status: r.status,
+    qualifiers: r.qualifiers,
+    history: r.history,
     counts: r.counts,
     failures: r.failures?.slice(0, 3),
     reasons: r.reasons,
+    limitations: r.limitations.slice(0, 3),
+    executionEnvelope: r.executionEnvelope,
   }));
 
 /** The reasons, the next action and (when the checks all passed) the review manifest that follow from the receipts. */
@@ -53,8 +58,10 @@ function nextStep(
   const { baseline, scope, stage } = run;
   const failing = receipts.filter((r) => r.status === "fail");
   const configFailed = receipts.some((r) => r.status === "inconclusive");
+  const flaky = receipts.some((r) => r.qualifiers.includes("flaky"));
   const passedAll =
     !baseline &&
+    !flaky &&
     scope === "full" &&
     receipts.length > 0 &&
     receipts.every((r) => r.status === "pass") &&
@@ -78,11 +85,13 @@ function nextStep(
         ? nx("test", "Fix the acceptance test so it fails for the right reason.", true)
         : nx("implement", "The red is distinguishing. Implement, then check.", true)
     );
-  } else if (failing.length || configFailed) {
+  } else if (failing.length || configFailed || flaky) {
     const why = failing.length
       ? `Fix the failing check (${attemptsLeft(nw.budget, nw.lane)} attempts left).`
-      : "The check could not run cleanly; fix the cause and retry.";
-    next.push(nx(failing.length ? "implement" : "check", why, true));
+      : flaky && !configFailed
+        ? "A required check passed only on a rerun; make it deterministic, then check again."
+        : "The check could not run cleanly; fix the cause and retry.";
+    next.push(nx(failing.length || (flaky && !configFailed) ? "implement" : "check", why, true));
   } else if (passedAll) {
     const issued = issueReview(run.ports, st, nw, run.facts, changes); // one builder for manifests (TS §8.7)
     work = issued.work;
@@ -168,9 +177,10 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
   const step = nextStep(run, st, nw, receipts, obligations, stop, changes);
   nw = step.work;
   await snapshot(run, nw, step.reasons);
-  if (nearLimit(nw.budget, nw.lane)) step.reasons.push(reason("budget-warning", "80% of a limit is used", { note: true }));
+  const nearBudgetLimit = nearLimit(nw.budget, nw.lane, ports.clock.now());
+  if (nearBudgetLimit) step.reasons.push(reason("budget-warning", "80% of a limit is used", { note: true }));
   // At a stop, and at 80% of any limit, the handoff is written while there is still budget to write it (WRK-12).
-  if (stop || nearLimit(nw.budget, nw.lane)) nw = { ...nw, handoff: handoffText(withWork(st, nw), nw) };
+  if (stop || nearBudgetLimit) nw = { ...nw, handoff: handoffText(withWork(st, nw), nw) };
   if (stage === "integrated" && step.passedAll && nw.git.integrated)
     nw = { ...nw, git: { ...nw.git, integrated: { ...nw.git.integrated, validated: true } } };
   return {

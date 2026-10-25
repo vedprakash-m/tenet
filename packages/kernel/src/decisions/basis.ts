@@ -1,6 +1,7 @@
 // `decide {propose: basis}`: record the outcome, examples and design sketch (TS §8.7). The one-stop rule: the basis is
 // confirmed from the request when every element is in the user's own words and the sketch commits to nothing;
 // otherwise exactly one `basis-confirm` question lists Tenet's additions. Nothing is classified as "already said".
+import { outputPatternProblem } from "../core/outputs.ts";
 import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
 import { build } from "../core/basis-build.ts";
@@ -161,6 +162,8 @@ export const basis: Decision = {
     }
     const proposal = BasisProposal.parse(input.propose);
     const scopePaths = new Set(proposal.scopePaths ?? work.scope.paths);
+    const badOutput = proposal.elements.flatMap((e) => e.outputs ?? []).map(outputPatternProblem).find((p) => p);
+    if (badOutput) throw new KernelError("capability-missing", badOutput, { exit: 1 });
     const trapped = [...new Set(proposal.elements.flatMap((e) => (e.support ?? []).filter((p) => scopePaths.has(p))))];
     if (trapped.length) {
       throw new KernelError("support-overlaps-scope", `${trapped.join(", ")}: it is expected to change, not a fixed input`, { exit: 1 });

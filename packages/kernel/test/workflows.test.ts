@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup, git, tmp, write } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult, finishFixture, focusFixture } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, callWithEnvelopeConsent, project, reviewResult, finishFixture, focusFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
@@ -39,7 +39,8 @@ describe("a new project", () => {
     write(root, "tsconfig.json", '{"compilerOptions":{"strict":true}}\n');
     write(root, ".gitignore", "node_modules\n");
     symlinkSync(join(import.meta.dirname, "../../../node_modules"), join(root, "node_modules"));
-    const call = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    const rawCall = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    const call = (v: string, i: Record<string, unknown>) => callWithEnvelopeConsent(rawCall, v, i);
 
     const ask = await call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts"], lane: "quick" });
     assert.equal(ask.exit, 3);
@@ -112,7 +113,9 @@ describe("commit hooks (TS §10.3)", () => {
     const f = await finishFixture(p, { h, subject: "Add greet" });
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f));
     assert.equal(d(f).scope, "committed");
-    assert.equal(p.ports().store.read()!.state.consents.length, 1);
+    const consents = p.ports().store.read()!.state.consents;
+    assert.equal(consents.filter((item) => item.kind === "hooks").length, 1);
+    assert.ok(consents.some((item) => item.kind === "envelope"));
   });
 
   it("keeps the commit and reports a path a hook staged that is not Tenet's", async () => {
@@ -123,6 +126,24 @@ describe("commit hooks (TS §10.3)", () => {
     await p.call("decide", { h, kind: "hook-consent", answers: { "hook-consent": "commit-with-hooks" } });
     const f = await finishFixture(p, { h, subject: "Add greet" });
     assert.ok(f.reasons.some((r) => r.code === "hook-staged-foreign-path"), JSON.stringify(f.reasons));
+    assert.equal(f.exit, 3, JSON.stringify(f));
+    assert.notEqual(d(f).endpoint, "checked-local");
+    const work = Object.values(p.ports().store.read()!.state.work)[0]!;
+    assert.notEqual(work.state, "finished");
+    assert.equal(work.git.commits.length, 1);
+    const foreign = work.attention.find(item => item.path === "made-by-hook.txt" && !item.disposition);
+    assert.ok(foreign);
+    await p.call("check", { h, stage: "candidate", again: true });
+    const checked = Object.values(p.ports().store.read()!.state.work)[0]!;
+    assert.ok(checked.attention.some(item => item.id === foreign.id && !item.disposition));
+    const retried = await p.call("finish", { h, again: true });
+    assert.notEqual(d(retried).endpoint, "checked-local", JSON.stringify(retried));
+    const accepted = await p.call("decide", { h, kind: "disposition", target: foreign.id,
+      propose: { outcome: "accepted", reason: "I reviewed and chose to keep the hook's extra file." } });
+    assert.equal(accepted.exit, 0, JSON.stringify(accepted));
+    const disposed = Object.values(p.ports().store.read()!.state.work)[0]!.attention.find(item => item.id === foreign.id);
+    assert.equal(disposed?.disposition?.by, "user");
+    assert.equal(disposed?.disposition?.outcome, "accepted");
     assert.equal(p.git("show", "--name-only", "--format=", "HEAD").includes("made-by-hook.txt"), true, "the commit is kept");
   });
 
@@ -320,7 +341,8 @@ describe("things that must not trip it", () => {
   it("investigates and plans in a folder with no Git at all", async () => {
     const root = tmp("tenet-nogit-"); roots.push(root);
     write(root, "notes.md", "# notes\n");
-    const call = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    const rawCall = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    const call = (v: string, i: Record<string, unknown>) => callWithEnvelopeConsent(rawCall, v, i);
     const o = await call("open", { profile: "investigate", request: "what is in here?" });
     assert.equal(o.exit, 0, JSON.stringify(o));
     const f = await call("finish", { h: o.handle! });

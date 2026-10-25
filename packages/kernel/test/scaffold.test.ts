@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
-import { FAKE_LOCK, callWith, fakeRecipe, fakeRecipes, reviewResult } from "./support/fixture.ts";
+import { FAKE_LOCK, callWith, callWithEnvelopeConsent, fakeRecipe, fakeRecipes, reviewResult } from "./support/fixture.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -17,7 +17,8 @@ async function empty(recipes = fakeRecipes(), lane = "quick") {
   initRepo(root);
   write(root, "NOTES.txt", "mine\n");
   git(root, "add", "-A"); git(root, "commit", "-qm", "initial");
-  const call = callWith(root, recipes);
+  const rawCall = callWith(root, recipes);
+  const call = (verb: string, input: Record<string, unknown> = {}) => callWithEnvelopeConsent(rawCall, verb, input);
   const o = await call("open", { profile: "feature", request: "a new app", scopePaths: [], lane });
   const h = o.handle!;
   const b = await call("decide", { h, kind: "basis", propose: {
@@ -32,6 +33,26 @@ async function empty(recipes = fakeRecipes(), lane = "quick") {
 }
 
 describe("scaffold", () => {
+  it("does not replay a published scaffold after commit clears transient touched paths [CON-03]", async () => {
+    const { root, call, h } = await empty();
+    assert.equal((await call("decide", { h, kind: "scaffold", propose: { name: "stable-scaffold" } })).exit, 0);
+    const checked = await call("check", { h, stage: "candidate" });
+    await call("findings", { h, result: reviewResult(d(checked)) });
+    const finished = await call("finish", { h, subject: "Scaffold once" });
+    assert.equal(d(finished).endpoint, "checked-local", JSON.stringify(finished));
+    const before = JSON.parse(readFileSync(join(root, ".tenet/state"), "utf8"));
+    const workId = Object.keys(before.work)[0];
+    assert.ok(workId);
+    assert.deepEqual(before.work[workId].touched, []);
+    const head = git(root, "rev-parse", "HEAD");
+    const opened = await call("open", { profile: "investigate", request: "leave published scaffold attribution unchanged" });
+    assert.equal(opened.exit, 0, JSON.stringify(opened));
+    const after = JSON.parse(readFileSync(join(root, ".tenet/state"), "utf8"));
+    assert.deepEqual(after.work[workId], before.work[workId]);
+    assert.deepEqual(after.project.recipe, before.project.recipe);
+    assert.equal(git(root, "rev-parse", "HEAD"), head);
+    assert.equal(opened.effects?.completed.some(effect => /scaffold.*not yet in the contract/.test(effect)) ?? false, false);
+  });
   it("writes the template with the project name, protects the starter's paths, installs, and then the first check and commit work [GIT-01]", async () => {
     const { root, call, h } = await empty();
     const r = await call("decide", { h, kind: "scaffold", propose: { name: "loan-desk" } });

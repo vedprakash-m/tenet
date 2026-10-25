@@ -1,6 +1,6 @@
 // The project folder as an adapter: the only code that writes files the user will see. Never overwrites.
 import { createHash, randomUUID } from "node:crypto";
-import { closeSync, constants, fchmodSync, fstatSync, fsyncSync, linkSync, lstatSync, mkdirSync, openSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, constants, fchmodSync, fstatSync, fsyncSync, linkSync, lstatSync, mkdirSync, openSync, readSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import type { Project, RecipeFile } from "../ports/types.ts";
 import { allowed } from "../core/exclusions.ts";
@@ -57,7 +57,17 @@ export class FsProject implements Project {
         const mb = MAX_READ_BYTES / (1024 * 1024);
         throw new KernelError("project-file-too-large", `${rel} exceeds the ${mb} MB bounded read limit`, { exit: 2 });
       }
-      return readFileSync(fd);
+      const bytes = Buffer.alloc(st.size + 1);
+      let count = 0;
+      while (count < bytes.length) {
+        const n = readSync(fd, bytes, count, bytes.length - count, count);
+        if (!n) break;
+        count += n;
+      }
+      const after = fstatSync(fd);
+      if (count !== st.size || after.size !== st.size || after.mtimeMs !== st.mtimeMs || after.ctimeMs !== st.ctimeMs)
+        throw new KernelError("capability-missing", `${rel} changed during its bounded read; retry against stable input`, { exit: 2 });
+      return bytes.subarray(0, count);
     } catch (e) { if ((e as NodeJS.ErrnoException).code === "ENOENT") return null; throw e; }
     finally { if (fd >= 0) closeSync(fd); }
   }

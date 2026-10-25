@@ -10,8 +10,12 @@ import { createPorts } from "../../src/wire.ts";
 import { git, initRepo, tmp, write } from "../helpers.ts";
 
 const REPO_NODE_MODULES = join(import.meta.dirname, "../../../../node_modules");
+const cliEnv = () => ({
+  PATH: process.env.PATH, HOME: process.env.HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
+  ...(process.platform === "darwin" ? { __CF_USER_TEXT_ENCODING: "test" } : {}),
+});
 
-export function project(files: Record<string, string> = {}) {
+export function project(files: Record<string, string> = {}, options: { autoConsentEnvelope?: boolean } = {}) {
   const root = tmp("tenet-fx-");
   initRepo(root);
   write(root, "package.json", '{"name":"fx","type":"module","private":true}\n');
@@ -23,11 +27,39 @@ export function project(files: Record<string, string> = {}) {
   git(root, "add", "-A");
   git(root, "commit", "-qm", "initial");
   const ports = () => createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
-  const call = (verb: string, input: Record<string, unknown> = {}): Promise<KernelResponse> => runVerb(ports(), VERBS, verb, input);
-  return { root, call, ports, git: (...a: string[]) => git(root, ...a), write: (rel: string, c: string) => write(root, rel, c) };
+  const rawCall = (verb: string, input: Record<string, unknown> = {}): Promise<KernelResponse> => runVerb(ports(), VERBS, verb, input);
+  const call = (verb: string, input: Record<string, unknown> = {}): Promise<KernelResponse> =>
+    options.autoConsentEnvelope === false ? rawCall(verb, input) : callWithEnvelopeConsent(rawCall, verb, input);
+  return { root, call, rawCall, ports, git: (...a: string[]) => git(root, ...a), write: (rel: string, c: string) => write(root, rel, c) };
+}
+
+export async function callWithEnvelopeConsent(
+  rawCall: (verb: string, input: Record<string, unknown>) => Promise<KernelResponse>,
+  verb: string,
+  input: Record<string, unknown>,
+): Promise<KernelResponse> {
+  const response = await rawCall(verb, input);
+  if (!response.questions?.some((question) => question.id === "envelope-consent") || typeof input.h !== "string") return response;
+  const approval = await rawCall("decide", {
+    h: input.h, kind: "envelope-consent", answers: { "envelope-consent": "allow-envelope" },
+  });
+  return approval.exit === 0 ? rawCall(verb, input) : approval;
 }
 
 export type Project = ReturnType<typeof project>;
+
+export async function preconsentEnvelope(p: Project, h: string, input: Record<string, unknown>): Promise<void> {
+  const ports = createPorts(p.root, cliEnv());
+  const call = (verb: string, body: Record<string, unknown>) => runVerb(ports, VERBS, verb, body);
+  const response = await call("check", { ...input, h });
+  if (!response.questions?.some((question) => question.id === "envelope-consent")) {
+    throw new Error(`expected pre-spawn envelope question: ${JSON.stringify(response)}`);
+  }
+  const approval = await call("decide", {
+    h, kind: "envelope-consent", answers: { "envelope-consent": "allow-envelope" },
+  });
+  if (approval.exit !== 0) throw new Error(`envelope approval failed: ${JSON.stringify(approval)}`);
+}
 
 export const GREET_TEST = `import { expect, it } from "vitest";
 import { greet } from "./greet.ts";
@@ -73,7 +105,7 @@ export interface Cli { code: number | null; signal: NodeJS.Signals | null; stdou
 
 /** Runs the real command-line entry in its own process, as an agent would. */
 export function cli(root: string, args: string[], stdin?: string): { child: ReturnType<typeof spawn>; done: Promise<Cli> } {
-  const child = spawn(process.execPath, [MAIN, ...args], { cwd: root, stdio: ["pipe", "pipe", "inherit"], env: { PATH: process.env.PATH, HOME: process.env.HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" } });
+  const child = spawn(process.execPath, [MAIN, ...args], { cwd: root, stdio: ["pipe", "pipe", "inherit"], env: cliEnv() });
   let stdout = "";
   child.stdout!.on("data", (c: Buffer) => { stdout += c.toString(); });
   child.stdin!.end(stdin ?? "");

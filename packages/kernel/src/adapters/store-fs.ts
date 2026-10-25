@@ -1,15 +1,19 @@
 // The filesystem Store (TS §7): one state document replaced atomically, a transaction lock with guarded stale-break,
 // an append-only log with torn-write repair, hash-named blobs and the workspace marker.
-import { accessSync, chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, readdirSync, linkSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { accessSync, chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, ftruncateSync, readdirSync, readFileSync, linkSync, lstatSync, mkdirSync, openSync, readSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { isUtf8 } from "node:buffer";
 import { join, relative } from "node:path";
+import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
 import type { Random } from "../core/ids.ts";
 import { SCHEMA_VERSION, State } from "../core/schemas.ts";
 import { accountingCheckpoint, recoverAccounting } from "../core/budget.ts";
+import { addMonths, reduceJournal } from "../core/journal-reduce.ts";
+import type { Months } from "../core/journal-reduce.ts";
 import { recoveredState } from "../core/state.ts";
-import type { Clock, LogEntry, Quarantined, Store, Tx } from "../ports/types.ts";
+import type { Clock, EvictReport, Footprint, LogEntry, Quarantined, Store, Tx } from "../ports/types.ts";
 import { isAlive, procStart } from "./proc.ts";
 import { quarantine, QUARANTINE_JOURNAL } from "./quarantine-fs.ts";
 
@@ -18,24 +22,85 @@ interface LockInfo { pid: number; procStart: string; nonce: string; verb: string
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const MAX_RECORD = 50 * 1024 * 1024;
-const readJson = <T>(p: string): T | null => {
-  let fd = -1;
-  try {
-    fd = openSync(p, constants.O_RDONLY | constants.O_NOFOLLOW);
-    const st = fstatSync(fd);
-    if (!st.isFile() || st.size > MAX_RECORD) return null;
-    const buffer = Buffer.alloc(st.size + 1), n = readSync(fd, buffer, 0, buffer.length, 0);
-    if (n > st.size) return null;
-    const parsed: unknown = JSON.parse(buffer.subarray(0, n).toString("utf8"));
-    const pending: Array<[unknown, number]> = [[parsed, 0]];
-    while (pending.length) {
-      const [value, depth] = pending.pop()!;
-      if (depth > 64) return null;
-      if (value && typeof value === "object") for (const item of Object.values(value)) pending.push([item, depth + 1]);
+const LogBase = z.object({ t: z.string().min(1) });
+const LogRecord = z.discriminatedUnion("kind", [
+  LogBase.extend({ kind: z.literal("intent"), effect: z.string().min(1), id: z.string().min(1), op: z.unknown() }).passthrough(),
+  LogBase.extend({ kind: z.literal("result"), effect: z.string().min(1), id: z.string().min(1), outcome: z.unknown() }).passthrough(),
+  LogBase.extend({ kind: z.literal("call"), verb: z.string().min(1), exit: z.number().int().min(0).max(5),
+    revision: z.number().int().nonnegative() }).passthrough(),
+  LogBase.extend({ kind: z.literal("accounting") }).passthrough(),
+]);
+
+function parseRecord(text: string): unknown {
+  const parsed: unknown = JSON.parse(text);
+  const pending: Array<[unknown, number]> = [[parsed, 0]];
+  while (pending.length) {
+    const [value, depth] = pending.pop()!;
+    if (depth > 64) throw new KernelError("unsupported-record", "a private record exceeds the depth bound");
+    if (value && typeof value === "object") for (const item of Object.values(value)) pending.push([item, depth + 1]);
+  }
+  return parsed;
+}
+
+function readJournal(text: string): { entries: LogEntry[]; keep: number } {
+  const lines = text.split("\n"), entries: LogEntry[] = [];
+  let keep = 0;
+  for (let index = 0; index < lines.length - 1; index++) {
+    const line = lines[index]!;
+    if (!line) { keep++; continue; }
+    let record: unknown;
+    try { record = parseRecord(line); }
+    catch (error) {
+      if (error instanceof SyntaxError && index === lines.length - 2) return { entries, keep };
+      throw new KernelError("unsupported-record", "the journal contains a corrupt complete record");
     }
-    return parsed as T;
+    const parsed = LogRecord.safeParse(record);
+    if (!parsed.success || (parsed.data.kind === "intent" && !Object.hasOwn(record!, "op")) ||
+      (parsed.data.kind === "result" && !Object.hasOwn(record!, "outcome"))) {
+      throw new KernelError("unsupported-record", "the journal contains an unsupported record");
+    }
+    entries.push(parsed.data);
+    keep += line.length + 1;
+  }
+  return { entries, keep };
+}
+
+function readRecord(path: string, journal = false): string | null {
+  let descriptor = -1;
+  try {
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    const info = fstatSync(descriptor);
+    if (!info.isFile() || info.size > MAX_RECORD) {
+      throw new KernelError("unsupported-record", "a private record is not a regular file within the 50 MB bound");
+    }
+    const buffer = Buffer.alloc(info.size + 1);
+    let offset = 0;
+    while (offset < buffer.length) {
+      const count = readSync(descriptor, buffer, offset, buffer.length - offset, offset);
+      if (!count) break;
+      offset += count;
+    }
+    const after = fstatSync(descriptor);
+    if (offset !== info.size || after.size !== info.size || after.mtimeMs !== info.mtimeMs) {
+      throw new KernelError("unsupported-record", "a private record changed during its bounded read");
+    }
+    const content = buffer.subarray(0, offset);
+    if (!isUtf8(journal ? content.subarray(0, content.lastIndexOf(0x0a) + 1) : content)) {
+      throw new KernelError("unsupported-record", "a private record contains invalid UTF-8");
+    }
+    return content.toString("utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    if (error instanceof KernelError) throw error;
+    throw new KernelError("unsupported-record", "a private record cannot be read safely");
+  } finally { if (descriptor >= 0) closeSync(descriptor); }
+}
+
+const readJson = <T>(p: string): T | null => {
+  try {
+    const text = readRecord(p);
+    return text === null ? null : parseRecord(text) as T;
   } catch { return null; }
-  finally { if (fd >= 0) closeSync(fd); }
 };
 
 function fsyncDir(dir: string) {
@@ -43,8 +108,31 @@ function fsyncDir(dir: string) {
   try { fsyncSync(fd); } finally { closeSync(fd); }
 }
 function writeSynced(path: string, data: string) {
-  const fd = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW, 0o600);
-  try { fchmodSync(fd, 0o600); writeFileSync(fd, data); fsyncSync(fd); } finally { closeSync(fd); }
+  const fd = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK, 0o600);
+  try {
+    if (!fstatSync(fd).isFile()) throw new KernelError("unsupported-record", "private writes require a regular file");
+    fchmodSync(fd, 0o600); ftruncateSync(fd, 0); writeFileSync(fd, data); fsyncSync(fd);
+  } finally { closeSync(fd); }
+}
+
+/** The latest modification time anywhere under a folder, so a folder with recently used packets is never called stale. */
+function newestMtime(path: string): number {
+  let newest = 0;
+  const walk = (dir: string) => {
+    for (const n of readdirSync(dir)) {
+      const st = lstatSync(join(dir, n));
+      newest = Math.max(newest, st.mtimeMs);
+      if (st.isDirectory()) walk(join(dir, n));
+    }
+  };
+  try { newest = lstatSync(path).mtimeMs; walk(path); } catch { /* unreadable: the folder's own time stands */ }
+  return newest;
+}
+
+/** Storage limits (PRD §4.4.3, TS §7.6); tests lower them, and `afterSummaries` is a crash seam for the reduction. */
+export interface StoreOptions {
+  lockWaitMs?: number; compactAtBytes?: number; ceilingBytes?: number; reserveBytes?: number; runFileCapBytes?: number;
+  journalDays?: number; afterSummaries?: () => void;
 }
 
 export class FsStore implements Store {
@@ -54,8 +142,10 @@ export class FsStore implements Store {
   private rand: Random;
   private lockWaitMs: number;
   private quarantined?: Quarantined;
+  private opts: StoreOptions;
 
-  constructor(root: string, clock: Clock, rand: Random, opts: { lockWaitMs?: number } = {}) {
+  constructor(root: string, clock: Clock, rand: Random, opts: StoreOptions = {}) {
+    this.opts = opts;
     this.root = root;
     this.dir = join(root, ".tenet");
     this.clock = clock;
@@ -244,7 +334,8 @@ export class FsStore implements Store {
         intent: (effect, id, op) => store.append({ kind: "intent", effect, id, op }),
         result: (effect, id, outcome) => store.append({ kind: "result", effect, id, outcome }),
         unresolved: () => store.unresolved(),
-        recent: (n) => store.readLog().slice(-n),
+        evict: (keep) => store.evict(keep),
+        recent: (n) => { const log = store.readLog(); return n === undefined ? log : log.slice(-n); },
       };
       return await fn(tx);
     } finally {
@@ -288,48 +379,53 @@ export class FsStore implements Store {
   // ------------------------------------------------------------ log
   private repairLogTail() {
     const path = this.p("log");
-    if (!existsSync(path)) return;
-    const text = readFileSync(path, "utf8");
+    const text = readRecord(path, true);
     if (!text) return;
-    if (text.endsWith("\n")) {
-      const body = text.slice(0, -1);
-      if (!body) return;
-      const start = body.lastIndexOf("\n") + 1;
-      try { JSON.parse(body.slice(start)); return; } catch { /* torn line that happens to end in a newline */ }
-      // Keep every complete line before the torn one; a single torn line leaves nothing.
-      writeSynced(path, body.slice(0, start));
-      return;
-    }
-    // A final line with no trailing newline is a torn write: truncate it; its effect is treated as intent-only.
-    const keep = text.slice(0, text.lastIndexOf("\n") + 1);
-    writeSynced(path, keep);
+    const { keep } = readJournal(text);
+    if (keep !== text.length) writeSynced(path, text.slice(0, keep));
   }
 
   private append(entry: Omit<LogEntry, "t">) {
-    const fd = openSync(this.p("log"), constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT, 0o600);
-    try { writeFileSync(fd, `${JSON.stringify({ t: this.clock.now(), ...entry })}\n`); fsyncSync(fd); } finally { closeSync(fd); }
+    const serialized = `${JSON.stringify({ t: this.clock.now(), ...entry })}\n`;
+    const bytes = Buffer.byteLength(serialized, "utf8");
+    if (bytes > MAX_RECORD) throw new KernelError("unsupported-record", "a journal entry exceeds the 50 MB record bound");
+    readJournal(serialized);
+    const flags = constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK;
+    const fd = openSync(this.p("log"), flags, 0o600);
+    try {
+      const info = fstatSync(fd);
+      if (!info.isFile()) throw new KernelError("unsupported-record", "the journal is not a regular file");
+      if (info.size + bytes > MAX_RECORD) throw new KernelError("storage-protected-full", "the journal reached its record bound");
+      writeFileSync(fd, serialized);
+      fsyncSync(fd);
+    } finally { closeSync(fd); }
   }
 
   readLog(): LogEntry[] {
-    if (!existsSync(this.p("log"))) return [];
-    return readFileSync(this.p("log"), "utf8").split("\n").filter(Boolean).flatMap((l) => { try { return [JSON.parse(l) as LogEntry]; } catch { return []; } });
+    return readJournal(readRecord(this.p("log"), true) ?? "").entries;
   }
 
   private unresolved() {
     const log = this.readLog();
-    const done = new Set(log.filter((e) => e.kind === "result").map((e) => `${e.effect}:${e.id}`));
-    return log.filter((e) => e.kind === "intent" && !done.has(`${e.effect}:${e.id}`)).map((e) => ({ effect: e.effect!, id: e.id!, op: e.op }));
+    const done = new Set(log.filter((e) => e.kind === "result").map((e) => JSON.stringify([e.effect, e.id])));
+    return log.filter((e) => e.kind === "intent" && !done.has(JSON.stringify([e.effect, e.id]))).map((e) => ({ effect: e.effect!, id: e.id!, op: e.op }));
   }
 
   // ------------------------------------------------------------ blobs and temp
   putBlob(content: string): string {
+    if (Buffer.byteLength(content, "utf8") > MAX_RECORD) {
+      throw new KernelError("unsupported-record", "a blob exceeds the 50 MB record bound");
+    }
     const h = sha256(content);
     mkdirSync(this.p("blobs"), { recursive: true, mode: 0o700 });
-    if (!existsSync(this.p(`blobs/${h}`))) writeSynced(this.p(`blobs/${h}`), content);
+    if (this.readBlob(h) === null) writeSynced(this.p(`blobs/${h}`), content);
     return h;
   }
   readBlob(hash: string): string | null {
-    try { return readFileSync(this.p(`blobs/${hash}`), "utf8"); } catch { return null; }
+    if (!/^[a-f0-9]{64}$/.test(hash)) throw new KernelError("unsupported-record", "invalid blob hash");
+    const content = readRecord(this.p(`blobs/${hash}`));
+    if (content !== null && sha256(content) !== hash) throw new KernelError("unsupported-record", "blob hash mismatch");
+    return content;
   }
 
   tempDir(name: string): string {
@@ -366,11 +462,14 @@ export class FsStore implements Store {
     const base = this.tempBase();
     if (!base) return 0;
     let removed = 0;
-    const old = (p: string) => { try { return Date.now() - statSync(p).mtimeMs > maxAgeMs; } catch { return false; } };
+    const old = (p: string) => { try { return Date.now() - lstatSync(p).mtimeMs > maxAgeMs; } catch { return false; } };
     for (const group of ["", "manifests", "review"]) {
       const dir = group ? join(base, group) : base;
       let names: string[] = [];
-      try { names = readdirSync(dir); } catch { continue; }
+      try {
+        if (!lstatSync(dir).isDirectory()) continue;
+        names = readdirSync(dir);
+      } catch { continue; }
       for (const n of names) {
         const p = join(dir, n);
         if ((group === "" && !n.startsWith("run-")) || keep.some((k) => k === p || k.startsWith(`${p}/`))) continue;
@@ -379,6 +478,127 @@ export class FsStore implements Store {
     }
     return removed;
   }
-  private tempBase(): string | null { try { return this.exists() ? join(tmpdir(), `tenet-${this.marker()!.workspaceId}`) : null; } catch { return null; } }
+  // ------------------------------------------------------------ eviction (CON-08, specs/storage-retention.md v2)
+  private replaceSynced(path: string, data: string) {
+    writeSynced(`${path}.tmp`, data);
+    renameSync(`${path}.tmp`, path);
+    fsyncDir(this.dir);
+  }
+  private prevRevision(): number | null {
+    try { return State.parse(JSON.parse(readRecord(this.p("state.prev")) ?? "null")).revision; } catch { return null; }
+  }
+  /** Old journal records become monthly counts in summaries.json, written first and keyed by the journal they came from. */
+  private reduceLog(nowMs: number): string | undefined {
+    const text = readRecord(this.p("log"), true) ?? "";
+    if (Buffer.byteLength(text) < (this.opts.compactAtBytes ?? 5 * 1024 * 1024)) return undefined;
+    const revision = this.read()?.state.revision ?? 0;
+    const protectFromRevision = Math.min(revision, this.prevRevision() ?? revision);
+    const reduced = (() => {
+      try { readJournal(text); return reduceJournal(text, { nowMs, days: this.opts.journalDays ?? 90, protectFromRevision }); } catch { return null; }
+    })();
+    if (!reduced) return "The journal was left untouched: it holds a record this kernel does not recognize.";
+    if (!reduced.removed) return undefined;
+    const from = sha256(text);
+    let prior: { from?: string; months?: Months } = {};
+    try { prior = JSON.parse(readRecord(this.p("summaries.json")) ?? "{}"); } catch { /* a damaged file is rebuilt from this reduction */ }
+    const months = prior.from === from ? (prior.months ?? {}) : addMonths(prior.months ?? {}, reduced.months);
+    this.replaceSynced(this.p("summaries.json"), JSON.stringify({ version: 1, from, months }));
+    this.opts.afterSummaries?.();
+    this.replaceSynced(this.p("log"), reduced.text);
+    return `Reduced the journal: ${reduced.removed} records older than 90 days are now monthly counts (summaries.json); `
+      + "unresolved effects and recent history are kept.";
+  }
+  /** Oldest run folders first, by newest file time, until the cap holds; folders in `keep` stay. */
+  private capRunFiles(keep: readonly string[]): string | undefined {
+    const base = this.tempBase();
+    if (!base) return undefined;
+    const entries = ["", "manifests", "review"].flatMap((g) => {
+      const dir = g ? join(base, g) : base;
+      try { return readdirSync(dir).filter((n) => g || n.startsWith("run-")).map((n) => join(dir, n)); } catch { return []; }
+    }).map((path) => ({ path, bytes: this.sizeOf(path), at: newestMtime(path) })).sort((a, b) => a.at - b.at);
+    let total = entries.reduce((n, e) => n + e.bytes, 0), removed = 0;
+    const cap = this.opts.runFileCapBytes ?? 200 * 1024 * 1024;
+    for (const e of entries) {
+      if (total <= cap) break;
+      if (keep.some((k) => k === e.path || k.startsWith(`${e.path}/`))) continue;
+      rmSync(e.path, { recursive: true, force: true }); total -= e.bytes; removed++;
+    }
+    return removed ? `Removed ${removed} old run folder(s): run files were over their cap.` : undefined;
+  }
+  evict(keep: readonly string[]): EvictReport {
+    const notes = [this.reduceLog(Date.parse(this.clock.now())), this.capRunFiles(keep)].filter((x): x is string => !!x);
+    let classes: Array<{ name: string; bytes: number }> = [];
+    try { classes = readdirSync(this.dir).map((name) => ({ name, bytes: this.sizeOf(join(this.dir, name)) })).sort((a, b) => b.bytes - a.bytes); } catch { /* no store yet */ }
+    const total = classes.reduce((n, c) => n + c.bytes, 0);
+    const overCeiling = total > (this.opts.ceilingBytes ?? 50 * 1024 * 1024) - (this.opts.reserveBytes ?? 5 * 1024 * 1024);
+    return { ...(notes.length ? { message: notes.join(" ") } : {}), overCeiling, largest: classes.slice(0, 3) };
+  }
+  private sizeOf(path: string): number {
+    try {
+      const st = lstatSync(path);
+      return st.isDirectory() ? readdirSync(path).reduce((n, f) => n + this.sizeOf(join(path, f)), 0) : st.size;
+    } catch { return 0; }
+  }
+  residue(): { tenet: Footprint | null; temp: Footprint | null } {
+    const measure = (path: string): Footprint | null => {
+      let files = 0, bytes = 0;
+      const walk = (dir: string) => {
+        for (const n of readdirSync(dir)) {
+          const st = lstatSync(join(dir, n));
+          if (st.isDirectory()) walk(join(dir, n)); else { files++; bytes += st.size; }
+        }
+      };
+      try { if (!lstatSync(path).isDirectory()) return null; walk(path); } catch { return null; }
+      return { path, files, bytes };
+    };
+    return { tenet: measure(this.dir), temp: this.exists() ? measure(join(tmpdir(), `tenet-${this.marker()!.workspaceId}`)) : null };
+  }
+  cleanTemp(scope: "project" | "machine", minAgeMs: number, remove: boolean): { removed: string[]; kept: string[] } {
+    const named = scope === "project"
+      ? (this.exists() ? [`tenet-${this.marker()!.workspaceId}`] : [])
+      : (() => { try { return readdirSync(tmpdir()).filter((n) => /^tenet-ws_[a-z0-9]+$/.test(n)); } catch { return []; } })();
+    const out = { removed: [] as string[], kept: [] as string[] };
+    for (const n of named) {
+      const p = join(tmpdir(), n);
+      try {
+        const st = lstatSync(p);
+        if (!st.isDirectory()) continue;
+        if (Date.now() - newestMtime(p) < minAgeMs) { out.kept.push(p); continue; }
+        if (remove) rmSync(p, { recursive: true, force: true });
+        out.removed.push(p);
+      } catch { /* gone or unreadable: nothing of ours to remove */ }
+    }
+    return out;
+  }
+  purge(texts: readonly string[]): number {
+    const base = this.tempBase();
+    const needles = texts.filter((t) => t.length > 0);
+    if (!base || !needles.length) return 0;
+    let removed = 0;
+    const visit = (dir: string) => {
+      let names: string[] = [];
+      try { names = readdirSync(dir); } catch { return; }
+      for (const n of names) {
+        const p = join(dir, n);
+        try {
+          const st = lstatSync(p);
+          if (st.isDirectory()) visit(p);
+          else if (st.isFile() && st.size <= 50_000_000 && needles.some((t) => readFileSync(p, "utf8").includes(t))) {
+            rmSync(p, { force: true });
+            removed++;
+          }
+        } catch { /* a file that vanished or cannot be read holds nothing Tenet can purge */ }
+      }
+    };
+    visit(base);
+    return removed;
+  }
+  private tempBase(): string | null {
+    try {
+      if (!this.exists()) return null;
+      const base = join(tmpdir(), `tenet-${this.marker()!.workspaceId}`);
+      return lstatSync(base).isDirectory() ? base : null;
+    } catch { return null; }
+  }
   canWrite(): boolean { try { accessSync(this.root, constants.W_OK); return true; } catch { return false; } }
 }
