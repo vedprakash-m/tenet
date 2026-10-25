@@ -1,17 +1,153 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { chmodSync, closeSync, constants, existsSync, ftruncateSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { chmodSync, closeSync, constants, existsSync, ftruncateSync, lstatSync, mkdirSync, openSync, readdirSync, readFileSync, readSync, rmSync, statSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import { cleanup, initState, tmp } from "./helpers.ts";
 import { KernelError } from "../src/core/errors.ts";
+import { FsStore } from "../src/adapters/store-fs.ts";
+import { systemClock, systemRandom } from "../src/adapters/system.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 const fresh = () => { const root = tmp(); roots.push(root); return root; };
 
 describe("private store boundaries", () => {
+  it("refuses unsafe compatibility reads before fallback or direct writes [CON-04, CON-05, SEC-12]", async () => {
+    const root = fresh(), store = await initState(root);
+    await store.transaction("test", async tx => tx.publish(tx.state!));
+    const path = join(root, ".tenet/state");
+    const future = JSON.stringify({ ...JSON.parse(readFileSync(path, "utf8")), schema: 2 });
+    const oversized = Buffer.from(future + " ".repeat(50 * 1024 * 1024));
+    writeFileSync(path, oversized);
+    const unsupported = (error: unknown) => error instanceof KernelError && error.reasons[0]?.code === "unsupported-record";
+
+    assert.throws(() => store.admit(), unsupported);
+    assert.throws(() => store.putBlob("must not be stored"), unsupported);
+    await assert.rejects(store.transaction("test", async tx => tx.publish(tx.state!)), unsupported);
+    assert.deepEqual(readFileSync(path), oversized);
+    assert.equal(existsSync(join(root, ".tenet/blobs")), false);
+    assert.equal(existsSync(join(root, ".tenet/lock")), false);
+  });
+
+  it("refuses an admission I/O error rather than trusting the previous state [CON-04, CON-05]", async () => {
+    const root = fresh(), store = await initState(root);
+    await store.transaction("test", async tx => tx.publish(tx.state!));
+    const path = join(root, ".tenet/state");
+    const future = JSON.stringify({ ...JSON.parse(readFileSync(path, "utf8")), schema: 2 });
+    writeFileSync(path, future);
+    const script = `
+      import fs from "node:fs";
+      import { syncBuiltinESMExports } from "node:module";
+      import { newStore } from ${JSON.stringify(new URL("./helpers.ts", import.meta.url).href)};
+      const root = process.argv[1], original = fs.openSync;
+      fs.openSync = (...args) => {
+        if (String(args[0]) === root + "/.tenet/state") throw Object.assign(new Error("injected I/O failure"), { code: "EIO" });
+        return original(...args);
+      };
+      syncBuiltinESMExports();
+      let code = "accepted";
+      try { newStore(root).putBlob("must not be stored"); }
+      catch (error) { code = error.reasons?.[0]?.code ?? "unexpected"; }
+      finally { fs.openSync = original; syncBuiltinESMExports(); }
+      process.stdout.write(JSON.stringify({ code }));
+    `;
+    const result = JSON.parse(execFileSync(process.execPath, ["--input-type=module", "-e", script, root], { encoding: "utf8" }));
+    assert.equal(result.code, "unsupported-record");
+    assert.equal(readFileSync(path, "utf8"), future);
+    assert.equal(existsSync(join(root, ".tenet/blobs")), false);
+  });
+
+  describe("owned schema admission", () => {
+    const blockers = [
+      { name: "future primary with valid previous", record: "state", schema: 2 },
+      { name: "future previous with valid primary", record: "state.prev", schema: 2 },
+      { name: "future marker", record: "marker", schema: 2 },
+      { name: "invalid declared schema", record: "state", schema: "1" },
+      ...["migration-transition.json", "migration-privacy.json"].flatMap(record =>
+        ["{}", "", "{ malformed"].map(content => ({ name: `${record} ${content === "{}" ? "present" : content === "" ? "empty" : "malformed"}`, record, content }))),
+    ];
+    const poison = (root: string, blocker: typeof blockers[number]) => {
+      const path = join(root, ".tenet", blocker.record);
+      writeFileSync(path, "schema" in blocker
+        ? JSON.stringify({ ...JSON.parse(readFileSync(path, "utf8")), schema: blocker.schema })
+        : blocker.content);
+    };
+    const snapshot = (root: string): string => {
+      const entries: unknown[] = [];
+      const visit = (path: string, name: string) => {
+        const info = lstatSync(path);
+        entries.push({ name, mode: info.mode & 0o777, directory: info.isDirectory(),
+          ...(info.isFile() ? { bytes: readFileSync(path).toString("hex") } : {}) });
+        if (info.isDirectory()) for (const child of readdirSync(path).sort()) visit(join(path, child), `${name}/${child}`);
+      };
+      visit(root, ".");
+      return JSON.stringify(entries);
+    };
+    for (const blocker of blockers.slice(0, 2)) {
+      it(`refuses owned schema admission read: ${blocker.name} [CON-04, CON-05]`, { timeout: 9000 }, async () => {
+        const root = fresh(), store = await initState(root);
+        writeFileSync(join(root, ".tenet/state.prev"), readFileSync(join(root, ".tenet/state")));
+        poison(root, blocker);
+        chmodSync(join(root, ".tenet"), 0o755);
+        for (const name of ["state", "state.prev", "marker"]) chmodSync(join(root, ".tenet", name), 0o644);
+        const before = snapshot(root);
+        let reason: unknown = "returned";
+        try { store.read(); } catch (error) { reason = error instanceof KernelError ? error.reasons[0]?.code : String(error); }
+        assert.deepEqual({ reason, unchanged: snapshot(root) === before }, { reason: "unsupported-record", unchanged: true });
+      });
+    }
+    for (const blocker of blockers) {
+      it(`refuses owned schema admission direct mutations: ${blocker.name} [CON-04, CON-05, SEC-12]`, { timeout: 9000 }, async () => {
+        const results: Array<{ method: string; reason: unknown; unchanged: boolean }> = [];
+        const methods = ["repairLock", "putBlob", "tempDir", "writeArtifact", "sweepTemp", "purge", "evict", "cleanTemp"];
+        for (const method of methods) {
+          const root = fresh();
+          await initState(root);
+          const store = new FsStore(root, systemClock, systemRandom, { lockWaitMs: 0, runFileCapBytes: 0 });
+          const previousTmp = process.env.TMPDIR;
+          process.env.TMPDIR = root;
+          try {
+            const artifactDir = store.tempDir("run-expired");
+            const artifact = store.writeArtifact(artifactDir, "packet.json", "private-admission-canary");
+            writeFileSync(join(root, ".tenet/state.prev"), readFileSync(join(root, ".tenet/state")));
+            writeFileSync(join(root, ".tenet/log"), '{"t":"t","kind":"intent","effect":"commit","id":"seed","op":{}}\n{"kind":');
+            for (const name of ["lock", "lock.break"]) writeFileSync(join(root, ".tenet", name),
+              JSON.stringify({ pid: 2 ** 22 + 5, procStart: "Thu Jan  1 00:00:00 1970", nonce: "dead", verb: "test" }));
+            poison(root, blocker);
+            const ageAndMode = (path: string) => {
+              const info = lstatSync(path);
+              if (info.isDirectory()) for (const child of readdirSync(path)) ageAndMode(join(path, child));
+              chmodSync(path, info.isDirectory() ? 0o755 : 0o644);
+              utimesSync(path, 1, 1);
+            };
+            ageAndMode(root);
+            const operations: Record<string, () => unknown> = {
+              repairLock: () => store.repairLock(),
+              putBlob: () => store.putBlob("new private blob"),
+              tempDir: () => store.tempDir("run-new"),
+              writeArtifact: () => store.writeArtifact(artifactDir, "packet.json", "replacement"),
+              sweepTemp: () => store.sweepTemp(1000, []),
+              purge: () => store.purge(["private-admission-canary"]),
+              evict: () => store.evict([]),
+              cleanTemp: () => store.cleanTemp("project", 1000, true),
+            };
+            assert.ok(artifact.startsWith(`${root}/`));
+            const before = snapshot(root);
+            let reason: unknown = "returned";
+            try { await operations[method]!(); }
+            catch (error) { reason = error instanceof KernelError ? error.reasons[0]?.code : String(error); }
+            results.push({ method, reason, unchanged: snapshot(root) === before });
+          } finally {
+            if (previousTmp === undefined) delete process.env.TMPDIR;
+            else process.env.TMPDIR = previousTmp;
+          }
+        }
+        assert.deepEqual(results, methods.map(method => ({ method, reason: "unsupported-record", unchanged: true })));
+      });
+    }
+  });
   for (const completed of ["commit", "commit:extra"]) {
     it(`keeps an unrelated pending intent when ${completed} completes a colliding text key [CON-03]`, async () => {
       const root = fresh(), store = await initState(root);

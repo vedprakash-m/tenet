@@ -29,6 +29,26 @@ async function finished(p: Project) {
 }
 
 describe("undo [GIT-04]", () => {
+  it("refuses a foreign commit with the same work label before previewing any inverse [CON-12, GIT-03]", async () => {
+    const p = fresh();
+    const h = await finished(p);
+    p.write("docs/foreign.md", "human work with a repeated label\n");
+    p.git("add", "docs/foreign.md");
+    p.git("commit", "-qm", "Unrelated work\n\nTenet-Work: W-0001");
+    const before = p.git("rev-parse", "HEAD");
+    const index = readFileSync(join(p.root, ".git/index"));
+
+    const result = await p.call("undo", { h });
+
+    assert.equal(result.reasons[0]?.code, "undo-conflict", JSON.stringify(result));
+    assert.equal(result.questions?.length ?? 0, 0, "foreign history must not reach the approval question");
+    assert.equal(p.git("rev-parse", "HEAD"), before);
+    assert.deepEqual(readFileSync(join(p.root, ".git/index")), index);
+    assert.equal(readFileSync(join(p.root, "docs/foreign.md"), "utf8"), "human work with a repeated label\n");
+    assert.equal(readFileSync(join(p.root, "src/greet.ts"), "utf8"), GREET_IMPL);
+    assert.equal(p.ports().store.read()!.state.pending.length, 0);
+  });
+
   it("previews first and changes nothing; on a yes reverts only the work, keeps later human changes, then checks and commits like any work", async () => {
     const p = fresh();
     const h = await finished(p);

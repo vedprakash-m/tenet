@@ -6,7 +6,7 @@ import type { FileChange, Manifest } from "../core/review.ts";
 import { projectCharter } from "../core/charter.ts";
 import {
   buildAnalystManifest, buildManifest, DEFAULT_CHARTER, DEFAULT_REVIEW_RUBRIC,
-  RESEARCHER_RUBRIC, deltaSince, isManifest, reviewMode,
+  RESEARCHER_RUBRIC, continuesReviewRound, deltaSince, isManifest, reviewMode,
 } from "../core/review.ts";
 import type { BasisElement, BudgetState, Reason, Reservation, State, WorkContract } from "../core/schemas.ts";
 import type { Ports } from "../ports/types.ts";
@@ -52,9 +52,9 @@ function admissionGate(nw: WorkContract, live: Reservation | undefined, focused:
 }
 
 /** The manifest's attempt number: a live reservation's own count, or the next one for its kind of dispatch. */
-function nextAttempt(live: Reservation | undefined, retry: boolean, focused: boolean, budget: BudgetState): number {
+function nextAttempt(live: Reservation | undefined, retry: boolean, focused: boolean, budget: BudgetState, reviews: number): number {
   if (live) return live.attempt + (retry ? 1 : 0);
-  return focused ? budget.reviewRounds + budget.rechecks + 1 : budget.delegations + budget.reservations.length + 1;
+  return focused ? reviews + 1 : budget.delegations + budget.reservations.length + 1;
 }
 
 /** The next action naming the dispatch this issued manifest expects (TS §6.6). */
@@ -111,13 +111,13 @@ export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Fac
 
   const lastFull = [...nw.reviews].reverse().find((l) => l.mode === "full" && l.status === "completed");
   const { mode, basedOn } = reviewMode(nw, basis.hash, deltaSince(lastFull, files));
-  if (!live && mode === "full" && budget.reviewRounds >= LIMITS[nw.lane].rounds) {
+  if (!live && mode === "full" && budget.reviewRounds >= LIMITS[nw.lane].rounds && !continuesReviewRound(nw, facts.candidate, basis.hash)) {
     return { work: nw, next: [nx("finish", "No full review round remains; finish with the current evidence.", true)], reasons: [reason("budget-exhausted", "review rounds")] };
   }
   const shown = mode === "recheck" ? changes.filter((c) => deltaSince(lastFull, files).includes(c.path)) : changes;
   const m = buildManifest({
     work: nw, elements: st.project.intent.elements.filter((e) => basis.elementIds.includes(e.id)), changes: shown, candidate: facts.candidate, basisHash: basis.hash,
-    attempt: nextAttempt(live, retry, focused, budget), mode, ...(basedOn ? { basedOn } : {}),
+    attempt: nextAttempt(live, retry, focused, budget, nw.reviews.length), mode, ...(basedOn ? { basedOn } : {}),
     recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused) + lessonExcerpt(activeLessons(st, nw, ports.clock.now())), id: nw.label, files, charter: charterOf(ports),
     exclusions: settingsFor(ports, st, w).exclusions as Exclusion[],
   });

@@ -1,7 +1,7 @@
 // Build (TS §3.2): typecheck, bundle the kernel into one file the plugin ships, generate the JSON schemas the skills
 // and the reviewer read, and enforce the size budget. The bundle has no runtime dependencies besides Node.
 import { execFileSync } from "node:child_process";
-import { mkdirSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { build } from "esbuild";
 import { z } from "zod";
@@ -15,6 +15,7 @@ const BUDGET_BYTES = 800 * 1024; // owner decision 2026-10-24 (was 750 KB, set 2
 execFileSync(join(ROOT, "node_modules/.bin/tsc"), ["--noEmit"], { cwd: ROOT, stdio: "inherit" });
 
 mkdirSync(dirname(OUT), { recursive: true });
+for (const name of ["LICENSE", "NOTICE"]) copyFileSync(join(ROOT, name), join(ROOT, "plugin", name));
 await build({
   entryPoints: [join(ROOT, "packages/kernel/src/main.ts")], outfile: OUT, bundle: true, platform: "node", format: "esm", target: "node22",
   minify: true, legalComments: "none", banner: { js: "#!/usr/bin/env node" }, logLevel: "warning",

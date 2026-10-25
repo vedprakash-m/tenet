@@ -26,6 +26,10 @@ export async function planUndo(ports: Ports, st: State, w: WorkContract): Promis
   const found = await ports.git.workCommits(w.label);
   if (found.shallow) throw new KernelError("undo-conflict", "this is a shallow clone, so the work's history may be incomplete");
   if (found.merges) throw new KernelError("undo-conflict", "a commit of this work is a merge commit; undoing it needs a person");
+  if (found.commits.some((commit) => !w.git.commits.includes(commit)))
+    throw new KernelError(
+      "undo-conflict", "another commit uses this work's label; its ownership cannot be established, so nothing was reverted"
+    );
   if (!found.commits.length || w.git.commits.some((c) => !found.commits.includes(c))) {
     throw new KernelError("capability-missing", "the work's commits are not all on the current branch; switch to the branch they are on", { exit: 2 });
   }

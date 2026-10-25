@@ -2,7 +2,7 @@
 // its next boundary when those change, says what changed, and continues only after an explicit reconcile.
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { versionDrift, kernelLine } from "../src/core/versions.ts";
+import { versionDrift, kernelLine, schemaStatus } from "../src/core/versions.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { cleanup } from "./helpers.ts";
@@ -27,6 +27,43 @@ function as(p: Project, over: { version?: string; adapter?: string }) {
   return (verb: string, input: Record<string, unknown> = {}) => callWithEnvelopeConsent(raw, verb, input);
 }
 const open = async (p: Project, profile = "plan") => (await p.call("open", { profile, request: "plan the work" })).handle!;
+
+describe("schema metadata status (pure) [LFC-03]", () => {
+  it("treats absent metadata as unavailable without defaulting to schema 1", () => {
+    for (const record of [undefined, null, false, 1, "metadata", [], {}, { work: {} }]) {
+      assert.equal(schemaStatus(record, 1), "unavailable");
+    }
+  });
+
+  it("requires an own schema on a non-array object", () => {
+    assert.equal(schemaStatus(Object.create({ schema: 1 }), 1), "unavailable");
+    assert.equal(schemaStatus(Object.assign([], { schema: 1 }), 1), "unavailable");
+  });
+
+  it("supports matching positive safe integers without claiming the state is valid", () => {
+    assert.equal(schemaStatus({ schema: 1 }, 1), "supported");
+    assert.equal(schemaStatus(Object.assign(Object.create(null), { schema: 1 }), 1), "supported");
+    assert.equal(schemaStatus({ schema: 1, work: null }, 1), "supported");
+    assert.equal(schemaStatus({ schema: Number.MAX_SAFE_INTEGER }, Number.MAX_SAFE_INTEGER), "supported");
+  });
+
+  it("rejects explicit future and older schemas", () => {
+    assert.equal(schemaStatus({ schema: 2 }, 1), "unsupported");
+    assert.equal(schemaStatus({ schema: 1 }, 2), "unsupported");
+  });
+
+  it("rejects malformed explicit schemas", () => {
+    for (const schema of [undefined, "1", null, false, 0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1, {}, []]) {
+      assert.equal(schemaStatus({ schema }, 1), "unsupported");
+    }
+  });
+
+  it("requires the running schema to be a positive safe integer too", () => {
+    for (const current of [0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      assert.equal(schemaStatus({ schema: current }, current), "unsupported");
+    }
+  });
+});
 
 describe("the drift rule (pure) [LFC-03]", () => {
   const run = { tenet: "0.1.0-m0", schema: 1, adapter: "node-ts@10" };
@@ -132,6 +169,44 @@ describe("a pinned contract pauses when Tenet changes [LFC-03]", () => {
     const done = await as(p, { adapter: "node-ts@99" })("decide", { h: r.handle, kind: "version-reconcile", answers: { "version-reconcile": "continue" } });
     assert.equal(done.exit, 0, JSON.stringify(done));
   });
+
+  for (const [label, over] of [
+    ["kernel major drift", { version: "1.1.0-m0" }],
+    ["kernel minor drift", { version: "0.2.0-m0" }],
+    ["adapter drift", { adapter: "node-ts@99" }],
+    ["no drift", {}],
+  ] as const) {
+    it(`repeated identical open preserves the proposed contract under ${label}`, async () => {
+      const p = fresh();
+      const h = await open(p);
+      const before = p.ports().store.read()!.state;
+      const next = as(p, over);
+      const response = await next("open", { profile: "plan", request: "plan the work" });
+      const after = p.ports().store.read()!.state;
+      assert.equal(response.exit, label === "no drift" ? 0 : 3, JSON.stringify(response));
+      assert.equal(response.handle, h);
+      if (label !== "no drift") {
+        assert.deepEqual(response.questions?.map((question) => question.id), ["version-reconcile"]);
+        assert.ok(response.reasons.some((reason) => reason.code === "version-changed"));
+        assert.equal(response.next[0]!.action, "ask");
+      } else {
+        assert.ok(!response.questions?.some((question) => question.id === "version-reconcile"));
+      }
+      assert.equal(after.generationSeq, before.generationSeq);
+      assert.deepEqual(Object.keys(after.work), Object.keys(before.work));
+      assert.deepEqual(after.pending, before.pending);
+      assert.deepEqual(after.sourceOwner, before.sourceOwner);
+      assert.equal(work(p).state, "proposed");
+      assert.deepEqual(work(p).session.generation, Object.values(before.work)[0]!.session.generation);
+      assert.deepEqual(work(p).pinned, Object.values(before.work)[0]!.pinned);
+      assert.deepEqual(work(p).budget, Object.values(before.work)[0]!.budget);
+      const note = await next("inspect", { view: "status", h });
+      assert.equal(note.exit, 0);
+      if (label !== "no drift") {
+        assert.ok(note.reasons.some((reason) => reason.code === "version-changed" && reason.note));
+      }
+    });
+  }
 
   it("a new contract on a project with a paused one pins the running versions", async () => {
     const p = fresh();

@@ -1,7 +1,7 @@
 // What Tenet leaves behind and the previewed cleanups (LFC-05, CON-10, TS §18 residue): read-only listing, then two scopes.
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { cleanup } from "./helpers.ts";
@@ -72,23 +72,27 @@ describe("cleanup previews and scopes [LFC-05, CON-10]", () => {
     assert.equal(r.reasons[0]!.code, "work-busy");
   });
 
-  it("machine scope removes stale tenet-ws_ folders, keeps recent ones and anything not named like Tenet's", async () => {
+  it("machine cleanup retains stale candidates whose ownership and compatibility cannot be proved [LFC-05, CON-10]", async () => {
     const p = fresh();
     const h = await open(p);
-    const stale = join(tmpdir(), "tenet-ws_staletest01"), recent = join(tmpdir(), "tenet-ws_recenttest01"), other = join(tmpdir(), "tenet-wsx_other01");
-    for (const dir of [stale, recent, other]) { mkdirSync(dir, { recursive: true }); writeFileSync(join(dir, "f"), "x"); extra.push(dir); }
+    const suffix = p.root.replace(/[^a-z0-9]/gi, "").toLowerCase();
+    const stale = join(tmpdir(), `tenet-ws_staletest${suffix}`), recent = join(tmpdir(), `tenet-ws_recenttest${suffix}`), other = join(tmpdir(), `tenet-wsx_other${suffix}`);
+    for (const dir of [stale, recent, other]) { mkdirSync(dir); extra.push(dir); writeFileSync(join(dir, "f"), "x"); }
     const old = new Date(Date.now() - 3 * 3600_000);
     for (const dir of [stale, other]) { utimesSync(join(dir, "f"), old, old); utimesSync(dir, old, old); }
     // a folder whose own time is old but which holds a recently used packet is not stale
-    const busy = join(tmpdir(), "tenet-ws_busytest01");
-    mkdirSync(busy, { recursive: true }); writeFileSync(join(busy, "live.json"), "{}"); extra.push(busy);
+    const busy = join(tmpdir(), `tenet-ws_busytest${suffix}`);
+    mkdirSync(busy); extra.push(busy); writeFileSync(join(busy, "live.json"), "{}");
     utimesSync(busy, old, old);
+    const before = readdirSync(tmpdir()).filter((name) => name.startsWith("tenet-ws_")).sort();
     const preview = await p.call("decide", { h, kind: "cleanup", target: "machine" });
     assert.equal(preview.exit, 3);
     assert.ok(existsSync(stale), "a preview removes nothing");
-    const done = await p.call("decide", { h, kind: "cleanup", target: "machine", answers: { "cleanup-confirm": "yes" } });
-    assert.equal(done.exit, 0, JSON.stringify(done));
-    assert.deepEqual([existsSync(stale), existsSync(recent), existsSync(other), existsSync(busy)], [false, true, true, true]);
+    const selection = p.ports().store.cleanTemp("machine", 2 * 3600_000, false);
+    assert.deepEqual(readdirSync(tmpdir()).filter((name) => name.startsWith("tenet-ws_")).sort(), before);
+    assert.deepEqual([existsSync(stale), existsSync(recent), existsSync(other), existsSync(busy)], [true, true, true, true]);
+    assert.deepEqual([recent, other, busy].map((dir) => selection.removed.includes(dir)), [false, false, false]);
+    assert.deepEqual({ selected: selection.removed.includes(stale), retained: selection.kept.includes(stale) }, { selected: false, retained: true });
   });
 
   it("refuses an unknown scope", async () => {

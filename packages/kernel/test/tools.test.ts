@@ -15,6 +15,24 @@ const PLUGIN = join(import.meta.dirname, "../../../plugin");
 const copy = () => { const d = scratch(); cpSync(PLUGIN, d, { recursive: true, filter: (s) => !/\/kernel(\/|$)|\/schemas(\/|$)/.test(s) }); return d; };
 const edit = (root: string, rel: string, fn: (s: string) => string) => writeFileSync(join(root, rel), fn(readFileSync(join(root, rel), "utf8")));
 
+describe("license packaging", () => {
+  it("ships MIT for Tenet and the starter while retaining third-party notices", () => {
+    const root = join(PLUGIN, "..");
+    const license = readFileSync(join(root, "LICENSE"), "utf8");
+    assert.match(license, /^MIT License\n/);
+    assert.match(license, /Permission is hereby granted, free of charge/);
+    assert.match(license, /THE SOFTWARE IS PROVIDED "AS IS"/);
+    assert.equal(readFileSync(join(PLUGIN, "LICENSE"), "utf8"), license);
+    assert.equal(readFileSync(join(PLUGIN, "skills/tenet-starter-ts-web-api/template/LICENSE"), "utf8"), license);
+    const notice = readFileSync(join(root, "NOTICE"), "utf8");
+    assert.equal(readFileSync(join(PLUGIN, "NOTICE"), "utf8"), notice);
+    assert.match(notice, /Copyright \(c\) 2025 Colin McDonnell/);
+    assert.match(notice, /licenses bind the user's project/);
+    assert.doesNotMatch(notice, /PLACEHOLDER-LICENSE/);
+    assert.equal(JSON.parse(readFileSync(join(PLUGIN, "plugin.json"), "utf8")).license, "MIT");
+  });
+});
+
 describe("lint-skills [ENG-03]", () => {
   it("passes the shipped payload [ENG-01]", () => assert.deepEqual(lintPayload(PLUGIN), []));
 

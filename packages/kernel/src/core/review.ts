@@ -2,6 +2,7 @@
 import { hashOf } from "./ids.ts";
 import { canReserve } from "./budget.ts";
 import { reason } from "./reasons.ts";
+import { KernelError } from "./errors.ts";
 import { packetExclusions } from "./exclusions.ts";
 import type { Exclusion } from "./exclusions.ts";
 import type {
@@ -93,6 +94,11 @@ export function reviewMode(work: WorkContract, basisHash: string, changedPaths: 
   if (!full || !open.length || full.basisHash !== basisHash || work.budget.rechecks >= 1) return { mode: "full" };
   const places = new Set(open.map((f) => f.location.path));
   return changedPaths.every((p) => places.has(p)) ? { mode: "recheck", basedOn: full } : { mode: "full" };
+}
+
+export function continuesReviewRound(work: WorkContract, candidate: string, basisHash: string): boolean {
+  const last = [...work.reviews].reverse().find(link => link.mode === "full" && (link.status === "completed" || link.status === "partial"));
+  return last?.status === "partial" && last.candidate === candidate && last.basisHash === basisHash;
 }
 
 export function buildManifest(i: ManifestInput): Manifest | Reason {
@@ -187,7 +193,9 @@ export function applyResult(work: WorkContract, r: ReviewResult, res: Reservatio
   if (res.mode === "recheck") {
     if (res.basedOn) link.basedOn = res.basedOn;
   }
-  return { findings, attention, link, basisGaps: r.basisGaps, countRound: r.status === "completed" || r.status === "partial" };
+  const countRound = (r.status === "completed" || r.status === "partial")
+    && (r.mode === "recheck" || !continuesReviewRound(work, res.candidate, res.basisHash));
+  return { findings, attention, link, basisGaps: r.basisGaps, countRound };
 }
 
 
@@ -206,7 +214,13 @@ export function reviewOnlyManifest(
     rubric: boundedRubric(rubric), resultGuidance: RESULT_GUIDANCE,
   };
   const text = JSON.stringify(body, null, 1);
-  return { text, hash: hashOf(body).slice(0, 16), tokens: estimateTokens(text) };
+  const tokens = estimateTokens(text);
+  if (tokens > TOKEN_BUDGET) {
+    throw new KernelError("narrow-increment", `the review-only assignment, including instructions and rubric, is about ${tokens} tokens`, {
+      next: [{ action: "ask", why: "Ask the user to narrow the change under review to fit the assignment budget.", required: true }],
+    });
+  }
+  return { text, hash: hashOf(body).slice(0, 16), tokens };
 }
 
 // ---------------------------------------------------------------- analyst packets (TS §5.5, AGT-03/05/11)

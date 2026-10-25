@@ -70,6 +70,7 @@ function repeated(c: Ctx): Plan | undefined {
     (w) => w.state === "proposed" && w.profile === c.input.profile && w.request === c.input.request
   );
   if (!same || c.input.resume) return undefined;
+  const ask = resumeAsk(c.ports, same);
   return {
     ...(c.state !== c.before ? { state: c.state } : {}),
     resp: {
@@ -79,6 +80,12 @@ function repeated(c: Ctx): Plan | undefined {
       kernel: true,
       ...surface(c.shared),
       ...quarantineSurface(c.state),
+      ...(ask.question ? {
+        exit: 3,
+        questions: [ask.question],
+        reasons: ask.reasons,
+        next: [nx("ask", ask.why!, true)],
+      } : {}),
     },
   };
 }

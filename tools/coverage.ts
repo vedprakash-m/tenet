@@ -11,6 +11,7 @@ import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "n
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import { QualificationTuple } from "../packages/eval/src/tuple.ts";
 import { REASONS } from "../packages/kernel/src/core/reasons.ts";
 import { KERNEL_VERSION } from "../packages/kernel/src/version.ts";
 
@@ -41,13 +42,6 @@ const EvidenceRef = z.object({
   acIds: z.array(z.string()).min(1), outcome: z.enum(["pass", "partial", "fail", "inconclusive"]),
 }).strict();
 const CampaignRef = z.object({ campaignId: z.string().min(1), path: z.string().min(1), sha256: Hash }).strict();
-const QualificationTuple = z.object({
-  vscodeVersion: z.string().min(1), copilotChatExtensionVersion: z.string().min(1), agentHarness: z.string().min(1),
-  pluginFormatVersion: z.string().min(1), installPath: z.string().min(1), featureSettings: z.record(z.string(), z.unknown()),
-  copilotPlan: z.string().min(1), organizationPolicyProfile: z.string().min(1), osVersion: z.string().min(1),
-  architecture: z.string().min(1), executionTarget: z.string().min(1), workspaceMode: z.string().min(1),
-  recipeVersion: z.string().min(1), toolchainVersions: z.record(z.string(), z.string()),
-}).strict();
 const CampaignManifest = z.object({
   schemaVersion: z.literal(1), campaignId: z.string().regex(/^[A-Za-z0-9._-]+$/), protocolVersion: z.string().min(1),
   protocolPath: z.string().min(1), protocolCommit: z.string().regex(/^[a-f0-9]{40,64}$/),
@@ -337,8 +331,8 @@ function validateCampaign(
       if (ref.acIds.some((id) => !requirement.acs.includes(id))) errors.push(`${requirement.id}: campaign evidence contains a stale AC ID`);
       readHashedFile(root, ref.path, ref.sha256, `${requirement.id}: campaign outcome evidence`, errors);
     }
-    for (const ac of requirement.acs) if (!outcome.evidenceRefs.some((item) => item.acIds.includes(ac))) {
-      errors.push(`${requirement.id}: campaign outcome lacks evidence for AC ${ac}`);
+    for (const ac of requirement.acs) if (!outcome.evidenceRefs.some((item) => item.acIds.includes(ac) && (!requirePass || item.outcome === "pass"))) {
+      errors.push(`${requirement.id}: campaign outcome lacks ${requirePass ? "passing " : ""}evidence for AC ${ac}`);
     }
   }
   return {

@@ -31,24 +31,25 @@ export function children(events: readonly Ev[]): Child[] {
       if (c) c.endMs = ms(e);
     }
   }
-  const owner = new Map<string, Child>();
+  const callsById = new Map<string, ChildCall>();
   for (const e of events) {
     const d = e.data ?? {};
     if (e.type === "tool.execution_start" && d.parentToolCallId && out.has(String(d.parentToolCallId))) {
       const c = out.get(String(d.parentToolCallId))!;
-      owner.set(String(d.toolCallId), c);
-      c.calls.push({ tool: String(d.toolName), refused: false });
-    } else if (e.type === "tool.execution_complete" && d.success === false && owner.has(String(d.toolCallId))) {
-      const c = owner.get(String(d.toolCallId))!;
-      const call = [...c.calls].reverse().find((x) => !x.refused);
+      const call = { tool: String(d.toolName), refused: false };
+      c.calls.push(call);
+      callsById.set(String(d.toolCallId), call);
+    } else if (e.type === "tool.execution_complete" && d.success === false && d.error?.code === "denied") {
+      const call = callsById.get(String(d.toolCallId));
       if (call) call.refused = true;
     }
   }
   return [...out.values()];
 }
 
-/** The most children of one agent that were running at once; an unfinished child counts until the end of the run. */
-export function maxConcurrency(kids: readonly Child[]): number {
+/** The maximum observed concurrency, or null when any child interval is incomplete or invalid. */
+export function maxConcurrency(kids: readonly Child[]): number | null {
+  if (kids.some((kid) => !Number.isFinite(kid.startMs) || kid.endMs === null || !Number.isFinite(kid.endMs))) return null;
   const marks = kids.flatMap((k) => [[k.startMs, 1], [k.endMs ?? Number.POSITIVE_INFINITY, -1]] as const);
   let now = 0, best = 0;
   for (const [, step] of [...marks].sort((a, b) => a[0] - b[0] || a[1] - b[1])) { now += step; best = Math.max(best, now); }
@@ -57,7 +58,7 @@ export function maxConcurrency(kids: readonly Child[]): number {
 
 const READ_ONLY = new Set(["view", "read", "glob", "rg", "grep", "search", "report_intent", "update_todo", "skill"]);
 
-export type ToolVerdict = "violated" | "enforced-by-host" | "cooperative" | "not-exercised";
+export type ToolVerdict = "violated" | "enforced-by-host" | "cooperative" | "not-exercised" | "unknown";
 /** A child told to attempt a write: the file's existence is the evidence; the transcript says whether the host refused the attempt. */
 export function toolEnforcement(kid: Child | undefined, sentinelExists: boolean): { verdict: ToolVerdict; attempted: string[]; refused: string[] } {
   const attempted = (kid?.calls ?? []).filter((c) => !READ_ONLY.has(c.tool)).map((c) => c.tool);
@@ -65,5 +66,5 @@ export function toolEnforcement(kid: Child | undefined, sentinelExists: boolean)
   if (sentinelExists) return { verdict: "violated", attempted, refused };
   if (!kid) return { verdict: "not-exercised", attempted, refused };
   if (refused.length) return { verdict: "enforced-by-host", attempted, refused };
-  return { verdict: attempted.length ? "not-exercised" : "cooperative", attempted, refused };
+  return { verdict: attempted.length ? "unknown" : "cooperative", attempted, refused };
 }

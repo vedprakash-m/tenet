@@ -13,6 +13,7 @@ import { accountingCheckpoint, recoverAccounting } from "../core/budget.ts";
 import { addMonths, reduceJournal } from "../core/journal-reduce.ts";
 import type { Months } from "../core/journal-reduce.ts";
 import { recoveredState } from "../core/state.ts";
+import { schemaStatus } from "../core/versions.ts";
 import type { Clock, EvictReport, Footprint, LogEntry, Quarantined, Store, Tx } from "../ports/types.ts";
 import { isAlive, procStart } from "./proc.ts";
 import { quarantine, QUARANTINE_JOURNAL } from "./quarantine-fs.ts";
@@ -65,7 +66,7 @@ function readJournal(text: string): { entries: LogEntry[]; keep: number } {
   return { entries, keep };
 }
 
-function readRecord(path: string, journal = false): string | null {
+function readRecord(path: string, journal = false, corruptAsNull = false): string | null {
   let descriptor = -1;
   try {
     descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
@@ -86,6 +87,7 @@ function readRecord(path: string, journal = false): string | null {
     }
     const content = buffer.subarray(0, offset);
     if (!isUtf8(journal ? content.subarray(0, content.lastIndexOf(0x0a) + 1) : content)) {
+      if (corruptAsNull) return null;
       throw new KernelError("unsupported-record", "a private record contains invalid UTF-8");
     }
     return content.toString("utf8");
@@ -102,6 +104,17 @@ const readJson = <T>(p: string): T | null => {
     return text === null ? null : parseRecord(text) as T;
   } catch { return null; }
 };
+
+function admissionRecord(path: string, marker = false): unknown {
+  try {
+    const text = readRecord(path, false, true);
+    return text === null ? null : parseRecord(text);
+  } catch (error) {
+    if (error instanceof SyntaxError) return null;
+    if (marker) throw new KernelError("marker-mismatch", "the ownership marker cannot be read safely");
+    throw new KernelError("unsupported-record", `unsupported private record: ${error instanceof Error ? error.message : "unsafe read"}`);
+  }
+}
 
 function fsyncDir(dir: string) {
   const fd = openSync(dir, "r");
@@ -167,6 +180,21 @@ export class FsStore implements Store {
 
   exists(): boolean { return existsSync(this.p("marker")); }
 
+  admit(): void {
+    const marker = admissionRecord(this.p("marker"), true) as Marker | null;
+    const here = lstatSync(this.dir, { throwIfNoEntry: false });
+    if (!marker || !here || marker.dev !== here.dev || marker.ino !== here.ino) return;
+    const blocked = () => { throw new KernelError("unsupported-record", "owned state needs a compatible kernel; nothing was changed"); };
+    if (marker.schema !== SCHEMA_VERSION) blocked();
+    for (const name of ["migration-transition.json", "migration-privacy.json"]) {
+      if (lstatSync(this.p(name), { throwIfNoEntry: false })) blocked();
+    }
+    for (const name of ["state", "state.prev"]) {
+      const record = admissionRecord(this.p(name));
+      if (schemaStatus(record, SCHEMA_VERSION) === "unsupported") blocked();
+    }
+  }
+
   private marker(): Marker | null {
     const m = readJson<Marker>(this.p("marker"));
     if (!m || !/^ws_[a-z2-7]{10}$/.test(m.workspaceId) || !/^[a-z0-9]{4}$/.test(m.tag) || m.schema !== SCHEMA_VERSION || !m.nonce) {
@@ -181,6 +209,7 @@ export class FsStore implements Store {
   }
 
   read(): { state: State; recovered: boolean } | null {
+    this.admit();
     if (!this.exists()) return null;
     this.marker();
     for (const [file, recovered] of [["state", false], ["state.prev", true]] as const) {
@@ -202,6 +231,7 @@ export class FsStore implements Store {
 
   // ------------------------------------------------------------ lock
   private async acquire(verb: string): Promise<LockInfo> {
+    this.admit();
     this.p("marker"); // refuse even a dangling directory link before creating anything
     try {
       mkdirSync(this.dir, { mode: 0o700 });
@@ -216,11 +246,7 @@ export class FsStore implements Store {
     } catch (e) {
       if (!(e instanceof KernelError) || e.reasons[0]?.code !== "marker-mismatch") throw e;
     }
-    const rawMarker = readJson<Marker>(this.p("marker"));
     const here = lstatSync(this.dir);
-    if (rawMarker && rawMarker.dev === here.dev && rawMarker.ino === here.ino && Number.isSafeInteger(rawMarker.schema) && rawMarker.schema >= 0 && rawMarker.schema !== SCHEMA_VERSION) {
-      throw new KernelError("unsupported-record", "this owned state needs a compatible kernel or an approved migration; it was not quarantined", { exit: 4 });
-    }
     if (!trusted || readdirSync(this.dir).some((name) => name.startsWith(QUARANTINE_JOURNAL))) {
       if (verb !== "open") throw new KernelError("marker-mismatch", "this ownership marker needs quarantine; open a fresh contract first", { exit: 3 });
       const bootstrap = `quarantine-bootstrap-${here.dev}-${here.ino}.lock`;
@@ -234,6 +260,7 @@ export class FsStore implements Store {
         finally { this.release(lock, bootstrap); }
       });
     }
+    this.admit();
     chmodSync(this.dir, 0o700);
     for (const name of ["marker", "state", "state.prev", "log"]) {
       if (existsSync(this.p(name))) chmodSync(this.p(name), 0o600);
@@ -243,12 +270,14 @@ export class FsStore implements Store {
   }
 
   private async claim(verb: string, name = "lock"): Promise<LockInfo> {
+    this.admit();
     const me: LockInfo = { ...this.self(), nonce: this.rand.base32(12), verb };
     const tmp = this.p(`${name}.${me.nonce}`);
     writeSynced(tmp, JSON.stringify(me));
     const deadline = Date.now() + this.lockWaitMs;
     try {
       for (;;) {
+        this.admit();
         try { linkSync(tmp, this.p(name)); return me; } // atomic exclusive create with complete content
         catch (e) { if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e; }
         const held = this.readLock(name);
@@ -263,6 +292,7 @@ export class FsStore implements Store {
 
   /** Guarded break: no fresh lock can exist while the stale one does, so two breakers never remove a live lock. */
   private async breakStale(dead: LockInfo, me: LockInfo, name = "lock"): Promise<void> {
+    this.admit();
     const guard = this.p(`${name}.break`);
     try {
       const g = this.p(`${name}.break.${me.nonce}`);
@@ -278,6 +308,7 @@ export class FsStore implements Store {
     }
     try {
       const now = this.readLock(name);
+      this.admit();
       if (now && now.nonce === dead.nonce) unlinkSync(this.p(name));
     } finally {
       rmSync(guard, { force: true });
@@ -290,6 +321,7 @@ export class FsStore implements Store {
   }
 
   async repairLock(): Promise<{ removed: string[] }> {
+    this.admit();
     const dead: Record<string, LockInfo> = {};
     for (const f of ["lock", "lock.break"]) {
       const h = this.readLock(f);
@@ -304,6 +336,7 @@ export class FsStore implements Store {
       const was = dead[f];
       if (!was) continue;
       const now = this.readLock(f);
+      this.admit();
       if (now && now.nonce === was.nonce) { rmSync(this.p(f)); removed.push(f); }
     }
     return { removed };
@@ -320,6 +353,7 @@ export class FsStore implements Store {
   async transaction<T>(verb: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
     const me = await this.acquire(verb);
     try {
+      this.admit();
       this.repairLogTail();
       const read = this.exists() ? this.read() : null;
       if (this.quarantined && read?.state.quarantine?.nonce === this.quarantined.nonce) this.finishQuarantine();
@@ -344,6 +378,7 @@ export class FsStore implements Store {
   }
 
   private ensureMarker(): { workspaceId: string; tag: string } {
+    this.admit();
     const existing = this.exists() ? this.marker() : null;
     if (existing) return existing;
     mkdirSync(this.dir, { recursive: true, mode: 0o700 });
@@ -378,6 +413,7 @@ export class FsStore implements Store {
 
   // ------------------------------------------------------------ log
   private repairLogTail() {
+    this.admit();
     const path = this.p("log");
     const text = readRecord(path, true);
     if (!text) return;
@@ -386,6 +422,7 @@ export class FsStore implements Store {
   }
 
   private append(entry: Omit<LogEntry, "t">) {
+    this.admit();
     const serialized = `${JSON.stringify({ t: this.clock.now(), ...entry })}\n`;
     const bytes = Buffer.byteLength(serialized, "utf8");
     if (bytes > MAX_RECORD) throw new KernelError("unsupported-record", "a journal entry exceeds the 50 MB record bound");
@@ -413,6 +450,7 @@ export class FsStore implements Store {
 
   // ------------------------------------------------------------ blobs and temp
   putBlob(content: string): string {
+    this.admit();
     if (Buffer.byteLength(content, "utf8") > MAX_RECORD) {
       throw new KernelError("unsupported-record", "a blob exceeds the 50 MB record bound");
     }
@@ -429,6 +467,7 @@ export class FsStore implements Store {
   }
 
   tempDir(name: string): string {
+    this.admit();
     const m = this.exists() ? this.marker() : null;
     if (name.startsWith("/") || name.split("/").some(p => !p || p === "." || p === "..")) throw new KernelError("run-dir-unavailable", "invalid temp directory name");
     let dir = tmpdir();
@@ -451,6 +490,7 @@ export class FsStore implements Store {
     return { pid: process.pid, procStart: start };
   }
   writeArtifact(dir: string, name: string, content: string): string {
+    this.admit();
     if (!name || name.includes("/") || name === "." || name === "..") throw new KernelError("run-dir-unavailable", "invalid artifact name");
     const id = this.exists() ? this.marker()!.workspaceId : "unbound";
     const rel = relative(join(tmpdir(), `tenet-${id}`), dir);
@@ -480,6 +520,7 @@ export class FsStore implements Store {
   }
   // ------------------------------------------------------------ eviction (CON-08, specs/storage-retention.md v2)
   private replaceSynced(path: string, data: string) {
+    this.admit();
     writeSynced(`${path}.tmp`, data);
     renameSync(`${path}.tmp`, path);
     fsyncDir(this.dir);
@@ -526,6 +567,7 @@ export class FsStore implements Store {
     return removed ? `Removed ${removed} old run folder(s): run files were over their cap.` : undefined;
   }
   evict(keep: readonly string[]): EvictReport {
+    this.admit();
     const notes = [this.reduceLog(Date.parse(this.clock.now())), this.capRunFiles(keep)].filter((x): x is string => !!x);
     let classes: Array<{ name: string; bytes: number }> = [];
     try { classes = readdirSync(this.dir).map((name) => ({ name, bytes: this.sizeOf(join(this.dir, name)) })).sort((a, b) => b.bytes - a.bytes); } catch { /* no store yet */ }
@@ -554,8 +596,10 @@ export class FsStore implements Store {
     return { tenet: measure(this.dir), temp: this.exists() ? measure(join(tmpdir(), `tenet-${this.marker()!.workspaceId}`)) : null };
   }
   cleanTemp(scope: "project" | "machine", minAgeMs: number, remove: boolean): { removed: string[]; kept: string[] } {
+    this.admit();
+    const own = this.exists() ? `tenet-${this.marker()!.workspaceId}` : null;
     const named = scope === "project"
-      ? (this.exists() ? [`tenet-${this.marker()!.workspaceId}`] : [])
+      ? (own ? [own] : [])
       : (() => { try { return readdirSync(tmpdir()).filter((n) => /^tenet-ws_[a-z0-9]+$/.test(n)); } catch { return []; } })();
     const out = { removed: [] as string[], kept: [] as string[] };
     for (const n of named) {
@@ -563,6 +607,7 @@ export class FsStore implements Store {
       try {
         const st = lstatSync(p);
         if (!st.isDirectory()) continue;
+        if (n !== own) { out.kept.push(p); continue; }
         if (Date.now() - newestMtime(p) < minAgeMs) { out.kept.push(p); continue; }
         if (remove) rmSync(p, { recursive: true, force: true });
         out.removed.push(p);
@@ -594,6 +639,7 @@ export class FsStore implements Store {
     return removed;
   }
   private tempBase(): string | null {
+    this.admit();
     try {
       if (!this.exists()) return null;
       const base = join(tmpdir(), `tenet-${this.marker()!.workspaceId}`);

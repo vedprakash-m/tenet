@@ -3,7 +3,7 @@
 // kernel wrote in `.tenet`, never from what the model reports.
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { argvFor, reserveRun, runCopilot, summarize } from "../../../tools/host/copilot-cli.ts";
@@ -41,7 +41,49 @@ describe("host harness (offline, against a fake copilot) [ENG-04]", () => {
     assert.equal(reserveRun(out, 2), 1);
     assert.equal(reserveRun(out, 2), 2);
     assert.throws(() => reserveRun(out, 2), /budget spent/);
-    assert.throws(() => reserveRun(scratch(), 0), /budget spent/);
+    assert.deepEqual(JSON.parse(readFileSync(join(out, "ledger.json"), "utf8")), { used: 2 });
+  });
+
+  for (const budget of [NaN, Infinity, -Infinity, 1.5, -0.5, -1, 0, -0, Number.MAX_SAFE_INTEGER + 1]) {
+    it(`refuses invalid run budget ${Object.is(budget, -0) ? "-0" : budget} without writing a ledger [RSC-03]`, () => {
+      const out = join(scratch(), "new");
+      assert.throws(() => reserveRun(out, budget), /invalid host run budget/);
+      assert.equal(existsSync(out), false);
+      const existing = scratch();
+      const file = join(existing, "ledger.json");
+      const original = '{"used":1}';
+      writeFileSync(file, original);
+      assert.throws(() => reserveRun(existing, budget), /invalid host run budget/);
+      assert.equal(readFileSync(file, "utf8"), original);
+    });
+  }
+
+  for (const ledger of ['{"used":NaN}', '{"used":Infinity}', '{"used":1e309}', '{"used":-1e309}', '{"used":1.5}', '{"used":-0.5}', '{"used":-1}', '{"used":null}', '{"used":"0"}', '{"used":false}', '{"used":9007199254740992}', '{}', 'null', '[]', '{']) {
+    it(`refuses invalid ledger ${ledger} without resetting its count [RSC-03]`, () => {
+      const out = scratch();
+      const file = join(out, "ledger.json");
+      writeFileSync(file, ledger);
+      assert.throws(() => reserveRun(out, 2), /invalid host run ledger/);
+      assert.equal(readFileSync(file, "utf8"), ledger);
+    });
+  }
+
+  it("refuses an unreadable ledger instead of treating it as first use [RSC-03]", () => {
+    const out = scratch();
+    mkdirSync(join(out, "ledger.json"));
+    assert.throws(() => reserveRun(out, 2), /invalid host run ledger/);
+  });
+
+  it("accepts zero usage and counts exactly up to the safe-integer budget [RSC-03]", () => {
+    const out = scratch();
+    const file = join(out, "ledger.json");
+    writeFileSync(file, '{"used":0}');
+    assert.equal(reserveRun(out, 1), 1);
+    assert.throws(() => reserveRun(out, 1), /budget spent/);
+    writeFileSync(file, JSON.stringify({ used: Number.MAX_SAFE_INTEGER - 1 }));
+    assert.equal(reserveRun(out, Number.MAX_SAFE_INTEGER), Number.MAX_SAFE_INTEGER);
+    assert.throws(() => reserveRun(out, Number.MAX_SAFE_INTEGER), /budget spent/);
+    assert.deepEqual(JSON.parse(readFileSync(file, "utf8")), { used: Number.MAX_SAFE_INTEGER });
   });
 
   it("summarizes a transcript: skills loaded, the subagent and its declared tools, denied calls and premium requests", () => {

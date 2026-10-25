@@ -6,6 +6,14 @@ import type { Question, WorkContract } from "./schemas.ts";
 export interface Versions { tenet: string; schema: number; adapter: string }
 export interface Drift { field: "kernel" | "schema" | "adapter"; was: string; now: string; downgrade: boolean }
 
+export function schemaStatus(record: unknown, current: number): "supported" | "unsupported" | "unavailable" {
+  if (typeof record !== "object" || record === null || Array.isArray(record) || !Object.hasOwn(record, "schema")) {
+    return "unavailable";
+  }
+  const schema = (record as { schema: unknown }).schema;
+  return Number.isSafeInteger(current) && current > 0 && schema === current ? "supported" : "unsupported";
+}
+
 /** The part of the kernel version that pauses a contract: major.minor and any pre-release tag; a patch release does not. */
 export const kernelLine = (v: string): string => {
   const m = /^(\d+)\.(\d+)\.\d+(.*)$/.exec(v);

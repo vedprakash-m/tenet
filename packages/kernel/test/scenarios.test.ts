@@ -1,7 +1,7 @@
 // Composition scenarios and the three injected failures of the walking skeleton (plan §6.9), on real repositories,
 // real processes and real signals.
 import { spawn } from "node:child_process";
-import { cpSync, readFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -13,6 +13,44 @@ const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 const fresh = (files?: Record<string, string>): Project => { const p = project(files); roots.push(p.root); return p; };
 const d = (r: { data?: unknown }) => r.data as Record<string, any>;
+
+describe("pipeline compatibility admission", () => {
+  it("refuses repair-lock on owned future state before dead-lock removal, chmod or torn-journal repair [CON-04, CON-05]", async () => {
+    const p = fresh();
+    const opened = await p.call("open", { profile: "plan", request: "plan the work" });
+    assert.equal(opened.exit, 0, JSON.stringify(opened));
+    await p.ports().store.transaction("test", async (tx) => tx.publish(tx.state!));
+    const dir = join(p.root, ".tenet");
+    const primary = JSON.parse(readFileSync(join(dir, "state"), "utf8"));
+    const previous = JSON.parse(readFileSync(join(dir, "state.prev"), "utf8"));
+    assert.equal(previous.schema, primary.schema);
+    assert.ok(Object.keys(previous.work).length, "the compatible fallback contains a handle");
+    p.write(".tenet/state", JSON.stringify({ ...primary, schema: primary.schema + 1 }));
+    p.write(".tenet/log", `${readFileSync(join(dir, "log"), "utf8")}{ torn`);
+    for (const name of ["lock", "lock.break"]) {
+      p.write(`.tenet/${name}`, JSON.stringify({ pid: 2147483647, procStart: "dead", nonce: name, verb: "test" }));
+      chmodSync(join(dir, name), 0o640);
+    }
+    chmodSync(dir, 0o750);
+    chmodSync(join(dir, "state"), 0o640);
+    const snapshot = () => ({
+      entries: readdirSync(dir).sort(),
+      mode: statSync(dir).mode & 0o777,
+      records: ["marker", "state", "state.prev", "log", "lock", "lock.break"].map((name) => {
+        const path = join(dir, name);
+        return { name, ...(existsSync(path) ? { bytes: readFileSync(path), mode: statSync(path).mode & 0o777 } : {}) };
+      }),
+    });
+    const before = snapshot();
+
+    const refused = await p.rawCall("decide", { h: opened.handle!, kind: "repair-lock" });
+
+    assert.equal(refused.exit, 4, JSON.stringify(refused));
+    assert.equal(refused.reasons[0]?.code, "unsupported-record", JSON.stringify(refused));
+    assert.equal(refused.handle, undefined, "the compatible previous state must not supply a fallback handle");
+    assert.deepEqual(snapshot(), before, "compatibility refusal must precede every repair side effect");
+  });
+});
 
 /** open → basis → red, leaving the project ready for the implementation. */
 async function toRed(p: Project, over: Record<string, unknown> = {}, basis = BASIS) {

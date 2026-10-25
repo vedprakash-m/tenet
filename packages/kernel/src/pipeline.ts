@@ -110,6 +110,7 @@ export async function runVerb(ports: Ports, verbs: Record<string, Verb>, name: s
       if (input.h && read) plan.resp.reasons = [...versionNote(ports, read.state, input.h), ...(plan.resp.reasons ?? [])];
       return render(ports, name, plan.resp, read?.state ?? null);
     }
+    ports.store.admit();
     return await mutate(ports, verb, input);
   } catch (e) {
     return fail(ports, name, e, safeState(ports));

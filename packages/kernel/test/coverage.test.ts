@@ -216,7 +216,7 @@ test("the ledger file itself cannot be loaded through an external symlink", () =
   }
 });
 
-test("a qualified disposition requires a passing manifest bound to the frozen protocol and built artifact", () => {
+test("a qualified disposition requires a passing manifest bound to the frozen protocol and built artifact", async (context) => {
   const root = tmp("tenet-coverage-");
   try {
     fixture(root);
@@ -257,7 +257,7 @@ test("a qualified disposition requires a passing manifest bound to the frozen pr
     const campaignRef = { campaignId, path: campaignPath, sha256: createHash("sha256").update(manifestText).digest("hex") };
     const reviewedAt = "2026-10-22T05:00:00Z";
     const recordRef = { ...resultRef, kind: "test", tier: "T1", path: evidencePath, acIds: ["AC-01", "AC-02"] };
-    write(root, "docs/audits/evidence-ledger.json", JSON.stringify({ schemaVersion: 1, records: [{
+    const ledger = { schemaVersion: 1, records: [{
       requirementId: "TST-01", disposition: "complete", uncoveredAcIds: [], evidenceRefs: [recordRef],
       reviewer: "owner", reviewedAt, reason: "All acceptance suites reviewed", ownerApprovalRef: "change-456",
       qualificationStatus: "qualified", campaignRef,
@@ -265,7 +265,8 @@ test("a qualified disposition requires a passing manifest bound to the frozen pr
         fromQualificationStatus: null, toQualificationStatus: "qualified", toUncoveredAcIds: [],
         reason: "All acceptance suites reviewed", reviewer: "owner", reviewedAt,
         ownerApprovalRef: "change-456", evidenceRefs: [recordRef] }],
-    }] }));
+      }] };
+      write(root, "docs/audits/evidence-ledger.json", JSON.stringify(ledger));
 
     const result = report(root, "M0");
 
@@ -281,6 +282,68 @@ test("a qualified disposition requires a passing manifest bound to the frozen pr
     }] });
     assert.equal(mixed.bindingMismatch, true);
     assert.deepEqual(mixed.blockedRequirements, ["TST-01", "TST-02"]);
+
+    const writeCampaign = () => {
+      const text = `${JSON.stringify(manifest)}\n`;
+      write(root, campaignPath, text);
+      campaignRef.sha256 = createHash("sha256").update(text).digest("hex");
+      write(root, "docs/audits/evidence-ledger.json", JSON.stringify(ledger));
+    };
+    for (const outcome of ["fail", "partial", "inconclusive"]) {
+      await context.test(`qualification rejects sole ${outcome} evidence despite a valid manifest hash`, () => {
+        manifest.outcomes[0]!.evidenceRefs = [{ ...resultRef, outcome }];
+        writeCampaign();
+
+        const rejected = report(root, "M0");
+
+        assert.equal(rejected.integrityErrors.some((error) => error.includes("hash mismatch")), false);
+        assert.ok(rejected.integrityErrors.some((error) => error.includes("passing evidence for AC AC-01")));
+        assert.ok(rejected.integrityErrors.some((error) => error.includes("passing evidence for AC AC-02")));
+        assert.equal(rejected.evidence[0]?.qualification, "not-qualified");
+        assert.deepEqual(releaseAudit(root, "R1").blockedRequirements, ["TST-01"]);
+      });
+      await context.test(`qualification requires passing evidence for each AC beside ${outcome} evidence`, () => {
+        manifest.outcomes[0]!.evidenceRefs = [
+          { ...resultRef, acIds: ["AC-01"] }, { ...resultRef, outcome, acIds: ["AC-02"] },
+        ];
+        writeCampaign();
+
+        const rejected = report(root, "M0");
+
+        assert.deepEqual(rejected.integrityErrors, ["TST-01: campaign outcome lacks passing evidence for AC AC-02"]);
+        assert.equal(rejected.evidence[0]?.qualification, "not-qualified");
+      });
+      await context.test(`qualification retains ${outcome} history when passing evidence covers every AC`, () => {
+        manifest.outcomes[0]!.evidenceRefs = [{ ...resultRef, outcome }, resultRef];
+        writeCampaign();
+
+        const retained = report(root, "M0");
+
+        assert.deepEqual(retained.integrityErrors, []);
+        assert.equal(retained.evidence[0]?.qualification, "qualified");
+        assert.equal(retained.evidence[0]?.evidenceRefs[1]?.outcome, outcome);
+        assert.deepEqual(releaseAudit(root, "R1").blockedRequirements, []);
+      });
+    }
+    for (const campaignResult of ["failed", "inconclusive"]) {
+      await context.test(`report integrity accepts an honest nonqualified ${campaignResult} campaign`, () => {
+        manifest.campaignResult = campaignResult;
+        manifest.outcomes[0]!.result = campaignResult;
+        manifest.outcomes[0]!.evidenceRefs = [{ ...resultRef, outcome: campaignResult === "failed" ? "fail" : "inconclusive" }];
+        ledger.records[0]!.qualificationStatus = "not-qualified";
+        ledger.records[0]!.changeHistory[0]!.toQualificationStatus = "not-qualified";
+        writeCampaign();
+
+        const retained = report(root, "M0");
+
+        assert.deepEqual(retained.integrityErrors, []);
+        assert.equal(retained.evidence[0]?.disposition, "complete");
+        assert.equal(retained.evidence[0]?.qualification, "not-qualified");
+        assert.equal(retained.evidence[0]?.campaignRef?.campaignId, campaignId);
+        assert.equal(retained.evidence[0]?.evidenceRefs[1]?.outcome, campaignResult === "failed" ? "fail" : "inconclusive");
+        assert.deepEqual(releaseAudit(root, "R1").blockedRequirements, ["TST-01"]);
+      });
+    }
 
     write(root, campaignPath, `${manifestText} `);
     const tampered = report(root, "M0");

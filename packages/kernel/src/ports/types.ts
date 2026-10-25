@@ -40,6 +40,7 @@ export interface Tx {
 export interface Footprint { path: string; files: number; bytes: number }
 
 export interface Store {
+  admit(): void;
   exists(): boolean;
   read(): { state: State; recovered: boolean } | null;
   transaction<T>(verb: string, fn: (tx: Tx) => Promise<T>): Promise<T>;

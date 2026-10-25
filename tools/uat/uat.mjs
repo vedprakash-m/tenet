@@ -90,6 +90,72 @@ try {
  }
  assert.equal(git(helpRoot, 'status', '--porcelain'), '');
  observations.push({ scenario: 'built mutating-subcommand help is stateless', commands: helpCommands.length, stateCreated: false, gitUnchanged: true });
+ for (const blocker of ['state', 'state.prev', 'marker', 'migration-transition.json', 'migration-privacy.json', 'oversized-state']) {
+  const compatibilityRoot = create();
+  call(compatibilityRoot, 'open', { profile: 'investigate', request: 'initialize compatibility fixture' });
+  call(compatibilityRoot, 'open', { profile: 'plan', request: 'retain a compatible previous state' });
+  write(compatibilityRoot, 'human.txt', 'human compatibility canary\n');
+  const dead = JSON.stringify({ pid: 2 ** 22 + 5, procStart: 'Thu Jan  1 00:00:00 1970', nonce: 'dead', verb: 'old' });
+  write(compatibilityRoot, '.tenet/lock', dead); write(compatibilityRoot, '.tenet/lock.break', dead);
+  const log = join(compatibilityRoot, '.tenet/log');
+  writeFileSync(log, `${readFileSync(log, 'utf8')}{torn`);
+  const target = join(compatibilityRoot, '.tenet', blocker === 'oversized-state' ? 'state' : blocker);
+  const content = blocker.endsWith('.json') ? '{' : JSON.stringify({ ...JSON.parse(readFileSync(target, 'utf8')), schema: 2 });
+  writeFileSync(target, content + (blocker === 'oversized-state' ? ' '.repeat(50 * 1024 * 1024) : ''));
+  chmodSync(join(compatibilityRoot, '.tenet'), 0o750);
+  chmodSync(join(compatibilityRoot, '.tenet/state'), 0o640);
+  const names = ['marker', 'state', 'state.prev', 'log', 'lock', 'lock.break', ...(blocker.endsWith('.json') ? [blocker] : [])];
+  const before = names.map(name => ({ name, bytes: readFileSync(join(compatibilityRoot, '.tenet', name)), mode: statSync(join(compatibilityRoot, '.tenet', name)).mode }));
+  const humanStatus = git(compatibilityRoot, 'status', '--porcelain');
+  const index = readFileSync(join(compatibilityRoot, '.git/index'));
+  for (const [verb, body] of [['open', { profile: 'investigate', request: 'refuse incompatible state before mutation' }], ['decide', { kind: 'repair-lock' }]]) {
+   const response = call(compatibilityRoot, verb, body);
+   assert.equal(response.exit, 4, JSON.stringify(response));
+   assert.ok(response.reasons.some(reason => reason.code === 'unsupported-record'));
+   assert.equal(response.handle, undefined);
+  }
+  for (const entry of before) {
+   assert.deepEqual(readFileSync(join(compatibilityRoot, '.tenet', entry.name)), entry.bytes);
+   assert.equal(statSync(join(compatibilityRoot, '.tenet', entry.name)).mode, entry.mode);
+  }
+  assert.equal(statSync(join(compatibilityRoot, '.tenet')).mode & 0o777, 0o750);
+  assert.deepEqual(readFileSync(join(compatibilityRoot, '.git/index')), index);
+  assert.equal(readFileSync(join(compatibilityRoot, 'human.txt'), 'utf8'), 'human compatibility canary\n');
+  assert.equal(git(compatibilityRoot, 'status', '--porcelain'), humanStatus);
+  assert.equal(call(compatibilityRoot, 'inspect', { view: 'help' }).exit, 0);
+  observations.push({ scenario: `built compatibility admission preserves ${blocker}`, exit: 4,
+   stateBytesPreserved: true, modesPreserved: true, locksPreserved: true, humanIndexPreserved: true, fallbackHandleIssued: false });
+ }
+ const reviewBounds = create();
+ write(reviewBounds, 'src/small.ts', 'export const small = true;\n');
+ const smallReview = call(reviewBounds, 'review');
+ assert.equal(smallReview.exit, 0, JSON.stringify(smallReview));
+ assert.ok(smallReview.data.tokens <= 20000);
+ for (let index = 0; index < 1000; index++) write(reviewBounds, `src/component-${index}.ts`, `export const component${index} = true;\n`);
+ const reviewStatus = git(reviewBounds, 'status', '--porcelain');
+ const largeReview = call(reviewBounds, 'review');
+ assert.equal(largeReview.exit, 2, JSON.stringify(largeReview));
+ assert.ok(largeReview.reasons.some(reason => reason.code === 'narrow-increment'));
+ assert.equal(largeReview.data?.manifest, undefined);
+ assert.equal(existsSync(join(reviewBounds, '.tenet')), false);
+ assert.equal(git(reviewBounds, 'status', '--porcelain'), reviewStatus);
+ observations.push({ scenario: 'built stateless review refuses oversized complete packets', smallAccepted: true, oversizedExit: 2, stateCreated: false, sourceUnchanged: true });
+ const versionRepeat = create();
+ const repeatInput = { profile: 'plan', request: 'repeat the same version-pinned plan' };
+ call(versionRepeat, 'open', repeatInput);
+ const versionStatePath = join(versionRepeat, '.tenet/state');
+ const versionState = JSON.parse(readFileSync(versionStatePath, 'utf8'));
+ const pinnedWork = Object.values(versionState.work)[0];
+ pinnedWork.pinned.adapter = 'node-ts@0';
+ writeFileSync(versionStatePath, JSON.stringify(versionState));
+ const versionQuestion = call(versionRepeat, 'open', repeatInput);
+ assert.equal(versionQuestion.exit, 3, JSON.stringify(versionQuestion));
+ assert.ok(versionQuestion.questions.some(question => question.id === 'version-reconcile'));
+ const afterRepeat = JSON.parse(readFileSync(versionStatePath, 'utf8'));
+ assert.equal(Object.keys(afterRepeat.work).length, 1);
+ assert.equal(afterRepeat.generationSeq, versionState.generationSeq);
+ assert.equal(Object.values(afterRepeat.work)[0].pinned.adapter, 'node-ts@0');
+ observations.push({ scenario: 'built repeated open surfaces synthetic pinned adapter drift', exit: 3, workDuplicated: false, generationUnchanged: true, automaticallyRepinned: false });
  const corruptJournal = create();
  call(corruptJournal, 'open', { profile: 'investigate', request: 'preserve corrupt journal evidence' });
  const journalPath = join(corruptJournal, '.tenet/log');
@@ -346,6 +412,8 @@ try {
   ],
  } }).exit, 0);
  assert.equal(call(scaffoldReplay, 'decide', { h: scaffoldHandle, kind: 'scaffold', propose: { name: 'stable-scaffold' } }).exit, 0);
+ assert.equal(readFileSync(join(scaffoldReplay, 'LICENSE'), 'utf8'), readFileSync(join(source, 'LICENSE'), 'utf8'));
+ observations.push({ scenario: 'built starter carries the selected MIT license', licenseCopied: true });
  const scaffoldCheck = call(scaffoldReplay, 'check', { h: scaffoldHandle, stage: 'candidate' });
  assert.equal(scaffoldCheck.exit, 0, JSON.stringify(scaffoldCheck));
  assert.ok(scaffoldCheck.data.review, JSON.stringify({ reasons: scaffoldCheck.reasons,
@@ -567,6 +635,19 @@ try {
  const integrated = call(root, 'integrate', { h }); assert.equal(integrated.exit, 0, JSON.stringify(integrated));
  assert.equal(git(root, 'branch', '--show-current'), 'main'); assert.equal(readFileSync(join(root, 'src/personal.ts'), 'utf8'), personal);
  observations.push({ scenario: 'built guarded local integration with carried human file', exit: integrated.exit, mode: integrated.data.mode, humanFilePreserved: true });
+ write(root, 'docs/foreign-label.md', 'unrelated human work\n');
+ git(root, 'add', 'docs/foreign-label.md');
+ git(root, 'commit', '-qm', 'Unrelated human commit\n\nTenet-Work: W-0001');
+ const foreignCommit = git(root, 'rev-parse', 'HEAD');
+ const foreignIndex = readFileSync(join(root, '.git/index'));
+ const foreignUndo = call(root, 'undo', { h });
+ assert.ok(foreignUndo.reasons.some(reason => reason.code === 'undo-conflict'), JSON.stringify(foreignUndo));
+ assert.equal(foreignUndo.questions?.length ?? 0, 0);
+ assert.equal(git(root, 'rev-parse', 'HEAD'), foreignCommit);
+ assert.deepEqual(readFileSync(join(root, '.git/index')), foreignIndex);
+ assert.equal(readFileSync(join(root, 'docs/foreign-label.md'), 'utf8'), 'unrelated human work\n');
+ git(root, 'commit', '--amend', '-qm', 'Unrelated human commit without a work trailer');
+ observations.push({ scenario: 'built undo rejects foreign commits with a repeated label', headPreserved: true, indexPreserved: true, humanContentPreserved: true, questionIssued: false });
  assert.equal(call(root, 'undo', { h }).questions[0].id, 'undo-confirm');
  const undone = call(root, 'decide', { h, kind: 'undo-confirm', answers: { 'undo-confirm': 'apply' } }); assert.equal(undone.exit, 0, JSON.stringify(undone));
  assert.match(readFileSync(join(root, 'src/greet.ts'), 'utf8'), /_name/); assert.equal(readFileSync(join(root, 'src/personal.ts'), 'utf8'), personal);

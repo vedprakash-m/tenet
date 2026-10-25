@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -18,6 +18,51 @@ const bump = (root: string, n: number) => new Promise<number>((res) => {
 });
 
 describe("store: transactions", () => {
+  it("refuses a future primary before fallback or permission changes [CON-04, CON-05]", async () => {
+    const root = fresh(), store = await initState(root);
+    await store.transaction("test", async tx => tx.publish(tx.state!));
+    const primary = join(root, ".tenet/state");
+    writeFileSync(primary, JSON.stringify({ ...JSON.parse(readFileSync(primary, "utf8")), schema: 2 }));
+    chmodSync(join(root, ".tenet"), 0o750);
+    chmodSync(primary, 0o640);
+    const bytes = readFileSync(primary);
+    const incompatible = (error: unknown) => error instanceof KernelError && error.reasons[0]?.code === "unsupported-record";
+
+    assert.throws(() => store.read(), incompatible, "an older previous state must not conceal an incompatible primary");
+    await assert.rejects(store.transaction("test", async () => assert.fail("incompatible state was admitted")), incompatible);
+    assert.deepEqual(readFileSync(primary), bytes);
+    assert.equal(statSync(primary).mode & 0o777, 0o640);
+    assert.equal(statSync(join(root, ".tenet")).mode & 0o777, 0o750);
+    assert.equal(existsSync(join(root, ".tenet/lock")), false);
+  });
+
+  it("re-admits a waiting writer before touching an incompatible store [CON-04, AGT-08]", async () => {
+    for (const blocker of ["state", "state.prev", "marker", "migration-transition.json", "migration-privacy.json"]) {
+      const root = fresh(), store = await initState(root);
+      await store.transaction("test", async tx => tx.publish(tx.state!));
+      const child = spawn(process.execPath, [join(import.meta.dirname, "fixtures/hold-lock.ts"), root], {
+        stdio: ["ignore", "pipe", "inherit"],
+      });
+      await new Promise(resolve => child.stdout.once("data", resolve));
+      try {
+        const held = readFileSync(join(root, ".tenet/lock"));
+        const pending = newStore(root).transaction("waiting", async () => assert.fail("incompatible writer entered"));
+        const path = join(root, ".tenet", blocker);
+        const changed = blocker.endsWith(".json") ? "{}" : JSON.stringify({
+          ...JSON.parse(readFileSync(path, "utf8")), schema: 2,
+        });
+        writeFileSync(path, changed);
+        await assert.rejects(pending, error => error instanceof KernelError && error.reasons[0]?.code === "unsupported-record");
+        assert.equal(readFileSync(path, "utf8"), changed);
+        assert.deepEqual(readFileSync(join(root, ".tenet/lock")), held, "the live holder's lock remains");
+      } finally {
+        const exited = new Promise(resolve => child.once("exit", resolve));
+        child.kill("SIGKILL");
+        await exited;
+      }
+    }
+  });
+
   it("rejects unknown or malformed stored restrictions while retaining explicit safe extensions [SEC-12]", () => {
     const state = emptyState("ws_aaaaaaaaaa", "aaaa");
     for (const local of [{ protected_pathz: ["src/"] }, { protected_paths: "src/" }, { style: "turbo" }]) assert.equal(State.safeParse({ ...state, config: { revision: 1, local } }).success, false);

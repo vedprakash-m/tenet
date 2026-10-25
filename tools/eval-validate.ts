@@ -8,7 +8,7 @@
 // bytes; and that no task file reaches for the network or a model. `--alpha` also requires the PRD §6.4.1 Alpha mix.
 // This proves the fixtures and graders; it says nothing about how an agent behaves on them.
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve } from "node:path";
 import { createHash } from "node:crypto";
@@ -152,6 +152,32 @@ export function validateTask(taskDir: string): TaskReport {
       else { const r = EvidenceState.safeParse(JSON.parse(readFileSync(f, "utf8"))); if (!r.success) fail(`${c.name}: state ${c.state} is not valid kernel evidence: ${r.error.issues[0]?.message}`); }
     }
   }
+  for (const { path } of manifest.setup.dirty ?? []) {
+    const parts = path.split("/");
+    if (/[\\:\0]/.test(path) || parts.some((part) => !part || part === "." || part === ".." || /[. ]$/.test(part))) {
+      fail(`dirty path ${JSON.stringify(path)} must be a safe relative file path`);
+      continue;
+    }
+    let target = join(taskDir, "seed");
+    try {
+      for (const [index, part] of ["", ...parts].entries()) {
+        target = join(target, part);
+        const entry = lstatSync(target, { throwIfNoEntry: false });
+        if (!entry) break;
+        if (entry.isSymbolicLink()) {
+          fail(`dirty path ${JSON.stringify(path)} traverses a seed symlink`);
+          break;
+        }
+        if (index < parts.length ? !entry.isDirectory() : !entry.isFile()) {
+          fail(`dirty path ${JSON.stringify(path)} requires each seed parent to be a directory and an existing leaf to be a regular file`);
+          break;
+        }
+      }
+    } catch {
+      fail(`dirty path ${JSON.stringify(path)} could not inspect the seed path`);
+    }
+  }
+  if (errors.length) return { id: manifest.id, category: manifest.category, errors };
 
   // No network and no model in anything the task or the grader ships.
   for (const f of [...walk(taskDir), ...walk(join(GOLDEN_DIR, "lib")).filter((p) => !p.endsWith(".json"))]) {
@@ -162,6 +188,7 @@ export function validateTask(taskDir: string): TaskReport {
     }
   }
   if (readdirSync(join(taskDir, "seed"), { recursive: true }).some((f) => String(f).endsWith("acceptance.mjs"))) fail("the seed contains grader material");
+  if (errors.length) return { id: manifest.id, category: manifest.category, errors };
 
   // Behavior: build every control, run the project check where it applies, and grade.
   const root = realpathSync(mkdtempSync(join(tmpdir(), "tenet-eval-")));

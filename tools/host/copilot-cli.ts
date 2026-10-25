@@ -49,10 +49,22 @@ const versionOf = (bin: string, args: string[]): string => {
 
 /** Counts a live run against the budget in the ledger; refuses when none is left (never silently skips). */
 export function reserveRun(outDir: string, budget: number): number {
+  if (!Number.isSafeInteger(budget) || budget <= 0) throw new Error("invalid host run budget: expected a positive safe integer");
   mkdirSync(outDir, { recursive: true });
   const file = join(outDir, "ledger.json");
   let used = 0;
-  try { used = (JSON.parse(readFileSync(file, "utf8")) as { used: number }).used; } catch { /* first run */ }
+  let raw: string | undefined;
+  try { raw = readFileSync(file, "utf8"); } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw new Error("invalid host run ledger: cannot read usage", { cause: error });
+  }
+  if (raw !== undefined) {
+    let count: unknown;
+    try { count = JSON.parse(raw)?.used; } catch (error) {
+      throw new Error("invalid host run ledger: cannot parse usage", { cause: error });
+    }
+    if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0) throw new Error("invalid host run ledger: expected nonnegative safe-integer usage");
+    used = count;
+  }
   if (used >= budget) throw new Error(`host run budget spent (${used} of ${budget}); raise TENET_HOST_RUNS only with the owner's authorization`);
   writeFileSync(file, JSON.stringify({ used: used + 1 }));
   return used + 1;
