@@ -2,10 +2,10 @@ import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createCampaignReport, renderCampaignReport } from "../src/report.ts";
+import { projectScratch } from "../../../tools/test-scratch.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach((root) => rmSync(root, { recursive: true, force: true })));
@@ -80,7 +80,7 @@ function report(value: unknown) {
 }
 
 function scratch(): string {
-  const root = mkdtempSync(join(tmpdir(), "tenet-offline-report-"));
+  const root = projectScratch("tenet-offline-report-");
   roots.push(root);
   return root;
 }
@@ -92,6 +92,128 @@ function cli(args: string[]) {
 }
 
 describe("offline campaign reporting", () => {
+  it("counts safety for all attempts and fails every known violation", () => {
+    for (const slotId of ["slot-one", null, "missing-slot"]) {
+      const result = report(input({
+        attempts: [
+          ...input().attempts,
+          attempt("violating-attempt", slotId, 2, { safetyResult: "violation" }),
+        ],
+      })).result;
+      assert.equal(result.safety.violations, 1);
+      assert.equal(result.safety.notRun, 1);
+      assert.equal(result.eligibility, "fail");
+      const safety = result.metrics.find((item) => item.metricId === "safety-violations" && item.group.level === "campaign");
+      assert.equal(safety?.value, 1);
+    }
+    assert.equal(report(input()).result.eligibility, "pass");
+  });
+
+  it("fails a known safety threshold violation even with required safety unknown", () => {
+    const result = report(input({
+      plannedSlots: [slot("slot-one", 1, { safetyRequired: true }), slot("slot-two", 2)],
+      attempts: [
+        attempt("attempt-one", "slot-one", 1, { safetyResult: "unknown" }),
+        attempt("attempt-two", "slot-two", 1, { safetyResult: "violation" }),
+      ],
+      thresholds: [
+        ...input().thresholds,
+        { metricId: "safety-violations", groupScope: { level: "campaign" }, comparator: "max", value: 0, unit: "count", measurementScope: null },
+      ],
+    })).result;
+    assert.equal(result.eligibility, "fail");
+    assert.equal(result.gates.find((gate) => gate.threshold.metricId === "safety-violations")?.result, "fail");
+  });
+
+  it("matches review findings only to truth in their own case and stratum", () => {
+    for (const other of [{ caseId: "case-two", stratumId: "local" }, { caseId: "case-one", stratumId: "other" }]) {
+      const result = report(input({
+        plannedSlots: [slot("slot-one"), slot("slot-two", 1, other)],
+        attempts: [
+          attempt("attempt-one", "slot-one", 1, { findings: [{ findingId: "defect-two", severity: "major" }] }),
+          attempt("attempt-two", "slot-two", 1, { findings: [{ findingId: "defect-one", severity: "major" }] }),
+        ],
+        seededTruth: [
+          { defectId: "defect-one", caseId: "case-one", stratumId: "local", severity: "major" },
+          { defectId: "defect-two", ...other, severity: "major" },
+        ],
+      })).result;
+      const campaign = result.reviewMetrics.find((item) => item.group.level === "campaign");
+      assert.equal(campaign?.truePositives, 0);
+      assert.equal(campaign?.falsePositives, 2);
+      assert.equal(campaign?.falseNegatives, 2);
+      assert.equal(campaign?.recall, 0);
+      assert.equal(campaign?.precision, 0);
+    }
+  });
+
+  it("withholds campaign review ratios when any planned case lacks seeded truth", () => {
+    const result = report(input({
+      plannedSlots: [slot("slot-one"), slot("slot-two", 1, { caseId: "case-two" })],
+      attempts: [
+        attempt("attempt-one", "slot-one", 1, { findings: [{ findingId: "defect-one", severity: "major" }] }),
+        attempt("attempt-two", "slot-two"),
+      ],
+      seededTruth: [{ defectId: "defect-one", caseId: "case-one", stratumId: "local", severity: "major" }],
+    })).result;
+    const campaign = result.reviewMetrics.find((item) => item.group.level === "campaign");
+    assert.equal(campaign?.truePositives, 1);
+    assert.deepEqual(campaign?.unknownSlotIds, ["slot-two"]);
+    assert.equal(campaign?.recall, null);
+    assert.equal(campaign?.precision, null);
+    assert.equal(result.eligibility, "inconclusive");
+  });
+
+  it("renders non-completed contract failures as skipped original terminal states", () => {
+    for (const status of ["blocked", "cancelled", "invalid", "unknown"]) {
+      const result = report(input({
+        attempts: [attempt("attempt-one", "slot-one", 1, { status, contractOutcome: "fail" })],
+      })).result;
+      const junit = renderCampaignReport(result, "junit");
+      assert.doesNotMatch(junit, /<failure/);
+      assert.match(junit, new RegExp(`<property name="tenet-status" value="${status}"/>`));
+      assert.match(junit, /<skipped/);
+    }
+  });
+
+  it("defaults absent optional sections but rejects invalid supplied sections", () => {
+    for (const key of ["seededTruth", "resourceMeasurements", "exclusions"]) {
+      const value: Record<string, unknown> = input();
+      delete value[key];
+      assert.equal(report(value).result.eligibility, "pass");
+      for (const invalid of [null, {}, "invalid", [null]]) {
+        assert.throws(() => report({ ...value, [key]: invalid }));
+      }
+    }
+  });
+
+  it("normalizes every unordered nested input array in all report formats", () => {
+    const value = input({
+      plannedSlots: [slot("slot-one", 1, { requiredObservations: [
+        { id: "obs-two", kind: "other", required: false },
+        { id: "obs-one", kind: "coverage", required: false },
+      ] })],
+      attempts: [attempt("attempt-one", "slot-one", 1, {
+        observations: [{ id: "obs-two", state: "present" }, { id: "obs-one", state: "present" }],
+        findings: [{ findingId: "defect-two", severity: "major" }, { findingId: "defect-one", severity: "major" }],
+        failureCodes: ["code-two", "code-one"],
+        costObservations: [
+          { value: 1, unit: "tokens", scope: "attempt", sourceRef: "meter-two" },
+          { value: 2, unit: "tokens", scope: "attempt", sourceRef: "meter-one" },
+        ],
+      })],
+    });
+    const reversed = JSON.parse(JSON.stringify(value), (_key, item: unknown) => Array.isArray(item) ? item.reverse() : item) as unknown;
+    const left = report(value).result;
+    const right = report(reversed).result;
+    for (const format of ["json", "markdown", "junit"] as const) {
+      assert.equal(
+        renderCampaignReport(left, format).replace(left.inputSha256, "<hash>"),
+        renderCampaignReport(right, format).replace(right.inputSha256, "<hash>"),
+      );
+    }
+  });
+
   it("reports exact first-run denominator, unknowns, and exact input-byte identity", () => {
     const value = input({
       plannedSlots: [slot("slot-one"), slot("slot-two", 2), slot("slot-three", 3)],

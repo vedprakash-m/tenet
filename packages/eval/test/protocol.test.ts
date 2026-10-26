@@ -1,12 +1,13 @@
-import { after, describe, it } from "node:test";
+import { after, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import fs, { mkdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
 import { join, resolve } from "node:path";
-import { validateProtocolFile } from "../src/protocol.ts";
+import { readBoundedRegularFile, validateProtocolFile } from "../src/protocol.ts";
 import { QualificationTuple } from "../src/tuple.ts";
+import { projectScratch } from "../../../tools/test-scratch.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach((root) => rmSync(root, { recursive: true, force: true })));
@@ -45,7 +46,7 @@ function protocol() {
 }
 
 function scratch() {
-  const root = mkdtempSync(join(tmpdir(), "tenet-static-protocol-"));
+  const root = projectScratch("tenet-static-protocol-");
   roots.push(root);
   mkdirSync(join(root, "fixtures"));
   mkdirSync(join(root, "graders"));
@@ -63,6 +64,92 @@ function scratch() {
 }
 
 describe("static protocol validation (offline)", () => {
+  it("rejects linked ancestors of direct bounded inputs", () => {
+    const input = scratch();
+    const linked = join(input.root, "linked-directory");
+    symlinkSync(join(input.root, "fixtures"), linked, process.platform === "win32" ? "junction" : "dir");
+    assert.throws(() => readBoundedRegularFile(join(linked, "input.json"), 1024));
+    assert.equal(readBoundedRegularFile(join(input.root, "fixtures", "input.json"), 1024).toString(), "synthetic fixture\n");
+  });
+
+  it("rejects file and ancestor identities swapped during open or read", () => {
+    for (const phase of ["open", "read"] as const) {
+      for (const ancestor of [false, true]) {
+        const input = scratch();
+        const path = join(input.root, "fixtures", "input.json");
+        const originalOpen = fs.openSync;
+        const originalRead = fs.readSync;
+        let swapped = false;
+        const swap = () => {
+          if (swapped) return;
+          swapped = true;
+          if (ancestor) {
+            renameSync(join(input.root, "fixtures"), join(input.root, "original-fixtures"));
+            mkdirSync(join(input.root, "fixtures"));
+          } else renameSync(path, `${path}.original`);
+          writeFileSync(path, "synthetic fixture\n");
+        };
+        const hook = phase === "open"
+          ? mock.method(fs, "openSync", (...args: Parameters<typeof fs.openSync>) => {
+            swap();
+            return originalOpen(...args);
+          })
+          : mock.method(fs, "readSync", (...args: Parameters<typeof fs.readSync>) => {
+            swap();
+            return originalRead(...args);
+          });
+        syncBuiltinESMExports();
+        try {
+          assert.throws(() => readBoundedRegularFile(path, 1024), `${phase}, ancestor=${ancestor}`);
+          assert.equal(swapped, true);
+        } finally {
+          hook.mock.restore();
+          syncBuiltinESMExports();
+        }
+      }
+    }
+  });
+
+  it("uses same-API device identities when Windows path and descriptor stat APIs disagree", () => {
+    const input = scratch();
+    const path = join(input.root, "fixtures", "input.json");
+    const original = fs.lstatSync;
+    const hook = mock.method(fs, "lstatSync", (...args: Parameters<typeof fs.lstatSync>) => {
+      const stat = original(...args);
+      assert.ok(stat);
+      stat.dev = typeof stat.dev === "bigint" ? stat.dev + 1n : stat.dev + 1;
+      return stat;
+    });
+    syncBuiltinESMExports();
+    try {
+      if (process.platform === "win32") assert.equal(readBoundedRegularFile(path, 1024).toString(), "synthetic fixture\n");
+      else assert.throws(() => readBoundedRegularFile(path, 1024));
+    } finally {
+      hook.mock.restore();
+      syncBuiltinESMExports();
+    }
+  });
+
+  it("still rejects a changed descriptor device rather than ignoring Windows volume identity", () => {
+    for (const changedCall of process.platform === "win32" ? [0, 3] : [0, 1]) {
+      const input = scratch();
+      const original = fs.fstatSync;
+      let calls = 0;
+      const hook = mock.method(fs, "fstatSync", (...args: Parameters<typeof fs.fstatSync>) => {
+        const stat = original(...args);
+        if (calls++ === changedCall) stat.dev = typeof stat.dev === "bigint" ? stat.dev + 1n : stat.dev + 1;
+        return stat;
+      });
+      syncBuiltinESMExports();
+      try {
+        assert.throws(() => readBoundedRegularFile(join(input.root, "fixtures", "input.json"), 1024));
+      } finally {
+        hook.mock.restore();
+        syncBuiltinESMExports();
+      }
+    }
+  });
+
   it("uses the canonical strict PRD qualification-tuple field set", () => {
     assert.deepEqual(Object.keys(QualificationTuple.shape), [
       "vscodeVersion", "copilotChatExtensionVersion", "agentHarness", "pluginFormatVersion", "installPath",

@@ -5,7 +5,7 @@
 //  - core, verbs, decisions and the pipeline name no host (ENG-02);
 //  - only core/verdict.ts sets an endpoint, only core/budget.ts changes a counter.
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const listFiles = (dir: string): string[] => readdirSync(dir).flatMap((f) => {
@@ -24,7 +24,7 @@ const problems: string[] = [];
 const add = (rel: string, line: number, msg: string) => problems.push(`${rel}:${line}: ${msg}`);
 const all = listFiles(SRC);
 for (const file of all) {
-  const rel = relative(SRC, file);
+  const rel = relative(SRC, file).split(sep).join("/");
   const text = readFileSync(file, "utf8");
   text.split("\n").forEach((src, i) => {
     const n = i + 1;

@@ -249,7 +249,7 @@ export interface Project {
 export interface Host { capabilities(): Descriptor }
 
 export interface Ports {
+  platform: NodeJS.Platform;
   root: string; version: string; store: Store; git: Git; runner: Runner; stack: Stack; clock: Clock; rand: Random;
   recipes: Recipes; project: Project; host: Host;
 }
-

@@ -2,7 +2,7 @@
 // Token budgets, closure (every verb, flag, decision kind, action, agent and resource named exists and parses),
 // secrets, unscoped overclaims, and repetition. Structure only; contradictions in prose are left to review.
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import { ACTIONS } from "../packages/kernel/src/core/schemas.ts";
@@ -61,16 +61,17 @@ export function parseCommand(line: string): { verb: string; input: Record<string
 
 export function lintPayload(root: string): string[] {
   const problems: string[] = [];
-  const bad = (f: string, msg: string) => problems.push(`${relative(root, f)}: ${msg}`);
+  const path = (f: string) => relative(root, f).split(sep).join("/");
+  const bad = (f: string, msg: string) => problems.push(`${path(f)}: ${msg}`);
   const all = existsSync(root) ? files(root) : [];
   const docs = all.filter((f) => f.endsWith(".md"));
-  const texts = new Map(docs.map((f) => [f, readFileSync(f, "utf8")]));
+  const texts = new Map(docs.map((f) => [f, readFileSync(f, "utf8").replace(/\r\n/g, "\n")]));
   const names = new Set<string>(["tenet-reviewer", "tenet-analyst"]);
   let descriptionTokens = 0, loadedTokens = 0;
 
   for (const [f, text] of texts) {
     const { meta, body, error } = frontMatter(text);
-    const rel = relative(root, f);
+    const rel = path(f);
     if (error) bad(f, `front matter is not valid YAML (${error}); quote the value`);
     const skill = /^skills\/([^/]+)\/SKILL\.md$/.exec(rel)?.[1];
     const isAgent = /agents\/.+\.agent\.md$/.test(rel);
@@ -123,12 +124,12 @@ export function lintPayload(root: string): string[] {
 
   // closure: every `tenet-*` name used exists; every action is handled by the coordinator skill
   for (const [f, text] of texts) for (const m of text.matchAll(/`(tenet-[a-z-]+)`/g)) if (!names.has(m[1]!)) bad(f, `names "${m[1]}", which does not exist`);
-  const coordinator = [...texts].find(([f]) => f.endsWith("skills/tenet/SKILL.md"))?.[1] ?? "";
+  const coordinator = [...texts].find(([f]) => path(f) === "skills/tenet/SKILL.md")?.[1] ?? "";
   for (const a of ACTIONS) if (!new RegExp(`\`${a}\``).test(coordinator)) bad(join(root, "skills/tenet/SKILL.md"), `the next action "${a}" is not handled`);
 
   // action-semantics words live in exactly one skill file (UX §7.2)
   for (const w of AMBIGUOUS_WORDS) {
-    const holders = [...texts].filter(([f, t]) => /skills\//.test(f) && new RegExp(`^\\| "${w}"`, "m").test(t));
+    const holders = [...texts].filter(([f, t]) => path(f).startsWith("skills/") && new RegExp(`^\\| "${w}"`, "m").test(t));
     if (holders.length !== 1) problems.push(`the word "${w}" must have a steering row in exactly one skill, found ${holders.length}`);
   }
 
@@ -138,7 +139,7 @@ export function lintPayload(root: string): string[] {
     const norm = p.replace(/\s+/g, " ").trim();
     if (norm.split(" ").length < 60) continue;
     const prev = seen.get(norm);
-    if (prev && prev !== f) bad(f, `repeats a paragraph from ${relative(root, prev)}`);
+    if (prev && prev !== f) bad(f, `repeats a paragraph from ${path(prev)}`);
     else if (prev === f) bad(f, "repeats one of its own paragraphs");
     seen.set(norm, f);
   }

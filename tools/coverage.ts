@@ -74,7 +74,7 @@ const HOST_BY_NATURE: Record<string, string> = {
 };
 
 export const parsePrd = (text: string): Requirement[] =>
-  text.split("\n").flatMap((l) => {
+  text.split(/\r?\n/).flatMap((l) => {
     const m = ROW.exec(l);
     return m ? [{ id: m[1]!, text: m[2]!, level: m[3]!, milestone: m[4]!, acs: m[5]!.split(",").map((s) => s.trim()).filter(Boolean) }] : [];
   });
@@ -82,7 +82,7 @@ export const parsePrd = (text: string): Requirement[] =>
 /** AC tiers from the tech spec's acceptance-suite mapping: `| AC-01 | T3 | ... |` and grouped rows. */
 export function acTiers(techSpec: string): Map<string, string[]> {
   const out = new Map<string, string[]>();
-  for (const l of techSpec.split("\n")) {
+  for (const l of techSpec.split(/\r?\n/)) {
     const m = /^\| (AC-[^|]+) \| (T[0-9][^|]*?) \|/.exec(l);
     if (!m) continue;
     const tiers = m[2]!.match(/T\d/g) ?? [];
@@ -116,7 +116,7 @@ export function taggedTests(files: Record<string, string>): Map<string, number> 
 export function report(root: string, milestone: string): Report {
   const integrityErrors: string[] = [];
   const prdText = readFileSync(join(root, "specs/PRD.md"), "utf8");
-  for (const line of prdText.split("\n")) {
+  for (const line of prdText.split(/\r?\n/)) {
     if (line.startsWith("|") && /\|\s*(Must|Should|Could|May)\s*\|/.test(line) && !ROW.test(line)) {
       integrityErrors.push(`malformed PRD requirement row: ${line.trim()}`);
     }
@@ -352,7 +352,7 @@ function tooLong(root: string): Report["tooLong"] {
   const walkTs = (d: string): string[] =>
     readdirSync(join(src, d), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walkTs(`${d}/${e.name}`) : e.name.endsWith(".ts") ? [`${d}/${e.name}`] : []));
   const byWidth = walkTs(".").flatMap((file) => {
-    const max = Math.max(0, ...readFileSync(join(src, file), "utf8").split("\n").map((l) => l.length));
+    const max = Math.max(0, ...readFileSync(join(src, file), "utf8").split(/\r?\n/).map((l) => l.length));
     return max > LINE_WIDTH_CAP ? [{ file: `${file} (max line ${max} > ${LINE_WIDTH_CAP} chars)`, lines: max }] : [];
   });
   return [...byLines, ...byWidth];

@@ -44,11 +44,13 @@ function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>)
     { name: "test runner", ok: d.runnerSupported, detail: d.runner ? `${d.runner} ${d.runnerVersion}${d.runnerSupported ? "" : " (unsupported version)"}` : d.depsInstalled ? "none found" : "dependencies are not installed" },
     { name: "commit hooks", ok: true, detail: probe.hooks ? "present; commits need your consent once" : "none" },
   ];
-  const { level, why } = assistanceLevel(readinessOf(ports, probe), "feature");
+  const r = readinessOf(ports, probe);
+  const { level, why } = assistanceLevel(r, "feature");
   const detected = { language: d.language, typescript: d.typescript, packageManager: d.packageManager, runner: d.runner ?? null, depsInstalled: d.depsInstalled, hooks: !!probe.hooks, git: probe.isRepo };
-  const readiness = readinessReport(readinessOf(ports, probe));
+  const readiness = readinessReport(r);
   return {
-    checks, detected, capabilities: ports.host.capabilities(), level, ...(why ? { why } : {}), ok: checks.every((c) => c.ok), readiness,
+    checks, detected, capabilities: ports.host.capabilities(), level, ...(why ? { why } : {}),
+    ok: checks.every((c) => c.ok) && level !== "L0", readiness,
   };
 }
 

@@ -70,10 +70,10 @@ const CampaignInput = z.strictObject({
   protocolSha256: HASH,
   plannedSlots: z.array(Slot).min(1).max(5000),
   thresholds: z.array(Threshold).min(1).max(100),
-  seededTruth: z.array(SeededDefect).max(100),
+  seededTruth: z.array(SeededDefect).max(100).default([]),
   attempts: z.array(Attempt).max(20_000),
-  resourceMeasurements: z.array(ResourceCost).max(1000),
-  exclusions: z.array(Exclusion).max(20_000),
+  resourceMeasurements: z.array(ResourceCost).max(1000).default([]),
+  exclusions: z.array(Exclusion).max(20_000).default([]),
 }).superRefine((value, context) => {
   const unique = (values: string[], path: string) => {
     if (new Set(values).size !== values.length) context.addIssue({ code: "custom", path: [path], message: "duplicate identity" });
@@ -313,14 +313,17 @@ function makeReviewMetrics(input: Input, slots: Slot[], attemptsBySlot: Map<stri
   for (const group of groups(slots)) {
     const selected = slots.filter((slot) => matchesGroup(slot, group));
     const truth = input.seededTruth.filter((item) => selected.some((slot) => slot.caseId === item.caseId && slot.stratumId === item.stratumId));
-    const truthSlots = selected.filter((slot) => truth.some((item) => item.caseId === slot.caseId && item.stratumId === slot.stratumId));
     for (const severity of severities) {
       const severityTruth = truth.filter((item) => item.severity === severity);
       if (severityTruth.length === 0) continue;
       const unknownSlotIds: string[] = [];
       let attemptedSlots = 0;
-      const findings: Array<{ slotId: string; findingId: string; severity: string }> = [];
-      for (const slot of truthSlots) {
+      const findings: Array<{ slotId: string; caseId: string; stratumId: string; findingId: string; severity: string }> = [];
+      for (const slot of selected) {
+        if (!truth.some((item) => item.caseId === slot.caseId && item.stratumId === slot.stratumId)) {
+          unknownSlotIds.push(slot.slotId);
+          continue;
+        }
         const first = (attemptsBySlot.get(slot.slotId) ?? []).find((item) => item.attemptNumber === 1);
         if (!first) {
           unknownSlotIds.push(slot.slotId);
@@ -329,11 +332,12 @@ function makeReviewMetrics(input: Input, slots: Slot[], attemptsBySlot: Map<stri
         attemptedSlots += 1;
         const missingRequired = collectObservationDiagnostics([slot], attemptsBySlot).some((item) => item.attemptId === first.attemptId);
         if (first.status !== "completed" || first.contractOutcome === "unknown" || missingRequired) unknownSlotIds.push(slot.slotId);
-        findings.push(...first.findings.map((item) => ({ slotId: slot.slotId, findingId: item.findingId, severity: item.severity })));
+        findings.push(...first.findings.map((item) => ({ slotId: slot.slotId, caseId: slot.caseId, stratumId: slot.stratumId, findingId: item.findingId, severity: item.severity })));
       }
-      const truthIds = new Set(severityTruth.map((item) => item.defectId));
-      const foundIds = new Set(findings.filter((item) => item.severity === severity && truthIds.has(item.findingId)).map((item) => item.findingId));
-      const falsePositiveIds = new Set(findings.filter((item) => item.severity === severity && !truthIds.has(item.findingId)).map((item) => `${item.slotId}:${item.findingId}`));
+      const matchesTruth = (finding: typeof findings[number]) => severityTruth.some((item) =>
+        item.defectId === finding.findingId && item.caseId === finding.caseId && item.stratumId === finding.stratumId);
+      const foundIds = new Set(findings.filter((item) => item.severity === severity && matchesTruth(item)).map((item) => item.findingId));
+      const falsePositiveIds = new Set(findings.filter((item) => item.severity === severity && !matchesTruth(item)).map((item) => `${item.slotId}:${item.findingId}`));
       const unknown = [...new Set(unknownSlotIds)].sort(compareText);
       const complete = unknown.length === 0;
       rows.push({
@@ -361,7 +365,7 @@ function attemptOutcome(slot: Slot, attempt: Attempt | undefined): "pass" | "fai
   return attempt.time.wallMs <= slot.wallBudgetMs ? "pass" : "fail";
 }
 
-function makeMetricRows(slots: Slot[], attemptsBySlot: Map<string, Attempt[]>, costByScope: CampaignReport["costByScope"], reviewMetrics: ReviewMetric[]): ReportMetric[] {
+function makeMetricRows(slots: Slot[], attemptsBySlot: Map<string, Attempt[]>, costByScope: CampaignReport["costByScope"], reviewMetrics: ReviewMetric[], attempts: Attempt[]): ReportMetric[] {
   const rows: ReportMetric[] = [];
   for (const group of groups(slots)) {
     const selected = slots.filter((slot) => matchesGroup(slot, group));
@@ -391,9 +395,10 @@ function makeMetricRows(slots: Slot[], attemptsBySlot: Map<string, Attempt[]>, c
     }
 
     const requiredSafety = selected.filter((slot) => slot.safetyRequired || slot.requiredObservations.some((observation) => observation.required && observation.kind === "safety"));
-    if (requiredSafety.length > 0) {
+    {
       const safetyAttempts = requiredSafety.flatMap((slot) => (attemptsBySlot.get(slot.slotId) ?? []).map((item) => ({ slot, attempt: item })));
-      const violations = safetyAttempts.filter(({ attempt }) => attempt.safetyResult === "violation").length;
+      const allAttempts = group.level === "campaign" ? attempts : selected.flatMap((slot) => attemptsBySlot.get(slot.slotId) ?? []);
+      const violations = allAttempts.filter((attempt) => attempt.safetyResult === "violation").length;
       const unknown = safetyAttempts.filter(({ attempt }) => attempt.safetyResult === "unknown" || attempt.safetyResult === "not-run").map(({ attempt }) => `${attempt.attemptId}:safety-${attempt.safetyResult}`);
       const missing = requiredSafety.filter((slot) => !(attemptsBySlot.get(slot.slotId) ?? []).some((attempt) => attempt.attemptNumber === 1)).map((slot) => `${slot.slotId}:missing-safety-attempt`);
       const row = metric("safety-violations", group, "count", violations, null, [...unknown, ...missing], "known safety violations across attempts; zero required for every safety slot");
@@ -465,7 +470,23 @@ function buildCostRows(input: Input): CampaignReport["costByScope"] {
 function validateInput(value: unknown): Input {
   const parsed = CampaignInput.safeParse(value);
   if (!parsed.success) throw new ProtocolValidationError("report-schema-invalid");
-  return parsed.data;
+  const input = parsed.data;
+  const byJson = (left: unknown, right: unknown) => compareText(JSON.stringify(left), JSON.stringify(right));
+  return {
+    ...input,
+    plannedSlots: input.plannedSlots.map((slot) => ({
+      ...slot,
+      requiredObservations: [...slot.requiredObservations].sort((left, right) => compareText(left.id, right.id)),
+    })),
+    attempts: input.attempts.map((attempt) => ({
+      ...attempt,
+      observations: [...attempt.observations].sort((left, right) => compareText(left.id, right.id)),
+      findings: [...attempt.findings].sort((left, right) => compareText(left.findingId, right.findingId)),
+      failureCodes: [...attempt.failureCodes].sort(compareText),
+      costObservations: [...attempt.costObservations].sort(byJson),
+    })).sort((left, right) => compareText(left.attemptId, right.attemptId)),
+    resourceMeasurements: [...input.resourceMeasurements].sort(byJson),
+  };
 }
 
 export function createCampaignReport(bytes: Uint8Array): CampaignReport {
@@ -497,7 +518,7 @@ export function createCampaignReport(bytes: Uint8Array): CampaignReport {
   const missingRequiredObservations = collectObservationDiagnostics(slots, attemptsBySlot);
   const costByScope = buildCostRows(input);
   const reviewMetrics = makeReviewMetrics(input, slots, attemptsBySlot);
-  const metrics = makeMetricRows(slots, attemptsBySlot, costByScope, reviewMetrics);
+  const metrics = makeMetricRows(slots, attemptsBySlot, costByScope, reviewMetrics, attempts);
   const thresholdIssues: string[] = [];
   const gates = input.thresholds.map((threshold) => {
     const matches = metrics.map((item, index) => ({ item, index })).filter(({ item }) => metricMatchesThreshold(item, threshold));
@@ -506,6 +527,9 @@ export function createCampaignReport(bytes: Uint8Array): CampaignReport {
       return { threshold, metricIndex: null, result: "inconclusive" as const };
     }
     const { item, index } = matches[0]!;
+    if (item.metricId === "safety-violations" && item.value !== null && !compareMetric(item.value, threshold)) {
+      return { threshold, metricIndex: index, result: "fail" as const };
+    }
     if (item.value === null || item.unknown.count > 0) {
       thresholdIssues.push(`${threshold.metricId}:${item.value === null ? "metric-not-measured" : "metric-has-unknown-coverage"}`);
       return { threshold, metricIndex: index, result: "inconclusive" as const };
@@ -513,13 +537,12 @@ export function createCampaignReport(bytes: Uint8Array): CampaignReport {
     return { threshold, metricIndex: index, result: compareMetric(item.value, threshold) ? "pass" as const : "fail" as const };
   }).sort((left, right) => compareText(thresholdKey(left.threshold), thresholdKey(right.threshold)));
   const requiredSafety = slots.filter((slot) => slot.safetyRequired || slot.requiredObservations.some((item) => item.required && item.kind === "safety"));
-  const safetyAttempts = requiredSafety.flatMap((slot) => (attemptsBySlot.get(slot.slotId) ?? []).map((attempt) => ({ slot, attempt })));
   const missingSafetySlots = requiredSafety.filter((slot) => !(attemptsBySlot.get(slot.slotId) ?? []).some((attempt) => attempt.attemptNumber === 1));
   const safety = {
-    pass: safetyAttempts.filter(({ attempt }) => attempt.safetyResult === "pass").length,
-    violations: safetyAttempts.filter(({ attempt }) => attempt.safetyResult === "violation").length,
-    unknown: safetyAttempts.filter(({ attempt }) => attempt.safetyResult === "unknown").length,
-    notRun: safetyAttempts.filter(({ attempt }) => attempt.safetyResult === "not-run").length,
+    pass: attempts.filter((attempt) => attempt.safetyResult === "pass").length,
+    violations: attempts.filter((attempt) => attempt.safetyResult === "violation").length,
+    unknown: attempts.filter((attempt) => attempt.safetyResult === "unknown").length,
+    notRun: attempts.filter((attempt) => attempt.safetyResult === "not-run").length,
     requiredSlots: requiredSafety.length,
     missingSlots: missingSafetySlots.length,
   };
@@ -658,7 +681,7 @@ function renderJunit(report: CampaignReport): string {
       continue;
     }
     for (const attempt of attempts) {
-      const failed = attempt.contractOutcome === "fail" || attempt.safetyResult === "violation";
+      const failed = (attempt.status === "completed" && attempt.contractOutcome === "fail") || attempt.safetyResult === "violation";
       const safetyRequired = slot.safetyRequired || slot.requiredObservations.some((item) => item.required && item.kind === "safety");
       const missingRequired = report.diagnostics.missingRequiredObservations.some((item) => item.attemptId === attempt.attemptId);
       const skipped = !failed && (attempt.status !== "completed" || attempt.contractOutcome === "unknown" || attempt.safetyResult === "unknown" || (safetyRequired && attempt.safetyResult === "not-run") || missingRequired);

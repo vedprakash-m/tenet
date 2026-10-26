@@ -48,6 +48,8 @@ export interface Readiness {
   experimental: boolean; // JavaScript-only, monorepo or another experimental tuple dimension
 }
 
+export const mutationSupported = (platform: string): boolean => platform === "darwin" || platform === "linux";
+
 /** The assistance level is one pure function of readiness probes; the lowest matching row wins (TS §8.2). */
 export function assistanceLevel(r: Readiness, profile: Profile): { level: Level; why?: string } {
   if (r.policyBlocks) return { level: "L0", why: "a required host capability is blocked by policy" };

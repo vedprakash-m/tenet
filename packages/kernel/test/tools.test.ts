@@ -1,6 +1,6 @@
 // The lints are tested like product code: each rule has a fixture that must fail, so a lint that stops catching shows up.
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { lintArch } from "../../../tools/lint-arch.ts";
@@ -12,14 +12,14 @@ const scratch = () => { const d = tmp("tenet-lint-"); dirs.push(d); return d; };
 after(() => dirs.forEach(cleanup));
 
 const PLUGIN = join(import.meta.dirname, "../../../plugin");
-const copy = () => { const d = scratch(); cpSync(PLUGIN, d, { recursive: true, filter: (s) => !/\/kernel(\/|$)|\/schemas(\/|$)/.test(s) }); return d; };
-const edit = (root: string, rel: string, fn: (s: string) => string) => writeFileSync(join(root, rel), fn(readFileSync(join(root, rel), "utf8")));
+const copy = () => { const d = scratch(); cpSync(PLUGIN, d, { recursive: true, filter: (s) => !/\/kernel(\/|$)|\/schemas(\/|$)/.test(s.split(sep).join("/")) }); return d; };
+const edit = (root: string, rel: string, fn: (s: string) => string) => writeFileSync(join(root, rel), fn(readFileSync(join(root, rel), "utf8").replace(/\r\n/g, "\n")));
 
 describe("license packaging", () => {
   it("ships MIT for Tenet and the starter while retaining third-party notices", () => {
     const root = join(PLUGIN, "..");
     const license = readFileSync(join(root, "LICENSE"), "utf8");
-    assert.match(license, /^MIT License\n/);
+    assert.match(license, /^MIT License\r?\n/);
     assert.match(license, /Permission is hereby granted, free of charge/);
     assert.match(license, /THE SOFTWARE IS PROVIDED "AS IS"/);
     assert.equal(readFileSync(join(PLUGIN, "LICENSE"), "utf8"), license);

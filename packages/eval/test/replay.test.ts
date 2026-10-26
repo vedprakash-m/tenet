@@ -2,10 +2,11 @@ import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { replayFixtureFile } from "../src/replay.ts";
+import { maxConcurrency } from "../../../tools/host/evaluate.ts";
+import { projectScratch } from "../../../tools/test-scratch.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach((root) => rmSync(root, { recursive: true, force: true })));
@@ -18,7 +19,7 @@ function fixture(fixtureId: string, events: SyntheticEvent[], sentinelExists: bo
 }
 
 function scratch() {
-  const root = mkdtempSync(join(tmpdir(), "tenet-offline-replay-"));
+  const root = projectScratch("tenet-offline-replay-");
   roots.push(root);
   return root;
 }
@@ -37,6 +38,11 @@ const start = (seconds: number, type: string, data: Record<string, unknown>): Sy
 });
 
 describe("offline synthetic observation replay", () => {
+  it("keeps reversed child intervals unknown without changing valid overlap", () => {
+    const child = { callId: "child-one", name: "agent", startMs: 10, endMs: 5, declaredTools: [], calls: [] };
+    assert.equal(maxConcurrency([child]), null);
+    assert.equal(maxConcurrency([{ ...child, endMs: 20 }]), 1);
+  });
   it("replays an exact tool-call denial and emits the frozen complete result", () => {
     const root = scratch();
     const events = [

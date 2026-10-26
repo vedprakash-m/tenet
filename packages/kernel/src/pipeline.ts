@@ -5,6 +5,7 @@ import type { ZodType } from "zod";
 import { inputProblem } from "./core/input.ts";
 import { KernelError } from "./core/errors.ts";
 import { reason } from "./core/reasons.ts";
+import { mutationSupported } from "./core/risk.ts";
 import { redact } from "./core/redact.ts";
 import { mutate } from "./pipeline-mutate.ts";
 import { versionNote } from "./pipeline-version.ts";
@@ -98,6 +99,10 @@ export async function runVerb(ports: Ports, verbs: Record<string, Verb>, name: s
     ])
   ) as typeof parsed.data;
   const cls = verb.class(input);
+  if (cls === "mutating" && !mutationSupported(ports.platform)) {
+    return render(ports, name, { exit: 2, reasons: [reason("capability-missing",
+      `mutating work is unavailable on ${ports.platform}; read-only inspection and advisory review remain available`)] }, null);
+  }
   try {
     if (cls === "stateless") {
       if (name === "review" || input.view === "doctor") configurePolicy(ports, null);

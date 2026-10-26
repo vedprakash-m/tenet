@@ -99,11 +99,15 @@ export async function runCopilot(run: HostRun, opts: HostOptions): Promise<Obser
   child.stderr.on("data", (c: Buffer) => chunks.push(c));
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; kill(); }, run.timeoutMs);
-  const end = await new Promise<{ exit: number | null; signal: string | null }>((resolve) => {
-    child.on("close", (exit, signal) => resolve({ exit, signal }));
-    child.on("error", () => resolve({ exit: null, signal: null }));
-  });
-  clearTimeout(timer);
+  let end: { exit: number | null; signal: string | null };
+  try {
+    end = await new Promise<{ exit: number | null; signal: string | null }>((resolve, reject) => {
+      child.on("close", (exit, signal) => resolve({ exit, signal }));
+      child.on("error", reject);
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   writeFileSync(transcript, Buffer.concat(chunks));
   const text = Buffer.concat(chunks).toString("utf8");
   const obs: Observation = {

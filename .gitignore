@@ -3,5 +3,6 @@
 node_modules/
 *.log
 plugin/kernel/
+plugin/SHA256SUMS
 .tenet/
 .host-runs/

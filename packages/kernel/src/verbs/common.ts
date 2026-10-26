@@ -1,7 +1,7 @@
 // Small helpers shared by verbs. Anything with a rule in it lives in core/; this file only wires.
 import { KernelError } from "../core/errors.ts";
 import { hashOf } from "../core/ids.ts";
-import { isEditingProfile } from "../core/risk.ts";
+import { isEditingProfile, mutationSupported } from "../core/risk.ts";
 import type { Readiness } from "../core/risk.ts";
 import type { Action, Question, State, WorkContract } from "../core/schemas.ts";
 import { handleOf, workByHandle } from "../pipeline.ts";
@@ -17,7 +17,7 @@ export const nodeOk = (): boolean => {
 export function readinessOf(ports: Ports, probe: RepoProbe): Readiness {
   const d = ports.stack.detect(ports.root);
   return {
-    nodeOk: nodeOk(), platformOk: process.platform === "darwin" || process.platform === "linux", stateWritable: true, policyBlocks: false,
+    nodeOk: nodeOk(), platformOk: mutationSupported(ports.platform), stateWritable: true, policyBlocks: false,
     gitState: probe.state, language: d.language, runnerSupported: d.runnerSupported, typescript: d.typescript,
     depsInstalled: d.depsInstalled, experimental: d.experimental,
   };

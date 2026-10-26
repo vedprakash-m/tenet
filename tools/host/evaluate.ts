@@ -49,7 +49,7 @@ export function children(events: readonly Ev[]): Child[] {
 
 /** The maximum observed concurrency, or null when any child interval is incomplete or invalid. */
 export function maxConcurrency(kids: readonly Child[]): number | null {
-  if (kids.some((kid) => !Number.isFinite(kid.startMs) || kid.endMs === null || !Number.isFinite(kid.endMs))) return null;
+  if (kids.some((kid) => !Number.isFinite(kid.startMs) || kid.endMs === null || !Number.isFinite(kid.endMs) || kid.endMs < kid.startMs)) return null;
   const marks = kids.flatMap((k) => [[k.startMs, 1], [k.endMs ?? Number.POSITIVE_INFINITY, -1]] as const);
   let now = 0, best = 0;
   for (const [, step] of [...marks].sort((a, b) => a[0] - b[0] || a[1] - b[1])) { now += step; best = Math.max(best, now); }

@@ -68,17 +68,75 @@ export interface StaticProtocolResult {
   result: "valid-static-protocol";
 }
 
-export function readBoundedRegularFile(path: string, maxBytes: number): Buffer {
+function filePathSnapshot(path: string) {
+  const paths: string[] = [];
+  let current = resolve(path);
+  while (true) {
+    paths.unshift(current);
+    const parent = dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return paths.map((entry, index) => {
+    const stat = lstatSync(entry, { bigint: true });
+    if (stat.isSymbolicLink() || (index === paths.length - 1 ? !stat.isFile() : !stat.isDirectory())) {
+      throw new ProtocolValidationError("unsafe-file");
+    }
+    return { path: entry, stat };
+  });
+}
+
+function sameFileIdentity(left: import("node:fs").BigIntStats, right: import("node:fs").BigIntStats): boolean {
+  return left.dev === right.dev && left.ino === right.ino && left.mode === right.mode;
+}
+
+function samePathEntry(left: import("node:fs").BigIntStats, right: import("node:fs").BigIntStats): boolean {
+  // Older Windows libuv reports different device IDs through lstat and fstat; bind the volume through handles instead.
+  return left.ino === right.ino && left.mode === right.mode && (process.platform === "win32" || left.dev === right.dev);
+}
+
+function assertDescriptorAtPath(path: string, expected: import("node:fs").BigIntStats): void {
   let descriptor: number;
   try {
     descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  } catch {
+    throw new ProtocolValidationError("file-path-changed");
+  }
+  try {
+    const current = fstatSync(descriptor, { bigint: true });
+    if (!current.isFile() || !sameFileIdentity(current, expected) || current.size !== expected.size ||
+      current.mtimeNs !== expected.mtimeNs) throw new ProtocolValidationError("file-path-changed");
+  } finally {
+    closeSync(descriptor);
+  }
+}
+
+function assertPathUnchanged(snapshot: ReturnType<typeof filePathSnapshot>): void {
+  const current = filePathSnapshot(snapshot[snapshot.length - 1]!.path);
+  if (current.length !== snapshot.length || current.some((entry, index) => !sameFileIdentity(entry.stat, snapshot[index]!.stat))) {
+    throw new ProtocolValidationError("file-path-changed");
+  }
+}
+
+export function readBoundedRegularFile(path: string, maxBytes: number): Buffer {
+  const admitted = filePathSnapshot(path);
+  const leaf = admitted[admitted.length - 1]!;
+  if (leaf.stat.size > BigInt(maxBytes)) throw new ProtocolValidationError("unsafe-file");
+  let descriptor: number;
+  try {
+    descriptor = openSync(leaf.path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   } catch {
     throw new ProtocolValidationError("unsafe-file");
   }
 
   try {
     const before = fstatSync(descriptor, { bigint: true });
-    if (!before.isFile() || before.size > BigInt(maxBytes)) throw new ProtocolValidationError("unsafe-file");
+    if (!before.isFile() || before.size > BigInt(maxBytes) || !samePathEntry(before, leaf.stat) ||
+      before.size !== leaf.stat.size || before.mtimeNs !== leaf.stat.mtimeNs) {
+      throw new ProtocolValidationError("unsafe-file");
+    }
+    if (process.platform === "win32") assertDescriptorAtPath(leaf.path, before);
+    assertPathUnchanged(admitted);
     const buffer = Buffer.allocUnsafe(maxBytes + 1);
     let bytesRead = 0;
     while (bytesRead < buffer.length) {
@@ -87,8 +145,16 @@ export function readBoundedRegularFile(path: string, maxBytes: number): Buffer {
       bytesRead += count;
     }
     const after = fstatSync(descriptor, { bigint: true });
-    if (bytesRead > maxBytes || BigInt(bytesRead) !== before.size || after.size !== before.size || after.ino !== before.ino || after.dev !== before.dev || after.mtimeNs !== before.mtimeNs) {
+    if (bytesRead > maxBytes || BigInt(bytesRead) !== before.size || after.size !== before.size ||
+      !sameFileIdentity(after, before) || after.mtimeNs !== before.mtimeNs || after.ctimeNs !== before.ctimeNs) {
       throw new ProtocolValidationError("file-changed-or-oversized");
+    }
+    if (process.platform === "win32") assertDescriptorAtPath(leaf.path, after);
+    assertPathUnchanged(admitted);
+    const finalPath = lstatSync(leaf.path, { bigint: true });
+    if (!samePathEntry(finalPath, after) || finalPath.size !== after.size ||
+      finalPath.mtimeNs !== after.mtimeNs) {
+      throw new ProtocolValidationError("file-path-changed");
     }
     return buffer.subarray(0, bytesRead);
   } finally {

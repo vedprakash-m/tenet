@@ -4,7 +4,7 @@
 // Module sizes (TS §6.2) follow the same rule: a module over its owner-set budget may not grow past its recorded ceiling.
 // Size is counted in non-whitespace characters, so wrapping a line or splitting a function is not growth (owner decision, 2026-10-20).
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
@@ -28,7 +28,7 @@ export const BUDGETS: Record<string, { match: RegExp; lines: number }> = {
   "adapters/git-cli": { match: /^adapters\/git-cli\.ts$/, lines: 657 }, // +3 lines for the layout probe call (GIT-13; 0.38%), +4 for the declared-output parameter (EVD-09; 0.5%); both pre-approved 2026-10-24
   "adapters/runner": { match: /^adapters\/runner\.ts$/, lines: 350 },
   "adapters/node-ts": { match: /^adapters\/node-ts\.ts$/, lines: 350 },
-  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 4184 }, // +36 lines (~2,073 chars) for hash-bound project-check envelopes and pre-spawn consent (RC1, owner-approved 2026-10-22), +36 lines for `decide lesson`/`forget`, the lessons view and packet excerpt (LRN-02, CON-10; owner-confirmed), +4 lines for `inspect --view impact` (INT-08; under the 1% pre-approval), +23 lines for `decide cleanup` and `inspect --view residue` (LFC-05; 0.57%, pre-approved), +19 lines for journal reduction, run-file cap and the ceiling at open/finish (CON-08; 0.45%, pre-approved), +11 lines for layout notes and the submodule refusal at open (GIT-13; 0.26%, pre-approved), +3 lines for impact in the plan preview (INT-08; 0.05%, pre-approved), +80 lines (2.0%) for check reruns, the flaky qualifier and the end-of-run toolchain comparison (EVD-08/EVD-11; owner-confirmed 2026-10-24, above the 1% pre-approval), +41 lines for declared outputs and named-file diagnostics (EVD-09; 1.0%, pre-approved), +75 lines (1.8%) for version pinning, the pause, the resume question and `decide version-reconcile` (LFC-03; approved in advance by the owner on 2026-10-24)
+  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 4188 }, // +4 for early unsupported-platform admission (TS §4.9; 0.096%, existing under-1% pre-approval, 2026-10-25). Prior increments: +36 lines (~2,073 chars) for hash-bound project-check envelopes and pre-spawn consent (RC1, owner-approved 2026-10-22), +36 lines for `decide lesson`/`forget`, the lessons view and packet excerpt (LRN-02, CON-10; owner-confirmed), +4 lines for `inspect --view impact` (INT-08; under the 1% pre-approval), +23 lines for `decide cleanup` and `inspect --view residue` (LFC-05; 0.57%, pre-approved), +19 lines for journal reduction, run-file cap and the ceiling at open/finish (CON-08; 0.45%, pre-approved), +11 lines for layout notes and the submodule refusal at open (GIT-13; 0.26%, pre-approved), +3 lines for impact in the plan preview (INT-08; 0.05%, pre-approved), +80 lines (2.0%) for check reruns, the flaky qualifier and the end-of-run toolchain comparison (EVD-08/EVD-11; owner-confirmed 2026-10-24, above the 1% pre-approval), +41 lines for declared outputs and named-file diagnostics (EVD-09; 1.0%, pre-approved), +75 lines (1.8%) for version pinning, the pause, the resume question and `decide version-reconcile` (LFC-03; approved in advance by the owner on 2026-10-24)
 };
 
 const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => {
@@ -62,9 +62,9 @@ const nameOf = (n: ts.Node): string | undefined => {
 export function measure(dir: string): Measured {
   const out: Measured = { functions: {}, wide: {}, modules: {} };
   for (const file of files(dir)) {
-    const rel = relative(dir, file);
+    const rel = relative(dir, file).split(sep).join("/");
     const text = readFileSync(file, "utf8");
-    const wide = text.split("\n").filter((l) => l.length > LIMITS.width).length;
+    const wide = text.split(/\r?\n/).filter((l) => l.length > LIMITS.width).length;
     if (wide) out.wide[rel] = wide;
     for (const [name, b] of Object.entries(BUDGETS)) if (b.match.test(rel)) out.modules[name] = (out.modules[name] ?? 0) + text.replace(/\s+/g, "").length;
     const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);

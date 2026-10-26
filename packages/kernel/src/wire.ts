@@ -33,6 +33,7 @@ export function createPorts(cwd: string, env: Record<string, string | undefined>
   const runner = new ProcessRunner(systemClock, env);
   const recipes = new FsRecipes(pluginRoot());
   return {
+    platform: process.platform,
     root, version: KERNEL_VERSION, clock: systemClock, rand: systemRandom,
     recipes, host: new PluginHost(recipes), project: new FsProject(root), store: new FsStore(root, systemClock, systemRandom), git: new GitCli(root, runner), runner, stack: createStack(),
   };

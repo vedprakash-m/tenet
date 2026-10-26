@@ -19,18 +19,61 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
       - run: npm ci --ignore-scripts --no-audit
       - run: npm run ci
       - name: The shipped bundle, driven through real repositories
         run: npm run uat
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22.12.0
       - name: The shipped bundle, driven through real repositories, on the minimum supported Node
         run: npm run uat
+  windows-portability:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run coverage
+      - run: npm run build
+      - run: npm run verify:payload
+      - name: Windows tooling, pure rules, offline evaluation and platform refusal only
+        run: >-
+          node --test --test-concurrency=4
+          packages\eval\test\protocol.test.ts
+          packages\eval\test\replay.test.ts
+          packages\eval\test\report.test.ts
+          packages\kernel\test\tooling-portability.test.ts
+          packages\kernel\test\payload.test.ts
+          packages\kernel\test\tools.test.ts
+          packages\kernel\test\quality-gate.test.ts
+          packages\kernel\test\coverage.test.ts
+          packages\kernel\test\platform.test.ts
+          packages\kernel\test\host-launch.test.ts
+          packages\kernel\test\ci-security.test.ts
+          packages\kernel\test\core.test.ts
+          packages\kernel\test\config.test.ts
+          packages\kernel\test\verdict.test.ts
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.12.0
+      - name: Windows bounded file identities and payload checks on minimum Node
+        run: >-
+          node --experimental-strip-types --test
+          packages\eval\test\protocol.test.ts
+          packages\eval\test\replay.test.ts
+          packages\eval\test\report.test.ts
+          packages\kernel\test\payload.test.ts
+          packages\kernel\test\host-launch.test.ts

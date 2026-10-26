@@ -1,16 +1,16 @@
 // The quality ratchet (copilot-instructions: simplicity first). New code meets the limits; existing offenders are recorded in
 // a baseline and may only shrink. Each rule has a fixture that must fail, so a gate that stops catching shows up.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { LIMITS, budgetChars, check, lowered, measure } from "../../../tools/lint-quality.ts";
-import { cleanup, tmp } from "./helpers.ts";
+import { projectScratch } from "../../../tools/test-scratch.ts";
 
 const dirs: string[] = [];
-after(() => dirs.forEach(cleanup));
+after(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })));
 const tree = (files: Record<string, string>) => {
-  const d = tmp("tenet-quality-");
+  const d = projectScratch("quality fixture-");
   dirs.push(d);
   for (const [rel, text] of Object.entries(files)) { mkdirSync(join(d, rel, ".."), { recursive: true }); writeFileSync(join(d, rel), text); }
   return d;
@@ -20,6 +20,27 @@ const branchy = (name: string, n: number) => `export function ${name}(x: number)
 const none: { functions: Record<string, never>; wide: Record<string, number>; modules?: Record<string, number> } = { functions: {}, wide: {} };
 
 describe("measuring", () => {
+  it("does not count CRLF terminators as width while retaining the exact width limit", () => {
+    const text = `${"x".repeat(LIMITS.width)}\n${"y".repeat(LIMITS.width + 1)}\n`;
+    const lf = measure(tree({ "core/risk.ts": text }));
+    const crlf = measure(tree({ "core/risk.ts": text.replace(/\n/g, "\r\n") }));
+    assert.deepEqual(lf.wide, { "core/risk.ts": 1 });
+    assert.deepEqual(crlf, lf);
+    assert.match(check(crlf, none).join("\n"), /core\/risk.ts: 1 line\(s\) wider than 140 characters/);
+  });
+  it("uses canonical nested paths for module matching and function and width baseline keys", () => {
+    const text = `${longFn("legacy", LIMITS.lines + 1)}const wide = "${"x".repeat(LIMITS.width)}";\n`;
+    const m = measure(tree({ "core/risk.ts": text }));
+    assert.deepEqual(Object.keys(m.functions), ["core/risk.ts#legacy"]);
+    assert.deepEqual(m.wide, { "core/risk.ts": 1 });
+    assert.equal(m.modules["core/risk"], text.replace(/\s+/g, "").length);
+    const base = { functions: { "core/risk.ts#legacy": { ...m.functions["core/risk.ts#legacy"]! } }, wide: { "core/risk.ts": 1 } };
+    assert.deepEqual(check(m, base), []);
+    const grown = measure(tree({ "core/risk.ts": `${longFn("legacy", LIMITS.lines + 2)}${"x".repeat(LIMITS.width + 1)}\n${"y".repeat(LIMITS.width + 1)}\n` }));
+    const problems = check(grown, base);
+    assert.ok(problems.some(p => /^core\/risk.ts#legacy grew:/.test(p)), problems.join("\n"));
+    assert.ok(problems.some(p => /^core\/risk.ts gained wide lines: 2, recorded 1$/.test(p)), problems.join("\n"));
+  });
   it("reports length, complexity and nesting per named function, and wide lines per file", () => {
     const m = measure(tree({ "a.ts": `${longFn("big", 10)}${branchy("many", 4)}const w = "${"x".repeat(150)}";\n` }));
     assert.equal(m.functions["a.ts#big"]!.lines, 13);
