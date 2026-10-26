@@ -355,16 +355,36 @@ test("a qualified disposition requires a passing manifest bound to the frozen pr
 });
 
 test("the report-integrity CLI does not modify requirements, evidence, or Git state", () => {
-  const root = resolve(import.meta.dirname, "../../..");
-  const readme = ["specs/PRD.md", "docs/audits/evidence-ledger.json"];
-  const hashes = readme.map((path) => createHash("sha256").update(readFileSync(join(root, path))).digest("hex"));
-  const statusBefore = git(root, "status", "--porcelain=v1", "--untracked-files=all");
+  const source = resolve(import.meta.dirname, "../../..");
+  const root = tmp("tenet-coverage-cli-");
+  try {
+    fixture(root);
+    for (const path of ["tools/coverage.ts", "packages/eval/src/tuple.ts", "packages/kernel/src/core/reasons.ts", "packages/kernel/src/version.ts"]) {
+      write(root, path, readFileSync(join(source, path), "utf8"));
+    }
+    write(root, "package.json", '{"type":"module"}\n');
+    write(root, ".gitignore", "node_modules\n");
+    write(root, "docs/audits/evidence-ledger.json", '{"schemaVersion":1,"records":[]}\n');
+    symlinkSync(join(source, "node_modules"), join(root, "node_modules"), "junction");
+    initRepo(root);
+    git(root, "add", "-A");
+    git(root, "commit", "-qm", "coverage fixture");
+    write(root, "staged.txt", "existing staged change\n");
+    git(root, "add", "staged.txt");
+    write(root, "untracked.txt", "existing untracked file\n");
+    write(root, "packages/kernel/src/verbs/example.ts", "// existing unstaged edit\n");
+    const readme = ["specs/PRD.md", "docs/audits/evidence-ledger.json"];
+    const hashes = readme.map((path) => createHash("sha256").update(readFileSync(join(root, path))).digest("hex"));
+    const statusBefore = git(root, "status", "--porcelain=v1", "--untracked-files=all");
 
-  const output = execFileSync(process.execPath, [join(root, "tools/coverage.ts"), "--milestone", "M0"], {
-    cwd: root, encoding: "utf8",
-  });
+    const output = execFileSync(process.execPath, [join(root, "tools/coverage.ts"), "--milestone", "M0"], {
+      cwd: root, encoding: "utf8", env: { ...process.env, NODE_DISABLE_COMPILE_CACHE: "1" },
+    });
 
-  assert.match(output, /^coverage M0:/);
-  assert.deepEqual(readme.map((path) => createHash("sha256").update(readFileSync(join(root, path))).digest("hex")), hashes);
-  assert.equal(git(root, "status", "--porcelain=v1", "--untracked-files=all"), statusBefore);
+    assert.match(output, /^coverage M0: 1 Musts/);
+    assert.deepEqual(readme.map((path) => createHash("sha256").update(readFileSync(join(root, path))).digest("hex")), hashes);
+    assert.equal(git(root, "status", "--porcelain=v1", "--untracked-files=all"), statusBefore);
+  } finally {
+    cleanup(root);
+  }
 });
