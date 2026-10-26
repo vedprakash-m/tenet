@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-25 - Align inherited launch-failure regression
+
+**Changed.** Updated the existing missing-executable test in `packages/kernel/test/host-cli.test.ts` to assert `ENOENT` rejection and no observation/transcript, matching explicit launch-error propagation. First pushed CI passed Windows but both POSIX suites exposed this stale expectation as their sole failure; no runtime assertions were weakened. Plan records the remote evidence and pending rerun.
+
 ## 2026-10-25 - Preserve host-runner launch errors
 
 **Changed.** `tools/host/copilot-cli.ts` now rejects process launch errors rather than publishing ambiguous null-exit observations. Its deadline is cleared in `finally`, including rejection. Added `packages/kernel/test/host-launch.test.ts` and both Windows runtime CI selectors; updated harness/plan records.

@@ -1025,6 +1025,12 @@ The evidence-ledger **mechanism** exists, but `docs/audits/evidence-ledger.json`
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
 
+### 2026-10-25 (pushed main and remote CI follow-up) - ◐ validation correction
+
+Pushed code/test commit `abd4586` and documentation commit `d128e03` directly to `origin/main` using the existing authenticated GitHub CLI credential helper after Git's default helper could not prompt. One local `main` branch, one worktree and a clean tracked checkout were confirmed. [Remote run 40256396120](https://github.com/vedprakash-m/tenet/actions/runs/40256396120) passed Windows portability but failed both POSIX full suites on exactly one stale expectation: `host-cli.test.ts` still expected missing executables to return null-exit observations. This test was missed during the launch-error behavior change; the failure is caused by this batch, not an inherited failure.
+
+Updated that existing regression to expect explicit `ENOENT` rejection and absence of both observation and transcript, matching the new real-process controls. No production failure was suppressed, and stop/timeout assertions remain unchanged. The previously failing macOS interrupted-probe test passed in this remote run; that is one passing observation, not a proven diagnosis or repair of its intermittent failure. Full gates/UAT require the follow-up remote run.
+
 ### 2026-10-25 (owner-authorized commit and push to main) - ◐ remote validation pending
 
 Owner explicitly requested all current changes be committed and pushed to GitHub `main`, with nothing on another branch or worktree. A fresh fetch confirmed local `main` and `origin/main` both at `e0d0d2d`, with only one local branch and one worktree. Rechecked typecheck, all lints, complete-payload verification and whitespace; staged code/tests passed `npm run privacy`. Committed implementation/tests as `abd4586`, followed by the related specs, plan, changelog and user/contributor documentation. Generated schemas have no semantic diff; ignored bundle/checksum outputs are not source commits. Remote CI must still be checked after pushing. No release, native-host, account or qualification gate is waived by source publication.
