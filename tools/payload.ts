@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const SUMS = "SHA256SUMS";
 
-function inventoryPaths(value: unknown): string[] {
+export function payloadInventory(value: unknown): string[] {
   if (!Array.isArray(value) || value.length === 0) throw new Error("invalid payload inventory: expected nonempty array");
   const names = new Set<string>();
   const paths: string[] = [];
@@ -22,7 +22,7 @@ function inventoryPaths(value: unknown): string[] {
   return paths.sort();
 }
 
-function payloadFiles(root: string, prefix = ""): string[] {
+export function payloadFiles(root: string, prefix = ""): string[] {
   const directory = lstatSync(join(root, prefix));
   if (directory.isSymbolicLink()) throw new Error(`linked payload path: ${prefix || "."}`);
   if (!directory.isDirectory()) throw new Error(`non-directory payload path: ${prefix || "."}`);
@@ -38,7 +38,7 @@ function payloadFiles(root: string, prefix = ""): string[] {
 
 /** Local byte inventory, not authenticity or atomic containment against concurrent path replacement. */
 export function payloadChecksums(root: string, inventory: unknown): string {
-  const expected = inventoryPaths(inventory);
+  const expected = payloadInventory(inventory);
   const actual = new Set(payloadFiles(root));
   const allowed = new Set(expected);
   for (const path of expected) if (!actual.has(path)) throw new Error(`missing payload file: ${path}`);
