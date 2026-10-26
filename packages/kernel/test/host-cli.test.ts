@@ -31,9 +31,15 @@ describe("host harness (offline, against a fake copilot) [ENG-04]", () => {
     assert.equal(obs.signal, "SIGKILL");
   });
 
-  it("reports an absent binary as a run with no exit, not as a pass", async () => {
-    const obs = await runCopilot({ id: "none", prompt: "x", cwd: scratch(), timeoutMs: 5_000 }, { bin: "/nonexistent/copilot", outDir: scratch() });
-    assert.equal(obs.exit, null);
+  it("rejects an absent binary explicitly without publishing an observation", async () => {
+    const out = scratch();
+    await assert.rejects(
+      runCopilot({ id: "none", prompt: "x", cwd: scratch(), timeoutMs: 5_000 },
+        { bin: join(out, "nonexistent-copilot"), outDir: out }),
+      { code: "ENOENT" },
+    );
+    assert.equal(existsSync(join(out, "none", "observation.json")), false);
+    assert.equal(existsSync(join(out, "none", "transcript.jsonl")), false);
   });
 
   it("refuses a live run once the budget is spent and writes the count down", () => {
