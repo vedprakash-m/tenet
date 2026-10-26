@@ -64,7 +64,7 @@ npm ci
 npm run ci
 ```
 
-`npm run ci` runs typecheck, `lint-arch`, `lint-skills`, the quality lint, coverage, the build, payload verification and every test.
+`npm run ci` runs typecheck, `lint-arch`, `lint-skills`, the quality lint, coverage, the build, payload and reproducibility verification, and every test.
 
 Run the full mutation, process-group and crash-recovery suite on macOS or Linux. Windows can build the bundle and run the deterministic tooling, pure-rule and platform-refusal tests, but it has no supported mutation port (Tech Spec §4.9). A passing Windows build or focused suite is not a passing full CI gate or host qualification; do not skip the POSIX tests to claim one.
 
@@ -75,6 +75,8 @@ The untrusted workflow retains full macOS/Linux CI and has a separate Windows po
 The build checks every file in `plugin/` against the explicit [payload inclusion list](tools/payload-files.json), including hidden starter files, and writes `plugin/SHA256SUMS` with exact-byte SHA-256 hashes. Only the checksum file itself is excluded from hashing. Missing, additional, linked or nonregular payload files fail the build; unexpected files are not deleted automatically. Add or remove an inventory entry when an intentional payload change adds or removes a file.
 
 The generated checksum file is invalidated before compilation and is git-ignored. After building, run `npm run verify:payload` to check the complete current payload against it. Editing payload files after building requires rebuilding; line-ending changes also change hashes. These local checks provide neither authenticity nor atomic protection from concurrent file replacement. They do not replace independent clean release builds, signed provenance, installed-payload verification or qualification.
+
+Run `npm run verify:reproducible` to build the entire payload twice in separate empty output directories. It does not create a Git branch/worktree or modify the source payload. It checks both inclusion lists/checksum files, compares every file's exact-byte hash, and refuses observed input changes. Its before/after snapshot covers package/lock/config files, root notices, kernel/evaluator/tool source trees, static payload files and installed TypeScript compiler files. The result records Node, esbuild and TypeScript versions and the manifest hash; it makes no cross-OS or independent-install claim. Transient changes restored between snapshots are not detected, and the existing installed dependencies are reused, not reinstalled or authenticated. The two uniquely owned output directories are removed on success or failure. CI runs this on macOS, Linux and Windows. Independent clean source/dependency rebuilds, installed verification and signing remain release gates.
 
 ## Plugin text is product behavior
 

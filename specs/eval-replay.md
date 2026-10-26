@@ -3,7 +3,7 @@
 > **Spec type:** API contract / offline evaluation
 > **Load-bearing frameworks:** F2 (acceptance criteria), F3 (scope), F4 (executor context) | **Supporting:** F1 (outcome), F5 (failure conditions), F6 (ambiguity audit)
 > **Date:** 2026-10-25 | **Author:** GitHub Copilot | **Decision owner:** Tenet repository owner
-> **Status:** Implemented locally under owner decision 36 A for pure-helper replay of hand-authored synthetic fixtures. Ten focused replay tests pass. Capture, native execution and full kernel-port replay remain out of scope or separately gated.
+> **Status:** Implemented under owner decision 36 A for pure-helper replay of hand-authored synthetic fixtures. Ten focused replay tests pass; remote full CI passes at `6c41f07` ([run 40257346186](https://github.com/vedprakash-m/tenet/actions/runs/40257346186)). Capture, native execution, trusted execution authorization and full kernel port/pipeline replay remain out of scope or separately gated. This is not host qualification or full lifecycle completion.
 > **Zero-Question Score:** 1 unresolved integration boundary, explicitly deferred: full kernel port/pipeline replay is not this slice.
 
 ## How to Read This Spec
@@ -213,7 +213,7 @@ Read-only review found seven precision issues; follow-up implementation review f
 | Decision 35 scope authority was not listed | Added Decision 35 A to the decisions table; full pipeline replay remains deferred. |
 | Follow-up implementation review found selection attribution could silently bind to the wrong same-name child | Validator now rejects orphaned, repeated and ambiguous selection events; red-first replay controls pass. |
 
-No host, process, network, account, model, capture or spend operation was performed. Owner implementation sign-off remains required.
+At this review, no host, process, network, account, model, capture or spend operation was performed, and owner implementation sign-off remained required. Subsequent owner decision 36 A approved the bounded pure-helper implementation, superseding that awaiting-sign-off status; the review itself did not supply owner approval. Capture, native execution, trusted execution authorization and full kernel port/pipeline replay remain separately gated, with no qualification inferred.
 
 ## Assumption Registry
 

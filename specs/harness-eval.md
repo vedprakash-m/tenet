@@ -360,7 +360,7 @@ Run tests against the actual standard editor/session. Mocked models, patched dia
 
 ### 7.4 Proposed Artifacts and Contracts
 
-[Approved by G0 decision 32 A for bounded offline implementation; `StaticProtocolV1` is specified in [eval-protocol.md](eval-protocol.md) and its static validator is implemented locally under decision 34 A. Replay/reporting remain unimplemented. Trusted execution Authorization is a separate, unapproved contract. These are **evaluation schemas**, not additions to kernel state, endpoints or reason-code vocabulary. Use the repository's existing schema library; make JSON records versioned and strict at executable/authority boundaries. Reject unsupported fields rather than interpreting a file as permission.
+Approved by G0 decision 32 A for bounded offline implementation; `StaticProtocolV1` is specified in [eval-protocol.md](eval-protocol.md) and its static validator is implemented under decision 34 A. Pure-helper synthetic replay is implemented under decision 36 A per [eval-replay.md](eval-replay.md); offline reporting is implemented under decisions 38 A and 39 A per [eval-report.md](eval-report.md). Remote full CI passes at `6c41f07` ([run 40257346186](https://github.com/vedprakash-m/tenet/actions/runs/40257346186)); this does not establish host observation, qualification or full lifecycle completion. Native execution, capture and full kernel port/pipeline replay remain separately gated; trusted execution Authorization is a separate, unapproved contract. These are **evaluation schemas**, not additions to kernel state, endpoints or reason-code vocabulary. Use the repository's existing schema library; make JSON records versioned and strict at executable/authority boundaries. Reject unsupported fields rather than interpreting a file as permission.
 
 | Record | Required Contents | Writer / Trust Boundary |
 |---|---|---|
@@ -452,7 +452,7 @@ Cleanup verifies recorded ownership and process start identity, never `pkill`/wi
 
 ### 7.8 Capture-to-Replay and Automatic Learning
 
-The first offline observation-replay slice is implemented locally per [eval-replay.md](eval-replay.md) and owner decision 36 A. It covers only hand-authored synthetic events through pure helpers. It does not implement consented capture or full kernel port/pipeline replay; neither is authorized by this slice.
+The first offline observation-replay slice is implemented per [eval-replay.md](eval-replay.md) and owner decision 36 A, with remote full CI passing at `6c41f07` (run 40257346186). It covers only hand-authored synthetic events through pure helpers. It does not implement consented capture or full kernel port/pipeline replay; neither is authorized by this slice, and no host qualification is established.
 
 Replay consumes reviewed synthetic observations and immutable expected outcomes; inject recorded Clock/Random/port values into in-memory/fake adapters and use the real pure rules/pipeline. It must never spawn a process, open a client connection, submit a chat prompt or re-execute an external job. Normalize only declared ephemeral identifiers/times/roots; never normalize away candidate/basis/manifest differences, statuses, missing fields, sampled types, permissions, file changes, bounds or reason codes. Preserve `historical` and source completeness.
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-25 - Windows reproducibility verification and macOS handoff
+
+**Changed.** Added `tools/reproducible-build.ts` and `npm run verify:reproducible`: two independent empty output builds using the same source/toolchain, complete payload/hash comparison, observed-input-change refusal, recorded versions and owned cleanup. Refactored `tools/build.ts` into an import-safe build operation with validated independent staging; shared inventory helpers in `tools/payload.ts`. Default build and size budgets remain unchanged. Package/full CI and Windows workflow/regressions invoke the new checks.
+
+**Validation.** Added eight real-build and failure controls in `packages/kernel/test/reproducible-build.test.ts`, after observing the missing-module red. Integrated Windows-safe selection passes 234 tests/32 suites on Node 24.22.1; minimum-runtime selection passes 57 tests/five suites on Node 22.12.0, with no skips/failures. Typecheck, all lints, coverage, build, payload verification and actual repeat-build CLI pass. This is not independent source/dependency reproducibility, installed verification, authenticity or signing.
+
+**Documentation.** Contributor and technical-spec build notes state the bounded scope. Plan/harness/replay records reconcile the earlier green cross-platform run, distinguish implemented synthetic offline helpers from native/full-pipeline evidence, and record the macOS pickup sequence and remaining owner/native/human/release gates. No native campaign, account, capture, model spend, publication or qualification is implied.
+
 ## 2026-10-25 - Align inherited launch-failure regression
 
 **Changed.** Updated the existing missing-executable test in `packages/kernel/test/host-cli.test.ts` to assert `ENOENT` rejection and no observation/transcript, matching explicit launch-error propagation. First pushed CI passed Windows but both POSIX suites exposed this stale expectation as their sole failure; no runtime assertions were weakened. Plan records the remote evidence and pending rerun.
