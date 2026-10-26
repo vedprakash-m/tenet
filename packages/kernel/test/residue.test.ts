@@ -1,7 +1,7 @@
 // What Tenet leaves behind and the previewed cleanups (LFC-05, CON-10, TS §18 residue): read-only listing, then two scopes.
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { cleanup } from "./helpers.ts";
@@ -10,10 +10,30 @@ import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
 const extra: string[] = [];
-after(() => { for (const r of roots) cleanup(r); for (const e of extra) rmSync(e, { recursive: true, force: true }); });
+// Machine-wide listing assertions must not observe other test processes' run directories.
+const temp = realpathSync(mkdtempSync(join(tmpdir(), "tenet-residue-")));
+const previous = { TMPDIR: process.env.TMPDIR, TMP: process.env.TMP, TEMP: process.env.TEMP };
+for (const key of Object.keys(previous)) process.env[key] = temp;
+after(() => {
+  try {
+    for (const r of roots) cleanup(r);
+    for (const e of extra) rmSync(e, { recursive: true, force: true });
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    rmSync(temp, { recursive: true, force: true });
+  }
+});
 const fresh = (): Project => { const p = project(); roots.push(p.root); return p; };
 const d = (r: { data?: unknown }) => r.data as Record<string, any>;
 const open = async (p: Project) => (await p.call("open", { profile: "plan", request: "plan the work" })).handle!;
+
+it("isolates residue fixtures from other test processes", () => {
+  assert.equal(realpathSync(tmpdir()), temp);
+});
+
 /** A plan contract with an analyst packet written to the temp folder, then the reservation released by stopping it. */
 async function withTemp(p: Project) {
   const h = await open(p);
