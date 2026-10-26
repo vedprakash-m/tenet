@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-26 - Isolate report-integrity Git-state assertions
+
+**Changed.** `packages/kernel/test/coverage.test.ts` now invokes the actual report-integrity CLI in an owned initialized Git fixture rather than comparing a live shared checkout. It retains exact requirement/evidence hashes and whole Git status, with staged, unstaged and untracked changes explicitly present. No runtime behavior, concurrency or assertion is weakened.
+
+**Validation.** Full Linux/macOS CI and dual-runtime UAT passed in run `40268539603`; Windows exposed changing live-checkout status whose producer was not established. After isolating the observation, the integrated Windows-safe selection again passes 234 tests/32 suites without skips, plus typecheck/lints/privacy/whitespace. The follow-up requires its own full CI/UAT; earlier failed runs remain recorded in the plan.
+
 ## 2026-10-26 - Isolate machine-residue regression fixtures
 
 **Changed.** `packages/kernel/test/residue.test.ts` now uses a uniquely owned canonical temp namespace and restores the original temp environment on cleanup. A final documentation-only CI run exposed another parallel test process adding an OS-temp directory between whole-listing assertions. Exact no-mutation/retention assertions and real kernel behavior remain unchanged; test concurrency and runtime cleanup policy are not weakened.
