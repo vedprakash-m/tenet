@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-26 - Isolate machine-residue regression fixtures
+
+**Changed.** `packages/kernel/test/residue.test.ts` now uses a uniquely owned canonical temp namespace and restores the original temp environment on cleanup. A final documentation-only CI run exposed another parallel test process adding an OS-temp directory between whole-listing assertions. Exact no-mutation/retention assertions and real kernel behavior remain unchanged; test concurrency and runtime cleanup policy are not weakened.
+
+**Validation.** Added a passing isolated-namespace setup regression on Windows; typecheck/lints/privacy/whitespace pass. Run `40266255726` retains the original Ubuntu failure and passing macOS/full UAT and Windows results; the test-only correction requires its own full supported-POSIX CI/UAT. The prior reproducibility implementation baseline remains green at `19b7cdc`.
+
 ## 2026-10-25 - Windows reproducibility verification and macOS handoff
 
 **Changed.** Added `tools/reproducible-build.ts` and `npm run verify:reproducible`: two independent empty output builds using the same source/toolchain, complete payload/hash comparison, observed-input-change refusal, recorded versions and owned cleanup. Refactored `tools/build.ts` into an import-safe build operation with validated independent staging; shared inventory helpers in `tools/payload.ts`. Default build and size budgets remain unchanged. Package/full CI and Windows workflow/regressions invoke the new checks.
