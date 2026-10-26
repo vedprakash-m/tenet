@@ -64,7 +64,17 @@ npm ci
 npm run ci
 ```
 
-`npm run ci` runs typecheck, `lint-arch`, `lint-skills`, the quality lint, coverage, the build and every test.
+`npm run ci` runs typecheck, `lint-arch`, `lint-skills`, the quality lint, coverage, the build, payload verification and every test.
+
+Run the full mutation, process-group and crash-recovery suite on macOS or Linux. Windows can build the bundle and run the deterministic tooling, pure-rule and platform-refusal tests, but it has no supported mutation port (Tech Spec §4.9). A passing Windows build or focused suite is not a passing full CI gate or host qualification; do not skip the POSIX tests to claim one.
+
+The untrusted workflow retains full macOS/Linux CI and has a separate Windows portability job. That job runs focused checks on Node 24 and the offline evaluator/payload regressions on Node 22.12; it is not the POSIX mutation suite. Synthetic local tooling/evaluation fixtures use unique directories under the existing ignored `.host-runs/test-fixtures/` area so parallel tests cannot change checkout-wide Git status. Each suite removes only its owned directories.
+
+### Build payload integrity
+
+The build checks every file in `plugin/` against the explicit [payload inclusion list](tools/payload-files.json), including hidden starter files, and writes `plugin/SHA256SUMS` with exact-byte SHA-256 hashes. Only the checksum file itself is excluded from hashing. Missing, additional, linked or nonregular payload files fail the build; unexpected files are not deleted automatically. Add or remove an inventory entry when an intentional payload change adds or removes a file.
+
+The generated checksum file is invalidated before compilation and is git-ignored. After building, run `npm run verify:payload` to check the complete current payload against it. Editing payload files after building requires rebuilding; line-ending changes also change hashes. These local checks provide neither authenticity nor atomic protection from concurrent file replacement. They do not replace independent clean release builds, signed provenance, installed-payload verification or qualification.
 
 ## Plugin text is product behavior
 

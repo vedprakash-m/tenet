@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-10-25 - Preserve host-runner launch errors
+
+**Changed.** `tools/host/copilot-cli.ts` now rejects process launch errors rather than publishing ambiguous null-exit observations. Its deadline is cleared in `finally`, including rejection. Added `packages/kernel/test/host-launch.test.ts` and both Windows runtime CI selectors; updated harness/plan records.
+
+**Validation.** Three offline controls pass on Node 24.22.1 and 22.12.0: missing executable rejects with `ENOENT` without observation/transcript output, an isolated controller exits promptly after rejection, and an actually started process's nonzero exit still produces the ordinary observation. These tests launch only the local Node executable or a nonexistent fixture path, with no live host/model activity. Typecheck/lints pass. Existing stop/timeout flags, group termination and POSIX interruption assertions remain unchanged; the macOS failure is not claimed fixed.
+
+## 2026-10-25 - Doctor agrees with blocked platform readiness
+
+**Changed.** `packages/kernel/src/verbs/inspect.ts` no longer returns overall success when assistance is blocked at L0, even if all individual dependency checks pass. It reuses one readiness result, keeping the existing source-size budget unchanged. Added red-first supported/unsupported-platform controls to `packages/kernel/test/platform.test.ts` and clarified the diagnostic in the install guide.
+
+**Validation.** All 11 platform controls pass, including darwin/Linux success and Windows/FreeBSD failure with otherwise healthy probes; typecheck, lints, build and complete-payload verification pass. Actual built-bundle doctor UAT on Windows with installed supported dependencies and configured Git has all named checks passing but correctly returns L0, `ok: false`, exit 2 and `blockedBy: ["platform"]` on both Node 24.22.1 and 22.12.0. Help/status still pass and editing refuses without state creation. The macOS interrupted-probe failure remains unchanged pending supported-POSIX process evidence; no timeout flag or assertion was weakened.
+
+## 2026-10-25 - Local payload inventory and minimum-runtime regressions
+
+**Changed.** Added the explicit 66-file preview inventory in `tools/payload-files.json` and deterministic exact-byte checksum generation/verification in `tools/payload.ts`. The build invalidates stale `SHA256SUMS` before compilation and refuses missing, extra, linked or nonregular files. `npm run verify:payload` checks the complete local payload; full CI invokes it after building. Generated checksum metadata is ignored and excludes only itself from hashing.
+
+**Corrected during integration.** Parallel project-local fixtures changed checkout-wide Git status during another test's no-mutation assertion. Tooling/evaluation fixtures now share a canonical ignored parent through `tools/test-scratch.ts`, with unique owned-directory cleanup. Real Windows Node 22.12 execution also exposed incompatible `lstat`/`fstat` device IDs: bounded reads now use additional Windows path-opened descriptors for strict same-API volume identity, without dropping device checks. POSIX direct comparisons and all replacement/link controls remain. The untrusted workflow adds a focused Windows job for Node 24 and minimum-runtime evaluator/payload checks; full POSIX jobs remain unchanged.
+
+**Files and validation.** Build/payload tooling, inventory, package scripts, scratch helper, protocol reader and tests, CI workflow/regressions, contributor documentation, evaluation/technical specs and plan. Red controls reproduced checksum/inclusion failures, stale manifests, scratch Git-status pollution and minimum-runtime file refusals. Final Windows checks pass **222 tests / 30 suites on Node 24.22.1**, plus **54 tests / four suites on Node 22.12.0**, without skips. Typecheck, lints, coverage, build, complete-payload verification and built minimum-runtime help/status/review/platform-refusal smoke pass. Independent fixture builds have identical hashes; independent clean release builds, installed verification, authenticity, remote CI and full POSIX UAT remain unproven. No commit, push or publication.
+
+## 2026-10-25 - Local-main portability and correctness repairs
+
+**Changed.** Central mutation admission now returns `capability-missing` on unsupported platforms before state access, as TS §4.9 requires; read-only/stateless operations remain available. Build/compiler launch, architecture/skills/quality paths and coverage parsing handle Windows paths and CRLF without weakening their gates. Existing CI actions use immutable official commit references. Offline evaluation now retains safety failures across all attempts, scopes review truth correctly, withholds incomplete metrics, preserves unknown JUnit outcomes, normalizes optional/unordered inputs, and reports reversed concurrency intervals as unknown. Bounded file admission rejects observed linked ancestors/leaves and identity replacements; it does not establish atomic containment against transient ancestor swaps.
+
+**Modified files.** Kernel pipeline/platform wiring and regressions; tooling/build/coverage and regression tests; evaluation protocol/report readers, helper and tests; root/starter workflows; contributor/install documentation; evaluation specs, technical budget and implementation plan. No dependency or schema semantics changed.
+
+**Validation.** Windows x64 / Node 24.22.1: 208 focused tests pass, with no skips; typecheck, all lints, M0 coverage, build and whitespace checks pass. Built-bundle smoke covers help, status, advisory review and mutation refusal without state creation. Actual unstaged/new additions pass the privacy scanner. Full supported-POSIX CI/UAT, minimum-runtime validation of this artifact, the upstream macOS interruption failure, owner contracts and qualification remain open. These are local repairs, not completed feature lifecycle or release qualification; nothing was committed or pushed.
+
 ## 2026-10-25 - Owner decision: implement offline campaign reporting
 
 **Changed.** Under owner decisions 38 A and 39 A, implemented strict bounded report input validation, denominator-preserving aggregation, safety/review/cost metrics, exclusions and diagnostics, deterministic JSON/Markdown/JUnit rendering, and the stdout-only `npm run eval:report` CLI. Exact input-byte hashes remain distinct when reordered inputs produce the same derived results; only completed attempts establish known pass/fail. Seventeen focused report tests pass on Node 26.3.0 and 22.12.0; full CI passes 1,118 tests/184 suites. No live operation, capture or qualification.

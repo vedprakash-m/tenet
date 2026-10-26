@@ -77,6 +77,8 @@ None. The output field `eligibility` is strictly an offline, input-derived gate;
 
 The input is strict UTF-8 JSON no larger than 10 MiB. Fixed objects reject unknown keys. IDs match `^[a-z0-9]+(-[a-z0-9]+)*$`; SHA-256 digests are 64 lowercase hexadecimal characters. Limits are 5,000 planned slots, 20,000 attempts, 100 seeded defects per campaign, 256 UTF-8 bytes per ID, 1,024 bytes per opaque source reference, and nesting depth 32. These bounds are proposed and require independent review. Duplicate IDs are invalid input (exit 2), not an eligibility diagnostic.
 
+Implementation clarification: absent optional `seededTruth`, `resourceMeasurements`, and `exclusions` sections default to empty arrays; supplied invalid values still reject. CLI input reads share the bounded component/identity observations in `eval-protocol.md`, not atomic containment against transient ancestor replacement. These checks add no isolation, authenticity or qualification claim.
+
 Top-level fields:
 
 | Field | Required meaning |

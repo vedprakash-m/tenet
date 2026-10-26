@@ -6,8 +6,11 @@
 - **VS Code** with GitHub Copilot Chat in agent mode, and the setting that enables agent plugins.
 - **Node.js 22.12 or newer.** Tenet uses the Node already on your machine and installs nothing. Without it, Tenet can give an advisory review only and will say so. Official installer: nodejs.org.
 - **Git.**
+- **Platform limits:** no host tuple is qualified yet. R1 targets macOS arm64; Linux is experimental. On Windows, read-only inspection and advisory review remain available, but every mutating kernel call is refused with `capability-missing` before local state is opened or changed. Building the bundle on Windows does not enable mutating workflows.
 - **A TypeScript or JavaScript project with Vitest** for full checking. Other setups get a lower assistance level, stated in Tenet's first message.
 - **Be aware:** the plugin runs a bundled file, `kernel/tenet.mjs`, through the host's terminal tool with your Node. The host will ask you to approve terminal commands. Project checks (tests, linters, servers) run as local processes on your machine. Under Autopilot, see [The Autopilot limit](autopilot.md).
+
+`inspect --view doctor` remains available on unsupported platforms, but reports `ok: false`, exit 2 and the platform readiness block rather than presenting a successful editing setup. Help, status and advisory review remain available.
 
 The kernel's helper is found by the plugin's own path, not through your `PATH`. It does run the `node` that your `PATH` resolves; that is a documented residual risk.
 

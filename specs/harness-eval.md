@@ -190,8 +190,10 @@ Existing boundaries to reuse:
 - [Kernel pipeline](../packages/kernel/src/pipeline.ts) and [composition root](../packages/kernel/src/wire.ts) own product behavior. The evaluator invokes the built kernel or drives the actual UI; it never edits operational records directly.
 - [CLI UAT](../tools/uat/uat.mjs) already builds synthetic Git projects and drives the shipped artifact. Reuse its behavior/examples and suitable helpers; do not call its scripted Reviewer an independent native pass.
 - [Contract tests](../packages/kernel/test/contract.test.ts) exercise the repaired packet format; [CLI-input tests](../packages/kernel/test/cli-input.test.ts) cover help statelessness. The harness adds the missing live-host boundary rather than reimplementing these rules.
-- [Untrusted workflow](../.github/workflows/untrusted.yml) already runs CI and minimum-runtime bundle UAT. It has no authenticated live suite; its action tags still need the separate pinned-action release repair.
+- [Untrusted workflow](../.github/workflows/untrusted.yml) runs full supported-POSIX CI and minimum-runtime bundle UAT, plus focused Windows portability checks. Its local action references are now immutable commit SHAs; remote validation of these repairs remains pending. It has no authenticated live suite.
 - `eval/golden/`, the offline validator and a CLI proxy runner already exist. The native UI controller and synthetic capture/replay implementation proposed here do not. Existing proxy helpers are not qualified native observations; the review below identifies two inference risks before reuse. No tuple is fully qualified. [Validated: source inspection; current local test evidence is recorded in the plan.]
+
+The CLI proxy runner rejects executable launch errors explicitly and clears its deadline on rejection; it does not serialize a failed launch as an observation with an unexplained null exit. An actually started process that exits nonzero still produces an observation. Offline controls use the Node executable or a nonexistent synthetic path, never an authenticated host or model call. This repair does not resolve the macOS stopped-process/pipe-close race or authorize live execution.
 
 #### Independent Review Disposition (2026-10-24)
 

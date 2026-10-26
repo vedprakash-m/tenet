@@ -141,6 +141,10 @@ Schema rules:
 - Protocol identity is SHA-256 over the exact original UTF-8 bytes, including whitespace and final newline; it is not a semantic/canonical JSON digest. Any byte change produces a new identity.
 - Paths use `/` separators, are relative to the protocol file's parent, and contain no empty, `.`, `..`, drive, UNC, backslash, colon, NUL, trailing-dot, or trailing-space components. Resolve and inspect each component without following symlinks; final files must be regular files below the same root. Compare exact bytes, not decoded text, for referenced-file hashes.
 
+Implementation limitation: bounded reads inspect all absolute path components with `lstat`, reject observed symlinks/junctions, compare admitted and opened file identities, and recheck path identities before and after reading. POSIX `O_NOFOLLOW` remains enabled. These are bounded observations, not atomic containment: portable Node APIs cannot exclude an adversarial ancestor replacement restored between checks. Passing these checks establishes neither isolation nor qualification.
+
+Windows Node 22.12 reports incompatible device IDs through path and descriptor stat APIs. Path snapshots retain strict same-API identity checks; opened handles retain strict device/inode/mode checks. Additional path-opened handles bind the original descriptor's full identity before and after reading on Windows, rather than discarding volume identity. POSIX retains direct path/descriptor device comparison. This remains bounded observation with the same transient-swap limitation.
+
 `ExecutionAuthorization` is deliberately not defined here. A valid `StaticProtocolV1` is not approved, executable, or evidence of an observed tuple. A later authorization contract must bind trusted provenance, case scope, limits, account/terms controls, and expiry before any action; it cannot be inferred from a JSON field.
 
 ### CLI and result

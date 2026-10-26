@@ -185,6 +185,7 @@ If a child has no `subagent.selected` event, the helper output has `declaredTool
 ## 8. Implementation Guidance
 
 - Validate fixture size/schema first; strict JSON, UTF-8, duplicate-key and path/digest checks reuse `eval-protocol.md` static validation rules.
+- Fixture reads share the bounded path/identity observations and transient ancestor-swap limitation documented in `eval-protocol.md`; they do not provide atomic containment or establish isolation.
 - Serialize the validated event array to JSONL exactly as specified in §5; call `parseEvents`, `children`, `maxConcurrency` and `toolEnforcement` in order, then assemble the complete ordered result as specified in §5.
 - Compare the complete output object against `expected` using stable JSON serialization; report only fixture ID, fixture hash and mismatch paths, never event/request contents.
 - Do not import kernel adapters, wire/main entry points, `spawn`, networking clients or capture storage. The package test/lint gate must fail if those imports appear in the replay module.
