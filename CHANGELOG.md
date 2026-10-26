@@ -6,6 +6,8 @@
 
 **Validation.** Added eight real-build and failure controls in `packages/kernel/test/reproducible-build.test.ts`, after observing the missing-module red. Integrated Windows-safe selection passes 234 tests/32 suites on Node 24.22.1; minimum-runtime selection passes 57 tests/five suites on Node 22.12.0, with no skips/failures. Typecheck, all lints, coverage, build, payload verification and actual repeat-build CLI pass. This is not independent source/dependency reproducibility, installed verification, authenticity or signing.
 
+**Pushed evidence.** Implementation `e83cbc7` and documentation `19b7cdc` are on `main`; [CI run 40264544000](https://github.com/vedprakash-m/tenet/actions/runs/40264544000) at `19b7cdc` passes all Windows/Linux/macOS jobs, including full supported-POSIX CI and built UAT on current/minimum runtimes. Native qualification and release gates remain open.
+
 **Documentation.** Contributor and technical-spec build notes state the bounded scope. Plan/harness/replay records reconcile the earlier green cross-platform run, distinguish implemented synthetic offline helpers from native/full-pipeline evidence, and record the macOS pickup sequence and remaining owner/native/human/release gates. No native campaign, account, capture, model spend, publication or qualification is implied.
 
 ## 2026-10-25 - Align inherited launch-failure regression
