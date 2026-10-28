@@ -126,6 +126,30 @@ export function lintPayload(root: string): string[] {
   for (const [f, text] of texts) for (const m of text.matchAll(/`(tenet-[a-z-]+)`/g)) if (!names.has(m[1]!)) bad(f, `names "${m[1]}", which does not exist`);
   const coordinator = [...texts].find(([f]) => path(f) === "skills/tenet/SKILL.md")?.[1] ?? "";
   for (const a of ACTIONS) if (!new RegExp(`\`${a}\``).test(coordinator)) bad(join(root, "skills/tenet/SKILL.md"), `the next action "${a}" is not handled`);
+  const deepVariant = /^\*\*Deep variant(?: \([^)]*\))?\.\*\*([\s\S]*?)(?=^\*\*Question)/m.exec(coordinator)?.[1] ?? "";
+  for (const [pattern, detail] of [
+    [/assessment/i, "assessment reason"],
+    [/if neither, say unknown/i, "unknown reason disclosure"],
+    [/about four automated review and analysis sessions/i, "expected review and analysis sessions"],
+    [/review rounds/i, "review rounds"],
+    [/full (?:required )?checks twice/i, "full-check count"],
+    [/workload run counts/i, "workload-run estimate"],
+    [/otherwise say unknown/i, "unknown workload disclosure"],
+    [/main effort drivers/i, "effort drivers"],
+    [/never currency/i, "no-currency wording"],
+  ] as const) {
+    if (!pattern.test(deepVariant)) bad(join(root, "skills/tenet/SKILL.md"), `the RES-09 Deep variant omits its ${detail}`);
+  }
+  const whyGuidance = /^\*\*Why\.\*\*(.*)$/m.exec(coordinator)?.[1] ?? "";
+  for (const [pattern, detail] of [
+    [/effective value.*source.*overrides.*limits.*change/i, "Why response anatomy"],
+    [/data\.assurance/i, "kernel assurance value"],
+    [/data\.scope/i, "response scope"],
+    [/controls\[\].*class.*note/i, "control mechanism class and limit"],
+    [/never upgrade/i, "non-overstatement rule"],
+  ] as const) {
+    if (!pattern.test(whyGuidance)) bad(join(root, "skills/tenet/SKILL.md"), `the EVD-07 Why guidance omits its ${detail}`);
+  }
 
   // action-semantics words live in exactly one skill file (UX §7.2)
   for (const w of AMBIGUOUS_WORDS) {

@@ -37,6 +37,8 @@ describe("workflows keep the untrusted tier untrusted [ENG-10]", () => {
     assert.ok(commands.includes("npm run verify:payload"));
     assert.ok(commands.includes("npm run verify:reproducible"));
     assert.ok(commands.some(command => command.includes("packages\\kernel\\test\\reproducible-build.test.ts")));
+    assert.ok(commands.some(command => command.includes('--test-name-pattern="automatic temp cleanup boundaries"')
+      && command.includes("packages\\kernel\\test\\store-boundary.test.ts")));
     assert.ok(commands.some(command => command.includes("--experimental-strip-types --test")
       && command.includes("packages\\eval\\test\\protocol.test.ts") && command.includes("packages\\kernel\\test\\payload.test.ts")));
     assert.ok(!commands.includes("npm run ci"), "Windows focused checks do not replace full supported-POSIX CI");

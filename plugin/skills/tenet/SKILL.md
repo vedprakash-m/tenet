@@ -13,7 +13,7 @@ In every skill, `tenet <verb> [positional] [--flag value]` is shorthand: never t
 | Verb | Use |
 |---|---|
 | `tenet open <profile> --request <text> --scope-paths <paths>` | Start a contract. Profiles: `feature`, `bug`, `refactor`, `fix` (needs `findings`), `investigate`, `plan`, `prototype` (with `--no-git` in a folder the user chose not to put under Git), `promote` (see below). Assess all six change-risk dimensions; recommend the lane from the risk and honor user changes within its floor. Ordinary features default to Standard; actual edits can raise the floor Add `--model <name>` to `open` and to `findings` only when the host reports the model; never guess it. |
-| `tenet decide <kind> --h <handle>` | Record a decision. Kinds: `basis`, `scaffold`, `sync-index`, `config`, `branch-switch`, `undo-confirm`, `abandon-confirm`, `takeover-check`, `dirty-overlap`, `unexplained`, `hook-consent`, `filter-consent`, `envelope-consent`, `decline`, `extend`, `acceptance`, `disposition`, `repair-lock`, `overview`, `plan`, `grant`, `decision-record`, `dependency`, `adopt` (`--target intent` or `policy`; it previews first, then `--answer adopt-confirm=confirm` or `decline`). `config` sets one of the twelve settings: `--target <setting>` with `{"propose": {"value": ..., "scope": "task"|"project"}}`, or `{"propose": {"reset": true, "scope": "task"}}`; a plain request ("be brief") is task scope, only "always" or "in this project" is project scope. `tenet inspect --view settings [--topic <setting>]` answers "why" for a setting. Content goes in JSON on stdin as `{"propose": ...}`; answers are `--answer <id>=<choice>` |
+| `tenet decide <kind> --h <handle>` | Record a decision. Kinds: `basis`, `scaffold`, `sync-index`, `config`, `branch-switch`, `undo-confirm`, `abandon-confirm`, `takeover-check`, `dirty-overlap`, `unexplained`, `hook-consent`, `filter-consent`, `envelope-consent`, `decline`, `extend`, `acceptance`, `disposition`, `repair-lock`, `overview`, `plan`, `grant`, `decision-record`, `dependency`, `adopt` (`--target intent` or `policy`; previews the proposed adoption before confirmation), `lesson`, `forget`, `cleanup`, `version-reconcile` (continue repins current versions; stop parks the work). Quarantine is separate: `adopt --target quarantine` only offers keep-fresh or view-metadata; it never imports contents. |
 | `tenet check --h <handle> --stage candidate` | Run the obligations. `--stage baseline` for the planned red, `--targeted` while iterating, `--touched <paths>` for every file you edited |
 | `tenet packet reviewer --h <handle> --retry` | A fresh manifest attempt. `packet handoff` and `packet resume` read the state back |
 | `tenet packet analyst --h <handle> --analyst-role <analyst-role> --question <text>` | A read-only researcher, architect or security assignment; no basis needed first. Several may be live at once on the same revision |
@@ -29,10 +29,10 @@ Before the first project check, the kernel may ask `envelope-consent`. Review th
 | `tenet review` | Review-only manifest; nothing is written to the project |
 
 **Exits.** 0 proceed. 1 usage error: fix the call. 2 blocked: explain, offer `next`. 3 a decision is due: ask `questions`, then `tenet decide`. 4 integrity: stop and report. 5 internal: stop and report.
-A call identical to your last one returns the same answer marked `historical`; after you edit files a new `tenet check` is a new call.
+Identical calls return `historical`; rerun `tenet check` after edits.
 
 ## What `next` means
-The kernel names the next action. Do the one marked `required`, or a permitted alternative.
+Follow the kernel's `required` action or an allowed alternative.
 
 | Action | You |
 |---|---|
@@ -50,17 +50,21 @@ The kernel names the next action. Do the one marked `required`, or a permitted a
 | `stop` | Run the stop mode named |
 
 ## The four shapes
-Every message is a kickoff, a question, a check-in or a report. Lead line first. Markdown, never code blocks (except commands to copy). Numbered choices with "(recommended)" as a word. At most one table per message.
+Messages: kickoff, question, check-in or report. Lead line first; Markdown except copyable commands. Number choices with "(recommended)"; one table maximum.
 
 **Truth rules.** State only what the evidence supports, in its scope ("the reservation journey passed", not "it works"). Name scope and limits in the same breath as the claim. No filler or ritual. Say what you mean in literal words; no metaphor or flourish where a plain phrase exists. Never write "production-ready", "secure", "100%" or "fully tested" <!-- lint-ok -->.
 
-**Kickoff** (first reply). Quick: one line, then the work. Standard and Deep: outcome, examples marked new or keep (your additions labeled "(added)"), never-invariants, design in a line or two, what you won't touch, checks; about 8 lines. Stop for a reply only when `tenet decide basis` returns a `basis-confirm` question; otherwise end with "Writing the example tests first. Reply if this isn't right." Say the level once: L4 "I'll build and check this locally"; L3 "I can make this change; this setup isn't one I can fully check (<reason>)"; L2 "Planning only"; L1 "I can read and review this project; I can't build or check <stack> yet"; L0 "I can't work here because <boundary>".
+**Why.** 10 lines max: effective value, source, overrides, limits, how to change. For `inspect why`, quote `data.assurance`, name `data.scope`, and ground `controls[]` (`control`, `class`, `note`). Never upgrade assurance or imply more than these fields.
+
+**Kickoff** (first reply). Quick: one line, then work. Standard/Deep: outcome, examples marked new or keep (your additions labeled "(added)"), never-invariants, design in a line or two, untouched scope and checks; about 8 lines. Stop only for a `basis-confirm` question from `tenet decide basis`; otherwise end with "Writing the example tests first. Reply if this isn't right." State the level once: L4 "I'll build and check this locally"; L3 "I can make this change; this setup isn't one I can fully check (<reason>)"; L2 "Planning only"; L1 "I can read and review this project; I can't build or check <stack> yet"; L0 "I can't work here because <boundary>".
+
+**Deep variant (RES-09).** Use assessment facts or a stated lane choice; if neither, say unknown. Estimate about four automated review and analysis sessions, up to two review rounds and full required checks twice. State workload run counts when known; otherwise say unknown. Main effort drivers: review, full checks and any workload runs. Words, never currency; label this an estimate, not actual use. Other lanes omit it.
 
 **Question** only when an answer changes the next action, the authority or the claim: one line of context, numbered choices (recommended first, each with its consequence), free text always accepted, at most 3 per group. Authority or risk questions (`channel: chat`) are plain chat and end your turn with a short reply cue. Never ask what the repository answers. Silence is never consent.
 
 **Check-in** per `progress`: one line, what finished and what is next. A planned failing test is progress ("Example 1 fails before the change, as it should"). Before a commit say "Committing the fix now; approve in VS Code if it asks."
 
-**Report.** Headline, evidence, read or limits, next. The headline is `data.label` exactly as returned. Evidence spends lines on exceptions: when all passed, one line. Name the scope when it is not a clean commit. Reasons follow their sentence in code font: "Shortcut needs your decision (`marker-unaccepted`)". Add a reading guide of at most three entries ("read first") for Standard and Deep. Call the reviewer "an automated reviewer" once, then "the reviewer". Follow `data.integration`: `offer` keeps accept and integrate separate; `auto-on-accept` says before asking that accepting also integrates and offers acceptance without integration; `never` offers no integration. Other findings read: severity, claim, consequence, fix, `path:line`; chat numbers findings 1, 2, 3.
+**Report.** Headline, evidence, scope/limits, next. Use `data.label` exactly. If all passed, one evidence line; otherwise focus on exceptions. Name scope for non-clean commits. Reasons follow their sentence in code font: "Shortcut needs your decision (`marker-unaccepted`)". Add up to three "read first" entries for Standard and Deep. Call the reviewer "an automated reviewer" once, then "the reviewer". Follow `data.integration`: `offer` keeps accept and integrate separate; `auto-on-accept` says before asking that accepting also integrates and offers acceptance without integration; `never` offers no integration. Other findings read: severity, claim, consequence, fix, `path:line`; chat numbers findings 1, 2, 3.
 
 An assumption that stays open (`assumption-unresolved`) blocks `checked-local`: say it in the report, ask the user to confirm it in plain words, and on yes run `tenet decide disposition --h <handle> --target <id>` with `{"propose": {"outcome": "accepted", "reason": "<their words>"}}`.
 
@@ -81,7 +85,7 @@ Handle anything new from the user before the next kernel call.
 | "be brief", "explain more" | Change presentation for this task |
 | "fix 1 and 3" | `tenet open fix` with JSON stdin `{"profile":"fix","request":"fix findings 1 and 3","findings":[{"n":1,"severity":"major","location":{"path":"src/a.ts","line":4},"claim":"…","evidence":"…"}]}`: exactly the findings the user named, copied from the review. Changing a file they do not name asks for a disposition |
 | "make it smaller" | Split into plan steps |
-| "why …?" | `tenet inspect why --h <handle>`, at most 10 lines |
+| "why …?" | `tenet inspect why --h <handle>` |
 
 Ambiguous words resolve to the safe meaning:
 
@@ -112,4 +116,3 @@ Leaving. "What does Tenet leave behind" or "help uninstall": `tenet inspect --vi
 
 ## Promoting a prototype
 `open promote` floors the lane at Standard and always needs a fresh review; a same-session review never reaches `checked-local` here. Before the basis, read `docs/hardening.md` if it exists and turn each shortcut it names into a proposed requirement or constraint for the user to confirm, not a silent assumption. Write preservation tests for the working behavior the user wants kept, and a distinguishing test for each missing safeguard the hardening notes call out, alongside the ordinary TDD-04 cycle.
-

@@ -3,7 +3,7 @@
 import { accessSync, chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, ftruncateSync, readdirSync, readFileSync, linkSync, lstatSync, mkdirSync, openSync, readSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isUtf8 } from "node:buffer";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
@@ -512,7 +512,7 @@ export class FsStore implements Store {
       } catch { continue; }
       for (const n of names) {
         const p = join(dir, n);
-        if ((group === "" && !n.startsWith("run-")) || keep.some((k) => k === p || k.startsWith(`${p}/`))) continue;
+        if ((group === "" && !n.startsWith("run-")) || keep.some((k) => k === p || k.startsWith(`${p}${sep}`))) continue;
         if (old(p)) { rmSync(p, { recursive: true, force: true }); removed++; }
       }
     }
@@ -555,13 +555,16 @@ export class FsStore implements Store {
     if (!base) return undefined;
     const entries = ["", "manifests", "review"].flatMap((g) => {
       const dir = g ? join(base, g) : base;
-      try { return readdirSync(dir).filter((n) => g || n.startsWith("run-")).map((n) => join(dir, n)); } catch { return []; }
+      try {
+        if (!lstatSync(dir).isDirectory()) return [];
+        return readdirSync(dir).filter((n) => g || n.startsWith("run-")).map((n) => join(dir, n));
+      } catch { return []; }
     }).map((path) => ({ path, bytes: this.sizeOf(path), at: newestMtime(path) })).sort((a, b) => a.at - b.at);
     let total = entries.reduce((n, e) => n + e.bytes, 0), removed = 0;
     const cap = this.opts.runFileCapBytes ?? 200 * 1024 * 1024;
     for (const e of entries) {
       if (total <= cap) break;
-      if (keep.some((k) => k === e.path || k.startsWith(`${e.path}/`))) continue;
+      if (keep.some((k) => k === e.path || k.startsWith(`${e.path}${sep}`))) continue;
       rmSync(e.path, { recursive: true, force: true }); total -= e.bytes; removed++;
     }
     return removed ? `Removed ${removed} old run folder(s): run files were over their cap.` : undefined;

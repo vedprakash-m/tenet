@@ -13,6 +13,76 @@ const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 const fresh = () => { const root = tmp(); roots.push(root); return root; };
 
+describe("automatic temp cleanup boundaries", () => {
+  const fixture = () => {
+    const root = fresh(), dir = join(root, ".tenet");
+    mkdirSync(dir);
+    const { dev, ino } = lstatSync(dir);
+    const workspaceId = `ws_${systemRandom.base32(10)}`;
+    writeFileSync(join(dir, "marker"), JSON.stringify({
+      workspaceId, tag: "test", nonce: "cleanup-fixture", schema: 1, dev, ino,
+    }));
+    const store = new FsStore(root, systemClock, systemRandom, { runFileCapBytes: 0 });
+    const base = join(store.tempDir("run-active"), "..");
+    return { store, base };
+  };
+
+  for (const group of ["manifests", "review"]) {
+    it(`never evicts human files through a linked ${group} group [SEC-06, CON-04]`, () => {
+      const { store, base } = fixture(), outside = fresh();
+      try {
+        const human = join(outside, "notes.txt");
+        writeFileSync(human, "preserve human work");
+        const before = readFileSync(human);
+        symlinkSync(outside, join(base, group), process.platform === "win32" ? "junction" : "dir");
+        const result = store.evict([]);
+        assert.equal(existsSync(human), true, "run-cap cleanup must not delete through a linked group");
+        assert.deepEqual(readFileSync(human), before);
+        assert.deepEqual(readdirSync(outside), ["notes.txt"]);
+        assert.equal(lstatSync(join(base, group)).isSymbolicLink(), true);
+        assert.equal(result.message, undefined);
+      } finally { rmSync(base, { recursive: true, force: true }); }
+    });
+  }
+
+  it("still evicts owned artifacts while preserving live run and reservation paths [CON-04]", () => {
+    const { store, base } = fixture();
+    try {
+      const active = join(base, "run-active");
+      const expired = store.tempDir("run-active-expired"), manifests = store.tempDir("manifests");
+      const packet = store.writeArtifact(manifests, "active.json", "{}");
+      const oldPacket = store.writeArtifact(manifests, "expired.json", "{}");
+      writeFileSync(join(active, "run.json"), "{}");
+      writeFileSync(join(expired, "report.json"), "{}");
+      const result = store.evict([join(active, "run.json"), packet]);
+      assert.equal(existsSync(expired), false);
+      assert.equal(existsSync(oldPacket), false);
+      assert.equal(readFileSync(join(active, "run.json"), "utf8"), "{}");
+      assert.equal(readFileSync(packet, "utf8"), "{}");
+      assert.match(result.message ?? "", /Removed 2 old run folder/);
+    } finally { rmSync(base, { recursive: true, force: true }); }
+  });
+
+  it("age cleanup preserves live descendants without preserving a sibling prefix [CON-04]", () => {
+    const { store, base } = fixture();
+    try {
+      const active = join(base, "run-active"), expired = store.tempDir("run-active-expired");
+      const manifests = store.tempDir("manifests");
+      const packet = store.writeArtifact(manifests, "active.json", "{}");
+      const oldPacket = store.writeArtifact(manifests, "expired.json", "{}");
+      writeFileSync(join(active, "run.json"), "{}");
+      writeFileSync(join(expired, "report.json"), "{}");
+      const old = new Date(Date.now() - 60_000);
+      for (const path of [active, expired, packet, oldPacket]) utimesSync(path, old, old);
+      assert.equal(store.sweepTemp(30_000, [join(active, "run.json"), packet]), 2);
+      assert.equal(existsSync(expired), false);
+      assert.equal(existsSync(oldPacket), false);
+      assert.equal(readFileSync(join(active, "run.json"), "utf8"), "{}");
+      assert.equal(readFileSync(packet, "utf8"), "{}");
+    } finally { rmSync(base, { recursive: true, force: true }); }
+  });
+});
+
 describe("private store boundaries", () => {
   it("refuses unsafe compatibility reads before fallback or direct writes [CON-04, CON-05, SEC-12]", async () => {
     const root = fresh(), store = await initState(root);

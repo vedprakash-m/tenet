@@ -18,10 +18,10 @@ Asking never starts work. "Don't change anything" and "just explain" do not crea
 
 ## What happens to a task
 
-1. **Intent.** Tenet restates the request, asks only what it cannot decide, and writes down examples and rules (the acceptance basis) for you to confirm or correct.
+1. **Intent.** Tenet restates the request, asks only what it cannot decide, and writes down examples and rules (the acceptance basis). It asks you to confirm or correct Tenet-added examples, assumptions or design commitments when the kernel returns `basis-confirm`; it does not require confirmation when there are no such additions.
 2. **A failing test first.** Tests are written before the code, and a changed test is a visible event, not a quiet edit.
 3. **Checks through the kernel.** Your tests, types and lint run through the kernel. Each result is a receipt tied to the exact files it ran against. A later edit makes the receipt stale.
-4. **A fresh reviewer.** A separate reviewer agent, started with a clean context, reads the change and reports findings with a severity and a disposition.
+4. **A reviewer subagent.** It reads the change and reports findings with a severity and a disposition. Reviewer dispatch has been observed on VS Code; actual context isolation and host enforcement of tool restrictions remain unobserved.
 5. **One stated outcome.** The report says which of a fixed set of outcomes was reached and what stopped a stronger one:
 
 | Outcome | Meaning |
@@ -34,7 +34,7 @@ Asking never starts work. "Don't change anything" and "just explain" do not crea
 
 ## What the kernel decides and what the agents do
 
-The kernel writes the binding facts: the outcome, the receipts, the counters and who owns what. Agents explain and do the work; they cannot relabel those facts. Records live in `.tenet/` in your project, which is private and git-ignored. Tenet and its agents do not edit `.tenet/` by hand.
+The kernel writes the binding facts: the outcome, the receipts, the counters and who owns what. Agents explain and do the work; they cannot relabel those facts. Records live in `.tenet/` in your project, which is git-ignored. Whether the host excludes `.tenet/` from indexing is unobserved. Tenet and its agents do not edit `.tenet/` by hand.
 
 ## What Tenet does with your Git repository
 

@@ -1,6 +1,6 @@
 # Specification: Bounded Storage and Eviction (CON-08, RC1 R07)
 
-> Status: Reviewed 2026-10-24 (fresh-context subagent, 10 findings, dispositions in §11). Owner approved D1 to D3 on the draft; **§12 (v2) supersedes §3 to §6 where they differ** and narrows scope. Items marked deferred in §12 wait for an owner decision.
+> Status: Reviewed 2026-10-24 (fresh-context subagent, 10 findings, dispositions in §11). Owner approved D1 to D3 on the draft; **§12 (v2) supersedes §3 to §6 where they differ** and narrows scope. Owner selected the PRD eviction order on 2026-10-26 (§13); remaining deferred mechanisms still require design/review/sign-off.
 > Date: 2026-10-24 | Decision owner: @vedprakash-m | Canonical sources: PRD §4.4.3, §5.15 (CON-08, AC-19); tech-spec §7.6, §7.2.
 
 ## 1. Outcome
@@ -20,7 +20,7 @@ A long-lived project keeps `.tenet/` within its budget and the run files within 
 | ID | Requirement | Source |
 |---|---|---|
 | SR-1 | Measure `.tenet/` (state, prev, log, blobs, quarantine) and run files; a call that would add data first checks the ceiling (50 MB; 5 MB reserve for state writes). | TS §7.6, AC-19 |
-| SR-2 | Evict only in this order, only inside `open` and `finish`, within 300 ms: finished-prototype snapshot blobs older than 30 days; journal entries older than 90 days replaced by monthly summaries; archived contracts compacted to summary lines. | PRD §5.15 |
+| SR-2 | Evict eligible classes in the order and under the conditions in PRD §5.15; the narrower implemented reduction/run-cleanup scope does not establish complete aggregate eviction. | PRD §5.15; owner ordering decision, §13 |
 | SR-3 | Never evict: an active or parked contract, a grant, an unresolved effect intent, an open finding, a lock, ownership, a blob a retained record references, accepted intent, an active lesson, unintegrated work. | PRD §5.15, CON-08 |
 | SR-4 | Accounting survives compaction: a monthly summary keeps the `accounting` high-water marks that recovery uses (`workSeq`, `generationSeq`), so recovery after compaction gives the same budgets. | TS §7.2, R04 |
 | SR-5 | Eviction is a recorded effect (intent, act, result) and is safe to interrupt at every step; a rerun finishes or repeats it without losing a protected record. | CON-12 |
@@ -87,7 +87,7 @@ Reviewer: a fresh-context subagent with read-only access (not the author). All t
 
 | # | Sev | Finding | Disposition |
 |---|---|---|---|
-| 1 | Blocker | PRD §5.15's eviction order (superseded raw output; accepted-work artifacts >30 d; traces >90 d to summaries; archived contracts) differs from TS §7.6's (snapshots; journal >90 d; archived contracts). | **Accepted; owner decision needed.** Logged as a spec defect in plan §12.3. v2 implements only what both sources agree on (journal entries older than 90 days reduced to summaries; run-file caps) and makes no claim about the order between classes. |
+| 1 | Blocker | PRD §5.15's eviction order (superseded raw output; accepted-work artifacts >30 d; traces >90 d to summaries; archived contracts) differs from TS §7.6's (snapshots; journal >90 d; archived contracts). | **Accepted; ordering policy resolved 2026-10-26.** Owner selected PRD §5.15; TS §7.6 is aligned under §13. v2 reduction/run cleanup does not complete aggregate ordering, snapshot/archive design or protected retention. |
 | 2 | Blocker | Snapshots are commits in the shadow repository at `.tenet/git`, not `.tenet/blobs`; `state.archive` is written by no code. | **Accepted.** Snapshot eviction, archive compaction, superseded raw output and accepted-work artifacts are **deferred** until their mechanism is designed (shadow-repo pruning is a Git operation). SR-3 now names blobs referenced by journal intents. |
 | 3 | Major | SR-4 aims at the wrong risk: recovery reads only checkpoints newer than `state.revision`; the tail near `state.prev` matters. | **Accepted.** New rule: no `accounting` record at or above the older of `state` and `state.prev` revisions is ever removed. |
 | 4 | Major | Whole-segment deletion cannot keep intent/result pairing. | **Accepted; avoided.** v2 does not segment. Removal is per record: an intent without a result is never removed, and a pair is removed only when both records are old. |
@@ -106,8 +106,14 @@ Reviewer: a fresh-context subagent with read-only access (not the author). All t
 - **V3. Run-file cap.** Over 200 MB, the oldest run folders, manifests and review folders (by newest file time) are removed except live runs and live reservations.
 - **V4. Reporting.** One sentence in the response's completed effects naming what was reduced and what is kept.
 
-**Deferred (owner decision or design needed).** Snapshot (shadow-repo) pruning, archived-contract compaction, superseded raw output, accepted-work artifacts older than 30 days, per-machine run-file cap, and the PRD/TS order conflict (finding 1).
+**Deferred (design/review/sign-off or separate authority needed).** Snapshot (shadow-repo) pruning, archived-contract compaction, superseded raw output, accepted-work artifacts older than 30 days, and per-machine run-file cap. The PRD/TS ordering policy is resolved in §13, not left open.
 
 **Safety argument.** Reduction is a pure function of the journal text; summaries are written before the journal is replaced and carry the input hash; the journal replacement is a rename. A crash leaves either the old journal (rerun is safe: same input hash, no double count) or the new one. Recovery after reduction yields the same budgets because every record recovery reads is protected.
 
 **Acceptance (v2).** E1 (adapted to per-record removal), E2 (recovery equality), E3 (kill after summaries write; after journal rename), E4 (parked and unresolved untouched), E5 (small-ceiling `storage-protected-full`; `stop` still works), E7 (project run-file cap), E8 (report once), plus: torn tail in the live journal, idempotent rerun without double count, clock-skew guard, and a 10,000-record latency check. Journal schema and marker schema are unchanged.
+
+## 13. Owner Ordering Decision (2026-10-26)
+
+The owner selected **retain PRD §5.15's eviction order and align tech-spec §7.6**, rather than amend the PRD or defer the policy. This resolves finding 1's ordering choice only. Protection and admission rules remain binding; an age or size threshold never permits eviction of protected records.
+
+No aggregate eviction, snapshot pruning, archive format, protected-retention implementation, new cleanup authority or budget increase is approved by this decision. Specify the remaining eligible-class mechanisms and recovery/reference protections, disposition independent review, and obtain implementation sign-off before code. Existing bounded journal reduction and project run cleanup remain partial safeguards, not CON-08/AC-19 completion.

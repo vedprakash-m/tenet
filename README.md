@@ -10,10 +10,10 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 
 Copilot already chats, edits and runs tools. Tenet adds a fixed loop around a request, and keeps its records outside the chat:
 
-- **A written acceptance basis.** Before code, the request becomes confirmed examples and rules you can read and correct.
+- **A written acceptance basis.** Before code, Tenet records examples and rules; it asks you to confirm or correct Tenet-added examples, assumptions or design commitments when the kernel returns `basis-confirm`.
 - **Test-first work.** A failing test comes before the code that makes it pass.
 - **Checks that run through the kernel.** Test results are recorded as receipts tied to the exact files they ran against. A later edit makes a receipt stale.
-- **An independent review.** A separate reviewer agent (a fresh-context subagent) reads the change. Its findings carry a severity and a disposition.
+- **A reviewer subagent.** It reads the change and reports findings with a severity and a disposition. Dispatch has been observed on VS Code; host-enforced context isolation and tool restrictions have not.
 - **One stated outcome.** Each piece of work ends with a label chosen by fixed rules, such as `checked-local`, `implemented-unverified`, `prototype`, `findings-only` or `blocked`. The label names what was and was not shown. `checked-local` is not owner acceptance and is not production readiness.
 - **Your work stays yours.** Tenet works on a branch and commits only files it wrote. Your uncommitted edits are left alone.
 
@@ -25,10 +25,10 @@ Dated record: [specs/plan.md](specs/plan.md) (sections 1, 4 and 13). In short, a
 
 | Area | State |
 |---|---|
-| Kernel, plugin, starter recipe, deterministic tests | Built. The full test suite passes locally. This is local evidence, not a qualification. |
+| Kernel, plugin, starter recipe, deterministic tests | Full Linux/macOS CI (1,177 tests / 192 suites) and built UAT on current and minimum runtimes, plus Windows portability, passed remotely in [run 40270175062](https://github.com/vedprakash-m/tenet/actions/runs/40270175062) at `159caab`. The local Windows selection is a subset, not full CI. No host qualification follows. |
 | Qualified tuple (host, extension, model, OS) | **Unrecorded.** No tuple is qualified. |
 | Installing and running on VS Code Copilot | **Partly observed** on VS Code 1.142.0 and 1.143.0 (October 19 and 20, 2026): the plugin loaded from a local plugin location; the kernel ran from the host's snapshot copy of the plugin; real multi-step tasks ran through `finish`. The Copilot extension version was not recorded. |
-| Reviewer subagent | **Partly observed.** A reviewer was dispatched several times, each time as a fresh subagent, and a partial result was correctly refused and retried. Not observed on VS Code: the reviewer's real tool list, whether its tools are restricted by the host, parallel dispatch, a cancelled or dead reviewer, and `usages`. |
+| Reviewer subagent | **Partly observed.** A reviewer was dispatched several times on VS Code, and a partial result was refused and retried. Not observed: the reviewer's real tool list or host enforcement of its restrictions, actual context isolation, parallel dispatch, a cancelled or dead reviewer, and `usages`. |
 | Approval behavior | **Unobserved** beyond one terminal approval ("Allow in this Session") per session. The approval mode is recorded as `unknown`. |
 | A 15-minute command through the host's terminal tool | **Unobserved.** The one attempt measured a test-runner timeout, not the host. |
 | Enable, disable, uninstall and update of the plugin | **Unobserved.** |

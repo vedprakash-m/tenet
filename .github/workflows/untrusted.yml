@@ -68,6 +68,10 @@ jobs:
           packages\kernel\test\core.test.ts
           packages\kernel\test\config.test.ts
           packages\kernel\test\verdict.test.ts
+      - name: Real filesystem cleanup boundaries without POSIX transactions
+        run: >-
+          node --test --test-name-pattern="automatic temp cleanup boundaries"
+          packages\kernel\test\store-boundary.test.ts
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22.12.0

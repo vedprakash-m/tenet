@@ -1,8 +1,8 @@
 # Tenet plugin (M0 preview)
 
-A governed, test-first engineering loop for GitHub Copilot in VS Code. A small local kernel (`kernel/tenet.mjs`) records what is true; the `tenet` agent does the work; a fresh-context `tenet-reviewer` reviews it.
+A governed, test-first engineering loop for GitHub Copilot in VS Code. A small local kernel (`kernel/tenet.mjs`) records what is true; the `tenet` agent does the work; a reviewer subagent reviews it.
 
-**Status: not yet verified on the real host.** The install path, the skill-relative kernel location, subagent dispatch and approval behavior are unobserved (plan spikes SP-01, SP-08, SP-12). Nothing here should be described as installed-and-working until those are recorded.
+**Status: preview; no host tuple is qualified.** On VS Code, plugin loading from a local plugin location, skill-relative kernel invocation from the host's snapshot copy, and reviewer dispatch have been observed. Context isolation and host enforcement of the reviewer's tool restrictions remain unobserved. Approval behavior was observed only as one terminal approval per session; the approval mode remains unknown. These partial observations do not establish an installed-and-working or qualified product.
 
 ## What you need
 - VS Code with GitHub Copilot Chat in agent mode, and the setting that enables agent plugins
@@ -11,7 +11,7 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 
 ## What it does and does not do
 - Works on a branch of your repository and commits only the files it authored; your uncommitted work stays yours
-- Runs only through the kernel, which keeps records in `.tenet/` (private, git-ignored)
+- Runs only through the kernel, which keeps records in `.tenet/` (git-ignored; exclusion from host indexing is unobserved)
 - Does not deploy, push or open pull requests; those arrive later and only on your request
 - Hooks: none ship in this preview, so the kernel cannot observe edits you or the agent make outside its own calls; it detects them by comparison instead
 

@@ -217,6 +217,16 @@ describe("dispositions", () => {
 describe("honest claims and handoffs (EVD-07, RES-04, WRK-12)", () => {
   it("states each control's mechanism class and the assurance profile, and discloses reduced independence [EVD-07]", async () => {
     const p = fresh();
+    if (process.platform === "win32") {
+      const refused = await p.call("open", {
+        profile: "feature", request: "add a greeting", scopePaths: ["src/greet.ts"], lane: "standard",
+      });
+      assert.equal(refused.exit, 2, JSON.stringify(refused));
+      assert.ok(refused.reasons.some((r) => r.code === "capability-missing"), JSON.stringify(refused));
+      assert.equal(refused.handle, undefined);
+      assert.equal(p.ports().store.read(), null, "unsupported mutation must not create state");
+      return;
+    }
     const { h, g } = await toGreen(p, { lane: "standard" });
     await p.call("findings", { h, result: reviewResult(d(g), { dispatchMode: "same-session" }) });
     const f = await finishFixture(p, { h, noCommit: true });
@@ -436,4 +446,3 @@ describe("parking, resuming and non-editing work", () => {
     void reviewResult;
   });
 });
-

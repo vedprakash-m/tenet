@@ -109,6 +109,47 @@ describe("verdict table [RES-02, EVD-01]", () => {
     assert.equal(verdict({ ...base(), commitExists: false, committedTreeChecked: false, checkedIncludesHumanEdits: true }).scope, "working-tree-with-your-edits");
     assert.equal(verdict({ ...base(), checkedIncludesHumanEdits: true, committedTreeChecked: false }).scope, "working-tree-with-your-edits");
   });
+  it("allows a supplied matching baseline failure only when its scope is excluded", () => {
+    const failure = { test: "legacy.test.ts#existing-failure", kind: "assertion" as const, message: "still fails" };
+    const candidateFailure = rc("OB-suite", { status: "fail", failures: [failure] });
+    const withInputs = (baselineFailures: string[], excludedScope: string[]) =>
+      verdict({ ...base(), receipts: [rc("OB-EX-1"), candidateFailure], baselineFailures, excludedScope });
+
+    const excluded = withInputs([failure.test], [failure.test]);
+    assert.equal(excluded.endpoint, "checked-local");
+    assert.ok(excluded.reasons.some((r) => r.code === "baseline-failure-excluded" && r.note));
+
+    const notExcluded = withInputs([failure.test], []);
+    assert.equal(notExcluded.endpoint, "implemented-unverified");
+    assert.ok(notExcluded.reasons.some((r) => r.code === "baseline-failure-not-excluded" && !r.note));
+
+    const notMatchingBaseline = withInputs([], [failure.test]);
+    assert.equal(notMatchingBaseline.endpoint, "implemented-unverified");
+    assert.ok(notMatchingBaseline.reasons.some((r) => r.code === "evidence-failed" && !r.note));
+
+    const differentBaselineTest = withInputs(["legacy.test.ts#different-failure"], [failure.test]);
+    assert.equal(differentBaselineTest.endpoint, "implemented-unverified");
+    assert.ok(differentBaselineTest.reasons.some((r) => r.code === "evidence-failed" && !r.note));
+  });
+  it("does not silently narrow the acceptance basis when only part of the outcome is verified", () => {
+    const secondRequirement: BasisElement = {
+      ...req, id: "REQ-2", text: "second part",
+      verifiedBy: [{ method: "obligation", ref: "OB-second" }],
+    };
+    const secondObligation: Obligation = { id: "OB-second", kind: "test", category: "acceptance" };
+    const input = {
+      ...base(),
+      elements: [...base().elements, secondRequirement],
+      obligations: [...base().obligations, secondObligation],
+    };
+    const v = verdict(input);
+
+    assert.equal(v.endpoint, "implemented-unverified");
+    assert.ok(input.receipts.some((r) => r.obligation === "OB-EX-1" && r.status === "pass"));
+    assert.ok(!v.reasons.some((r) => r.code === "basis-element-unverified" && r.refs?.includes("REQ-1")));
+    assert.ok(v.reasons.some((r) => r.code === "evidence-missing" && r.message.includes("OB-second")));
+    assert.ok(v.reasons.some((r) => r.code === "basis-element-unverified" && r.message.includes("REQ-2")));
+  });
   const rows: Array<[string, (i: VerdictInput) => VerdictInput, string, string]> = [
     ["evidence-missing", (i) => ({ ...i, receipts: [rc("OB-EX-1")] }), "evidence-missing", "implemented-unverified"],
     ["a planned red is not evidence of the candidate", (i) => ({ ...i, receipts: [rc("OB-EX-1", { stage: "baseline", status: "pass" }), rc("OB-suite")] }), "evidence-missing", "implemented-unverified"],

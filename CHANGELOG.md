@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-10-27 - Assert the unsupported Windows workflow boundary
+
+**Changed.** `packages/kernel/test/workflows.test.ts` now verifies the documented `capability-missing` refusal, absent handle and absent state for the EVD-07 feature workflow on Windows. The full assurance and control assertions remain unchanged on supported POSIX; runtime behavior is unchanged.
+
+**Validation.** The focused Windows regression passes 1/1; typecheck and all linters pass. A full `npm run ci` attempt reached tests but hit Windows `EPERM` on POSIX directory `fsync`; the unsupported run was stopped, so no full-suite pass is claimed. POSIX workflow execution and host rendering remain unverified. `specs/plan.md` records this limit.
+
+## 2026-10-26 - Preserve human and active files during automatic cleanup
+
+**Changed.** `packages/kernel/src/adapters/store-fs.ts` refuses to enumerate already-linked manifest/review groups during run-cap cleanup, matching the existing age-sweep safeguard. Both cleanup paths now use the native separator when protecting a live descendant. No deletion scope, authority, storage format or budget changed.
+
+**Tests and review.** `packages/kernel/test/store-boundary.test.ts` adds four real-filesystem controls: linked manifest/review targets retain their human bytes and links; cap and age cleanup still remove owned expired artifacts while retaining active descendants/reservations, without protecting sibling prefixes. Three controls failed before the fix; restoring the old age-sweep separator also makes the fourth fail. `.github/workflows/untrusted.yml` runs the focused controls on Windows, guarded by `packages/kernel/test/ci-security.test.ts`. The owner approved the bounded repair; independent caller/boundary review found no blocker.
+
+**Validation.** Windows Node 24.22.1 passes the existing 236-test/32-suite selection and four cleanup controls, typecheck, all lints, M0 coverage, build, complete payload integrity and clean-output repeatability. Built scratch help/status and unsupported editing refusal preserve the exact scratch listing with no project state. `specs/plan.md` records the defect and evidence. Full supported-POSIX CI and dual-runtime feature UAT on these local edits remain required; Windows mutation, concurrent replacement and aggregate retention are not qualified.
+
+## 2026-10-26 - Reconcile implementation evidence and strengthen verdict proof
+
+**Changed.** Added direct baseline/exclusion and partial-outcome controls in `packages/kernel/test/verdict.test.ts`, without enabling sealed-baseline execution. Corrected `README.md`, `plugin/README.md` and `docs/user/what-tenet-adds.md` to distinguish git-ignore from host-indexing privacy, observed dispatch from unproved isolation, conditional basis confirmation and local subsets from full remote CI. The coordinator skill inventory now includes the existing `lesson`, `forget`, `cleanup` and `version-reconcile` kinds. No new decision kind, authority, state format or kernel behavior was added.
+
+**Plan.** `specs/plan.md` records the synchronized `159caab` pickup, current green CI, the exact 50 unmapped Musts, corrected stale checklists and dependency-ordered next work. The evidence ledger remains empty; 115 tagged Musts are not 115 complete or qualified requirements. Full R1, unsigned mechanism implementation and native/human/release gates remain open.
+
+**Storage policy.** Owner selected PRD §5.15's eviction order; `specs/tech-spec.md` and `specs/storage-retention.md` align that policy. Aggregate eviction, snapshot/archive mechanisms, protected retention and final implementation sign-off remain open; no storage runtime changes are included.
+
+**Validation.** A controlled mutation of the baseline-exclusion predicate made the new assertion fail; production code was restored before the focused **51/51** green run. Final typecheck, all lints, M0 coverage and integrated Windows selection pass **236 tests / 32 suites**, zero failures/skips. Skill lint, build, 66-file payload verification and same-source/toolchain repeat builds pass. Full Linux/macOS CI and dual-runtime built UAT passed at pickup `159caab` in [run 40270175062](https://github.com/vedprakash-m/tenet/actions/runs/40270175062); that evidence does not validate these later local edits or qualify a host tuple. Independent review retained explicit failure-kind/signature and final excluded-failure-listing gaps instead of claiming full AC-27 completion.
+
 ## 2026-10-26 - Isolate report-integrity Git-state assertions
 
 **Changed.** `packages/kernel/test/coverage.test.ts` now invokes the actual report-integrity CLI in an owned initialized Git fixture rather than comparing a live shared checkout. It retains exact requirement/evidence hashes and whole Git status, with staged, unstaged and untracked changes explicitly present. No runtime behavior, concurrency or assertion is weakened.
