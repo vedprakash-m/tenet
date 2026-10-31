@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-31 — Publish preserved work and repair cold-browser CI setup
+
+- Published implementation/tests (`35c26df`) and specification/audit records (`2bf4c38`) separately after staged and outgoing-range privacy checks. The owner explicitly retained Git's inferred identity. No amendment, new branch, force push or unsigned protocol/cap activation.
+- Exact-head remote CI passed Windows, but both Linux/macOS starter and golden journeys failed because their pinned Chromium was absent (1,235/1,237 tests passed per POSIX job). Add a red-first workflow control, then install the starter's locked Playwright/browser prerequisites from runner-owned temporary tooling before full CI; keep the shipped payload clean. A golden-check diagnostic reports the actual failed response instead of a secondary missing-review dereference.
+- Files: `.github/workflows/untrusted.yml`, `packages/kernel/test/{ci-security,golden-task-loan-desk}.test.ts`, plan and [publication evidence](docs/audits/2026-10-31/publication-validation.json). Targeted setup control is red then green (10/1 then 11/0); full local CI passes 1,238 tests/202 suites, zero failures/skips. Repair commit `a98b78d`; bundle/payload unchanged. Corrected remote CI remains pending. Prior local observations and failed remote evidence remain historical, not R1 qualification.
+
 ## 2026-10-29 — Owner-authorized configuration/migration capacity proposal (uncommitted)
 
 - Added `specs/protocol-capacity.md`: existing-owner measurements, 28 target responsibilities, two in-memory source candidates, transparent source/bundle forecast limits and coordinator wording feasibility. Small source candidates save 180 characters/302 bundle bytes; no candidate is installed and no actual target deficit or cap increase is claimed.

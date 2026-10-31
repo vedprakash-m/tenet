@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-31",
+  "status": "local-correction-validated-remote-correction-pending",
+  "authority": {
+    "commitAndPushAllChanges": "explicit owner request",
+    "keepInferredGitIdentity": "explicit owner selection after disclosure",
+    "amendOrGitConfigurationChanges": false,
+    "unsignedProtocolOrBudgetActivation": false
+  },
+  "initialPublication": {
+    "implementationCommit": "35c26df81429c16217150ab174572dcef95c396b",
+    "documentationCommit": "2bf4c38fb36d2a86557eb123c8a0eb34587ceec5",
+    "destination": "origin/main",
+    "push": "normal",
+    "stagedPrivacyExitEach": 0,
+    "outgoingPrivacyExit": 0,
+    "ci": {
+      "run": 41176202822,
+      "url": "https://github.com/vedprakash-m/tenet/actions/runs/41176202822",
+      "head": "2bf4c38fb36d2a86557eb123c8a0eb34587ceec5",
+      "conclusion": "failure",
+      "windows": "success",
+      "linuxAndMacEach": {
+        "tests": 1237,
+        "passed": 1235,
+        "failed": 2,
+        "starterBrowserReceipt": {
+          "discovered": 12,
+          "passed": 2,
+          "failed": 10
+        }
+      },
+      "cause": "Missing Playwright-pinned Chromium caused starter browser failure and downstream golden missing-review dereference",
+      "failureLog": {
+        "storage": "Current session files",
+        "file": "publication-ci-2bf4c38-failures.log",
+        "sha256": "6025bb25099853c519e913356a2fe135bec99e6fa995a0b3f1b68ebb8ead6a8f"
+      }
+    }
+  },
+  "repair": {
+    "commit": "a98b78d470668de287ad99470ef9c97b6c9df0ed",
+    "changes": [
+      "Install browser tooling from both starter manifests in runner-owned scratch storage before supported-POSIX CI",
+      "Invoke installed locked Playwright CLI to install Chromium and required system libraries",
+      "Add red-first CI setup control and explicit golden scaffold-review diagnostic"
+    ],
+    "targeted": {
+      "test": "packages/kernel/test/ci-security.test.ts",
+      "red": { "passed": 10, "failed": 1 },
+      "green": { "passed": 11, "failed": 0 }
+    },
+    "localCi": {
+      "command": "npm run ci",
+      "exit": 0,
+      "node": "26.3.0",
+      "tests": 1238,
+      "suites": 202,
+      "passed": 1238,
+      "failed": 0,
+      "skipped": 0,
+      "log": {
+        "storage": "Current session files",
+        "file": "publication-ci-browser-fix-local.log",
+        "sha256": "394348c0d2bfa6b0f19ccdef96d3b2900a8d3afd0a22631ac0ded689e39aefd8"
+      }
+    },
+    "source": {
+      "files": 385,
+      "sha256": "245588db0a667c794f931a36a86eb3ae5fa499a0dee7325abadb9d6f15bebad2",
+      "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path + NUL + bytes + NUL for each file",
+      "workflowSha256": "9293fc1078266f34cf0ca440efc2ee8c08eecb4e1c900c5926dcee6c668317d1"
+    },
+    "bundle": {
+      "bytes": 776837,
+      "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb",
+      "payloadFiles": 91,
+      "unchangedFromOctober29Validation": true
+    },
+    "remoteCi": { "status": "not-yet-observed" }
+  },
+  "limits": [
+    "CI is not R1 semantic qualification, native Copilot isolation or release approval",
+    "Required system library versions are not claimed to be pinned",
+    "No schema-2 activation, budget increase, weaker browser assertion or skipped browser test",
+    "Retained workload and host/human/release gaps remain open",
+    "October 29 validation records retain their historical source and timing"
+  ]
+}
