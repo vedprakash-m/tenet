@@ -25,14 +25,19 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /** Runs `fn` in an immediate transaction. SQLITE_BUSY is retried with jitter up to one second in total. */
 export async function writeTx<T>(db: Db, fn: () => T): Promise<T> {
   const deadline = Date.now() + 1000;
+  const checkDeadline = () => {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) throw new AppError(503, "busy", "The database is busy; try again.");
+    return remaining;
+  };
   for (;;) {
+    checkDeadline();
     try {
-      return db.transaction(fn).immediate();
+      return db.transaction(() => { checkDeadline(); return fn(); }).immediate();
     } catch (e) {
       const busy = (e as { code?: string }).code?.startsWith("SQLITE_BUSY");
       if (!busy) throw e;
-      if (Date.now() > deadline) throw new AppError(503, "busy", "The database is busy; try again.");
-      await sleep(20 + Math.floor(Math.random() * 60));
+      await sleep(Math.min(checkDeadline(), 20 + Math.floor(Math.random() * 60)));
     }
   }
 }

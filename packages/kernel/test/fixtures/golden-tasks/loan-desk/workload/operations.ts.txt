@@ -1,0 +1,24 @@
+import { ItemResponse, LoanResponse, Page, Problem } from "../shared/schemas.ts";
+import { headers } from "./client.ts";
+import type { Client, Reply, transport } from "./client.ts";
+import type { Kind } from "./report.ts";
+const Items = Page(ItemResponse);
+function classify(kind: Kind, reply: Reply) {
+  const parsed = kind === "list" ? Items.safeParse(reply.body) : LoanResponse.safeParse(reply.body);
+  const success = reply.status === 200 && parsed.success;
+  const problem = Problem.safeParse(reply.body);
+  const conflict = kind === "reserve" && reply.status === 409 && problem.success && problem.data.type === "urn:problem:item-on-loan";
+  const busy = reply.status === 503 && problem.success && problem.data.type === "urn:problem:busy";
+  return { success, conflict, busy };
+}
+export async function execute(request: ReturnType<typeof transport>, client: Client, kind: Kind, index: number) {
+  const init = { headers: headers(client) };
+  let reply: Reply;
+  if (kind === "list") reply = await request(`/api/items?limit=25&offset=${index % 9900}`, init);
+  else if (kind === "reserve") reply = await request(`/api/items/item-${5001 + index % 4999}/reserve`, { ...init, method: "POST" });
+  else reply = await request(`/api/loans/${client.loans[0] ?? "no-owned-loan"}/return`, { ...init, method: "POST" });
+  const result = classify(kind, reply);
+  if (result.success && kind === "reserve") client.loans.push(LoanResponse.parse(reply.body).id);
+  if (result.success && kind === "return") client.loans.shift();
+  return { reply, ...result };
+}

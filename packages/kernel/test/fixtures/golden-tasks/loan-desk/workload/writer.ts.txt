@@ -1,0 +1,6 @@
+import { openDb } from "../server/src/platform/db.ts";
+const db = openDb(process.argv[2]!);
+try {
+  db.exec("BEGIN IMMEDIATE"); process.send?.({ kind: "held" });
+  await new Promise<void>(resolve => { const timer = setTimeout(resolve, 3000); process.once("message", () => { clearTimeout(timer); resolve(); }); });
+} finally { if (db.inTransaction) db.exec("ROLLBACK"); db.close(); process.disconnect?.(); }

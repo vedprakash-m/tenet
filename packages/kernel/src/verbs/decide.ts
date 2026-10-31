@@ -14,7 +14,7 @@ export const decide: Verb<DecideInput> = {
     if (input.kind === "repair-lock") await ports.store.repairLock();
   },
   async run(ports, state, input, tx) {
-    const kind = DECISIONS[input.kind];
+    const kind = Object.hasOwn(DECISIONS, input.kind) && DECISIONS[input.kind];
     if (!kind) {
       throw new KernelError("restriction-key-unknown", `no decision kind "${input.kind}"; known: ${Object.keys(DECISIONS).join(", ")}`, { exit: 1 });
     }

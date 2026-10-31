@@ -1,0 +1,185 @@
+{
+  "version": 1,
+  "scope": "platform account and fixture-only equipment-loan journeys",
+  "journeys": [
+    {
+      "actor": "local account holder",
+      "entry": "/",
+      "preconditions": [
+        "loopback API and web server running",
+        "synthetic local account available"
+      ],
+      "files": [
+        "web/src/App.tsx",
+        "web/src/lib/api.ts",
+        "web/src/style.css",
+        "shared/schemas.ts",
+        "server/src/platform/auth/routes.ts"
+      ],
+      "automatedTest": "server/test/e2e/auth-browser.e2e.spec.ts",
+      "screenReaderProcedure": "docs/a11y-checks.md",
+      "qualification": "unqualified",
+      "id": "sign-in",
+      "goal": "Sign in to the local app",
+      "mainPath": [
+        "enter credentials",
+        "submit once",
+        "read the current account from the server"
+      ],
+      "validation": [
+        "invalid email",
+        "missing password",
+        "credentials refused"
+      ],
+      "loading": "announce pending sign-in; disable duplicate submission",
+      "empty": "signed-out form is distinct from failed loading",
+      "failed": "retain input and focus the error",
+      "denied": "show the server refusal without claiming sign-in",
+      "conflict": "retain input and permit retry",
+      "recovery": "correct input or retry the request",
+      "success": "account heading and details only after a fresh session read"
+    },
+    {
+      "actor": "local account holder",
+      "entry": "/",
+      "preconditions": [
+        "loopback API and web server running",
+        "synthetic local account available"
+      ],
+      "files": [
+        "web/src/App.tsx",
+        "web/src/lib/api.ts",
+        "web/src/style.css",
+        "shared/schemas.ts",
+        "server/src/platform/auth/routes.ts"
+      ],
+      "automatedTest": "server/test/e2e/auth-browser.e2e.spec.ts",
+      "screenReaderProcedure": "docs/a11y-checks.md",
+      "qualification": "unqualified",
+      "id": "account",
+      "goal": "Read the current account and retain the session across reload",
+      "mainPath": [
+        "open the app",
+        "read the session",
+        "reload",
+        "read the current session again"
+      ],
+      "validation": [
+        "malformed session data is not success"
+      ],
+      "loading": "announce session loading",
+      "empty": "401 shows the signed-out form",
+      "failed": "show a separate retryable loading failure",
+      "denied": "revoked session returns to sign-in",
+      "conflict": "not applicable: read-only account view",
+      "recovery": "retry the current session read",
+      "success": "server-confirmed account identity displayed"
+    },
+    {
+      "actor": "local account holder",
+      "entry": "/",
+      "preconditions": [
+        "loopback API and web server running",
+        "synthetic local account available"
+      ],
+      "files": [
+        "web/src/App.tsx",
+        "web/src/lib/api.ts",
+        "web/src/style.css",
+        "shared/schemas.ts",
+        "server/src/platform/auth/routes.ts"
+      ],
+      "automatedTest": "server/test/e2e/auth-browser.e2e.spec.ts",
+      "screenReaderProcedure": "docs/a11y-checks.md",
+      "qualification": "unqualified",
+      "id": "sign-out",
+      "goal": "End the current browser session",
+      "mainPath": [
+        "activate Sign out",
+        "revoke the server session",
+        "confirm absence through a fresh read"
+      ],
+      "validation": [
+        "an already-expired session still requires absence confirmation"
+      ],
+      "loading": "announce pending sign-out; disable duplicate submission",
+      "empty": "signed-out form",
+      "failed": "retain the account with an error until the outcome is confirmed",
+      "denied": "401 is followed by an independent session read",
+      "conflict": "a remaining session prevents a success claim",
+      "recovery": "retry sign-out",
+      "success": "sign-in heading focused and session cookie removed"
+    },
+    {
+      "id": "reserve-return",
+      "actor": "signed-in member or admin",
+      "entry": "/#equipment",
+      "goal": "Reserve and return equipment with persisted independent reads",
+      "preconditions": [
+        "dedicated source-bound API and database",
+        "synthetic fixture accounts and equipment"
+      ],
+      "files": [
+        "web/src/App.tsx",
+        "web/src/lib/api.ts",
+        "web/src/features/loans/LoanDesk.tsx",
+        "server/src/features/loans/*",
+        "shared/schemas.ts"
+      ],
+      "automatedTest": "server/test/e2e/loans-browser.e2e.spec.ts",
+      "screenReaderProcedure": "docs/a11y-checks.md",
+      "qualification": "unqualified",
+      "mainPath": [
+        "open equipment",
+        "browse availability",
+        "reserve",
+        "confirm through fresh reads",
+        "reload",
+        "return",
+        "confirm through fresh reads"
+      ],
+      "loading": "announce loading and confirmation; disable concurrent mutation",
+      "empty": "no equipment / no loans",
+      "failed": "focus error, refresh before retry",
+      "denied": "server enforces owner/role; focus refusal",
+      "conflict": "retain refusal until explicit fresh read",
+      "recovery": "refresh current server state",
+      "success": "display mutation outcome only after independent server reads"
+    },
+    {
+      "id": "borrower-authorization",
+      "actor": "signed-in member or admin",
+      "entry": "/#equipment",
+      "goal": "Protect borrower identity and loan ownership",
+      "preconditions": [
+        "dedicated source-bound API and database",
+        "synthetic fixture accounts and equipment"
+      ],
+      "files": [
+        "web/src/App.tsx",
+        "web/src/lib/api.ts",
+        "web/src/features/loans/LoanDesk.tsx",
+        "server/src/features/loans/*",
+        "shared/schemas.ts"
+      ],
+      "automatedTest": "server/test/e2e/loans-browser.e2e.spec.ts",
+      "screenReaderProcedure": "docs/a11y-checks.md",
+      "qualification": "unqualified",
+      "mainPath": [
+        "open two member contexts",
+        "reserve once",
+        "receive stale availability conflict",
+        "deny another member\u2019s return",
+        "deny member admin overview",
+        "show admin borrower overview"
+      ],
+      "loading": "announce loading and confirmation; disable concurrent mutation",
+      "empty": "no equipment / no loans",
+      "failed": "focus error, refresh before retry",
+      "denied": "server enforces owner/role; focus refusal",
+      "conflict": "retain refusal until explicit fresh read",
+      "recovery": "refresh current server state",
+      "success": "display mutation outcome only after independent server reads"
+    }
+  ]
+}

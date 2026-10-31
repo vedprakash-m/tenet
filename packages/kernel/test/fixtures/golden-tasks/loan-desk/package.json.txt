@@ -1,0 +1,49 @@
+{
+  "name": "tenet-starter-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "tsx watch server/src/server.ts",
+    "start": "tsx server/src/server.ts",
+    "restore": "tsx server/src/restore-cli.ts",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "dev:web": "vite",
+    "build": "vite build",
+    "openapi": "node --experimental-strip-types server/src/openapi.ts",
+    "workload": "npm run build 1>&2 && node --experimental-strip-types workload/run.ts",
+    "workload:smoke": "node --experimental-strip-types workload/run.ts --smoke"
+  },
+  "dependencies": {
+    "@fastify/cookie": "11.1.3",
+    "@fastify/helmet": "13.2.0",
+    "@fastify/rate-limit": "11.2.1",
+    "@fastify/swagger": "9.9.2",
+    "better-sqlite3": "12.11.1",
+    "fastify": "5.12.7",
+    "fastify-type-provider-zod": "7.0.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.64.1",
+    "@types/better-sqlite3": "7.6.13",
+    "@types/node": "24.0.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "9.39.1",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.55.0",
+    "vite": "8.3.5",
+    "vitest": "5.0.5"
+  }
+}

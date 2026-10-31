@@ -1,0 +1,104 @@
+import { useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
+import { SignInRequest } from "../../shared/schemas.ts";
+import type { SessionResponse } from "../../shared/schemas.ts";
+import { errorMessage, loadSession, signIn, signOut } from "./lib/api.ts";
+
+type View = { kind: "loading" } | { kind: "error"; message: string } | { kind: "signed-out" } | { kind: "account"; session: SessionResponse };
+type Fields = Partial<Record<"email" | "password", string>>;
+
+function Heading({ children }: { children: string }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { ref.current?.focus(); }, []);
+  return <h1 tabIndex={-1} ref={ref}>{children}</h1>;
+}
+
+function Notice({ issue }: { issue: { message: string } }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => { ref.current?.focus(); }, [issue]);
+  return <div className="notice" role="alert" tabIndex={-1} ref={ref}>{issue.message}</div>;
+}
+
+function SignIn({ onSignedIn }: { onSignedIn: (session: SessionResponse) => void }) {
+  const [email, setEmail] = useState(""), [password, setPassword] = useState("");
+  const [fields, setFields] = useState<Fields>({}), [error, setError] = useState<{ message: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const pending = useRef(false);
+  const validate = (): Fields => {
+    const parsed = SignInRequest.safeParse({ email, password });
+    return parsed.success ? {} : Object.fromEntries(parsed.error.issues.map(issue => [issue.path[0], issue.message]));
+  };
+  const blur = (field: keyof Fields) => setFields(previous => ({ ...previous, [field]: validate()[field] }));
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pending.current) return;
+    const invalid = validate(); setFields(invalid);
+    if (Object.keys(invalid).length) { setError({ message: "Check the highlighted fields and try again." }); return; }
+    pending.current = true; setBusy(true); setError(null);
+    try { onSignedIn(await signIn({ email, password })); }
+    catch (failure) { setError({ message: errorMessage(failure) }); }
+    finally { pending.current = false; setBusy(false); }
+  }
+  return <>
+    <p className="eyebrow">Welcome back</p><Heading>Sign in</Heading>
+    <p className="intro">Use your account to continue.</p>
+    {error && <Notice issue={error} />}
+    <form onSubmit={event => { void submit(event); }} noValidate aria-busy={busy}>
+      <label htmlFor="email">Email</label>
+      <input id="email" name="email" type="email" autoComplete="username" value={email}
+        onChange={event => setEmail(event.target.value)} onBlur={() => blur("email")}
+        aria-invalid={!!fields.email} aria-describedby={fields.email ? "email-error" : undefined} />
+      <p id="email-error" className="field-error">{fields.email ? "Enter a valid email address." : ""}</p>
+      <label htmlFor="password">Password</label>
+      <input id="password" name="password" type="password" autoComplete="current-password" value={password}
+        onChange={event => setPassword(event.target.value)} onBlur={() => blur("password")}
+        aria-invalid={!!fields.password} aria-describedby={fields.password ? "password-error" : undefined} />
+      <p id="password-error" className="field-error">{fields.password ? "Enter your password (up to 256 characters)." : ""}</p>
+      <button type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+      <p role="status" className="status">{busy ? "Checking your account…" : ""}</p>
+    </form>
+  </>;
+}
+
+function Account({ session, onSignedOut }: { session: SessionResponse; onSignedOut: () => void }) {
+  const [busy, setBusy] = useState(false), [error, setError] = useState<{ message: string } | null>(null);
+  const pending = useRef(false);
+  async function leave() {
+    if (pending.current) return;
+    pending.current = true; setBusy(true); setError(null);
+    try { await signOut(session.csrfToken); onSignedOut(); }
+    catch (failure) { setError({ message: errorMessage(failure) }); }
+    finally { pending.current = false; setBusy(false); }
+  }
+  return <>
+    <p className="eyebrow">Account</p><Heading>You're signed in</Heading>
+    <p className="intro">Your session is ready.</p>
+    {error && <Notice issue={error} />}
+    <dl><dt>Email</dt><dd>{session.user.email}</dd><dt>Role</dt><dd>{session.user.role}</dd></dl>
+    <button type="button" disabled={busy} onClick={() => { void leave(); }}>{busy ? "Signing out…" : "Sign out"}</button>
+    <p role="status" className="status">{busy ? "Confirming sign-out…" : ""}</p>
+  </>;
+}
+
+export function App() {
+  const [view, setView] = useState<View>({ kind: "loading" }), [retry, setRetry] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    setView({ kind: "loading" });
+    void loadSession(controller.signal).then(session => {
+      if (!controller.signal.aborted) setView(session ? { kind: "account", session } : { kind: "signed-out" });
+    }).catch(error => { if (!controller.signal.aborted) setView({ kind: "error", message: errorMessage(error) }); });
+    return () => controller.abort();
+  }, [retry]);
+  return <>
+    <a className="skip" href="#main">Skip to content</a>
+    <header><span className="brand">Your app</span><span>Account access</span></header>
+    <main id="main" tabIndex={-1}>
+      {view.kind === "loading" && <><h1>Loading your session</h1><p role="status">Checking whether you're signed in…</p></>}
+      {view.kind === "error" && <><h1>We couldn't load your session</h1><Notice issue={view} /><button onClick={() => setRetry(n => n + 1)}>Try again</button></>}
+      {view.kind === "signed-out" && <SignIn onSignedIn={session => setView({ kind: "account", session })} />}
+      {view.kind === "account" && <Account session={view.session} onSignedOut={() => setView({ kind: "signed-out" })} />}
+    </main>
+    <footer>Sign out when you've finished using a shared device.</footer>
+  </>;
+}

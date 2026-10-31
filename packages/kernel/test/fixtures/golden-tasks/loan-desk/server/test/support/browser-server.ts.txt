@@ -1,0 +1,40 @@
+// Source-bound browser fixture: actual API plus freshly built production UI in an owned temporary directory.
+import { build, preview } from "vite";
+import { mkdtempSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { buildApp } from "../../src/app.ts";
+import { loadConfig } from "../../src/platform/config.ts";
+import { hashPassword } from "../../src/platform/auth/passwords.ts";
+import { findUserByEmail, insertUser } from "../../src/platform/users.repository.ts";
+import { takeOwner } from "../../src/platform/owner.ts";
+import { browserEmail, browserPassword } from "./browser-identities.ts";
+
+if (!process.env.DATABASE_URL) throw new Error("browser tests require a dedicated DATABASE_URL");
+const config = loadConfig({ ...process.env, NODE_ENV: "test", LOG_LEVEL: "silent" });
+const release = takeOwner(config.databaseUrl);
+process.on("exit", release);
+const app = await buildApp(config);
+await app.ready();
+// This fixture's account is separate from unknown-user rejection and generated development accounts.
+if (!findUserByEmail(app.db, browserEmail)) insertUser(app.db, { id: "browser-member", email: browserEmail, role: "member", password_hash: await hashPassword(browserPassword), created_at: Date.now() });
+for (const [id, role] of [["loan-ada", "member"], ["loan-ben", "member"], ["loan-admin", "admin"], ["loan-states", "member"]] as const) {
+  const email = `${id}@example.test`;
+  if (!findUserByEmail(app.db, email)) insertUser(app.db, { id, email, role, password_hash: await hashPassword(browserPassword), created_at: Date.now() });
+}
+for (const [id, name] of [["journey", "Journey microscope"], ["race", "Shared microscope"]]) {
+  app.db.prepare("INSERT OR IGNORE INTO items (id, name, created_at) VALUES (?, ?, ?)").run(id, name, Date.now());
+}
+const api = await app.listen({ host: "127.0.0.1", port: 0 });
+const webDirectory = mkdtempSync(join(dirname(config.databaseUrl), "browser-web-"));
+process.on("exit", () => rmSync(webDirectory, { recursive: true, force: true }));
+const ui = { configFile: false as const, root: "web", logLevel: "silent" as const, cacheDir: join(webDirectory, "cache"), build: { outDir: join(webDirectory, "dist"), emptyOutDir: true } };
+await build(ui);
+const web = await preview({ ...ui,
+  preview: { host: "127.0.0.1", port: config.port, strictPort: true, proxy: { "/api": api } },
+});
+const address = web.httpServer.address();
+if (!address || typeof address === "string" || address.address !== "127.0.0.1") throw new Error("browser fixture did not bind loopback");
+process.send?.({ kind: "browser-ready", port: address.port });
+for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, () => {
+  void Promise.all([web.close(), app.close()]).then(() => { release(); process.exit(0); });
+});

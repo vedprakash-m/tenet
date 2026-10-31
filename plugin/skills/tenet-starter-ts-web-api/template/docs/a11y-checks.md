@@ -1,0 +1,19 @@
+# Account journey accessibility checks
+
+Scope: sign-in, account read/reload and sign-out in `journeys.json`, including validation, pending submission, failed loading, denied/conflicting responses and retry. The browser suite runs axe and explicit keyboard/focus checks. Automated checks do not establish complete WCAG 2.2 AA conformance.
+
+After a critical journey changes, run its browser tests, then check with VoiceOver (or record the actual screen reader/browser used):
+
+1. From a signed-out page, navigate by headings and form controls. Confirm that Email and Password have names, input format and errors are announced, Tab reaches the submit button, and submitting invalid input moves focus to the error summary without losing input.
+2. Sign in. Confirm the pending status is announced, focus reaches the account heading only after a fresh server read, and account details can be read in order. Reload and confirm the signed-in state is still announced. Use only synthetic local credentials.
+3. Navigate to Sign out by keyboard and activate it. Confirm that the signed-out heading receives focus. Check a failed/retried request as well; a failed request must not be announced as completed.
+
+| Observation | Result |
+|---|---|
+| Source revision and journeys | Not recorded |
+| Browser / OS / screen reader versions | Not recorded |
+| Keyboard check | Not run manually |
+| Screen-reader check | Not run |
+| Issues, fixes and retest | Not recorded |
+
+Until completed and recorded for the actual revision, report “accessibility: automated checks only”. Domain journeys, zoom/reflow checks and a full applicability review must be added before a wider accessibility claim.

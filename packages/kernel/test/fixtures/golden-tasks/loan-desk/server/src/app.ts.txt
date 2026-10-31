@@ -2,16 +2,17 @@
 // beyond the database it is given; server.ts is the only entry point that listens.
 import cookie from "@fastify/cookie";
 import helmet from "@fastify/helmet";
-import rateLimit from "@fastify/rate-limit";
 import Fastify from "fastify";
 import type { FastifyInstance } from "fastify";
 import { serializerCompiler, validatorCompiler } from "fastify-type-provider-zod";
 import "./platform/actor.ts";
+import { registerAdmission } from "./platform/admission.ts";
 import type { Config } from "./platform/config.ts";
 import { HEADER, PRE_COOKIE, isStateChanging, tokensMatch } from "./platform/auth/csrf.ts";
-import { openDb } from "./platform/db.ts";
+import { openDb, writeTx } from "./platform/db.ts";
 import type { Db } from "./platform/db.ts";
 import { AppError, problem } from "./platform/errors.ts";
+import { registerOpenApi } from "./platform/openapi.ts";
 import { registerHealth } from "./platform/health.ts";
 import { loggerOptions, requestId } from "./platform/logging.ts";
 import { migrate } from "./platform/migrate.ts";
@@ -36,16 +37,16 @@ export async function buildApp(config: Config, deps: Deps = {}): Promise<Fastify
   app.decorate("now", now);
   app.decorateRequest("actor", null);
 
+  await registerOpenApi(app);
   await app.register(helmet);
   await app.register(cookie);
-  await app.register(rateLimit, { global: true, max: 120, timeWindow: "1 minute" });
-
   app.addHook("onRequest", async (req, reply) => { void reply.header("x-request-id", req.id); });
+  await registerAdmission(app);
 
-  // Resolve the session once per request; an invalid cookie is cleared and treated as signed out.
+  // Re-read current authority after admission; invalid cookies are cleared for admitted requests.
   app.addHook("preHandler", async (req, reply) => {
     const raw = req.cookies[COOKIE];
-    const found = resolveSession(db, raw, config.cookieSecret, now());
+    const found = raw ? await writeTx(db, () => resolveSession(db, raw, config.cookieSecret, now())) : undefined;
     if (found) req.actor = { user: found.user, session: found.session };
     else if (raw) void reply.clearCookie(COOKIE, { path: "/" });
     // CSRF: bound to the session row, or to the pre-session cookie when there is no session (sign-in).

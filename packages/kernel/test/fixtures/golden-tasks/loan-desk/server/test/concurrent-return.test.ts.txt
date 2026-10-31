@@ -1,0 +1,68 @@
+// A held write lock makes every process enter the service before any return can commit.
+// This exposes stale read/check/write behavior that sequential or single-connection HTTP calls miss.
+import { execFile } from "node:child_process";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { expect, it } from "vitest";
+import { insertItem } from "../src/features/loans/items.repository.ts";
+import { insertLoan } from "../src/features/loans/loans.repository.ts";
+import { openDb } from "../src/platform/db.ts";
+import { loadConfig } from "../src/platform/config.ts";
+import { migrate } from "../src/platform/migrate.ts";
+import { createSession } from "../src/platform/session/session.ts";
+import { insertUser } from "../src/platform/users.repository.ts";
+
+async function until(ready: () => boolean, label: string) {
+  const deadline = Date.now() + 15_000;
+  while (!ready()) {
+    if (Date.now() > deadline) throw new Error(`${label} timed out`);
+    await new Promise(resolve => setTimeout(resolve, 5));
+  }
+}
+
+function worker(path: string, index: number, session: string) {
+  let child!: ReturnType<typeof execFile>;
+  const finished = new Promise<{ error: string | null; stdout: string; stderr: string }>(resolve => {
+    child = execFile(process.execPath, ["--experimental-strip-types", join(import.meta.dirname, "fixtures/concurrent-return-worker.ts"), path, String(index), session, String(1000 + index)],
+      { timeout: 20_000, killSignal: "SIGKILL" }, (error, stdout, stderr) => resolve({ error: error?.message ?? null, stdout, stderr }));
+  });
+  return { child, finished };
+}
+
+it.each(["owner-and-admin", "wrong-members"])("serializes contended returns from 5 real processes: %s [QLT-01, QLT-12]", async mode => {
+  const dir = mkdtempSync(join(tmpdir(), "starter-return-race-")), path = join(dir, "app.db");
+  const db = openDb(path), workers: ReturnType<typeof worker>[] = [];
+  try {
+    migrate(db);
+    insertItem(db, { id: "item", name: "Contested microscope", created_at: 0 });
+    for (const [id, role] of [["owner", "member"], ["admin", "admin"], ["other", "member"]] as const) {
+      insertUser(db, { id, role, email: `${id}@example.test`, password_hash: "x", created_at: 0 });
+    }
+    insertLoan(db, { id: "contested-loan", item_id: "item", user_id: "owner", reserved_at: 1 });
+    const secret = loadConfig({ NODE_ENV: "test" }).cookieSecret;
+    const actors = mode === "owner-and-admin" ? ["owner", "admin", "owner", "admin", "owner"] : ["owner", "other", "other", "other", "other"];
+    const sessions = actors.map(id => createSession(db, id, secret, Date.now()).session.id);
+    workers.push(...sessions.map((session, index) => worker(path, index, session)));
+    await until(() => workers.every((_, index) => existsSync(join(dir, `ready-${index}`))), "worker startup");
+    db.exec("BEGIN IMMEDIATE");
+    writeFileSync(join(dir, "start"), "");
+    await until(() => workers.every((_, index) => existsSync(join(dir, `attempted-${index}`))), "contended service entry");
+    db.exec("ROLLBACK");
+    const outputs = await Promise.all(workers.map(w => w.finished));
+    expect(outputs.every(output => output.error === null), JSON.stringify(outputs)).toBe(true);
+    const results = outputs.map(output => JSON.parse(output.stdout));
+    expect(results.filter(result => result.kind === "ok"), JSON.stringify(results)).toHaveLength(1);
+    expect(results.filter(result => result.kind === (mode === "owner-and-admin" ? "already-returned" : "forbidden"))).toHaveLength(4);
+    expect(results.filter(result => result.kind !== "ok").map(result => result.status)).toEqual(Array(4).fill(mode === "owner-and-admin" ? 409 : 403));
+    const winner = results.find(result => result.kind === "ok");
+    expect(db.prepare("SELECT status, returned_at FROM loans WHERE id = 'contested-loan'").get()).toEqual({ status: "returned", returned_at: winner.loan.returnedAt });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM loans").get()).toEqual({ n: 1 });
+    expect(db.pragma("foreign_key_check")).toEqual([]);
+  } finally {
+    if (db.inTransaction) db.exec("ROLLBACK");
+    for (const { child } of workers) if (child.exitCode === null) child.kill("SIGKILL");
+    await Promise.all(workers.map(w => w.finished));
+    db.close(); rmSync(dir, { recursive: true, force: true });
+  }
+}, 30_000);

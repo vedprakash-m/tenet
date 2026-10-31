@@ -2,7 +2,7 @@
 // normalization of its JSON report into the same shape Vitest's does, so every receipt rule already built for
 // test obligations (contradiction, population, focused, zero-tests) applies unchanged. The adapter normalizes;
 // it never decides acceptance.
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { z } from "zod";
 import type { Normalized } from "../ports/types.ts";
@@ -12,18 +12,13 @@ const PLAYWRIGHT_SCRIPT = "@playwright/test/cli.js";
 const SUPPORTED = [1];
 
 /** A direct binary, never npx; null when Playwright is not installed in the project at a supported major version. */
-export function playwrightArgv(root: string, report: string): string[] | null {
+export function playwrightArgv(root: string, report: string, version = "none"): string[] | null {
   if (!existsSync(join(root, "node_modules", PLAYWRIGHT_SCRIPT))) return null;
-  const pkg = readPkg(join(root, "node_modules/@playwright/test/package.json"));
-  const major = Number(String(pkg?.version ?? "").split(".")[0]);
+  const major = Number(version.split(".")[0]);
   if (!SUPPORTED.includes(major)) return null;
   const script = join("node_modules", PLAYWRIGHT_SCRIPT); // a direct binary, never npx (TS §9.3)
   void report; // the JSON reporter writes to PLAYWRIGHT_JSON_OUTPUT_NAME in the run's env, not an argv flag
   return [process.execPath, script, "test", "--reporter=json"];
-}
-
-function readPkg(p: string): Record<string, any> | null {
-  try { return JSON.parse(readFileSync(p, "utf8")); } catch { return null; }
 }
 
 const invalid = (message: string): Normalized => ({ files: new Map(), discovered: 0, invalid: message });

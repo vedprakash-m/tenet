@@ -1,4 +1,15 @@
 // Bound the complete transport body before any schema traversal or persistent operation (TS §6.1, §11.2).
+import { redact, redactDeep } from "./redact.ts";
+
+/** Free-text requests/quotes are redacted. Other structured input must use placeholders, never silently changed semantics. */
+export function recordInput(value: Record<string, unknown>): Record<string, unknown> | null {
+  const input = Object.fromEntries(Object.entries(value).map(([key, item]) => [
+    key, (key === "quote" || key === "request") && typeof item === "string" ? redact(item) : item,
+  ]));
+  const text = JSON.stringify(input);
+  return JSON.stringify(redactDeep(input)) === text && redact(text) === text ? input : null;
+}
+
 export function inputProblem(value: unknown): string | undefined {
   const pending: Array<[unknown, number]> = [[value, 0]], seen = new Set<object>();
   let nodes = 0, bytes = 0;

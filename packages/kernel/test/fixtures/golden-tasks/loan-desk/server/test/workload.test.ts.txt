@@ -1,0 +1,78 @@
+import { spawnSync } from "node:child_process";
+import { expect, it } from "vitest";
+
+it("runs the real isolated production workload smoke and never calls it a reference pass [QLT-05]", () => {
+  const child = spawnSync(process.execPath, ["--experimental-strip-types", "workload/run.ts", "--smoke"], { encoding: "utf8", timeout: 30_000, killSignal: "SIGKILL" });
+  expect(child.status, child.stderr).toBe(0);
+  expect(child.stderr).not.toContain("MaxListenersExceededWarning");
+  const report = JSON.parse(child.stdout);
+  expect(report.mode).toBe("smoke");
+  expect(report.referencePass).toBe(false);
+  expect(report.qualification).toBe("unqualified");
+  expect(report.seed).toEqual({ users: 2000, items: 10000, loans: 50000 });
+  expect(report.operations.list.attempts).toBeGreaterThan(0);
+  expect(report.operations.reserve.attempts).toBeGreaterThan(0);
+  expect(report.operations.return.attempts).toBeGreaterThan(0);
+  expect(report.metrics.peakRssBytes).toBeGreaterThan(0);
+  expect(report.metrics.eventLoopSamples).toBeGreaterThan(0);
+  expect(report.database.duplicateActiveItems).toBe(0);
+  expect(report.cleanup).toEqual({ serverExited: true, writerExited: true, directoryRemoved: true });
+}, 35_000);
+
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { buckets, judge, operation, percentiles } from "../../workload/report.ts";
+import { seed } from "../../workload/seed.ts";
+import { initialLoans } from "../../workload/client.ts";
+import Database from "better-sqlite3";
+
+function healthy() {
+  const all = buckets();
+  for (let i = 0; i < 5000; i++) { const b = all[operation(i)]; b.attempts++; b.successfulMs.push(10); b.allMs.push(10); b.statuses["200"] = (b.statuses["200"] ?? 0) + 1; }
+  return all;
+}
+it("declares the requested 70/20/10 cycle [QLT-05]", () => {
+  const kinds = Array.from({ length: 100 }, (_, i) => operation(i));
+  expect(["list", "reserve", "return"].map(kind => kinds.filter(k => k === kind).length)).toEqual([70, 20, 10]);
+});
+it("uses nearest-rank percentiles and leaves absent samples unknown [QLT-05]", () => {
+  expect(percentiles([])).toEqual({ samples: 0, p50: null, p95: null, p99: null });
+  expect(percentiles(Array.from({ length: 100 }, (_, i) => 100 - i))).toEqual({ samples: 100, p50: 50, p95: 95, p99: 99 });
+});
+it("recognizes measured targets only with sufficient successful samples and coverage [QLT-05]", () => {
+  expect(judge("reference", healthy(), { peakRssBytes: 100_000_000, eventLoopSamples: 1000, eventLoopP95Ms: 10 }, 12, 12, 0, true, 1)).toEqual({ referencePass: true, reasons: [] });
+});
+it.each(["quota", "samples", "memory", "event-loop", "bursts", "invariant", "busy"])("never hides a failed %s target behind fast responses [QLT-05]", failure => {
+  const all = healthy(), metrics = { peakRssBytes: 100_000_000, eventLoopSamples: 1000, eventLoopP95Ms: 10 };
+  if (failure === "quota") all.list.unexpected = 1;
+  if (failure === "samples") all.list.successfulMs = [];
+  if (failure === "memory") metrics.peakRssBytes = NaN;
+  if (failure === "event-loop") metrics.eventLoopSamples = 0;
+  expect(judge("reference", all, metrics, failure === "bursts" ? 0 : 12, 12, failure === "invariant" ? 1 : 0, true, failure === "busy" ? 0 : 1).referencePass).toBe(false);
+});
+it.each(["", "-wal"])("never resets an existing seed target or sidecar %s [QLT-05]", async suffix => {
+  const dir = mkdtempSync(join(tmpdir(), "workload-seed-guard-")), path = join(dir, "guard.db");
+  try {
+    writeFileSync(path + suffix, "preserve me");
+    await expect(seed(path, "synthetic fixture value")).rejects.toThrow(/new dedicated/);
+    expect(readFileSync(path + suffix, "utf8")).toBe("preserve me");
+    expect(readdirSync(dir)).toEqual([`guard.db${suffix}`]);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+it("provides every baseline client enough owned active loans for the complete measured cycle [QLT-05]", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "workload-inventory-")), path = join(dir, "app.db");
+  try {
+    await seed(path, "synthetic fixture value");
+    const db = new Database(path, { readonly: true });
+    try {
+      for (let index = 0; index < 20; index++) {
+        const actual = db.prepare("SELECT id FROM loans WHERE user_id = ? AND status = 'active'").all(`user-${index}`) as Array<{ id: string }>;
+        expect(actual.length).toBeGreaterThan(150_000 / 250 / 10);
+        expect(new Set(actual.map(row => row.id))).toEqual(new Set(initialLoans(index)));
+      }
+      expect(initialLoans(20)).toEqual([]);
+    } finally { db.close(); }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

@@ -1,6 +1,6 @@
 // The filesystem Store (TS §7): one state document replaced atomically, a transaction lock with guarded stale-break,
 // an append-only log with torn-write repair, hash-named blobs and the workspace marker.
-import { accessSync, chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, ftruncateSync, readdirSync, readFileSync, linkSync, lstatSync, mkdirSync, openSync, readSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { accessSync, chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, ftruncateSync, readdirSync, linkSync, lstatSync, mkdirSync, openSync, readSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isUtf8 } from "node:buffer";
 import { join, relative, sep } from "node:path";
@@ -239,7 +239,6 @@ export class FsStore implements Store {
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e;
     }
-    chmodSync(this.dir, 0o700);
     let trusted = false;
     try {
       trusted = !!this.marker();
@@ -256,16 +255,11 @@ export class FsStore implements Store {
       };
       this.quarantined = await quarantine(this.dir, this.clock, this.rand, (name) => this.p(name), isOwned, async (fn) => {
         const lock = await this.claim("quarantine", bootstrap);
-        try { return fn(); }
+        try { this.admit(); chmodSync(this.dir, 0o700); return fn(); }
         finally { this.release(lock, bootstrap); }
       });
     }
     this.admit();
-    chmodSync(this.dir, 0o700);
-    for (const name of ["marker", "state", "state.prev", "log"]) {
-      if (existsSync(this.p(name))) chmodSync(this.p(name), 0o600);
-    }
-    if (!existsSync(this.p(".gitignore"))) writeFileSync(this.p(".gitignore"), "*\n");
     return this.claim(verb);
   }
 
@@ -354,16 +348,22 @@ export class FsStore implements Store {
     const me = await this.acquire(verb);
     try {
       this.admit();
+      chmodSync(this.dir, 0o700);
+      for (const name of ["marker", "state", "state.prev", "log"]) {
+        if (existsSync(this.p(name))) chmodSync(this.p(name), 0o600);
+      }
+      if (!existsSync(this.p(".gitignore"))) writeFileSync(this.p(".gitignore"), "*\n");
       this.repairLogTail();
       const read = this.exists() ? this.read() : null;
       if (this.quarantined && read?.state.quarantine?.nonce === this.quarantined.nonce) this.finishQuarantine();
       const store = this;
+      let published = read?.state ?? null;
       const tx: Tx = {
-        state: read?.state ?? null,
+        get state() { return published; },
         recovered: read?.recovered ?? false,
         ...(this.quarantined ? { quarantined: this.quarantined } : {}),
         ensure: () => store.ensureMarker(),
-        publish: (next) => store.publishState(next),
+        publish: (next) => { published = store.publishState(next); },
         call: (entry) => store.append({ kind: "call", ...entry }),
         intent: (effect, id, op) => store.append({ kind: "intent", effect, id, op }),
         result: (effect, id, outcome) => store.append({ kind: "result", effect, id, outcome }),
@@ -404,6 +404,7 @@ export class FsStore implements Store {
     renameSync(tmp, this.p("state"));
     fsyncDir(this.dir);
     if (this.quarantined && doc.quarantine?.nonce === this.quarantined.nonce) this.finishQuarantine();
+    return doc;
   }
 
   private finishQuarantine() {
@@ -625,20 +626,25 @@ export class FsStore implements Store {
     let removed = 0;
     const visit = (dir: string) => {
       let names: string[] = [];
-      try { names = readdirSync(dir); } catch { return; }
+      try { names = readdirSync(dir); }
+      catch (e) { if ((e as NodeJS.ErrnoException).code === "ENOENT") return; throw e; }
       for (const n of names) {
         const p = join(dir, n);
         try {
           const st = lstatSync(p);
           if (st.isDirectory()) visit(p);
-          else if (st.isFile() && st.size <= 50_000_000 && needles.some((t) => readFileSync(p, "utf8").includes(t))) {
-            rmSync(p, { force: true });
-            removed++;
+          else if (st.isFile()) {
+            const text = readRecord(p);
+            if (text && needles.some((t) => text.includes(t))) {
+              rmSync(p, { force: true });
+              removed++;
+            }
           }
-        } catch { /* a file that vanished or cannot be read holds nothing Tenet can purge */ }
+        } catch (e) { if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e; }
       }
     };
-    visit(base);
+    const manifests = join(base, "manifests");
+    if (lstatSync(manifests, { throwIfNoEntry: false })?.isDirectory()) visit(manifests);
     return removed;
   }
   private tempBase(): string | null {
@@ -647,7 +653,7 @@ export class FsStore implements Store {
       if (!this.exists()) return null;
       const base = join(tmpdir(), `tenet-${this.marker()!.workspaceId}`);
       return lstatSync(base).isDirectory() ? base : null;
-    } catch { return null; }
+    } catch (e) { if ((e as NodeJS.ErrnoException).code === "ENOENT") return null; throw e; }
   }
   canWrite(): boolean { try { accessSync(this.root, constants.W_OK); return true; } catch { return false; } }
 }

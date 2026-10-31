@@ -11,6 +11,7 @@ const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
 const fake = {
   github: `ghp_${"a1B2".repeat(9)}`, aws: `AKIA${"Q7".repeat(8)}`, openai: `sk-${"z9Y8".repeat(8)}`, slack: `xoxb-${"1234567890"}-${"abcdefghij"}`,
+  githubFineGrained: ["github_pat_", "a1B2_".repeat(12)].join(""),
   jwt: `eyJ${"a".repeat(12)}.${"b".repeat(12)}.${"c".repeat(12)}`,
   pem: ["-----BEGIN RSA PRIVATE KEY-----", "MIIEow", "abc", "-----END RSA PRIVATE KEY-----"].join("\n"), // privacy-ok: a fake key for the redaction test
 };
@@ -28,6 +29,10 @@ describe("redaction [SEC-11]", () => {
     assert.equal(redact("DB_PASSWORD=hunter2hunter2 and api_key: abcd1234efgh"), "DB_PASSWORD=[redacted] and api_key: [redacted]");
     assert.equal(redact("connect to https://admin:s3cr3tpass@db.internal/app"), "connect to https://admin:[redacted]@db.internal/app"); // privacy-ok: a fake URL credential
     assert.equal(redact("Authorization: Bearer " + "x".repeat(30)), "Authorization: Bearer [redacted]");
+  });
+  it("redacts Cookie and Set-Cookie header values without consuming the next line", () => {
+    assert.equal(redact("Cookie: sid=synthetic-session; csrf=synthetic-csrf\nNext: ordinary"), "Cookie: [redacted]\nNext: ordinary");
+    assert.equal(redact("Set-Cookie: sid=synthetic-session; HttpOnly; SameSite=Lax"), "Set-Cookie: [redacted]");
   });
   it("leaves ordinary text, hashes and identifiers alone", () => {
     for (const s of ["no token needed here", "password: required", "sha256 " + "ab12".repeat(16), "task-abcdefghijklmnopqrstuvwxyz", "commit 9d9c018 on tenet/w-0001-export-greet", "PLN-001-k7q and DEC-002-abc"]) assert.equal(redact(s), s);

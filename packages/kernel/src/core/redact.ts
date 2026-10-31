@@ -7,11 +7,12 @@ const VALUE = String.raw`(?=[^\s"',;]*[\d_+/=-])[^\s"',;]{8,}`; // an assigned v
 const PATTERNS: Array<[RegExp, string]> = [
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g, "[redacted private key]"],
   [/\bAKIA[0-9A-Z]{16}\b/g, MARK],
-  [/\bgh[pousr]_[A-Za-z0-9]{30,}\b/g, MARK],
+  [/\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})\b/g, MARK],
   [/\bsk-[A-Za-z0-9_-]{20,}\b/g, MARK],
   [/\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g, MARK],
   [/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, MARK],
   [/\b(Bearer\s+)[A-Za-z0-9._~+/-]{20,}=*/gi, `$1${MARK}`],
+  [/\b((?:Set-)?Cookie:[ \t]*)[^\r\n]+/gi, `$1${MARK}`],
   [/(\b[a-z][a-z0-9+.-]{0,20}:\/\/[^\s:@/]{1,200}:)[^\s@/]{1,500}@/gi, `$1${MARK}@`], // bounded: an unbounded scheme or user part is quadratic on a long dotted run
   [new RegExp(String.raw`((?:password|passwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)[\w-]{0,40}\s{0,3}[:=]\s{0,3}["']?)${VALUE}`, "gi"), `$1${MARK}`], // no leading \w*: scanning from every word start is quadratic
 ];

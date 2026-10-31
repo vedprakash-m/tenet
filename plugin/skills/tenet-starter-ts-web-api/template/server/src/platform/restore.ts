@@ -2,8 +2,8 @@
 // where the originals move, moves the database with its -wal and -shm aside, copies the backup in and verifies it, then removes
 // the marker. A restore killed at any step leaves the marker; the server will not start until it is finished or rolled back.
 import Database from "better-sqlite3";
-import { closeSync, copyFileSync, existsSync, fsyncSync, openSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { MIGRATIONS_DIR } from "./migrate.ts";
+import { closeSync, copyFileSync, existsSync, fsyncSync, openSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { MIGRATIONS_DIR, loadMigrations, pendingMigrations } from "./migrate.ts";
 import { takeOwner } from "./owner.ts";
 
 export interface Restored { schemaVersion: string; compatibleWith: string; keptAside?: string }
@@ -14,21 +14,18 @@ interface Marker { backup: string; aside: string; at: number }
 const SUFFIXES = ["", "-wal", "-shm"] as const;
 const markerPath = (to: string) => `${to}.restore-in-progress`;
 
-const versionsOf = (db: Database.Database): string[] =>
-  (db.prepare("SELECT version FROM schema_migrations ORDER BY version").all() as Array<{ version: string }>).map((r) => r.version);
-
-/** The schema version of a database file, after it passes an integrity check and names only migrations this code knows. */
+/** The schema version of a database file, after integrity, compatible history/checksums and foreign-key checks. */
 function verified(file: string): string {
-  const known = new Set(readdirSync(MIGRATIONS_DIR).filter((f) => /^\d{4}_.+\.sql$/.test(f)));
   let copy: Database.Database | undefined;
   try {
     copy = new Database(file, { readonly: true });
     const check = copy.pragma("integrity_check", { simple: true });
     if (check !== "ok") throw new Error(`failed its integrity check: ${String(check)}`);
-    const versions = versionsOf(copy);
-    const unknown = versions.find((v) => !known.has(v));
-    if (unknown) throw new Error(`it was written by newer code (migration ${unknown}); restore it with the code that wrote it`);
-    return versions.at(-1) ?? "";
+    const rows = copy.prepare("SELECT version, checksum FROM schema_migrations ORDER BY version").all() as Array<{ version: string; checksum: string }>;
+    pendingMigrations(loadMigrations(MIGRATIONS_DIR), new Map(rows.map(row => [row.version, row.checksum])), MIGRATIONS_DIR);
+    if (!rows.length && copy.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> 'schema_migrations' LIMIT 1").get()) throw new Error("the backup has an unrecorded schema history");
+    if (copy.prepare("PRAGMA foreign_key_check").get()) throw new Error("the backup has foreign key violations");
+    return rows.at(-1)?.version ?? "";
   } catch (e) {
     throw new Error(`the backup cannot be restored: ${e instanceof Error ? e.message : String(e)}`);
   } finally {

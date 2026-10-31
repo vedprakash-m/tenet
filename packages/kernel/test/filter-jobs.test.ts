@@ -152,7 +152,7 @@ describe("guarded Git filter preparation", () => {
 
   it("times out a TERM-resistant filter and its child as a process group [CON-12, SEC-04]", async () => {
     const marker = join(scratch(), "pids");
-    const source = `const child=require('child_process').spawn(process.execPath,['-e',"process.on('SIGTERM',()=>{});setInterval(()=>{},1000)"],{stdio:'ignore'});require('fs').writeFileSync(${JSON.stringify(marker)},JSON.stringify([process.pid,child.pid]));process.on('SIGTERM',()=>{});setInterval(()=>{},1000);`;
+    const source = `const child=require('child_process').spawn(process.execPath,['-e',"process.on('SIGTERM',()=>{});setInterval(()=>{},1000)"],{stdio:'ignore'});const fs=require('fs');fs.writeFileSync(${JSON.stringify(marker + '.tmp')},JSON.stringify([process.pid,child.pid]));fs.renameSync(${JSON.stringify(marker + '.tmp')},${JSON.stringify(marker)});process.on('SIGTERM',()=>{});setInterval(()=>{},1000);`;
     const { root, g, plan } = await repository(source);
     const pending = g.commit({ ...plan, timeoutMs: 1000 });
     const pids = await waitFor(() => existsSync(marker) && JSON.parse(readFileSync(marker, "utf8")) as number[]);

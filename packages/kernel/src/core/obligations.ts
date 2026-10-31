@@ -73,7 +73,9 @@ export function deriveObligations(elements: readonly BasisElement[], tool: strin
     };
     // A revised test keeps its earlier red only if the file is unchanged, so the prior record carries over by id.
     const p = prev.get(id);
-    const same = p && p.testFile === base.testFile && p.test === base.test && p.expectation === base.expectation && JSON.stringify(p.support ?? []) === JSON.stringify(base.support ?? []);
+    const same = p && p.testFile === base.testFile && p.test === base.test && p.expectation === base.expectation &&
+      JSON.stringify(p.support ?? []) === JSON.stringify(base.support ?? []) &&
+      JSON.stringify(p.outputs ?? []) === JSON.stringify(base.outputs ?? []);
     out.push(same ? { ...base, state: p.state, baselineTestHash: p.baselineTestHash, baselineMatched: p.baselineMatched, baselineInputs: p.baselineInputs } : base);
   }
   out.push(prev.get(FULL_SUITE) ?? { id: FULL_SUITE, kind: "test", category: "affected", tool });
@@ -92,7 +94,7 @@ export function linkElement(el: BasisElement, all: readonly BasisElement[]): Bas
 }
 
 /** Support files locked with a test: those the example declares, plus the runner's own configuration (TS §9.7). */
-export const CONFIG_INPUTS = ["package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "tsconfig.json", ...["vitest", "vite", "eslint"].flatMap(tool => ["ts", "js", "mts", "mjs", "cts", "cjs"].map(ext => `${tool}.config.${ext}`))];
+export const CONFIG_INPUTS = ["package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "tsconfig.json", ...["vitest", "vite", "eslint", "playwright"].flatMap(tool => ["ts", "js", "mts", "mjs", "cts", "cjs"].map(ext => `${tool}.config.${ext}`))];
 
 /** Declared inputs participate even when Git ignores them; absences bind the baseline too. */
 export const declaredInputs = (obligations: readonly Obligation[]): string[] => [...new Set([...CONFIG_INPUTS, ...obligations.flatMap(o => [...(o.testFile ? [o.testFile] : []), ...(o.support ?? []), ...Object.keys(o.baselineInputs ?? {})])])];

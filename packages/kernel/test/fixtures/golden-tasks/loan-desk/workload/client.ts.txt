@@ -1,0 +1,50 @@
+import { CsrfResponse, SessionResponse } from "../shared/schemas.ts";
+
+export class Gate {
+  active = 0; maxActive = 0;
+  private queue: Array<() => void> = [];
+  async run<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.active >= 20) await new Promise<void>(resolve => this.queue.push(resolve));
+    else this.active++;
+    this.maxActive = Math.max(this.maxActive, this.active);
+    try { return await fn(); }
+    finally { const next = this.queue.shift(); if (next) next(); else this.active--; }
+  }
+}
+export const initialLoans = (index: number) => index < 20 ? Array.from({ length: 250 }, (_, n) => `seed-loan-${index + n * 20}`) : [];
+export interface Client { cookie: string; csrf: string; loans: string[] }
+export interface Reply { status: number; body: unknown; ms: number }
+export function transport(base: string, gate: Gate, signal: AbortSignal) {
+  return async (path: string, init: RequestInit = {}): Promise<Reply> => {
+    const started = performance.now();
+    const deadline = AbortSignal.any([signal, AbortSignal.timeout(5000)]);
+    return gate.run(async () => {
+      try {
+        const response = await fetch(base + path, { ...init, signal: deadline });
+        const body: unknown = response.status === 204 ? null : await response.json();
+        return { status: response.status, body, ms: performance.now() - started };
+      } catch { return { status: 0, body: null, ms: performance.now() - started }; }
+    });
+  };
+}
+export async function login(base: string, index: number, password: string, gate: Gate, signal: AbortSignal, onPost: () => void): Promise<Client> {
+  return gate.run(async () => {
+    const init = { signal: AbortSignal.any([signal, AbortSignal.timeout(5000)]) };
+    const pre = await fetch(base + "/api/auth/csrf", init);
+    if (pre.status !== 200) throw new Error(`csrf-status-${pre.status}`);
+    const { csrfToken } = CsrfResponse.parse(await pre.json());
+    const preCookie = pre.headers.getSetCookie().find(c => c.startsWith("pre_csrf="))?.split(";")[0];
+    if (!preCookie) throw new Error("pre-cookie-missing");
+    onPost();
+    const response = await fetch(base + "/api/auth/sign-in", { ...init, method: "POST", headers: { cookie: preCookie, "content-type": "application/json", "x-csrf-token": csrfToken }, body: JSON.stringify({ email: `workload.${index}@example.test`, password }) });
+    if (response.status !== 200) throw new Error(`signin-status-${response.status}`);
+    const session = SessionResponse.parse(await response.json());
+    const cookie = response.headers.getSetCookie().find(c => c.startsWith("sid="))?.split(";")[0];
+    if (!cookie) throw new Error("session-cookie-missing");
+    const confirmed = await fetch(base + "/api/auth/me", { ...init, headers: { cookie } });
+    if (confirmed.status !== 200) throw new Error(`session-status-${confirmed.status}`);
+    SessionResponse.parse(await confirmed.json());
+    return { cookie, csrf: session.csrfToken, loans: initialLoans(index) };
+  });
+}
+export const headers = (client: Client) => ({ cookie: client.cookie, "x-csrf-token": client.csrf });

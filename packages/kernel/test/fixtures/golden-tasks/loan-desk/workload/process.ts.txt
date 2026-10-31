@@ -1,0 +1,25 @@
+import { fork } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
+import { setTimeout as sleep } from "node:timers/promises";
+
+export function start(path: string, args: string[], env: Record<string, string | undefined>) {
+  const child = fork(path, args, { execArgv: ["--experimental-strip-types"], env, stdio: ["ignore", "ignore", "inherit", "ipc"] });
+  const closed = new Promise<void>(resolve => { child.once("exit", () => resolve()); child.once("error", () => resolve()); });
+  return { child, closed };
+}
+export function message(child: ChildProcess, kind: string): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const done = () => { clearTimeout(timer); child.off("message", got); child.off("exit", ended); child.off("error", failed); };
+    const got = (value: unknown) => { if ((value as { kind?: string })?.kind === kind) { done(); resolve(value as Record<string, unknown>); } };
+    const ended = () => { done(); reject(new Error(`workload child exited before ${kind}`)); };
+    const failed = () => { done(); reject(new Error(`workload child failed before ${kind}`)); };
+    const timer = setTimeout(() => { done(); reject(new Error(`workload child timed out waiting for ${kind}`)); }, 15_000);
+    child.on("message", got); child.once("exit", ended); child.once("error", failed);
+  });
+}
+export async function stop(owned: ReturnType<typeof start>) {
+  if (owned.child.exitCode === null && owned.child.signalCode === null) owned.child.kill("SIGTERM");
+  await Promise.race([owned.closed, sleep(3000, undefined, { ref: false })]);
+  if (owned.child.exitCode === null && owned.child.signalCode === null) owned.child.kill("SIGKILL");
+  await owned.closed;
+}

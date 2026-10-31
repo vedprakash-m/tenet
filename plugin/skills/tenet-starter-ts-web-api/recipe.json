@@ -1,13 +1,19 @@
 {
   "id": "ts-web-api",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "sentinel": "tenet-starter-app",
-  "checks": ["tsc", "eslint", "e2e"],
-  "lockfileSha256": "2de0d01f0e804cc319745a6a186cb6af146b8c0472b33a5e82f22622e7fa4fd4",
+  "checks": [
+    "tsc",
+    "eslint",
+    "e2e"
+  ],
+  "lockfileSha256": "1ef193bac3c115268d6b21f65014761f809783fa2fa4bee8a4838f9f309f9f77",
   "protectedPaths": [
     "server/src/platform/auth/*",
     "server/src/platform/session/*",
-    "server/migrations/*"
+    "server/migrations/*",
+    "server/src/platform/admission.ts",
+    "server/src/platform/rate-metadata.ts"
   ],
   "install": [
     [

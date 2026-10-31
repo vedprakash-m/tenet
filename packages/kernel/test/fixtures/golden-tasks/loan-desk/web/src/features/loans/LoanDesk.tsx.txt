@@ -1,0 +1,94 @@
+import { useEffect, useRef, useState } from "react";
+import { AdminLoanResponse, ItemResponse, LoanResponse, Page } from "../../../../shared/schemas.ts";
+import type { SessionResponse } from "../../../../shared/schemas.ts";
+import { errorMessage, request } from "../../lib/api.ts";
+
+const Items = Page(ItemResponse), Loans = Page(LoanResponse), Overview = Page(AdminLoanResponse);
+
+function Availability({ items, busy, reserve }: { items: ItemResponse[]; busy: boolean; reserve: (id: string, name: string) => void }) {
+  return <><h3>Availability</h3>{items.length === 0 ? <p>No equipment is listed yet.</p> : <ul>{items.map(item => <li key={item.id}>
+    <p>{item.name} · {item.available ? "Available" : "On loan"}</p>
+    {item.available && <button disabled={busy} onClick={() => reserve(item.id, item.name)}>Reserve {item.name}</button>}
+  </li>)}</ul>}</>;
+}
+function OwnLoans({ loans, busy, giveBack }: { loans: LoanResponse[]; busy: boolean; giveBack: (id: string, name: string) => void }) {
+  return <><h3>Your loans</h3>{loans.length === 0 ? <p>You have no loans.</p> : <ul>{loans.map(loan => <li key={loan.id}>
+    <p>{loan.itemName} · {loan.returnedAt === null ? "Active" : "Returned"}</p>
+    {loan.returnedAt === null && <button disabled={busy} onClick={() => giveBack(loan.id, loan.itemName)}>Return {loan.itemName}</button>}
+  </li>)}</ul>}</>;
+}
+function Borrowers({ loans }: { loans: AdminLoanResponse[] }) {
+  return loans.length === 0 ? <p>No loans have been recorded.</p> : <ul>{loans.map(loan => <li key={loan.id}>{loan.itemName} · {loan.borrower.email} · {loan.returnedAt === null ? "Active" : "Returned"}</li>)}</ul>;
+}
+const size = 25;
+
+export function LoanDesk({ session }: { session: SessionResponse }) {
+  const [items, setItems] = useState<ReturnType<typeof Items.parse> | null>(null);
+  const [loans, setLoans] = useState<ReturnType<typeof Loans.parse> | null>(null);
+  const [overview, setOverview] = useState<ReturnType<typeof Overview.parse> | null>(null);
+  const [offset, setOffset] = useState({ items: 0, loans: 0, overview: 0 });
+  const [retry, setRetry] = useState(0), [loading, setLoading] = useState(true), [busy, setBusy] = useState(false);
+  const [issue, setIssue] = useState<{ message: string } | null>(null), [confirmation, setConfirmation] = useState("");
+  const pending = useRef(false), alert = useRef<HTMLDivElement>(null), heading = useRef<HTMLHeadingElement>(null);
+  const admin = session.user.role === "admin";
+  useEffect(() => { heading.current?.focus(); }, []);
+  useEffect(() => { if (issue) alert.current?.focus(); }, [issue]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true); setIssue(null);
+    const query = (start: number) => `?limit=${size}&offset=${start}`;
+    async function load() {
+      // StrictMode can dispose this view before its first read; do not dispatch an already abandoned load.
+      await Promise.resolve();
+      if (controller.signal.aborted) return;
+      const [nextItems, nextLoans, nextOverview] = await Promise.all([
+      request(`/api/items${query(offset.items)}`, { signal: controller.signal }).then(body => Items.parse(body)),
+      request(`/api/loans${query(offset.loans)}`, { signal: controller.signal }).then(body => Loans.parse(body)),
+      admin ? request(`/api/admin/loans${query(offset.overview)}`, { signal: controller.signal }).then(body => Overview.parse(body)) : null,
+    ]);
+      if (!controller.signal.aborted) { setItems(nextItems); setLoans(nextLoans); setOverview(nextOverview); }
+    }
+    void load().catch(error => { if (!controller.signal.aborted) setIssue({ message: errorMessage(error) }); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [admin, offset, retry]);
+
+  async function change(path: string, message: string) {
+    if (pending.current) return;
+    pending.current = true; setBusy(true); setIssue(null); setConfirmation("");
+    try {
+      LoanResponse.parse(await request(path, { method: "POST", headers: { "x-csrf-token": session.csrfToken } }));
+      // Success is visible only after all three views have been independently re-read.
+      const [nextItems, nextLoans, nextOverview] = await Promise.all([
+        request(`/api/items?limit=${size}&offset=${offset.items}`).then(body => Items.parse(body)),
+        request(`/api/loans?limit=${size}&offset=${offset.loans}`).then(body => Loans.parse(body)),
+        admin ? request(`/api/admin/loans?limit=${size}&offset=${offset.overview}`).then(body => Overview.parse(body)) : null,
+      ]);
+      setItems(nextItems); setLoans(nextLoans); setOverview(nextOverview); setConfirmation(message);
+      heading.current?.focus();
+    } catch (error) { setIssue({ message: `${errorMessage(error)} Refresh equipment to check the current state before trying again.` }); }
+    finally { pending.current = false; setBusy(false); }
+  }
+  function pages(key: keyof typeof offset, total: number) {
+    return <div aria-label={`${key} pages`}>
+      <button disabled={busy || loading || offset[key] === 0} onClick={() => setOffset(current => ({ ...current, [key]: Math.max(0, current[key] - size) }))}>Previous {key}</button>{" "}
+      <button disabled={busy || loading || offset[key] + size >= total} onClick={() => setOffset(current => ({ ...current, [key]: current[key] + size }))}>Next {key}</button>
+      <p>Page {Math.floor(offset[key] / size) + 1} · {total} total</p>
+    </div>;
+  }
+  return <section id="equipment" aria-labelledby="equipment-title">
+    <h2 id="equipment-title" ref={heading} tabIndex={-1}>Equipment</h2>
+    <p>Reserve available equipment and return your own loans.</p>
+    {issue && <div className="notice" role="alert" tabIndex={-1} ref={alert}>{issue.message}</div>}
+    <p aria-live="polite">{loading ? "Loading equipment…" : busy ? "Confirming the change…" : confirmation}</p>
+    <button disabled={busy || loading} onClick={() => { setConfirmation(""); setRetry(n => n + 1); }}>Refresh equipment</button>
+    {!loading && !issue && <>
+      {items && <><Availability items={items.items} busy={busy} reserve={(id, name) => { void change(`/api/items/${encodeURIComponent(id)}/reserve`, `${name} reserved.`); }} />{pages("items", items.total)}</>}
+      {loans && <><OwnLoans loans={loans.items} busy={busy} giveBack={(id, name) => { void change(`/api/loans/${encodeURIComponent(id)}/return`, `${name} returned.`); }} />{pages("loans", loans.total)}</>}
+      {overview && <section aria-labelledby="overview-title"><h3 id="overview-title">Loan overview</h3>
+        <Borrowers loans={overview.items} />
+        {pages("overview", overview.total)}
+      </section>}
+    </>}
+  </section>;
+}

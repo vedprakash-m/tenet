@@ -1,0 +1,49 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { expect, it, vi } from "vitest";
+import { seed } from "../../workload/seed.ts";
+import { buildApp } from "../src/app.ts";
+import { loadConfig } from "../src/platform/config.ts";
+import { openDb } from "../src/platform/db.ts";
+import { createSession } from "../src/platform/session/session.ts";
+
+it("bounds materialized browse rows by its page and retains fresh private availability at full scale [QLT-12]", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "loan-browse-bound-")), path = join(directory, "app.db");
+  await seed(path, "synthetic seed password");
+  const db = openDb(path), config = loadConfig({ NODE_ENV: "test", LOG_LEVEL: "silent", DATABASE_URL: path });
+  const signed = createSession(db, "user-0", config.cookieSecret, Date.now());
+  const app = await buildApp(config, { db });
+  const materialized: number[] = [], prepare = db.prepare.bind(db);
+  // Observe the actual driver output without replacing results or depending on SQL spelling.
+  const observer = vi.spyOn(db, "prepare").mockImplementation(sql => {
+    const statement = prepare(sql), all = statement.all.bind(statement);
+    Object.defineProperty(statement, "all", { value: (...params: unknown[]) => {
+      const rows = all(...params); materialized.push(rows.length); return rows;
+    } });
+    return statement;
+  });
+  const cookies = { sid: signed.cookie }, headers = { "x-csrf-token": signed.session.csrf };
+  try {
+    for (const offset of [0, 4990, 9990]) {
+      const response = await app.inject({ method: "GET", url: `/api/items?limit=25&offset=${offset}`, cookies });
+      expect(response.statusCode).toBe(200);
+      const body = response.json() as { items: Array<{ id: string; name: string; available: boolean }>; total: number };
+      expect(body.total).toBe(10000); expect(body.items).toHaveLength(Math.min(25, 10000 - offset));
+      for (const item of body.items) {
+        const id = Number(item.id.slice("item-".length));
+        expect(item.available).toBe(!(id >= 1 && id <= 5000));
+        expect(Object.keys(item).sort()).toEqual(["available", "id", "name"]);
+      }
+      expect(Math.max(...materialized)).toBeLessThanOrEqual(25);
+    }
+    const reserved = await app.inject({ method: "POST", url: "/api/items/item-0/reserve", cookies, headers });
+    expect(reserved.statusCode).toBe(200);
+    const page = await app.inject({ method: "GET", url: "/api/items?limit=25", cookies });
+    expect(page.json().items.find((item: { id: string }) => item.id === "item-0").available).toBe(false);
+    expect((await app.inject({ method: "POST", url: `/api/loans/${reserved.json().id}/return`, cookies, headers })).statusCode).toBe(200);
+    const fresh = await app.inject({ method: "GET", url: "/api/items?limit=25", cookies });
+    expect(fresh.json().items.find((item: { id: string }) => item.id === "item-0").available).toBe(true);
+    expect(materialized.length).toBeGreaterThan(0); expect(Math.max(...materialized)).toBeLessThanOrEqual(25);
+  } finally { observer.mockRestore(); await app.close(); db.close(); rmSync(directory, { recursive: true, force: true }); }
+});

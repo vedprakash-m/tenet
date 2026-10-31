@@ -1,0 +1,27 @@
+// Frozen schema-1 builder: no current migrate/auth/seed helpers. Only synthetic fixture data.
+import { createHash, createHmac } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import Database from "better-sqlite3";
+
+export const priorNow = 1_700_000_000_000;
+export const priorPassword = ["prior", "schema", "fixture", "password"].join(" ");
+const checksum = "bab12a741fea06b20c48f2d751932a3108a95aa752a67ae7af8d7a13b899e57c";
+const oldHash = "scrypt$32768$8$1$ABEiM0RVZneImaq7zN3u/w==$nOLpf3mTBmGlG3zKGM2aeSDUfkxSDet5wYd77eou9vs=";
+
+export function buildSchemaV1(path: string, secret: string) {
+  const sql = readFileSync(join(import.meta.dirname, "schema-v1.sql"), "utf8");
+  if (createHash("sha256").update(sql).digest("hex") !== checksum) throw new Error("the frozen schema-1 fixture changed");
+  const db = new Database(path);
+  const id = "11".repeat(32), csrf = "22".repeat(32);
+  try {
+    db.pragma("journal_mode = WAL"); db.pragma("foreign_keys = ON");
+    db.exec(sql);
+    db.exec("CREATE TABLE schema_migrations (version TEXT PRIMARY KEY, checksum TEXT NOT NULL, applied_at INTEGER NOT NULL)");
+    db.prepare("INSERT INTO schema_migrations VALUES (?, ?, ?)").run("0001_init.sql", checksum, priorNow);
+    for (const role of ["admin", "member"]) db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, ?)").run(`prior-${role}`, `prior.${role}@example.test`, role, oldHash, priorNow);
+    db.prepare("INSERT INTO sessions VALUES (?, ?, ?, ?, ?, ?)").run(id, "prior-member", csrf, priorNow, priorNow, priorNow + 7 * 24 * 3600_000);
+    return { cookie: `${id}.${createHmac("sha256", secret).update(id).digest("base64url")}`, csrf,
+      users: db.prepare("SELECT * FROM users ORDER BY id").all(), sessions: db.prepare("SELECT * FROM sessions ORDER BY id").all() };
+  } finally { db.close(); }
+}

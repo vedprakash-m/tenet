@@ -133,7 +133,7 @@ export const REASONS = {
 
 export type ReasonCode = keyof typeof REASONS;
 
-export const isReasonCode = (c: string): c is ReasonCode => c in REASONS;
+export const isReasonCode = (c: string): c is ReasonCode => Object.hasOwn(REASONS, c);
 
 /** Build a reason; `detail` extends the registry meaning with the specific fact, `note` marks non-blocking ones. */
 export function reason(code: ReasonCode, detail?: string, opts: { note?: boolean; refs?: string[] } = {}): Reason {

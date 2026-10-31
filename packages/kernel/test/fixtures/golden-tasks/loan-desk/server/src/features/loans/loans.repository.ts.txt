@@ -17,3 +17,9 @@ export interface LoanWithItem extends LoanRow { item_name: string }
 export const listAllLoans = (db: Db, limit: number, offset: number): LoanWithItem[] =>
   db.prepare("SELECT l.*, i.name AS item_name FROM loans l JOIN items i ON i.id = l.item_id ORDER BY l.reserved_at DESC LIMIT ? OFFSET ?").all(limit, offset) as LoanWithItem[];
 export const countAllLoans = (db: Db): number => (db.prepare("SELECT COUNT(*) AS n FROM loans").get() as { n: number }).n;
+
+/** An actor-scoped read; never retrieve all borrowers and filter them in the client. */
+export const listOwnLoans = (db: Db, userId: string, limit: number, offset: number): LoanWithItem[] =>
+  db.prepare("SELECT l.*, i.name AS item_name FROM loans l JOIN items i ON i.id = l.item_id WHERE l.user_id = ? ORDER BY l.reserved_at DESC, l.id LIMIT ? OFFSET ?").all(userId, limit, offset) as LoanWithItem[];
+export const countOwnLoans = (db: Db, userId: string): number =>
+  (db.prepare("SELECT COUNT(*) AS n FROM loans WHERE user_id = ?").get(userId) as { n: number }).n;

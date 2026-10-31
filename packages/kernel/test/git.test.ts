@@ -308,7 +308,7 @@ describe("git: commit through a temporary index", () => {
     chmodSync(join(root, ".git/hooks/pre-commit"), 0o755);
     write(root, "src/a.ts", "export const a = 2;\n");
     const out = await g.commit({ paths: ["src/a.ts"], deleted: [], message: "m", parent: git(root, "rev-parse", "HEAD"), timeoutMs: 1000 });
-    assert.equal(out.ok, true);
+    assert.equal(out.ok, true, JSON.stringify(out));
     assert.deepEqual(out.foreign, ["hook-made.txt"]);
   });
 

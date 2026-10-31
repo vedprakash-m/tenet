@@ -11,7 +11,10 @@ import { cleanup, initRepo, tmp, write } from "./helpers.ts";
 
 const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
-const ENV = { PATH: process.env.PATH, HOME: process.env.HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" };
+const ENV = {
+  PATH: process.env.PATH, HOME: process.env.HOME, GIT_EXEC_PATH: process.env.GIT_EXEC_PATH,
+  GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
+};
 const g = (cwd: string, ...args: string[]) =>
   execFileSync("git", ["-c", "protocol.file.allow=always", "-c", "user.name=t", "-c", "user.email=t@example.com", ...args], { cwd, encoding: "utf8", env: ENV }).trim();
 const repo = (): string => {

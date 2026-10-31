@@ -1,0 +1,45 @@
+export type Kind = "list" | "reserve" | "return";
+export interface Bucket { attempts: number; statuses: Record<string, number>; successfulMs: number[]; allMs: number[]; unexpected: number }
+const bucket = (): Bucket => ({ attempts: 0, statuses: {}, successfulMs: [], allMs: [], unexpected: 0 });
+export const buckets = (): Record<Kind, Bucket> => ({ list: bucket(), reserve: bucket(), return: bucket() });
+export const operation = (index: number): Kind => index % 10 < 7 ? "list" : index % 10 < 9 ? "reserve" : "return";
+export function percentiles(values: number[]) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const at = (fraction: number) => sorted.length ? sorted[Math.ceil(sorted.length * fraction) - 1]! : null;
+  return { samples: sorted.length, p50: at(.5), p95: at(.95), p99: at(.99) };
+}
+export function summarize(all: Record<Kind, Bucket>) {
+  return Object.fromEntries(Object.entries(all).map(([kind, bucket]) => [kind, {
+    attempts: bucket.attempts, statuses: bucket.statuses, unexpected: bucket.unexpected,
+    unexpectedRate: bucket.attempts ? bucket.unexpected / bucket.attempts : null,
+    successful: percentiles(bucket.successfulMs), allAttempts: percentiles(bucket.allMs),
+  }]));
+}
+export interface Metrics { peakRssBytes: number; eventLoopSamples: number; eventLoopP95Ms: number | null }
+function operationReasons(kind: string, bucket: Bucket) {
+  const reasons: string[] = [], p95 = percentiles(bucket.successfulMs).p95;
+  if (p95 === null) reasons.push(`${kind}-success-unobserved`);
+  else if (p95 > 200) reasons.push(`${kind}-p95-over-200ms`);
+  if (bucket.unexpected) reasons.push(`${kind}-unexpected-errors`);
+  return reasons;
+}
+function metricReasons(metrics: Metrics) {
+  const reasons: string[] = [];
+  if (!Number.isFinite(metrics.peakRssBytes) || metrics.peakRssBytes > 300_000_000 || metrics.peakRssBytes <= 0) reasons.push("server-memory-target-failed");
+  if (!Number.isFinite(metrics.eventLoopSamples) || metrics.eventLoopSamples < 1 || metrics.eventLoopP95Ms === null || !Number.isFinite(metrics.eventLoopP95Ms)) reasons.push("event-loop-unobserved");
+  else if (metrics.eventLoopP95Ms > 200) reasons.push("event-loop-p95-over-200ms");
+  return reasons;
+}
+function coverageReasons(validBursts: number, burstCount: number, duplicates: number, writer: boolean, busy: number) {
+  const reasons: string[] = [];
+  if (burstCount !== 12 || validBursts !== 12) reasons.push("five-way-bursts-incomplete");
+  if (duplicates) reasons.push("double-booking");
+  if (!writer || busy < 1) reasons.push("busy-degradation-unobserved");
+  return reasons;
+}
+export function judge(mode: string, all: Record<Kind, Bucket>, metrics: Metrics, validBursts: number, burstCount: number, duplicateActiveItems: number, writerObserved: boolean, busyObserved: number) {
+  const reasons = [...Object.entries(all).flatMap(([kind, bucket]) => operationReasons(kind, bucket)), ...metricReasons(metrics), ...coverageReasons(validBursts, burstCount, duplicateActiveItems, writerObserved, busyObserved)];
+  if (mode !== "reference") reasons.push("diagnostic-smoke-only");
+  if (Object.values(all).reduce((sum, b) => sum + b.successfulMs.length, 0) < 5000) reasons.push("insufficient-successful-samples");
+  return { referencePass: reasons.length === 0, reasons };
+}

@@ -133,7 +133,7 @@ function fencedByUncertainty(ports: Ports, verb: Verb, tx: Tx, current: State, r
   if (current !== tx.state) tx.publish(current);
   const effects = { completed: recovered.completed, uncertain: recovered.uncertain };
   const message = "An interrupted operation is still uncertain; dependent work is fenced until it is reconciled.";
-  return { res: render(ports, verb.name, { exit: 2, effects, reasons: [{ code: "effect-uncertain", message }] }, current) };
+  return { res: render(ports, verb.name, { exit: 2, effects, reasons: [{ code: "effect-uncertain", message }] }, tx.state) };
 }
 
 /** What recovery and shared-file reconciliation found goes into the answer, ahead of the verb's own reasons and effects. */

@@ -5,7 +5,7 @@ import { hashOf } from "../core/ids.ts";
 import { declaredOutputs, movedNote } from "../core/outputs.ts";
 import { baselineDefinitionMatches, supportOf, wantsRed } from "../core/obligations.ts";
 import { receiptsFrom, settleReruns, staticReceipt } from "../core/receipts.ts";
-import type { RunFacts } from "../core/receipts.ts";
+import type { ReceiptContext, RunFacts } from "../core/receipts.ts";
 import { carryDispositions, netAttention } from "../core/review.ts";
 import type { FileChange } from "../core/review.ts";
 import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
@@ -42,21 +42,27 @@ export const isE2e = (ob: Obligation): boolean => ob.tool === "playwright";
 export const staticReport = (runDir: string, tool: string): string => join(runDir, `${tool}.json`);
 export const e2eReport = (runDir: string): string => join(runDir, "playwright.json");
 
+const unexecuted = (run: Run): RunFacts => ({
+  timedOut: false, durationMs: 0, startedAt: run.ports.clock.now(), raw: null, after: run.facts.candidate, ran: false,
+});
+
+/** Every tool's receipts bind to the same prepared candidate and run. */
+function receiptContext(run: Run, argv: string[]): ReceiptContext {
+  const { ports, facts, stage, scope, runId, runDir, executionEnvelope } = run;
+  return {
+    stage, scope, id: run.id, candidate: facts.candidate, runId, runDir, argv, before: facts.candidate,
+    versions: ports.stack.fingerprint(ports.root), executionEnvelope, missing: new Set<string>(),
+  };
+}
+
 /** A static check is judged by its own run, on the same candidate as the tests. */
 function staticReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
-  const { ports, facts, runId, runDir, stage, scope } = run;
-  const versions = ports.stack.fingerprint(ports.root);
+  const { ports, runDir } = run;
   return run.toRun.filter((ob) => isStatic(ob) && !isE2e(ob)).map((ob, i) => {
     const tool = ob.tool as StaticTool;
     const argv = ports.stack.staticArgv(ports.root, tool, staticReport(runDir, tool)) ?? [];
-    const candidate = facts.candidate;
-    const ctx = {
-      stage, scope, id: run.id, candidate, runId, runDir, argv, versions, before: candidate,
-      executionEnvelope: run.executionEnvelope,
-      missing: new Set<string>(), population: facts.inv.entries,
-    };
-    const notRun: RunFacts = { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, after: candidate, ran: false };
-    const ran = o.statics[ob.id] ?? notRun;
+    const ctx = { ...receiptContext(run, argv), population: run.facts.inv.entries };
+    const ran = o.statics[ob.id] ?? unexecuted(run);
     const norm = ports.stack.normalizeStatic(tool, { exit: ran.exit, raw: ran.raw }, ports.root);
     return staticReceipt(ran, norm, ob, firstIndex + i, ctx);
   });
@@ -65,26 +71,22 @@ function staticReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
 /** The e2e obligation is judged like a test (real pass/fail counts), but from its own separate Playwright run,
  * never the shared Vitest report (EVD-13). */
 function e2eReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
-  const { ports, facts, runId, runDir, stage, scope } = run;
+  const { ports, runId, runDir } = run;
   const e2eObs = run.toRun.filter(isE2e);
   if (!e2eObs.length) return [];
-  const candidate = facts.candidate;
-  const notRun: RunFacts = { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, after: candidate, ran: false };
-  const ran = o.statics[e2eObs[0]!.id] ?? notRun;
+  const ran = o.statics[e2eObs[0]!.id] ?? unexecuted(run);
   const norm = ports.stack.normalizeE2e({ exit: ran.exit, raw: ran.raw }, ports.root);
-  return receiptsFrom(ran, norm, e2eObs, {
-    stage, scope, id: run.id, candidate, runId, runDir, argv: ports.stack.e2eArgv(ports.root, e2eReport(runDir)) ?? [],
-    before: candidate, versions: ports.stack.fingerprint(ports.root), executionEnvelope: run.executionEnvelope, missing: new Set<string>(),
-  }).map((r, i) => ({ ...r, id: `RC-${runId}-${firstIndex + i + 1}` }));
+  const ctx = receiptContext(run, ports.stack.e2eArgv(ports.root, e2eReport(runDir)) ?? []);
+  ctx.versions = { ...ctx.versions, tool: `playwright@${ctx.versions.static.playwright ?? "none"}`, reporter: "playwright-json" };
+  return receiptsFrom(ran, norm, e2eObs, ctx).map((r, i) => ({ ...r, id: `RC-${runId}-${firstIndex + i + 1}` }));
 }
 
 /** The test obligations' receipts for one run of the test runner; a rerun is read the same way, over fewer obligations. */
 function testReceipts(run: Run, facts: RunFacts, tests: Obligation[], toExecute: "all" | string[], report: string): Receipt[] {
-  const { ports, facts: world, runId, runDir, stage, scope } = run;
+  const { ports } = run;
   const norm: Normalized | null = facts.raw === null ? null : ports.stack.normalize(facts.raw, ports.root);
   return receiptsFrom(facts, norm, tests, {
-    stage, scope, id: run.id, candidate: world.candidate, runId, runDir, argv: ports.stack.argv(toExecute, report), before: world.candidate,
-    versions: ports.stack.fingerprint(ports.root), executionEnvelope: run.executionEnvelope, missing: new Set(run.missing.map((m) => m.id)),
+    ...receiptContext(run, ports.stack.argv(toExecute, report)), missing: new Set(run.missing.map((m) => m.id)),
   });
 }
 

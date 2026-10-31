@@ -12,7 +12,7 @@ import { FsProject } from "./project-fs.ts";
 import { nestsTooDeep } from "./report-bounds.ts";
 import { normalizePlaywright, playwrightArgv } from "./playwright.ts";
 
-const ADAPTER = "node-ts@10"; // 10: reruns of a failed required check can end flaky (EVD-08)
+const ADAPTER = "node-ts@11"; // 11: Playwright version, configuration and receipt provenance bind evidence.
 function installedMetadata(path: string, kind: "tool" | "dependency"): { record: Record<string, any>; digest: string } | null {
   let descriptor = -1;
   try {
@@ -420,7 +420,8 @@ export function createStack(): Stack {
     },
     staticOutput: (tool, r) => (tool === "tsc" ? r.stdout : r.report),
     normalizeStatic,
-    e2eArgv: (root, report) => playwrightArgv(root, report),
+    e2eArgv: (root, report) => playwrightArgv(root, report,
+      String(metadata(root, exclusions).json("node_modules/@playwright/test/package.json")?.version ?? "none")),
     normalizeE2e: (out, root) => normalizePlaywright(out.raw, root),
     adapterVersion: () => ADAPTER,
     fingerprint: (root): ToolVersions => ({
@@ -430,8 +431,8 @@ export function createStack(): Stack {
       adapter: ADAPTER,
       dependencies: metadata(root, exclusions).installed(),
       static: Object.fromEntries(
-        (["tsc", "eslint"] as const).map((t) => {
-          const pkg = metadata(root, exclusions).json(`node_modules/${t === "tsc" ? "typescript" : "eslint"}/package.json`);
+        ([["tsc", "typescript"], ["eslint", "eslint"], ["playwright", "@playwright/test"]] as const).map(([t, name]) => {
+          const pkg = metadata(root, exclusions).json(`node_modules/${name}/package.json`);
           return [t, String(pkg?.version ?? "none")];
         }),
       ),

@@ -5,6 +5,22 @@ import { signIn, testApp } from "../../../test/helpers.ts";
 const auth = (csrf: string, sid: string) => ({ cookies: { sid }, headers: { "x-csrf-token": csrf } });
 
 describe("loans: browse, reserve, return, admin overview", () => {
+  it("lists only the current member's loans after reload, with bounded pagination and no borrower identity", async () => {
+    const { app } = await testApp();
+    const ada = await signIn(app), ben = await signIn(app, "ben@example.test");
+    const loan = (await app.inject({ method: "POST", url: "/api/items/i1/reserve", ...auth(ada.csrf!, ada.sid!) })).json();
+    await app.inject({ method: "POST", url: "/api/items/i2/reserve", ...auth(ben.csrf!, ben.sid!) });
+    const mine = await app.inject({ method: "GET", url: "/api/loans?limit=1&offset=0", cookies: { sid: ada.sid! } });
+    expect(mine.statusCode).toBe(200);
+    expect(mine.json()).toEqual({ items: [loan], total: 1, limit: 1, offset: 0 });
+    expect((await app.inject({ method: "GET", url: "/api/loans?userId=ben", cookies: { sid: ada.sid! } })).json().items).toEqual([loan]);
+    expect((await app.inject({ method: "GET", url: "/api/loans?offset=1", cookies: { sid: ada.sid! } })).json().items).toEqual([]);
+    expect((await app.inject({ method: "GET", url: "/api/loans?limit=101", cookies: { sid: ada.sid! } })).statusCode).toBe(400);
+    expect((await app.inject({ method: "GET", url: "/api/loans" })).statusCode).toBe(401);
+    await app.inject({ method: "POST", url: `/api/loans/${loan.id}/return`, ...auth(ada.csrf!, ada.sid!) });
+    expect((await app.inject({ method: "GET", url: "/api/loans", cookies: { sid: ada.sid! } })).json().items[0].returnedAt).not.toBeNull();
+  });
+
   it("refuses to browse while signed out", async () => {
     const { app } = await testApp();
     expect((await app.inject({ method: "GET", url: "/api/items" })).statusCode).toBe(401);

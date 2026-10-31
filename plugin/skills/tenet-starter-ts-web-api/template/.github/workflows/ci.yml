@@ -5,6 +5,9 @@ permissions:
   contents: read
 jobs:
   check:
+    strategy:
+      matrix:
+        node: [22.12.0, 24]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -12,9 +15,13 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 24
-      - run: npm ci --ignore-scripts --no-audit
+          node-version: ${{ matrix.node }}
+      - run: npm ci --ignore-scripts --no-audit --engine-strict
       - run: npm rebuild better-sqlite3
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run build
+      - run: npm run --silent openapi > openapi.json
+      - run: node node_modules/@playwright/test/cli.js install --with-deps chromium
+      - run: npm run e2e

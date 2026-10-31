@@ -77,6 +77,109 @@ const waitUntil = async (fn, what) => {
  for (;;) { const found = fn(); if (found) return found; assert.ok(Date.now() < end, `timed out: ${what}`); await new Promise(r => setTimeout(r, 25)); }
 };
 try {
+ for (const point of ['normal', 'after-intent', 'after-purge', 'after-first', 'after-second', 'after-result']) {
+  const forgetting = create(), text = 'UAT-ORCHID-lesson-96341', quote = 'UAT-ORCHID-quote-25739';
+  const h = call(forgetting, 'open', { profile: 'plan', request: 'forget a project convention safely' }).handle;
+  const id = call(forgetting, 'decide', { h, kind: 'lesson', quote, propose: { statement: text } }).data.id;
+  const packet = call(forgetting, 'packet', { h, role: 'analyst', analystRole: 'researcher', question: 'inspect project conventions' }).data.analyst.manifest;
+  const base = join(packet, '../..'); roots.push(base);
+  assert.ok(readFileSync(packet, 'utf8').includes(text));
+  const input = { h, kind: 'forget', target: id, answers: { 'forget-confirm': 'yes' } };
+  if (point === 'normal') {
+   const dir = join(forgetting, '.tenet'); chmodSync(dir, 0o755);
+   for (const name of ['marker', 'state', 'state.prev', 'log']) if (existsSync(join(dir, name))) chmodSync(join(dir, name), 0o644);
+   rmSync(join(dir, '.gitignore'));
+   const result = call(forgetting, 'decide', input);
+   assert.equal(result.exit, 0, JSON.stringify(result));
+   assert.equal(statSync(dir).mode & 0o777, 0o700);
+   assert.equal(readFileSync(join(dir, '.gitignore'), 'utf8'), '*\n');
+   for (const name of ['marker', 'state', 'state.prev', 'log']) assert.equal(statSync(join(dir, name)).mode & 0o777, 0o600);
+  } else {
+   const killed = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-forget.mjs'), bundle, point, 'decide'], { cwd: forgetting, env, input: JSON.stringify(input), encoding: 'utf8' });
+   assert.equal(killed.signal, 'SIGKILL', killed.stderr + killed.stdout);
+  }
+  const result = call(forgetting, 'decide', { h, kind: 'config', target: 'style', propose: { value: 'concise' } });
+  assert.equal(result.exit, 0, JSON.stringify(result));
+  if (point !== 'normal' && point !== 'after-result') assert.ok(result.effects.completed.includes('an interrupted forget was finished'));
+  const state = JSON.parse(readFileSync(join(forgetting, '.tenet/state'), 'utf8'));
+  assert.equal(result.revision, state.revision);
+  assert.equal(Object.values(state.work)[0].session.last.response.revision, state.revision);
+  const records = readFileSync(join(forgetting, '.tenet/log'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
+  assert.equal(records.filter(e => e.kind === 'call').at(-1).revision, state.revision);
+  assert.deepEqual(records.filter(e => e.effect === 'forget').map(e => e.kind), ['intent', 'result']);
+  const walk = dir => existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]) : [];
+  for (const path of [...walk(join(forgetting, '.tenet')), ...walk(base)]) {
+   const bytes = readFileSync(path, 'utf8'); assert.equal(bytes.includes(text) || bytes.includes(quote), false, path);
+  }
+  assert.equal(call(forgetting, 'decide', { ...input, again: true }).exit, 2);
+  observations.push({ scenario: `built crash-safe forget ${point}`, killedAtBoundary: point !== 'normal', packetsAndBackupPurged: true, revisionMatchesDisk: true });
+ }
+ for (const outputs of [['coverage/**'], []]) {
+  const definition = create(), initialOutputs = outputs.length ? [] : ['coverage/**'];
+  const h = call(definition, 'open', { profile: 'feature', request: 'refine declared check outputs', lane: 'quick' }).handle;
+  const proposed = { ...basis, elements: basis.elements.map(e => e.kind === 'example' ? { ...e, outputs: initialOutputs } : e) };
+  const first = call(definition, 'decide', { h, kind: 'basis', propose: proposed });
+  assert.equal(first.exit, 0, JSON.stringify(first));
+  write(definition, 'src/greet.test.ts', 'import {expect,it} from "vitest";import {greet} from "./greet.ts";it("greets",()=>expect(greet("Ada")).toBe("Hello, Ada!"));\n');
+  assert.equal(call(definition, 'check', { h, stage: 'baseline' }).data.receipts[0].status, 'fail');
+  const refined = { ...proposed, elements: proposed.elements.map(e => ({ ...e, ref: first.data.ids[e.ref], ...(e.of ? { of: first.data.ids[e.of] } : {}), ...(e.kind === 'example' ? { outputs } : {}) })) };
+  assert.equal(call(definition, 'decide', { h, kind: 'basis', propose: refined }).exit, 0);
+  write(definition, 'src/greet.ts', 'export const greet=(name:string):string=>`Hello, ${name}!`;\n');
+  call(definition, 'check', { h, stage: 'candidate' }, ['--touched=src/greet.ts']);
+  const why = call(definition, 'inspect', { h, view: 'why' });
+  assert.notEqual(why.data.endpoint, 'checked-local');
+  assert.ok(why.reasons.some(r => r.code === 'no-distinguishing-red'), JSON.stringify(why));
+  let state = JSON.parse(readFileSync(join(definition, '.tenet/state'), 'utf8'));
+  assert.equal(state.locks.some(l => l.path === 'src/greet.test.ts'), false);
+  write(definition, 'src/greet.ts', 'export const greet = (_name: string): string => "";\n');
+  const freshRed = call(definition, 'check', { h, stage: 'baseline' }, ['--again']);
+  assert.equal(freshRed.next[0]?.action, 'implement', JSON.stringify(freshRed));
+  write(definition, 'src/greet.ts', 'export const greet=(name:string):string=>`Hello, ${name}!`;\n');
+  const fresh = call(definition, 'check', { h, stage: 'candidate' }, ['--touched=src/greet.ts', '--again']);
+  assert.equal(fresh.data.receipts[0].status, 'pass');
+  state = JSON.parse(readFileSync(join(definition, '.tenet/state'), 'utf8'));
+  assert.ok(state.locks.some(l => l.path === 'src/greet.test.ts'));
+  observations.push({ scenario: `built output declaration ${outputs.length ? 'addition' : 'removal'} invalidates red`, oldRedRejected: true, freshRedRestoresLocks: true });
+ }
+ for (const failure of ['unreadable-file', 'unreadable-directory', 'unwritable-directory', 'oversized-file', 'invalid-utf8']) {
+  const forgetting = create(), text = 'UAT-IRIS-lesson-48261';
+  const h = call(forgetting, 'open', { profile: 'plan', request: 'refuse incomplete forgetting' }).handle;
+  const id = call(forgetting, 'decide', { h, kind: 'lesson', quote: 'UAT-IRIS-quote-58316', propose: { statement: text } }).data.id;
+  const packet = call(forgetting, 'packet', { h, role: 'analyst', analystRole: 'researcher', question: 'inspect project conventions' }).data.analyst.manifest;
+  const manifests = join(packet, '..'), base = join(manifests, '..'); roots.push(base);
+  const original = readFileSync(packet), before = readFileSync(join(forgetting, '.tenet/state'));
+  try {
+   if (failure === 'unreadable-file') chmodSync(packet, 0o000);
+   else if (failure === 'unreadable-directory') chmodSync(manifests, 0o000);
+   else if (failure === 'unwritable-directory') chmodSync(manifests, 0o500);
+   else if (failure === 'invalid-utf8') writeFileSync(packet, Buffer.concat([original, Buffer.from([0xff])]));
+   else { const fd = openSync(packet, 'r+'); try { ftruncateSync(fd, 50 * 1024 * 1024 + 1); } finally { closeSync(fd); } }
+   const refused = call(forgetting, 'decide', { h, kind: 'forget', target: id, answers: { 'forget-confirm': 'yes' } });
+   assert.notEqual(refused.exit, 0, JSON.stringify(refused));
+   assert.deepEqual(readFileSync(join(forgetting, '.tenet/state')), before);
+   const log = readFileSync(join(forgetting, '.tenet/log'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
+   assert.deepEqual(log.filter(e => e.effect === 'forget').map(e => e.kind), ['intent']);
+  } finally {
+   chmodSync(manifests, 0o700); if (existsSync(packet)) { chmodSync(packet, 0o600); writeFileSync(packet, original); }
+  }
+  assert.equal(call(forgetting, 'decide', { h, kind: 'config', target: 'style', propose: { value: 'concise' } }).exit, 0);
+  assert.equal(existsSync(packet), false);
+  assert.equal(readFileSync(join(forgetting, '.tenet/state.prev'), 'utf8').includes(text), false);
+  observations.push({ scenario: `built forget refuses ${failure}`, lessonRetainedUntilRepair: true, intentRecoversOnce: true });
+ }
+ {
+  const uncertain = create(), h = call(uncertain, 'open', { profile: 'plan', request: 'recover before refusing' }).handle;
+  const id = call(uncertain, 'decide', { h, kind: 'lesson', quote: 'UAT-ASTER-quote-19452', propose: { statement: 'UAT-ASTER-lesson-83194' } }).data.id;
+  const killed = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-forget.mjs'), bundle, 'after-intent', 'decide'], { cwd: uncertain, env, input: JSON.stringify({ h, kind: 'forget', target: id, answers: { 'forget-confirm': 'yes' } }), encoding: 'utf8' });
+  assert.equal(killed.signal, 'SIGKILL', killed.stderr + killed.stdout);
+  const state = JSON.parse(readFileSync(join(uncertain, '.tenet/state'), 'utf8'));
+  writeFileSync(join(uncertain, '.tenet/log'), JSON.stringify({ t: new Date().toISOString(), kind: 'intent', effect: 'unrecognized-effect', id: 'uncertain-one', op: { work: Object.keys(state.work)[0] } }) + '\n', { flag: 'a' });
+  const r = call(uncertain, 'decide', { h, kind: 'config', target: 'style', propose: { value: 'concise' } });
+  assert.equal(r.exit, 2); assert.ok(r.effects.completed.includes('an interrupted forget was finished'));
+  assert.ok(r.effects.uncertain.some(x => x.includes('unrecognized-effect')));
+  assert.equal(r.revision, JSON.parse(readFileSync(join(uncertain, '.tenet/state'), 'utf8')).revision);
+  observations.push({ scenario: 'built recovery refusal uses actual published revision', realForgetKill: true, syntheticUnknownIntent: true, uncertaintyPreserved: true });
+ }
  const helpRoot = create();
  const helpCommands = [
   ['open', ['investigate', '--help']], ['decide', ['config', '--help']],
@@ -90,6 +193,47 @@ try {
  }
  assert.equal(git(helpRoot, 'status', '--porcelain'), '');
  observations.push({ scenario: 'built mutating-subcommand help is stateless', commands: helpCommands.length, stateCreated: false, gitUnchanged: true });
+ for (const verb of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+  const response = call(helpRoot, verb);
+  assert.equal(response.exit, 1, JSON.stringify(response));
+  assert.equal(response.reasons[0].code, 'unknown-verb');
+  assert.equal(existsSync(join(helpRoot, '.tenet')), false);
+ }
+ observations.push({ scenario: 'built inherited verb names produce structured usage errors without state', commands: 4 });
+ const privacyRoot = create();
+ const privacyHandle = call(privacyRoot, 'open', { profile: 'plan', request: 'record a local storage choice' }).handle;
+ const privateFiles = () => readdirSync(join(privacyRoot, '.tenet')).sort().map(name => [name, readFileSync(join(privacyRoot, '.tenet', name))]);
+ const privateBefore = privateFiles();
+ const syntheticCredential = ['ghp_', 'a'.repeat(36)].join('');
+ const refusedProposal = call(privacyRoot, 'decide', { h: privacyHandle, kind: 'decision-record', quote: 'Use SQLite',
+  propose: { title: 'Store locally', context: `Accidentally pasted: ${syntheticCredential}`, decision: 'Use SQLite' } });
+ assert.equal(refusedProposal.exit, 1, JSON.stringify(refusedProposal));
+ assert.equal(refusedProposal.reasons[0].code, 'invalid-input');
+ assert.equal(JSON.stringify(refusedProposal).includes(syntheticCredential), false);
+ assert.deepEqual(privateFiles(), privateBefore);
+ observations.push({ scenario: 'built secret-bearing proposal refuses before state, backup or journal writes' });
+ const playwrightInputs = create();
+ rmSync(join(playwrightInputs, 'node_modules')); mkdirSync(join(playwrightInputs, 'node_modules'));
+ symlinkSync(join(source, 'node_modules/vitest'), join(playwrightInputs, 'node_modules/vitest'));
+ write(playwrightInputs, 'node_modules/@playwright/test/package.json', '{"version":"1.64.1"}');
+ write(playwrightInputs, '.gitignore', 'node_modules\n.tenet/\nplaywright.config.*\n');
+ const pwCandidate = staticCandidate(playwrightInputs, 'retain exact Playwright evidence inputs');
+ focused(playwrightInputs, pwCandidate.h, pwCandidate.checked);
+ assert.equal(call(playwrightInputs, 'inspect', { h: pwCandidate.h, view: 'why' }).data.endpoint, 'checked-local');
+ const pwStatus = git(playwrightInputs, 'status', '--porcelain');
+ write(playwrightInputs, 'node_modules/@playwright/test/package.json', '{"version":"1.64.2"}');
+ assert.equal(git(playwrightInputs, 'status', '--porcelain'), pwStatus);
+ assert.ok(call(playwrightInputs, 'inspect', { h: pwCandidate.h, view: 'why' }).reasons.some(r => r.code === 'stale'));
+ observations.push({ scenario: 'built installed Playwright version change stales passing evidence without a Git change' });
+ const pwRefresh = call(playwrightInputs, 'check', { h: pwCandidate.h, stage: 'candidate' });
+ assert.equal(pwRefresh.exit, 0, JSON.stringify(pwRefresh));
+ assert.equal(call(playwrightInputs, 'inspect', { h: pwCandidate.h, view: 'why' }).data.endpoint, 'checked-local');
+ write(playwrightInputs, 'playwright.config.ts', 'export default { retries: 2 };\n');
+ assert.equal(git(playwrightInputs, 'status', '--porcelain'), pwStatus);
+ const pwStale = call(playwrightInputs, 'inspect', { h: pwCandidate.h, view: 'why' });
+ assert.ok(pwStale.reasons.some(r => r.code === 'stale'), JSON.stringify(pwStale));
+ assert.ok(pwStale.reasons.some(r => r.code === 'red-invalidated'), JSON.stringify(pwStale));
+ observations.push({ scenario: 'built ignored Playwright configuration invalidates receipts and baseline proof' });
  for (const blocker of ['state', 'state.prev', 'marker', 'migration-transition.json', 'migration-privacy.json', 'oversized-state']) {
   const compatibilityRoot = create();
   call(compatibilityRoot, 'open', { profile: 'investigate', request: 'initialize compatibility fixture' });
@@ -416,6 +560,24 @@ try {
  observations.push({ scenario: 'built starter carries the selected MIT license', licenseCopied: true });
  const scaffoldCheck = call(scaffoldReplay, 'check', { h: scaffoldHandle, stage: 'candidate' });
  assert.equal(scaffoldCheck.exit, 0, JSON.stringify(scaffoldCheck));
+ const browserReceipt = scaffoldCheck.data.receipts.find(r => r.obligation === 'OB-e2e');
+ assert.equal(browserReceipt.status, 'pass', JSON.stringify(browserReceipt));
+ assert.equal(browserReceipt.counts.executed, 12, 'all source-server, account and admission-exhaustion browser checks ran');
+ assert.equal(existsSync(join(scaffoldReplay, 'web/src/App.tsx')), true);
+ assert.equal(existsSync(join(scaffoldReplay, 'data/app.db')), false, 'browser checks never touched the development database');
+ observations.push({ scenario: 'built starter source-bound browser account journeys', browserAndServerTests: browserReceipt.counts.executed, dedicatedDatabase: true, axeAndKeyboardAssertions: true, screenReaderObserved: false });
+ const exportContract = spawnSync(process.execPath, ['--experimental-strip-types', 'server/src/openapi.ts'], {
+  cwd: scaffoldReplay, env: { ...env, NODE_ENV: 'production', PORT: 'invalid', DATABASE_URL: join(scaffoldReplay, 'data', 'must-not-open.db'), COOKIE_SECRET: 'short' }, encoding: 'utf8', timeout: 15000,
+ });
+ assert.equal(exportContract.status, 0, exportContract.stderr);
+ const apiContract = JSON.parse(exportContract.stdout);
+ assert.equal(apiContract.openapi, '3.1.0');
+ assert.equal(Object.keys(apiContract.paths).length, 6);
+ assert.deepEqual(apiContract.paths['/api/auth/me'].get.security, [{ session: [] }]);
+ assert.equal(existsSync(join(scaffoldReplay, 'data')), false, 'contract export never opens the development database');
+ observations.push({ scenario: 'built starter source-bound OpenAPI export', paths: 6, version: apiContract.openapi, ambientConfigurationIgnored: true, listenerStarted: false, compatibilityEnforced: false });
+
+
  assert.ok(scaffoldCheck.data.review, JSON.stringify({ reasons: scaffoldCheck.reasons,
   receipts: scaffoldCheck.data.receipts.map(receipt => ({ obligation: receipt.obligation,
    status: receipt.status, counts: receipt.counts, reasons: receipt.reasons })) }));

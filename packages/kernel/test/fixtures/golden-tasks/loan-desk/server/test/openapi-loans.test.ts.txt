@@ -1,0 +1,26 @@
+import { expect, it } from "vitest";
+import { testApp } from "./helpers.ts";
+
+it("exports the added loan feature, bounded pagination and borrower-private response contracts [QLT-01, QLT-06]", async () => {
+  const { app, db } = await testApp();
+  try {
+    const document = JSON.parse(JSON.stringify(app.swagger()));
+    const routes = document.paths;
+    expect(routes["/api/items"].get.security).toEqual([{ session: [] }]);
+    expect(routes["/api/loans"].get.security).toEqual([{ session: [] }]);
+    expect(routes["/api/items/{id}/reserve"].post.security).toEqual([{ session: [], csrf: [] }]);
+    expect(routes["/api/loans/{id}/return"].post.security).toEqual([{ session: [], csrf: [] }]);
+    expect(routes["/api/admin/loans"].get.description).toMatch(/admin/i);
+    expect(routes["/api/admin/loans"].get.security).toEqual([{ session: [] }]);
+    const parameters = routes["/api/items"].get.parameters;
+    expect(parameters).toContainEqual(expect.objectContaining({ name: "limit", in: "query", schema: expect.objectContaining({ minimum: 1, maximum: 100, default: 25 }) }));
+    expect(parameters).toContainEqual(expect.objectContaining({ name: "offset", in: "query", schema: expect.objectContaining({ minimum: 0, default: 0 }) }));
+    const schema = (path: string) => routes[path].get.responses[200].content["application/json"].schema;
+    expect(Object.keys(schema("/api/items").properties.items.items.properties).sort()).toEqual(["available", "id", "name"]);
+    expect(Object.keys(schema("/api/loans").properties.items.items.properties).sort()).toEqual(["id", "itemId", "itemName", "reservedAt", "returnedAt"]);
+    expect(schema("/api/loans").properties.items.items.properties.returnedAt).toMatchObject({ type: ["number", "null"] });
+    expect(schema("/api/admin/loans").properties.items.items.properties.borrower.properties).toHaveProperty("email");
+    expect(routes["/api/items/{id}/reserve"].post.parameters).toContainEqual(expect.objectContaining({ name: "id", in: "path", required: true }));
+    expect(routes["/api/items/{id}/reserve"].post.responses.default.content["application/json"].schema).toMatchObject({ properties: { correlationId: { type: "string" } } });
+  } finally { await app.close(); db.close(); }
+});

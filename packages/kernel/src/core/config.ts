@@ -30,7 +30,7 @@ export const CATALOG = {
   dependency_policy: { kind: "commitment", scopes: ["project"], default: DEFAULT_DEPENDENCY, schema: P.dependency_policy.unwrap() },
 } as const satisfies Record<string, Entry>;
 export type SettingKey = keyof typeof CATALOG;
-export const isSettingKey = (k: string): k is SettingKey => k in CATALOG;
+export const isSettingKey = (k: string): k is SettingKey => Object.hasOwn(CATALOG, k);
 
 /** Stored preferences/restrictions obey the same catalog and scope rules as incoming decisions. */
 export const settingsSchema = (scope: Scope) => z.strictObject(Object.fromEntries(

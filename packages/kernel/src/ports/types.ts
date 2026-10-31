@@ -59,7 +59,7 @@ export interface Store {
   writeArtifact(dir: string, name: string, content: string): string;
   /** Removes this workspace's run directories and manifests older than `maxAgeMs`, except those under `keep` (TS §7.6). */
   sweepTemp(maxAgeMs: number, keep: readonly string[]): number;
-  /** Deletes this workspace's run, manifest and review files that contain any of these texts (CON-10); returns how many. */
+  /** Deletes only this workspace's lesson-bearing manifest files that contain any of these texts (CON-10); returns how many. */
   purge(texts: readonly string[]): number;
   /** What Tenet keeps for this workspace: the `.tenet` folder and the run files in the OS temp folder (null when absent). */
   residue(): { tenet: Footprint | null; temp: Footprint | null };

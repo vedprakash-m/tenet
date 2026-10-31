@@ -130,3 +130,80 @@ describe("what a declaration may name [EVD-09]", () => {
     }
   });
 });
+
+describe("output declarations bind evidence [EVD-03, EVD-09, TDD-01]", () => {
+  it("a changed declaration changes check identity even when no output exists", async () => {
+    const p = project(); roots.push(p.root);
+    const h = (await p.call("open", { profile: "feature", request: "bind declared outputs", lane: "quick" })).handle!;
+    assert.equal((await p.call("decide", { h, kind: "basis", propose: BASIS })).exit, 0);
+    const { gather, checkInputId } = await import("../src/verbs/facts.ts");
+    const ports = p.ports(), w = Object.values(ports.store.read()!.state.work)[0]!;
+    const candidate = (await gather(ports, w)).candidate;
+    const id = checkInputId(ports, w, candidate);
+    const changed = { ...w, obligations: w.obligations.map(o => o.example ? { ...o, outputs: ["coverage/**"] } : o) };
+    assert.equal((await gather(ports, changed)).candidate, candidate, "only the declaration changed, with no file movement");
+    assert.notEqual(checkInputId(ports, changed, candidate), id);
+  });
+
+  it("an unchanged declaration keeps its valid red through a stable-ID refinement", async () => {
+    const p = project(); roots.push(p.root);
+    const h = (await p.call("open", { profile: "feature", request: "retain the same output contract", lane: "quick" })).handle!;
+    const first = await p.call("decide", { h, kind: "basis", propose: withOutputs(["coverage/**"]) });
+    p.write("src/greet.test.ts", GREET_TEST);
+    assert.equal((await p.call("check", { h, stage: "baseline" })).next[0]?.action, "implement");
+    const ids = d(first).ids;
+    const proposal = { ...withOutputs(["coverage/**"]), elements: withOutputs(["coverage/**"]).elements.map(e => ({ ...e, ref: ids[e.ref], ...("of" in e ? { of: ids[e.of!] } : {}) })) };
+    assert.equal((await p.call("decide", { h, kind: "basis", propose: proposal })).exit, 0);
+    assert.equal(Object.values(p.ports().store.read()!.state.work)[0]!.obligations.find(o => o.example)?.baselineMatched, true);
+    p.write("src/greet.ts", GREET_IMPL);
+    const checked = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    assert.equal(receiptOf(checked).status, "pass");
+    assert.equal(checked.reasons.some(r => r.code === "no-distinguishing-red"), false);
+    assert.ok(p.ports().store.read()!.state.locks.some(l => l.path === "src/greet.test.ts"));
+  });
+
+  for (const outputs of [["coverage/**"], []]) {
+    it(`a stable-ID basis refinement ${outputs.length ? "adding" : "removing"} outputs requires a fresh baseline`, async () => {
+      const p = project(); roots.push(p.root);
+      const h = (await p.call("open", { profile: "feature", request: "refine output declaration", lane: "quick" })).handle!;
+      const initial = await p.call("decide", { h, kind: "basis", propose: withOutputs(outputs.length ? [] : ["coverage/**"]) });
+      assert.equal(initial.exit, 0, JSON.stringify(initial));
+      p.write("src/greet.test.ts", GREET_TEST);
+      const red = await p.call("check", { h, stage: "baseline" });
+      assert.equal(receiptOf(red).status, "fail", JSON.stringify(red));
+      assert.equal(red.next[0]?.action, "implement");
+      const ids = d(initial).ids;
+      const proposal = { ...withOutputs(outputs), elements: withOutputs(outputs).elements.map(e => ({ ...e, ref: ids[e.ref], ...("of" in e ? { of: ids[e.of!] } : {}) })) };
+      const refined = await p.call("decide", { h, kind: "basis", propose: proposal });
+      assert.equal(refined.exit, 0, JSON.stringify(refined));
+      assert.equal(refined.next[0]?.action, "test", "old red cannot authorize implementing under a changed definition");
+      p.write("src/greet.ts", GREET_IMPL);
+      const checked = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+      if (d(checked).review) {
+        const work = Object.values(p.ports().store.read()!.state.work)[0]!;
+        const review = await p.call("findings", { h, result: reviewResult(d(checked), {
+          attention: work.attention.map(a => ({ id: a.id, disposition: "accepted", reason: "only an output declaration changed" })),
+        }) });
+        assert.equal(review.exit, 0, JSON.stringify(review));
+      }
+      const why = await p.call("inspect", { view: "why", h });
+      assert.notEqual(d(why).endpoint, "checked-local");
+      assert.ok(why.reasons.some(r => r.code === "no-distinguishing-red"), JSON.stringify(why));
+      const unproved = Object.values(p.ports().store.read()!.state.work)[0]!;
+      assert.equal(unproved.obligations.find(o => o.example)?.baselineMatched, undefined);
+      assert.equal(p.ports().store.read()!.state.locks.some(l => l.path === "src/greet.test.ts"), false);
+      // A real new red under the refined definition restores proof; rejection is not permanent.
+      p.write("src/greet.ts", "export const greet = (_name: string): string => '';\n");
+      assert.equal((await p.call("check", { h, stage: "baseline", again: true })).next[0]?.action, "implement");
+      p.write("src/greet.ts", GREET_IMPL);
+      const fresh = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"], again: true });
+      assert.equal(receiptOf(fresh).status, "pass", JSON.stringify(fresh));
+      const work = Object.values(p.ports().store.read()!.state.work)[0]!;
+      if (d(fresh).review) assert.equal((await p.call("findings", { h, result: reviewResult(d(fresh), {
+        attention: work.attention.map(a => ({ id: a.id, disposition: "accepted", reason: "only an output declaration changed" })),
+      }) })).exit, 0);
+      const proved = await p.call("inspect", { view: "why", h });
+      assert.equal(d(proved).endpoint, "checked-local", JSON.stringify(proved));
+    });
+  }
+});

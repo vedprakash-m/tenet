@@ -1,4 +1,7 @@
-.archive/
+.archive/*
+!.archive/specs/
+.archive/specs/*
+!.archive/specs/store-lock-admission.md
 .DS_Store
 node_modules/
 *.log

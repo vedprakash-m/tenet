@@ -1,6 +1,7 @@
 // One reconciler per effect (TS §7.4). `settle` decides what an intent with no result left behind, from its postcondition:
 // completed, not performed, or uncertain. `publish` applies a result that was logged but never reached the state document.
 import { adopted, type AdoptOp } from "../decisions/adopt.ts";
+import { completeForget } from "../decisions/forget.ts";
 import { restoreFiles, type DependencyOp } from "../decisions/dependency.ts";
 import { scaffolded, type ScaffoldOp } from "../decisions/scaffold.ts";
 import type { UndoOp } from "../decisions/undo.ts";
@@ -193,6 +194,10 @@ async function branch(r: Recovery, u: Unresolved) {
 
 export const SETTLE: Record<string, (r: Recovery, u: Unresolved) => Promise<void>> = {
   "index-sync": indexSync, commit, integration, undo, scaffold, adopt, dependency, branch,
+  async forget(r, u) {
+    r.state = completeForget(r.ports, r.tx, r.state, (u.op as { lesson: string }).lesson).state;
+    r.completed.push("an interrupted forget was finished");
+  },
 };
 
 /** A result that was logged but never published is applied to state, once (TS §7.4). */

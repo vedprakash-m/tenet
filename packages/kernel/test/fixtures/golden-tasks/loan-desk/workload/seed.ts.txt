@@ -1,0 +1,33 @@
+import { existsSync } from "node:fs";
+import { hashPassword } from "../server/src/platform/auth/passwords.ts";
+import { openDb } from "../server/src/platform/db.ts";
+import { migrate } from "../server/src/platform/migrate.ts";
+
+export const seedSize = { users: 2000, items: 10000, loans: 50000 };
+export async function seed(path: string, password: string) {
+  if (["", "-wal", "-shm", ".owner", ".restore-in-progress"].some(suffix => existsSync(path + suffix))) throw new Error("workload seeding requires a new dedicated database");
+  const db = openDb(path);
+  try {
+    const passwordHash = await hashPassword(password);
+    migrate(db);
+    const user = db.prepare("INSERT INTO users (id, email, role, password_hash, created_at) VALUES (?, ?, ?, ?, ?)");
+    const item = db.prepare("INSERT INTO items VALUES (?, ?, ?)");
+    const loan = db.prepare("INSERT INTO loans VALUES (?, ?, ?, ?, ?, ?)");
+    const now = 1_700_000_000_000;
+    db.transaction(() => {
+      for (let i = 0; i < seedSize.users; i++) user.run(`user-${i}`, `workload.${i}@example.test`, i === 1999 ? "admin" : "member", passwordHash, now);
+      for (let i = 0; i < seedSize.items; i++) item.run(`item-${i}`, `Workload item ${i}`, now);
+      for (let i = 0; i < seedSize.loans; i++) {
+        const active = i < 5000;
+        loan.run(`seed-loan-${i}`, `item-${active ? i + 1 : i % 10000}`, `user-${i % (active ? 20 : 2000)}`, active ? "active" : "returned", now - 1000, active ? null : now);
+      }
+    })();
+    const counts = {
+      users: (db.prepare("SELECT COUNT(*) AS n FROM users").get() as { n: number }).n,
+      items: (db.prepare("SELECT COUNT(*) AS n FROM items").get() as { n: number }).n,
+      loans: (db.prepare("SELECT COUNT(*) AS n FROM loans").get() as { n: number }).n,
+    };
+    if (JSON.stringify(counts) !== JSON.stringify(seedSize) || db.prepare("PRAGMA foreign_key_check").get()) throw new Error("workload seed integrity failed");
+    return counts;
+  } finally { db.close(); }
+}

@@ -23,8 +23,9 @@ export function createSession(db: Db, userId: string, secret: string, now: numbe
   return { cookie: `${session.id}.${mac(session.id, secret)}`, session };
 }
 
-/** The live session and its user for a cookie, or undefined: a bad signature, an unknown or expired session all look the same. */
-export function resolveSession(db: Db, cookie: string | undefined, secret: string, now: number): { session: SessionRow; user: UserRow } | undefined {
+type Live = { session: SessionRow; user: UserRow };
+
+function inspectSession(db: Db, cookie: string | undefined, secret: string, now: number): Live | { expiredId: string } | undefined {
   if (!cookie) return undefined;
   const dot = cookie.indexOf(".");
   if (dot < 1) return undefined;
@@ -32,11 +33,24 @@ export function resolveSession(db: Db, cookie: string | undefined, secret: strin
   if (!same(cookie.slice(dot + 1), mac(id, secret))) return undefined;
   const session = findSession(db, id);
   if (!session) return undefined;
-  if (now >= session.expires_at || now - session.last_seen_at >= IDLE_MS) { deleteSession(db, id); return undefined; }
+  if (now >= session.expires_at || now - session.last_seen_at >= IDLE_MS) return { expiredId: id };
   const user = findUserById(db, session.user_id);
-  if (!user) return undefined;
-  touchSession(db, id, now);
-  return { session, user };
+  return user ? { session, user } : undefined;
+}
+
+/** Admission lookup only: no touch, deletion or authority carried into a handler. */
+export function readSession(db: Db, cookie: string | undefined, secret: string, now: number): Live | undefined {
+  const found = inspectSession(db, cookie, secret, now);
+  return found && !("expiredId" in found) ? found : undefined;
+}
+
+/** Re-read and maintain the current session inside the caller's write transaction. */
+export function resolveSession(db: Db, cookie: string | undefined, secret: string, now: number): Live | undefined {
+  const found = inspectSession(db, cookie, secret, now);
+  if (!found) return undefined;
+  if ("expiredId" in found) { deleteSession(db, found.expiredId); return undefined; }
+  touchSession(db, found.session.id, now);
+  return found;
 }
 
 export { deleteSession };

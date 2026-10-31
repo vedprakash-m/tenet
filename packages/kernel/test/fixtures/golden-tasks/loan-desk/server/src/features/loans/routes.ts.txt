@@ -3,29 +3,36 @@ import type { FastifyInstance } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { AdminLoanResponse, ItemResponse, LoanResponse, Page, PageQuery } from "../../../../shared/schemas.ts";
+import { errorResponses, mutationSecurity, sessionSecurity } from "../../platform/openapi.ts";
 import { requireActor } from "../../platform/actor.ts";
-import { adminListLoans, browseItems, reserveItem, returnItem } from "./service.ts";
+import { memberListLoans, adminListLoans, browseItems, reserveItem, returnItem } from "./service.ts";
 
 export function registerLoanRoutes(app: FastifyInstance): void {
   const r = app.withTypeProvider<ZodTypeProvider>();
 
-  r.get("/api/items", { schema: { querystring: PageQuery, response: { 200: Page(ItemResponse) } } }, async (req) => {
+  r.get("/api/items", { schema: { security: sessionSecurity, querystring: PageQuery, response: { 200: Page(ItemResponse), ...errorResponses } } }, async (req) => {
     requireActor(req);
     const { limit, offset } = req.query;
     return browseItems(app.db, limit, offset);
   });
 
-  r.post("/api/items/:id/reserve", { schema: { params: z.object({ id: z.string() }), response: { 200: LoanResponse } } }, async (req) => {
+  r.get("/api/loans", { schema: { security: sessionSecurity, querystring: PageQuery, response: { 200: Page(LoanResponse), ...errorResponses } } }, async (req) => {
+    const actor = requireActor(req);
+    const { limit, offset } = req.query;
+    return memberListLoans(app.db, actor, limit, offset);
+  });
+
+  r.post("/api/items/:id/reserve", { schema: { security: mutationSecurity, params: z.object({ id: z.string() }), response: { 200: LoanResponse, ...errorResponses } } }, async (req) => {
     const actor = requireActor(req);
     return reserveItem(app.db, actor, req.params.id, app.now());
   });
 
-  r.post("/api/loans/:id/return", { schema: { params: z.object({ id: z.string() }), response: { 200: LoanResponse } } }, async (req) => {
+  r.post("/api/loans/:id/return", { schema: { security: mutationSecurity, params: z.object({ id: z.string() }), response: { 200: LoanResponse, ...errorResponses } } }, async (req) => {
     const actor = requireActor(req);
     return returnItem(app.db, actor, req.params.id, app.now());
   });
 
-  r.get("/api/admin/loans", { schema: { querystring: PageQuery, response: { 200: Page(AdminLoanResponse) } } }, async (req) => {
+  r.get("/api/admin/loans", { schema: { description: "Admin only: borrower identity and loan history.", security: sessionSecurity, querystring: PageQuery, response: { 200: Page(AdminLoanResponse), ...errorResponses } } }, async (req) => {
     const actor = requireActor(req);
     const { limit, offset } = req.query;
     return adminListLoans(app.db, actor, limit, offset);

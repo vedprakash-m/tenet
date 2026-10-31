@@ -2,11 +2,10 @@
 // then the response is rebuilt from the finalized result. Locking, recovery, the envelope and logging exist once here.
 import { ZodError } from "zod";
 import type { ZodType } from "zod";
-import { inputProblem } from "./core/input.ts";
+import { inputProblem, recordInput } from "./core/input.ts";
 import { KernelError } from "./core/errors.ts";
 import { reason } from "./core/reasons.ts";
 import { mutationSupported } from "./core/risk.ts";
-import { redact } from "./core/redact.ts";
 import { mutate } from "./pipeline-mutate.ts";
 import { versionNote } from "./pipeline-version.ts";
 import { render } from "./pipeline-render.ts";
@@ -85,19 +84,15 @@ function fail(ports: Ports, verb: string, e: unknown, state: State | null): Kern
 }
 
 export async function runVerb(ports: Ports, verbs: Record<string, Verb>, name: string, raw: unknown): Promise<KernelResponse> {
-  const verb = verbs[name];
+  const verb = Object.hasOwn(verbs, name) && verbs[name];
   if (!verb) return render(ports, name, { exit: 1, reasons: [{ code: "unknown-verb", message: `no verb "${name}"` }] }, null);
   const problem = inputProblem(raw);
   if (problem) return render(ports, name, { exit: 1, reasons: [{ code: "invalid-input", message: problem }] }, null);
   const parsed = verb.schema.safeParse(raw ?? {});
   if (!parsed.success) return render(ports, name, { exit: 1, reasons: [invalidInput(parsed.error.issues, raw)] }, null);
-  // The user's own words and request text are kept as they said them, minus anything that looks like a secret (SEC-11).
-  const input = Object.fromEntries(
-    Object.entries(parsed.data as Record<string, unknown>).map(([k, v]) => [
-      k,
-      (k === "quote" || k === "request") && typeof v === "string" ? redact(v) : v,
-    ])
-  ) as typeof parsed.data;
+  const input = recordInput(parsed.data) as typeof parsed.data;
+  if (!input) return render(ports, name, { exit: 1, reasons: [{ code: "invalid-input",
+    message: "Structured input contains likely secret material; replace it with placeholders." }] }, null);
   const cls = verb.class(input);
   if (cls === "mutating" && !mutationSupported(ports.platform)) {
     return render(ports, name, { exit: 2, reasons: [reason("capability-missing",

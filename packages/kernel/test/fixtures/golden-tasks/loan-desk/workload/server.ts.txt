@@ -1,0 +1,15 @@
+// Import the actual production entry, not a second application factory/listener.
+import { monitorEventLoopDelay } from "node:perf_hooks";
+import { app } from "../server/src/server.ts";
+
+const loop = monitorEventLoopDelay({ resolution: 10 }); loop.enable();
+let peakRssBytes = process.memoryUsage().rss;
+const timer = setInterval(() => { peakRssBytes = Math.max(peakRssBytes, process.memoryUsage().rss); }, 10); timer.unref();
+process.on("message", message => {
+  const kind = (message as { kind?: string }).kind;
+  if (kind === "begin") { loop.reset(); peakRssBytes = process.memoryUsage().rss; process.send?.({ kind: "begun" }); }
+  if (kind === "snapshot") process.send?.({ kind: "metrics", peakRssBytes: Math.max(peakRssBytes, process.memoryUsage().rss), eventLoopSamples: loop.count, eventLoopP95Ms: loop.count ? loop.percentile(95) / 1e6 : null });
+});
+const address = app.server.address();
+if (!address || typeof address === "string" || address.address !== "127.0.0.1") throw new Error("workload API did not bind loopback");
+process.send?.({ kind: "ready", port: address.port });

@@ -1,0 +1,33 @@
+// Real service calls in a separate process/connection; markers only synchronize the test's external writer.
+import { existsSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { returnItem } from "../../src/features/loans/service.ts";
+import { openDb } from "../../src/platform/db.ts";
+import { AppError } from "../../src/platform/errors.ts";
+import { findSession } from "../../src/platform/session/sessions.repository.ts";
+import { findUserById } from "../../src/platform/users.repository.ts";
+
+const [path, index, sessionId, returnedAt] = process.argv.slice(2);
+const db = openDb(path!), dir = dirname(path!);
+try {
+  const session = findSession(db, sessionId!);
+  const user = session && findUserById(db, session.user_id);
+  if (!session || !user) throw new Error("missing fixture actor");
+  writeFileSync(join(dir, `ready-${index}`), "");
+  const deadline = Date.now() + 15_000;
+  while (!existsSync(join(dir, "start"))) {
+    if (Date.now() > deadline) throw new Error("start barrier timed out");
+    await new Promise(resolve => setTimeout(resolve, 5));
+  }
+  try {
+    const pending = returnItem(db, { session, user }, "contested-loan", Number(returnedAt));
+    // returnItem runs synchronously until writeTx encounters the held lock and yields for retry.
+    writeFileSync(join(dir, `attempted-${index}`), "");
+    process.stdout.write(JSON.stringify({ kind: "ok", loan: await pending }));
+  } catch (error) {
+    if (!(error instanceof AppError)) throw error;
+    process.stdout.write(JSON.stringify({ kind: error.code, status: error.status }));
+  }
+} catch (error) {
+  process.stderr.write(String(error)); process.exitCode = 1;
+} finally { db.close(); }

@@ -1,0 +1,14 @@
+import { workload } from "./harness.ts";
+const args = process.argv.slice(2);
+if (args.length > 1 || (args.length === 1 && args[0] !== "--smoke")) throw new Error("usage: workload/run.ts [--smoke]");
+const controller = new AbortController();
+process.once("SIGINT", () => controller.abort()); process.once("SIGTERM", () => controller.abort());
+try {
+  const mode = args[0] === "--smoke" ? "smoke" : "reference";
+  const report = await workload(mode, controller.signal);
+  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+  process.exitCode = mode === "smoke" || report.referencePass ? 0 : 1;
+} catch (error) {
+  process.stderr.write(`${error instanceof Error ? error.message : "workload failed"}\n`);
+  process.exitCode = controller.signal.aborted ? 130 : 1;
+}

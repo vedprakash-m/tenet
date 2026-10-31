@@ -59,7 +59,10 @@ export function unauthorizedEdits(ports: Ports, w: WorkContract, f: Facts): stri
 
 /** sha256(source candidate, obligation definitions, toolchain fingerprint, semantic envelope) (TS §8.8). */
 export function checkInputId(ports: Ports, w: WorkContract, candidate: string): string {
-  const defs = w.obligations.map((o) => ({ id: o.id, kind: o.kind, category: o.category, tool: o.tool, testFile: o.testFile, support: o.support, test: o.test, expectation: o.expectation, example: o.example }));
+  const defs = w.obligations.map((o) => ({
+    id: o.id, kind: o.kind, category: o.category, tool: o.tool, testFile: o.testFile, support: o.support,
+    outputs: o.outputs, test: o.test, expectation: o.expectation, example: o.example,
+  }));
   return hashOf({ candidate, defs, toolchain: ports.stack.fingerprint(ports.root), envelope: { cwd: ".", env: { CI: "1" }, argv: "vitest run --reporter=json" } }).slice(0, 24);
 }
 

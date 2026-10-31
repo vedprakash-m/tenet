@@ -4,8 +4,15 @@ import type { Db } from "../../platform/db.ts";
 export interface ItemRow { id: string; name: string; created_at: number }
 
 export const findItemById = (db: Db, id: string): ItemRow | undefined => db.prepare("SELECT * FROM items WHERE id = ?").get(id) as ItemRow | undefined;
-export const listItems = (db: Db, limit: number, offset: number): ItemRow[] => db.prepare("SELECT * FROM items ORDER BY name LIMIT ? OFFSET ?").all(limit, offset) as ItemRow[];
+export interface ItemAvailability extends ItemRow { available: number }
+
+/** Materialize only the requested page; availability never loads borrower identity or all active IDs. */
+export const listItems = (db: Db, limit: number, offset: number): ItemAvailability[] => db.prepare(`
+  SELECT page.*, NOT EXISTS (
+    SELECT 1 FROM loans WHERE item_id = page.id AND status = 'active'
+  ) AS available
+  FROM (SELECT * FROM items ORDER BY name LIMIT ? OFFSET ?) AS page
+  ORDER BY page.name
+`).all(limit, offset) as ItemAvailability[];
 export const countItems = (db: Db): number => (db.prepare("SELECT COUNT(*) AS n FROM items").get() as { n: number }).n;
 export const insertItem = (db: Db, i: ItemRow): void => void db.prepare("INSERT INTO items (id, name, created_at) VALUES (@id, @name, @created_at)").run(i);
-/** Item ids with a currently active loan, for availability without naming the borrower. */
-export const activeLoanItemIds = (db: Db): Set<string> => new Set((db.prepare("SELECT item_id FROM loans WHERE status = 'active'").all() as Array<{ item_id: string }>).map((r) => r.item_id));

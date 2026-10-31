@@ -1,0 +1,27 @@
+:root { font-family: system-ui, sans-serif; color: #172a27; background: #f3f6f3; line-height: 1.6; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+header { display: flex; justify-content: space-between; gap: 1rem; max-width: 70rem; margin: auto; padding: 1.5rem 2rem; border-bottom: 1px solid #c5d0c8; color: #43564e; }
+.brand { font-weight: 750; color: #172a27; }
+main { margin: 4rem auto 2rem; padding: 2.5rem; max-width: 30rem; background: white; border: 1px solid #c5d0c8; border-radius: .75rem; }
+h1 { line-height: 1.2; font-size: 2rem; margin: .4rem 0 1rem; }
+.eyebrow { font-size: .8rem; text-transform: uppercase; letter-spacing: .12em; font-weight: 700; color: #365c4c; margin: 0; }
+.intro { color: #43564e; margin-bottom: 1.75rem; }
+label { display: block; font-weight: 650; margin: 1rem 0 .3rem; }
+input { display: block; width: 100%; font: inherit; padding: .7rem; border: 1px solid #708379; border-radius: .3rem; }
+input[aria-invalid="true"] { border: 2px solid #a32b28; }
+button { font: inherit; font-weight: 650; cursor: pointer; border: 0; border-radius: .3rem; background: #20543d; color: white; padding: .8rem 1.2rem; margin-top: 1.5rem; min-height: 2.75rem; }
+button:disabled { background: #516c5f; cursor: wait; }
+:focus-visible { outline: 3px solid #186bc4; outline-offset: 4px; }
+h1:focus, main:focus { outline: none; }
+.notice { color: #812320; background: #fff3f1; border: 1px solid #b6483d; padding: .8rem; border-radius: .3rem; }
+.field-error { min-height: 3.2em; color: #812320; font-size: .9rem; margin: .3rem 0; }
+.status { min-height: 1.6rem; color: #43564e; }
+dl { padding: 1rem; background: #f3f6f3; border-radius: .3rem; }
+dt { font-size: .85rem; font-weight: 650; color: #43564e; }
+dd { margin: 0 0 .75rem; overflow-wrap: anywhere; }
+footer { text-align: center; color: #43564e; font-size: .85rem; max-width: 35rem; margin: 0 auto; padding: 1rem 2rem 2rem; }
+.skip { position: absolute; top: -10rem; left: 1rem; background: white; color: #172a27; padding: .5rem; }
+.skip:focus { top: 1rem; }
+@media (max-width: 36rem) { header { padding: 1rem; } main { margin: 2rem 1rem 1rem; padding: 1.5rem; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }

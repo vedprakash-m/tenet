@@ -1,0 +1,125 @@
+import { randomBytes } from "node:crypto";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir, arch, platform, release, totalmem } from "node:os";
+import { join } from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
+import Database from "better-sqlite3";
+import { HealthResponse, LoanResponse, Problem } from "../shared/schemas.ts";
+import { buckets, judge, operation, summarize } from "./report.ts";
+import type { Kind, Metrics } from "./report.ts";
+import { Gate, headers, login, transport } from "./client.ts";
+import type { Client } from "./client.ts";
+import { execute } from "./operations.ts";
+import { seed } from "./seed.ts";
+import { message, start, stop } from "./process.ts";
+
+export async function workload(mode: "smoke" | "reference", signal: AbortSignal) {
+  const directory = mkdtempSync(join(tmpdir(), "loan-workload-")), path = join(directory, "app.db");
+  const password = randomBytes(24).toString("base64url");
+  const env = { PATH: process.env.PATH, NODE_ENV: "production", PORT: "0", DATABASE_URL: path, COOKIE_SECRET: randomBytes(32).toString("hex"), LOG_LEVEL: "silent", TENET_RUN_TOKEN: randomBytes(16).toString("hex") };
+  const owned: Array<ReturnType<typeof start>> = [];
+  const all = buckets(), gate = new Gate();
+  const warmupMs = mode === "reference" ? 30_000 : 0, measurementMs = mode === "reference" ? 120_000 : 2000;
+  const bursts: Array<{ successes: number; conflicts: number; unexpected: number }> = [];
+  const probes: Array<{ requested: number; posted: number; successful: number; failures: number }> = [];
+  let writerObserved = false, writerExited = false, busyObserved = 0, counter = 0;
+  let writerStartedAt: number | null = null, writerEndedAt: number | null = null;
+  let metrics: Metrics = { peakRssBytes: 0, eventLoopSamples: 0, eventLoopP95Ms: null };
+  let database = { duplicateActiveItems: 0, foreignKeyViolations: 0 };
+  let result: { referencePass: boolean; [key: string]: unknown } = { referencePass: false };
+  try {
+    const seeded = await seed(path, password);
+    const server = start(join(import.meta.dirname, "server.ts"), [], env); owned.push(server);
+    const ready = await message(server.child, "ready");
+    if (typeof ready.port !== "number") throw new Error("invalid workload server address");
+    const base = `http://127.0.0.1:${ready.port}`, request = transport(base, gate, signal);
+    const identity = HealthResponse.parse((await request("/api/health")).body);
+    if (identity.runToken !== env.TENET_RUN_TOKEN) throw new Error("workload server identity mismatch");
+    const clients = await Promise.all(Array.from({ length: 20 }, (_, index) => login(base, index, password, gate, signal, () => {})));
+    function overlapsWriter(entered: number, finished: number) {
+      return writerStartedAt !== null && entered <= (writerEndedAt ?? Infinity) && finished >= writerStartedAt;
+    }
+    async function perform(client: Client, kind: Kind, index: number, measured: boolean) {
+      const entered = performance.now();
+      const { reply, success, conflict, busy } = await execute(request, client, kind, index);
+      if (!measured) return;
+      const bucket = all[kind]; bucket.attempts++; bucket.allMs.push(reply.ms);
+      bucket.statuses[String(reply.status)] = (bucket.statuses[String(reply.status)] ?? 0) + 1;
+      if (success) bucket.successfulMs.push(reply.ms);
+      const expectedBusy = busy && overlapsWriter(entered, performance.now());
+      if (expectedBusy) busyObserved++;
+      if (!success && !conflict && !expectedBusy) bucket.unexpected++;
+    }
+    async function phase(duration: number, measured: boolean) {
+      const deadline = performance.now() + duration;
+      await Promise.all(clients.map(async (client, clientIndex) => {
+        let cycle = clientIndex;
+        while (!signal.aborted && performance.now() < deadline) {
+          const index = counter++; await perform(client, operation(cycle++), index, measured);
+          await sleep(250);
+        }
+      }));
+    }
+    await phase(warmupMs, false); signal.throwIfAborted(); counter = 0; gate.maxActive = 0;
+    const begun = message(server.child, "begun"); server.child.send({ kind: "begin" }); await begun;
+    const started = performance.now();
+    let previousBurst: { client: Client; id: string } | undefined;
+    async function burst() {
+      if (previousBurst) {
+        const returned = await request(`/api/loans/${previousBurst.id}/return`, { method: "POST", headers: headers(previousBurst.client) });
+        if (returned.status === 200) previousBurst = undefined;
+      }
+      const responses = await Promise.all(clients.slice(0, 5).map(client => request("/api/items/item-0/reserve", { method: "POST", headers: headers(client) })));
+      const successes = responses.filter(r => r.status === 200 && LoanResponse.safeParse(r.body).success).length;
+      const conflicts = responses.filter(r => r.status === 409 && Problem.safeParse(r.body).success && Problem.parse(r.body).type === "urn:problem:item-on-loan").length;
+      bursts.push({ successes, conflicts, unexpected: 5 - successes - conflicts });
+      const winner = responses.findIndex(r => r.status === 200 && LoanResponse.safeParse(r.body).success);
+      if (winner >= 0) previousBurst = { client: clients[winner]!, id: LoanResponse.parse(responses[winner]!.body).id };
+    }
+    const scheduled = (async () => {
+      for (let index = 0; index < Math.ceil(measurementMs / 10_000); index++) {
+        await sleep(Math.max(0, started + index * 10_000 - performance.now()), undefined, { signal });
+        await burst();
+        const probe = { requested: 4, posted: 0, successful: 0, failures: 0 };
+        await Promise.all(Array.from({ length: 4 }, async (_, n) => {
+          try { await login(base, 20 + index * 4 + n, password, gate, signal, () => { probe.posted++; }); probe.successful++; }
+          catch { probe.failures++; }
+        })); probes.push(probe);
+      }
+    })();
+    const held = (async () => {
+      await sleep(measurementMs / 2, undefined, { signal });
+      const writer = start(join(import.meta.dirname, "writer.ts"), [path], env); owned.push(writer);
+      await message(writer.child, "held"); writerObserved = true; writerStartedAt = performance.now();
+      await sleep(2000, undefined, { signal }); writer.child.send({ kind: "release" }); await writer.closed; writerExited = true; writerEndedAt = performance.now();
+    })();
+    await Promise.all([phase(measurementMs, true), scheduled, held]);
+    const snapshot = message(server.child, "metrics"); server.child.send({ kind: "snapshot" });
+    const sample = await snapshot;
+    metrics = { peakRssBytes: Number(sample.peakRssBytes), eventLoopSamples: Number(sample.eventLoopSamples), eventLoopP95Ms: sample.eventLoopP95Ms === null ? null : Number(sample.eventLoopP95Ms) };
+    await stop(server);
+    const db = new Database(path, { readonly: true });
+    try {
+      database = {
+        duplicateActiveItems: Number((db.prepare("SELECT COUNT(*) AS n FROM (SELECT item_id FROM loans WHERE status = 'active' GROUP BY item_id HAVING COUNT(*) > 1)").get() as { n: number }).n),
+        foreignKeyViolations: db.prepare("PRAGMA foreign_key_check").all().length,
+      };
+    } finally { db.close(); }
+    const validBursts = bursts.filter(b => b.successes === 1 && b.conflicts === 4 && b.unexpected === 0).length;
+    const judged = judge(mode, all, metrics, validBursts, bursts.length, database.duplicateActiveItems, writerObserved, busyObserved);
+    if (database.foreignKeyViolations) judged.reasons.push("foreign-key-violations");
+    if (probes.some(p => p.posted !== 4 || p.successful !== 4)) judged.reasons.push("hash-capacity-probes-incomplete");
+    if (gate.maxActive !== 20) judged.reasons.push("twenty-client-concurrency-unobserved");
+    result = { mode, qualification: "unqualified", referencePass: judged.reasons.length === 0, reasons: judged.reasons,
+      protocol: { warmupMs, measurementMs, actualMeasurementAndDrainMs: performance.now() - started, clients: 20, maxHttpConcurrency: gate.maxActive, mix: { list: 70, reserve: 20, return: 10 }, pacingMs: 250, minimumSamples: 5000, expectedBursts: 12 },
+      seed: seeded, operations: summarize(all), metrics, database, bursts, signInProbes: probes,
+      writer: { observed: writerObserved, holdMs: 2000, actualHoldMs: writerStartedAt === null || writerEndedAt === null ? null : writerEndedAt - writerStartedAt, busyResponses: busyObserved },
+      environment: { node: process.version, platform: platform(), arch: arch(), release: release(), totalMemoryBytes: totalmem() },
+      limits: ["local observation; no reference-hardware/isolation or release qualification", "percentiles separate successful responses from all attempts; refusals never establish fast successful operations", "no kernel workload receipt, trend consumer or attention disposition implemented"],
+    };
+  } finally {
+    for (const child of owned.reverse()) await stop(child);
+    rmSync(directory, { recursive: true, force: true });
+  }
+  return { ...result, cleanup: { serverExited: true, writerExited, directoryRemoved: !existsSync(directory) } };
+}

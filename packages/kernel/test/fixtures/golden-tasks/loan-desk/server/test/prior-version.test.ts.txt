@@ -1,0 +1,73 @@
+// A populated old application's schema/data/auth survive upgrade, real backup restore and re-upgrade.
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import Database from "better-sqlite3";
+import { expect, it } from "vitest";
+import { buildApp } from "../src/app.ts";
+import { insertItem } from "../src/features/loans/items.repository.ts";
+import { loadConfig } from "../src/platform/config.ts";
+import { openDb } from "../src/platform/db.ts";
+import { migrate } from "../src/platform/migrate.ts";
+import { restore } from "../src/platform/restore.ts";
+import { buildSchemaV1, priorNow, priorPassword } from "./fixtures/schema-v1.ts";
+import { signIn } from "./helpers.ts";
+
+it("preserves a frozen schema-1 account/session through loan upgrade, backup restore and re-upgrade [QLT-07, QLT-12]", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "starter-prior-version-")), path = join(dir, "app.db");
+  const config = loadConfig({ NODE_ENV: "test", LOG_LEVEL: "silent", DATABASE_URL: path });
+  const prior = buildSchemaV1(path, config.cookieSecret);
+  const db = openDb(path);
+  try {
+    expect(migrate(db).applied).toEqual(["0002_items_loans.sql"]);
+    expect(db.prepare("SELECT * FROM users ORDER BY id").all()).toEqual(prior.users);
+    expect(db.prepare("SELECT * FROM sessions ORDER BY id").all()).toEqual(prior.sessions);
+    expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+    const backups = readdirSync(dir).filter(name => name.endsWith(".bak"));
+    expect(backups).toHaveLength(1);
+    const copy = join(dir, backups[0]!);
+    const old = new Database(copy, { readonly: true });
+    try {
+      expect(old.prepare("SELECT * FROM users ORDER BY id").all()).toEqual(prior.users);
+      expect(old.prepare("SELECT * FROM sessions ORDER BY id").all()).toEqual(prior.sessions);
+      expect(old.prepare("SELECT version FROM schema_migrations").all()).toEqual([{ version: "0001_init.sql" }]);
+      expect(old.prepare("SELECT name FROM sqlite_master WHERE name = 'loans'").get()).toBeUndefined();
+      expect(old.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+    } finally { old.close(); }
+    insertItem(db, { id: "upgraded-item", name: "Upgraded microscope", created_at: priorNow });
+    const app = await buildApp(config, { db, now: () => priorNow + 100 });
+    let loanId: string;
+    try {
+      await app.ready();
+      const me = await app.inject({ method: "GET", url: "/api/auth/me", cookies: { sid: prior.cookie } });
+      expect(me.statusCode).toBe(200);
+      expect(me.json().user).toEqual({ id: "prior-member", email: "prior.member@example.test", role: "member" });
+      expect((await signIn(app, "prior.member@example.test", priorPassword)).res.statusCode).toBe(200);
+      const reserved = await app.inject({ method: "POST", url: "/api/items/upgraded-item/reserve", cookies: { sid: prior.cookie }, headers: { "x-csrf-token": prior.csrf } });
+      expect(reserved.statusCode).toBe(200); loanId = reserved.json().id;
+    } finally { await app.close(); }
+    db.close();
+    const result = restore(copy, path);
+    expect(result.schemaVersion).toBe("0001_init.sql");
+    const kept = new Database(result.keptAside!, { readonly: true });
+    try {
+      expect(kept.prepare("SELECT user_id FROM loans WHERE id = ?").get(loanId!)).toEqual({ user_id: "prior-member" });
+      expect(kept.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+    } finally { kept.close(); }
+    const restored = openDb(path);
+    try {
+      expect(restored.prepare("SELECT * FROM users ORDER BY id").all()).toEqual(prior.users);
+      expect(restored.prepare("SELECT * FROM sessions ORDER BY id").all()).toEqual(prior.sessions);
+      expect(migrate(restored, { backupTo: join(dir, "before-reapply.bak") }).applied).toEqual(["0002_items_loans.sql"]);
+      expect(migrate(restored).applied).toEqual([]);
+      expect(restored.prepare("SELECT COUNT(*) AS n FROM loans").get()).toEqual({ n: 0 });
+      expect(restored.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+      const restarted = await buildApp(config, { db: restored, now: () => priorNow + 200 });
+      try {
+        await restarted.ready();
+        expect((await restarted.inject({ method: "GET", url: "/api/auth/me", cookies: { sid: prior.cookie } })).statusCode).toBe(200);
+        expect((await signIn(restarted, "prior.member@example.test", priorPassword)).res.statusCode).toBe(200);
+      } finally { await restarted.close(); }
+    } finally { restored.close(); }
+  } finally { if (db.open) db.close(); rmSync(dir, { recursive: true, force: true }); }
+});

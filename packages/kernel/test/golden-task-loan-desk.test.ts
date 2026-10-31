@@ -2,6 +2,7 @@
 // QLT-01's persistence, validation, server-side object/role authorization and a real local journey end to end.
 // This is evidence for the feature, not a shipped part of the recipe: tech-spec §12.2 is explicit that
 // `features/<f>/` starts empty in the template, so the fixture files below live here, not in the recipe.
+import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { after, describe, it } from "node:test";
@@ -40,7 +41,22 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
   it("scaffolds the starter, then the real open/basis/check/review/finish loop builds the reservation feature with a real baseline red and a real green", { timeout: 300_000 }, async () => {
     const root = tmp("tenet-golden-loan-desk-"); roots.push(root);
     initRepo(root);
-    const rawCall = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    // The same scratch journey can drive the shipped CLI during UAT; CI defaults to the source pipeline.
+    const rawCall = async (v: string, i: Record<string, unknown>) => {
+      const bundle = process.env.TENET_TEST_BUNDLE;
+      if (!bundle) return runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+      const readsBody = ["open", "decide", "findings"].includes(v);
+      const args = readsBody ? [] : Object.entries(i).flatMap(([key, value]) => [
+        `--${key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`, Array.isArray(value) ? value.join(",") : typeof value === "object" ? JSON.stringify(value) : String(value),
+      ]);
+      const result = spawnSync(process.execPath, [bundle, v, ...args], {
+        cwd: root, env: process.env, input: readsBody ? JSON.stringify(i) : "", encoding: "utf8", maxBuffer: 10 * 1024 * 1024,
+      });
+      assert.equal(result.signal, null, result.stderr);
+      const response = JSON.parse(result.stdout);
+      assert.equal(result.status, response.exit, result.stderr);
+      return response;
+    };
     const call = (v: string, i: Record<string, unknown>) => callWithEnvelopeConsent(rawCall, v, i);
 
     // 1. Scaffold the platform layer (same recipe path `starter.test.ts` exercises).
@@ -64,9 +80,10 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
     // 2. A new Standard-lane task: the first real feature, built as the user's own first increment, per
     // tech-spec §12.2 ("the first plan item's own build step is what populates the first feature").
     const scope = [
-      "server/migrations/0002_items_loans.sql", "server/src/features/loans/*", "server/src/app.ts", "shared/schemas.ts",
-      "server/test/helpers.ts", "server/test/migrate.test.ts", "server/test/restore.test.ts",
-      "server/test/concurrent-reservation.test.ts", "server/test/fixtures/*",
+      "server/migrations/0002_items_loans.sql", "server/src/features/loans/*", "server/src/app.ts", "server/src/server.ts", "shared/schemas.ts", "package.json", "tsconfig.json", "workload/*",
+      "server/test/helpers.ts", "server/test/migrate.test.ts", "server/test/restore.test.ts", "server/test/openapi-loans.test.ts", "server/test/prior-version.test.ts", "server/test/workload.test.ts", "server/test/bounded-browse.test.ts",
+      "server/test/concurrent-reservation.test.ts", "server/test/concurrent-return.test.ts", "server/test/fixtures/*",
+      "web/src/*", "server/test/e2e/*", "server/test/support/browser-server.ts", "journeys.json", "docs/a11y-checks.md", "docs/workload.md",
     ];
     const open = await call("open", {
       profile: "feature",
@@ -78,12 +95,13 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
       outcome: "Members browse availability, reserve and return equipment; only an admin sees who has what",
       scopePaths: scope,
       elements: [
-        { ref: "r1", kind: "requirement", origin: "request", text: "a signed-in member can see which items are available or on loan, reserve an available item, and return their own loan" },
+        { ref: "r1", kind: "requirement", origin: "request", text: "a signed-in member can see which items are available or on loan, reserve an available item, and return their own loan; repeated or concurrent returns are refused with a conflict" },
         { ref: "e1", kind: "example", origin: "request", of: "r1", test: "distinguishing", expect: "fail", testFile: "server/src/features/loans/loans.test.ts", text: "browsing shows availability; reserving an available item succeeds and marks it unavailable" },
         { ref: "e2", kind: "example", origin: "request", of: "r1", test: "boundary", expect: "fail", testFile: "server/src/features/loans/loans.test.ts", text: "reserving an item already on loan is refused with a conflict, not a silent failure" },
         { ref: "e3", kind: "example", origin: "request", of: "r1", test: "boundary", expect: "pass", testFile: "server/test/concurrent-reservation.test.ts", text: "of 5 simultaneous reservation attempts on one item from separate processes, exactly one succeeds — a database-schema invariant (the unique partial index), true the moment the migration exists, independent of the feature logic this task adds" },
         { ref: "r2", kind: "requirement", origin: "request", text: "only an admin can see who currently has an item on loan; everyone else sees only availability" },
         { ref: "e4", kind: "example", origin: "request", of: "r2", test: "distinguishing", expect: "fail", testFile: "server/src/features/loans/loans.test.ts", text: "the admin overview names the borrower; a member's own browse view never does, and a member is refused the admin overview" },
+        { ref: "e5", kind: "example", origin: "request", of: "r1", test: "distinguishing", expect: "fail", testFile: "server/src/features/loans/loans.test.ts", text: "a fresh actor-scoped read lists only the current member’s persisted loans and returns, with bounded pagination" },
         { ref: "i1", kind: "invariant", origin: "request", of: "r2", text: "no response a non-admin can read ever names another user's identity" },
       ],
     } });
@@ -93,6 +111,7 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
     // repositories — not "behavior," the requirement text above names none of their shapes). The actual
     // requirement (availability without a name, the conflict, authorization) is still entirely unwritten.
     writeFixture(root, [
+      "package.json", "tsconfig.json",
       "server/migrations/0002_items_loans.sql", "server/src/features/loans/items.repository.ts", "server/src/features/loans/loans.repository.ts",
       "server/src/features/loans/loans.test.ts", "server/test/concurrent-reservation.test.ts", "server/test/fixtures/concurrent-reserve-worker.ts",
     ]);
@@ -107,13 +126,18 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
     assert.equal(candidate.exit, 0, JSON.stringify(candidate));
     const suite = d(candidate).receipts.find((r: { obligation: string }) => r.obligation === "OB-suite");
     assert.equal(suite.status, "pass", JSON.stringify(suite));
+    assert.equal(suite.counts.executed, 116, "platform, feature, process-race and generated-contract cases all ran");
     for (const id of ["OB-types", "OB-lint"]) {
       const receipt = d(candidate).receipts.find((r: { obligation: string }) => r.obligation === id);
       assert.equal(receipt?.status, "pass", `${id}: ${JSON.stringify(receipt)}`);
     }
 
-    // 5. A fresh review, then the native architect and security passes the schema change raised the lane to
-    // Deep for (migrations carry both reversibility and compatibility risk, TS §8.2's signal table).
+    const browser = d(candidate).receipts.find((r: { obligation: string }) => r.obligation === "OB-e2e");
+    assert.equal(browser?.status, "pass", JSON.stringify(browser));
+    assert.equal(browser.counts.executed, 16, "all preserved account/server and domain browser scenarios ran");
+
+    // 5. Synthetic review/architect/security results exercise the Deep-lane gate; no native analyst run
+    // is observed here. Migrations raise reversibility/compatibility risk (TS §8.2's signal table).
     await call("findings", { h, result: reviewResult(d(candidate)) });
     for (const analystRole of ["architect", "security"]) {
       const packet = await call("packet", { h, role: "analyst", analystRole, question: `Judge the ${analystRole} of this change.` });
@@ -123,6 +147,7 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
       assert.equal(recorded.exit, 0, JSON.stringify(recorded));
     }
     const f = await call("finish", { h, subject: "Build the loan desk feature" });
+    assert.equal(f.exit, 0, JSON.stringify(f));
     assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
     assert.equal(d(f).scope, "committed");
 

@@ -7,8 +7,8 @@ import { writeTx } from "../../platform/db.ts";
 import { AppError } from "../../platform/errors.ts";
 import { findUserById } from "../../platform/users.repository.ts";
 import type { AdminLoanResponse, ItemResponse, LoanResponse } from "../../../../shared/schemas.ts";
-import { activeLoanItemIds, countItems, findItemById, listItems } from "./items.repository.ts";
-import { countAllLoans, findLoanById, insertLoan, listAllLoans, returnLoan } from "./loans.repository.ts";
+import { countItems, findItemById, listItems } from "./items.repository.ts";
+import { countOwnLoans, listOwnLoans, countAllLoans, findLoanById, insertLoan, listAllLoans, returnLoan } from "./loans.repository.ts";
 import { canReturn, canViewBorrowers } from "./policy.ts";
 
 const isUniqueViolation = (e: unknown): boolean => (e as { code?: string } | undefined)?.code === "SQLITE_CONSTRAINT_UNIQUE";
@@ -16,8 +16,7 @@ interface Paged<T> { items: T[]; limit: number; offset: number; total: number }
 
 /** Availability, never who has it (the borrower-privacy invariant, PRD §3.5/5.16). */
 export function browseItems(db: Db, limit: number, offset: number): Paged<ItemResponse> {
-  const onLoan = activeLoanItemIds(db);
-  return { items: listItems(db, limit, offset).map((i) => ({ id: i.id, name: i.name, available: !onLoan.has(i.id) })), limit, offset, total: countItems(db) };
+  return { items: listItems(db, limit, offset).map((i) => ({ id: i.id, name: i.name, available: i.available === 1 })), limit, offset, total: countItems(db) };
 }
 
 export async function reserveItem(db: Db, actor: Actor, itemId: string, now: number): Promise<LoanResponse> {
@@ -34,13 +33,15 @@ export async function reserveItem(db: Db, actor: Actor, itemId: string, now: num
 }
 
 export async function returnItem(db: Db, actor: Actor, loanId: string, now: number): Promise<LoanResponse> {
-  const loan = findLoanById(db, loanId);
-  if (!loan) throw new AppError(404, "loan-not-found", "That loan does not exist.");
-  if (!canReturn(actor, loan)) throw new AppError(403, "forbidden", "You may only return your own loan.");
-  if (loan.status === "returned") throw new AppError(409, "already-returned", "That loan was already returned.");
-  await writeTx(db, () => returnLoan(db, loanId, now));
-  const item = findItemById(db, loan.item_id);
-  return { id: loan.id, itemId: loan.item_id, itemName: item?.name ?? "", reservedAt: loan.reserved_at, returnedAt: now };
+  return writeTx(db, () => {
+    const loan = findLoanById(db, loanId);
+    if (!loan) throw new AppError(404, "loan-not-found", "That loan does not exist.");
+    if (!canReturn(actor, loan)) throw new AppError(403, "forbidden", "You may only return your own loan.");
+    if (loan.status === "returned") throw new AppError(409, "already-returned", "That loan was already returned.");
+    returnLoan(db, loanId, now);
+    const item = findItemById(db, loan.item_id);
+    return { id: loan.id, itemId: loan.item_id, itemName: item?.name ?? "", reservedAt: loan.reserved_at, returnedAt: now };
+  });
 }
 
 export function adminListLoans(db: Db, actor: Actor, limit: number, offset: number): Paged<AdminLoanResponse> {
@@ -50,4 +51,12 @@ export function adminListLoans(db: Db, actor: Actor, limit: number, offset: numb
     borrower: { id: r.user_id, email: findUserById(db, r.user_id)?.email ?? "" },
   }));
   return { items, limit, offset, total: countAllLoans(db) };
+}
+
+export function memberListLoans(db: Db, actor: Actor, limit: number, offset: number): Paged<LoanResponse> {
+  return {
+    items: listOwnLoans(db, actor.user.id, limit, offset).map(r => ({
+      id: r.id, itemId: r.item_id, itemName: r.item_name, reservedAt: r.reserved_at, returnedAt: r.returned_at,
+    })), limit, offset, total: countOwnLoans(db, actor.user.id),
+  };
 }
