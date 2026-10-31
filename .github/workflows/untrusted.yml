@@ -1,5 +1,5 @@
 # Untrusted workflow: runs on every pull request, including from forks. Read-only token, no secrets, no network
-# beyond installing the repository's own locked dependencies. It runs the whole T1 suite (plan §5.2, TS §17.6).
+# beyond installing locked dependencies, their pinned Chromium and required system libraries. It runs the whole T1 suite (plan §5.2, TS §17.6).
 # The development loop runs TypeScript directly (Node 24+); the shipped bundle must also run on the minimum Node.
 name: untrusted
 on:
@@ -26,6 +26,13 @@ jobs:
         with:
           node-version: 24
       - run: npm ci --ignore-scripts --no-audit
+      - name: Install the starter's locked Chromium for real browser journeys
+        run: |
+          browser_tools="$RUNNER_TEMP/tenet-browser-tools"
+          mkdir -p "$browser_tools"
+          cp plugin/skills/tenet-starter-ts-web-api/template/package.json plugin/skills/tenet-starter-ts-web-api/template/package-lock.json "$browser_tools/"
+          npm ci --prefix "$browser_tools" --ignore-scripts --no-audit
+          node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium
       - run: npm run ci
       - name: The shipped bundle, driven through real repositories
         run: npm run uat

@@ -24,6 +24,20 @@ describe("workflows keep the untrusted tier untrusted [ENG-10]", () => {
   it("there is a workflow to check", () => assert.ok(workflows.length > 0));
   it("the starter CI install disables npm's implicit audit", () => assert.match(starterWorkflow, /npm ci --ignore-scripts --no-audit/));
   it("the starter pins every remote action to a commit [AC-28]", () => assertPinnedActions(starterWorkflow));
+  it("provisions the starter's locked browser outside the shipped payload before supported-POSIX CI", () => {
+    const steps = workflows.find(({ f }) => f === "untrusted.yml")!.doc.jobs.t1.steps;
+    const commands: string[] = steps.map((step: { run?: string }) => step.run ?? "");
+    const browser = commands.findIndex(command => command.includes("/@playwright/test/cli.js"));
+    assert.ok(browser > commands.indexOf("npm ci --ignore-scripts --no-audit"), "browser tooling follows the locked workspace install");
+    assert.ok(browser < commands.indexOf("npm run ci"), "a cold browser cache must work before real browser tests");
+    const command = commands[browser]!;
+    assert.match(command, /browser_tools="\$RUNNER_TEMP\/tenet-browser-tools"/);
+    assert.ok(command.includes("plugin/skills/tenet-starter-ts-web-api/template/package.json"));
+    assert.ok(command.includes("plugin/skills/tenet-starter-ts-web-api/template/package-lock.json"));
+    assert.ok(command.includes('npm ci --prefix "$browser_tools" --ignore-scripts --no-audit'));
+    assert.ok(command.includes('node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium'));
+    assert.doesNotMatch(command, /\bnpx\b|npm exec\b/, "do not resolve a separate unpinned Playwright");
+  });
   it("continuously checks Windows portability and minimum-runtime evaluation without claiming POSIX mutation support", () => {
     const workflow = workflows.find(({ f }) => f === "untrusted.yml")!.doc;
     const job = workflow.jobs["windows-portability"];

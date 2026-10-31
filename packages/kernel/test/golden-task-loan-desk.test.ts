@@ -73,6 +73,7 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
     assert.equal(s.exit, 0, JSON.stringify(s));
     const scaffoldCheck = await call("check", { h: h0, stage: "candidate" });
     assert.equal(scaffoldCheck.exit, 0, JSON.stringify(scaffoldCheck));
+    assert.ok(d(scaffoldCheck).review, JSON.stringify(scaffoldCheck));
     await call("findings", { h: h0, result: reviewResult(d(scaffoldCheck)) });
     const scaffoldFinish = await call("finish", { h: h0, subject: "Scaffold the starter" });
     assert.equal(d(scaffoldFinish).endpoint, "checked-local", JSON.stringify(scaffoldFinish.reasons));
