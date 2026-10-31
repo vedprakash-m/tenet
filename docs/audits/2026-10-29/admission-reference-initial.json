@@ -1,0 +1,260 @@
+{
+  "mode": "reference",
+  "qualification": "unqualified",
+  "referencePass": false,
+  "reasons": [
+    "server-memory-target-failed",
+    "busy-degradation-unobserved"
+  ],
+  "protocol": {
+    "warmupMs": 30000,
+    "measurementMs": 120000,
+    "actualMeasurementAndDrainMs": 120273.96274999999,
+    "clients": 20,
+    "maxHttpConcurrency": 20,
+    "mix": {
+      "list": 70,
+      "reserve": 20,
+      "return": 10
+    },
+    "pacingMs": 250,
+    "minimumSamples": 5000,
+    "expectedBursts": 12
+  },
+  "seed": {
+    "users": 2000,
+    "items": 10000,
+    "loans": 50000
+  },
+  "operations": {
+    "list": {
+      "attempts": 6412,
+      "statuses": {
+        "200": 6412
+      },
+      "unexpected": 0,
+      "unexpectedRate": 0,
+      "successful": {
+        "samples": 6412,
+        "p50": 7.481417000002693,
+        "p95": 18.44145800000115,
+        "p99": 26.565375000005588
+      },
+      "allAttempts": {
+        "samples": 6412,
+        "p50": 7.481417000002693,
+        "p95": 18.44145800000115,
+        "p99": 26.565375000005588
+      }
+    },
+    "reserve": {
+      "attempts": 1832,
+      "statuses": {
+        "200": 1479,
+        "409": 353
+      },
+      "unexpected": 0,
+      "unexpectedRate": 0,
+      "successful": {
+        "samples": 1479,
+        "p50": 5.00470900000073,
+        "p95": 18.33574999999837,
+        "p99": 26.68224999999802
+      },
+      "allAttempts": {
+        "samples": 1832,
+        "p50": 4.945000000006985,
+        "p95": 18.16416700000991,
+        "p99": 26.68224999999802
+      }
+    },
+    "return": {
+      "attempts": 916,
+      "statuses": {
+        "200": 916
+      },
+      "unexpected": 0,
+      "unexpectedRate": 0,
+      "successful": {
+        "samples": 916,
+        "p50": 5.815250000014203,
+        "p95": 18.823125000009895,
+        "p99": 27.402124999993248
+      },
+      "allAttempts": {
+        "samples": 916,
+        "p50": 5.815250000014203,
+        "p95": 18.823125000009895,
+        "p99": 27.402124999993248
+      }
+    }
+  },
+  "metrics": {
+    "peakRssBytes": 348798976,
+    "eventLoopSamples": 10422,
+    "eventLoopP95Ms": 14.852095
+  },
+  "database": {
+    "duplicateActiveItems": 0,
+    "foreignKeyViolations": 0
+  },
+  "bursts": [
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    },
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    },
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    },
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    },
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    },
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    },
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    },
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    },
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    },
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    },
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    },
+    {
+      "successes": 1,
+      "conflicts": 4,
+      "unexpected": 0
+    }
+  ],
+  "signInProbes": [
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    },
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    },
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    },
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    },
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    },
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    },
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    },
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    },
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    },
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    },
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    },
+    {
+      "requested": 4,
+      "posted": 4,
+      "successful": 4,
+      "failures": 0
+    }
+  ],
+  "writer": {
+    "observed": true,
+    "holdMs": 2000,
+    "actualHoldMs": 2010.4302090000128,
+    "busyResponses": 0
+  },
+  "environment": {
+    "node": "v26.3.0",
+    "platform": "darwin",
+    "arch": "arm64",
+    "release": "27.0.0",
+    "totalMemoryBytes": 38654705664
+  },
+  "limits": [
+    "local observation; no reference-hardware/isolation or release qualification",
+    "percentiles separate successful responses from all attempts; refusals never establish fast successful operations",
+    "no kernel workload receipt, trend consumer or attention disposition implemented"
+  ],
+  "cleanup": {
+    "serverExited": true,
+    "writerExited": true,
+    "directoryRemoved": true
+  }
+}

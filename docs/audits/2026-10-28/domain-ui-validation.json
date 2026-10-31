@@ -1,0 +1,173 @@
+{
+  "date": "2026-10-28",
+  "baseCommit": "8b7bbc4190fc76599b51e1fcfe50f23947a2963c",
+  "status": "local-uncommitted",
+  "scope": "Fixture-only loan-desk browser increment; neutral recipe remains ts-web-api@0.2.0. No native host, human screen-reader or release qualification.",
+  "sourceSha256": "1fc41f6957a9b8b667ecdc0cc30d8fcbde31dc790f19cc1af6f52d556dc116c2",
+  "sourceHashMethod": "Sorted Git-known tracked/untracked nonignored packages/tools/plugin paths and bytes, NUL-separated. Generated payload/bundle separately hashed.",
+  "ci": {
+    "file": "/tmp/tenet-domain-ci-complete.log",
+    "sha256": "37bbc4f83d0ea84c6bbdd375f6e6c7e5cdca24877bda6296f411ec54917b58fe",
+    "command": "npm run ci",
+    "exit": 0,
+    "tests": 1237,
+    "suites": 202,
+    "failures": 0,
+    "skips": 0
+  },
+  "redControls": [
+    {
+      "name": "actor-scoped own-loan read returns 404",
+      "file": "/tmp/tenet-domain-api-red.log",
+      "sha256": "bbdda6a1a1b2301a07576c237b209a8f0040b6a36394dbf211e11a8655c93a80"
+    },
+    {
+      "name": "Equipment view absent",
+      "file": "/tmp/tenet-domain-browser-red.log",
+      "sha256": "8d50201f9c217aec667183a6405f166c2fdf360864f1d187b057799327ccbba7"
+    },
+    {
+      "name": "Equipment navigation does not transfer focus",
+      "file": "/tmp/tenet-domain-focus-red.log",
+      "sha256": "6c155514d528334791730b76bcf761d6ffde852098fedc58613389fddfdce001"
+    },
+    {
+      "name": "pending live region is inside a busy ancestor",
+      "file": "/tmp/tenet-domain-live-red.log",
+      "sha256": "ed5bd1889b4ce41dfa2d8957217b216f3d6b22e0c4f0a2acc13c42f59ec87be2"
+    }
+  ],
+  "appChecks": {
+    "unitIntegrationTests": 53,
+    "typecheck": "pass",
+    "lint": "pass",
+    "webBuild": "pass",
+    "productionRateLimits": "unchanged; combined browser regression first hit global limit before abandoning unnecessary view loads and cancelling disposed reads",
+    "runtimes": {
+      "current": {
+        "node": "26.3.0",
+        "browser": {
+          "startTime": "2026-10-29T02:47:42.221Z",
+          "duration": 6192.575000000001,
+          "expected": 15,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        },
+        "file": "/tmp/tenet-domain-browser-final-focus.json",
+        "sha256": "1a3327033f7f9be02844c41a26a63d8ced4c3ab1c8a6b5d8ce04a8370c752776"
+      },
+      "minimum": {
+        "node": "22.12.0",
+        "browser": {
+          "startTime": "2026-10-29T02:47:47.292Z",
+          "duration": 6230.063,
+          "expected": 15,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        },
+        "file": "/tmp/tenet-domain-browser-final-minimum.json",
+        "sha256": "f7b26100a7047bf5022f18bbc80da33a9ef7ef548196e7cef676bb0ffa9cd94a"
+      }
+    }
+  },
+  "uat": {
+    "current": {
+      "runtime": "v26.3.0",
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "scenarios": 148,
+      "file": "/tmp/tenet-domain-uat.json",
+      "sha256": "4a7e6333a50d26f4eab4dacfba71d0b8119ccd6b9574cdfe31aad978c35907d6",
+      "domainJourney": {
+        "exit": 0,
+        "source": "packages/kernel/test/golden-task-loan-desk.test.ts",
+        "mode": "TENET_TEST_BUNDLE selects actual built CLI for every verb",
+        "browserScenariosAsserted": 15,
+        "baseline": "real red",
+        "finish": "committed checked-local in scratch only",
+        "reviewResults": "synthetic submissions exercise gate, not native analyst observation",
+        "file": "/tmp/tenet-domain-built-current-final.log",
+        "sha256": "b3b584c176e78c06aa5ab98268b27406f70304bf9d301341973a0c8844a03a9f"
+      }
+    },
+    "minimum": {
+      "runtime": "v22.12.0",
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "scenarios": 148,
+      "file": "/tmp/tenet-domain-uat-minimum.json",
+      "sha256": "3b919171f61e8ceb32451e24932444db8507e3bab8353173acfaf430e1e4355d",
+      "domainJourney": {
+        "exit": 0,
+        "source": "packages/kernel/test/golden-task-loan-desk.test.ts",
+        "mode": "TENET_TEST_BUNDLE selects actual built CLI for every verb",
+        "browserScenariosAsserted": 15,
+        "baseline": "real red",
+        "finish": "committed checked-local in scratch only",
+        "reviewResults": "synthetic submissions exercise gate, not native analyst observation",
+        "file": "/tmp/tenet-domain-built-minimum-final.log",
+        "sha256": "370f5346fc4c8db0702103c88b1076f4394fc598e4cf86371c16125fc10650c0"
+      }
+    }
+  },
+  "artifact": {
+    "bundleBytes": 776837,
+    "bundleSha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb",
+    "payloadFiles": 78,
+    "payloadManifestSha256": "88cbf7041ecb83beda8e86738aaea949bf43c54d756df3aeead618c78c87d6de"
+  },
+  "validationRepairs": {
+    "firstCiFailure": {
+      "file": "/tmp/tenet-domain-ci.log",
+      "sha256": "ed5dce78c3895ae4db3923c055e4d23e5c6d018330f4064e3fc95015d71eda86",
+      "cause": "Existing timeout test could parse a partially written PID marker; fixture now writes then atomically renames the marker."
+    },
+    "filterRegression": {
+      "file": "/tmp/tenet-domain-filter-regression.log",
+      "sha256": "0b01528e8c803c562304b29bb07246444a88a19a2b94db215f49e604c22bdb78",
+      "tests": 16,
+      "failures": 0
+    },
+    "firstBuiltUatFailure": {
+      "file": "/tmp/tenet-domain-built-current.log",
+      "sha256": "e2a1056ab75ffb8dc007d34e9abd4d3fbd6eb394227575fd3a1699e2f5c81c5d",
+      "cause": "New test driver JSON-encoded touched list instead of comma-separated CLI values; CLI refused unexplained paths. Fixed driver, not kernel behavior."
+    }
+  },
+  "privacy": {
+    "scope": "unstaged additions and all nonignored untracked files",
+    "untrackedFiles": 37,
+    "findings": []
+  },
+  "visualInspection": {
+    "desktop": "inspected; no overflow observed",
+    "mobile": "375 by 812 viewport; inspected and automated no-horizontal-overflow assertion passed",
+    "manualScreenReader": "unobserved",
+    "fullWcagAsvs": "unqualified"
+  },
+  "remaining": [
+    "per-changed-journey consumer and review/selection mechanism",
+    "manual screen-reader evidence",
+    "date-interval/next-free behavior",
+    "OpenAPI/workload/applicability and full requirement dispositions",
+    "schema-2 mechanism review/sign-off and independent review",
+    "native host/qualification/release gates"
+  ],
+  "postValidationDocumentationChecks": {
+    "commands": [
+      "npm run lint",
+      "npm run build",
+      "npm run verify:payload",
+      "npm run verify:reproducible"
+    ],
+    "exit": 0,
+    "scope": "Only root plan/spec/changelog/audit documentation finalized after full CI and built domain UAT; packages/tools/plugin source bytes unchanged.",
+    "repeatBuildLogSha256": "654b50d62510eeadc9ebf83df1ac72d187f98e7104bb27fb3876b3010012470b"
+  }
+}

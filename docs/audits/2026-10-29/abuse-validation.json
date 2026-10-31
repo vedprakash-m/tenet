@@ -1,0 +1,209 @@
+{
+  "date": "2026-10-29",
+  "status": "local-uncommitted-unqualified",
+  "baseCommit": "8b7bbc4190fc76599b51e1fcfe50f23947a2963c",
+  "sourceSha256": "d2dc1336aebaa24701dc58d1fec815f5cce043a204ac4ca7ad36964f0b6c0644",
+  "sourceHashMethod": "Sorted Git-known nonignored packages/tools/plugin paths and bytes, NUL-separated; generated artifacts separately hashed.",
+  "scope": "Repair existing IP/account limiter composition, retain headers and pre-work rejection, and validate unchanged browser assertions against fresh current-source production UI. No new admission policy or cryptographic change.",
+  "recipe": {
+    "id": "ts-web-api",
+    "version": "0.3.3",
+    "sentinel": "tenet-starter-app",
+    "checks": [
+      "tsc",
+      "eslint",
+      "e2e"
+    ],
+    "lockfileSha256": "1ef193bac3c115268d6b21f65014761f809783fa2fa4bee8a4838f9f309f9f77",
+    "protectedPaths": [
+      "server/src/platform/auth/*",
+      "server/src/platform/session/*",
+      "server/migrations/*"
+    ],
+    "install": [
+      [
+        "npm",
+        "ci",
+        "--ignore-scripts",
+        "--no-audit"
+      ],
+      [
+        "npm",
+        "rebuild",
+        "better-sqlite3"
+      ]
+    ]
+  },
+  "ci": {
+    "command": "npm run ci",
+    "exit": 0,
+    "file": "/tmp/tenet-abuse-ci.log",
+    "sha256": "28d560845b555b2f583b4c9760ec40c824fabd19388d0bb5b5848bb117ee4852",
+    "tests": 1237,
+    "suites": 202,
+    "failures": 0,
+    "skips": 0
+  },
+  "sourceContext": {
+    "implementationAndPostWorkloadSourceSha256": "ebf023fda86e7f97312f02fb79c07184580363dd3df070052ef80ad9c5c99ecc",
+    "finalDifference": "Only the existing Git hook test success assertion now includes JSON outcome diagnostics. Reversing that assertion message reproduces the frozen implementation/workload source hash exactly. No deadline, assertion condition, production or fixture byte changed after measurements/UAT."
+  },
+  "ciInvestigation": {
+    "firstRun": {
+      "failures": 1,
+      "case": "git.test.ts hook-staged foreign path; one-second commit timeout; assertion lacked outcome detail",
+      "rootCause": "unconfirmed; timing/resource contention is an inference, not established",
+      "file": "/tmp/tenet-abuse-ci-first.log",
+      "sha256": "432b8919e74d1818d1ce70c875a9ef1a35f87ea406cdc7c925c19a491cc8a559"
+    },
+    "focusedUnchangedDeadline": [
+      {
+        "file": "/tmp/tenet-abuse-git-focus-1.log",
+        "sha256": "469680fe6f813515ab75d7fb14bf4f64de5d93d85bfeed727ec577f5103bc46e"
+      },
+      {
+        "file": "/tmp/tenet-abuse-git-focus-2.log",
+        "sha256": "4387b6370af1c37f7edcb6f67729be4f82de9d8ffa2402f9e57e865c50e55fd5"
+      },
+      {
+        "file": "/tmp/tenet-abuse-git-focus-3.log",
+        "sha256": "fccc7f562b45d1bc40895c3946991f5c4b187bde8685c720ca21a16395412aee"
+      }
+    ],
+    "disposition": "Three isolated repetitions pass with the same one-second deadline. Full CI rerun without competing validation jobs; preserve initial failure and improve diagnostics. No timeout or condition was relaxed. Intermittent-load investigation remains a follow-up."
+  },
+  "controls": [
+    {
+      "name": "Route override bypasses exhausted IP ceiling",
+      "result": "Real application red 401 instead of 429; held writer red 503 instead of 429. Per-account control passes.",
+      "file": "/tmp/tenet-abuse-red.log",
+      "sha256": "525251e3620d2e4c4f3aacd545208f1d139d8df6ecaad3e6c84fb5dd2ab7a783"
+    },
+    {
+      "name": "Naive rateLimit hook composition skips account check",
+      "result": "Scratch-only mutation fails the five-attempt control (401 instead of 429); final source restored.",
+      "file": "/tmp/tenet-abuse-naive-mutation.log",
+      "sha256": "6b6667094ba2f436c76305122310c5bf188b95e82f7b5fd83fe7db30b9801c4e"
+    },
+    {
+      "name": "Shared development UI cohort reaches global ceiling",
+      "result": "Trace observes 429 at request 121. All assertions retained; fresh production UI source build passes 15 browser cases, no exemption or raised cap.",
+      "file": "/tmp/tenet-abuse-browser-requests.jsonl",
+      "sha256": "529924b3b68643b0065d9e42c8006e6543e74ead3694e72ed99eec400363cc09",
+      "initialLoop": {
+        "file": "/tmp/tenet-abuse-golden-source.log",
+        "sha256": "3551350284392e21b2532e1cf937eea2ce532b0bd53734d246884cc1d06437c7"
+      },
+      "productionUiLoop": {
+        "file": "/tmp/tenet-abuse-golden-production-ui.log",
+        "sha256": "4bb9a05c713a632080214110b23c704a2c626774013444e5a8591b34d213c555"
+      }
+    }
+  ],
+  "checks": {
+    "neutralAppTests": 59,
+    "neutralBrowserTests": 11,
+    "evolvedAppTests": 85,
+    "evolvedBrowserTests": 15,
+    "newAbuseControls": 3,
+    "targetedCurrent": {
+      "file": "/tmp/tenet-abuse-current.log",
+      "sha256": "25d3685beb9aa7a9276f5758f3128eff55bbd1d8d1f70e10554b1d0d09002950"
+    },
+    "targetedMinimum": {
+      "file": "/tmp/tenet-abuse-minimum.log",
+      "sha256": "7bb585f121a46653231914d5deb391307a692c423bc917b3118b90d60671570d"
+    }
+  },
+  "uat": {
+    "current": {
+      "runtime": "v26.3.0",
+      "scenarios": 149,
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "file": "/tmp/tenet-abuse-uat.json",
+      "sha256": "a7716457c079808b8c985c9cb047cd61c9556e606ea16c72fc0c7e3b4d63c304",
+      "featureLoop": {
+        "exit": 0,
+        "appTestsAsserted": 85,
+        "browserTestsAsserted": 15,
+        "mode": "Actual built CLI scaffold/baseline/candidate/review/finish; synthetic review results exercise gates without native review claim",
+        "file": "/tmp/tenet-abuse-built-current.log",
+        "sha256": "c5b54f0e9b37c351109d38ac13ab4e5918d4525e4d6e19827f4a955697a5a792"
+      }
+    },
+    "minimum": {
+      "runtime": "v22.12.0",
+      "scenarios": 149,
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "file": "/tmp/tenet-abuse-uat-minimum.json",
+      "sha256": "a9df7b23932883b0c6a402a66ac27b6e886e4323d9e08c723cabb08cc904734b",
+      "featureLoop": {
+        "exit": 0,
+        "appTestsAsserted": 85,
+        "browserTestsAsserted": 15,
+        "mode": "Actual built CLI scaffold/baseline/candidate/review/finish; synthetic review results exercise gates without native review claim",
+        "file": "/tmp/tenet-abuse-built-minimum.log",
+        "sha256": "4887f76a8d1af3a9b90bb8ad65003b901632a027d88f639b29b88351206e0486"
+      }
+    }
+  },
+  "postRepairWorkload": {
+    "runtime": "26.3.0",
+    "exit": 1,
+    "qualification": "unqualified",
+    "report": "docs/audits/2026-10-29/abuse-reference-observation.json",
+    "sha256": "cadea1e76446cd24cfcf2e69278f7aab102b0aac49f2750eaa94056b7ac2a4d0",
+    "reasons": [
+      "list-unexpected-errors",
+      "reserve-unexpected-errors",
+      "return-unexpected-errors",
+      "server-memory-target-failed",
+      "five-way-bursts-incomplete",
+      "busy-degradation-unobserved",
+      "insufficient-successful-samples",
+      "hash-capacity-probes-incomplete"
+    ],
+    "metrics": {
+      "peakRssBytes": 324616192,
+      "eventLoopSamples": 10444,
+      "eventLoopP95Ms": 12.189695
+    },
+    "cleanup": {
+      "serverExited": true,
+      "writerExited": true,
+      "directoryRemoved": true
+    },
+    "successfulSamples": 205,
+    "attempts": 9440,
+    "rateRefusals": 9235,
+    "limits": "One current-runtime full run alone; no post-repair minimum full performance run or reference-tuple qualification. Both final functional loops include real production-process smoke."
+  },
+  "memoryDiagnostic": {
+    "file": "docs/audits/2026-10-29/memory-diagnosis.json",
+    "sha256": "3684f8ce851e67a1c85022a3e8aa89e10ad57b2980b99e394250367c07ed2f16",
+    "scope": "Pre-repair instrumented observations, not current artifact performance or an implemented memory repair."
+  },
+  "artifact": {
+    "bundleBytes": 776837,
+    "bundleSha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb",
+    "payloadFiles": 84,
+    "payloadManifestSha256": "3e178d354a04f4b083160e02b6bcaa882281fbbbffd4abd82db551076a31f894"
+  },
+  "privacy": {
+    "scope": "unstaged additions and all nonignored untracked files",
+    "untrackedFiles": 77,
+    "findings": []
+  },
+  "limits": [
+    "No changed rate values, hash parameters/concurrency, public problem DTOs, kernel policy/schema/authority or module budget.",
+    "No dependency/lock change; reused cached browser/native dependencies, no fresh registry audit/clean-host bootstrap claim.",
+    "Legitimate-user/NAT admission contract, memory capacity, reference tuple, workload/trend consumers and broader unsigned/native/release gates remain open.",
+    "No owner-accepted requirement evidence, independent implementation review, commit, push or qualification."
+  ]
+}

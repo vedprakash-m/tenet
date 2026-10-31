@@ -1,0 +1,234 @@
+{
+  "date": "2026-10-28",
+  "baseCommit": "8b7bbc4190fc76599b51e1fcfe50f23947a2963c",
+  "status": "local-uncommitted",
+  "scope": "Source-derived OpenAPI generation and isolated export only. No compatibility/trait/semver consumer, native host, manual screen-reader or release qualification.",
+  "sourceSha256": "8a897078122f17d50ceb246e38a0ecd090d31222d28a85cb209acf8010649527",
+  "sourceHashMethod": "Sorted Git-known tracked/untracked nonignored packages/tools/plugin paths and bytes, NUL-separated. Generated bundle and complete payload manifest separately hashed.",
+  "recipe": {
+    "id": "ts-web-api",
+    "version": "0.3.0",
+    "sentinel": "tenet-starter-app",
+    "checks": [
+      "tsc",
+      "eslint",
+      "e2e"
+    ],
+    "lockfileSha256": "1ef193bac3c115268d6b21f65014761f809783fa2fa4bee8a4838f9f309f9f77",
+    "protectedPaths": [
+      "server/src/platform/auth/*",
+      "server/src/platform/session/*",
+      "server/migrations/*"
+    ],
+    "install": [
+      [
+        "npm",
+        "ci",
+        "--ignore-scripts",
+        "--no-audit"
+      ],
+      [
+        "npm",
+        "rebuild",
+        "better-sqlite3"
+      ]
+    ]
+  },
+  "ci": {
+    "command": "npm run ci",
+    "exit": 0,
+    "file": "/tmp/tenet-openapi-ci.log",
+    "sha256": "74f4c51199464ea2f1bc265ed0480711c4d285ef80d1cf2221793685b6f49a53",
+    "tests": 1237,
+    "suites": 202,
+    "failures": 0,
+    "skips": 0
+  },
+  "redControls": [
+    {
+      "name": "real app has no swagger decorator; contract export unavailable",
+      "file": "/tmp/tenet-openapi-red.log",
+      "sha256": "290c9151aa48df921d39505f43cc0e348d128ba4a63a9dd6c6aa25f6f2f4b919"
+    },
+    {
+      "name": "added feature lacks cookie/CSRF metadata",
+      "file": "/tmp/tenet-openapi-loan-red.log",
+      "sha256": "c03fbb1be8d9fc86f0d761a21044cb965d544bd350525b56bda640d19a1043fe"
+    }
+  ],
+  "appChecks": {
+    "neutralUnitIntegration": 48,
+    "loanUnitIntegration": 57,
+    "currentAndMinimumTypesLintBuild": "pass",
+    "minimumCleanEngineStrictInstallAndNativeRebuild": {
+      "exit": 0,
+      "file": "/tmp/tenet-openapi-min-install.log",
+      "sha256": "f3eed8cbba893cef8f0bd262cfcb6ea0df12e37c9e1ea40b4b9720a35be3d25e"
+    },
+    "minimumNeutralChecks": {
+      "file": "/tmp/tenet-openapi-min-checks.log",
+      "sha256": "45dc79b5edbdefb3b56bffccecbd7af74195febb52a570a5740a9fe98f8c2860"
+    },
+    "kernelScaffoldReceiptCommitAndChromiumCancellation": {
+      "tests": 3,
+      "exit": 0,
+      "file": "/tmp/tenet-openapi-kernel-targeted.log",
+      "sha256": "06546a1230b89d2c516b2628b8204504e1f90b7d1813c467ec25cd5affd29344"
+    },
+    "browser": {
+      "currentNeutral": {
+        "stats": {
+          "startTime": "2026-10-29T03:29:35.514Z",
+          "duration": 6458.482,
+          "expected": 11,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        },
+        "file": "/tmp/tenet-openapi-browser-platform.json",
+        "sha256": "ec9d1e455d5f9b97e31e1214f50b9c90b38db8ea22e22db750ab54faf05592ec"
+      },
+      "minimumNeutral": {
+        "stats": {
+          "startTime": "2026-10-29T03:29:36.823Z",
+          "duration": 6140.79,
+          "expected": 11,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        },
+        "file": "/tmp/tenet-openapi-browser-min.json",
+        "sha256": "ce89b1e9b4fd4eeb88824ae04d0962f37837db2f4eda7532006c1edb9f10390d"
+      },
+      "currentLoan": {
+        "stats": {
+          "startTime": "2026-10-29T03:27:10.716Z",
+          "duration": 6003.885,
+          "expected": 15,
+          "skipped": 0,
+          "unexpected": 0,
+          "flaky": 0
+        },
+        "file": "/tmp/tenet-openapi-browser-loan.json",
+        "sha256": "cea8d13cacbce89d095d32a10020b279231d26abdf76fa7f9452063232e4e82e"
+      }
+    }
+  },
+  "contracts": {
+    "currentNeutral": {
+      "paths": 6,
+      "file": "/tmp/tenet-openapi-platform-final.json",
+      "sha256": "b697ae9bfd1fd0eefce9bf56af7555c6195aaa1c37c4aedd951f02bc7cac883f"
+    },
+    "minimumNeutral": {
+      "paths": 6,
+      "file": "/tmp/tenet-openapi-min-platform.json",
+      "sha256": "b697ae9bfd1fd0eefce9bf56af7555c6195aaa1c37c4aedd951f02bc7cac883f"
+    },
+    "currentLoan": {
+      "paths": 11,
+      "file": "/tmp/tenet-openapi-loan.json",
+      "sha256": "595ba8848cb62faf206d00c7a44ee933f5402b742fe205d2dfc4f328ca0e0aea"
+    }
+  },
+  "dependencyReview": {
+    "swagger": "9.9.2, promoted existing resolved peer to explicit runtime dependency",
+    "resolvedPackageVersionChanges": 0,
+    "registryAdvisoryMetadata": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "audit": {
+      "file": "/tmp/tenet-openapi-audit.json",
+      "sha256": "facfb8994c1fb72c6c7e4e2ea022b936ee16a3672f6279fbbfb056512eebfffb"
+    },
+    "limits": "Zero reported advisories is not a security/support guarantee. Retained ESLint 9.39.1 reports upstream deprecation; reassess compatible lint stack before qualification. No runtime floor increase."
+  },
+  "uat": {
+    "current": {
+      "runtime": "v26.3.0",
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "scenarios": 149,
+      "contractObservation": {
+        "scenario": "built starter source-bound OpenAPI export",
+        "paths": 6,
+        "version": "3.1.0",
+        "ambientConfigurationIgnored": true,
+        "listenerStarted": false,
+        "compatibilityEnforced": false
+      },
+      "file": "/tmp/tenet-openapi-uat.json",
+      "sha256": "a7716457c079808b8c985c9cb047cd61c9556e606ea16c72fc0c7e3b4d63c304",
+      "domainJourney": {
+        "exit": 0,
+        "mode": "actual built CLI for every verb, real baseline and candidate, source-derived account and loan contracts, 57 app tests and 15 browser cases, committed checked-local in scratch only",
+        "reviewResults": "synthetic submissions exercise gate, not observed native analysts",
+        "file": "/tmp/tenet-openapi-built-current.log",
+        "sha256": "3665251576ceeeccbecb2d949ca7d1b49d93980defcaf1c7af98c46775c562ed"
+      }
+    },
+    "minimum": {
+      "runtime": "v22.12.0",
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "scenarios": 149,
+      "contractObservation": {
+        "scenario": "built starter source-bound OpenAPI export",
+        "paths": 6,
+        "version": "3.1.0",
+        "ambientConfigurationIgnored": true,
+        "listenerStarted": false,
+        "compatibilityEnforced": false
+      },
+      "file": "/tmp/tenet-openapi-uat-minimum.json",
+      "sha256": "a9df7b23932883b0c6a402a66ac27b6e886e4323d9e08c723cabb08cc904734b",
+      "domainJourney": {
+        "exit": 0,
+        "mode": "actual built CLI for every verb, real baseline and candidate, source-derived account and loan contracts, 57 app tests and 15 browser cases, committed checked-local in scratch only",
+        "reviewResults": "synthetic submissions exercise gate, not observed native analysts",
+        "file": "/tmp/tenet-openapi-built-minimum.log",
+        "sha256": "690029bceb4b509651952b4d062ca9fa3e312c24486779175d9932a065a79c85"
+      }
+    }
+  },
+  "artifact": {
+    "bundleBytes": 776837,
+    "bundleSha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb",
+    "payloadFiles": 81,
+    "payloadManifestSha256": "c93ec397087d6ffec57aa957e040a5e1b70c75fddb00e2814d73e2560ca7f949"
+  },
+  "privacy": {
+    "scope": "unstaged additions and all nonignored untracked files",
+    "untrackedFiles": 42,
+    "findings": []
+  },
+  "remaining": [
+    "API breaking-change, trait and semver consumers",
+    "changed-journey selection/enforcement",
+    "workload/fitness trends and threshold attention",
+    "ASVS applicability/results and manual screen-reader observation",
+    "date-interval/next-free behavior",
+    "unsigned schema-2 protocol review/sign-off",
+    "native host, independent review and release qualification"
+  ],
+  "postValidationDocumentationChecks": {
+    "commands": [
+      "npm run lint",
+      "npm run build",
+      "npm run verify:payload",
+      "npm run verify:reproducible"
+    ],
+    "exit": 0,
+    "scope": "Only root plan/spec/changelog/audit documentation finalized after full CI and built UAT; packages/tools/plugin bytes unchanged.",
+    "repeatBuildLogSha256": "ad47369faeae16890e5ecb0412fc6547647c9be48c161ec2fb312ff92a1d0a1a"
+  }
+}

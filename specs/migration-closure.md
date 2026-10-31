@@ -2,7 +2,9 @@
 
 > Status: Approved 2026-10-27 by the owner after independent review (§10): budget path (a), forget repair as specified, and MC-1/3/4 dispositions as amendments. Implementation of §3.1 waits for a supported-POSIX test route. §§3.2-3.3 remain inactive target-protocol text.
 > Owner: repository owner. Sources: [schema-migration.md](schema-migration.md) §§16.4, 16.6, 16.7, 18.1, 18.2, 18.4, 19; [config-completion.md](config-completion.md) §§18.2-18.4, 20; technical specification §7.4 (effects) and §7.7 (forgetting); CON-10, AC-09, LFC-04, CON-05.
-> MC-2 is specified separately in [store-lock-admission.md](store-lock-admission.md) and is blocked on a POSIX test environment.
+> MC-2 is specified separately in [store-lock-admission.md](../.archive/specs/store-lock-admission.md) and is blocked on a POSIX test environment.
+
+> Local schema-1 implementation update, 2026-10-28: FG controls are grouped in `packages/kernel/test/forget-recovery.test.ts` and `fixtures/crash-forget.ts`, alongside existing lessons tests. All five real SIGKILL points, fallback, lost-response retry and live-job preservation pass locally; all three FG-4 controlled mutations fail as required. `Tx.state` remains read-only at the port and exposes the last publication through a getter. Shared source grows 729 non-whitespace characters; the owner-approved under-1% allowance raises its cap by 10 lines (0.24%) after using existing headroom. Full local CI passes 1,226 tests/198 suites; built UAT passes 139 scenarios on both Node 26.3.0 and 22.12.0. Target-protocol sections remain inactive and this mixed-scope spec is retained until migration is implemented.
 
 ## 1. Outcome and scope
 

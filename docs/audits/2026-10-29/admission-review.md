@@ -1,0 +1,21 @@
+# Independent admission design review — October 29, 2026
+
+Status: **independent design review closed; owner implementation sign-off subsequently recorded** in [admission-approval.md](admission-approval.md). The owner explicitly authorized one read-only independent subagent review. The same reviewer performed the initial pass and disposition checks; it made no edits, ran no tests/benchmarks, accessed no host/account/network and delegated no work.
+
+Final reviewed [contract](../../../specs/admission-policy.md) SHA-256: `8279ef8835e92fa4b4e9c90e148e5154a7013513766215b5a6edcfa9919465e4`. The draft stays unsigned and immutable at this review point. This record supersedes its pre-verification review-pending note, not its owner-sign-off requirement. No proposed policy is implemented.
+
+## Finding dispositions
+
+| Finding | Initial failure path | Final disposition verified independently |
+|---|---|---|
+| AR1 major: anonymous traffic blocks verified session management | Shared 120/IP health traffic denies `/me`/sign-out; post-sign-out fresh read also becomes blocked | Verified session management uses actor admission; password attempts also have a five/user cap. Coarse-only constant 401 for an entirely absent cookie preserves fresh signed-out confirmation without lookup, write, hash or authority. Invalid/empty/presented cookies do not take that path. Coarse/actor exhaustion remains an explicit availability limit. |
+| AR2 major: an early group guard is not a final configuration check | Later route/ready hooks add grouping after early validation; plugin dynamically appends groups to manual keys | Actual-request metadata normalization is authoritative. Only supported own-data metadata is copied into a private null-prototype record, with a pinned non-writable/non-configurable own `groupId: undefined` and pinned served binding. Accessors/custom prototypes/unsafe descriptors fail closed. Tests cover mutations across awaited keys. |
+| AR2 follow-up minor: collected options can detach from served configuration | Fastify shallow-copy plus later replacement makes collector and actual context differ | Startup collector validation is explicitly diagnostic, not universal pre-listen enforcement. Actual served metadata is checked before counters/handlers; detachment has its own regression. Removed the unnecessary custom finalization lifecycle and kept ordinary `onReady`. |
+| AR3 minor: read/mutation ordering | Anonymous classification of signed cookies requires lookup before selecting its bucket | Coarse admission precedes lookup; branch admission precedes body parsing, mutations and hashing. Read-only classification is explicit and authority is re-read transactionally after admission. |
+| AR2 wording: mutation does not always throw | Non-strict JavaScript can silently ignore a write to sealed metadata | Tests/claims require stable unpartitioned counters; strict errors or silently ignored attempts are distinguished. No universal detection/500 claim. |
+
+Review sequence: initial `c6673fdc6af9d1012d2eb4763fbbf7ee5d6524d1f330d0e2808acd48fe328822`; revised `19f30d56b1cf7d567f9868e72ed40064ac7454cdbf23022faaade4ab0cbb17ab`; metadata refinement `645c2fd2c34b88c1d837756723b3bc59cfda1846fd86a8afdf54741187a17223`; final hash above. The reviewer confirmed all findings resolved in the final contract and identified no remaining blocker or major.
+
+Coverage: canonical workload/security contracts; neutral and loan app composition; session resolver/repository; sign-in and client session flows; abuse/busy controls; workload scheduling; installed Fastify/rate-limit hook/context/manual-counter behavior. The reviewer verified the simplification back to an ordinary synchronous ready diagnostic and the explicit finite-store, shared-budget, memory and deployment-envelope limits.
+
+Implementation still must prove idempotent metadata sealing, independent counters, current transactional authority and every planned regression. No implementation, race, performance, reference-tuple, native/human or release qualification is supplied by this review. The existing recipe 0.3.3 additive-control repair is validated separately in [abuse-validation.json](abuse-validation.json); it does not implement the proposed new quotas.

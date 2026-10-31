@@ -1,0 +1,232 @@
+{
+  "date": "2026-10-29",
+  "status": "local-uncommitted-unqualified",
+  "baseCommit": "8b7bbc4190fc76599b51e1fcfe50f23947a2963c",
+  "scope": "S8b fixture-only reference workload tooling. Existing canonical protocol; neutral starter, runtime kernel, security controls and dependency graph unchanged.",
+  "sourceSha256": "7f993d8f9b93ec6b11e552cda1212cf4e6d7d450ccf8977c84a513b1244766be",
+  "sourceHashMethod": "Sorted Git-known nonignored packages/tools/plugin path + NUL + bytes + NUL; generated bundle/manifest separately hashed.",
+  "ci": {
+    "command": "npm run ci",
+    "exit": 0,
+    "file": "/tmp/tenet-workload-ci-final.log",
+    "sha256": "3112197dc0459b1e7652c79a8efa12712c23911da02f90e818db8ba633a77312",
+    "tests": 1237,
+    "suites": 202,
+    "failures": 0,
+    "skips": 0
+  },
+  "controls": [
+    {
+      "name": "Node 22 shared pacing signal listener threshold",
+      "result": "Real smoke rejects MaxListenersExceededWarning before repair; bounded 250 ms pacing no longer registers twenty shared-signal listeners. Minimum types/lint and 14 controls pass without raising or disabling the threshold.",
+      "file": "/tmp/tenet-workload-listener-red.log",
+      "sha256": "4e7a23f7fc1b69cd2d94a6c47e4085b2ae92944508aa9e28bd40e1c495aded46"
+    },
+    {
+      "name": "Missing workload command/implementation",
+      "result": "Initial command fails before implementation",
+      "file": "/tmp/tenet-workload-red.log",
+      "sha256": "5fd706ceb61859884184b04bb0c0ad46b30b8746aa5c0305f36b3781e91a80c2"
+    },
+    {
+      "name": "Insufficient baseline-client active-loan inventory",
+      "result": "Actual DB has three owned active loans; counterexample requires enough for full cycle. Final DB/client-ID equivalence control passes after correction.",
+      "file": "/tmp/tenet-workload-inventory-red2.log",
+      "sha256": "374ee9d1c219a5c21c0b8bd6ed33cc352b19dfe1201362ce02b350335d8ab19b"
+    },
+    {
+      "name": "Baseline metadata changed between red and candidate",
+      "result": "Kernel correctly refuses checked-local with red-invalidated for package.json/tsconfig.json. Infrastructure metadata now precedes baseline; guard unchanged.",
+      "file": "/tmp/tenet-workload-golden-debug.log",
+      "sha256": "6212a12e1483880e6b1f7012ed8c8c142c43e7c36012f34f895278846e2eea9a"
+    }
+  ],
+  "functional": {
+    "workloadTests": 14,
+    "evolvedAppTests": 82,
+    "evolvedBrowserTests": 15,
+    "neutralAppTests": 56,
+    "neutralBrowserTests": 11,
+    "focused": {
+      "file": "/tmp/tenet-workload-min-tests.log",
+      "sha256": "4bc2d7c17073a3875db6bd60e1840e7a30dc8c63180878cf47b2a2f933fbf891",
+      "runtime": "22.12.0",
+      "typecheck": {
+        "file": "/tmp/tenet-workload-min-types.log",
+        "sha256": "4a82dd9a2ae076e5bca79f439df1329e3374459e22df1a215459f75c593bc464"
+      },
+      "lint": {
+        "file": "/tmp/tenet-workload-min-lint.log",
+        "sha256": "c64efd25edab2b875e6cd083f29cda499d569a742eb3ba6dcd9f54aed0299e1e"
+      }
+    },
+    "limits": "Pure judge success fixture tests classification only; real smoke always remains non-qualifying. Normal cleanup observed; no claim of forced-driver SIGKILL orphan recovery."
+  },
+  "cancellationUat": {
+    "runtime": "v26.3.0",
+    "signal": "SIGTERM",
+    "driverExit": 130,
+    "serverExited": true,
+    "dedicatedDirectoryEmpty": true,
+    "stdoutEmpty": true,
+    "scope": "Real SIGTERM during startup after the production server owner file appears; not forced SIGKILL recovery.",
+    "file": "/tmp/tenet-workload-cancel.json",
+    "sha256": "fc76af125447157913f11c5ee62c295f42edce68bb6da9b5c50536ccb786e20c",
+    "driver": {
+      "file": "/tmp/tenet-workload-cancel.mjs",
+      "sha256": "cc6ac4540957d9e513e356488d91264a8a969521e3aeb9a8bdfb3c169906792c"
+    }
+  },
+  "uat": {
+    "current": {
+      "runtime": "v26.3.0",
+      "scenarios": 149,
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "file": "/tmp/tenet-workload-uat.json",
+      "sha256": "a7716457c079808b8c985c9cb047cd61c9556e606ea16c72fc0c7e3b4d63c304",
+      "featureLoop": {
+        "exit": 0,
+        "evolvedTestsAsserted": 82,
+        "browserTestsAsserted": 15,
+        "mode": "Actual built CLI scaffold/baseline/candidate/review/finish with synthetic review submissions; checked-local scratch commit only",
+        "file": "/tmp/tenet-workload-built-current-final.log",
+        "sha256": "c959352be3f5886770653308c1d56576a74d39b9b03ca71bfa06b994709b6deb"
+      }
+    },
+    "minimum": {
+      "runtime": "v22.12.0",
+      "scenarios": 149,
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "file": "/tmp/tenet-workload-uat-minimum.json",
+      "sha256": "a9df7b23932883b0c6a402a66ac27b6e886e4323d9e08c723cabb08cc904734b",
+      "featureLoop": {
+        "exit": 0,
+        "evolvedTestsAsserted": 82,
+        "browserTestsAsserted": 15,
+        "mode": "Actual built CLI scaffold/baseline/candidate/review/finish with synthetic review submissions; checked-local scratch commit only",
+        "file": "/tmp/tenet-workload-built-minimum-final.log",
+        "sha256": "05bc2940614a1496a86aac4b0e8dac26a9b8e53d0772ded10bf0185b6ba5aea0"
+      }
+    }
+  },
+  "referenceRuns": {
+    "current": {
+      "file": "docs/audits/2026-10-29/workload-reference-observation.json",
+      "sha256": "2e301a0b47b33c192d54d9d7ba7b3591228331ec91cac605af043599efe38124",
+      "exit": 1,
+      "successfulSamples": 213,
+      "attempts": 9461,
+      "rateRefusals": 9248,
+      "reasons": [
+        "list-unexpected-errors",
+        "reserve-unexpected-errors",
+        "return-unexpected-errors",
+        "server-memory-target-failed",
+        "five-way-bursts-incomplete",
+        "busy-degradation-unobserved",
+        "insufficient-successful-samples",
+        "hash-capacity-probes-incomplete"
+      ],
+      "metrics": {
+        "peakRssBytes": 331710464,
+        "eventLoopSamples": 10258,
+        "eventLoopP95Ms": 12.214271
+      },
+      "database": {
+        "duplicateActiveItems": 0,
+        "foreignKeyViolations": 0
+      },
+      "environment": {
+        "node": "v26.3.0",
+        "platform": "darwin",
+        "arch": "arm64",
+        "release": "27.0.0",
+        "totalMemoryBytes": 38654705664
+      },
+      "cleanup": {
+        "serverExited": true,
+        "writerExited": true,
+        "directoryRemoved": true
+      }
+    },
+    "minimum": {
+      "file": "docs/audits/2026-10-29/workload-reference-minimum-observation.json",
+      "sha256": "1e8c0ecdab9398bbb5286348a0d1ab1cf0797d9721091d7bc4a4fa5c762a165c",
+      "exit": 1,
+      "successfulSamples": 213,
+      "attempts": 9460,
+      "rateRefusals": 9247,
+      "reasons": [
+        "list-unexpected-errors",
+        "reserve-unexpected-errors",
+        "return-unexpected-errors",
+        "five-way-bursts-incomplete",
+        "busy-degradation-unobserved",
+        "insufficient-successful-samples",
+        "hash-capacity-probes-incomplete"
+      ],
+      "metrics": {
+        "peakRssBytes": 297517056,
+        "eventLoopSamples": 10247,
+        "eventLoopP95Ms": 12.230655
+      },
+      "database": {
+        "duplicateActiveItems": 0,
+        "foreignKeyViolations": 0
+      },
+      "environment": {
+        "node": "v22.12.0",
+        "platform": "darwin",
+        "arch": "arm64",
+        "release": "27.0.0",
+        "totalMemoryBytes": 38654705664
+      },
+      "cleanup": {
+        "serverExited": true,
+        "writerExited": true,
+        "directoryRemoved": true
+      }
+    }
+  },
+  "measurementSource": {
+    "finalSourceSha256": "7f993d8f9b93ec6b11e552cda1212cf4e6d7d450ccf8977c84a513b1244766be",
+    "sourceFrozenBeforeRuns": true,
+    "applicationRuntimeAndTestFilesMatchedToBothMeasurementTrees": 77,
+    "matchedSuffixes": [
+      ".ts",
+      ".tsx",
+      ".sql",
+      ".json"
+    ],
+    "isolation": "Full runs performed sequentially with other validation jobs idle. No certified hardware/OS isolation or qualification. Current local hardware is 38,654,705,664 bytes, not the specified 16 GB reference tuple."
+  },
+  "artifact": {
+    "bundleBytes": 776837,
+    "bundleSha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb",
+    "payloadFiles": 83,
+    "payloadManifestSha256": "6579760a4c0b23d581cd4fbe886d764c5d287586b9961575507fd6392e259825"
+  },
+  "uatScope": "149-scenario UAT exercises the unchanged shipped bundle/template. Final feature loops are rerun on the frozen fixture revision; no fresh 149-scenario rerun is implied by subsequent fixture-only timer/test edits.",
+  "dependencyScope": "No dependency/lock changes in this increment; reused existing separately installed current/minimum native dependency trees and cached Chromium. No fresh registry audit or clean-host/browser bootstrap claim.",
+  "privacy": {
+    "scope": "unstaged additions and all nonignored untracked files",
+    "untrackedFiles": 69,
+    "findings": []
+  },
+  "remaining": [
+    "legitimate-user admission contract review/sign-off without weakening abuse protections",
+    "memory diagnosis and successful full reference-tuple coverage",
+    "kernel workload receipt/baseline/trend/threshold-attention consumers with reviewed mechanism and budget",
+    "API compatibility/trait/semver and changed-journey consumers",
+    "ASVS/manual accessibility and date-interval evidence",
+    "independent recovery review and supported-platform qualification",
+    "unsigned configuration/schema/reconfirmation mechanisms; separately authorized native-host and release gates",
+    "owner-accepted requirement evidence ledger remains empty"
+  ]
+}

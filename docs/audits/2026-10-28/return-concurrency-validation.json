@@ -1,0 +1,185 @@
+{
+  "date": "2026-10-28",
+  "baseCommit": "8b7bbc4190fc76599b51e1fcfe50f23947a2963c",
+  "status": "local-uncommitted",
+  "scope": "Atomic generated-example return and bounded HTTP session/sign-out writes. No new kernel protocol or qualification.",
+  "sourceSha256": "fe24adc297bfc8ad03d262c6e337acae68baf54601885eaa2febbabea5bfaaa5",
+  "sourceHashMethod": "Sorted Git-known tracked/untracked nonignored packages/tools/plugin paths and bytes, NUL-separated. Generated bundle/payload manifest separately hashed.",
+  "recipe": {
+    "id": "ts-web-api",
+    "version": "0.3.1",
+    "sentinel": "tenet-starter-app",
+    "checks": [
+      "tsc",
+      "eslint",
+      "e2e"
+    ],
+    "lockfileSha256": "1ef193bac3c115268d6b21f65014761f809783fa2fa4bee8a4838f9f309f9f77",
+    "protectedPaths": [
+      "server/src/platform/auth/*",
+      "server/src/platform/session/*",
+      "server/migrations/*"
+    ],
+    "install": [
+      [
+        "npm",
+        "ci",
+        "--ignore-scripts",
+        "--no-audit"
+      ],
+      [
+        "npm",
+        "rebuild",
+        "better-sqlite3"
+      ]
+    ]
+  },
+  "ci": {
+    "command": "npm run ci",
+    "exit": 0,
+    "file": "/tmp/tenet-contention-ci.log",
+    "sha256": "c26a81f062f597dba8e0d7a29470955d3a94080972a103d187b10d4501c34442",
+    "tests": 1237,
+    "suites": 202,
+    "failures": 0,
+    "skips": 0
+  },
+  "counterexamples": [
+    {
+      "name": "Five authorized processes acknowledge one return with five different timestamps",
+      "expected": "one success, four existing already-returned conflicts",
+      "actual": "five successes; wrong-member control passes",
+      "transport": "real service calls in five OS processes/connections blocked by a separate SQLite writer",
+      "file": "/tmp/tenet-return-red.log",
+      "sha256": "6e0a32fd121a187b717c04f58c482c6201b9bc2860fae07593d6fff206a9b703"
+    },
+    {
+      "name": "Session maintenance and sign-out deletion under writer contention",
+      "expected": "bounded retry then 503, retained cookie/session, successful recovery after release",
+      "actual": "both HTTP cases return 500",
+      "transport": "real app.inject request pipeline and separate SQLite connections; not a production load result",
+      "file": "/tmp/tenet-busy-http-red.log",
+      "sha256": "4a3984cc0417dbb7768c5ba6c1ff13aa98cbcddc25cfa612b2493688a24334ff"
+    }
+  ],
+  "appChecks": {
+    "evolvedAppTests": 61,
+    "neutralAppTests": 50,
+    "browserTestsEvolved": 15,
+    "browserTestsNeutral": 11,
+    "runtimes": {
+      "current": {
+        "node": "26.3.0",
+        "typesLintTests": "pass",
+        "file": "/tmp/tenet-contention-current.log",
+        "sha256": "be1709d5039b22a9b30e401e0fcb113dc3eddac95272880eff0ca057b271fe6e",
+        "browser": {
+          "stats": {
+            "startTime": "2026-10-29T04:01:31.768Z",
+            "duration": 5934.816000000001,
+            "expected": 15,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          },
+          "file": "/tmp/tenet-contention-browser.json",
+          "sha256": "199fb5d165c3ed0e71b0f5f15413dc3d9931efbbe4c5ce702745bd78f31dff68"
+        }
+      },
+      "minimum": {
+        "node": "22.12.0",
+        "typesLintTests": "pass",
+        "file": "/tmp/tenet-contention-minimum.log",
+        "sha256": "6001f6ea94d445ca8ba3d35b4fff55f731a136083ed770df90dd969aa7f9bcf3",
+        "browser": {
+          "stats": {
+            "startTime": "2026-10-29T04:01:33.137Z",
+            "duration": 6077.161,
+            "expected": 15,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          },
+          "file": "/tmp/tenet-contention-min-browser.json",
+          "sha256": "37dd8abf135e0688ff42e948d752e1b39eece4f6c198301c7eebb116e82eb6d2"
+        }
+      }
+    }
+  },
+  "uat": {
+    "current": {
+      "runtime": "v26.3.0",
+      "scenarios": 149,
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "file": "/tmp/tenet-contention-uat.json",
+      "sha256": "a7716457c079808b8c985c9cb047cd61c9556e606ea16c72fc0c7e3b4d63c304",
+      "featureJourney": {
+        "exit": 0,
+        "mode": "Every verb uses the actual built CLI; baseline/check/review/finish and committed checked-local in scratch only",
+        "appTestsAsserted": 61,
+        "browserTestsAsserted": 15,
+        "reviews": "Synthetic result submissions exercise the gate, not observed native analysts",
+        "file": "/tmp/tenet-contention-built-current.log",
+        "sha256": "12712eec23ed5b05691ad982ea42e35b3405b667efde047ded61b7c36ab8ad8b"
+      }
+    },
+    "minimum": {
+      "runtime": "v22.12.0",
+      "scenarios": 149,
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "file": "/tmp/tenet-contention-uat-minimum.json",
+      "sha256": "a9df7b23932883b0c6a402a66ac27b6e886e4323d9e08c723cabb08cc904734b",
+      "featureJourney": {
+        "exit": 0,
+        "mode": "Every verb uses the actual built CLI; baseline/check/review/finish and committed checked-local in scratch only",
+        "appTestsAsserted": 61,
+        "browserTestsAsserted": 15,
+        "reviews": "Synthetic result submissions exercise the gate, not observed native analysts",
+        "file": "/tmp/tenet-contention-built-minimum.log",
+        "sha256": "713f71ea9e6c04a096bd06769fad9e5b87d37692a4bdf48d09bcf913b7fedc26"
+      }
+    }
+  },
+  "artifact": {
+    "bundleBytes": 776837,
+    "bundleSha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb",
+    "payloadFiles": 82,
+    "payloadManifestSha256": "abce20584bdfa3cfacb819dd56f9015fd3cb0c80cf3575c814d6ccba1b846984"
+  },
+  "dependencyScope": {
+    "changed": false,
+    "lockfileSha256": "1ef193bac3c115268d6b21f65014761f809783fa2fa4bee8a4838f9f309f9f77",
+    "minimumNativeDependencies": "Reused the separately installed/engine-strict Node 22.12 tree from the preceding OpenAPI slice; no fresh install or registry audit claimed."
+  },
+  "privacy": {
+    "scope": "unstaged additions and all nonignored untracked files",
+    "untrackedFiles": 46,
+    "findings": []
+  },
+  "remaining": [
+    "API compatibility/trait/semver consumers",
+    "per-changed-journey enforcement",
+    "reference workload and trend attention",
+    "ASVS applicability/results and manual screen-reader observations",
+    "date-interval behavior",
+    "unsigned schema-2 mechanism review/sign-off",
+    "independent review, native host and release qualification"
+  ],
+  "postValidationDocumentationChecks": {
+    "commands": [
+      "npm run lint",
+      "npm run build",
+      "npm run verify:payload",
+      "npm run verify:reproducible"
+    ],
+    "exit": 0,
+    "scope": "Only root plan/changelog/audit documentation finalized after final CI/UAT; packages/tools/plugin bytes unchanged.",
+    "repeatBuildLogSha256": "176c0172043efd76394255be034e0ed860f78319ace91ceed295ab6bdb8a2fab"
+  }
+}

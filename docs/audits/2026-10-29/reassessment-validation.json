@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-29",
+  "status": "local-validation-not-qualification",
+  "head": "8b7bbc4190fc76599b51e1fcfe50f23947a2963c",
+  "source": {
+    "files": 385,
+    "sha256": "d77aff0043399b0b10677a72020d12ff2c8c7aad67a8ffffff2d4e4d851e9c85",
+    "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path + NUL + bytes + NUL for each file"
+  },
+  "bundle": {
+    "bytes": 776837,
+    "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb",
+    "payloadFiles": 91
+  },
+  "environment": {
+    "os": "macOS",
+    "currentNode": "26.3.0",
+    "minimumNode": "22.12.0",
+    "git": "2.56.0"
+  },
+  "initialFailures": {
+    "ci": {
+      "tests": 1237,
+      "passed": 1233,
+      "failed": 4,
+      "causes": [
+        "Exact protected-path expectation omitted two approved admission modules",
+        "Empty cleanup catch correctly blocked both starter workflows at the attention gate",
+        "Reduced fixture environment omitted relocated Git helper path"
+      ]
+    },
+    "builtUat": {
+      "expectedBrowserPopulation": 11,
+      "actualBrowserPopulation": 12
+    }
+  },
+  "final": {
+    "ci": {
+      "command": "npm run ci",
+      "exit": 0,
+      "tests": 1237,
+      "suites": 202,
+      "passed": 1237,
+      "failed": 0,
+      "skipped": 0
+    },
+    "builtUat": {
+      "runtimes": ["26.3.0", "22.12.0"],
+      "exitEach": 0,
+      "observationsEach": 149,
+      "starterBrowserAndSourceServerCases": 12
+    },
+    "builtFeatureLoop": {
+      "runtimes": ["26.3.0", "22.12.0"],
+      "test": "packages/kernel/test/golden-task-loan-desk.test.ts",
+      "bundleEnvironment": "TENET_TEST_BUNDLE=plugin/kernel/tenet.mjs",
+      "exitEach": 0,
+      "neutralAppCases": 89,
+      "neutralBrowserAndSourceServerCases": 12,
+      "evolvedAppCases": 116,
+      "evolvedBrowserAndSourceServerCases": 16
+    }
+  },
+  "artifacts": {
+    "storage": "Current session files; hashes bind retained raw outputs, not published CI",
+    "reassessment-ci-exact-source.log": "a4dc463fe826c1568422dddb72b4b356f99467fe79bda12ec31e26bd00387cc6",
+    "reassessment-uat-current-final.json": "31c0c6a33596938d49fd8877cd4d138ed6e8d7e0558bc1c25e28c21a1bf30f44",
+    "reassessment-uat-minimum-final.json": "648d4616d32814d20af9b5e5c6037e8281f98c83948a0f5fc228d5282143b0cb",
+    "reassessment-built-feature-current.log": "5e1a02760aad4adcc9c60f818920a4bd270819f8ae5863ca8f651beb93250bfe",
+    "reassessment-built-feature-minimum.log": "647b46218a2a9423fc1108a011c12b296bd3173f4e31d78f21f46e30fa5e9d85"
+  },
+  "limits": [
+    "Uncommitted source, not a released or independently qualified artifact",
+    "M0 structural coverage gate is not R1 semantic acceptance",
+    "Reviewer and analyst submissions in the feature fixture are synthetic, not native isolation evidence",
+    "No new full-size workload measurement or performance qualification",
+    "Retained current-runtime workload RSS exceeds the target",
+    "No native-host spike, screen-reader observation, human study, campaign, schema-2 activation, commit or push"
+  ]
+}

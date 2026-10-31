@@ -1,0 +1,2369 @@
+{
+  "date": "2026-10-28",
+  "baseCommit": "8b7bbc4190fc76599b51e1fcfe50f23947a2963c",
+  "status": "local-uncommitted",
+  "sourceSha256": "0384eb7c8fa15ba6fa5badba2e8ab65f5938592fccf87408a73843e571c8d62b",
+  "sourceHashMethod": "sorted Git-known nonignored packages/tools/plugin paths and bytes, NUL separated; generated bundle separately hashed",
+  "ci": {
+    "result": "pass",
+    "exit": 0,
+    "tests": 1237,
+    "suites": 202,
+    "failures": 0,
+    "skips": 0,
+    "logSha256": "5bfb24b1ab9d0632836ec7e2eecba7dac0d8b32f072721b135aa10b58e32baf1"
+  },
+  "bundle": {
+    "bytes": 776837,
+    "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+  },
+  "uat": [
+    {
+      "runtime": "v26.3.0",
+      "git": "git version 2.56.0",
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "observations": [
+        {
+          "scenario": "built crash-safe forget normal",
+          "killedAtBoundary": false,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built crash-safe forget after-intent",
+          "killedAtBoundary": true,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built crash-safe forget after-purge",
+          "killedAtBoundary": true,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built crash-safe forget after-first",
+          "killedAtBoundary": true,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built crash-safe forget after-second",
+          "killedAtBoundary": true,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built crash-safe forget after-result",
+          "killedAtBoundary": true,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built output declaration addition invalidates red",
+          "oldRedRejected": true,
+          "freshRedRestoresLocks": true
+        },
+        {
+          "scenario": "built output declaration removal invalidates red",
+          "oldRedRejected": true,
+          "freshRedRestoresLocks": true
+        },
+        {
+          "scenario": "built forget refuses unreadable-file",
+          "lessonRetainedUntilRepair": true,
+          "intentRecoversOnce": true
+        },
+        {
+          "scenario": "built forget refuses unreadable-directory",
+          "lessonRetainedUntilRepair": true,
+          "intentRecoversOnce": true
+        },
+        {
+          "scenario": "built forget refuses unwritable-directory",
+          "lessonRetainedUntilRepair": true,
+          "intentRecoversOnce": true
+        },
+        {
+          "scenario": "built forget refuses oversized-file",
+          "lessonRetainedUntilRepair": true,
+          "intentRecoversOnce": true
+        },
+        {
+          "scenario": "built forget refuses invalid-utf8",
+          "lessonRetainedUntilRepair": true,
+          "intentRecoversOnce": true
+        },
+        {
+          "scenario": "built recovery refusal uses actual published revision",
+          "realForgetKill": true,
+          "syntheticUnknownIntent": true,
+          "uncertaintyPreserved": true
+        },
+        {
+          "scenario": "built mutating-subcommand help is stateless",
+          "commands": 4,
+          "stateCreated": false,
+          "gitUnchanged": true
+        },
+        {
+          "scenario": "built inherited verb names produce structured usage errors without state",
+          "commands": 4
+        },
+        {
+          "scenario": "built secret-bearing proposal refuses before state, backup or journal writes"
+        },
+        {
+          "scenario": "built installed Playwright version change stales passing evidence without a Git change"
+        },
+        {
+          "scenario": "built ignored Playwright configuration invalidates receipts and baseline proof"
+        },
+        {
+          "scenario": "built compatibility admission preserves state",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built compatibility admission preserves state.prev",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built compatibility admission preserves marker",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built compatibility admission preserves migration-transition.json",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built compatibility admission preserves migration-privacy.json",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built compatibility admission preserves oversized-state",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built stateless review refuses oversized complete packets",
+          "smallAccepted": true,
+          "oversizedExit": 2,
+          "stateCreated": false,
+          "sourceUnchanged": true
+        },
+        {
+          "scenario": "built repeated open surfaces synthetic pinned adapter drift",
+          "exit": 3,
+          "workDuplicated": false,
+          "generationUnchanged": true,
+          "automaticallyRepinned": false
+        },
+        {
+          "scenario": "built corrupt journal refuses without erasing evidence",
+          "exit": 4,
+          "statePreserved": true,
+          "journalPreserved": true
+        },
+        {
+          "scenario": "built oversized journal refuses before repair",
+          "exit": 4,
+          "statePreserved": true,
+          "journalPreserved": true,
+          "humanContentPreserved": true
+        },
+        {
+          "scenario": "built open cleanup never follows linked private temp storage",
+          "boundaries": [
+            "workspace",
+            "manifests",
+            "review"
+          ],
+          "humanContentPreserved": true
+        },
+        {
+          "scenario": "built hook-replaced merge cannot finalize or reconcile as the planned commit",
+          "exit": 2,
+          "recoveryExit": 2,
+          "humanIndexPreserved": true,
+          "sourceOwnershipFenced": true,
+          "unexpectedHeadPreserved": true
+        },
+        {
+          "scenario": "built hook-replaced merge with replacement refs cannot finalize or reconcile as the planned commit",
+          "exit": 2,
+          "recoveryExit": 2,
+          "humanIndexPreserved": true,
+          "sourceOwnershipFenced": true,
+          "unexpectedHeadPreserved": true
+        },
+        {
+          "scenario": "built replacement refs cannot hide foreign hook-committed human content",
+          "exit": 3,
+          "foreignPathReported": true,
+          "humanStagingPreserved": true,
+          "humanContentPreserved": true,
+          "replacementRefPreserved": true
+        },
+        {
+          "scenario": "built prepared-call recovery fifo admission",
+          "realKilledPreparation": true,
+          "childNeverLaunched": true,
+          "controlledRecordFault": true,
+          "noReceipt": true,
+          "usagePreserved": true,
+          "ownership": "retained",
+          "humanGitPreserved": true
+        },
+        {
+          "scenario": "built prepared-call recovery short admission",
+          "realKilledPreparation": true,
+          "childNeverLaunched": true,
+          "controlledRecordFault": true,
+          "noReceipt": true,
+          "usagePreserved": true,
+          "ownership": "released-after-admission",
+          "humanGitPreserved": true
+        },
+        {
+          "scenario": "built prepared-call recovery prepared-grow admission",
+          "realKilledPreparation": true,
+          "childNeverLaunched": true,
+          "controlledRecordFault": true,
+          "noReceipt": true,
+          "usagePreserved": true,
+          "ownership": "retained",
+          "humanGitPreserved": true
+        },
+        {
+          "scenario": "built crashed unknown check requires fresh same-envelope consent",
+          "sameEnvelope": true,
+          "externalEffectPreserved": true,
+          "declinedReplayBlocked": true,
+          "approvedRerunExecutedOnce": true
+        },
+        {
+          "scenario": "built cancelled unknown check requires fresh same-envelope consent",
+          "sameEnvelope": true,
+          "externalEffectPreserved": true,
+          "declinedReplayBlocked": true,
+          "approvedRerunExecutedOnce": true
+        },
+        {
+          "scenario": "built recorded commit replay complete foreign metadata",
+          "killedAfterSyncedResult": true,
+          "laterJournalRecords": 0,
+          "recoveryExit": 0,
+          "humanStagingPreserved": true,
+          "humanContentPreserved": true,
+          "duplicateCommits": false
+        },
+        {
+          "scenario": "built recorded commit replay complete-long-history foreign metadata",
+          "killedAfterSyncedResult": true,
+          "laterJournalRecords": 450,
+          "recoveryExit": 0,
+          "humanStagingPreserved": true,
+          "humanContentPreserved": true,
+          "duplicateCommits": false
+        },
+        {
+          "scenario": "built recorded commit replay legacy foreign metadata",
+          "killedAfterSyncedResult": true,
+          "laterJournalRecords": 0,
+          "recoveryExit": 2,
+          "humanStagingPreserved": true,
+          "humanContentPreserved": true,
+          "duplicateCommits": false
+        },
+        {
+          "scenario": "built recorded commit replay malformed foreign metadata",
+          "killedAfterSyncedResult": true,
+          "laterJournalRecords": 0,
+          "recoveryExit": 2,
+          "humanStagingPreserved": true,
+          "humanContentPreserved": true,
+          "duplicateCommits": false
+        },
+        {
+          "scenario": "built historical adoption replay cannot replace newer accepted trust",
+          "provenancePreserved": true,
+          "ownedFileHashPreserved": true,
+          "humanProsePreserved": true,
+          "repeatedRecoveryIdempotent": true
+        },
+        {
+          "scenario": "built starter carries the selected MIT license",
+          "licenseCopied": true
+        },
+        {
+          "scenario": "built finished scaffold is not reapplied after transient touched paths clear",
+          "realStarterInstalled": true,
+          "finishedContractUnchanged": true,
+          "recipeRecordUnchanged": true,
+          "humanNotesPreserved": true,
+          "repeatedRecoveryIdempotent": true
+        },
+        {
+          "scenario": "built installed dependency record changes invalidate passing evidence",
+          "trackedInputsUnchanged": true,
+          "compilerReceipt": "pass",
+          "staleAfterIgnoredEdit": true,
+          "metadataContentsDisclosed": false
+        },
+        {
+          "scenario": "built malformed installed dependency record refuses before a new check",
+          "exit": 2,
+          "receiptsPreserved": true,
+          "budgetPreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built oversized installed tool metadata refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built linked installed tool metadata refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built invalid-utf8 installed tool metadata refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built deep installed tool metadata refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built invalid UTF-8 in private state refuses admission",
+          "exit": 4,
+          "storedBytesPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built invalid UTF-8 in private marker refuses admission",
+          "exit": 3,
+          "storedBytesPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built invalid UTF-8 in private log refuses admission",
+          "exit": 4,
+          "storedBytesPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built valid Unicode and torn multibyte journal recovery preserve accepted text",
+          "readOnlyPreservedTail": true,
+          "transactionRepairedTail": true,
+          "validUnicodePreserved": true
+        },
+        {
+          "scenario": "built same-size private state mutation refuses admission",
+          "exit": 4,
+          "foreignEditPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built same-size private marker mutation refuses admission",
+          "exit": 3,
+          "foreignEditPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built same-size private log mutation refuses admission",
+          "exit": 4,
+          "foreignEditPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built same-size installed tool metadata mutation refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built same-size installed dependency metadata mutation refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built grow project read refuses after concurrent mutation",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true
+        },
+        {
+          "scenario": "built oversized project read refuses after concurrent mutation",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true
+        },
+        {
+          "scenario": "built shrink project read refuses after concurrent mutation",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true
+        },
+        {
+          "scenario": "built overwrite project read refuses after concurrent mutation",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true
+        },
+        {
+          "scenario": "built oversized project package metadata is not treated as absent",
+          "exit": 2,
+          "statePreserved": true
+        },
+        {
+          "scenario": "built linked project package metadata is not treated as absent",
+          "exit": 2,
+          "statePreserved": true
+        },
+        {
+          "scenario": "built directory project package metadata is not treated as absent",
+          "exit": 2,
+          "statePreserved": true
+        },
+        {
+          "scenario": "built reviewer packet is readable and exclusion-aware",
+          "rubricParts": 8,
+          "cooperativeExclusions": true,
+          "typedSampleGuidance": true
+        },
+        {
+          "scenario": "built CLI red-green-finish with concurrent human file inside predicted scope",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "committed": [
+            "src/greet.test.ts",
+            "src/greet.ts"
+          ],
+          "humanFilePreserved": true,
+          "cliEqualsSyntax": true,
+          "focusedPassReported": true,
+          "nativeDelegations": 0
+        },
+        {
+          "scenario": "unimplemented committed-tree stage",
+          "exit": 2,
+          "reason": "capability-missing"
+        },
+        {
+          "scenario": "built guarded local integration with carried human file",
+          "exit": 0,
+          "mode": "fast-forward",
+          "humanFilePreserved": true
+        },
+        {
+          "scenario": "built undo rejects foreign commits with a repeated label",
+          "headPreserved": true,
+          "indexPreserved": true,
+          "humanContentPreserved": true,
+          "questionIssued": false
+        },
+        {
+          "scenario": "built guarded working-tree undo",
+          "exit": 0,
+          "humanFilePreserved": true,
+          "newContractRequiresChecks": true
+        },
+        {
+          "scenario": "built readiness reprobe after runner version change",
+          "exit": 2,
+          "reason": "adapter-unsupported-version",
+          "childLaunched": false
+        },
+        {
+          "scenario": "built ignored acceptance and new ignored configuration",
+          "baseline": "fail",
+          "introducedConfigInvalidatesRed": true
+        },
+        {
+          "scenario": "passing unrelated suite without baseline proof",
+          "exit": 2,
+          "reason": "no-distinguishing-red",
+          "checkedLocal": false
+        },
+        {
+          "scenario": "built active-chat takeover",
+          "question": "takeover-check",
+          "oldHandleFenced": true,
+          "chatConfirmationRequired": true
+        },
+        {
+          "scenario": "built abandonment preview, cancel and confirm",
+          "previewExit": 3,
+          "channel": "chat",
+          "cancelExit": 0,
+          "confirmExit": 0,
+          "finalState": "cancelled"
+        },
+        {
+          "scenario": "built copied-state quarantine and metadata review",
+          "exit": 3,
+          "originalBytesPreserved": true,
+          "importedSettingsActive": false,
+          "importedAuthorityActive": false,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built markerless-state quarantine and fresh-start choice",
+          "exit": 0,
+          "entriesPreserved": true,
+          "importedLockIgnored": true
+        },
+        {
+          "scenario": "built backup recovery conserves real candidate costs",
+          "attemptsBefore": 3,
+          "attemptsAfter": 3,
+          "checksBefore": 19,
+          "checksAfter": 19,
+          "accounting": "verified",
+          "authoritySuspended": true,
+          "additionalAttemptLaunched": false
+        },
+        {
+          "scenario": "built unknown legacy accounting fences new editing authority",
+          "exit": 3,
+          "handleIssued": false,
+          "branchUnchanged": true,
+          "recordsUnchanged": true
+        },
+        {
+          "scenario": "built pending effect pair after commit result",
+          "syntheticJournalRecords": true,
+          "ownershipRetained": true,
+          "journalPrefixPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built pending effect pair after commit:extra result",
+          "syntheticJournalRecords": true,
+          "ownershipRetained": true,
+          "journalPrefixPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built pending effect pair after both result",
+          "syntheticJournalRecords": true,
+          "ownershipRetained": false,
+          "journalPrefixPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect toString pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect toString completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect constructor pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect constructor completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect __proto__ pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect __proto__ completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect hasOwnProperty pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect hasOwnProperty completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect __defineGetter__ pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect __defineGetter__ completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect future-effect pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect future-effect completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built backup checkpoint in-flight retry",
+          "accounting": "unknown",
+          "spentAttempts": 1,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint completeness retry",
+          "accounting": "unknown",
+          "spentAttempts": 1,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint budget retry",
+          "accounting": "unknown",
+          "spentAttempts": 2,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint sequence retry",
+          "accounting": "unknown",
+          "spentAttempts": 1,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint identical retry",
+          "accounting": "verified",
+          "spentAttempts": 1,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint budget-progress retry",
+          "accounting": "verified",
+          "spentAttempts": 2,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint sequence-progress retry",
+          "accounting": "verified",
+          "spentAttempts": 1,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built atomic project write predictable-temp-link",
+          "killedAtBoundary": false,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-temp-fsync",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-publish",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-dir-fsync",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built unreadable adoption remains uncertain through stop",
+          "exit": 2,
+          "authorityRetainedAsFence": true,
+          "outsideBytesPreserved": true,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built secret alias is refused before adoption preview",
+          "exit": 2,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built stop preserves interrupted scaffold under tighter policy",
+          "exit": 2,
+          "partialFilePreserved": true,
+          "pendingEffectRetained": true,
+          "installLaunched": false
+        },
+        {
+          "scenario": "built stop preserves interrupted scaffold under tighter adopted policy",
+          "exit": 2,
+          "partialFilePreserved": true,
+          "pendingEffectRetained": true,
+          "installLaunched": false
+        },
+        {
+          "scenario": "built contradictory lint child cannot produce a passing receipt",
+          "syntheticTool": true,
+          "programExit": 1,
+          "reportedErrors": 1,
+          "diagnosticMessages": 0,
+          "receipt": "inconclusive",
+          "reason": "report-invalid"
+        },
+        {
+          "scenario": "built named static configuration refuses substitution",
+          "defaultConfigExit": 0,
+          "requiredConfigExit": 2,
+          "admissionExit": 2,
+          "substituteLaunched": false,
+          "receiptIssued": false
+        },
+        {
+          "scenario": "built default checkout-hook admission",
+          "exit": 2,
+          "hookLaunched": false,
+          "branchUnchanged": true,
+          "explicitCurrentBranchAccepted": true
+        },
+        {
+          "scenario": "built configured checkout-hook admission",
+          "exit": 2,
+          "hookLaunched": false,
+          "branchUnchanged": true,
+          "explicitCurrentBranchAccepted": true
+        },
+        {
+          "scenario": "built index recovery before-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery after-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery before-rename",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery after-rename",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery manual-after-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery failed-directory-sync",
+          "killedAtBoundary": false,
+          "directorySyncFailure": true,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "user-level Git LFS filter configuration",
+          "openExit": 0,
+          "filterRan": false
+        },
+        {
+          "scenario": "built guarded filter pass",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "minimalEnvironment": true,
+          "headChanged": true,
+          "humanBytesPreserved": true,
+          "filterMutationPreserved": false
+        },
+        {
+          "scenario": "built guarded filter transform",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "minimalEnvironment": true,
+          "headChanged": false,
+          "humanBytesPreserved": true,
+          "filterMutationPreserved": false
+        },
+        {
+          "scenario": "built guarded filter mutate",
+          "endpoint": "implemented-unverified",
+          "minimalEnvironment": true,
+          "headChanged": false,
+          "humanBytesPreserved": false,
+          "filterMutationPreserved": true
+        },
+        {
+          "scenario": "built guarded filter stop",
+          "processRecorded": true,
+          "stoppedBeforeCommit": true,
+          "recoveryDidNotReplay": true,
+          "humanStagingPreserved": true
+        },
+        {
+          "scenario": "built guarded filter killed",
+          "processRecorded": true,
+          "stoppedBeforeCommit": true,
+          "recoveryDidNotReplay": true,
+          "humanStagingPreserved": true
+        },
+        {
+          "scenario": "built stateless doctor honors metadata exclusions",
+          "exit": 2,
+          "metadataRefused": true,
+          "noStateWritten": true,
+          "helpIndependent": true
+        },
+        {
+          "scenario": "built conflicting required definitions refuse before launch",
+          "exit": 2,
+          "launched": 0,
+          "receipts": 0
+        },
+        {
+          "scenario": "built TypeScript default population",
+          "receipt": "pass",
+          "analyzedFiles": [
+            "src/greet.ts",
+            "src/greet.test.ts"
+          ],
+          "reasons": [],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built TypeScript ignored-input population",
+          "receipt": "inconclusive",
+          "analyzedFiles": [
+            "src/greet.ts",
+            "src/greet.test.ts",
+            "ignored.ts"
+          ],
+          "reasons": [
+            "population-mismatch"
+          ],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built TypeScript references population",
+          "receipt": "inconclusive",
+          "analyzedFiles": [],
+          "reasons": [
+            "not-executed"
+          ],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built synthetic compiler unsupported version",
+          "receipt": "inconclusive",
+          "reasons": [
+            "not-executed"
+          ],
+          "childLaunched": false,
+          "syntheticTool": true
+        },
+        {
+          "scenario": "built synthetic compiler truncated valid prefix",
+          "receipt": "inconclusive",
+          "reasons": [
+            "report-invalid"
+          ],
+          "childLaunched": true,
+          "syntheticTool": true
+        },
+        {
+          "scenario": "built private artifact fifo write admission",
+          "syntheticTool": true,
+          "controlledLeafInjection": true,
+          "childLaunched": false,
+          "statePreservedOnRefusal": true,
+          "sourceAndIndexPreserved": true,
+          "leafPreserved": true
+        },
+        {
+          "scenario": "built private artifact fifo-reader write admission",
+          "syntheticTool": true,
+          "controlledLeafInjection": true,
+          "childLaunched": false,
+          "statePreservedOnRefusal": true,
+          "sourceAndIndexPreserved": true,
+          "leafPreserved": true
+        },
+        {
+          "scenario": "built private artifact directory write admission",
+          "syntheticTool": true,
+          "controlledLeafInjection": true,
+          "childLaunched": false,
+          "statePreservedOnRefusal": true,
+          "sourceAndIndexPreserved": true,
+          "leafPreserved": true
+        },
+        {
+          "scenario": "built private artifact link write admission",
+          "syntheticTool": true,
+          "controlledLeafInjection": true,
+          "childLaunched": false,
+          "statePreservedOnRefusal": true,
+          "sourceAndIndexPreserved": true,
+          "leafPreserved": true
+        },
+        {
+          "scenario": "built private artifact regular write admission",
+          "syntheticTool": true,
+          "controlledLeafInjection": true,
+          "childLaunched": true,
+          "statePreservedOnRefusal": false,
+          "sourceAndIndexPreserved": true,
+          "leafPreserved": false
+        },
+        {
+          "scenario": "built synthetic Vitest report stable admission",
+          "receipt": "pass",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "built synthetic Vitest report invalid-utf8 admission",
+          "receipt": "inconclusive",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "built synthetic Vitest report overwrite-json admission",
+          "receipt": "inconclusive",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "built synthetic Vitest report replace-fifo admission",
+          "receipt": "inconclusive",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "built synthetic Vitest report replace-directory admission",
+          "receipt": "inconclusive",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "built synthetic Vitest report replace-link admission",
+          "receipt": "inconclusive",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "symlinked state directory",
+          "exit": 3,
+          "reason": "marker-mismatch",
+          "outsideWrites": false
+        }
+      ]
+    },
+    {
+      "runtime": "v22.12.0",
+      "git": "git version 2.56.0",
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "observations": [
+        {
+          "scenario": "built crash-safe forget normal",
+          "killedAtBoundary": false,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built crash-safe forget after-intent",
+          "killedAtBoundary": true,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built crash-safe forget after-purge",
+          "killedAtBoundary": true,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built crash-safe forget after-first",
+          "killedAtBoundary": true,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built crash-safe forget after-second",
+          "killedAtBoundary": true,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built crash-safe forget after-result",
+          "killedAtBoundary": true,
+          "packetsAndBackupPurged": true,
+          "revisionMatchesDisk": true
+        },
+        {
+          "scenario": "built output declaration addition invalidates red",
+          "oldRedRejected": true,
+          "freshRedRestoresLocks": true
+        },
+        {
+          "scenario": "built output declaration removal invalidates red",
+          "oldRedRejected": true,
+          "freshRedRestoresLocks": true
+        },
+        {
+          "scenario": "built forget refuses unreadable-file",
+          "lessonRetainedUntilRepair": true,
+          "intentRecoversOnce": true
+        },
+        {
+          "scenario": "built forget refuses unreadable-directory",
+          "lessonRetainedUntilRepair": true,
+          "intentRecoversOnce": true
+        },
+        {
+          "scenario": "built forget refuses unwritable-directory",
+          "lessonRetainedUntilRepair": true,
+          "intentRecoversOnce": true
+        },
+        {
+          "scenario": "built forget refuses oversized-file",
+          "lessonRetainedUntilRepair": true,
+          "intentRecoversOnce": true
+        },
+        {
+          "scenario": "built forget refuses invalid-utf8",
+          "lessonRetainedUntilRepair": true,
+          "intentRecoversOnce": true
+        },
+        {
+          "scenario": "built recovery refusal uses actual published revision",
+          "realForgetKill": true,
+          "syntheticUnknownIntent": true,
+          "uncertaintyPreserved": true
+        },
+        {
+          "scenario": "built mutating-subcommand help is stateless",
+          "commands": 4,
+          "stateCreated": false,
+          "gitUnchanged": true
+        },
+        {
+          "scenario": "built inherited verb names produce structured usage errors without state",
+          "commands": 4
+        },
+        {
+          "scenario": "built secret-bearing proposal refuses before state, backup or journal writes"
+        },
+        {
+          "scenario": "built installed Playwright version change stales passing evidence without a Git change"
+        },
+        {
+          "scenario": "built ignored Playwright configuration invalidates receipts and baseline proof"
+        },
+        {
+          "scenario": "built compatibility admission preserves state",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built compatibility admission preserves state.prev",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built compatibility admission preserves marker",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built compatibility admission preserves migration-transition.json",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built compatibility admission preserves migration-privacy.json",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built compatibility admission preserves oversized-state",
+          "exit": 4,
+          "stateBytesPreserved": true,
+          "modesPreserved": true,
+          "locksPreserved": true,
+          "humanIndexPreserved": true,
+          "fallbackHandleIssued": false
+        },
+        {
+          "scenario": "built stateless review refuses oversized complete packets",
+          "smallAccepted": true,
+          "oversizedExit": 2,
+          "stateCreated": false,
+          "sourceUnchanged": true
+        },
+        {
+          "scenario": "built repeated open surfaces synthetic pinned adapter drift",
+          "exit": 3,
+          "workDuplicated": false,
+          "generationUnchanged": true,
+          "automaticallyRepinned": false
+        },
+        {
+          "scenario": "built corrupt journal refuses without erasing evidence",
+          "exit": 4,
+          "statePreserved": true,
+          "journalPreserved": true
+        },
+        {
+          "scenario": "built oversized journal refuses before repair",
+          "exit": 4,
+          "statePreserved": true,
+          "journalPreserved": true,
+          "humanContentPreserved": true
+        },
+        {
+          "scenario": "built open cleanup never follows linked private temp storage",
+          "boundaries": [
+            "workspace",
+            "manifests",
+            "review"
+          ],
+          "humanContentPreserved": true
+        },
+        {
+          "scenario": "built hook-replaced merge cannot finalize or reconcile as the planned commit",
+          "exit": 2,
+          "recoveryExit": 2,
+          "humanIndexPreserved": true,
+          "sourceOwnershipFenced": true,
+          "unexpectedHeadPreserved": true
+        },
+        {
+          "scenario": "built hook-replaced merge with replacement refs cannot finalize or reconcile as the planned commit",
+          "exit": 2,
+          "recoveryExit": 2,
+          "humanIndexPreserved": true,
+          "sourceOwnershipFenced": true,
+          "unexpectedHeadPreserved": true
+        },
+        {
+          "scenario": "built replacement refs cannot hide foreign hook-committed human content",
+          "exit": 3,
+          "foreignPathReported": true,
+          "humanStagingPreserved": true,
+          "humanContentPreserved": true,
+          "replacementRefPreserved": true
+        },
+        {
+          "scenario": "built prepared-call recovery fifo admission",
+          "realKilledPreparation": true,
+          "childNeverLaunched": true,
+          "controlledRecordFault": true,
+          "noReceipt": true,
+          "usagePreserved": true,
+          "ownership": "retained",
+          "humanGitPreserved": true
+        },
+        {
+          "scenario": "built prepared-call recovery short admission",
+          "realKilledPreparation": true,
+          "childNeverLaunched": true,
+          "controlledRecordFault": true,
+          "noReceipt": true,
+          "usagePreserved": true,
+          "ownership": "released-after-admission",
+          "humanGitPreserved": true
+        },
+        {
+          "scenario": "built prepared-call recovery prepared-grow admission",
+          "realKilledPreparation": true,
+          "childNeverLaunched": true,
+          "controlledRecordFault": true,
+          "noReceipt": true,
+          "usagePreserved": true,
+          "ownership": "retained",
+          "humanGitPreserved": true
+        },
+        {
+          "scenario": "built crashed unknown check requires fresh same-envelope consent",
+          "sameEnvelope": true,
+          "externalEffectPreserved": true,
+          "declinedReplayBlocked": true,
+          "approvedRerunExecutedOnce": true
+        },
+        {
+          "scenario": "built cancelled unknown check requires fresh same-envelope consent",
+          "sameEnvelope": true,
+          "externalEffectPreserved": true,
+          "declinedReplayBlocked": true,
+          "approvedRerunExecutedOnce": true
+        },
+        {
+          "scenario": "built recorded commit replay complete foreign metadata",
+          "killedAfterSyncedResult": true,
+          "laterJournalRecords": 0,
+          "recoveryExit": 0,
+          "humanStagingPreserved": true,
+          "humanContentPreserved": true,
+          "duplicateCommits": false
+        },
+        {
+          "scenario": "built recorded commit replay complete-long-history foreign metadata",
+          "killedAfterSyncedResult": true,
+          "laterJournalRecords": 450,
+          "recoveryExit": 0,
+          "humanStagingPreserved": true,
+          "humanContentPreserved": true,
+          "duplicateCommits": false
+        },
+        {
+          "scenario": "built recorded commit replay legacy foreign metadata",
+          "killedAfterSyncedResult": true,
+          "laterJournalRecords": 0,
+          "recoveryExit": 2,
+          "humanStagingPreserved": true,
+          "humanContentPreserved": true,
+          "duplicateCommits": false
+        },
+        {
+          "scenario": "built recorded commit replay malformed foreign metadata",
+          "killedAfterSyncedResult": true,
+          "laterJournalRecords": 0,
+          "recoveryExit": 2,
+          "humanStagingPreserved": true,
+          "humanContentPreserved": true,
+          "duplicateCommits": false
+        },
+        {
+          "scenario": "built historical adoption replay cannot replace newer accepted trust",
+          "provenancePreserved": true,
+          "ownedFileHashPreserved": true,
+          "humanProsePreserved": true,
+          "repeatedRecoveryIdempotent": true
+        },
+        {
+          "scenario": "built starter carries the selected MIT license",
+          "licenseCopied": true
+        },
+        {
+          "scenario": "built finished scaffold is not reapplied after transient touched paths clear",
+          "realStarterInstalled": true,
+          "finishedContractUnchanged": true,
+          "recipeRecordUnchanged": true,
+          "humanNotesPreserved": true,
+          "repeatedRecoveryIdempotent": true
+        },
+        {
+          "scenario": "built installed dependency record changes invalidate passing evidence",
+          "trackedInputsUnchanged": true,
+          "compilerReceipt": "pass",
+          "staleAfterIgnoredEdit": true,
+          "metadataContentsDisclosed": false
+        },
+        {
+          "scenario": "built malformed installed dependency record refuses before a new check",
+          "exit": 2,
+          "receiptsPreserved": true,
+          "budgetPreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built oversized installed tool metadata refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built linked installed tool metadata refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built invalid-utf8 installed tool metadata refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built deep installed tool metadata refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built invalid UTF-8 in private state refuses admission",
+          "exit": 4,
+          "storedBytesPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built invalid UTF-8 in private marker refuses admission",
+          "exit": 3,
+          "storedBytesPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built invalid UTF-8 in private log refuses admission",
+          "exit": 4,
+          "storedBytesPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built valid Unicode and torn multibyte journal recovery preserve accepted text",
+          "readOnlyPreservedTail": true,
+          "transactionRepairedTail": true,
+          "validUnicodePreserved": true
+        },
+        {
+          "scenario": "built same-size private state mutation refuses admission",
+          "exit": 4,
+          "foreignEditPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built same-size private marker mutation refuses admission",
+          "exit": 3,
+          "foreignEditPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built same-size private log mutation refuses admission",
+          "exit": 4,
+          "foreignEditPreserved": true,
+          "noTransaction": true
+        },
+        {
+          "scenario": "built same-size installed tool metadata mutation refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built same-size installed dependency metadata mutation refuses before launch",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true,
+          "commandLaunched": false
+        },
+        {
+          "scenario": "built grow project read refuses after concurrent mutation",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true
+        },
+        {
+          "scenario": "built oversized project read refuses after concurrent mutation",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true
+        },
+        {
+          "scenario": "built shrink project read refuses after concurrent mutation",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true
+        },
+        {
+          "scenario": "built overwrite project read refuses after concurrent mutation",
+          "exit": 2,
+          "statePreserved": true,
+          "foreignEditPreserved": true
+        },
+        {
+          "scenario": "built oversized project package metadata is not treated as absent",
+          "exit": 2,
+          "statePreserved": true
+        },
+        {
+          "scenario": "built linked project package metadata is not treated as absent",
+          "exit": 2,
+          "statePreserved": true
+        },
+        {
+          "scenario": "built directory project package metadata is not treated as absent",
+          "exit": 2,
+          "statePreserved": true
+        },
+        {
+          "scenario": "built reviewer packet is readable and exclusion-aware",
+          "rubricParts": 8,
+          "cooperativeExclusions": true,
+          "typedSampleGuidance": true
+        },
+        {
+          "scenario": "built CLI red-green-finish with concurrent human file inside predicted scope",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "committed": [
+            "src/greet.test.ts",
+            "src/greet.ts"
+          ],
+          "humanFilePreserved": true,
+          "cliEqualsSyntax": true,
+          "focusedPassReported": true,
+          "nativeDelegations": 0
+        },
+        {
+          "scenario": "unimplemented committed-tree stage",
+          "exit": 2,
+          "reason": "capability-missing"
+        },
+        {
+          "scenario": "built guarded local integration with carried human file",
+          "exit": 0,
+          "mode": "fast-forward",
+          "humanFilePreserved": true
+        },
+        {
+          "scenario": "built undo rejects foreign commits with a repeated label",
+          "headPreserved": true,
+          "indexPreserved": true,
+          "humanContentPreserved": true,
+          "questionIssued": false
+        },
+        {
+          "scenario": "built guarded working-tree undo",
+          "exit": 0,
+          "humanFilePreserved": true,
+          "newContractRequiresChecks": true
+        },
+        {
+          "scenario": "built readiness reprobe after runner version change",
+          "exit": 2,
+          "reason": "adapter-unsupported-version",
+          "childLaunched": false
+        },
+        {
+          "scenario": "built ignored acceptance and new ignored configuration",
+          "baseline": "fail",
+          "introducedConfigInvalidatesRed": true
+        },
+        {
+          "scenario": "passing unrelated suite without baseline proof",
+          "exit": 2,
+          "reason": "no-distinguishing-red",
+          "checkedLocal": false
+        },
+        {
+          "scenario": "built active-chat takeover",
+          "question": "takeover-check",
+          "oldHandleFenced": true,
+          "chatConfirmationRequired": true
+        },
+        {
+          "scenario": "built abandonment preview, cancel and confirm",
+          "previewExit": 3,
+          "channel": "chat",
+          "cancelExit": 0,
+          "confirmExit": 0,
+          "finalState": "cancelled"
+        },
+        {
+          "scenario": "built copied-state quarantine and metadata review",
+          "exit": 3,
+          "originalBytesPreserved": true,
+          "importedSettingsActive": false,
+          "importedAuthorityActive": false,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built markerless-state quarantine and fresh-start choice",
+          "exit": 0,
+          "entriesPreserved": true,
+          "importedLockIgnored": true
+        },
+        {
+          "scenario": "built backup recovery conserves real candidate costs",
+          "attemptsBefore": 3,
+          "attemptsAfter": 3,
+          "checksBefore": 19,
+          "checksAfter": 19,
+          "accounting": "verified",
+          "authoritySuspended": true,
+          "additionalAttemptLaunched": false
+        },
+        {
+          "scenario": "built unknown legacy accounting fences new editing authority",
+          "exit": 3,
+          "handleIssued": false,
+          "branchUnchanged": true,
+          "recordsUnchanged": true
+        },
+        {
+          "scenario": "built pending effect pair after commit result",
+          "syntheticJournalRecords": true,
+          "ownershipRetained": true,
+          "journalPrefixPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built pending effect pair after commit:extra result",
+          "syntheticJournalRecords": true,
+          "ownershipRetained": true,
+          "journalPrefixPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built pending effect pair after both result",
+          "syntheticJournalRecords": true,
+          "ownershipRetained": false,
+          "journalPrefixPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect toString pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect toString completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect constructor pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect constructor completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect __proto__ pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect __proto__ completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect hasOwnProperty pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect hasOwnProperty completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect __defineGetter__ pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect __defineGetter__ completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect future-effect pending dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": true,
+          "completedRecordReadable": false,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built unknown effect future-effect completed dispatch",
+          "syntheticJournalRecords": true,
+          "pendingUncertaintyPreserved": false,
+          "completedRecordReadable": true,
+          "journalPrefixPreserved": true,
+          "ownershipAndAuthorityPreserved": true,
+          "sourceAndIndexPreserved": true,
+          "retryVerified": true
+        },
+        {
+          "scenario": "built backup checkpoint in-flight retry",
+          "accounting": "unknown",
+          "spentAttempts": 1,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint completeness retry",
+          "accounting": "unknown",
+          "spentAttempts": 1,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint budget retry",
+          "accounting": "unknown",
+          "spentAttempts": 2,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint sequence retry",
+          "accounting": "unknown",
+          "spentAttempts": 1,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint identical retry",
+          "accounting": "verified",
+          "spentAttempts": 1,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint budget-progress retry",
+          "accounting": "verified",
+          "spentAttempts": 2,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built backup checkpoint sequence-progress retry",
+          "accounting": "verified",
+          "spentAttempts": 1,
+          "syntheticCheckpoints": true,
+          "recordsUnchanged": true,
+          "indexAndContentPreserved": true,
+          "handleIssued": false
+        },
+        {
+          "scenario": "built atomic project write predictable-temp-link",
+          "killedAtBoundary": false,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-temp-fsync",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-publish",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built atomic project write after-dir-fsync",
+          "killedAtBoundary": true,
+          "adoptedOnce": true,
+          "outsideBytesPreserved": true
+        },
+        {
+          "scenario": "built unreadable adoption remains uncertain through stop",
+          "exit": 2,
+          "authorityRetainedAsFence": true,
+          "outsideBytesPreserved": true,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built secret alias is refused before adoption preview",
+          "exit": 2,
+          "canaryDisclosed": false
+        },
+        {
+          "scenario": "built stop preserves interrupted scaffold under tighter policy",
+          "exit": 2,
+          "partialFilePreserved": true,
+          "pendingEffectRetained": true,
+          "installLaunched": false
+        },
+        {
+          "scenario": "built stop preserves interrupted scaffold under tighter adopted policy",
+          "exit": 2,
+          "partialFilePreserved": true,
+          "pendingEffectRetained": true,
+          "installLaunched": false
+        },
+        {
+          "scenario": "built contradictory lint child cannot produce a passing receipt",
+          "syntheticTool": true,
+          "programExit": 1,
+          "reportedErrors": 1,
+          "diagnosticMessages": 0,
+          "receipt": "inconclusive",
+          "reason": "report-invalid"
+        },
+        {
+          "scenario": "built named static configuration refuses substitution",
+          "defaultConfigExit": 0,
+          "requiredConfigExit": 2,
+          "admissionExit": 2,
+          "substituteLaunched": false,
+          "receiptIssued": false
+        },
+        {
+          "scenario": "built default checkout-hook admission",
+          "exit": 2,
+          "hookLaunched": false,
+          "branchUnchanged": true,
+          "explicitCurrentBranchAccepted": true
+        },
+        {
+          "scenario": "built configured checkout-hook admission",
+          "exit": 2,
+          "hookLaunched": false,
+          "branchUnchanged": true,
+          "explicitCurrentBranchAccepted": true
+        },
+        {
+          "scenario": "built index recovery before-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery after-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery before-rename",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery after-rename",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery manual-after-lock",
+          "killedAtBoundary": true,
+          "directorySyncFailure": false,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "built index recovery failed-directory-sync",
+          "killedAtBoundary": false,
+          "directorySyncFailure": true,
+          "commitCount": 2,
+          "duplicateCommit": false,
+          "humanStagingPreserved": true,
+          "indexSyncRecovered": true
+        },
+        {
+          "scenario": "user-level Git LFS filter configuration",
+          "openExit": 0,
+          "filterRan": false
+        },
+        {
+          "scenario": "built guarded filter pass",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "minimalEnvironment": true,
+          "headChanged": true,
+          "humanBytesPreserved": true,
+          "filterMutationPreserved": false
+        },
+        {
+          "scenario": "built guarded filter transform",
+          "endpoint": "checked-local",
+          "scope": "working-tree-with-your-edits",
+          "minimalEnvironment": true,
+          "headChanged": false,
+          "humanBytesPreserved": true,
+          "filterMutationPreserved": false
+        },
+        {
+          "scenario": "built guarded filter mutate",
+          "endpoint": "implemented-unverified",
+          "minimalEnvironment": true,
+          "headChanged": false,
+          "humanBytesPreserved": false,
+          "filterMutationPreserved": true
+        },
+        {
+          "scenario": "built guarded filter stop",
+          "processRecorded": true,
+          "stoppedBeforeCommit": true,
+          "recoveryDidNotReplay": true,
+          "humanStagingPreserved": true
+        },
+        {
+          "scenario": "built guarded filter killed",
+          "processRecorded": true,
+          "stoppedBeforeCommit": true,
+          "recoveryDidNotReplay": true,
+          "humanStagingPreserved": true
+        },
+        {
+          "scenario": "built stateless doctor honors metadata exclusions",
+          "exit": 2,
+          "metadataRefused": true,
+          "noStateWritten": true,
+          "helpIndependent": true
+        },
+        {
+          "scenario": "built conflicting required definitions refuse before launch",
+          "exit": 2,
+          "launched": 0,
+          "receipts": 0
+        },
+        {
+          "scenario": "built TypeScript default population",
+          "receipt": "pass",
+          "analyzedFiles": [
+            "src/greet.ts",
+            "src/greet.test.ts"
+          ],
+          "reasons": [],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built TypeScript ignored-input population",
+          "receipt": "inconclusive",
+          "analyzedFiles": [
+            "src/greet.ts",
+            "src/greet.test.ts",
+            "ignored.ts"
+          ],
+          "reasons": [
+            "population-mismatch"
+          ],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built TypeScript references population",
+          "receipt": "inconclusive",
+          "analyzedFiles": [],
+          "reasons": [
+            "not-executed"
+          ],
+          "buildInfoPreserved": true
+        },
+        {
+          "scenario": "built synthetic compiler unsupported version",
+          "receipt": "inconclusive",
+          "reasons": [
+            "not-executed"
+          ],
+          "childLaunched": false,
+          "syntheticTool": true
+        },
+        {
+          "scenario": "built synthetic compiler truncated valid prefix",
+          "receipt": "inconclusive",
+          "reasons": [
+            "report-invalid"
+          ],
+          "childLaunched": true,
+          "syntheticTool": true
+        },
+        {
+          "scenario": "built private artifact fifo write admission",
+          "syntheticTool": true,
+          "controlledLeafInjection": true,
+          "childLaunched": false,
+          "statePreservedOnRefusal": true,
+          "sourceAndIndexPreserved": true,
+          "leafPreserved": true
+        },
+        {
+          "scenario": "built private artifact fifo-reader write admission",
+          "syntheticTool": true,
+          "controlledLeafInjection": true,
+          "childLaunched": false,
+          "statePreservedOnRefusal": true,
+          "sourceAndIndexPreserved": true,
+          "leafPreserved": true
+        },
+        {
+          "scenario": "built private artifact directory write admission",
+          "syntheticTool": true,
+          "controlledLeafInjection": true,
+          "childLaunched": false,
+          "statePreservedOnRefusal": true,
+          "sourceAndIndexPreserved": true,
+          "leafPreserved": true
+        },
+        {
+          "scenario": "built private artifact link write admission",
+          "syntheticTool": true,
+          "controlledLeafInjection": true,
+          "childLaunched": false,
+          "statePreservedOnRefusal": true,
+          "sourceAndIndexPreserved": true,
+          "leafPreserved": true
+        },
+        {
+          "scenario": "built private artifact regular write admission",
+          "syntheticTool": true,
+          "controlledLeafInjection": true,
+          "childLaunched": true,
+          "statePreservedOnRefusal": false,
+          "sourceAndIndexPreserved": true,
+          "leafPreserved": false
+        },
+        {
+          "scenario": "built synthetic Vitest report stable admission",
+          "receipt": "pass",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "built synthetic Vitest report invalid-utf8 admission",
+          "receipt": "inconclusive",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "built synthetic Vitest report overwrite-json admission",
+          "receipt": "inconclusive",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "built synthetic Vitest report replace-fifo admission",
+          "receipt": "inconclusive",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "built synthetic Vitest report replace-directory admission",
+          "receipt": "inconclusive",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "built synthetic Vitest report replace-link admission",
+          "receipt": "inconclusive",
+          "childLaunched": true,
+          "syntheticTool": true,
+          "reportBytesPreserved": true
+        },
+        {
+          "scenario": "symlinked state directory",
+          "exit": 3,
+          "reason": "marker-mismatch",
+          "outsideWrites": false
+        }
+      ]
+    }
+  ],
+  "focusedMinimum": {
+    "result": "pass",
+    "tests": 53,
+    "suites": 7,
+    "logSha256": "7358ddcb67d3a0d9a534e6f129b065db8d07c52fe932082fd571ab6fa1384398"
+  },
+  "redControls": {
+    "outputDefinition": {
+      "result": "failed as intended",
+      "logSha256": "91bd97adb49578428b040ca9203ab50ec1e3093b3024a105aeb9e69494321ebd"
+    },
+    "recoveryRefusal": {
+      "result": "failed as intended",
+      "logSha256": "c6326edaea366f20e795754d42ac58082613a6ea2f4dfc034a0d3404c113dc20"
+    },
+    "packetPurge": {
+      "result": "failed as intended",
+      "logSha256": "c510d2d9728d334e19085e8c8108877f81d75264c708eaf4142f6369461eebf7"
+    },
+    "tempRoot": {
+      "result": "failed as intended",
+      "logSha256": "99a5f84c419a3cd32ab40d196c403ce03a729ece3393bbd688c299e1d469c8e2"
+    }
+  },
+  "budgets": {
+    "before": {
+      "adapters/git-cli": {
+        "used": 37801,
+        "cap": 37843,
+        "free": 42
+      },
+      "adapters/node-ts": {
+        "used": 17929,
+        "cap": 20160,
+        "free": 2231
+      },
+      "adapters/runner": {
+        "used": 9928,
+        "cap": 20160,
+        "free": 10232
+      },
+      "adapters/store-fs": {
+        "used": 24830,
+        "cap": 25920,
+        "free": 1090
+      },
+      "core/budget": {
+        "used": 8585,
+        "cap": 8640,
+        "free": 55
+      },
+      "core/review": {
+        "used": 16981,
+        "cap": 20160,
+        "free": 3179
+      },
+      "core/risk": {
+        "used": 4779,
+        "cap": 8640,
+        "free": 3861
+      },
+      "core/schemas": {
+        "used": 26863,
+        "cap": 26899,
+        "free": 36
+      },
+      "core/verdict": {
+        "used": 12549,
+        "cap": 17280,
+        "free": 4731
+      },
+      "pipeline + verbs + decisions": {
+        "used": 241776,
+        "cap": 241805,
+        "free": 29
+      }
+    },
+    "after": {
+      "adapters/git-cli": {
+        "used": 37801,
+        "cap": 37843,
+        "free": 42
+      },
+      "adapters/node-ts": {
+        "used": 17929,
+        "cap": 20160,
+        "free": 2231
+      },
+      "adapters/runner": {
+        "used": 9928,
+        "cap": 20160,
+        "free": 10232
+      },
+      "adapters/store-fs": {
+        "used": 24920,
+        "cap": 25920,
+        "free": 1000
+      },
+      "core/budget": {
+        "used": 8585,
+        "cap": 8640,
+        "free": 55
+      },
+      "core/review": {
+        "used": 16981,
+        "cap": 20160,
+        "free": 3179
+      },
+      "core/risk": {
+        "used": 4779,
+        "cap": 8640,
+        "free": 3861
+      },
+      "core/schemas": {
+        "used": 26863,
+        "cap": 26899,
+        "free": 36
+      },
+      "core/verdict": {
+        "used": 12549,
+        "cap": 17280,
+        "free": 4731
+      },
+      "pipeline + verbs + decisions": {
+        "used": 241796,
+        "cap": 241805,
+        "free": 9
+      }
+    },
+    "capChanges": false
+  },
+  "privacy": {
+    "scope": "actual unstaged additions and untracked nonignored files",
+    "findings": []
+  },
+  "validationCorrections": [
+    "Initial typecheck caught an unused filesystem import; removed before successful full CI.",
+    "Old bundle failed new output-definition UAT before rebuild.",
+    "New UAT first used incorrect boolean flag syntax, then restored equivalent rather than byte-exact baseline source; both fixture errors corrected before successful final runs."
+  ],
+  "scope": "Local deterministic and real scratch-process evidence only. No native host or qualification.",
+  "pending": [
+    "Independent protocol review; request to authorize a fresh reviewer remains unanswered.",
+    "Measured simplification/target capacity and final protocol sign-off before schema-2 implementation.",
+    "R08 owner-deferred; broader completion-plan work remains.",
+    "No commit/push requested or performed."
+  ]
+}

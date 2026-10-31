@@ -3,6 +3,8 @@
 > Status: Independently reviewed 2026-10-26; three findings accepted and dispositioned in §8. Owner approved option A and the bounded repair/canonical clarification on 2026-10-26. Implementation must follow TDD and the validation gates below; full migration remains unapproved.
 > Owner: repository owner. Sources: technical specification §§7.3, 7.4, 7.5, 7.6, 7.7; CON-04, CON-05, SEC-12; migration review MC-2.
 
+> Local implementation update, 2026-10-28: the supported unprivileged macOS route is available. LA-1–LA-7 are grouped in `packages/kernel/test/store-lock-admission.test.ts` with one real-process barrier fixture. Twelve red/green controls pass locally; existing 94 store/boundary/quarantine tests pass. Full local CI passes 1,226 tests/198 suites; 139 built UAT scenarios pass on Node 26.3.0 and 22.12.0 against the same 776,671-byte bundle. No remote CI or qualification is implied. Archived after local validation; implementation review and commit remain pending.
+
 ## 1. Outcome and scope
 
 An existing owned store waiting for its transaction lock does not change protected directory/record permissions or create its private ignore file. Once the lock is acquired, it freshly admits compatibility before doing that maintenance. A cooperative fence publisher uses the same transaction lock, so it cannot install a transition/privacy fence between this admission and protected maintenance.
@@ -11,9 +13,9 @@ This repairs MC-2 only. It adds no migration writer, schema, port, reason, lock 
 
 ## 2. Source finding
 
-Current [acquire](../packages/kernel/src/adapters/store-fs.ts) admits, attempts initialization, chmods the store directory, checks ownership/quarantine, admits again, chmods directory/records and may write `.gitignore`, then calls `claim`. A fence installed after either pre-lock admission can precede permission or ignore-file mutation. The later refusal does not undo that mutation.
+Current [acquire](../../packages/kernel/src/adapters/store-fs.ts) admits, attempts initialization, chmods the store directory, checks ownership/quarantine, admits again, chmods directory/records and may write `.gitignore`, then calls `claim`. A fence installed after either pre-lock admission can precede permission or ignore-file mutation. The later refusal does not undo that mutation.
 
-Current [transaction](../packages/kernel/src/adapters/store-fs.ts) already has an under-lock admission inside its try/finally, followed by journal repair and callback execution. Its finally releases only its matching lock. Reuse this boundary; do not add another orchestration path or acquire a second lock.
+Current [transaction](../../packages/kernel/src/adapters/store-fs.ts) already has an under-lock admission inside its try/finally, followed by journal repair and callback execution. Its finally releases only its matching lock. Reuse this boundary; do not add another orchestration path or acquire a second lock.
 
 ## 3. Proposed ordering
 
@@ -42,7 +44,7 @@ If A is approved, clarify technical specification §7.6's "mutating admission re
 
 ## 5. Behavior as examples and test ownership
 
-All rows are planned checks, not results. Use existing [store.test.ts](../packages/kernel/test/store.test.ts), [store-boundary.test.ts](../packages/kernel/test/store-boundary.test.ts), [quarantine.test.ts](../packages/kernel/test/quarantine.test.ts) and their real child-process fixtures. One bounded test fixture is justified only if existing hold-lock fixtures cannot express the admission barrier. No production timing hook is needed: the child may wrap its public `admit` method solely to announce/block immediately after successful admission; real filesystem operations, lock acquisition and process identities remain unchanged.
+All rows are planned checks, not results. Use existing [store.test.ts](../../packages/kernel/test/store.test.ts), [store-boundary.test.ts](../../packages/kernel/test/store-boundary.test.ts), [quarantine.test.ts](../../packages/kernel/test/quarantine.test.ts) and their real child-process fixtures. One bounded test fixture is justified only if existing hold-lock fixtures cannot express the admission barrier. No production timing hook is needed: the child may wrap its public `admit` method solely to announce/block immediately after successful admission; real filesystem operations, lock acquisition and process identities remain unchanged.
 
 | ID | Example and exact acceptance | Test home |
 |---|---|---|
@@ -58,7 +60,7 @@ Coordinate child processes with explicit bounded barriers, not sleeps that presu
 
 ## 6. Impact, feasibility and risks
 
-Production scope: only [store-fs.ts](../packages/kernel/src/adapters/store-fs.ts), moving existing maintenance within the same class and deleting redundant early chmod. No pipeline/shared-schema/core-budget change. Tests and their narrowly owned fixture may change; canonical clarification, plan and changelog follow approved implementation.
+Production scope: only [store-fs.ts](../../packages/kernel/src/adapters/store-fs.ts), moving existing maintenance within the same class and deleting redundant early chmod. No pipeline/shared-schema/core-budget change. Tests and their narrowly owned fixture may change; canonical clarification, plan and changelog follow approved implementation.
 
 Current store budget is **24,653/25,920 non-whitespace characters** (1,267 free), measured with the existing quality tool on October 26. The proposed production move is expected to shrink code, but this is not a measured implementation delta. Verify actual deltas, function/file ratchets and unchanged caps after implementation. Shared aggregate has only five characters free; this repair does not use it.
 

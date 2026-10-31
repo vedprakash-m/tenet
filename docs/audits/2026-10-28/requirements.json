@@ -1,0 +1,4436 @@
+{
+  "date": "2026-10-28",
+  "baseCommit": "159caab650dbf38a50409c32ade3d29c0cd98efb",
+  "scope": "Main working tree. Initial modified specs preserved. Draft review inventory, not the authoritative evidence ledger.",
+  "kernelSourceFiles": 111,
+  "kernelSourceLines": 12750,
+  "testFiles": 93,
+  "counts": {
+    "musts": 181,
+    "shoulds": 19,
+    "taggedMusts": 115,
+    "hostBuckets": 16,
+    "unmappedMusts": 50,
+    "qualified": 0
+  },
+  "requirements": [
+    {
+      "id": "INS-01",
+      "text": "Tenet shall install as one plugin through the qualified native install path without cloning, building, editing JSON or installing a runtime.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-01"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "INS-02",
+      "text": "The README shall state, before installation, prerequisites, publisher and verification steps, the support matrix and assistance levels, permissions and executable content, a first task, and update and removal steps.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-01",
+        "AC-11"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Root README is explicitly a draft with name/publisher placeholders; plugin README is stale relative to host observations."
+    },
+    {
+      "id": "INS-03",
+      "text": "When invoked with a task, Tenet shall accept the task before any setup and run only the readiness checks that task depends on.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-02",
+        "AC-21"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "INS-04",
+      "text": "Tenet shall distinguish plugin-ready, project-ready and action-ready states and report only those relevant to the current task.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-03",
+        "AC-21"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/core.test.ts",
+          "sha256": "3a4ea6b27f712b1226f7bea64cfe47a6cfb01b963c54e7a320715625001938de"
+        },
+        {
+          "path": "packages/kernel/test/platform.test.ts",
+          "sha256": "6ec3da953a4f27ad9c2ed04605bc2d24c7ea8e3fdc1799e4f3ce0c08881137f5"
+        },
+        {
+          "path": "packages/kernel/test/readiness-report.test.ts",
+          "sha256": "d9e8695298190075caa873dcc6ceb751d36d5cbb2230e2bc5f13fdda2ced8d02"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INS-05",
+      "text": "When the host version, plugin version, policy or relevant project inputs change, Tenet shall re-probe only the affected capabilities; otherwise it shall reuse cached observations with provenance.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-19",
+        "AC-21"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Plugin descriptor is static/cached per process; affected-capability probe cache with provenance is absent."
+    },
+    {
+      "id": "INS-06",
+      "text": "If a required capability is missing, Tenet shall block only dependent operations, name the missing prerequisite, and offer the safe next action and unaffected alternatives.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-03"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/platform.test.ts",
+          "sha256": "6ec3da953a4f27ad9c2ed04605bc2d24c7ea8e3fdc1799e4f3ce0c08881137f5"
+        },
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INS-07",
+      "text": "The installed product shall require no runtime, service, database, MCP server, API key or CI beyond the documented host account and the project's own tools; Tenet helpers reuse the project's Node.js.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-01"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/invariants.test.ts",
+          "sha256": "b77b36c231d0f8d6f0cd9d710a68bf9a8ace6eaf944613f85ce547bf131152f5"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Bundle has no external runtime dependency besides project Node; installed zero-setup path still requires native proof."
+    },
+    {
+      "id": "INS-08",
+      "text": "If policy blocks plugin installation or required features, the README shall explain the native recovery path.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-01"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INS-09",
+      "text": "Tenet shall answer questions, help and status requests conversationally without creating a work contract or files.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "INS-10",
+      "text": "Tenet shall announce its engagement and next step once when a task starts, not on every reply.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "INS-11",
+      "text": "When a project needs Node.js, a package manager or Git that is missing, Tenet shall explain the prerequisite, link the official installer and re-check, without installing software itself.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-03",
+        "AC-21"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Doctor names missing tools; official installer/recheck user workflow incomplete."
+    },
+    {
+      "id": "INS-12",
+      "text": "Before implementation, Tenet shall state the assistance level (Section 2.3) for the current project and task.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-03",
+        "AC-21"
+      ],
+      "workstream": "Installation, readiness and host qualification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/platform.test.ts",
+          "sha256": "6ec3da953a4f27ad9c2ed04605bc2d24c7ea8e3fdc1799e4f3ce0c08881137f5"
+        },
+        {
+          "path": "packages/kernel/test/requirements.test.ts",
+          "sha256": "2294aeb68681246754ebef5188d6a2d55d66c848e8bcdb16d34bcc454ab2518c"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INT-01",
+      "text": "Before asking questions, Tenet shall inspect existing source, docs and conventions and reuse established facts.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-04",
+        "AC-21"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "INT-02",
+      "text": "Tenet shall record intent with separate sections for purpose and value, users, accepted requirements with examples and invariants, constraints, preferences, non-goals, assumptions, deferred choices and plan items.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-13a"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/adopt.test.ts",
+          "sha256": "c02924806c2643e7b723fe76ce57fa2c1f6a78b7803dc90ebe6191bcd0036a55"
+        },
+        {
+          "path": "packages/kernel/test/decision-record.test.ts",
+          "sha256": "78910b3023bb0173a94bafcb5e9ed84ba7d3e0243c91e1afcbb417740555db7f"
+        },
+        {
+          "path": "packages/kernel/test/intent-md.test.ts",
+          "sha256": "9bcb20d6972424ae25af69e04a5c0a8f1fd6136a8142214fd2f77d510a90fdee"
+        },
+        {
+          "path": "packages/kernel/test/planning.test.ts",
+          "sha256": "d3d24b156c0a1a1b73eba6dc4231d1034a5d1517ce099da577bcca7b6f96c539"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Local intent and INTENT.md adoption exist; automatic reprojection and accepted external content reconciliation remain incomplete."
+    },
+    {
+      "id": "INT-03",
+      "text": "Tenet shall ask only questions whose answers change the next dependent action, each with a recommendation, its consequences, and a reversible default where one is justified.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-04",
+        "AC-21"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "INT-04",
+      "text": "For behavioral work in Standard and Deep lanes, Tenet shall express the agreed outcome as concrete examples in the user's domain language; when the request already states unambiguous cases, Tenet shall record them as confirmed and show them in the contract summary, and otherwise shall obtain the user's confirmation before implementation.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-24"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INT-05",
+      "text": "Tenet shall implement the acceptance basis as executable acceptance tests before the production behavior they cover, tag them with their IDs, and lock each test once its verification result is recorded (Section 3.7.2).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-05",
+        "AC-24"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INT-06",
+      "text": "When a locked acceptance test must change, Tenet shall record the reason and obtain user confirmation for a behavior change, or an independent review disposition for a test defect; related mechanical corrections may share one disposition.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-07",
+        "AC-24"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INT-07",
+      "text": "Tenet shall keep inferred requirements as assumptions until the user confirms them.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-13a"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INT-08",
+      "text": "When intent changes, Tenet shall identify affected requirements, examples, plan items, tests, decisions and in-flight work and present the impact before proceeding.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-13a"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/impact.test.ts",
+          "sha256": "f6724fa032f5c8289384377ea1e84648d02cf10540ef5ed3d9074a402e989220"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INT-09",
+      "text": "Tenet shall record consequential decisions in MADR format with context, options, choice and consequences, linked to the IDs they affect.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-13a"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Decision records exist locally/in INTENT.md; MADR directory projection and lifecycle remain pending in shared-files spec."
+    },
+    {
+      "id": "INT-10",
+      "text": "Tenet shall assign stable, branch-safe IDs to durable plan items, requirements, examples, constraints, assumptions and decisions (Section 3.7.3).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-13a",
+        "AC-25"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/decision-record.test.ts",
+          "sha256": "78910b3023bb0173a94bafcb5e9ed84ba7d3e0243c91e1afcbb417740555db7f"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Local allocator/IDs exist; cross-branch shared-ID reconciliation and reconstruction allocator are unfinished."
+    },
+    {
+      "id": "INT-11",
+      "text": "While style is Guided, Tenet shall present examples and choices without technical jargon and explain consequences in domain terms.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "INT-12",
+      "text": "When a request spans several increments, Tenet shall propose an ordered, editable plan of independently checkable increments with dependencies, track progress against it, and propose the next item on request.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-04",
+        "AC-12"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/plan.test.ts",
+          "sha256": "8bb26c8e3a3da9198ded65d2a2acf8dc011c4a4ecd56a0123b2b0cd245b934d7"
+        },
+        {
+          "path": "packages/kernel/test/planning.test.ts",
+          "sha256": "d3d24b156c0a1a1b73eba6dc4231d1034a5d1517ce099da577bcca7b6f96c539"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INT-13",
+      "text": "Tenet shall let the user designate existing planning documents as intent, plan and status sources instead of creating `INTENT.md`.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-04"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/intent-md.test.ts",
+          "sha256": "9bcb20d6972424ae25af69e04a5c0a8f1fd6136a8142214fd2f77d510a90fdee"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INT-14",
+      "text": "Tenet shall keep `docs/architecture.md` describing current components, data model and integration points.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "INT-15",
+      "text": "Tenet shall define each work's acceptance basis (Section 4.5.1) and propose at least one boundary or negative example for each new requirement.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-24",
+        "AC-27"
+      ],
+      "workstream": "Intent, configuration and shared files",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/boundary-example.test.ts",
+          "sha256": "708b225283c9749b404b32fadead7e813b012e856e2dd804f9fd54cdce96c1c8"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "WRK-01",
+      "text": "Tenet shall record a work contract for each implementation task containing outcome, acceptance basis, scope, protected paths, checks, execution envelopes, endpoint, budget, branch and base, pinned versions and recovery point.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-04",
+        "AC-13a"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "295ef70dbf1e7c19f8387f70535cfe5df281ebe612cd54713daf113f1bb9b31c"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "WRK-02",
+      "text": "A clear user request shall authorize routine in-scope local steps (edits, inspected checks, review, bookkeeping, recovery preparation) without further approval prompts.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "295ef70dbf1e7c19f8387f70535cfe5df281ebe612cd54713daf113f1bb9b31c"
+        },
+        {
+          "path": "packages/kernel/test/static-checks.test.ts",
+          "sha256": "6d45532e6e8b5a2ee8988a48e41e64ad17b299e7b07c6dec03664edeebdad0d6"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "WRK-03",
+      "text": "Tenet shall request new authority only when behavior, data or access, compatibility, protected paths, irreversible or remote effects, or resource limits change beyond the contract.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-08",
+        "AC-13a"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/authority.test.ts",
+          "sha256": "5fcc47b6659d6766772083f346c70ee91a6f65c5cc4229094bddea1cf81fe59d"
+        },
+        {
+          "path": "packages/kernel/test/grant.test.ts",
+          "sha256": "6707c8b325fb1fe3b1f8e1ec043e2f12012b33656c25fa2e8ed4f6251c21c669"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "WRK-04",
+      "text": "Tenet shall recommend a lane from the Section 5.2 assessment of the change, re-assess it after inspection, state the reason in one line, and let the user raise it, or lower it no further than the floor.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/deep.test.ts",
+          "sha256": "0a643f0abdba68938088201a5827134e2195d48bbc00fe8626a84fc45ce1b88c"
+        },
+        {
+          "path": "packages/kernel/test/scaffold.test.ts",
+          "sha256": "883ead3ee07bfc937146e5dae68cb95c14ee4746e54bbd4590f10645cd2215cd"
+        },
+        {
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "b2a7ba4fadfc4def945165093bf94fc856e151b6f7dec7967ca4608848b0d586"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "WRK-05",
+      "text": "Tenet shall route feature, bug, review, investigation, refactor, prototype, plan and continuation requests through the main workflow without the user choosing a mode.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "WRK-06",
+      "text": "When the user explicitly requests a prototype, Tenet shall label it unhardened, keep it within declared data limits, record its gaps in `docs/hardening.md` and never report it as checked.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-05",
+        "AC-21"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Prototype endpoint/shadow snapshot exists; data-limit and per-prototype hardening workflow are missing."
+    },
+    {
+      "id": "WRK-07",
+      "text": "When an unhardened prototype is promoted, Tenet shall inventory shortcuts, characterize working behavior, add distinguishing checks for missing safeguards and obtain independent review before a checked-local verdict.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-05"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/promote.test.ts",
+          "sha256": "b5cc7b1dd94806d04d23ee4a42d29586c9761beb471186afcfc130e794457308"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Promotion floor/native-review requirement exists; automatic shortcut inventory and quality obligations remain incomplete."
+    },
+    {
+      "id": "WRK-08",
+      "text": "Tenet shall apply the per-contract limits of Section 4.4.2 at the boundaries their mechanism class allows, warn at 80%, and at the bound stop with a diagnosis and a specific extension proposal.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-15c",
+        "AC-19"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/active-time.test.ts",
+          "sha256": "0ab8b78b6425e86d59080b86c49ab297a3e3a8d28fcbff69daae7cda8dce010e"
+        },
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/backup-accounting.test.ts",
+          "sha256": "62da83546f81e97b3b9b1feb52fdb810d4db89f465dda2117c8e5c1e2097b0fd"
+        },
+        {
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "295ef70dbf1e7c19f8387f70535cfe5df281ebe612cd54713daf113f1bb9b31c"
+        },
+        {
+          "path": "packages/kernel/test/core.test.ts",
+          "sha256": "3a4ea6b27f712b1226f7bea64cfe47a6cfb01b963c54e7a320715625001938de"
+        },
+        {
+          "path": "packages/kernel/test/review-admission.test.ts",
+          "sha256": "25ebc696781f618afbe59100672244bdf42a108a1ba4e8e6bca2275c67b75e3e"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "WRK-09",
+      "text": "If the same operational failure recurs twice in a row, or attempts oscillate, Tenet shall stop retrying and present a diagnosis; planned failing tests in TDD do not count as failures.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-15c"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/core.test.ts",
+          "sha256": "3a4ea6b27f712b1226f7bea64cfe47a6cfb01b963c54e7a320715625001938de"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "WRK-10",
+      "text": "Tenet shall checkpoint at declared boundaries and before known host limits where observable, so an iteration pause or interruption loses at most the work since the last checkpoint, and shall never auto-confirm a host pause.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-08",
+        "AC-21"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        },
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "WRK-11",
+      "text": "Tenet shall support status, refine, pause, cancel, undo, integrate, decline and resume as defined in Section 3.4.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "WRK-12",
+      "text": "Tenet shall reserve enough budget to write a handoff and diagnosis before exhaustion.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-08"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "295ef70dbf1e7c19f8387f70535cfe5df281ebe612cd54713daf113f1bb9b31c"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "WRK-13",
+      "text": "If the user declines a mandatory step, Tenet shall proceed only to an endpoint whose label reflects the missing evidence (Section 4.5.2), state it once, and never lower the floor silently.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21",
+        "AC-27"
+      ],
+      "workstream": "Workflow, authority and resource boundaries",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/decline.test.ts",
+          "sha256": "2868fdffa3c4baac5bfb9a06ad59f3e1c1521dce64d3465e3ee24828697d63f8"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "AGT-01",
+      "text": "Tenet shall define roles as responsibility contracts (Section 3.9) independent of model names.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-22"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/requirements.test.ts",
+          "sha256": "2294aeb68681246754ebef5188d6a2d55d66c848e8bcdb16d34bcc454ab2518c"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "AGT-02",
+      "text": "On the R1 tuple, Tenet shall dispatch the Reviewer as a native subagent with fresh context for consequential work and record observed dispatch metadata.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-06",
+        "AC-22"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/host-sp08.test.ts",
+          "sha256": "bbc75dc4f1c136bc0854172cb1cb17c040dd05a7858083fc259da5a50ba6b132"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "AGT-03",
+      "text": "Tenet shall dispatch independent read-only Researcher assignments in parallel when they observe one declared source revision.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-22"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/analyst.test.ts",
+          "sha256": "030c0c4b5cc188243e62720f5c284290c495cb5eddee9008fd28618604ed48a5"
+        },
+        {
+          "path": "packages/kernel/test/host-sp08.test.ts",
+          "sha256": "bbc75dc4f1c136bc0854172cb1cb17c040dd05a7858083fc259da5a50ba6b132"
+        },
+        {
+          "path": "packages/kernel/test/lessons.test.ts",
+          "sha256": "7657b93dfbad22cc9bbb1dfdc66a0da6ddadd4b82f34aa9b19d795448fcfbc61"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "AGT-04",
+      "text": "Each assignment shall carry goal, contract and config revision, source baseline, minimal context, permitted actions, budget and expected output.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-22"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/review-admission.test.ts",
+          "sha256": "25ebc696781f618afbe59100672244bdf42a108a1ba4e8e6bca2275c67b75e3e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "AGT-05",
+      "text": "Each result shall report completed, partial, blocked, failed or cancelled, plus artifacts inspected or changed, findings and open dependencies; partial output shall not count as completion.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-22"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/analyst.test.ts",
+          "sha256": "030c0c4b5cc188243e62720f5c284290c495cb5eddee9008fd28618604ed48a5"
+        },
+        {
+          "path": "packages/kernel/test/host-sp08.test.ts",
+          "sha256": "bbc75dc4f1c136bc0854172cb1cb17c040dd05a7858083fc259da5a50ba6b132"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "AGT-06",
+      "text": "Child work shall not expand authority, reset budgets or delegate further; violations found in traces are findings (mechanism: cooperative plus detected, Section 5.4).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-22"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "AGT-07",
+      "text": "The coordinator shall resolve factual disagreements by evidence and present normative product or risk choices to the user as options with a recommendation.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-22"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "AGT-08",
+      "text": "Tenet shall hold an atomic write-ownership claim (Section 5.11) before writing and run at most one write workflow per workspace.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-17"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/index-recovery.test.ts",
+          "sha256": "2e271a809cbb9de267e4004e88712937c9205541beb860111d27aa51a4bdbc64"
+        },
+        {
+          "path": "packages/kernel/test/refusals.test.ts",
+          "sha256": "8d30b2094a4a40e21f5100a3ab20ecaa92cb2235a18023c76915cd586845b547"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        },
+        {
+          "path": "packages/kernel/test/store.test.ts",
+          "sha256": "1238228e33ca810af96ffee13380f02d7ca7267cd0b3a0e45a056979886b87d2"
+        },
+        {
+          "path": "packages/kernel/test/takeover.test.ts",
+          "sha256": "6c15bdae7a61d4ee077617277c6cb556e744fefbddb3e595c32c1d5cedbc18d5"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "AGT-09",
+      "text": "For small tasks, Tenet shall use a focused same-session pass instead of dispatch and shall not describe it as a separate agent.",
+      "level": "Should",
+      "milestone": "B",
+      "acs": [
+        "AC-22"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/focused-review.test.ts",
+          "sha256": "df94ad1efd08de898b3afca85133993306b04d22b137bf1a2eba3e76fbe7f9c0"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "AGT-10",
+      "text": "Users shall obtain results without managing specialist lifecycles or reading subagent transcripts.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21",
+        "AC-22"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "AGT-11",
+      "text": "When parallel readers return findings against a revision that has since changed, the coordinator shall reconcile them before acting.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-22"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/analyst.test.ts",
+          "sha256": "030c0c4b5cc188243e62720f5c284290c495cb5eddee9008fd28618604ed48a5"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "AGT-12",
+      "text": "When an assignment changes a non-private interface or symbol, selected context shall prioritize direct importers and callers and linked acceptance tests (Section 3.8.7).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-19",
+        "AC-22"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "TDD-01",
+      "text": "For changed behavior, Tenet shall run at least one distinguishing reproduction test that fails on the baseline and passes on the candidate, and shall record the expected results of preservation, boundary and negative cases, which may pass on both.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-05"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/core.test.ts",
+          "sha256": "3a4ea6b27f712b1226f7bea64cfe47a6cfb01b963c54e7a320715625001938de"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        },
+        {
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "b2a7ba4fadfc4def945165093bf94fc856e151b6f7dec7967ca4608848b0d586"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "TDD-02",
+      "text": "For new interfaces, Tenet shall add minimal compilable scaffolding so the failing test is behavioral; a compile or import error alone shall not count as a failing test.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-05"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "TDD-03",
+      "text": "If a behavioral failing test is infeasible, Tenet shall use a test-alongside approach with a negative control and disclose it in the result.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-05"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "TDD-04",
+      "text": "In existing code, Tenet shall characterize affected behavior before changing it and preserve unrelated behavior.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-05",
+        "AC-20"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/receipts.test.ts",
+          "sha256": "5d9b4228ff9078c0e8027166be58ee6dbd65ec64a8226c757d80af8b1befde79"
+        },
+        {
+          "path": "packages/kernel/test/requirements.test.ts",
+          "sha256": "2294aeb68681246754ebef5188d6a2d55d66c848e8bcdb16d34bcc454ab2518c"
+        },
+        {
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "b2a7ba4fadfc4def945165093bf94fc856e151b6f7dec7967ca4608848b0d586"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "TDD-05",
+      "text": "After green, Tenet shall refactor when it reduces complexity within scope, then rerun affected checks.",
+      "level": "Should",
+      "milestone": "B",
+      "acs": [
+        "AC-05"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "TDD-06",
+      "text": "For nonbehavioral work, Tenet shall state the alternative check instead of writing artificial tests.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-05"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "EVD-01",
+      "text": "Tenet shall bind every check result to the candidate (base commit, digest of relevant uncommitted and untracked files, lockfile, configuration, toolchain, execution envelope) without hashing or storing secret values.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-18"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/filter-jobs.test.ts",
+          "sha256": "db5672f8f25c0fd49afc99358f59c93d13863e132ee810125e272ac29d3ffe69"
+        },
+        {
+          "path": "packages/kernel/test/required-composition.test.ts",
+          "sha256": "b0648562c3ef6526d7cf314c534d1091eb7a9303bb813f210dc8584c125ba95f"
+        },
+        {
+          "path": "packages/kernel/test/runner-artifact.test.ts",
+          "sha256": "384ab93a7cef1385d8721ea4a17a7bf633dfaf394db2ddcf8c5b716b087d76da"
+        },
+        {
+          "path": "packages/kernel/test/static-checks.test.ts",
+          "sha256": "6d45532e6e8b5a2ee8988a48e41e64ad17b299e7b07c6dec03664edeebdad0d6"
+        },
+        {
+          "path": "packages/kernel/test/static-conformance.test.ts",
+          "sha256": "8c124398abc2b9efe2cfbb418dfb556e49ba920543d9b1004372b198d82186c6"
+        },
+        {
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "b2a7ba4fadfc4def945165093bf94fc856e151b6f7dec7967ca4608848b0d586"
+        },
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Partial: semantic envelope is hard-coded in checkInputId; configuration/evidence binding awaits signed config/migration protocol."
+    },
+    {
+      "id": "EVD-02",
+      "text": "Tenet shall record each check's verdict, qualifiers, freshness and source as defined in Section 3.7.2; zero tests executed shall be inconclusive.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-07"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/playwright-adapter.test.ts",
+          "sha256": "5a31d1afcd36631c0401f47e82bb90064c9c799d2b24d800b17aad14e64fa538"
+        },
+        {
+          "path": "packages/kernel/test/receipts.test.ts",
+          "sha256": "5d9b4228ff9078c0e8027166be58ee6dbd65ec64a8226c757d80af8b1befde79"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        },
+        {
+          "path": "packages/kernel/test/static-checks.test.ts",
+          "sha256": "6d45532e6e8b5a2ee8988a48e41e64ad17b299e7b07c6dec03664edeebdad0d6"
+        },
+        {
+          "path": "packages/kernel/test/static-conformance.test.ts",
+          "sha256": "8c124398abc2b9efe2cfbb418dfb556e49ba920543d9b1004372b198d82186c6"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "EVD-03",
+      "text": "When an input changes, Tenet shall mark dependent evidence stale; an input of unknown relevance shall invalidate conservatively or make the result inconclusive.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-18"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/declared-inputs.test.ts",
+          "sha256": "1e2bb19a3bf698833670c2fc45c5e1a68211ae2cf8021b2852b856089a445f98"
+        },
+        {
+          "path": "packages/kernel/test/filter-jobs.test.ts",
+          "sha256": "db5672f8f25c0fd49afc99358f59c93d13863e132ee810125e272ac29d3ffe69"
+        },
+        {
+          "path": "packages/kernel/test/git.test.ts",
+          "sha256": "10ac681a30176c70d5e57288ed0430a0a2b48e6ebe5df0d249020836241761e4"
+        },
+        {
+          "path": "packages/kernel/test/readiness-boundary.test.ts",
+          "sha256": "e1d51e907551af7a0dd255c7f07e0bdabe4beefa15260438c4598cd0cd6fcb49"
+        },
+        {
+          "path": "packages/kernel/test/static-conformance.test.ts",
+          "sha256": "8c124398abc2b9efe2cfbb418dfb556e49ba920543d9b1004372b198d82186c6"
+        },
+        {
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "b2a7ba4fadfc4def945165093bf94fc856e151b6f7dec7967ca4608848b0d586"
+        },
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "New counterexample: ignored Playwright config and installed version do not bind evidence. Repair tracked in report F01-F03."
+    },
+    {
+      "id": "EVD-04",
+      "text": "Tenet shall run the distinguishing reproduction and targeted checks on the baseline before changing code; when a broader check fails on the candidate and is not already recorded as a baseline failure, Tenet shall rerun it on the baseline in a sealed checkout outside the workspace (Section 5.13) to classify it as pre-existing or introduced.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-18",
+        "AC-19"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Sealed candidate/baseline materialization and matching are absent from main. D1-D3 resolved; D4-D8 and final review/sign-off pending."
+    },
+    {
+      "id": "EVD-05",
+      "text": "Tenet shall normalize evidence through ecosystem adapters under the contract of Section 3.8.3.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-18",
+        "AC-20"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/playwright-adapter.test.ts",
+          "sha256": "5a31d1afcd36631c0401f47e82bb90064c9c799d2b24d800b17aad14e64fa538"
+        },
+        {
+          "path": "packages/kernel/test/receipts.test.ts",
+          "sha256": "5d9b4228ff9078c0e8027166be58ee6dbd65ec64a8226c757d80af8b1befde79"
+        },
+        {
+          "path": "packages/kernel/test/runner-artifact.test.ts",
+          "sha256": "384ab93a7cef1385d8721ea4a17a7bf633dfaf394db2ddcf8c5b716b087d76da"
+        },
+        {
+          "path": "packages/kernel/test/static-checks.test.ts",
+          "sha256": "6d45532e6e8b5a2ee8988a48e41e64ad17b299e7b07c6dec03664edeebdad0d6"
+        },
+        {
+          "path": "packages/kernel/test/static-conformance.test.ts",
+          "sha256": "8c124398abc2b9efe2cfbb418dfb556e49ba920543d9b1004372b198d82186c6"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "EVD-06",
+      "text": "Owner acceptance shall never convert a failed or missing check into pass.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-07",
+        "AC-27"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "EVD-07",
+      "text": "Tenet shall state each consequential control's mechanism class (Section 5.4) and assurance level (Section 5.3.4).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-07",
+        "AC-13a"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "EVD-08",
+      "text": "Tenet shall distinguish flaky, simulated, partial and unavailable-history results from pass and fail; a result is classified flaky only under the Section 4.4.1 rerun policy.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-07",
+        "AC-18"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/evidence-flaky.test.ts",
+          "sha256": "36e8ca2d1fa7349b2fefab5cf248851ad4aa2faaf9fa57560edbcbe55f2a76a9"
+        },
+        {
+          "path": "packages/kernel/test/receipts.test.ts",
+          "sha256": "5d9b4228ff9078c0e8027166be58ee6dbd65ec64a8226c757d80af8b1befde79"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "EVD-09",
+      "text": "Declared fixture mutations, caches and outputs shall not invalidate evidence; unexpected changes to relevant inputs shall.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-18"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/evidence-outputs.test.ts",
+          "sha256": "c4eaa9777195ff8dba235a37f06ee65eb9817ce7decb7f63a3fe7aaeedc2c85b"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Only bounded, untracked data outputs supported; tracked fixture mutation/cache semantics deferred."
+    },
+    {
+      "id": "EVD-10",
+      "text": "Tenet shall detect any change to a locked acceptance test by comparing it with the lock manifest at every check and review, and report undisposed changes as blocker findings.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-07",
+        "AC-24"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/declared-inputs.test.ts",
+          "sha256": "1e2bb19a3bf698833670c2fc45c5e1a68211ae2cf8021b2852b856089a445f98"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "EVD-11",
+      "text": "If a relevant input changes while a check runs, Tenet shall treat that result as inconclusive.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-18"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/evidence-flaky.test.ts",
+          "sha256": "36e8ca2d1fa7349b2fefab5cf248851ad4aa2faaf9fa57560edbcbe55f2a76a9"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "EVD-12",
+      "text": "Each check result shall keep an execution receipt (Section 3.8.3); a model-written summary is not a receipt.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-18"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/requirements.test.ts",
+          "sha256": "2294aeb68681246754ebef5188d6a2d55d66c848e8bcdb16d34bcc454ab2518c"
+        },
+        {
+          "path": "packages/kernel/test/static-checks.test.ts",
+          "sha256": "6d45532e6e8b5a2ee8988a48e41e64ad17b299e7b07c6dec03664edeebdad0d6"
+        },
+        {
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "b2a7ba4fadfc4def945165093bf94fc856e151b6f7dec7967ca4608848b0d586"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "New counterexample: e2e receipts identify Vitest instead of Playwright; repair tracked in F03."
+    },
+    {
+      "id": "EVD-13",
+      "text": "Integration and end-to-end checks shall use a dedicated test database and a server instance verified as Tenet-started for this candidate, never the user's development data or an unverified process on the port (Section 5.13).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-18",
+        "AC-20"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/playwright-adapter.test.ts",
+          "sha256": "5a31d1afcd36631c0401f47e82bb90064c9c799d2b24d800b17aad14e64fa538"
+        },
+        {
+          "path": "packages/kernel/test/starter.test.ts",
+          "sha256": "b6335515519f3c305cd0469b4ff012a63a13971f59b476ccdfa3a035471a387f"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Dedicated database/token infrastructure and API server e2e exist; UI/browser journey and wider integration coverage absent."
+    },
+    {
+      "id": "EVD-14",
+      "text": "Tenet shall classify imported CI results as externally produced, and as protected acceptance evidence only after the verification in Section 5.3.5.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-25"
+      ],
+      "workstream": "Evidence and behavioral verification",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "REV-01",
+      "text": "Consequential work shall receive a fresh-context native review of intent, the acceptance basis, the full diff including tests and configuration, and evidence receipts.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-06"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/focused-review.test.ts",
+          "sha256": "df94ad1efd08de898b3afca85133993306b04d22b137bf1a2eba3e76fbe7f9c0"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        },
+        {
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "b2a7ba4fadfc4def945165093bf94fc856e151b6f7dec7967ca4608848b0d586"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "REV-02",
+      "text": "Review shall give separate verdicts for behavior and intent, and for structure, security and charter; neither compensates for the other.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-06"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "295ef70dbf1e7c19f8387f70535cfe5df281ebe612cd54713daf113f1bb9b31c"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "REV-03",
+      "text": "Review shall list changes to assertions, test discovery, skips or focus markers, snapshots, mocks, suppressions, CI and dependencies for explicit disposition.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-07"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/core.test.ts",
+          "sha256": "3a4ea6b27f712b1226f7bea64cfe47a6cfb01b963c54e7a320715625001938de"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "REV-04",
+      "text": "Findings shall carry severity, evidence and a disposition under Sections 3.7.2 and 4.5.3.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-06",
+        "AC-27"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        },
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "REV-05",
+      "text": "Review shall stay within the lane's review-round budget (Section 4.4.2) plus one focused recheck; exhausting it is not approval and leaves unresolved items under the verdict policy.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-06"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/review-admission.test.ts",
+          "sha256": "25ebc696781f618afbe59100672244bdf42a108a1ba4e8e6bca2275c67b75e3e"
+        },
+        {
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "b2a7ba4fadfc4def945165093bf94fc856e151b6f7dec7967ca4608848b0d586"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "REV-06",
+      "text": "Tenet shall disclose reduced independence whenever it actually occurred, including same-session review or tests written and reviewed by the same session.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-06"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "REV-08",
+      "text": "When the change exceeds the Reviewer's context budget, Tenet shall split review coverage, narrow the increment, or report the uncovered parts, and shall not issue a whole-change verdict from partial coverage.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-06",
+        "AC-27"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/review-admission.test.ts",
+          "sha256": "25ebc696781f618afbe59100672244bdf42a108a1ba4e8e6bca2275c67b75e3e"
+        },
+        {
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "b2a7ba4fadfc4def945165093bf94fc856e151b6f7dec7967ca4608848b0d586"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "REV-09",
+      "text": "Review shall challenge the sufficiency of the acceptance basis and the fidelity of each acceptance test to its example, and propose missing behavior as assumptions or requirements without expanding scope.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-24"
+      ],
+      "workstream": "Review and delegated work",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "RES-01",
+      "text": "The result shall lead with the outcome and how to use it, then checks, limits and next actions, with details on demand (Section 3.3).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Result and user experience",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/walking-skeleton.test.ts",
+          "sha256": "5a79ac4b90168a0fe422e568315e684f2135b7ecb36987850f9ad910b7c0d5c5"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "RES-02",
+      "text": "The result shall state the endpoint chosen by the verdict policy (Section 4.5.2) and every condition that prevented a stronger one.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-07",
+        "AC-27"
+      ],
+      "workstream": "Result and user experience",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "b2a7ba4fadfc4def945165093bf94fc856e151b6f7dec7967ca4608848b0d586"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "RES-03",
+      "text": "Tenet shall not ask a routine final approval question; owner acceptance stays pending until the user accepts or rejects, or integrates the work.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Result and user experience",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "RES-04",
+      "text": "At contract end, pause or budget stop, Tenet shall write a handoff sufficient to resume in a new session without re-explanation.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-08"
+      ],
+      "workstream": "Result and user experience",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "RES-05",
+      "text": "For user-facing changes, the result shall include a demo path: run instructions, the steps that show the confirmed examples and, for the `ui` trait, screenshots.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Result and user experience",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Finish contains outcome/checks/review/usage; no structured demo path, screenshots or reading guide."
+    },
+    {
+      "id": "RES-06",
+      "text": "A review-only request shall end at findings; \"fix findings N and M\" shall implement only those findings and reuse the review context.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-04"
+      ],
+      "workstream": "Result and user experience",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/fix.test.ts",
+          "sha256": "39bdb81871a342ea87faf6dc7a2c681ac3f93f5de700b5c1a7e33202000b5401"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "RES-07",
+      "text": "Tenet shall disclose stable host and assurance limits once and when they change, and repeat a limit only when it materially affects the current task.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Result and user experience",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "RES-08",
+      "text": "While style is Guided, Tenet shall offer to start the local app under native consent and confirm the local URL responds.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Result and user experience",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "RES-09",
+      "text": "Before Deep work, Tenet shall show the expected budget envelope and its main cost drivers.",
+      "level": "Should",
+      "milestone": "B",
+      "acs": [
+        "AC-15c"
+      ],
+      "workstream": "Result and user experience",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-01",
+      "text": "Checked implementation shall require a Git repository; in a non-Git folder Tenet shall offer to initialize one (only after the user chooses it), proceed read-only, or build a prototype backed by a snapshot.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-17",
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/git.test.ts",
+          "sha256": "10ac681a30176c70d5e57288ed0430a0a2b48e6ebe5df0d249020836241761e4"
+        },
+        {
+          "path": "packages/kernel/test/prototype.test.ts",
+          "sha256": "8086a7be227d06d9b38a8d4606db2ccde93a2becd189c554af52793a2cd7a3f1"
+        },
+        {
+          "path": "packages/kernel/test/refusals.test.ts",
+          "sha256": "8d30b2094a4a40e21f5100a3ab20ecaa92cb2235a18023c76915cd586845b547"
+        },
+        {
+          "path": "packages/kernel/test/scaffold.test.ts",
+          "sha256": "883ead3ee07bfc937146e5dae68cb95c14ee4746e54bbd4590f10645cd2215cd"
+        },
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-02",
+      "text": "Tenet shall create a work branch from the current HEAD per contract unless the user chooses the current branch, record the base, state when work is stacked on an unintegrated branch, and never rewrite published history.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/branch-admission.test.ts",
+          "sha256": "4aadd573e3cd8bbcd6e76595bc70888a93ae76e81f59017823e6124c39194aa0"
+        },
+        {
+          "path": "packages/kernel/test/walking-skeleton.test.ts",
+          "sha256": "5a79ac4b90168a0fe422e568315e684f2135b7ecb36987850f9ad910b7c0d5c5"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-03",
+      "text": "Tenet shall commit at green boundaries, staging only changes it authored in scope while preserving the user's index, following the project's commit convention, with configurable `Tenet-Work` and `Tenet-Req` trailers.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/backup-accounting.test.ts",
+          "sha256": "62da83546f81e97b3b9b1feb52fdb810d4db89f465dda2117c8e5c1e2097b0fd"
+        },
+        {
+          "path": "packages/kernel/test/filter-jobs.test.ts",
+          "sha256": "db5672f8f25c0fd49afc99358f59c93d13863e132ee810125e272ac29d3ffe69"
+        },
+        {
+          "path": "packages/kernel/test/git.test.ts",
+          "sha256": "10ac681a30176c70d5e57288ed0430a0a2b48e6ebe5df0d249020836241761e4"
+        },
+        {
+          "path": "packages/kernel/test/hooks.test.ts",
+          "sha256": "91f5a8b4ef0c3f241f4787cd4dc51d0ae58bd116e6e9a4fa09153cbfb95281cc"
+        },
+        {
+          "path": "packages/kernel/test/index-recovery.test.ts",
+          "sha256": "2e271a809cbb9de267e4004e88712937c9205541beb860111d27aa51a4bdbc64"
+        },
+        {
+          "path": "packages/kernel/test/undo.test.ts",
+          "sha256": "19e117341371c7af80d13fe091f8ff701f6bd81b5fb847c3ea9722ffd28aa72f"
+        },
+        {
+          "path": "packages/kernel/test/walking-skeleton.test.ts",
+          "sha256": "5a79ac4b90168a0fe422e568315e684f2135b7ecb36987850f9ad910b7c0d5c5"
+        },
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-04",
+      "text": "Undo shall preview the inverse of the work's commits against current state, preserve later human changes, apply only after confirmation and run applicable checks afterwards.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-17"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/undo.test.ts",
+          "sha256": "19e117341371c7af80d13fe091f8ff701f6bd81b5fb847c3ea9722ffd28aa72f"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-05",
+      "text": "Tenet shall push, open or merge remote pull requests, or publish only on explicit request.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-04",
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/invariants.test.ts",
+          "sha256": "b77b36c231d0f8d6f0cd9d710a68bf9a8ace6eaf944613f85ce547bf131152f5"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-06",
+      "text": "On request, Tenet shall draft a pull request description from the contract, examples, evidence and open findings.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-07",
+      "text": "The starter recipe shall include a CI workflow running the same check obligations.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-20",
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-08",
+      "text": "Tenet shall include uncommitted human edits in the candidate it checks, and shall never stage, commit, stash, reset or discard them without explicit consent.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-17",
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-09",
+      "text": "When Tenet's shared files conflict on integration, Tenet shall reconcile by ID, detect same-ID different-content collisions, and propose the merged content for user confirmation.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-17"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Ordinary conflict prediction exists; no ID-aware merge/preview/application for shared records."
+    },
+    {
+      "id": "GIT-10",
+      "text": "When work starts on a dirty working tree, Tenet shall record the starting HEAD, index and dirty paths and ask whether to commit the user's changes separately, include named files in scope, or leave them untouched.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-17",
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-11",
+      "text": "When the user accepts a result, Tenet shall offer to integrate the work branch into its base branch locally, following the `integration` setting, as a reversible step distinct from push or publication.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/integrate.test.ts",
+          "sha256": "dad9d75abe1d0c41f4771e463931db383ab4c45b163c75a78cc696fb8348d00f"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-12",
+      "text": "Tenet shall treat Git hooks, signing and configured Git programs as executable effects: inspect them before the first commit, run them under native consent, never bypass them, and rerun affected checks when hooks modify files.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16",
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/branch-admission.test.ts",
+          "sha256": "4aadd573e3cd8bbcd6e76595bc70888a93ae76e81f59017823e6124c39194aa0"
+        },
+        {
+          "path": "packages/kernel/test/filter-jobs.test.ts",
+          "sha256": "db5672f8f25c0fd49afc99358f59c93d13863e132ee810125e272ac29d3ffe69"
+        },
+        {
+          "path": "packages/kernel/test/filters.test.ts",
+          "sha256": "bae751a31bf2059bd4d31d8353de61fbca055579b2def25df1aed2e4c64ae62a"
+        },
+        {
+          "path": "packages/kernel/test/git.test.ts",
+          "sha256": "10ac681a30176c70d5e57288ed0430a0a2b48e6ebe5df0d249020836241761e4"
+        },
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Bounded hooks/filters and conservative refusal exist; configured signing and integration hook execution remain refused."
+    },
+    {
+      "id": "GIT-13",
+      "text": "Tenet shall report a specific readiness outcome for detached HEAD, rebase or merge in progress, unresolved conflicts, shallow clones, submodules, LFS and linked worktrees before implementing.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/repo-layout.test.ts",
+          "sha256": "5ddc398bf21f42f3603d101e5755cdacbcc241c098902ff53d4cd6a19755106a"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-14",
+      "text": "Tenet shall offer to delete a work branch after integration or abandonment, and never delete unintegrated work without consent.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "GIT-15",
+      "text": "If a checkpoint commit cannot be made under existing authority, Tenet shall keep the candidate uncommitted, report the recovery limitation and not claim the work is committed.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-17",
+        "AC-25"
+      ],
+      "workstream": "Git and effect safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/filter-jobs.test.ts",
+          "sha256": "db5672f8f25c0fd49afc99358f59c93d13863e132ee810125e272ac29d3ffe69"
+        },
+        {
+          "path": "packages/kernel/test/filters.test.ts",
+          "sha256": "bae751a31bf2059bd4d31d8353de61fbca055579b2def25df1aed2e4c64ae62a"
+        },
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "CON-01",
+      "text": "At the end of the first successful increment, or on request, Tenet shall offer once, with a preview, to add the shared files of Section 3.2 to the repository, warn when the remote is public, and remember the answer.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-08",
+        "AC-15a"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/adopt.test.ts",
+          "sha256": "c02924806c2643e7b723fe76ce57fa2c1f6a78b7803dc90ebe6191bcd0036a55"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "INTENT.md/policy previews exist; full shared-file set and re-projection are not complete."
+    },
+    {
+      "id": "CON-02",
+      "text": "Tenet shall keep operational state in `.tenet/` with its own `.gitignore`, user-only permissions where the OS supports them, an ownership marker, and no files with source, test or build-configuration extensions (snapshots stored as content-addressed blobs).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-17"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/invariants.test.ts",
+          "sha256": "b77b36c231d0f8d6f0cd9d710a68bf9a8ace6eaf944613f85ce547bf131152f5"
+        },
+        {
+          "path": "packages/kernel/test/takeover.test.ts",
+          "sha256": "6c15bdae7a61d4ee077617277c6cb556e744fefbddb3e595c32c1d5cedbc18d5"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "CON-03",
+      "text": "On resume, Tenet shall reconcile current source, branch and human edits with recorded state and reuse only valid evidence and corroborated authority (Section 5.14).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-08"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/adopt.test.ts",
+          "sha256": "c02924806c2643e7b723fe76ce57fa2c1f6a78b7803dc90ebe6191bcd0036a55"
+        },
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/backup-accounting.test.ts",
+          "sha256": "62da83546f81e97b3b9b1feb52fdb810d4db89f465dda2117c8e5c1e2097b0fd"
+        },
+        {
+          "path": "packages/kernel/test/dependency.test.ts",
+          "sha256": "4fca323d44009d2ac066212c97ad9c97aeace48f12c0aba60a6c61e318d4d58e"
+        },
+        {
+          "path": "packages/kernel/test/execution-envelope.test.ts",
+          "sha256": "69dd4eb498584b41dc08eb8c3c39b27b494d8f062215b8579fc0d58de5d9be46"
+        },
+        {
+          "path": "packages/kernel/test/git.test.ts",
+          "sha256": "10ac681a30176c70d5e57288ed0430a0a2b48e6ebe5df0d249020836241761e4"
+        },
+        {
+          "path": "packages/kernel/test/index-recovery.test.ts",
+          "sha256": "2e271a809cbb9de267e4004e88712937c9205541beb860111d27aa51a4bdbc64"
+        },
+        {
+          "path": "packages/kernel/test/project-boundary.test.ts",
+          "sha256": "f88b1cd62c3d39aba6bba2464c6b3871c1f03fe35dab7dacf61ab903224c670d"
+        },
+        {
+          "path": "packages/kernel/test/project-recovery.test.ts",
+          "sha256": "3c5c1d458ec72a25105e78ac043e2b01651be3a90db5e1035d269fc2357f210e"
+        },
+        {
+          "path": "packages/kernel/test/quarantine.test.ts",
+          "sha256": "9b6706c95eec7cdc6f48c96e4fe2c860d0932bb9e1aee49b41e60d8b77449ace"
+        },
+        {
+          "path": "packages/kernel/test/runner-ownership.test.ts",
+          "sha256": "cd56c18fc55cf60e60517b1cec9bf2243aef0637d5a5c6a20ee516897f32580e"
+        },
+        {
+          "path": "packages/kernel/test/scaffold.test.ts",
+          "sha256": "883ead3ee07bfc937146e5dae68cb95c14ee4746e54bbd4590f10645cd2215cd"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        },
+        {
+          "path": "packages/kernel/test/store-boundary.test.ts",
+          "sha256": "33e1bdee4bede4ccb903aec59f39eb92d97c4fd33e26bac05d794b062c8ea48b"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Many effect/lock/backup recovery controls exist; backup authority stays suspended and reconfirmation is unavailable."
+    },
+    {
+      "id": "CON-04",
+      "text": "Records shall carry schema version, project and work identity, revision and provenance, and be updated inside an atomic ownership boundary (Section 5.11).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-17"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/filter-jobs.test.ts",
+          "sha256": "db5672f8f25c0fd49afc99358f59c93d13863e132ee810125e272ac29d3ffe69"
+        },
+        {
+          "path": "packages/kernel/test/git.test.ts",
+          "sha256": "10ac681a30176c70d5e57288ed0430a0a2b48e6ebe5df0d249020836241761e4"
+        },
+        {
+          "path": "packages/kernel/test/host-sp08.test.ts",
+          "sha256": "bbc75dc4f1c136bc0854172cb1cb17c040dd05a7858083fc259da5a50ba6b132"
+        },
+        {
+          "path": "packages/kernel/test/index-recovery.test.ts",
+          "sha256": "2e271a809cbb9de267e4004e88712937c9205541beb860111d27aa51a4bdbc64"
+        },
+        {
+          "path": "packages/kernel/test/quarantine.test.ts",
+          "sha256": "9b6706c95eec7cdc6f48c96e4fe2c860d0932bb9e1aee49b41e60d8b77449ace"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        },
+        {
+          "path": "packages/kernel/test/store-boundary.test.ts",
+          "sha256": "33e1bdee4bede4ccb903aec59f39eb92d97c4fd33e26bac05d794b062c8ea48b"
+        },
+        {
+          "path": "packages/kernel/test/store.test.ts",
+          "sha256": "1238228e33ca810af96ffee13380f02d7ca7267cd0b3a0e45a056979886b87d2"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "CON-05",
+      "text": "If records are malformed, of unknown version or conflicting, Tenet shall diagnose and reconcile, never silently reset or infer authority.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-17"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/backup-accounting.test.ts",
+          "sha256": "62da83546f81e97b3b9b1feb52fdb810d4db89f465dda2117c8e5c1e2097b0fd"
+        },
+        {
+          "path": "packages/kernel/test/refusals.test.ts",
+          "sha256": "8d30b2094a4a40e21f5100a3ab20ecaa92cb2235a18023c76915cd586845b547"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        },
+        {
+          "path": "packages/kernel/test/store-boundary.test.ts",
+          "sha256": "33e1bdee4bede4ccb903aec59f39eb92d97c4fd33e26bac05d794b062c8ea48b"
+        },
+        {
+          "path": "packages/kernel/test/store.test.ts",
+          "sha256": "1238228e33ca810af96ffee13380f02d7ca7267cd0b3a0e45a056979886b87d2"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Unknown schemas are refused; no complete migration/rollback protocol."
+    },
+    {
+      "id": "CON-06",
+      "text": "Copied, imported, relocated or pre-populated records shall confer no authority and no behavior until reviewed (Section 5.6).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-08",
+        "AC-16"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/quarantine.test.ts",
+          "sha256": "9b6706c95eec7cdc6f48c96e4fe2c860d0932bb9e1aee49b41e60d8b77449ace"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "CON-07",
+      "text": "If `.tenet/` is lost, Tenet shall reconstruct from repository memory and Git history, ask only consequential unknowns and never fabricate evidence.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-08"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Loss reconstruction absent from main. Inherited reconstruction worktree contains unvalidated work; do not import wholesale."
+    },
+    {
+      "id": "CON-08",
+      "text": "Tenet shall keep `.tenet/` within the storage budget using the eviction order of Section 5.15.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-19"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/storage-eviction.test.ts",
+          "sha256": "27635dc173548827cac3db30995b1b1173d8b3cd051c52dd9789cb873fc5f559"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Journal reduction, aggregate admission and project run caps exist; full PRD eviction order, shadow snapshots/archive retention deferred."
+    },
+    {
+      "id": "CON-09",
+      "text": "Review-only and readiness requests shall create no files in the project, including `.tenet/`; by default they run as a single stateless kernel call, may use host plugin storage outside the workspace where available, and export durable results only on request.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-04"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/adopt.test.ts",
+          "sha256": "c02924806c2643e7b723fe76ce57fa2c1f6a78b7803dc90ebe6191bcd0036a55"
+        },
+        {
+          "path": "packages/kernel/test/cli-input.test.ts",
+          "sha256": "f2117b9b5a71a212810a0c43a4a086525b1f7e33fb2712e79825e42e7c42971b"
+        },
+        {
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "295ef70dbf1e7c19f8387f70535cfe5df281ebe612cd54713daf113f1bb9b31c"
+        },
+        {
+          "path": "packages/kernel/test/filter-jobs.test.ts",
+          "sha256": "db5672f8f25c0fd49afc99358f59c93d13863e132ee810125e272ac29d3ffe69"
+        },
+        {
+          "path": "packages/kernel/test/filters.test.ts",
+          "sha256": "bae751a31bf2059bd4d31d8353de61fbca055579b2def25df1aed2e4c64ae62a"
+        },
+        {
+          "path": "packages/kernel/test/quarantine.test.ts",
+          "sha256": "9b6706c95eec7cdc6f48c96e4fe2c860d0932bb9e1aee49b41e60d8b77449ace"
+        },
+        {
+          "path": "packages/kernel/test/readiness-boundary.test.ts",
+          "sha256": "e1d51e907551af7a0dd255c7f07e0bdabe4beefa15260438c4598cd0cd6fcb49"
+        },
+        {
+          "path": "packages/kernel/test/refusals.test.ts",
+          "sha256": "8d30b2094a4a40e21f5100a3ab20ecaa92cb2235a18023c76915cd586845b547"
+        },
+        {
+          "path": "packages/kernel/test/required-composition.test.ts",
+          "sha256": "b0648562c3ef6526d7cf314c534d1091eb7a9303bb813f210dc8584c125ba95f"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        },
+        {
+          "path": "packages/kernel/test/static-conformance.test.ts",
+          "sha256": "8c124398abc2b9efe2cfbb418dfb556e49ba920543d9b1004372b198d82186c6"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "CON-10",
+      "text": "Reset a preference, forget a lesson, delete records, abandon work, undo and uninstall shall be separate actions, each previewing its consequences.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-09",
+        "AC-10"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/lessons.test.ts",
+          "sha256": "7657b93dfbad22cc9bbb1dfdc66a0da6ddadd4b82f34aa9b19d795448fcfbc61"
+        },
+        {
+          "path": "packages/kernel/test/residue.test.ts",
+          "sha256": "35843602d566f30578d545540e0f260fb2af69be4235094f3ee2a6f2dab78755"
+        },
+        {
+          "path": "packages/kernel/test/stop-approval.test.ts",
+          "sha256": "044343948a458ba9219305e3f5765a4ea2bf7a0ba538109eb5094c3bbf2be1f1"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "CON-11",
+      "text": "When the project moves, is cloned, or changes branch or machine, Tenet shall reconcile scope instead of transferring authority by path.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-17"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/quarantine.test.ts",
+          "sha256": "9b6706c95eec7cdc6f48c96e4fe2c860d0932bb9e1aee49b41e60d8b77449ace"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "CON-12",
+      "text": "Tenet shall record intended, dispatched and observed effects so a crash between an effect and its record is detected and reconciled before any retry.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-17"
+      ],
+      "workstream": "Recovery and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/filter-jobs.test.ts",
+          "sha256": "db5672f8f25c0fd49afc99358f59c93d13863e132ee810125e272ac29d3ffe69"
+        },
+        {
+          "path": "packages/kernel/test/undo.test.ts",
+          "sha256": "19e117341371c7af80d13fe091f8ff701f6bd81b5fb847c3ea9722ffd28aa72f"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "SEC-01",
+      "text": "Tenet shall use native permissions, explain why each is needed, its scope and what declining prevents; a denied action stays denied and is not retried through another tool.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-03"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "SEC-02",
+      "text": "Tenet shall treat repository, retrieved, tool-output and lesson content as untrusted data that cannot grant authority, change acceptance or trigger egress; adopted shared files follow Section 5.6.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-16"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "295ef70dbf1e7c19f8387f70535cfe5df281ebe612cd54713daf113f1bb9b31c"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "SEC-03",
+      "text": "Tenet shall collect no credentials, unrelated projects, private chat histories or telemetry by default.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-11"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/requirements.test.ts",
+          "sha256": "2294aeb68681246754ebef5188d6a2d55d66c848e8bcdb16d34bcc454ab2518c"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "SEC-04",
+      "text": "Before first execution, Tenet shall classify each command by its declared execution envelope (Section 5.8), not by its name.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-04",
+        "AC-16"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/execution-envelope.test.ts",
+          "sha256": "69dd4eb498584b41dc08eb8c3c39b27b494d8f062215b8579fc0d58de5d9be46"
+        },
+        {
+          "path": "packages/kernel/test/filter-jobs.test.ts",
+          "sha256": "db5672f8f25c0fd49afc99358f59c93d13863e132ee810125e272ac29d3ffe69"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Unknown project-check envelope consent exists; configured commands/signing/integration programs lack complete execution consumers."
+    },
+    {
+      "id": "SEC-05",
+      "text": "For new dependencies, Tenet shall verify identity and existence, license, install scripts including transitive lifecycle scripts, and lock resolution, and seek native consent for executable changes.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/dependencies.test.ts",
+          "sha256": "6153cbf6ad898343a3fb68093414ca3115ee52ce3c794e72983f4b97efbee95e"
+        },
+        {
+          "path": "packages/kernel/test/dependency.test.ts",
+          "sha256": "4fca323d44009d2ac066212c97ad9c97aeace48f12c0aba60a6c61e318d4d58e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Dependency preparation/confirmation and npm/pnpm verification exist; full manager/license/transitive conformance still needs proof."
+    },
+    {
+      "id": "SEC-06",
+      "text": "Bundled helpers shall accept only validated structured input, resolve workspace boundaries including symlinks, and expose no generic execution endpoint.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/declared-inputs.test.ts",
+          "sha256": "1e2bb19a3bf698833670c2fc45c5e1a68211ae2cf8021b2852b856089a445f98"
+        },
+        {
+          "path": "packages/kernel/test/git.test.ts",
+          "sha256": "10ac681a30176c70d5e57288ed0430a0a2b48e6ebe5df0d249020836241761e4"
+        },
+        {
+          "path": "packages/kernel/test/index-recovery.test.ts",
+          "sha256": "2e271a809cbb9de267e4004e88712937c9205541beb860111d27aa51a4bdbc64"
+        },
+        {
+          "path": "packages/kernel/test/project-boundary.test.ts",
+          "sha256": "f88b1cd62c3d39aba6bba2464c6b3871c1f03fe35dab7dacf61ab903224c670d"
+        },
+        {
+          "path": "packages/kernel/test/project-recovery.test.ts",
+          "sha256": "3c5c1d458ec72a25105e78ac043e2b01651be3a90db5e1035d269fc2357f210e"
+        },
+        {
+          "path": "packages/kernel/test/quarantine.test.ts",
+          "sha256": "9b6706c95eec7cdc6f48c96e4fe2c860d0932bb9e1aee49b41e60d8b77449ace"
+        },
+        {
+          "path": "packages/kernel/test/requirements.test.ts",
+          "sha256": "2294aeb68681246754ebef5188d6a2d55d66c848e8bcdb16d34bcc454ab2518c"
+        },
+        {
+          "path": "packages/kernel/test/runner-artifact.test.ts",
+          "sha256": "384ab93a7cef1385d8721ea4a17a7bf633dfaf394db2ddcf8c5b716b087d76da"
+        },
+        {
+          "path": "packages/kernel/test/static-conformance.test.ts",
+          "sha256": "8c124398abc2b9efe2cfbb418dfb556e49ba920543d9b1004372b198d82186c6"
+        },
+        {
+          "path": "packages/kernel/test/store-boundary.test.ts",
+          "sha256": "33e1bdee4bede4ccb903aec59f39eb92d97c4fd33e26bac05d794b062c8ea48b"
+        },
+        {
+          "path": "packages/kernel/test/store.test.ts",
+          "sha256": "1238228e33ca810af96ffee13380f02d7ca7267cd0b3a0e45a056979886b87d2"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "SEC-07",
+      "text": "R1 shall bundle no MCP server or MCP configuration, except the Tenet kernel front-end of Section 5.7.1 when SP-12 selects it.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-11"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/requirements.test.ts",
+          "sha256": "2294aeb68681246754ebef5188d6a2d55d66c848e8bcdb16d34bcc454ab2518c"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "SEC-08",
+      "text": "Tenet shall honor declared exclusions (no-model-send, no-read, no-edit, no-export, no-routine-scan) before affected reads where controllable, disclose host limits and block incompatible work.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-16",
+        "AC-23"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "295ef70dbf1e7c19f8387f70535cfe5df281ebe612cd54713daf113f1bb9b31c"
+        },
+        {
+          "path": "packages/kernel/test/host-sp08.test.ts",
+          "sha256": "bbc75dc4f1c136bc0854172cb1cb17c040dd05a7858083fc259da5a50ba6b132"
+        },
+        {
+          "path": "packages/kernel/test/project-recovery.test.ts",
+          "sha256": "3c5c1d458ec72a25105e78ac043e2b01651be3a90db5e1035d269fc2357f210e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "SEC-09",
+      "text": "Review shall flag new network destinations, telemetry calls, credential handling and permission changes introduced in generated code.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-16",
+        "AC-20"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "SEC-10",
+      "text": "Tenet shall never weaken tests or CI, bypass hooks, or alter permissions to make a task pass.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-07"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/requirements.test.ts",
+          "sha256": "2294aeb68681246754ebef5188d6a2d55d66c848e8bcdb16d34bcc454ab2518c"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "SEC-11",
+      "text": "Tenet shall redact likely secrets from displayed output, traces and exports, and never write credential values into records or fixtures.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-11",
+        "AC-16"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/backup-accounting.test.ts",
+          "sha256": "62da83546f81e97b3b9b1feb52fdb810d4db89f465dda2117c8e5c1e2097b0fd"
+        },
+        {
+          "path": "packages/kernel/test/redact.test.ts",
+          "sha256": "07ff4b8b4f661d5075854a4cb2038dcdbde85c0d60ac74d38bec4eb7d8dcc626"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Output and receipt redaction exist. Audit F05 repairs structured proposal secrets entering private state by refusing before persistence; heuristic limits and historical cleanup remain separate."
+    },
+    {
+      "id": "SEC-12",
+      "text": "Shared project files and imported or pre-populated `.tenet/` content may add restrictions and obligations but shall never grant authority, add egress, relax floors or authorize commands; changes made outside Tenet need user acceptance before they relax anything (Section 5.6).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/adopt.test.ts",
+          "sha256": "c02924806c2643e7b723fe76ce57fa2c1f6a78b7803dc90ebe6191bcd0036a55"
+        },
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/project-recovery.test.ts",
+          "sha256": "3c5c1d458ec72a25105e78ac043e2b01651be3a90db5e1035d269fc2357f210e"
+        },
+        {
+          "path": "packages/kernel/test/quarantine.test.ts",
+          "sha256": "9b6706c95eec7cdc6f48c96e4fe2c860d0932bb9e1aee49b41e60d8b77449ace"
+        },
+        {
+          "path": "packages/kernel/test/requirements.test.ts",
+          "sha256": "2294aeb68681246754ebef5188d6a2d55d66c848e8bcdb16d34bcc454ab2518c"
+        },
+        {
+          "path": "packages/kernel/test/store-boundary.test.ts",
+          "sha256": "33e1bdee4bede4ccb903aec59f39eb92d97c4fd33e26bac05d794b062c8ea48b"
+        },
+        {
+          "path": "packages/kernel/test/store.test.ts",
+          "sha256": "1238228e33ca810af96ffee13380f02d7ca7267cd0b3a0e45a056979886b87d2"
+        },
+        {
+          "path": "packages/kernel/test/trust.test.ts",
+          "sha256": "3fa94d9545ca415eaebff70b4002c10942fa1f7aefdcc1df29984539071b4541"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "SEC-13",
+      "text": "If host tool auto-approval is enabled or unknown, Tenet shall ask in chat before remote mutation, project-content egress and destructive actions, and label that gate advisory.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-03",
+        "AC-16"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/stop-approval.test.ts",
+          "sha256": "044343948a458ba9219305e3f5765a4ea2bf7a0ba538109eb5094c3bbf2be1f1"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "SEC-14",
+      "text": "Tenet shall apply the default exclusions of Section 5.10.2 for common secret files.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16",
+        "AC-23"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/core.test.ts",
+          "sha256": "3a4ea6b27f712b1226f7bea64cfe47a6cfb01b963c54e7a320715625001938de"
+        },
+        {
+          "path": "packages/kernel/test/declared-inputs.test.ts",
+          "sha256": "1e2bb19a3bf698833670c2fc45c5e1a68211ae2cf8021b2852b856089a445f98"
+        },
+        {
+          "path": "packages/kernel/test/git.test.ts",
+          "sha256": "10ac681a30176c70d5e57288ed0430a0a2b48e6ebe5df0d249020836241761e4"
+        },
+        {
+          "path": "packages/kernel/test/project-boundary.test.ts",
+          "sha256": "f88b1cd62c3d39aba6bba2464c6b3871c1f03fe35dab7dacf61ab903224c670d"
+        },
+        {
+          "path": "packages/kernel/test/project-recovery.test.ts",
+          "sha256": "3c5c1d458ec72a25105e78ac043e2b01651be3a90db5e1035d269fc2357f210e"
+        },
+        {
+          "path": "packages/kernel/test/readiness-boundary.test.ts",
+          "sha256": "e1d51e907551af7a0dd255c7f07e0bdabe4beefa15260438c4598cd0cd6fcb49"
+        },
+        {
+          "path": "packages/kernel/test/static-conformance.test.ts",
+          "sha256": "8c124398abc2b9efe2cfbb418dfb556e49ba920543d9b1004372b198d82186c6"
+        },
+        {
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "5ac0c79550541f9f5506cc026cabd36f157dbbe661017e2f66a7d8848474f4be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "SEC-15",
+      "text": "If a check's execution envelope has unknown network, data or credential exposure, Tenet shall obtain the user's authorization to run with the stated unknowns and disclose them in the result.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-16"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Pre-spawn unknown-envelope consent is implemented but requirement is untagged; final-result unknown-exposure disclosure incomplete."
+    },
+    {
+      "id": "SEC-16",
+      "text": "When work concerns regulated, safety-critical, clinical or financial-transaction functions, Tenet shall state that its verdicts cover software checks only and that qualified human expertise is required.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Authority, privacy and execution safety",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "CFG-01",
+      "text": "Users shall change settings in ordinary language and receive the interpreted value and scope; persistence, read-back and confirmation follow Section 7.5.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "workstream": "Configuration and schema migration",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Typed local/task changes exist; ordinary-language flow, confirmation, provenance/readback and full evidence binding incomplete."
+    },
+    {
+      "id": "CFG-02",
+      "text": "R1 shall expose the catalog in Section 7.3 and no others.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "workstream": "Configuration and schema migration",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/config.test.ts",
+          "sha256": "95c2ec5e62271fcefb777c1549d0f33e93d83f20cc2df9786df81bb4c49d7eed"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Twelve-key catalog exists; inherited property names were accepted by membership guard (F04)."
+    },
+    {
+      "id": "CFG-03",
+      "text": "Tenet shall resolve settings as defined in Section 7.4; project commitments and external restrictions shall apply regardless of preference order.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "workstream": "Configuration and schema migration",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Layer composition exists; personal/host storage, provenance and all consumers incomplete."
+    },
+    {
+      "id": "CFG-04",
+      "text": "`/tenet why` shall explain the effective value, its source and adoption state, overridden values and capability limits.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "workstream": "Configuration and schema migration",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Settings inspector reports sources; complete ordinary-language why/capability flow unverified."
+    },
+    {
+      "id": "CFG-05",
+      "text": "Configuration shall never grant authority or create a capability.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-23"
+      ],
+      "workstream": "Configuration and schema migration",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/settings.test.ts",
+          "sha256": "0435b9c2ceba5be9a6ceb14146001ec548aca99d7dcd1cd23fd216e8dd83fa20"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "CFG-06",
+      "text": "Style and checkpoints shall change presentation and pacing only, never depth, authority or evidence floors.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-15a",
+        "AC-21"
+      ],
+      "workstream": "Configuration and schema migration",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/config.test.ts",
+          "sha256": "95c2ec5e62271fcefb777c1549d0f33e93d83f20cc2df9786df81bb4c49d7eed"
+        },
+        {
+          "path": "packages/kernel/test/settings.test.ts",
+          "sha256": "0435b9c2ceba5be9a6ceb14146001ec548aca99d7dcd1cd23fd216e8dd83fa20"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Presentation/checkpoint resolution has tests; complete ordinary-language behavior and pacing still need exact-host acceptance. Registry admission repairs are evidence for CFG-02/11, not CFG-06."
+    },
+    {
+      "id": "CFG-07",
+      "text": "Explicit \"always in this project\" corrections shall persist locally with provenance without re-asking; inferred preferences shall need confirmation.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-09"
+      ],
+      "workstream": "Configuration and schema migration",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/settings.test.ts",
+          "sha256": "0435b9c2ceba5be9a6ceb14146001ec548aca99d7dcd1cd23fd216e8dd83fa20"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "CFG-08",
+      "text": "Personal preferences shall never be written into shared files.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-15a"
+      ],
+      "workstream": "Configuration and schema migration",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No personal preference persistence; shared-file isolation must be proved when that persistence is built."
+    },
+    {
+      "id": "CFG-09",
+      "text": "Tenet shall coexist with other plugins, instruction files and host memory features without rewriting or disabling them (Section 7.9).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "workstream": "Configuration and schema migration",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "CFG-10",
+      "text": "Reapplying unchanged settings shall be idempotent.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "workstream": "Configuration and schema migration",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Simple JSON-equality reapplication is tested; full canonical idempotence/revision protocol remains gated."
+    },
+    {
+      "id": "CFG-11",
+      "text": "Unknown or malformed configuration whose intended effect may be a restriction shall block dependent actions until resolved (Section 7.7).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "workstream": "Configuration and schema migration",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/adopt.test.ts",
+          "sha256": "c02924806c2643e7b723fe76ce57fa2c1f6a78b7803dc90ebe6191bcd0036a55"
+        },
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/policy.test.ts",
+          "sha256": "2b584423051595bb99ea298f52fcda4d3a645f39df4bde199dfb911a326b3504"
+        },
+        {
+          "path": "packages/kernel/test/required-composition.test.ts",
+          "sha256": "b0648562c3ef6526d7cf314c534d1091eb7a9303bb813f210dc8584c125ba95f"
+        },
+        {
+          "path": "packages/kernel/test/static-checks.test.ts",
+          "sha256": "6d45532e6e8b5a2ee8988a48e41e64ad17b299e7b07c6dec03664edeebdad0d6"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "RSC-01",
+      "text": "Tenet shall use the active model without asking the user to switch models per phase. A disclosed economy-tier model preference for the read-only researcher role is permitted once release qualification shows it meets that role's thresholds, and the user can decline it in words; the Reviewer and authority-bearing roles always inherit the active model.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-15b"
+      ],
+      "workstream": "Accounting and resource modes",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/model-record.test.ts",
+          "sha256": "9c2f2df6f0b651180ffebae7f6508d023c7145b79e808a6ad7ea1b184d6c4445"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "RSC-02",
+      "text": "Tenet shall record the requested and observed model per assignment where observable; unknown stays unknown.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-15b"
+      ],
+      "workstream": "Accounting and resource modes",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/model-record.test.ts",
+          "sha256": "9c2f2df6f0b651180ffebae7f6508d023c7145b79e808a6ad7ea1b184d6c4445"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "RSC-03",
+      "text": "Tenet shall respect native limits and never fund, purchase, enable overage or switch to a paid route without explicit authority.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-15c"
+      ],
+      "workstream": "Accounting and resource modes",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/host-cli.test.ts",
+          "sha256": "52ebee8eae86e8324363688bae4a0444aa15411708fc3d8927fe514d464213be"
+        },
+        {
+          "path": "packages/kernel/test/model-record.test.ts",
+          "sha256": "9c2f2df6f0b651180ffebae7f6508d023c7145b79e808a6ad7ea1b184d6c4445"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "RSC-04",
+      "text": "Tenet shall report per-contract counts of attempts, review rounds, delegations, Tenet-launched checks and active work time; comparative overhead is an evaluation metric (Section 6.6).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-15c",
+        "AC-19"
+      ],
+      "workstream": "Accounting and resource modes",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Kernel counters and active minutes exist; interrupted jobs/EADDRINUSE launch counts and separate wait accounting incomplete."
+    },
+    {
+      "id": "RSC-05",
+      "text": "While resource mode is Conserve, Tenet shall prefer focused passes for optional roles; while it is Serial, Tenet shall dispatch no optional or parallel subagents; the review required by the Section 5.2 floors still runs.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-15c",
+        "AC-23"
+      ],
+      "workstream": "Accounting and resource modes",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Stored resource_mode has no scheduling consumer in manifest dispatch. Required review must survive Serial/Conserve."
+    },
+    {
+      "id": "RSC-08",
+      "text": "Tenet shall label the active model qualified, unqualified or unknown from golden-suite results (Section 6.4.4) and warn before Deep work on an unqualified or unknown model.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-15b",
+        "AC-26"
+      ],
+      "workstream": "Accounting and resource modes",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Model record can say unknown; no golden-suite-derived qualification lookup or complete Deep warning."
+    },
+    {
+      "id": "LRN-01",
+      "text": "Tenet shall apply an explicit correction to the current task immediately.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-09"
+      ],
+      "workstream": "Intent, lessons and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/lessons.test.ts",
+          "sha256": "7657b93dfbad22cc9bbb1dfdc66a0da6ddadd4b82f34aa9b19d795448fcfbc61"
+        },
+        {
+          "path": "packages/kernel/test/settings.test.ts",
+          "sha256": "0435b9c2ceba5be9a6ceb14146001ec548aca99d7dcd1cd23fd216e8dd83fa20"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "LRN-02",
+      "text": "Project lessons shall be scoped, inspectable and resettable, carry provenance, and never transfer to another project without explicit scope.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-09"
+      ],
+      "workstream": "Intent, lessons and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/lessons.test.ts",
+          "sha256": "7657b93dfbad22cc9bbb1dfdc66a0da6ddadd4b82f34aa9b19d795448fcfbc61"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "LRN-03",
+      "text": "Tenet shall turn a reported defect into a reproduction test before fixing it.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-05",
+        "AC-09"
+      ],
+      "workstream": "Intent, lessons and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/requirements.test.ts",
+          "sha256": "2294aeb68681246754ebef5188d6a2d55d66c848e8bcdb16d34bcc454ab2518c"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "LRN-04",
+      "text": "At contract end, Tenet shall propose lessons only when supported by evidence from that work, for user confirmation.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-09"
+      ],
+      "workstream": "Intent, lessons and continuity",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "LRN-05",
+      "text": "Learning shall never weaken acceptance, add permissions or change evaluators.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-09",
+        "AC-14"
+      ],
+      "workstream": "Intent, lessons and continuity",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/lessons.test.ts",
+          "sha256": "7657b93dfbad22cc9bbb1dfdc66a0da6ddadd4b82f34aa9b19d795448fcfbc61"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "LFC-01",
+      "text": "Tenet shall version releases with SemVer against the public compatibility contract of Section 6.5.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-10"
+      ],
+      "workstream": "Upgrade, lifecycle and release",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "LFC-02",
+      "text": "Release notes shall disclose changed permissions, destinations, executable content, evaluators, schemas and evaluated behavior changes.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-10",
+        "AC-11"
+      ],
+      "workstream": "Upgrade, lifecycle and release",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "LFC-03",
+      "text": "Each contract shall record the Tenet package, recipe, adapter and schema versions it uses; when an update is observed mid-contract, Tenet shall pause at the next boundary and reconcile or migrate the contract explicitly, never mixing versions silently.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-10"
+      ],
+      "workstream": "Upgrade, lifecycle and release",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/version-pin.test.ts",
+          "sha256": "75ff86a8296bd952f0c05050e3dc9b74a2cddde08259ec559f2df8bc995fd08d"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Kernel/schema/adapter pins and pause/reconciliation exist; not a complete migration or recipe-upgrade mechanism."
+    },
+    {
+      "id": "LFC-04",
+      "text": "Schema migrations shall be previewed, preserve overrides and unknown fields where safe, and have a tested path back to the previous known-good release.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-10"
+      ],
+      "workstream": "Upgrade, lifecycle and release",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/quarantine.test.ts",
+          "sha256": "9b6706c95eec7cdc6f48c96e4fe2c860d0932bb9e1aee49b41e60d8b77449ace"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Tagged test proves admission/refusal only. Real migration, safe unknown fields, recovery and rollback are absent."
+    },
+    {
+      "id": "LFC-05",
+      "text": "Disable and uninstall shall preserve code, specs and evidence, list residual files and offer optional cleanup of `.tenet/`.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-10"
+      ],
+      "workstream": "Upgrade, lifecycle and release",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/residue.test.ts",
+          "sha256": "35843602d566f30578d545540e0f260fb2af69be4235094f3ee2a6f2dab78755"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Residue/cleanup tooling exists; actual installed disable/uninstall preservation unobserved."
+    },
+    {
+      "id": "QLT-01",
+      "text": "The starter shall demonstrate persistence, validation, server-side object and role authorization, and a real local journey.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/golden-task-loan-desk.test.ts",
+          "sha256": "624728cb65e05fab9bed1d35b38109bb94cf9b1ea8192463a4831a78183b9b38"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "October 29 local update: neutral React/Vite account UI and the fixture loan journey now exercise persistence, validation and object/role authorization; preserved browsers run a fresh production UI build. Recipe 0.3.3 adds real additive abuse-control regressions. Wider quality, independent review and formal qualification remain pending."
+    },
+    {
+      "id": "QLT-02",
+      "text": "The starter shall meet its published list of applicable OWASP ASVS 5.0 Level 1 requirements, each with a verification method (automated, behavioral test or manual review), non-applicability reasons and results; scans alone shall not be presented as ASVS conformance.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "QLT-03",
+      "text": "The starter UI shall meet WCAG 2.2 AA on its declared critical journeys and their states, verified by automated, keyboard and screen-reader checks; claims shall name the journeys covered.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "QLT-04",
+      "text": "The starter shall include structured logging with redaction, a health endpoint and consistent non-leaking error responses.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Structured redacted logging, health and errors exist in template; no complete requirement-level conformance disposition."
+    },
+    {
+      "id": "QLT-05",
+      "text": "Each application recipe shall declare a reference workload and fitness functions (Section 5.16); checks shall report trends across changes without claiming whole-application conformance from changed flows, and a trend crossing its declared degradation threshold across consecutive checks shall raise an attention item rather than only appear in a report.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-19",
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "October 29 local update: loan-fixture workload tooling and 14 activated fixture controls exist; both final full runs fail traffic/coverage, with current-runtime RSS also over target. See ../2026-10-29/workload-findings.md. Canonical root structural mapping remains unmapped; recipe declarations/fitness thresholds, kernel workload receipt/trend/attention consumers, reference-tuple qualification and owner evidence disposition remain open."
+    },
+    {
+      "id": "QLT-06",
+      "text": "Tenet shall apply the obligations contributed by the project's and the change's traits (Section 3.8.4).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/static-checks.test.ts",
+          "sha256": "6d45532e6e8b5a2ee8988a48e41e64ad17b299e7b07c6dec03664edeebdad0d6"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Static/e2e recipe obligations exist; full per-trait/per-flow obligation matrix is absent."
+    },
+    {
+      "id": "QLT-07",
+      "text": "Schema changes shall include a migration tested against prior-version fixture data and, where user data exists, a consistent backup through a supported mechanism with a tested restore; Tenet shall never reset data to make tests pass.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Local frozen schema-1 upgrade/automatic-backup/auth/restore/re-upgrade, incompatible-history/FK refusal and postflight rollback evidence is in schema-history-validation.json. Review actual assertions and close whole-migration/supported-platform qualification before an owner disposition; ledger remains unchanged."
+    },
+    {
+      "id": "QLT-08",
+      "text": "As part of handover, Tenet shall keep README run instructions, decision records, the architecture doc and CHANGELOG current.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "QLT-09",
+      "text": "Tenet shall apply the project charter, or the default charter (Section 1.8) when none exists.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-15a"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/charter.test.ts",
+          "sha256": "550d4efd06e3aa3f73b570da6484edb97f6bae933111d0e516f4278569d92f0f"
+        },
+        {
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "295ef70dbf1e7c19f8387f70535cfe5df281ebe612cd54713daf113f1bb9b31c"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "QLT-10",
+      "text": "Tenet shall flag a suspected out-of-scope improvement instead of expanding the task.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-13a"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "QLT-11",
+      "text": "Tenet shall detect, record and let the user correct project and change traits (Section 3.8.5).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "QLT-12",
+      "text": "The starter shall follow the identity, exposure and data model of Section 5.16.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16",
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/golden-task-loan-desk.test.ts",
+          "sha256": "624728cb65e05fab9bed1d35b38109bb94cf9b1ea8192463a4831a78183b9b38"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "October 29 local update: account/equipment UI, real HTTP/SQLite persistence, privacy/denial/conflict and production-UI browser journeys are locally implemented. Additive IP/account admission is repaired without new policy. Date intervals, workload targets/consumers, ASVS/manual/API evidence and formal qualification remain pending."
+    },
+    {
+      "id": "QLT-13",
+      "text": "For changes with `auth`, `persistence`, `personal-data` or `external-effects` traits, Tenet shall record a short threat and data note whose security items become tests or constraints.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "QLT-14",
+      "text": "For the `ui` trait, Tenet shall cover the states listed in Section 3.8.4 for each changed flow.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "October 29 local update: fresh-session, retained-input, loading/duplicate guards, denied/conflict/retry and uncertain sign-out flows have active browser/axe/keyboard controls. Root structural mapping remains unmapped. Changed-journey consumers, manual screen-reader observation and full accessibility qualification remain pending."
+    },
+    {
+      "id": "QLT-15",
+      "text": "Tenet shall record each project's recipe version and offer recipe upgrades as ordinary work items with a diff preview.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-10",
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "QLT-16",
+      "text": "Maintainers shall refresh starter dependencies monthly and respond to critical vulnerabilities in starter dependencies within the release-stewardship window (Q-09).",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "QLT-17",
+      "text": "The starter and every prototype shall keep `docs/hardening.md` listing what must change before shared, networked or production use.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Starter and generated application quality",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Starter hardening document exists; automatic per-prototype gap projection is missing."
+    },
+    {
+      "id": "ENG-01",
+      "text": "Tenet's core shall ship in Agent Skills format with thin host bindings (Section 3.8.1).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-01",
+        "AC-26"
+      ],
+      "workstream": "Evaluation and release engineering",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/tools.test.ts",
+          "sha256": "368e4a3db99c8be20e22d91a687cfd64accfaa85626e465bb6ad7544173063c9"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "ENG-02",
+      "text": "Each host binding shall ship a capability descriptor, and core logic shall branch on capabilities only (Section 3.8.2).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-03",
+        "AC-26"
+      ],
+      "workstream": "Evaluation and release engineering",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/host-descriptor.test.ts",
+          "sha256": "ec3f01af772123d4e7d9f5b3b5a8c0014df28fdec1161b585673e33286b26bbb"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "ENG-03",
+      "text": "Tenet's CI shall lint skills and agents for validity and enforce the context budgets of Section 4.4.3.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-19",
+        "AC-26"
+      ],
+      "workstream": "Evaluation and release engineering",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/tools.test.ts",
+          "sha256": "368e4a3db99c8be20e22d91a687cfd64accfaa85626e465bb6ad7544173063c9"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "ENG-04",
+      "text": "Tenet shall run its evaluation tiers as defined in Section 6.4.3, blocking merges on deterministic-tier regressions and releases on full-suite regressions.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-26",
+        "AC-28"
+      ],
+      "workstream": "Evaluation and release engineering",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/host-cli.test.ts",
+          "sha256": "52ebee8eae86e8324363688bae4a0444aa15411708fc3d8927fe514d464213be"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "T1 CI and offline helper tests exist; full deterministic pipeline replay and protected live regression gates are incomplete."
+    },
+    {
+      "id": "ENG-05",
+      "text": "Maintainers shall rerun the native-host suite monthly and when a host model change is observed; until then the support matrix shall label the combination \"not yet evaluated with the current model\".",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-26"
+      ],
+      "workstream": "Evaluation and release engineering",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "ENG-06",
+      "text": "Trace fields shall follow the pinned OpenTelemetry GenAI subset (Section 3.8.8).",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-13a"
+      ],
+      "workstream": "Evaluation and release engineering",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "ENG-07",
+      "text": "Releases shall satisfy the verification chain of Section 5.9.2.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "workstream": "Evaluation and release engineering",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "ENG-08",
+      "text": "Before R1, maintainers shall complete one bounded improvement experiment under Section 6.10.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-14"
+      ],
+      "workstream": "Evaluation and release engineering",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "ENG-09",
+      "text": "Trace events shall link intent revision, work, role, observed model, action, permission outcome, check outcome, timestamps and termination state, and shall declare visibility gaps.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-13a"
+      ],
+      "workstream": "Evaluation and release engineering",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Effects/receipts record many facts; full trace correlation/export/visibility-gap protocol is missing."
+    },
+    {
+      "id": "ENG-10",
+      "text": "Tenet's own CI shall follow the security tiers of Section 5.9.3.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-28"
+      ],
+      "workstream": "Evaluation and release engineering",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/ci-security.test.ts",
+          "sha256": "8532fa0e196769cc4a203029b9f6c2f8ed574f8583582c885fea046bd5051b82"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "ENG-11",
+      "text": "Until two maintainers exist, changes to executable content, hooks, helpers or permissions shall follow the solo-maintainer review rule of Section 5.9.2, disclosed in release notes.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "workstream": "Evaluation and release engineering",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "OSS-01",
+      "text": "The repository shall publish a license, attribution, CONTRIBUTING, code of conduct, SECURITY.md and the supported-version policy.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "workstream": "Release, documentation and governance",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "License/NOTICE/CONTRIBUTING/SECURITY exist; code of conduct and finalized supported-version policy missing."
+    },
+    {
+      "id": "OSS-02",
+      "text": "Documentation shall include a quickstart, an examples gallery (new app, brownfield bug, review) and troubleshooting.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-02"
+      ],
+      "workstream": "Release, documentation and governance",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "OSS-03",
+      "text": "Recipe, role and host-binding contributions shall follow an RFC process and carry a certification level (experimental, community, official).",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "workstream": "Release, documentation and governance",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "OSS-04",
+      "text": "Using Tenet shall not require disclosure of application source or give Tenet any ownership of the application; obligations from incorporated templates, snippets, assets and dependencies remain and are listed for the starter.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "workstream": "Release, documentation and governance",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "OSS-05",
+      "text": "Before publication, maintainers shall review the source tree and reachable history for private material separately from package inclusion.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "workstream": "Release, documentation and governance",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "No requirement tag. Inspect existing partial behavior, implement missing canonical acceptance cases, then add an assertion-backed tag."
+    },
+    {
+      "id": "OSS-06",
+      "text": "`/tenet feedback` shall produce a redacted, previewable report the user can attach to an issue.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-11",
+        "AC-21"
+      ],
+      "workstream": "Release, documentation and governance",
+      "structuralMapping": "Should-not-evaluated-by-Must-gate",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "NFR-01",
+      "text": "Tenet shall meet the system budgets of Section 4.4.3 on the frozen reference fixtures.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-19"
+      ],
+      "workstream": "Budgets, failure safety and usability",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Structural size budgets enforced; latency, inventory and token accuracy on frozen fixtures not qualified."
+    },
+    {
+      "id": "NFR-02",
+      "text": "Tenet's own messages shall be usable by keyboard and screen reader, use text rather than color-only status, and state what failed, what remains safe and the next action.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Budgets, failure safety and usability",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "NFR-03",
+      "text": "A required control shall never fail open silently.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-03",
+        "AC-13b"
+      ],
+      "workstream": "Budgets, failure safety and usability",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/audit-boundaries.test.ts",
+          "sha256": "0fdc735d14bd91306337ac79deb9930d86b02ffb1a5172730b69ac3c7bad1836"
+        },
+        {
+          "path": "packages/kernel/test/audit-regressions.test.ts",
+          "sha256": "09e7b5f61ff75d6ce90a8caf217dc06d14ac73b87752275a256633e6948db72b"
+        },
+        {
+          "path": "packages/kernel/test/cli-input.test.ts",
+          "sha256": "f2117b9b5a71a212810a0c43a4a086525b1f7e33fb2712e79825e42e7c42971b"
+        },
+        {
+          "path": "packages/kernel/test/static-checks.test.ts",
+          "sha256": "6d45532e6e8b5a2ee8988a48e41e64ad17b299e7b07c6dec03664edeebdad0d6"
+        },
+        {
+          "path": "packages/kernel/test/trust.test.ts",
+          "sha256": "3fa94d9545ca415eaebff70b4002c10942fa1f7aefdcc1df29984539071b4541"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "NFR-04",
+      "text": "If network, model or tools fail, Tenet shall preserve known state and budgets, avoid spawning fallback work, and clean up only Tenet-owned processes and temporary paths.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-17",
+        "AC-19"
+      ],
+      "workstream": "Budgets, failure safety and usability",
+      "structuralMapping": "mapped",
+      "testFileReferences": [
+        {
+          "path": "packages/kernel/test/git.test.ts",
+          "sha256": "10ac681a30176c70d5e57288ed0430a0a2b48e6ebe5df0d249020836241761e4"
+        },
+        {
+          "path": "packages/kernel/test/redact.test.ts",
+          "sha256": "07ff4b8b4f661d5075854a4cb2038dcdbde85c0d60ac74d38bec4eb7d8dcc626"
+        },
+        {
+          "path": "packages/kernel/test/runner-artifact.test.ts",
+          "sha256": "384ab93a7cef1385d8721ea4a17a7bf633dfaf394db2ddcf8c5b716b087d76da"
+        },
+        {
+          "path": "packages/kernel/test/runner-ownership.test.ts",
+          "sha256": "cd56c18fc55cf60e60517b1cec9bf2243aef0637d5a5c6a20ee516897f32580e"
+        },
+        {
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "cec8b5115f20a53e2c3a68d082c803734d95f6c4e044793c84b17e0243a2328e"
+        }
+      ],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Inspect every linked acceptance case and actual assertions; test tags alone do not establish complete behavior. Complete corresponding workstream and obtain evidence disposition."
+    },
+    {
+      "id": "NFR-05",
+      "text": "Tenet shall report its active work time separately from provider, tool, network and user waiting time.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-19"
+      ],
+      "workstream": "Budgets, failure safety and usability",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Total call duration is treated as active time; separate provider/tool/network/user waits are not fully reported."
+    },
+    {
+      "id": "NFR-06",
+      "text": "R1 interaction language shall be English; generated application locale, time zone and code conventions are independent project decisions.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-21"
+      ],
+      "workstream": "Budgets, failure safety and usability",
+      "structuralMapping": "host-only",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Requires separately authorized exact-host/user observation; host bucket is not an exemption."
+    },
+    {
+      "id": "NFR-07",
+      "text": "Diagnostics shall be redacted and exported only on user request, with the included content previewed.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-11"
+      ],
+      "workstream": "Budgets, failure safety and usability",
+      "structuralMapping": "unmapped",
+      "testFileReferences": [],
+      "reviewStatus": "draft-not-owner-disposition",
+      "qualification": "not-qualified",
+      "next": "Redaction exists; complete previewed diagnostic export command is absent."
+    }
+  ],
+  "synchronizedReassessment": {
+    "upstreamCommit": "8b7bbc4190fc76599b51e1fcfe50f23947a2963c",
+    "document": "synced-reassessment.md",
+    "baselineHashes": "Historical pre-sync candidate references; not final source evidence.",
+    "authority": "Draft only; no accepted evidence ledger changes."
+  }
+}

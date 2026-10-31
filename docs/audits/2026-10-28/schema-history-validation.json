@@ -1,0 +1,200 @@
+{
+  "date": "2026-10-28",
+  "baseCommit": "8b7bbc4190fc76599b51e1fcfe50f23947a2963c",
+  "status": "local-uncommitted",
+  "scope": "Application SQL history/restore compatibility and populated prior-version evidence. No Tenet schema-2 activation or qualification.",
+  "sourceSha256": "4c8b0ddcec444e86f405489385f5b23a9bde0cab3e7f47d2c043ff1613978de4",
+  "sourceHashMethod": "Sorted Git-known tracked/untracked nonignored packages/tools/plugin paths and bytes, NUL-separated; generated bundle/payload manifest separately hashed.",
+  "recipe": {
+    "id": "ts-web-api",
+    "version": "0.3.2",
+    "sentinel": "tenet-starter-app",
+    "checks": [
+      "tsc",
+      "eslint",
+      "e2e"
+    ],
+    "lockfileSha256": "1ef193bac3c115268d6b21f65014761f809783fa2fa4bee8a4838f9f309f9f77",
+    "protectedPaths": [
+      "server/src/platform/auth/*",
+      "server/src/platform/session/*",
+      "server/migrations/*"
+    ],
+    "install": [
+      [
+        "npm",
+        "ci",
+        "--ignore-scripts",
+        "--no-audit"
+      ],
+      [
+        "npm",
+        "rebuild",
+        "better-sqlite3"
+      ]
+    ]
+  },
+  "ci": {
+    "command": "npm run ci",
+    "exit": 0,
+    "file": "/tmp/tenet-history-ci.log",
+    "sha256": "d6746ececf00819a2d6b8b6452c80500b6db48764637902ea7c42f4a0eb60abd",
+    "tests": 1237,
+    "suites": 202,
+    "failures": 0,
+    "skips": 0
+  },
+  "counterexamples": [
+    {
+      "name": "Incompatible checksums/history/FKs and retroactive migration admission",
+      "scope": "Four direct admission/order controls reject effects; the fifth test additionally checks real SIGKILL/recovery/rollback. The initial in-process interruption attempt retained live ownership and was corrected to a real child death before final validation.",
+      "result": "Before repair, direct controls did not refuse invalid copies/order. All final controls pass.",
+      "file": "/tmp/tenet-history-red-final.log",
+      "sha256": "43a4ea0b4f63b7866409250b9ca21147f298f78a4fdb0cd3a60b4830e190b0f8"
+    },
+    {
+      "name": "Migration FK postflight throws after table and ledger commit",
+      "result": "Red leaves the new table; final migration transaction rolls back its SQL and ledger, preserving prior data.",
+      "file": "/tmp/tenet-history-postflight-red.log",
+      "sha256": "01356d52adb4a5759f606851fb508e4c190da6c10b403f029927db30d1fac889"
+    },
+    {
+      "name": "Scratch destructive-upgrade negative control",
+      "result": "Deleting old users/sessions during upgrade fails the real prior-data equality assertion; original SQL restored before green checks. Not a kernel baseline proof.",
+      "file": "/tmp/tenet-prior-mutation.log",
+      "sha256": "8b5221fefa8e495fe2e1759ea12ef1953abf458a67d0a2816490e102434f171a"
+    }
+  ],
+  "priorFixture": {
+    "frozenSqlSha256": "bab12a741fea06b20c48f2d751932a3108a95aa752a67ae7af8d7a13b899e57c",
+    "matchesBaseCommit0001": true,
+    "usesCurrentMigrateOrSeedHelpers": false,
+    "clock": "fixed; prior session is unexpired at the test upgrade",
+    "test": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/prior-version.test.ts.txt",
+    "flow": [
+      "frozen schema-1 DB and old password/session",
+      "apply actual 0002 loan migration",
+      "automatic pre-upgrade backup matches all old auth rows",
+      "old session/password authenticate; new loan uses old member",
+      "restore actual pre-upgrade copy; retain newer DB aside",
+      "reapply migration with a separate backup; old auth still works"
+    ],
+    "limits": "Synthetic test data and controlled clock/unchanged signing secret; no experiment on user data or claim of every migration/platform."
+  },
+  "checks": {
+    "neutralTests": 56,
+    "evolvedTests": 68,
+    "neutralBrowserTests": 11,
+    "evolvedBrowserTests": 15,
+    "runtimes": {
+      "current": {
+        "node": "26.3.0",
+        "typesLintTests": "pass",
+        "file": "/tmp/tenet-history-current-final.log",
+        "sha256": "f6113d238eaa6d816cfcb19d344711db2db62b878d1f06cfff159055c6cf29bd",
+        "browser": {
+          "stats": {
+            "startTime": "2026-10-29T06:23:00.390Z",
+            "duration": 5615.525,
+            "expected": 15,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          },
+          "file": "/tmp/tenet-history-browser-final.json",
+          "sha256": "e153427cc4bc705384caa811590f4282713fcf6d249cd77288853bc005c09461"
+        }
+      },
+      "minimum": {
+        "node": "22.12.0",
+        "typesLintTests": "pass",
+        "file": "/tmp/tenet-history-minimum-final.log",
+        "sha256": "b54d7cf08c736d8ff28c4fc895ba51a700f51bcba1fc4e8386f3068493389a91",
+        "browser": {
+          "stats": {
+            "startTime": "2026-10-29T06:23:02.694Z",
+            "duration": 5791.920999999999,
+            "expected": 15,
+            "skipped": 0,
+            "unexpected": 0,
+            "flaky": 0
+          },
+          "file": "/tmp/tenet-history-min-browser-final.json",
+          "sha256": "5e25166d23e62af0c242400138c282a9e4f0437b009befac9afce461d8f0d035"
+        }
+      }
+    }
+  },
+  "uat": {
+    "current": {
+      "runtime": "v26.3.0",
+      "scenarios": 149,
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "file": "/tmp/tenet-history-uat.json",
+      "sha256": "a7716457c079808b8c985c9cb047cd61c9556e606ea16c72fc0c7e3b4d63c304",
+      "featureLoop": {
+        "exit": 0,
+        "mode": "Every verb uses actual built CLI: scaffold/baseline/check/review/finish; committed checked-local in scratch only",
+        "testsAsserted": 68,
+        "browserTestsAsserted": 15,
+        "reviews": "Synthetic result submissions exercise gate, not observed native analysts",
+        "file": "/tmp/tenet-history-built-current.log",
+        "sha256": "e791236b563e37f22cf609f26d26f541391b6f0b2fb63163cb76ae1e4c7d8a9b"
+      }
+    },
+    "minimum": {
+      "runtime": "v22.12.0",
+      "scenarios": 149,
+      "bundle": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "file": "/tmp/tenet-history-uat-minimum.json",
+      "sha256": "a9df7b23932883b0c6a402a66ac27b6e886e4323d9e08c723cabb08cc904734b",
+      "featureLoop": {
+        "exit": 0,
+        "mode": "Every verb uses actual built CLI: scaffold/baseline/check/review/finish; committed checked-local in scratch only",
+        "testsAsserted": 68,
+        "browserTestsAsserted": 15,
+        "reviews": "Synthetic result submissions exercise gate, not observed native analysts",
+        "file": "/tmp/tenet-history-built-minimum.log",
+        "sha256": "1fac63f12e736e4f59e2ac43358e78a03794a6f8a04d66d92f98fbf3ae16a94c"
+      }
+    }
+  },
+  "artifact": {
+    "bundleBytes": 776837,
+    "bundleSha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb",
+    "payloadFiles": 83,
+    "payloadManifestSha256": "6579760a4c0b23d581cd4fbe886d764c5d287586b9961575507fd6392e259825"
+  },
+  "dependencyScope": "Unchanged lock/dependencies; reused the separately installed Node 22.12 native dependency tree. No fresh registry audit/clean install claimed.",
+  "privacy": {
+    "scope": "unstaged additions and all nonignored untracked files",
+    "untrackedFiles": 51,
+    "findings": []
+  },
+  "remaining": [
+    "independent review and supported-platform qualification of recovery",
+    "API compatibility/trait/semver consumers",
+    "changed-journey enforcement",
+    "workload and trend attention",
+    "ASVS/manual screen-reader evidence",
+    "date-interval behavior",
+    "unsigned core schema/config/reconfirmation contracts and native-host/release gates"
+  ],
+  "postValidationDocumentationChecks": {
+    "commands": [
+      "npm run lint",
+      "npm run build",
+      "npm run verify:payload",
+      "npm run verify:reproducible"
+    ],
+    "exit": 0,
+    "scope": "Only root plan/changelog/audit documentation and draft QLT-07 follow-up notes changed after full CI/UAT; packages/tools/plugin bytes unchanged. No ledger/mapping/qualification status changed.",
+    "repeatBuildLogSha256": "8222838c071ea46a65896484595d820024171861807e61eab2dc6e7cfc2e06fc"
+  }
+}

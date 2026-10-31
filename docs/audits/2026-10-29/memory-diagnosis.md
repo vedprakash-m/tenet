@@ -1,0 +1,11 @@
+# Memory diagnosis — October 29, 2026
+
+Status: ◐ local diagnostic evidence, not qualification or a memory repair. [Numeric observations](memory-diagnosis.json) bind the original application source and the temporary counter instrumentation.
+
+The short real-authentication probe grows RSS from 122 MB to 261 MB on Node 26.3 and from 132 MB to 272 MB on Node 22.12. Used JavaScript heap stays around 25–29 MB and reported external memory remains nearly flat. Single- versus four-way sign-in batches show substantial additional resident allocation. The application still uses its real scrypt parameters and four-active/sixteen-queued guard.
+
+Instrumented full workloads confirm transient peaks rather than a steadily rising used-heap trace. In Node 26, sampled RSS falls to about 171–177 MB between hash probes and rises above 320 MB after later probes; used heap varies around 23–48 MB while allocated heap capacity grows to roughly 103 MB. The corresponding Node 22 trace falls to about 157 MB and later rises near 292 MB with roughly 63 MB allocated heap capacity. The measured-window peak is 326,696,960 bytes on Node 26 versus 294,633,472 bytes on Node 22. One minimum-runtime warm-up sample also exceeds 300 MB; the protocol resets measured peaks after warm-up, so the reported measured peak must not be presented as a whole-lifetime bound.
+
+This supports investigating the combination of native hashing allocation and runtime heap/allocator headroom. It does not isolate an allocator defect or justify weakening password work/concurrency. Do not force GC or discard high samples to pass. The full-size traffic/admission gap must be resolved separately; then evaluate production artifact/runtime options with repeated uninstrumented measurements on the actual reference tuple. A production API bundle is a reviewable option, not an implemented or approved mechanism. No memory-target closure is claimed.
+
+The diagnostic run also led to the independent admission-composition counterexample: the sign-in override replaced the default IP limiter. That repair preserves the existing limits and is validated separately. These pre-repair memory measurements cannot be borrowed as post-repair performance evidence.
