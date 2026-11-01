@@ -1,0 +1,87 @@
+{
+  "schemaJsonComparisons": 52,
+  "schemaComparisons": 25718,
+  "parseResults": {
+    "valid": 7098,
+    "invalid": 18620
+  },
+  "perSchema": {
+    "OpenInput": 80,
+    "State": 8144,
+    "KernelResponse": 3984,
+    "WorkContract": 5144,
+    "BudgetState": 1664,
+    "Grant": 72,
+    "DecideInput": 280,
+    "BasisProposal": 152,
+    "BasisElementInput": 118,
+    "BasisElement": 232,
+    "Obligation": 336,
+    "CheckInput": 56,
+    "Question": 240,
+    "Receipt": 608,
+    "Lock": 152,
+    "FindingsInput": 312,
+    "ReviewResult": 168,
+    "ReviewLink": 184,
+    "FinishInput": 24,
+    "PacketInput": 40,
+    "Reservation": 96,
+    "AnalystResult": 112,
+    "AnalystLink": 136,
+    "DecisionRecord": 88,
+    "AccountingCheckpoint": 3296
+  },
+  "recoveryComparisons": 8152,
+  "timeComparisons": 288,
+  "inputsFrozen": true,
+  "recoveryMeasurements": [
+    {
+      "works": 200,
+      "checkpointEntries": 200,
+      "beforeMs": [
+        2.2651670000000195,
+        1.5786249999996471,
+        1.4897920000003069
+      ],
+      "afterMs": [
+        0.7763749999999163,
+        0.6543750000000728,
+        0.617584000000079
+      ]
+    },
+    {
+      "works": 1000,
+      "checkpointEntries": 1000,
+      "beforeMs": [
+        90.52599999999984,
+        92.3541250000003,
+        91.67250000000013
+      ],
+      "afterMs": [
+        3.197834000000057,
+        3.152625000000171,
+        2.8417090000002645
+      ]
+    },
+    {
+      "works": 2000,
+      "checkpointEntries": 2000,
+      "beforeMs": [
+        523.850958,
+        522.5829170000002,
+        524.9920420000008
+      ],
+      "afterMs": [
+        5.371999999999844,
+        6.107958000000053,
+        5.519584000000577
+      ]
+    }
+  ],
+  "limits": [
+    "Differential probes and synthetic timing are local observations, not exhaustive equivalence or qualification",
+    "Production checkpoint publication/strictness/proof/accounting semantics are unchanged",
+    "No forced GC, threshold change, cap increase or schema-2 activation"
+  ]
+}

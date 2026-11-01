@@ -16,7 +16,7 @@ const copy = () => { const d = scratch(); cpSync(PLUGIN, d, { recursive: true, f
 const edit = (root: string, rel: string, fn: (s: string) => string) => writeFileSync(join(root, rel), fn(readFileSync(join(root, rel), "utf8").replace(/\r\n/g, "\n")));
 
 describe("license packaging", () => {
-  it("ships MIT for Tenet and the starter while retaining third-party notices", () => {
+  it("ships MIT for Tenet and the starter while retaining third-party notices [OSS-04]", () => {
     const root = join(PLUGIN, "..");
     const license = readFileSync(join(root, "LICENSE"), "utf8");
     assert.match(license, /^MIT License\r?\n/);
@@ -29,6 +29,23 @@ describe("license packaging", () => {
     assert.match(notice, /Copyright \(c\) 2025 Colin McDonnell/);
     assert.match(notice, /licenses bind the user's project/);
     assert.doesNotMatch(notice, /PLACEHOLDER-LICENSE/);
+    assert.match(notice, /Using Tenet does not require the user to\s+disclose application source and gives Tenet no ownership of it\./);
+    const starter = join(PLUGIN, "skills/tenet-starter-ts-web-api/template");
+    const packageJson = JSON.parse(readFileSync(join(starter, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    const lock = JSON.parse(readFileSync(join(starter, "package-lock.json"), "utf8")) as {
+      packages: Record<string, { version?: string; license?: string }>;
+    };
+    for (const name of Object.keys({ ...packageJson.dependencies, ...packageJson.devDependencies })) {
+      const entry = lock.packages[`node_modules/${name}`];
+      assert.ok(entry?.version && entry.license, `${name} has a locked version and license`);
+      const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const escapedVersion = entry.version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const escapedLicense = entry.license.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      assert.match(notice, new RegExp(`^\\s+${escapedName}\\s+${escapedVersion}\\s+${escapedLicense}\\s*$`, "m"), `${name} is listed in NOTICE`);
+    }
     assert.equal(JSON.parse(readFileSync(join(PLUGIN, "plugin.json"), "utf8")).license, "MIT");
   });
 });

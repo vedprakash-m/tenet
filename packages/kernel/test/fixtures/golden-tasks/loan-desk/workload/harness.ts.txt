@@ -7,7 +7,7 @@ import Database from "better-sqlite3";
 import { HealthResponse, LoanResponse, Problem } from "../shared/schemas.ts";
 import { buckets, judge, operation, summarize } from "./report.ts";
 import type { Kind, Metrics } from "./report.ts";
-import { Gate, headers, login, transport } from "./client.ts";
+import { Gate, headers, login, loginFailure, transport } from "./client.ts";
 import type { Client } from "./client.ts";
 import { execute } from "./operations.ts";
 import { seed } from "./seed.ts";
@@ -21,7 +21,7 @@ export async function workload(mode: "smoke" | "reference", signal: AbortSignal)
   const all = buckets(), gate = new Gate();
   const warmupMs = mode === "reference" ? 30_000 : 0, measurementMs = mode === "reference" ? 120_000 : 2000;
   const bursts: Array<{ successes: number; conflicts: number; unexpected: number }> = [];
-  const probes: Array<{ requested: number; posted: number; successful: number; failures: number }> = [];
+  const probes: Array<{ requested: number; posted: number; successful: number; failures: number; failureReasons: Record<string, number> }> = [];
   let writerObserved = false, writerExited = false, busyObserved = 0, counter = 0;
   let writerStartedAt: number | null = null, writerEndedAt: number | null = null;
   let metrics: Metrics = { peakRssBytes: 0, eventLoopSamples: 0, eventLoopP95Ms: null };
@@ -80,10 +80,14 @@ export async function workload(mode: "smoke" | "reference", signal: AbortSignal)
       for (let index = 0; index < Math.ceil(measurementMs / 10_000); index++) {
         await sleep(Math.max(0, started + index * 10_000 - performance.now()), undefined, { signal });
         await burst();
-        const probe = { requested: 4, posted: 0, successful: 0, failures: 0 };
+        const probe: (typeof probes)[number] = { requested: 4, posted: 0, successful: 0, failures: 0, failureReasons: {} };
         await Promise.all(Array.from({ length: 4 }, async (_, n) => {
           try { await login(base, 20 + index * 4 + n, password, gate, signal, () => { probe.posted++; }); probe.successful++; }
-          catch { probe.failures++; }
+          catch (error) {
+            probe.failures++;
+            const reason = loginFailure(error);
+            probe.failureReasons[reason] = (probe.failureReasons[reason] ?? 0) + 1;
+          }
         })); probes.push(probe);
       }
     })();

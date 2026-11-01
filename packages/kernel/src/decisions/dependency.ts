@@ -30,7 +30,7 @@ function decline(c: DecisionCtx, dep: Waiting): Plan {
   const { dependency: _gone, ...cleared } = work;
   return {
     state: withWork({ ...state, pending: state.pending.filter((q) => q.id !== "dependency-confirm") }, cleared),
-    resp: { work: work.id, reasons: [reason("dependency-rejected", note, { note: true })], next: [] },
+    resp: { work: work.id, reasons: [reason("dependency-rejected", note, { note: true })] },
   };
 }
 

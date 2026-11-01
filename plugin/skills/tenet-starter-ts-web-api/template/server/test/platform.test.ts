@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Password } from "../../shared/schemas.ts";
 import { hashPassword, verifyPassword } from "../src/platform/auth/passwords.ts";
 import { loadConfig } from "../src/platform/config.ts";
 import { ABSOLUTE_MS, IDLE_MS } from "../src/platform/session/session.ts";
@@ -78,17 +79,30 @@ describe("sign-in and sessions", () => {
   });
 
   it("revokes every session of the user on password change, and keeps the caller signed in with a fresh one", async () => {
-    const { app } = await testApp();
-    const one = await signIn(app);
-    const two = await signIn(app);
-    const res = await app.inject({ method: "POST", url: "/api/auth/password", cookies: { sid: one.sid! }, headers: { "x-csrf-token": one.csrf! }, payload: { currentPassword: PASSWORD, newPassword: "a brand new passphrase" } });
+    const { app, db } = await testApp();
+    const previousPassword = "Café synthetic password";
+    const nextPassword = "密碼 Café synthetic passphrase";
+    db.prepare("UPDATE users SET password_hash = ? WHERE id = 'u1'").run(await hashPassword(previousPassword));
+    const one = await signIn(app, "ada@example.test", previousPassword);
+    const two = await signIn(app, "ada@example.test", previousPassword);
+    const alteredCurrent = await app.inject({ method: "POST", url: "/api/auth/password", cookies: { sid: one.sid! }, headers: { "x-csrf-token": one.csrf! }, payload: { currentPassword: previousPassword.normalize("NFD"), newPassword: nextPassword } });
+    expect(alteredCurrent.statusCode).toBe(403);
+    const res = await app.inject({ method: "POST", url: "/api/auth/password", cookies: { sid: one.sid! }, headers: { "x-csrf-token": one.csrf! }, payload: { currentPassword: previousPassword, newPassword: nextPassword } });
     expect(res.statusCode).toBe(200);
     const fresh = res.cookies.find((c) => c.name === "sid")!.value;
     expect((await app.inject({ method: "GET", url: "/api/auth/me", cookies: { sid: one.sid! } })).statusCode).toBe(401);
     expect((await app.inject({ method: "GET", url: "/api/auth/me", cookies: { sid: two.sid! } })).statusCode).toBe(401);
     expect((await app.inject({ method: "GET", url: "/api/auth/me", cookies: { sid: fresh } })).statusCode).toBe(200);
-    expect((await signIn(app, "ada@example.test", "a brand new passphrase")).res.statusCode).toBe(200);
-    expect((await signIn(app)).res.statusCode).toBe(401);
+    const signInStatus = async (password: string) => {
+      const isolated = await testApp({ db });
+      try { return (await signIn(isolated.app, "ada@example.test", password)).res.statusCode; }
+      finally { await isolated.app.close(); }
+    };
+    expect(await signInStatus(nextPassword), "the exact changed password signs in").toBe(200);
+    for (const [index, altered] of [nextPassword.toUpperCase(), `${nextPassword} `, nextPassword.normalize("NFD")].entries()) {
+      expect(await signInStatus(altered), `changed password variant ${index + 1} is rejected`).toBe(401);
+    }
+    expect(await signInStatus(PASSWORD), "the previous password is rejected").toBe(401);
   });
 
   it("limits sign-in to 5 attempts a minute per IP and account", async () => {
@@ -101,6 +115,17 @@ describe("sign-in and sessions", () => {
 });
 
 describe("passwords", () => {
+  it("enforces length bounds without restricting password composition", () => {
+    for (const password of [
+      "lowercase password", "UPPERCASE PASSWORD", "123456789012", "!@#$%^&*()_+",
+      " leading and trailing ", "密碼密碼密碼密碼密碼密碼", "🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂",
+    ]) expect(Password.safeParse(password).success, password).toBe(true);
+    expect(Password.safeParse("x".repeat(11)).success).toBe(false);
+    expect(Password.safeParse("x".repeat(12)).success).toBe(true);
+    expect(Password.safeParse("x".repeat(256)).success).toBe(true);
+    expect(Password.safeParse("x".repeat(257)).success).toBe(false);
+  });
+
   it("hashes with scrypt and a fresh salt, verifies in constant time, and rejects a different password", async () => {
     const a = await hashPassword("pw one pw one"), b = await hashPassword("pw one pw one");
     expect(a).not.toBe(b);
@@ -108,6 +133,18 @@ describe("passwords", () => {
     expect(await verifyPassword("pw one pw one", a)).toBe(true);
     expect(await verifyPassword("pw two pw two", a)).toBe(false);
     expect(await verifyPassword("anything", "not-a-hash")).toBe(false);
+  });
+
+  it("verifies the exact Unicode password through the sign-in API, without case, whitespace or normalization changes", async () => {
+    const password = "Café synthetic pass";
+    const { app, db } = await testApp();
+    db.prepare("UPDATE users SET password_hash = ? WHERE id = 'u1'").run(await hashPassword(password));
+    try {
+      expect((await signIn(app, "ada@example.test", password)).res.statusCode).toBe(200);
+      for (const altered of [password.toUpperCase(), `${password} `, password.normalize("NFD")]) {
+        expect((await signIn(app, "ada@example.test", altered)).res.statusCode).toBe(401);
+      }
+    } finally { await app.close(); db.close(); }
   });
 });
 

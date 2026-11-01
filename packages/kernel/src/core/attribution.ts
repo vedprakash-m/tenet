@@ -24,7 +24,7 @@ export interface Attribution {
 
 export function attribute(work: WorkContract, inv: Inventory, explainedBy: (path: string) => boolean): Attribution {
   const start = new Map(work.git.start.dirty.map((d) => [d.path, d]));
-  const declared = new Set(work.touched.map((t) => t.path));
+  const declared = new Set(work.touched.map((t) => t.path)), keep = new Set(work.keepOut);
   const out: Attribution = { tenet: [], human: [], mixed: [], unexplained: [], concurrent: [], changed: [] };
   for (const s of inv.status) {
     out.changed.push(s.path);
@@ -36,7 +36,7 @@ export function attribute(work: WorkContract, inv: Inventory, explainedBy: (path
       else if (was.blob !== s.blob) out.concurrent.push(s.path);
       else out.human.push(s.path);
     } else if (declared.has(s.path) || explainedBy(s.path)) out.tenet.push(s.path);
-    else if (work.keepOut.includes(s.path)) out.human.push(s.path); // the user said these are not Tenet's
+    else if (keep.has(s.path)) out.human.push(s.path); // the user said these are not Tenet's
     else out.unexplained.push(s.path);
   }
   // A start-dirty path that is now clean was reverted or committed by the human: nothing to attribute.

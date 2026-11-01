@@ -97,7 +97,8 @@ function lanePlan(c: Ctx, scope: string[], protectedPaths: string[], prefs: Retu
 async function draft(c: Ctx, probe: RepoProbe, level: Level) {
   const { ports, input, now, state } = c;
   const named = input.findings ?? [];
-  const scope = [...new Set([...(input.scopePaths ?? []), ...named.map((f) => f.location.path)])];
+  const paths = [...(input.scopePaths ?? []), ...named.map((f) => f.location.path)];
+  const scope = [...new Set(input.profile === "prototype" ? [...paths, "docs/hardening.md"] : paths)];
   const prefs = settingsFor(ports, state);
   const protectedPaths = [...new Set([...(input.protectedPaths ?? []), ...(prefs.protected_paths as string[])])];
   const { assessment, floor, lane, clamped } = lanePlan(c, scope, protectedPaths, prefs);
@@ -169,6 +170,30 @@ function layoutNotes(probe: RepoProbe) {
 
 export async function created(c: Ctx): Promise<Plan> {
   const { ports, input } = c;
+  if (input.profile === "prototype") {
+    const scope = [...(input.scopePaths ?? []), ...(input.findings ?? []).map((f) => f.location.path)];
+    const assessment = raise(input.assessment ?? {}, [...scope, ...(input.signals ?? [])], c.state.project.traits, false);
+    if (assessment["sensitive-data"] === "high") {
+      const q = question({
+        id: "prototype-data-limit", header: "Prototype data limit", channel: "chat",
+        question:
+          "The declared sensitive-data assessment is High. Tenet does not inspect project data; " +
+          "use synthetic or public data in a prototype. Make this a checked change instead, or stop?",
+        bind: { factsHash: factsHash({
+          assessment, scope, signals: input.signals ?? [], traits: c.state.project.traits,
+        }) },
+        options: [
+          {
+            label: "Make this a checked change", description: "Use a checked profile, not a prototype.", recommended: true,
+          },
+          { label: "Stop", description: "Do not open this work." },
+        ],
+      });
+      throw new KernelError("prototype-data-limit", undefined, {
+        exit: 3, questions: [q], next: [{ action: "ask", why: "Choose a checked change or stop.", required: true }],
+      });
+    }
+  }
   const editing = isEditingProfile(input.profile);
   const probe = await repository(ports, input, editing);
   const { level, why } = assistanceLevel(readinessOf(ports, probe), input.profile);

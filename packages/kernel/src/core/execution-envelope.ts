@@ -60,6 +60,18 @@ export function makeExecutionEnvelope(
   return { ...body, hash: hashOf(body) };
 }
 
+const exposureLimit = (envelope: ExecutionEnvelope) =>
+  `Network exposure is ${envelope.expectedNetwork}; data and credential exposure are unknown. ` +
+  "Project tools can still read credential files in HOME.";
+
+export function executionDisclosures(envelopes: ExecutionEnvelope[], consents: State["consents"]) {
+  return [...new Map(envelopes.map(envelope => [envelope.hash, envelope])).values()].map(envelope => ({
+    ...envelope,
+    authorization: consents.find(item => item.kind === "envelope" && item.configHash === envelope.hash) ?? null,
+    limitations: exposureLimit(envelope),
+  }));
+}
+
 export function envelopeQuestion(envelope: ExecutionEnvelope): Question {
   const passed = [...new Set(envelope.commands.flatMap((command) => command.environment.passed))].sort();
   const dropped = [...new Set(envelope.commands.flatMap((command) => command.environment.dropped))].sort();
@@ -69,7 +81,7 @@ export function envelopeQuestion(envelope: ExecutionEnvelope): Question {
     id: "envelope-consent", header: "Project check execution", channel: "chat", bind: { factsHash: envelope.hash },
     question: [
       `This check runs ${commands} with no OS sandbox. Project code may read or write workspace files and files accessible from HOME;`,
-      `network exposure is unknown. Passed environment names: ${list(passed)}. Dropped names: ${list(dropped)}.`,
+      `${exposureLimit(envelope)} Passed environment names: ${list(passed)}. Dropped names: ${list(dropped)}.`,
       "An interrupted check may have left external side effects; this consent does not undo them.",
       "Allow this exact envelope?",
     ].join(" "),

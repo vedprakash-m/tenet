@@ -2,10 +2,11 @@
 // An observation states the tuple, the arguments, the exit, the time and where the raw transcript is. It carries no verdict:
 // a test decides from evidence the kernel wrote itself, never from what the model says it did. Live runs spend credits, so
 // each needs a run budget (TENET_HOST_RUNS) and is counted in a ledger; with none left the run is refused, not skipped.
-import { spawn, spawnSync } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { arch, platform, release } from "node:os";
 import { join } from "node:path";
+import { StringDecoder } from "node:string_decoder";
 
 export interface HostRun {
   id: string; prompt: string; cwd: string; pluginDir?: string; model?: string; timeoutMs: number; extraArgs?: string[];
@@ -42,10 +43,42 @@ export function summarize(jsonl: string): Summary {
 
 export interface HostOptions { bin?: string; outDir: string; env?: NodeJS.ProcessEnv }
 
-const versionOf = (bin: string, args: string[]): string => {
-  const r = spawnSync(bin, args, { encoding: "utf8" });
-  return r.status === 0 ? `${r.stdout}${r.stderr}`.trim().split("\n")[0]!.slice(0, 80) : "unavailable";
-};
+function killOwned(child: ChildProcess) {
+  if (!child.pid) return;
+  if (platform() === "win32") { child.kill("SIGKILL"); return; }
+  try { process.kill(-child.pid, "SIGKILL"); }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+    child.kill("SIGKILL");
+  }
+}
+
+async function versionOf(bin: string, args: string[], deadline: number): Promise<string> {
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) return "unavailable (deadline exhausted)";
+  const child = spawn(bin, args, { detached: true, stdio: ["ignore", "pipe", "pipe"] });
+  const stdout: Buffer[] = [], stderr: Buffer[] = [];
+  let unavailable: string | undefined;
+  const capture = (chunks: Buffer[]) => {
+    let bytes = 0;
+    return (chunk: Buffer) => {
+      if (unavailable) return;
+      bytes += chunk.length;
+      if (bytes > 1024 * 1024) { unavailable = "output limit"; killOwned(child); }
+      else chunks.push(chunk);
+    };
+  };
+  child.stdout.on("data", capture(stdout)); child.stderr.on("data", capture(stderr));
+  const timer = setTimeout(() => { unavailable = "timeout"; killOwned(child); }, remaining);
+  child.once("exit", () => killOwned(child));
+  child.once("error", (error: NodeJS.ErrnoException) => { unavailable = error.code ?? "spawn error"; });
+  return new Promise(resolve => child.once("close", exit => {
+    clearTimeout(timer);
+    resolve(unavailable ? `unavailable (${unavailable})` : exit === 0
+      ? `${Buffer.concat(stdout).toString("utf8")}${Buffer.concat(stderr).toString("utf8")}`.trim().split("\n")[0]!.slice(0, 80)
+      : "unavailable");
+  }));
+}
 
 /** Counts a live run against the budget in the ledger; refuses when none is left (never silently skips). */
 export function reserveRun(outDir: string, budget: number): number {
@@ -87,18 +120,21 @@ export async function runCopilot(run: HostRun, opts: HostOptions): Promise<Obser
   const started = Date.now();
   const child = spawn(bin, argv, { cwd: run.cwd, env: { ...process.env, ...(run.home ? { COPILOT_HOME: run.home } : {}), ...opts.env }, stdio: ["ignore", "pipe", "pipe"], detached: true });
   const chunks: Buffer[] = [];
+  const decoder = new StringDecoder("utf8");
   let stopped = false, partial = "";
-  const kill = () => { try { process.kill(-child.pid!, "SIGKILL"); } catch { child.kill("SIGKILL"); } };
+  const kill = () => killOwned(child);
   child.stdout.on("data", (c: Buffer) => {
     chunks.push(c);
     if (!run.stopWhen || stopped) return;
-    const lines = (partial + c.toString("utf8")).split("\n");
+    const lines = (partial + decoder.write(c)).split("\n");
     partial = lines.pop() ?? "";
     if (lines.some(run.stopWhen)) { stopped = true; kill(); }
   });
   child.stderr.on("data", (c: Buffer) => chunks.push(c));
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; kill(); }, run.timeoutMs);
+  // A fork racing the first group signal can keep stdout open after its leader dies.
+  child.once("exit", () => { if (stopped || timedOut) kill(); });
   let end: { exit: number | null; signal: string | null };
   try {
     end = await new Promise<{ exit: number | null; signal: string | null }>((resolve, reject) => {
@@ -110,9 +146,13 @@ export async function runCopilot(run: HostRun, opts: HostOptions): Promise<Obser
   }
   writeFileSync(transcript, Buffer.concat(chunks));
   const text = Buffer.concat(chunks).toString("utf8");
+  const [copilot, git] = await Promise.all([
+    versionOf(bin, ["--version"], started + run.timeoutMs),
+    versionOf("git", ["--version"], started + run.timeoutMs),
+  ]);
   const obs: Observation = {
     id: run.id, at: new Date().toISOString(), argv: argv.map((a) => (a === run.prompt ? "<prompt>" : a)),
-    tuple: { ...(run.home ? { isolatedHome: "yes" } : {}), copilot: versionOf(bin, ["--version"]), node: process.version, git: versionOf("git", ["--version"]), os: `${platform()} ${release()} ${arch()}`, ...(run.model ? { model: run.model } : {}) },
+    tuple: { ...(run.home ? { isolatedHome: "yes" } : {}), copilot, node: process.version, git, os: `${platform()} ${release()} ${arch()}`, ...(run.model ? { model: run.model } : {}) },
     exit: end.exit, signal: end.signal, timedOut, stopped, durationMs: Date.now() - started, transcript, bytes: statSync(transcript).size, summary: summarize(text),
   };
   writeFileSync(join(dir, "observation.json"), JSON.stringify(obs, null, 2));

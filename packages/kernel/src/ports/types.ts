@@ -197,6 +197,7 @@ export interface Normalized {
 export interface Stack {
   setExclusions(exclusions: readonly Exclusion[]): void;
   detect(root: string): Detection;
+  assertSupportedConfiguration(root: string): void;
   argv(files: readonly string[] | "all", reportPath: string): string[];
   normalize(raw: string, root: string): Normalized;
   /** A direct binary, never npx; null when the tool is not installed in the project. */

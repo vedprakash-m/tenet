@@ -1,6 +1,7 @@
 // The filesystem Store (TS §7): one state document replaced atomically, a transaction lock with guarded stale-break,
 // an append-only log with torn-write repair, hash-named blobs and the workspace marker.
 import { accessSync, chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, ftruncateSync, readdirSync, linkSync, lstatSync, mkdirSync, openSync, readSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import type { Stats } from "node:fs";
 import { tmpdir } from "node:os";
 import { isUtf8 } from "node:buffer";
 import { join, relative, sep } from "node:path";
@@ -66,6 +67,20 @@ function readJournal(text: string): { entries: LogEntry[]; keep: number } {
   return { entries, keep };
 }
 
+/** Revalidate ctime-only changes without a second document-sized allocation. */
+function matchesRead(fd: number, content: Buffer, stamp: Stats): boolean {
+  const chunk = Buffer.alloc(Math.min(64 * 1024, content.length + 1));
+  let offset = 0;
+  for (;;) {
+    const count = readSync(fd, chunk, 0, Math.min(chunk.length, content.length - offset + 1), offset);
+    if (!count) break;
+    if (offset + count > content.length || !chunk.subarray(0, count).equals(content.subarray(offset, offset + count))) return false;
+    offset += count;
+  }
+  const after = fstatSync(fd);
+  return offset === content.length && after.size === stamp.size && after.mtimeMs === stamp.mtimeMs && after.ctimeMs === stamp.ctimeMs;
+}
+
 function readRecord(path: string, journal = false, corruptAsNull = false): string | null {
   let descriptor = -1;
   try {
@@ -86,6 +101,9 @@ function readRecord(path: string, journal = false, corruptAsNull = false): strin
       throw new KernelError("unsupported-record", "a private record changed during its bounded read");
     }
     const content = buffer.subarray(0, offset);
+    if (after.ctimeMs !== info.ctimeMs && !matchesRead(descriptor, content, after)) {
+      throw new KernelError("unsupported-record", "a private record changed during its bounded read");
+    }
     if (!isUtf8(journal ? content.subarray(0, content.lastIndexOf(0x0a) + 1) : content)) {
       if (corruptAsNull) return null;
       throw new KernelError("unsupported-record", "a private record contains invalid UTF-8");
@@ -121,6 +139,9 @@ function fsyncDir(dir: string) {
   try { fsyncSync(fd); } finally { closeSync(fd); }
 }
 function writeSynced(path: string, data: string) {
+  if (Buffer.byteLength(data, "utf8") > MAX_RECORD) {
+    throw new KernelError("unsupported-record", "a private record exceeds the 50 MB bound");
+  }
   const fd = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK, 0o600);
   try {
     if (!fstatSync(fd).isFile()) throw new KernelError("unsupported-record", "private writes require a regular file");
@@ -499,23 +520,24 @@ export class FsStore implements Store {
     writeSynced(path, content);
     return path;
   }
-  sweepTemp(maxAgeMs: number, keep: readonly string[]): number {
+  /** Only owned run leaves under real group directories are cleanup candidates. */
+  private runFiles(): string[] {
     const base = this.tempBase();
-    if (!base) return 0;
+    if (!base) return [];
+    return ["", "manifests", "review"].flatMap((group) => {
+      const dir = group ? join(base, group) : base;
+      try {
+        if (!lstatSync(dir).isDirectory()) return [];
+        return readdirSync(dir).filter((name) => group || name.startsWith("run-")).map((name) => join(dir, name));
+      } catch { return []; }
+    });
+  }
+  sweepTemp(maxAgeMs: number, keep: readonly string[]): number {
     let removed = 0;
     const old = (p: string) => { try { return Date.now() - lstatSync(p).mtimeMs > maxAgeMs; } catch { return false; } };
-    for (const group of ["", "manifests", "review"]) {
-      const dir = group ? join(base, group) : base;
-      let names: string[] = [];
-      try {
-        if (!lstatSync(dir).isDirectory()) continue;
-        names = readdirSync(dir);
-      } catch { continue; }
-      for (const n of names) {
-        const p = join(dir, n);
-        if ((group === "" && !n.startsWith("run-")) || keep.some((k) => k === p || k.startsWith(`${p}${sep}`))) continue;
-        if (old(p)) { rmSync(p, { recursive: true, force: true }); removed++; }
-      }
+    for (const path of this.runFiles()) {
+      if (keep.some((k) => k === path || k.startsWith(`${path}${sep}`))) continue;
+      if (old(path)) { rmSync(path, { recursive: true, force: true }); removed++; }
     }
     return removed;
   }
@@ -552,15 +574,7 @@ export class FsStore implements Store {
   }
   /** Oldest run folders first, by newest file time, until the cap holds; folders in `keep` stay. */
   private capRunFiles(keep: readonly string[]): string | undefined {
-    const base = this.tempBase();
-    if (!base) return undefined;
-    const entries = ["", "manifests", "review"].flatMap((g) => {
-      const dir = g ? join(base, g) : base;
-      try {
-        if (!lstatSync(dir).isDirectory()) return [];
-        return readdirSync(dir).filter((n) => g || n.startsWith("run-")).map((n) => join(dir, n));
-      } catch { return []; }
-    }).map((path) => ({ path, bytes: this.sizeOf(path), at: newestMtime(path) })).sort((a, b) => a.at - b.at);
+    const entries = this.runFiles().map((path) => ({ path, bytes: this.sizeOf(path), at: newestMtime(path) })).sort((a, b) => a.at - b.at);
     let total = entries.reduce((n, e) => n + e.bytes, 0), removed = 0;
     const cap = this.opts.runFileCapBytes ?? 200 * 1024 * 1024;
     for (const e of entries) {

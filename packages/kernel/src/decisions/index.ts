@@ -8,6 +8,7 @@ import { decisionRecord } from "./decision-record.ts";
 import { dependency } from "./dependency.ts";
 import { lesson } from "./lesson.ts";
 import { versionReconcile } from "./version-reconcile.ts";
+import { hardening } from "./hardening.ts";
 import { cleanup } from "./cleanup.ts";
 import { forget } from "./forget.ts";
 import { grant } from "./grant.ts";
@@ -22,5 +23,5 @@ import type { Decision } from "./types.ts";
 export const DECISIONS: Record<string, Decision> = Object.fromEntries([
   basis, scaffold, dirtyOverlap, acceptance, disposition, repairLock, unexplained, extend, hookConsent, filterConsent, envelopeConsent,
   syncIndex, branchSwitch, config, undoConfirm, adopt, overview, plan, grant, decisionRecord, dependency,
-  abandon, takeover, decline, lesson, forget, cleanup, versionReconcile,
+  abandon, takeover, decline, lesson, forget, cleanup, versionReconcile, hardening,
 ].map((d) => [d.kind, d]));

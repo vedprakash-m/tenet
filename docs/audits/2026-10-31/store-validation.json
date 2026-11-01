@@ -1,0 +1,157 @@
+{
+  "date": "2026-10-31",
+  "status": "locally-validated-uncommitted-unqualified",
+  "baseCommit": "28555763ee720b7b4f33c5380107c93b010afc98",
+  "scope": "Reconcile restored-mtime private-read controls, same-descriptor bounded revalidation and cleanup enumeration with later preserved takeover/starter/schema changes. These repairs are already included in later takeover evidence and are not counted twice.",
+  "source": {
+    "files": 394,
+    "sha256": "7c822f4d5e8f524f0c36159a340976eb3a9bbc7fcb54ae705acfef768fc40a50",
+    "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path + NUL + bytes + NUL."
+  },
+  "artifact": {
+    "bytes": 775824,
+    "sha256": "7a3ea964d85f14948c63e97301415aafca9224c8340a15e2c4899ed61ac4c3dd",
+    "manifestSha256": "8040c2aca7a7286672d1ae1fd5931ba4ee4da26d1800ef5a5686df6a2053a8f1"
+  },
+  "red": {
+    "tests": 3,
+    "fail": 3,
+    "exit": 1,
+    "log": {
+      "storage": "Local temporary validation output",
+      "file": "tenet-store-mtime-red.log",
+      "sha256": "6964b7e231e182f6502829d690f40948036c53ffd07b5986ff1afcfb763cb7be"
+    }
+  },
+  "readRaceGreen": {
+    "tests": 15,
+    "pass": 15,
+    "exit": 0,
+    "log": {
+      "storage": "Local temporary validation output",
+      "file": "tenet-store-mtime-green.log",
+      "sha256": "0df577ae7c5b8c745212ab90fa372a5585534ea48aca2ed3a818f1e27c799d61"
+    }
+  },
+  "earlierFocusedStoreSelection": {
+    "tests": 91,
+    "suites": 6,
+    "pass": 91,
+    "exit": 0,
+    "log": {
+      "storage": "Local temporary validation output",
+      "file": "tenet-store-focused.log",
+      "sha256": "f2dcc96ad153c70dcaa83588a65f1c18a36823a0994b7782f06c9a8fa048bfd7"
+    },
+    "scope": "Before the separately preserved bounded-write control; final CI includes the current complete selection."
+  },
+  "minimumReadRace": {
+    "exit": 0,
+    "tests": 15,
+    "pass": 15,
+    "log": {
+      "storage": "Local temporary validation output",
+      "file": "tenet-store-minimum-focused.log",
+      "sha256": "08c4a48787639a87652b15dd6514b44c04c2cab966078df2b6d5e3ee51eba429"
+    }
+  },
+  "finalCi": {
+    "command": "npm run ci",
+    "exit": 0,
+    "node": "v26.3.0",
+    "tests": 1266,
+    "suites": 204,
+    "pass": 1266,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "todo": 0,
+    "log": {
+      "storage": "Local temporary validation output",
+      "file": "tenet-store-final-ci.log",
+      "sha256": "bdc3f4eb97c38a163dcd90730fbf14cf4a05e08364839b0e137f699daeae69e9"
+    }
+  },
+  "builtUat": {
+    "current": {
+      "node": "v26.3.0",
+      "exit": 0,
+      "scenarios": 152,
+      "bundle": {
+        "bytes": 775824,
+        "sha256": "7a3ea964d85f14948c63e97301415aafca9224c8340a15e2c4899ed61ac4c3dd"
+      },
+      "evidence": {
+        "path": "docs/audits/2026-10-31/store-uat-current.json",
+        "sha256": "2205f9b28398e187bbf6520dd70ebcf0d8b03140eed0bca6969ec43ef828ce82"
+      },
+      "feature": {
+        "exit": 0,
+        "log": {
+          "storage": "Local temporary validation output",
+          "file": "tenet-store-feature-current.log",
+          "sha256": "bac57c73b14fb08b15006d56f9532eaaeb6b130745124c0b613295309d7bed84"
+        },
+        "scope": "Complete actual built starter/loan workflow; synthetic review and Analyst transport, not independent or native-host proof. Fixture source population assertions belong to the source cohort loaded by that process."
+      }
+    },
+    "minimum": {
+      "node": "v22.12.0",
+      "exit": 0,
+      "scenarios": 152,
+      "bundle": {
+        "bytes": 775824,
+        "sha256": "7a3ea964d85f14948c63e97301415aafca9224c8340a15e2c4899ed61ac4c3dd"
+      },
+      "evidence": {
+        "path": "docs/audits/2026-10-31/store-uat-minimum.json",
+        "sha256": "7e539cadfec1accb5f7c0703f01c2d847de0180d02532ab4cbca804bfbe839ed"
+      },
+      "feature": {
+        "exit": 0,
+        "log": {
+          "storage": "Local temporary validation output",
+          "file": "tenet-store-feature-minimum.log",
+          "sha256": "c6dc843eb4af21c8ceaafe953f0223ea4da1e806f18b4ff311651af520ede8e0"
+        },
+        "scope": "Complete actual built starter/loan workflow; synthetic review and Analyst transport, not independent or native-host proof. Fixture source population assertions belong to the source cohort loaded by that process."
+      }
+    }
+  },
+  "payload": {
+    "exit": 0,
+    "log": {
+      "storage": "Local temporary validation output",
+      "file": "tenet-store-payload-check.log",
+      "sha256": "525f360adf243499ee831886f1931ccbe4f2355b40b2733676b52870845be198"
+    }
+  },
+  "capacity": {
+    "storeBefore": 24920,
+    "readRepairAndCleanupCandidate": 25581,
+    "currentIncludingPreservedWriteBound": 25706,
+    "ceiling": 25920,
+    "free": 214,
+    "ceilingsOrMatchersOrRatchetsChanged": false,
+    "wholeProtocolFit": false
+  },
+  "frozenBefore": {
+    "storage": "Local scratch oracle",
+    "file": "store-fs.before.ts",
+    "bytes": 31327,
+    "sha256": "2dfa41246749577eb2b32efe26fdd63ea27502818f060a4b1267b46b9aa61006"
+  },
+  "prototype": {
+    "proposal": "specs/protocol-prototype.md",
+    "authorization": "Pending explicit owner response at record creation",
+    "delegation": "Pending explicit owner response",
+    "activated": false
+  },
+  "limits": [
+    "Later checkout work is preserved; previous evidence remains bound to its original cohort. Do not infer that old feature-case populations describe the current recipe.",
+    "A template test changed during this validation batch; final payload integrity passes. Built source-cohort scope is explicit rather than claiming an immutable whole-checkout CI snapshot.",
+    "Read consistency checks detect observed mutation; they provide no filesystem snapshot or parent-path replacement guarantee.",
+    "Permission/link metadata changes remain accepted only when captured bytes compare identically and the revalidation metadata is stable.",
+    "No independent review, target activation, semantic ledger acceptance, native/model/human/reference-hardware qualification, release, commit or push."
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "unsafePrototypeAssignment": "caught",
+  "sharedInputMapMutation": "caught",
+  "productionFaultsInstalled": false
+}

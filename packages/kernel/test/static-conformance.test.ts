@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { closeSync, ftruncateSync, mkdirSync, openSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, ftruncateSync, mkdirSync, openSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import { createStack, normalizeStatic } from "../src/adapters/node-ts.ts";
@@ -46,6 +46,52 @@ describe("static report population and bounds", () => {
 });
 
 describe("static adapter execution profile", () => {
+  it("refuses a project JSON reporter output destination before checks run [TQ-10]", async () => {
+    const p = project({
+      "vitest.config.ts": `import { defineConfig } from "vitest/config";
+export default defineConfig({ test: { reporters: [["json", { outputFile: "configured.json" }]] } });
+`,
+    });
+    roots.push(p.root);
+    p.write("src/greet.test.ts", GREET_TEST);
+    const h = (await p.call("open", { profile: "feature", request: "verify configured test reporter" })).handle!;
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    const result = await p.call("check", { h, stage: "baseline" });
+    assert.equal(result.exit, 2, JSON.stringify(result));
+    assert.ok(result.reasons.some(reason => reason.code === "adapter-unsupported-config"), JSON.stringify(result));
+    assert.equal(existsSync(join(p.root, "configured.json")), false, "the project-configured destination is not written");
+    const work = Object.values(p.ports().store.read()!.state.work)[0]!;
+    assert.equal(work.receipts.length, 0, "an unsupported report configuration launches no check");
+  });
+  it("accepts a static reporter list followed by ordinary test settings [TQ-10]", async () => {
+    const p = project({
+      "vitest.config.ts": `import { defineConfig } from "vitest/config";
+export default defineConfig({ test: { reporters: ["default"], testTimeout: 5000 } });
+`,
+    });
+    roots.push(p.root);
+    p.write("src/greet.test.ts", GREET_TEST);
+    const h = (await p.call("open", { profile: "feature", request: "verify supported test reporter" })).handle!;
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    const result = await p.call("check", { h, stage: "baseline" });
+    assert.equal(result.exit, 0, JSON.stringify(result));
+    assert.ok(Object.values(p.ports().store.read()!.state.work)[0]!.receipts.length > 0);
+  });
+  it("refuses reporter settings that cannot be inspected statically [TQ-10]", async () => {
+    const p = project({
+      "vitest.config.ts": `const reporters = getReporters();
+export default { test: { reporters } };
+`,
+    });
+    roots.push(p.root);
+    const h = (await p.call("open", { profile: "feature", request: "verify opaque test reporter" })).handle!;
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    const result = await p.call("check", { h, stage: "baseline" });
+    assert.equal(result.exit, 2, JSON.stringify(result));
+    assert.ok(result.reasons.some(reason => reason.code === "adapter-unsupported-config"), JSON.stringify(result));
+    assert.equal(Object.values(p.ports().store.read()!.state.work)[0]!.receipts.length, 0);
+  });
+
   for (const operation of ["tool", "dependency"] as const) {
     for (const mode of ["overwrite-json", "short"] as const) {
       it(`${mode === "short" ? "accepts short reads of stable" : "refuses same-size changes to"} installed ${operation} metadata [SEC-06, EVD-03]`, () => {

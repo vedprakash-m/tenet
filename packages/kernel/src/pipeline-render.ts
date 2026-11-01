@@ -1,5 +1,5 @@
 // How a response is built and recorded: handles, the rendered envelope, the call identity and the publish step.
-import { accrueTime, summarize } from "./core/budget.ts";
+import { accrueTime, attachUsage, budgetProgress, summarize } from "./core/budget.ts";
 import { formatHandle, hashOf, parseHandle } from "./core/ids.ts";
 import { KernelError } from "./core/errors.ts";
 import { redactDeep } from "./core/redact.ts";
@@ -39,6 +39,7 @@ export function render(
 ): KernelResponse {
   const w = resp.work && state ? state.work[resp.work] : undefined;
   const reasons = [...(resp.reasons ?? [])];
+  const usage = w ? summarize(w.budget, w.lane) : undefined;
   if (state?.recovered && !reasons.some((r) => r.code === "state-recovered-from-backup"))
     reasons.push({
       code: "state-recovered-from-backup",
@@ -52,14 +53,14 @@ export function render(
     revision: state?.revision ?? 0,
     reasons,
     next: resp.next ?? [],
-    budget: w ? summarize(w.budget, w.lane) : DEFAULT_BUDGET,
+    budget: usage ? budgetProgress(usage) : DEFAULT_BUDGET,
     ...extra,
   };
   if (w && state) out.handle = handleOf(state, w);
   if (resp.questions?.length) out.questions = resp.questions;
   if (resp.progress) out.progress = resp.progress;
   if (resp.effects) out.effects = resp.effects;
-  if (resp.data !== undefined) out.data = resp.data;
+  if (resp.data !== undefined) out.data = attachUsage(resp.data, usage);
   if (resp.kernel) out.kernel = { version: ports.version, schemaVersion: 1 };
   return redactDeep(out); // nothing displayed, and nothing cached on the contract, carries a likely secret (SEC-11)
 }

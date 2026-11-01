@@ -5,7 +5,7 @@ import { delimiter, dirname, join } from "node:path";
 import { ProcessRunner } from "../src/adapters/runner.ts";
 import { systemClock } from "../src/adapters/system.ts";
 import type { Obligation, WorkContract } from "../src/core/schemas.ts";
-import { recoverStoppedCall } from "../src/core/execution-envelope.ts";
+import { executionDisclosures, recoverStoppedCall } from "../src/core/execution-envelope.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
@@ -62,6 +62,83 @@ it("plans tests, static checks, and e2e in one value-only exposure envelope", ()
   assert.deepEqual(envelope.commands.map((command) => command.kind), ["tests", "static", "e2e"]);
   assert.ok(envelope.commands.find((command) => command.kind === "e2e")!.environment.passed.includes("PORT"));
   assert.equal(JSON.stringify(envelope).includes(p.root), false);
+});
+
+it("blocks unknown exposure before consent and discloses the unknowns and authorization in check and finish results [SEC-15]", async () => {
+  const p = project({}, { autoConsentEnvelope: false });
+  roots.push(p.root);
+  const ports = p.ports();
+  const call = (verb: string, input: Record<string, unknown>) => runVerb(ports, VERBS, verb, input);
+  let launches = 0;
+  const execute = ports.runner.run.bind(ports.runner);
+  ports.runner.run = async spec => { launches++; return execute(spec); };
+  const h = (await call("open", { profile: "feature", request: "unknown exposure disclosure", lane: "quick" })).handle!;
+  await call("decide", { h, kind: "basis", propose: BASIS });
+  p.write("src/greet.test.ts", GREET_TEST);
+
+  const asked = await call("check", { h, stage: "baseline" });
+  assert.equal(asked.exit, 3, JSON.stringify(asked));
+  assert.equal(launches, 0, "no project process starts before authorization");
+  const question = asked.questions?.find(item => item.id === "envelope-consent");
+  assert.equal(question?.channel, "chat");
+  const pending = Object.values(ports.store.read()!.state.work)[0]!;
+  assert.equal(pending.receipts.length, 0);
+  assert.equal(pending.session.inCall, undefined);
+  assert.match(question?.question ?? "", /network.*unknown/i);
+  assert.match(question?.question ?? "", /data.*credential.*unknown/i);
+  assert.match(question?.question ?? "", /credential files.*HOME/i);
+
+  const approved = await call("decide", {
+    h, kind: "envelope-consent", answers: { "envelope-consent": "allow-envelope" },
+  });
+  assert.equal(approved.exit, 0, JSON.stringify(approved));
+  assert.equal(launches, 0, "consent alone does not execute the check");
+  const consent = ports.store.read()!.state.consents.find(item => item.kind === "envelope");
+  assert.equal(consent?.configHash, question?.bind.factsHash);
+
+  const checked = await call("check", { h, stage: "baseline" });
+  assert.equal(checked.exit, 0, JSON.stringify(checked));
+  assert.ok(launches > 0, "the consented check really executed");
+  const work = Object.values(ports.store.read()!.state.work)[0]!;
+  assert.equal(work.receipts[0]?.executionEnvelope?.hash, consent?.configHash);
+  ports.runner.run = async () => { throw new Error("synthetic runner failure"); };
+  const failed = await call("check", { h, stage: "baseline", touched: ["src/greet.test.ts"] });
+  assert.equal(failed.exit, 5, JSON.stringify(failed));
+  assert.equal(failed.reasons[0]?.code, "internal-error");
+  assert.deepEqual(Object.values(ports.store.read()!.state.work)[0]!.receipts, work.receipts);
+  const finished = await call("finish", { h, noCommit: true });
+  assert.equal(finished.exit, 0, JSON.stringify(finished));
+  const repeated = await call("finish", { h, noCommit: true });
+  for (const response of [checked, failed, finished, repeated]) {
+    const disclosure = (response.data as Record<string, any>).executionEnvelopes?.[0];
+    assert.equal(disclosure?.hash, consent?.configHash);
+    assert.equal(disclosure?.expectedNetwork, "unknown");
+    assert.equal(disclosure?.containment, "none-observed");
+    assert.deepEqual(disclosure?.authorization, consent);
+    assert.match(disclosure?.limitations ?? "", /network.*data.*credential.*unknown/i);
+    assert.match(disclosure?.limitations ?? "", /credential files.*HOME/i);
+    assert.ok(disclosure?.commands[0].environment.passed.includes("PATH"));
+    assert.equal(JSON.stringify(disclosure).includes(p.root), false);
+  }
+});
+
+it("deduplicates disclosure without changing schema-1 envelopes or inventing missing authorization", () => {
+  const p = project();
+  roots.push(p.root);
+  const ports = p.ports();
+  const envelope = ports.runner.planEnvelope({
+    projectId: "workspace-id", root: p.root,
+    obligations: [{ id: "OB-1", kind: "test", category: "acceptance", testFile: "src/greet.test.ts" }],
+    toExecute: ["src/greet.test.ts"], stack: ports.stack,
+  });
+  const original = JSON.stringify(envelope);
+  const consents = [{ kind: "hooks" as const, configHash: envelope.hash, at: "t" }];
+  const disclosures = executionDisclosures([envelope, envelope], consents);
+  assert.equal(disclosures.length, 1);
+  assert.equal(disclosures[0]?.authorization, null, "a hook consent is not envelope authorization");
+  assert.equal(JSON.stringify(envelope), original);
+  assert.deepEqual(consents, [{ kind: "hooks", configHash: envelope.hash, at: "t" }]);
+  assert.deepEqual(executionDisclosures([], consents), [], "legacy receipts without an envelope confer no exposure facts");
 });
 
 it("asks for unknown exposure before spawn and reuses consent for the same envelope", async () => {

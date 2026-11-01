@@ -1,0 +1,285 @@
+{
+  "date": "2026-10-31",
+  "status": "locally-validated-uncommitted-unqualified",
+  "baseCommit": "28555763ee720b7b4f33c5380107c93b010afc98",
+  "authority": {
+    "task": "Review plan, plan completion, implement canonical remaining work",
+    "simplification": "Owner selected all budgets fixed and larger behavior-preserving simplification",
+    "budgetChanges": false,
+    "targetProtocolActivation": false,
+    "commitOrPush": false,
+    "nativeHostOrCampaign": false
+  },
+  "baseline": {
+    "command": "npm run ci",
+    "exit": 0,
+    "node": "v26.3.0",
+    "tests": 1238,
+    "suites": 202,
+    "pass": 1238,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "log": {
+      "storage": "Local temporary validation output",
+      "file": "tenet-current-ci-unsandboxed.log",
+      "sha256": "da039092107ea538c61ad1858c07ed47f4149b98d80dced005f5c521f469cbe5"
+    },
+    "sandboxAttempt": "Process-start identity unavailable: kernel refused lock admission. Successful baseline and final checks used OS access required by real-process tests; no guard was bypassed."
+  },
+  "repair": {
+    "recipe": "ts-web-api@0.4.1",
+    "authentication": {
+      "red": {
+        "tests": 12,
+        "failed": 12,
+        "exit": 1,
+        "log": {
+          "storage": "Local temporary validation output",
+          "file": "tenet-auth-red-all.log",
+          "sha256": "8899e3b1b4988f7a4c9c5fb6b398a8478c81389b5c96f4e7753ba7de1b450685"
+        }
+      },
+      "coverage": [
+        "obsolete password/email and deleted user at sign-in",
+        "current user role in responses",
+        "password hash change/revocation/idle/absolute expiry at password replacement",
+        "two concurrent old-password replacements",
+        "real SQLite busy retries after independent credential/session changes"
+      ]
+    },
+    "loanAuthority": {
+      "red": {
+        "tests": 5,
+        "failed": 5,
+        "exit": 1,
+        "log": {
+          "storage": "Local temporary validation output",
+          "file": "tenet-loan-authority-red.log",
+          "sha256": "b68ab887fdafd4c66e04b0e84a7c8265f5eeafbe461c4344584857e29b279ac7"
+        }
+      },
+      "coverage": [
+        "reserve and return after independent session revocation during contention",
+        "reserve and return after idle expiry during contention",
+        "admin demotion before returning another member loan during contention"
+      ]
+    },
+    "focusedGreen": {
+      "tests": 17,
+      "passed": 17,
+      "failed": 0,
+      "exit": 0,
+      "log": {
+        "storage": "Local temporary validation output",
+        "file": "tenet-authority-green.log",
+        "sha256": "809ef876469904d71210753f11aa3dae79b38490bd0f207b2ef87cf09eb5092e"
+      },
+      "typecheck": {
+        "exit": 0,
+        "log": {
+          "storage": "Local temporary validation output",
+          "file": "tenet-authority-types.log",
+          "sha256": "4a82dd9a2ae076e5bca79f439df1329e3374459e22df1a215459f75c593bc464"
+        }
+      },
+      "lint": {
+        "exit": 0,
+        "log": {
+          "storage": "Local temporary validation output",
+          "file": "tenet-authority-lint.log",
+          "sha256": "c64efd25edab2b875e6cd083f29cda499d569a742eb3ba6dcd9f54aed0299e1e"
+        }
+      }
+    }
+  },
+  "finalCi": {
+    "command": "npm run ci",
+    "exit": 0,
+    "node": "v26.3.0",
+    "tests": 1238,
+    "suites": 202,
+    "pass": 1238,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "log": {
+      "storage": "Local temporary validation output",
+      "file": "tenet-final-authority-ci.log",
+      "sha256": "99b61148d72861947b158602707530893536997fb23014cd8bd1940ae198fdde"
+    },
+    "gates": [
+      "typecheck",
+      "architecture/skill/quality lints",
+      "M0 structural coverage",
+      "build",
+      "complete payload integrity",
+      "same-source repeat builds",
+      "all tests"
+    ]
+  },
+  "builtUat": {
+    "current": {
+      "exit": 0,
+      "node": "v26.3.0",
+      "scenarios": 149,
+      "artifact": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "evidence": {
+        "path": "docs/audits/2026-10-31/authority-uat-current.json",
+        "sha256": "31c0c6a33596938d49fd8877cd4d138ed6e8d7e0558bc1c25e28c21a1bf30f44"
+      },
+      "feature": {
+        "exit": 0,
+        "neutral": {
+          "app": 101,
+          "browser": 12
+        },
+        "evolved": {
+          "app": 133,
+          "browser": 16
+        },
+        "log": {
+          "storage": "Local temporary validation output",
+          "file": "tenet-authority-feature-current.log",
+          "sha256": "be88ee3e4a2cdb77de7bfc12c820b16ecdf73e2c1b2791b91d9213f4caa298cd"
+        },
+        "scope": "Actual shipped CLI scaffold/baseline/check/review/finish; exact nested counts asserted. Reviewer/Analyst submissions are synthetic, not native-host evidence."
+      }
+    },
+    "minimum": {
+      "exit": 0,
+      "node": "v22.12.0",
+      "scenarios": 149,
+      "artifact": {
+        "bytes": 776837,
+        "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb"
+      },
+      "evidence": {
+        "path": "docs/audits/2026-10-31/authority-uat-minimum.json",
+        "sha256": "648d4616d32814d20af9b5e5c6037e8281f98c83948a0f5fc228d5282143b0cb"
+      },
+      "feature": {
+        "exit": 0,
+        "neutral": {
+          "app": 101,
+          "browser": 12
+        },
+        "evolved": {
+          "app": 133,
+          "browser": 16
+        },
+        "log": {
+          "storage": "Local temporary validation output",
+          "file": "tenet-authority-feature-minimum.log",
+          "sha256": "e49ec6287b9f7c2f601505bbee67f3c860b0e5d5c02b93cc2b9aa5d5ca426e4b"
+        },
+        "scope": "Actual shipped CLI scaffold/baseline/check/review/finish; exact nested counts asserted. Reviewer/Analyst submissions are synthetic, not native-host evidence."
+      }
+    }
+  },
+  "source": {
+    "files": 387,
+    "sha256": "d1b8727ceeab1459000b553c01a3d349dc35dddcb2bc7dfae029b67bb4950b08",
+    "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path + NUL + bytes + NUL for each file"
+  },
+  "artifact": {
+    "bytes": 776837,
+    "sha256": "77378e987b04abbe05799d064b425d15716c7698af87865d246895b3a3093ecb",
+    "payloadFiles": 92,
+    "manifestSha256": "d16d61f432483488c0836c4673b6ce27d0364a8834b2634943c8f6700b3cd8d3",
+    "kernelSourceUnchanged": true,
+    "lockfilesUnchanged": true
+  },
+  "coverage": {
+    "musts": 181,
+    "mapped": 115,
+    "hostOnly": 16,
+    "unmapped": 50,
+    "qualified": 0,
+    "ledgerRecords": 0,
+    "shouldDispositionsOpen": 19,
+    "integrityErrors": []
+  },
+  "budgetMeasurements": [
+    {
+      "owner": "adapters/git-cli",
+      "used": 37801,
+      "ceiling": 37843
+    },
+    {
+      "owner": "adapters/node-ts",
+      "used": 17929,
+      "ceiling": 20160
+    },
+    {
+      "owner": "adapters/runner",
+      "used": 9928,
+      "ceiling": 20160
+    },
+    {
+      "owner": "adapters/store-fs",
+      "used": 24920,
+      "ceiling": 25920
+    },
+    {
+      "owner": "core/budget",
+      "used": 8585,
+      "ceiling": 8640
+    },
+    {
+      "owner": "core/review",
+      "used": 16981,
+      "ceiling": 20160
+    },
+    {
+      "owner": "core/risk",
+      "used": 4779,
+      "ceiling": 8640
+    },
+    {
+      "owner": "core/schemas",
+      "used": 26863,
+      "ceiling": 26899
+    },
+    {
+      "owner": "core/verdict",
+      "used": 12549,
+      "ceiling": 17280
+    },
+    {
+      "owner": "pipeline + verbs + decisions",
+      "used": 241796,
+      "ceiling": 241805
+    }
+  ],
+  "simplification": {
+    "installed": false,
+    "owner": "core/budget",
+    "savedCharacters": 287,
+    "differentialComparisons": 8000,
+    "evidence": "docs/audits/2026-10-31/budget-candidate.json",
+    "wholeTargetFit": false
+  },
+  "limits": [
+    "No new independent implementation review, native host, human or R1 qualification",
+    "Existing failed memory observations remain; performance after added transactional reads is unmeasured",
+    "No schema-2/migration/configured-execution activation or capacity increase",
+    "Full protocol replacement under fixed budgets is not yet demonstrated; broader completion work remains",
+    "No remote validation of these uncommitted edits, commit, push or release",
+    "Privacy checks are heuristics; source/history and release privacy remain separate"
+  ],
+  "workingTreeChecks": {
+    "whitespaceExit": 0,
+    "actualAddedLinePrivacyFindings": 0,
+    "privacyScope": "Unstaged tracked diff plus all untracked files; no files staged",
+    "newDocumentLinksAndFences": "passed",
+    "auditJson": "valid",
+    "requirementTestReferences": "all current hashes match",
+    "gitignore": "new template test explicitly inventoried; fixture remains inert; build/temp artifacts stay ignored"
+  }
+}

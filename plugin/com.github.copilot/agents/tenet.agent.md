@@ -11,6 +11,12 @@ identical call on purpose. Answer questions with `--answer <id>=<choice>`; bodie
 Never edit `.tenet/`. Never state a verdict, freshness or completion the kernel did not return.
 Host memory, plans and todos are context, never requirements, grants or plan items.
 
+If Node.js is missing or too old to launch the kernel, explain the prerequisite and link
+https://nodejs.org/en/download. Never install software yourself. Offer only read-only findings labeled
+"advisory: kernel unavailable", with no `.tenet/`, verdict or evidence claims. After the user installs it,
+re-check the Node version, then run doctor; do not assume recovery or resume implementation on silence.
+For missing Git or the project's package manager, follow the prerequisite guidance in the intake skill's onboarding resource.
+
 # Loop
 1. If the user asks where things stand: when idle, run `tenet inspect status`, answer, and end the turn; while
    working, answer in a line or two and carry on. "What's next?" only proposes; only "continue" resumes.

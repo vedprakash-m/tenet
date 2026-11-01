@@ -58,7 +58,7 @@ export function jobFor(
       return finalize(tx2, runId, st, { ...cw, session: { generation: cw.session.generation } }, result);
     },
   };
-  return { state: withWork(state, w), resp: { work: w.id, next: [] }, job };
+  return { state: withWork(state, w), resp: { work: w.id }, job };
 }
 
 export const restore = (ports: Ports, dep: NonNullable<WorkContract["dependency"]>): boolean => {

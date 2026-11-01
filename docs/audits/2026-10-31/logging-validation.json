@@ -1,0 +1,99 @@
+{
+  "date": "2026-10-31",
+  "status": "locally-validated-named-field-redaction-not-arbitrary-secret-sanitization",
+  "branch": "main",
+  "baseCommit": "28555763ee720b7b4f33c5380107c93b010afc98",
+  "priorEvidence": "cli-library-validation.json",
+  "requirement": "QLT-04",
+  "recipeVersion": "0.4.2",
+  "scope": "Preserve structured logging and existing health/error contracts; redact root password/currentPassword/newPassword/csrfToken in addition to the existing one-level and header paths.",
+  "red": {
+    "command": "npm test -- --run server/test/logging.test.ts in owned copied template",
+    "result": "Actual app logger stdout contains all four synthetic authentication values at the log root while the nested fields are redacted.",
+    "report": "Current session files/logging-red.log",
+    "sha256": "010b2e5ce719b4cbca64d1f008d007caf373919aada35bc6b936ea1c98a858ab"
+  },
+  "controls": [
+    "Real child loads the actual app/logger; capture actual JSON stdout, require no synthetic secret value, require retained safe field and structured severity/message, require exact root/nested redaction. Identity req/res serializers ensure the header redaction paths are genuinely exercised rather than silently dropping the objects.",
+    "Actual HTTP injection checks health without a run token, fresh server-owned correlation IDs despite a caller header, exact 404/500 problem objects and absence of unexpected Error/SQL/stack internals. Existing platform tests retain validation, security-header and configured run-token assertions.",
+    "Kernel scaffold and complete loan feature candidate runs require exact 103 neutral and 136 evolved application cases, plus existing 12/16 real browser cases, types and lint. No test population is skipped."
+  ],
+  "finalSource": {
+    "runtimeFiles": 392,
+    "sha256": "35f1bb7d83f87db5fdf32dff2075272aaf44356eedbc70991e945db9e79b030f",
+    "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path+NUL+bytes+NUL.",
+    "bundleBytes": 776010,
+    "bundleSha256": "347f8edabf0619b756788ff0a37e5e188014dfcd63436e2efe9fe7f2d99c2f1d",
+    "bundleChanged": false,
+    "payloadChecksumsSha256": "f1743f0566fcf58748c40934ec13b7fc2bdeb80256ed047c206cfafe754d8d2c"
+  },
+  "validation": {
+    "focused": {
+      "node": "26.3.0",
+      "tests": 2,
+      "report": "Current session files/logging-green.log",
+      "sha256": "5f2295b975d62b29f231e71d295386fad588b027f5793e6144b8067871da0273",
+      "typesSha256": "4a82dd9a2ae076e5bca79f439df1329e3374459e22df1a215459f75c593bc464",
+      "lintSha256": "c64efd25edab2b875e6cd083f29cda499d569a742eb3ba6dcd9f54aed0299e1e"
+    },
+    "supportedNode24": {
+      "node": "24.22.2",
+      "tests": 2,
+      "report": "Current session files/logging-node24.log",
+      "sha256": "6ee71d292afe03ad9aabb7950743094e2e1536be60f80a56bf454e63271bab8f",
+      "dependencyRestoration": "Initial run explicitly failed SQLite ABI147 versus137. Rebuild only the owned scratch SQLite dependency for Node24, then both actual-app controls pass. Root dependencies are untouched."
+    },
+    "ci": {
+      "command": "npm run ci",
+      "tests": 1263,
+      "suites": 204,
+      "failuresCancelledSkipped": 0,
+      "report": "Current session files/logging-ci.log",
+      "sha256": "6906d781e52b89962ac3b382fc2b1304699a811b2df03fdb073778419fcb8dbb"
+    },
+    "uat": [
+      {
+        "node": "26.3.0",
+        "scenarios": 152,
+        "report": "Current session files/logging-uat-current.json",
+        "sha256": "0c7e798307d04b712292291a807340786cf01de6f9e9a78700bc3cc12752a754"
+      },
+      {
+        "node": "22.12.0",
+        "scenarios": 152,
+        "report": "Current session files/logging-uat-minimum.json",
+        "sha256": "3549d4d279268c199331fd51efe0569da900ee78592a805d6f17676e7814a762"
+      }
+    ],
+    "builtFeature": [
+      {
+        "node": "26.3.0",
+        "report": "Current session files/logging-built-current.log",
+        "sha256": "0f8bb1865c474887be37d6a927873d84a4e2770341b6f31ced5b4b612191f442"
+      },
+      {
+        "node": "22.12.0",
+        "report": "Current session files/logging-built-minimum.log",
+        "sha256": "750cca71cfbb001cb675e11c0519154c95bed44a1af60a23e5fa10cb3f74939e"
+      }
+    ]
+  },
+  "traceability": {
+    "counts": [
+      { "milestone": "M0", "mapped": 30, "host": 4, "unmapped": 0 },
+      { "milestone": "A", "mapped": 90, "host": 9, "unmapped": 1 },
+      { "milestone": "B", "mapped": 114, "host": 13, "unmapped": 31 },
+      { "milestone": "R1", "mapped": 117, "host": 16, "unmapped": 48 }
+    ],
+    "integrityErrors": 0,
+    "semanticLedgerRecords": 0,
+    "qualified": 0
+  },
+  "privacy": {
+    "scope": "Actual tracked unstaged added lines and complete new files; no staging.",
+    "findings": "Two credential-assignment heuristic matches on logging.test.ts lines30-31 are the literal expected censor output [redacted], not credentials. Both reviewed and dispositioned as false positives; no plaintext credential value is introduced.",
+    "limits": "Heuristic scanning and this disposition are not exhaustive secret detection."
+  },
+  "limitations": "Named root/one-level/header fields only, not arbitrary nesting or secret text in messages/URLs/errors. Hardening notes disclose log access/retention duties. No exhaustive secret detection, ASVS conformance, independent/native review, workload rerun or whole-application qualification.",
+  "actionsNotTaken": "No new dependency, kernel mechanism/schema/budget/target change, native spike, installed-host campaign, commit, push, branch, worktree or release."
+}

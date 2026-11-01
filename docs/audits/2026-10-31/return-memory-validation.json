@@ -1,0 +1,159 @@
+{
+  "date": "2026-10-31",
+  "status": "local-fixture-repair-validated-runtime-candidates-uninstalled",
+  "baseCommit": "28555763ee720b7b4f33c5380107c93b010afc98",
+  "branch": "main",
+  "source": {
+    "files": 389,
+    "sha256": "26974505ab36229c1de4e733b0d043f1adb5ad69ad8a98731e81779603fae854",
+    "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path + NUL + bytes + NUL."
+  },
+  "artifact": {
+    "bytes": 776010,
+    "sha256": "347f8edabf0619b756788ff0a37e5e188014dfcd63436e2efe9fe7f2d99c2f1d",
+    "changed": false
+  },
+  "returnFixture": {
+    "files": [
+      "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/concurrent-return.test.ts.txt",
+      "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/fixtures/concurrent-return-worker.ts.txt"
+    ],
+    "defect": "The parent-held SQLite writer remains locked while waiting for every worker's first attempted service marker; scheduling can consume the real one-second transaction deadline before release. All-busy can be a correct response to this test-induced hold, not evidence of broken serialization.",
+    "repair": "Keep five independently ready real processes and a common start marker, remove the external writer across that barrier, and observe each actual loan row get against real SQLite with db.inTransaction before the read. Require one protected read per worker; do not replace driver rows. Preserve exactly one winner, four 409 or 403 refusals and the persisted winner timestamp/loan count/FK assertions.",
+    "unchanged": ["five processes", "one-second production transaction bound", "250-ms SQLite busy timeout", "worker timeout", "test timeout", "actor/HTTP statuses", "production service"],
+    "mutation": {
+      "change": "Scratch-only removal of returnItem's writeTx boundary, retaining actual database reads, authority refresh and mutation body.",
+      "command": "vitest run server/test/concurrent-return.test.ts",
+      "exit": 1,
+      "tests": 2,
+      "fail": 2,
+      "symptom": "Every worker rejects loan authority read outside the write transaction.",
+      "log": "Current session files/return-fixture-mutation-red.log",
+      "sha256": "f47aed77cf3316a47e821a7999d3f6b001f6891c246a0f830aa0adb573057f75"
+    },
+    "currentRepeat": {
+      "node": "v26.3.0",
+      "runs": 20,
+      "casesPerRun": 2,
+      "failedRuns": 0,
+      "log": "Current session files/return-fixture-current-repeat.log",
+      "sha256": "c8c5f70505d30488495421f648b940b3e32c75d9e74277dd5a4925006d1c78e9"
+    },
+    "minimumRepeat": {
+      "node": "v22.12.0",
+      "runs": 10,
+      "casesPerRun": 2,
+      "failedRuns": 0,
+      "log": "Current session files/return-fixture-minimum-repeat.log",
+      "sha256": "22c7191156c37be56634695a54f4b68e795daa818f6ebe8aebbf0ff6d4d3e6dd"
+    },
+    "independentReview": "One fresh-context read-only review found no high-confidence bug or assertion weakening in the two fixture changes; reviewer ran no tests.",
+    "limits": ["Not exact-new-source remote CI.", "No claim that local timing proves the historical macOS runner's precise scheduling.", "node:test mock.method observes/delegates the real driver's get; this is not an in-memory database substitute."]
+  },
+  "ci": {
+    "command": "npm run ci",
+    "node": "v26.3.0",
+    "exit": 0,
+    "tests": 1261,
+    "suites": 204,
+    "pass": 1261,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "log": "Current session files/return-final-ci.log",
+    "sha256": "95025418853e7e436db90877a7ce449199862df752594ec902b1ec9ad92f8d98"
+  },
+  "builtJourney": {
+    "current": {
+      "command": "TENET_TEST_BUNDLE=plugin/kernel/tenet.mjs node --test packages/kernel/test/golden-task-loan-desk.test.ts",
+      "node": "v26.3.0",
+      "exit": 0,
+      "tests": 1,
+      "neutralAppBrowser": [101, 12],
+      "evolvedAppBrowser": [133, 16],
+      "log": "Current session files/return-built-current.log",
+      "sha256": "bebdc3b3c6cee16b01af3ee22e283df5b7a48ca6035f823ad2176e4a9693f37e"
+    },
+    "minimum": {
+      "command": "TENET_TEST_BUNDLE=plugin/kernel/tenet.mjs npm exec --yes --package=node@22.12.0 -- node --experimental-strip-types --test packages/kernel/test/golden-task-loan-desk.test.ts",
+      "node": "v22.12.0",
+      "exit": 0,
+      "tests": 1,
+      "neutralAppBrowser": [101, 12],
+      "evolvedAppBrowser": [133, 16],
+      "log": "Current session files/return-built-minimum.log",
+      "sha256": "2348089c280718d7a7b6cfe17d21eead51e3c431c24f3ce17d40028bcdf948ae"
+    },
+    "limits": ["The built kernel is real; reviewer/analyst submissions are synthetic, not native model qualification."]
+  },
+  "memoryCandidates": {
+    "installed": false,
+    "nativeHostOrQualification": false,
+    "baseline": "process-workload-validation.json records current source memory failure at 326828032 bytes and minimum-runtime single local pass.",
+    "protocol": "Unchanged full workload, 30000-ms warmup, 120000-ms measurement, 20-client concurrency, 2000 users/10000 items/50000 loans; memory ceiling 300000000 bytes and all original latency/coverage/crypto/quota/hash/busy checks.",
+    "fixedStatements": {
+      "command": "npm run --silent typecheck && npm run --silent lint && npm run --silent test && npm run --silent workload",
+      "source": "Current template/loan overlay with five scratch-only statement helper/repository files; finite 21-statement dictionaries per real connection; no row/authority cache.",
+      "appTestsPassed": 133,
+      "workloadExit": 1,
+      "referencePass": false,
+      "peakRssBytes": 313704448,
+      "successfulSamples": 8715,
+      "report": "Current session files/statement-workload.json",
+      "sha256": "9ae06f7d2d1eeeb6cc873528e61e0ca0f74b0e10c9882b847d4da2d3bc836c80",
+      "disposition": "Reject as a standalone memory fix; source retained in current session files/statement-rejected-source."
+    },
+    "javascriptOnly": {
+      "command": "tsc --noEmit false --rewriteRelativeImportExtensions true --outDir compiled; copy unchanged migrations; node compiled/workload/run.js",
+      "source": "Current unchanged production app emitted by its existing locked TypeScript compiler; manually adjust only compiled workload child filenames from .ts to .js.",
+      "workloadExit": 1,
+      "referencePass": false,
+      "peakRssBytes": 306085888,
+      "successfulSamples": 8802,
+      "report": "Current session files/compiled-workload.json",
+      "sha256": "43b4868b9eb4473f9c7b748e625baf5038252217581084f229151b966d58eefd",
+      "disposition": "Reject as a standalone memory fix; no production build/start command changed."
+    },
+    "combined": {
+      "source": "Both scratch candidates, current production service restored exactly. Existing 133 source-app tests pass; emitted workload launches the actual emitted API entry, not a second factory. No dependency or runtime flag change.",
+      "command": "node compiled/workload/run.js",
+      "first": {
+        "node": "v26.3.0",
+        "exit": 0,
+        "referencePass": true,
+        "peakRssBytes": 292421632,
+        "successfulSamples": 8691,
+        "report": "Current session files/combined-workload.json",
+        "sha256": "2a1d57e520d7583e73a6151294ee3284f837bb66eb24af366ca789f54417bb6e"
+      },
+      "repeat": {
+        "node": "v26.3.0",
+        "exit": 0,
+        "referencePass": true,
+        "peakRssBytes": 293355520,
+        "successfulSamples": 8737,
+        "report": "Current session files/combined-workload-repeat.json",
+        "sha256": "3f9f5dcc9c284a6192374723248dd5d37a171bf3ad3e8605bca30620148e5130"
+      },
+      "disposition": "Promising uninstalled combination. Reviewed draft specs/starter-runtime.md includes final build safety, freshness, supported Node22/24 plus current26 UAT and repeated workloads; owner implementation sign-off pending."
+    },
+    "allFourReports": {
+      "correctBurstsEach": 12,
+      "successfulSignInsEach": 48,
+      "expectedBusyResponsesEach": [3, 3, 4, 4],
+      "unexpectedErrors": 0,
+      "duplicateActiveItems": 0,
+      "foreignKeyViolations": 0,
+      "ownedProcessAndDatabaseCleanup": true
+    },
+    "limits": ["Scratch prototype, not installed lifecycle/UAT equivalence or reference-hardware qualification.", "Final runtime artifact and Node24/minimum-runtime combined measurements are still required.", "Initial scratch type/lint failures and dependency restoration remain retained; no linter or type guard was disabled.", "No GC/heap flags, runtime support restriction, forced collection, quota/crypto/concurrency reduction or target relaxation."]
+  },
+  "scope": {
+    "inheritedChangesPreserved": true,
+    "newBranchOrWorktree": false,
+    "commitOrPush": false,
+    "budgetChanges": false,
+    "targetProtocolActivation": false,
+    "entirePlanImplemented": false
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-31",
+  "status": "diagnostic-experiments-rejected-no-runtime-change-installed",
+  "priorEvidence": "workload-diagnostics-validation.json",
+  "protocol": "Full 30s warm-up/120s measured workload, original dataset, concurrency, hashing, deadlines and acceptance checks. Each workload ran alone. Profiling adds diagnostic overhead and cannot supply final-artifact performance acceptance.",
+  "hashOnly": {
+    "source": "Current session files/hash-memory-probe.mjs",
+    "sourceSha256": "cf3ad0619e2551707af619457c6cd1949d8da724caa942e8ae62d1dde49dc227",
+    "behavior": "Twelve sequential bursts, each four concurrent real scrypt derivations with N=32768, r=8, p=1, keylen=32, maxmem=67108864. Samples RSS every10ms without forced GC/heap flags. Synthetic strings; no credentials.",
+    "observations": [
+      { "node": "22.12.0", "peakRssBytes": 178405376, "report": "Current session files/hash-memory-node22.json", "sha256": "aa3cc2c3de78b1228ac83b57f57a786ae9201dfe6a154b7b6874267fb088b5b7" },
+      { "node": "24.22.2", "peakRssBytes": 185647104, "report": "Current session files/hash-memory-node24.json", "sha256": "8e60b3436798a91fb0f75d9029905ce6823225e0726cf10cea256af90cc421db" },
+      { "node": "26.3.0", "peakRssBytes": 186859520, "report": "Current session files/hash-memory-node26.json", "sha256": "3852706bf4d49d34486b9bbb48dd3d709ea37706414134eb0e2532d215d0f5ed" }
+    ],
+    "limits": "Not application workload acceptance, an exact native allocation decomposition or proof of a hashing leak."
+  },
+  "sourceProfile": {
+    "node": "24.22.2",
+    "instrumentation": "Ten-second process.memoryUsage/getHeapStatistics samples in the owned workload observer, in addition to original10ms RSS sampling. All production files initially exact main.",
+    "peakRssBytes": 402456576,
+    "referencePass": false,
+    "reasons": ["server-memory-target-failed"],
+    "heapTotalInitialBytes": 38125568,
+    "heapTotalAt140SecondsBytes": 163250176,
+    "heapUsedAt140SecondsBytes": 20721488,
+    "report": "Current session files/profile-node24-workload.json",
+    "sha256": "bbf869ca5d86f99b40f87382f5f5b25a1b909903045f20d83da89b55b4ceec10",
+    "samples": "Current session files/profile-node24-memory.jsonl",
+    "samplesSha256": "176813e31d13ff49c3b9e3e4b8887cbe4f003af92b1353aba6d31624096e5f85",
+    "conclusion": "Large heap expansion with much lower live heap in a later sample is observed. No demonstrated unbounded live-object leak or exact attribution of all RSS."
+  },
+  "transactionDispatcher": {
+    "source": "Uninstalled finite statements and emitted JavaScript candidate plus a WeakMap keyed by Db, retaining one db.transaction(operation => operation()).immediate dispatcher per connection. Each invocation passes the current synchronous closure, retaining both original deadline checks and the driver's original rollback/savepoint handling.",
+    "node": "24.22.2",
+    "profiled": true,
+    "peakRssBytes": 358268928,
+    "referencePass": false,
+    "reasons": ["server-memory-target-failed"],
+    "report": "Current session files/dispatcher-node24-workload.json",
+    "sha256": "cf72c60fcb85d6dc1262fbc7f73a800c78ec635dee6a4594f03e1b69ed02ec93",
+    "samples": "Current session files/dispatcher-node24-memory.jsonl",
+    "samplesSha256": "9e62e57e6d4661fea48ea7c9d1753586926eca730213174fd64a668790115725",
+    "disposition": "Rejected as a memory fix and removed from scratch before subsequent candidates. Not installed or accepted on the strength of one passing hash/busy observation."
+  },
+  "allocationProfile": {
+    "source": "Finite-statement source plus the scratch transaction dispatcher; no emitted-code launch. node:inspector HeapProfiler sampling at32768 bytes includes allocations collected by minor/major GC. No forced GC or heap limit change.",
+    "node": "24.22.2",
+    "report": "Current session files/allocation-node24-workload.json",
+    "sha256": "46569ed65155ca7eec83f2cb21f13343ff7333b2c97d45646bb154320ba975d3",
+    "profile": "Current session files/allocation-node24-profile.jsonl",
+    "profileSha256": "3b25f5ca3e804c401cd67845d87e8364e2ef03b6d0958ee3d8052d51822e19e6",
+    "observations": "Sampled cumulative allocation attributed82460824 bytes to the list-route frame,43714920 to Helmet parseDirectives and15973104 to its middleware-construction frame; many other Fastify/socket/DTO/authority frames contribute. These are sampled cumulative allocations, not retained heap or independently additive exact RSS.",
+    "disposition": "Diagnostic only; no external inspector listener, raw profile publication or acceptance claim."
+  },
+  "defaultHeaderCompilation": {
+    "source": "Restore original writeTx and observer. With finite statements/emitted JavaScript, register the existing Fastify Helmet plugin global:false; build the existing locked transitive Helmet default middleware once, apply it only when actual route config has no helmet override; let the plugin retain route override/decorator behavior. Guard metadata type and propagate middleware errors. No main/manifest/lockfile edit.",
+    "node": "24.22.2",
+    "appCasesPassed": 134,
+    "typecheckPassed": true,
+    "peakRssBytes": 355041280,
+    "referencePass": false,
+    "reasons": ["server-memory-target-failed", "busy-degradation-unobserved", "hash-capacity-probes-incomplete"],
+    "failedSignInReasons": { "signin-status-503": 4 },
+    "report": "Current session files/headers-node24-workload.json",
+    "sha256": "3daa90e12fc915b04fcb90ef27188f920776a6316a8df830f5ac1239b6e04550",
+    "disposition": "Rejected and original app restored. Existing tests are not full security-header/override equivalence, and a production direct import would need its own reviewed explicit dependency/build contract."
+  },
+  "bundledApi": {
+    "source": "Original app/header policy and writeTx plus finite statements. Workspace's existing esbuild produces a scratch ESM API for node22.12 with better-sqlite3 external and createRequire banner. Output under the platform directory preserves the current relative migration path. Emitted workload imports this actual API entry. No runtime bundler/dependency or production build mechanism installed.",
+    "node": "24.22.2",
+    "peakRssBytes": 357646336,
+    "referencePass": false,
+    "reasons": ["server-memory-target-failed", "busy-degradation-unobserved", "hash-capacity-probes-incomplete"],
+    "failedSignInReasons": { "signin-status-503": 4 },
+    "report": "Current session files/bundle-node24-workload.json",
+    "sha256": "c76d3d3c3d32128fa67899a7053be93e6b4235cb9fd4a43e6dc241b0af64fd19",
+    "disposition": "Rejected. Bundling did not solve acceptance; successful launch is not complete packaged-runtime/module/path equivalence."
+  },
+  "allFullTrials": {
+    "ownedProcessesExitedAndDatabaseRemoved": true,
+    "memoryCeilingUnchangedBytes": 300000000,
+    "cryptoQuotaConcurrencyAndProtocolUnchanged": true,
+    "referenceHardwareOrQualification": false
+  },
+  "scope": {
+    "candidateInstalled": false,
+    "productionRuntimeChanged": false,
+    "approvalInferred": false,
+    "branchWorktreeCommitPush": false,
+    "disposition": "Distinct experiments rejected; do not keep repeating equivalent candidates or treat a failed optimization as a completed plan item. Further replacement design and final supported-runtime acceptance remain required."
+  }
+}

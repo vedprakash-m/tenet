@@ -369,6 +369,7 @@ function makeMetricRows(slots: Slot[], attemptsBySlot: Map<string, Attempt[]>, c
   const rows: ReportMetric[] = [];
   for (const group of groups(slots)) {
     const selected = slots.filter((slot) => matchesGroup(slot, group));
+    const allAttempts = group.level === "campaign" ? attempts : selected.flatMap((slot) => attemptsBySlot.get(slot.slotId) ?? []);
     const firstRun = selected.map((slot) => ({ slot, first: (attemptsBySlot.get(slot.slotId) ?? []).find((item) => item.attemptNumber === 1) }));
     const unknownFirst = firstRun.filter(({ slot, first }) => attemptOutcome(slot, first) === "unknown").map(({ slot, first }) => `${slot.slotId}:${first ? "unknown-first-attempt" : "missing-attempt-1"}`);
     const successFirst = firstRun.filter(({ slot, first }) => attemptOutcome(slot, first) === "pass").length;
@@ -397,7 +398,6 @@ function makeMetricRows(slots: Slot[], attemptsBySlot: Map<string, Attempt[]>, c
     const requiredSafety = selected.filter((slot) => slot.safetyRequired || slot.requiredObservations.some((observation) => observation.required && observation.kind === "safety"));
     {
       const safetyAttempts = requiredSafety.flatMap((slot) => (attemptsBySlot.get(slot.slotId) ?? []).map((item) => ({ slot, attempt: item })));
-      const allAttempts = group.level === "campaign" ? attempts : selected.flatMap((slot) => attemptsBySlot.get(slot.slotId) ?? []);
       const violations = allAttempts.filter((attempt) => attempt.safetyResult === "violation").length;
       const unknown = safetyAttempts.filter(({ attempt }) => attempt.safetyResult === "unknown" || attempt.safetyResult === "not-run").map(({ attempt }) => `${attempt.attemptId}:safety-${attempt.safetyResult}`);
       const missing = requiredSafety.filter((slot) => !(attemptsBySlot.get(slot.slotId) ?? []).some((attempt) => attempt.attemptNumber === 1)).map((slot) => `${slot.slotId}:missing-safety-attempt`);
@@ -412,15 +412,15 @@ function makeMetricRows(slots: Slot[], attemptsBySlot: Map<string, Attempt[]>, c
       ["wait-time", "milliseconds-wait", "waitMs"],
     ] as const;
     for (const [metricId, unit, field] of timeFields) {
-      const samples = selected.flatMap((slot) => (attemptsBySlot.get(slot.slotId) ?? []).map((attempt) => ({ slot, value: attempt.time[field] })));
+      const samples = allAttempts.map((attempt) => ({ attemptId: attempt.attemptId, value: attempt.time[field] }));
       const total = samples.reduce<number>((sum, sample) => sum + (sample.value ?? 0), 0);
-      const row = metric(metricId, group, unit, total, samples.length, samples.flatMap(({ slot, value }) => value === null ? [`${slot.slotId}:missing-${field}`] : []), `reported ${field} total; null values remain unknown`);
+      const row = metric(metricId, group, unit, total, samples.length, samples.flatMap(({ attemptId, value }) => value === null ? [`${attemptId}:missing-${field}`] : []), `reported ${field} total; null values remain unknown`);
       row.value = samples.length === 0 || samples.every((sample) => sample.value === null) ? null : total;
       rows.push(row);
     }
 
     for (const [metricId, field] of [["retry-count", "retries"], ["delegation-count", "delegations"], ["check-count", "checks"], ["intervention-count", "interventions"]] as const) {
-      const values = selected.flatMap((slot) => attemptsBySlot.get(slot.slotId) ?? []).map((attempt) => attempt[field]);
+      const values = allAttempts.map((attempt) => attempt[field]);
       const total = values.reduce((sum, value) => sum + value, 0);
       const row = metric(metricId, group, "count", total, values.length, [], `sum of recorded ${field} across attempts`);
       row.value = total;
@@ -646,7 +646,7 @@ function renderMarkdown(report: CampaignReport): string {
     for (const attempt of attempts) {
       const safetyRequired = slot.safetyRequired || slot.requiredObservations.some((item) => item.required && item.kind === "safety");
       if (attempt.status !== "completed" || attempt.contractOutcome !== "pass" || attempt.safetyResult === "violation" || attempt.safetyResult === "unknown" || (safetyRequired && attempt.safetyResult === "not-run")) {
-        const status = attempt.safetyResult === "violation" ? "safety-violation" : attempt.contractOutcome === "fail" ? "fail" : attempt.status;
+        const status = attempt.safetyResult === "violation" ? "safety-violation" : attempt.status === "completed" && attempt.contractOutcome === "fail" ? "fail" : attempt.status;
         lines.push(`| ${slot.slotId} | ${attempt.attemptNumber} | ${status} | ${markdownCell([attempt.contractOutcome, ...attempt.failureCodes].join("; "))} |`);
       }
     }
@@ -692,10 +692,13 @@ function renderJunit(report: CampaignReport): string {
     }
   }
   for (const attempt of report.attempts.filter((item) => item.slotId === null || report.plannedSlots.every((slot) => slot.slotId !== item.slotId))) {
-    unplannedCases.push({ name: `unplanned:${attempt.attemptId}`, status: "unknown", body: `<skipped message="unplanned ${esc(attempt.status)}"/>` });
+    const failed = attempt.safetyResult === "violation" || (attempt.status === "completed" && attempt.contractOutcome === "fail");
+    const body = failed ? `<failure message="${attempt.safetyResult === "violation" ? "safety-violation" : "contract-fail"}"/>`
+      : `<skipped message="unplanned ${esc(attempt.status)}"/>`;
+    unplannedCases.push({ name: `unplanned:${attempt.attemptId}`, status: failed ? "fail" : "unknown", body });
   }
   const suite = (name: string, cases: TestCase[], planned: number) => {
-    cases.sort((left, right) => compareText(left.name, right.name));
+    if (name === "unplanned") cases.sort((left, right) => compareText(left.name, right.name));
     const failures = cases.filter((item) => item.status === "fail").length;
     const skipped = cases.length - cases.filter((item) => item.status === "pass" || item.status === "fail").length;
     const properties = `<properties><property name="tenet-status" value="${report.eligibility}"/><property name="input-sha256" value="${report.inputSha256}"/><property name="planned" value="${planned}"/><property name="passed" value="${cases.filter((item) => item.status === "pass").length}"/><property name="failed" value="${failures}"/><property name="skipped" value="${skipped}"/><property name="unknown" value="${cases.filter((item) => item.status === "unknown").length}"/><property name="disclaimer" value="${esc(report.disclaimer)}"/></properties>`;

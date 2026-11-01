@@ -341,8 +341,8 @@ function validateCampaign(
   };
 }
 
-/** No verb or decision file is longer than this, and no source line packs >340 chars to evade the cap (owner decision, 2026-10-19). */
-const FILE_CAP = 250;
+/** No verb or decision file is longer than this, and no source line packs >340 chars to evade the cap (owner decision, 2026-10-19; WRK-06 increment 2026-10-31). */
+const FILE_CAP = 265;
 const LINE_WIDTH_CAP = 340;
 function tooLong(root: string): Report["tooLong"] {
   const src = join(root, "packages/kernel/src");

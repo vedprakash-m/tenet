@@ -26,10 +26,10 @@ export const forget: Decision = {
       reason("restriction-key-unknown", `there is no lesson "${input.target ?? ""}" to forget`) ] } };
     if (input.answers?.["forget-confirm"] !== "yes") {
       const { question, preview } = forgetPreview(l);
-      return { resp: { exit: 3, work: work.id, questions: [question], next: [], data: { preview } } };
+      return { resp: { exit: 3, work: work.id, questions: [question], data: { preview } } };
     }
     tx.intent("forget", l.id, { work: work.id, lesson: l.id });
     const { state: next, packetsRemoved } = completeForget(ports, tx, withWork(state, work), l.id);
-    return { state: next, resp: { work: work.id, next: [], data: { forgotten: l.id, packetsRemoved, outside: OUTSIDE } } };
+    return { state: next, resp: { work: work.id, data: { forgotten: l.id, packetsRemoved, outside: OUTSIDE } } };
   },
 };

@@ -1,0 +1,85 @@
+{
+  "date": "2026-10-31",
+  "status": "locally-validated-shipped-guidance-native-adherence-unobserved",
+  "branch": "main",
+  "baseCommit": "28555763ee720b7b4f33c5380107c93b010afc98",
+  "priorEvidence": "workload-diagnostics-validation.json",
+  "requirement": "INS-11",
+  "scope": "Canonical prerequisite guidance only. The entry agent handles missing/too-old Node before kernel launch; intake onboarding covers project manager/Git guidance, official installers, no autonomous software installation, actual version/doctor recheck, stale editor environment and no-kernel advisory limits.",
+  "files": [
+    "plugin/com.github.copilot/agents/tenet.agent.md",
+    "plugin/skills/tenet-intake/resources/onboarding.md",
+    "packages/kernel/test/prerequisite-guidance.test.ts"
+  ],
+  "red": {
+    "command": "node --test packages/kernel/test/prerequisite-guidance.test.ts",
+    "result": "Shipped entry lacked missing-Node prerequisite recovery instructions.",
+    "report": "Current session files/prerequisite-red.log",
+    "sha256": "22a5b92a9ad141a3fd7c3d0b0afc260cf32a344c5230f837d7bcab10e2fba488"
+  },
+  "controls": "Read exact shipped text; require entry missing-Node installer/advisory/no-state/no-verdict/no-evidence/recheck instructions and onboarding official links, user-managed install, lockfile/packageManager identification, --version, doctor, restart permission and missing-manager versus npm-ci distinction. This proves an instruction contract, not model/host adherence.",
+  "officialLinksVerified": [
+    "https://nodejs.org/en/download",
+    "https://docs.npmjs.com/downloading-and-installing-node-js-and-npm",
+    "https://pnpm.io/installation",
+    "https://yarnpkg.com/getting-started/install",
+    "https://bun.sh/docs/installation",
+    "https://git-scm.com/downloads"
+  ],
+  "linkLimits": "Public official documentation fetched read-only; npm/Git canonical redirects observed. No downloaded installer executed, OS/project tool installed or host state changed.",
+  "finalSource": {
+    "runtimeFiles": 390,
+    "sha256": "515ba6ca2ca56fe3a532f19a91759c1eac79e9ebb3ff8f1f7d8f2ef0d74c4bb3",
+    "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path+NUL+bytes+NUL.",
+    "bundleBytes": 776010,
+    "bundleBudgetBytes": 819200,
+    "bundleSha256": "347f8edabf0619b756788ff0a37e5e188014dfcd63436e2efe9fe7f2d99c2f1d",
+    "bundleChanged": false,
+    "payloadChecksumsSha256": "c61d51c4617542a64f828907ee867e736028055200c4e360606fb4b7a956275c"
+  },
+  "validation": {
+    "ci": {
+      "command": "npm run ci",
+      "tests": 1262,
+      "suites": 204,
+      "failuresCancelledSkipped": 0,
+      "report": "Current session files/prerequisite-ci.log",
+      "sha256": "58fb9c4e86ab8bf5116b3309bc3ece776055b6f693b4c86aab7488098ba526a5"
+    },
+    "uat": [
+      {
+        "command": "node tools/uat/uat.mjs",
+        "node": "26.3.0",
+        "scenarios": 152,
+        "report": "Current session files/prerequisite-uat-current.json",
+        "sha256": "0c7e798307d04b712292291a807340786cf01de6f9e9a78700bc3cc12752a754"
+      },
+      {
+        "command": "npm exec --yes --package=node@22.12.0 -- node tools/uat/uat.mjs",
+        "node": "22.12.0",
+        "scenarios": 152,
+        "report": "Current session files/prerequisite-uat-minimum.json",
+        "sha256": "3549d4d279268c199331fd51efe0569da900ee78592a805d6f17676e7814a762"
+      }
+    ],
+    "budgets": "Existing skill/loaded/agent/source/bundle budgets unchanged; all lints and payload/reproducibility checks pass.",
+    "nativeHostInstallationAndRecovery": "unobserved"
+  },
+  "traceability": {
+    "command": "tools/coverage.ts report(root, milestone) for M0/A/B/R1",
+    "report": "Current session files/prerequisite-coverage.jsonl",
+    "sha256": "50b7fde3a4b678566c3863b1e6bcd156dcc81d62a16e34ebab8cf83c68361b8e",
+    "counts": [
+      { "milestone": "M0", "mapped": 30, "host": 4, "unmapped": 0 },
+      { "milestone": "A", "mapped": 90, "host": 9, "unmapped": 1 },
+      { "milestone": "B", "mapped": 114, "host": 13, "unmapped": 31 },
+      { "milestone": "R1", "mapped": 116, "host": 16, "unmapped": 49 }
+    ],
+    "integrityErrors": 0,
+    "semanticLedgerRecords": 0,
+    "qualified": 0,
+    "limit": "INS-11's new T1 mapping checks shipped instructions only. Actual no-Node/missing-manager/Git recovery, host/model adherence and AC disposition remain unobserved/unreviewed. Mapping is not whole-requirement completion."
+  },
+  "remaining": "Runtime memory replacement/acceptance; complete fixed-budget protocol design/review/sign-off and implementation; real consumer/semantic/host/human/release gates. All19 Should dispositions remain open.",
+  "actionsNotTaken": "No native spike, system installation, schema/authority/budget/target change, commit, push, branch, worktree or release."
+}

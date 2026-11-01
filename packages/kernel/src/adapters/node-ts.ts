@@ -12,7 +12,7 @@ import { FsProject } from "./project-fs.ts";
 import { nestsTooDeep } from "./report-bounds.ts";
 import { normalizePlaywright, playwrightArgv } from "./playwright.ts";
 
-const ADAPTER = "node-ts@11"; // 11: Playwright version, configuration and receipt provenance bind evidence.
+const ADAPTER = "node-ts@12"; // 12: contradictory Playwright skip expectations cannot pass.
 function installedMetadata(path: string, kind: "tool" | "dependency"): { record: Record<string, any>; digest: string } | null {
   let descriptor = -1;
   try {
@@ -107,7 +107,49 @@ function metadata(root: string, exclusions: readonly Exclusion[]) {
         return null;
       }
     },
+    text(path: string): string | null {
+      permit(path);
+      return project.read(path);
+    },
   };
+}
+
+function reporterConfigProblem(reporters: unknown, path: string): string | undefined {
+  if (reporters === undefined) return undefined;
+  const entries = Array.isArray(reporters) ? reporters : [reporters];
+  for (const entry of entries) {
+    if (typeof entry === "string") continue;
+    if (!Array.isArray(entry) || entry[0] !== "json") continue;
+    if (!entry[1] || typeof entry[1] !== "object")
+      return `${path} has JSON reporter options the adapter cannot verify`;
+    if ("outputFile" in entry[1])
+      return `${path} sets a JSON reporter outputFile that overrides the adapter's private report destination`;
+    if (Object.keys(entry[1]).length)
+      return `${path} has JSON reporter options the adapter cannot verify`;
+  }
+  return undefined;
+}
+
+function configProblem(meta: ReturnType<typeof metadata>): string | undefined {
+  const pkg = meta.json("package.json");
+  const packageProblem = reporterConfigProblem(pkg?.vitest?.test?.reporters ?? pkg?.vitest?.reporters, "package.json");
+  if (packageProblem) return packageProblem;
+  for (const base of ["vitest.config", "vite.config"]) for (const extension of ["js", "mjs", "cjs", "ts", "mts", "cts"]) {
+    const path = `${base}.${extension}`;
+    const source = meta.text(path);
+    if (!source) continue;
+    const matches = [...source.matchAll(/(?:\breporters\b|["']reporters["'])\s*:\s*/g)];
+    if ([...source.matchAll(/\breporters\b/g)].length > matches.length)
+      return `${path} has reporter settings the adapter cannot verify`;
+    for (const match of matches) {
+      const setting = source.slice(match.index! + match[0].length);
+      if (/^\[\s*\[\s*["']json["']\s*,\s*\{[^}]*\boutputFile\s*:/s.test(setting))
+        return `${path} sets a JSON reporter outputFile that overrides the adapter's private report destination`;
+      if (!/^(?:["'][^"'\\]*["']|\[\s*["'][^"'\\]*["'](?:\s*,\s*["'][^"'\\]*["'])*\s*\])/s.test(setting))
+        return `${path} has reporter options the adapter cannot verify`;
+    }
+  }
+  return undefined;
 }
 
 function detect(root: string, exclusions: readonly Exclusion[]): Detection {
@@ -391,6 +433,10 @@ export function createStack(): Stack {
       exclusions = value;
     },
     detect: (root) => detect(root, exclusions),
+    assertSupportedConfiguration: (root) => {
+      const problem = configProblem(metadata(root, exclusions));
+      if (problem) throw new KernelError("adapter-unsupported-config", `${problem}; no check was launched`, { exit: 2 });
+    },
     argv: (files, report) => {
       const vitest = "node_modules/vitest/vitest.mjs"; // a direct binary, never npx (TS §9.3)
       return [

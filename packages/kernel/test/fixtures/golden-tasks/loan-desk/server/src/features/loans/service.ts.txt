@@ -2,6 +2,7 @@
 // and who may return what. The database driver itself lives behind the repositories; this file never imports it.
 import { randomUUID } from "node:crypto";
 import type { Actor } from "../../platform/actor.ts";
+import { refreshActor } from "../../platform/session/session.ts";
 import type { Db } from "../../platform/db.ts";
 import { writeTx } from "../../platform/db.ts";
 import { AppError } from "../../platform/errors.ts";
@@ -19,24 +20,28 @@ export function browseItems(db: Db, limit: number, offset: number): Paged<ItemRe
   return { items: listItems(db, limit, offset).map((i) => ({ id: i.id, name: i.name, available: i.available === 1 })), limit, offset, total: countItems(db) };
 }
 
-export async function reserveItem(db: Db, actor: Actor, itemId: string, now: number): Promise<LoanResponse> {
-  const item = findItemById(db, itemId);
-  if (!item) throw new AppError(404, "item-not-found", "That item does not exist.");
+export async function reserveItem(db: Db, actor: Actor, itemId: string, now: number, clock = Date.now): Promise<LoanResponse> {
   const id = randomUUID();
   try {
-    await writeTx(db, () => insertLoan(db, { id, item_id: itemId, user_id: actor.user.id, reserved_at: now }));
+    return await writeTx(db, () => {
+      const current = refreshActor(db, actor, clock());
+      const item = findItemById(db, itemId);
+      if (!item) throw new AppError(404, "item-not-found", "That item does not exist.");
+      insertLoan(db, { id, item_id: itemId, user_id: current.user.id, reserved_at: now });
+      return { id, itemId, itemName: item.name, reservedAt: now, returnedAt: null };
+    });
   } catch (e) {
     if (isUniqueViolation(e)) throw new AppError(409, "item-on-loan", "That item is already on loan.");
     throw e;
   }
-  return { id, itemId, itemName: item.name, reservedAt: now, returnedAt: null };
 }
 
-export async function returnItem(db: Db, actor: Actor, loanId: string, now: number): Promise<LoanResponse> {
+export async function returnItem(db: Db, actor: Actor, loanId: string, now: number, clock = Date.now): Promise<LoanResponse> {
   return writeTx(db, () => {
+    const current = refreshActor(db, actor, clock());
     const loan = findLoanById(db, loanId);
     if (!loan) throw new AppError(404, "loan-not-found", "That loan does not exist.");
-    if (!canReturn(actor, loan)) throw new AppError(403, "forbidden", "You may only return your own loan.");
+    if (!canReturn(current, loan)) throw new AppError(403, "forbidden", "You may only return your own loan.");
     if (loan.status === "returned") throw new AppError(409, "already-returned", "That loan was already returned.");
     returnLoan(db, loanId, now);
     const item = findItemById(db, loan.item_id);

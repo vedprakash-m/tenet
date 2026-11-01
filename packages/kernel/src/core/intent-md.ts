@@ -49,9 +49,17 @@ export function parseBlocks(text: string): Parsed {
 
 const list = (label: string, items: readonly string[]): string => (items.length ? `**${label}**\n${items.map((x) => `- ${x}`).join("\n")}\n` : "");
 
-/** A decision with its context and consequences, so a reader of the file needs nothing else (INT-10). */
+/** A decision summary retains its MADR fields and affected IDs in the adopted projection (INT-09, INT-10). */
 const decisionBody = (r: Intent["records"][number]): string =>
-  `**${r.id} ${r.title}** (${r.status}, ${r.date.slice(0, 10)})\n- Context: ${r.context}\n- Decision: ${r.decision}\n${r.consequences ? `- Consequences: ${r.consequences}\n` : ""}${r.alternatives.map((a) => `- Considered ${a.option}: ${a.why}\n`).join("")}${r.supersedes ? `- Supersedes ${r.supersedes}\n` : ""}`;
+  [
+    `**${r.id} ${r.title}** (${r.status}, ${r.date.slice(0, 10)})`,
+    `- Context: ${r.context}`,
+    `- Decision: ${r.decision}`,
+    ...(r.consequences ? [`- Consequences: ${r.consequences}`] : []),
+    ...r.alternatives.map((a) => `- Considered ${a.option}: ${a.why}`),
+    ...(r.links.length ? [`- Affects: ${r.links.join(", ")}`] : []),
+    ...(r.supersedes ? [`- Supersedes ${r.supersedes}`] : []),
+  ].join("\n") + "\n";
 
 /** Block bodies by ID, in the order they appear: the overview, then each requirement with its examples and invariants, then the rest, then plan items. */
 export function renderIntent(intent: Intent): Map<string, string> {
@@ -78,13 +86,14 @@ export type Projection =
  * The file after Tenet writes its blocks. `written` holds the hash of what Tenet last wrote in each block: a block that
  * differs from both that and the new text was edited by a person, so it stays as it is and is reported for a diff.
  */
-export function projectIntent(existing: string | null, intent: Intent, written: Readonly<Record<string, string>>): Projection {
+export function projectBlocks(
+  existing: string | null, desired: ReadonlyMap<string, string>, written: Readonly<Record<string, string>>, header: string,
+): Projection {
   const parsed = existing === null ? ({ ok: true, blocks: [] } as const) : parseBlocks(existing);
   if (!parsed.ok) return parsed;
   const eol = existing?.includes("\r\n") ? "\r\n" : "\n";
   const fit = (s: string) => s.replace(/\r?\n/g, eol);
-  const desired = renderIntent(intent);
-  const text0 = existing ?? `# Intent${eol}`;
+  const text0 = existing ?? `${header}${eol}`;
   const changed: string[] = [], external: string[] = [], stale: string[] = [];
   const now: Record<string, string> = {};
   const edits: { from: number; to: number; text: string }[] = [];
@@ -109,4 +118,8 @@ export function projectIntent(existing: string | null, intent: Intent, written: 
   let text = text0;
   for (const e of edits.sort((a, b) => b.from - a.from)) text = text.slice(0, e.from) + e.text + text.slice(e.to);
   return { ok: true, text, changed, external, stale, written: now };
+}
+
+export function projectIntent(existing: string | null, intent: Intent, written: Readonly<Record<string, string>>): Projection {
+  return projectBlocks(existing, renderIntent(intent), written, "# Intent");
 }

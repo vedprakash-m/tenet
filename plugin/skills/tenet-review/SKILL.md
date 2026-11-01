@@ -18,15 +18,18 @@ would it fail if the behavior broke and pass if only internals changed; do expec
 could an absence check pass vacuously? What required behavior has no example or check (basisGaps,
 coverage.uncovered)? Flag changes outside the requested scope (out-of-scope-change).
 
-Stage B (structure, security, charter): design, readability, duplication, suppressions, dependency changes, network
-destinations, credentials, test or CI weakening, and the charter (the manifest's `charter` field — judge against it
-literally, not from memory). Ask what happens on a rerun, a half-finished run
+Stage B (structure, security, charter): design, readability, duplication, suppressions and dependency changes; flag new
+network destinations, telemetry calls, credential handling and permission changes introduced in generated code; check
+test or CI weakening and the charter (the manifest's `charter` field — judge against it literally, not from memory).
+Ask what happens on a rerun, a half-finished run
 or a race between check and act; whether new entry points are authorized; whether errors are swallowed or secrets
 logged. Name the fact that makes the change safe and its evidence; look for consumers symbol search misses (stored
 or serialized formats, configuration keys, flags, other languages, scripts parsing output). Changeability: one
 rule in several places, indirection with no purpose, errors handled where nothing can act on them, what the next
 likely change would have to touch. Shotgun surgery: did one conceptual change require edits across several
-unrelated files to take effect? Judge by consequence, not shape. Give every attention item a disposition.
+unrelated files or modules to take effect — a distinct, nameable smell from blast radius, which is about how many
+callers a signature change reaches, not about how scattered the change itself had to be. Judge by consequence, not
+shape. Give every attention item a disposition.
 
 Severity: blocker = violates the basis, an integrity rule, or a security or data-integrity obligation; major =
 material quality or reliability defect; minor; note. Severity follows consequence and evidence.

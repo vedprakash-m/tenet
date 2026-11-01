@@ -161,7 +161,6 @@ function undoOutcome(
       work: cur.id,
       exit: 3,
       reasons: [reason("undo-conflict", r.detail ?? r.error ?? "the inverse did not apply")],
-      next: [],
     },
   };
 }
@@ -175,7 +174,7 @@ export const undoConfirm: Decision = {
     if (answer !== "apply" && answer !== "cancel")
       throw new KernelError("revision-conflict", 'answer "apply" or "cancel"', { exit: 1 });
     const rest: State = { ...state, pending: state.pending.filter((p) => p.id !== "undo-confirm") };
-    if (answer === "cancel") return { state: withWork(rest, work), resp: { work: work.id, next: [] } };
+    if (answer === "cancel") return { state: withWork(rest, work), resp: { work: work.id } };
 
     const plan = await planUndo(ports, rest, work);
     if (undoFacts(plan) !== q.bind.factsHash) {
@@ -199,6 +198,6 @@ export const undoConfirm: Decision = {
       execute: () => ports.git.applyPatch(plan.patch, [], { runDir, timeoutMs: 60_000 }),
       finalize: async (tx2, st2, result) => undoOutcome(tx2, st2, work, nw, plan, id, result),
     };
-    return { state: next, resp: { work: nw.id, next: [] }, job };
+    return { state: next, resp: { work: nw.id }, job };
   },
 };

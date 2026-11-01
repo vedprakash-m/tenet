@@ -18,7 +18,7 @@ The kernel's helper is found by the plugin's own path, not through your `PATH`. 
 
 There is no public install path yet. A release install with no cloning, building or JSON editing is a requirement that is not met.
 
-1. Clone the repository (PLACEHOLDER-REPOSITORY-URL).
+1. Clone the source repository: `git clone https://github.com/vedprakash-m/tenet.git`.
 2. In the repository:
 
 ```bash

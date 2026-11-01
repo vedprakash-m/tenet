@@ -192,7 +192,7 @@ export async function startCommit(
     execute: () => ports.git.commit({ paths, deleted: [], message, parent, expectedTree, timeoutMs: 120_000, runDir, indexJournal }),
     finalize: async (tx2, st2, result) => settle({ w, runId, paths }, tx2, st2, result, done),
   };
-  return { state: withWork(st, prepared), resp: { work: w.id, next: [] }, job };
+  return { state: withWork(st, prepared), resp: { work: w.id }, job };
 }
 
 export const commit: Verb<CommitInput> = {

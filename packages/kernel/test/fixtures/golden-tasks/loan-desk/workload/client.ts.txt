@@ -1,4 +1,17 @@
 import { CsrfResponse, SessionResponse } from "../shared/schemas.ts";
+import { ZodError } from "zod";
+
+export function loginFailure(error: unknown): string {
+  if (error instanceof ZodError) return "invalid-response";
+  if (error instanceof SyntaxError) return "invalid-json";
+  if (error instanceof Error) {
+    if (error.name === "AbortError") return "aborted";
+    if (error.name === "TimeoutError") return "timeout";
+    if (/^(?:csrf|signin|session)-status-[1-5]\d{2}$/.test(error.message)) return error.message;
+    if (error.message === "pre-cookie-missing" || error.message === "session-cookie-missing") return error.message;
+  }
+  return error instanceof TypeError ? "type-error" : "unexpected-error";
+}
 
 export class Gate {
   active = 0; maxActive = 0;

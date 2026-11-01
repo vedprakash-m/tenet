@@ -93,7 +93,7 @@ async function claimSource(ports: Ports, verb: Verb, input: Input, current: Stat
   const vetted = ports.project.hashes(Object.keys(w0.vetted));
   const paths = (await ports.git.inventory([])).status
     .map((s) => s.path)
-    .filter((p) => !(p in w0.vetted && vetted[p] === w0.vetted[p]));
+    .filter((p) => !(Object.hasOwn(w0.vetted, p) && vetted[p] === w0.vetted[p]));
   const assessment = raise(
     w0.assessment,
     paths,

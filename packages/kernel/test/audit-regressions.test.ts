@@ -8,13 +8,32 @@ import { runVerb } from "../src/pipeline.ts";
 import type { Verb } from "../src/pipeline.ts";
 import { CheckInput } from "../src/core/schemas.ts";
 import { VERBS } from "../src/verbs/index.ts";
-import { gather } from "../src/verbs/facts.ts";
+import { checkInputId, gather } from "../src/verbs/facts.ts";
 
 const roots: string[] = [];
 const fresh = () => { const p = project(); roots.push(p.root); return p; };
 after(() => roots.forEach(cleanup));
 
 describe("audit: common mutation boundaries", () => {
+  it("binds check identity to the contract base without following later HEAD commits [EVD-01, EVD-03]", async () => {
+    const p = fresh();
+    await p.call("open", { profile: "feature", request: "base identity", lane: "quick" });
+    const work = Object.values(p.ports().store.read()!.state.work)[0]!;
+    const ports = p.ports();
+    const before = await gather(ports, work);
+    const identity = checkInputId(ports, work, before.candidate);
+    p.git("commit", "--allow-empty", "-qm", "same tree, new base");
+    const after = await gather(ports, work);
+    assert.notEqual(after.inv.head, before.inv.head);
+    assert.equal(after.candidate, before.candidate);
+    assert.equal(checkInputId(ports, work, after.candidate), identity,
+      "a later HEAD does not rewrite the pinned contract base");
+    const rebased = { ...work, git: { ...work.git, base: after.inv.head } };
+    assert.notEqual(checkInputId(ports, rebased, after.candidate), identity,
+      "identical file contents cannot reuse evidence from a different contract base");
+    assert.notEqual(checkInputId(ports, { ...rebased, git: { ...rebased.git, base: null } }, after.candidate), identity);
+  });
+
   it("does not report checked-local from a backup whose authority was suspended [SEC-12, EVD-01]", async () => {
     const p = fresh();
     const h = (await p.call("open", { profile: "feature", request: "backup verdict", lane: "quick" })).handle!;

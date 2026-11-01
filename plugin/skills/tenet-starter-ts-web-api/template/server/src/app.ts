@@ -58,7 +58,10 @@ export async function buildApp(config: Config, deps: Deps = {}): Promise<Fastify
   });
 
   app.setErrorHandler((err: Error & { statusCode?: number; validation?: unknown }, req, reply) => {
-    if (err instanceof AppError) return reply.status(err.status).send(problem(err.status, err.code, err.message, req.id, req.url));
+    if (err instanceof AppError) {
+      if (err.code === "unauthenticated" && req.cookies[COOKIE]) void reply.clearCookie(COOKIE, { path: "/" });
+      return reply.status(err.status).send(problem(err.status, err.code, err.message, req.id, req.url));
+    }
     if (err.validation) return reply.status(400).send(problem(400, "invalid-request", "The request did not match the expected shape.", req.id, req.url));
     if (err.statusCode === 429) return reply.status(429).send(problem(429, "too-many-requests", "Too many requests; try again shortly.", req.id, req.url));
     if (err.statusCode && err.statusCode < 500) return reply.status(err.statusCode).send(problem(err.statusCode, "bad-request", undefined, req.id, req.url));

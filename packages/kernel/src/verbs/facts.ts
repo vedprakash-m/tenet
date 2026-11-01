@@ -38,12 +38,12 @@ export async function worldDigest(ports: Ports, _input?: unknown, state?: State 
 export async function gather(ports: Ports, w: WorkContract, locks: State["locks"] = []): Promise<Facts> {
   if (w.git.mode === "none") return { inv: NO_GIT, att: attribute(w, NO_GIT, () => false), candidate: NO_GIT.digest, tenetPaths: [], reviewPaths: [], lockAnchors: new Set() };
   const tests = new Set(w.obligations.map((o) => o.testFile).filter((p): p is string => !!p));
-  const explained = (p: string) => tests.has(p) || p in w.vetted;
+  const explained = (p: string) => tests.has(p) || Object.hasOwn(w.vetted, p);
   const inv = await ports.git.inventory([], declaredInputs(w.obligations), declaredOutputs(w.obligations));
   const att = attribute(w, inv, explained);
-  const keep = new Set(w.keepOut);
-  const tenetPaths = [...new Set([...att.tenet, ...att.mixed.filter((p) => w.includeDirty.includes(p)), ...w.includeDirty])]
-    .filter((p) => !keep.has(p) && inv.status.some((s) => s.path === p));
+  const keep = new Set(w.keepOut), changed = new Set(att.changed), included = new Set(w.includeDirty);
+  const tenetPaths = [...new Set([...att.tenet, ...att.mixed.filter((p) => included.has(p)), ...included])]
+    .filter((p) => !keep.has(p) && changed.has(p));
   const anchors = locks.flatMap((l) => ("commit" in l.anchor ? [l.anchor.commit] : []));
   const reviewPaths = [...new Set([...tenetPaths, ...w.git.committed])];
   return { inv, att, candidate: inv.digest, tenetPaths, reviewPaths, lockAnchors: anchors.length ? await ports.git.ancestors(anchors) : new Set() };
@@ -54,16 +54,15 @@ export function unauthorizedEdits(ports: Ports, w: WorkContract, f: Facts): stri
   const changed = new Set(f.inv.status.map((s) => s.path));
   const mine = [...f.reviewPaths, ...w.touched.map((t) => t.path).filter((p) => changed.has(p) || w.git.committed.includes(p))];
   const vetted = ports.project.hashes(Object.keys(w.vetted)); // what a scaffold wrote is authorized by its kickoff, until someone changes it
-  return uncoveredProtected(w.scope.protected, [...new Set(mine)].filter((p) => !(p in w.vetted && vetted[p] === w.vetted[p])).sort(), w.grants, ports.clock.now());
+  return uncoveredProtected(w.scope.protected, [...new Set(mine)].filter((p) => !(Object.hasOwn(w.vetted, p) && vetted[p] === w.vetted[p])).sort(), w.grants, ports.clock.now());
 }
 
-/** sha256(source candidate, obligation definitions, toolchain fingerprint, semantic envelope) (TS §8.8). */
+/** Bind the contract base (EVD-01), source candidate and check definitions (TS §8.8). */
 export function checkInputId(ports: Ports, w: WorkContract, candidate: string): string {
-  const defs = w.obligations.map((o) => ({
-    id: o.id, kind: o.kind, category: o.category, tool: o.tool, testFile: o.testFile, support: o.support,
-    outputs: o.outputs, test: o.test, expectation: o.expectation, example: o.example,
+  const defs = w.obligations.map(({ id, kind, category, tool, testFile, support, outputs, test, expectation, example }) => ({
+    id, kind, category, tool, testFile, support, outputs, test, expectation, example,
   }));
-  return hashOf({ candidate, defs, toolchain: ports.stack.fingerprint(ports.root), envelope: { cwd: ".", env: { CI: "1" }, argv: "vitest run --reporter=json" } }).slice(0, 24);
+  return hashOf({ base: w.git.base, candidate, defs, toolchain: ports.stack.fingerprint(ports.root), envelope: { cwd: ".", env: { CI: "1" }, argv: "vitest run --reporter=json" } }).slice(0, 24);
 }
 
 // ---------------------------------------------------------------- verdict input
@@ -85,7 +84,7 @@ export function verdictInput(ports: Ports, st: State, w: WorkContract, facts: Fa
   for (const o of w.obligations) for (const p of Object.keys(o.baselineInputs ?? {})) testHashes[p] = inv.entries.get(p)?.blob ?? "";
   const humanPresent = att.human.length + att.concurrent.length + att.unexplained.length + att.mixed.filter((p) => w.keepOut.includes(p)).length > 0;
   const vetted = ports.project.hashes(Object.keys(w.vetted));
-  const recipeOnly = facts.reviewPaths.length > 0 && facts.reviewPaths.every(p => w.vetted[p] !== undefined && vetted[p] === w.vetted[p]);
+  const recipeOnly = facts.reviewPaths.length > 0 && facts.reviewPaths.every(p => Object.hasOwn(w.vetted, p) && vetted[p] === w.vetted[p]);
   const i: VerdictInput = {
     profile: w.profile, level: w.level, lane: w.lane,
     authorityAvailable: !isEditingProfile(w.profile) || routineAuthorized(w.grants, ports.clock.now()),

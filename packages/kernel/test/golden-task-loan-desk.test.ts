@@ -77,12 +77,16 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
     await call("findings", { h: h0, result: reviewResult(d(scaffoldCheck)) });
     const scaffoldFinish = await call("finish", { h: h0, subject: "Scaffold the starter" });
     assert.equal(d(scaffoldFinish).endpoint, "checked-local", JSON.stringify(scaffoldFinish.reasons));
+    assert.equal(readFileSync(join(root, "docs/asvs.md"), "utf8"),
+      readFileSync(join(import.meta.dirname, "../../../plugin/skills/tenet-starter-ts-web-api/template/docs/asvs.md"), "utf8"),
+      "scaffold and commit the exact scoped assurance inventory, not merely its source fixture");
+    assert.ok(git(root, "ls-files").split("\n").includes("docs/asvs.md"));
 
     // 2. A new Standard-lane task: the first real feature, built as the user's own first increment, per
     // tech-spec §12.2 ("the first plan item's own build step is what populates the first feature").
     const scope = [
       "server/migrations/0002_items_loans.sql", "server/src/features/loans/*", "server/src/app.ts", "server/src/server.ts", "shared/schemas.ts", "package.json", "tsconfig.json", "workload/*",
-      "server/test/helpers.ts", "server/test/migrate.test.ts", "server/test/restore.test.ts", "server/test/openapi-loans.test.ts", "server/test/prior-version.test.ts", "server/test/workload.test.ts", "server/test/bounded-browse.test.ts",
+      "server/test/helpers.ts", "server/test/migrate.test.ts", "server/test/restore.test.ts", "server/test/openapi-loans.test.ts", "server/test/prior-version.test.ts", "server/test/workload.test.ts", "server/test/bounded-browse.test.ts", "server/test/loan-authority.test.ts",
       "server/test/concurrent-reservation.test.ts", "server/test/concurrent-return.test.ts", "server/test/fixtures/*",
       "web/src/*", "server/test/e2e/*", "server/test/support/browser-server.ts", "journeys.json", "docs/a11y-checks.md", "docs/workload.md",
     ];
@@ -127,7 +131,7 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
     assert.equal(candidate.exit, 0, JSON.stringify(candidate));
     const suite = d(candidate).receipts.find((r: { obligation: string }) => r.obligation === "OB-suite");
     assert.equal(suite.status, "pass", JSON.stringify(suite));
-    assert.equal(suite.counts.executed, 116, "platform, feature, process-race and generated-contract cases all ran");
+    assert.equal(suite.counts.executed, 138, "platform, feature, process-race and generated-contract cases all ran");
     for (const id of ["OB-types", "OB-lint"]) {
       const receipt = d(candidate).receipts.find((r: { obligation: string }) => r.obligation === id);
       assert.equal(receipt?.status, "pass", `${id}: ${JSON.stringify(receipt)}`);
@@ -139,7 +143,15 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
 
     // 5. Synthetic review/architect/security results exercise the Deep-lane gate; no native analyst run
     // is observed here. Migrations raise reversibility/compatibility risk (TS §8.2's signal table).
-    await call("findings", { h, result: reviewResult(d(candidate)) });
+    const manifest = JSON.parse(readFileSync(d(candidate).review.manifest, "utf8"));
+    assert.deepEqual(manifest.attention.map((item: { path: string }) => item.path).sort(), ["package.json", "tsconfig.json"]);
+    assert.ok(manifest.attention.every((item: { marker: boolean; pattern: string }) => !item.marker && item.pattern === "test or build configuration"));
+    // The synthetic reviewer explicitly inspects the two declared infrastructure changes; no blanket attention acceptance.
+    const attention = manifest.attention.map((item: { id: string; path: string }) => ({
+      id: item.id, disposition: "accepted",
+      reason: item.path === "package.json" ? "The declared workload commands preserve existing checks and locked dependencies." : "The declared workload types join the existing strict typecheck.",
+    }));
+    await call("findings", { h, result: reviewResult(d(candidate), { attention }) });
     for (const analystRole of ["architect", "security"]) {
       const packet = await call("packet", { h, role: "analyst", analystRole, question: `Judge the ${analystRole} of this change.` });
       assert.equal(packet.exit, 0, JSON.stringify(packet));

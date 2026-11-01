@@ -29,6 +29,40 @@ describe("host harness (offline, against a fake copilot) [ENG-04]", () => {
     const obs = await runCopilot({ id: "slow", prompt: "x", cwd: scratch(), timeoutMs: 300 }, { bin: fake('[ "$1" = --version ] && exit 0; sleep 5'), outDir: scratch() });
     assert.equal(obs.timedOut, true);
     assert.equal(obs.signal, "SIGKILL");
+    assert.equal(obs.tuple.copilot, "unavailable (deadline exhausted)");
+  });
+
+  it("stops on a complete UTF-8 event split across stdout chunks without changing transcript bytes [AGT-05]", async () => {
+    const event = '{"type":"subagent.started","note":"caf\u00e9"}';
+    const bin = fake('[ "$1" = --version ] && exit 0\n'
+      + 'printf \'{"type":"subagent.started","note":"caf\\303\'\nsleep 0.1\nprintf \'\\251"}\\n\'\nsleep 30');
+    const obs = await runCopilot({
+      id: "split-utf8", prompt: "x", cwd: scratch(), timeoutMs: 2000,
+      stopWhen: line => line === event,
+    }, { bin, outDir: scratch() });
+    assert.deepEqual([obs.stopped, obs.timedOut, obs.signal], [true, false, "SIGKILL"]);
+    assert.deepEqual(readFileSync(obs.transcript), Buffer.from(`${event}\n`));
+    assert.ok(obs.durationMs < 2000);
+  });
+
+  it("bounds a stalled version probe without blocking an independent run [RSC-03]", async () => {
+    const probe = runCopilot({ id: "probe", prompt: "x", cwd: scratch(), timeoutMs: 500 },
+      { bin: fake('if [ "$1" = --version ]; then sleep 2; exit 0; fi\necho \'{"type":"done"}\''), outDir: scratch() });
+    const independent = runCopilot({ id: "independent", prompt: "x", cwd: scratch(), timeoutMs: 500 },
+      { bin: fake('[ "$1" = --version ] && exit 0\nsleep 0.1\necho \'{"type":"done"}\''), outDir: scratch() });
+    const [observed, other] = await Promise.all([probe, independent]);
+    assert.deepEqual([observed.exit, observed.timedOut, other.exit, other.timedOut], [0, false, 0, false]);
+    assert.equal(observed.tuple.copilot, "unavailable (timeout)");
+    assert.ok(observed.durationMs < 1000);
+    assert.ok(other.durationMs < 1000);
+  });
+
+  it("bounds version output and reports the limit without changing the run transcript [RSC-03]", async () => {
+    const obs = await runCopilot({ id: "version-output", prompt: "x", cwd: scratch(), timeoutMs: 2000 },
+      { bin: fake('if [ "$1" = --version ]; then head -c 1048577 /dev/zero; exit 0; fi\necho \'{"type":"done"}\''), outDir: scratch() });
+    assert.deepEqual([obs.exit, obs.timedOut], [0, false]);
+    assert.equal(obs.tuple.copilot, "unavailable (output limit)");
+    assert.equal(readFileSync(obs.transcript, "utf8"), '{"type":"done"}\n');
   });
 
   it("rejects an absent binary explicitly without publishing an observation", async () => {

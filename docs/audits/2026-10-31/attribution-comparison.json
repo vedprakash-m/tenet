@@ -1,0 +1,96 @@
+{
+  "comparisons": 134,
+  "inputMutation": false,
+  "callArgumentsAndResultsEqual": true,
+  "measurements": [
+    {
+      "paths": 1004,
+      "mode": 0,
+      "beforeMs": [
+        3.4947499999999962,
+        3.4708750000000066,
+        3.4128749999999997
+      ],
+      "afterMs": [
+        0.3261669999999981,
+        0.3163339999999977,
+        0.3667079999999885
+      ]
+    },
+    {
+      "paths": 1004,
+      "mode": 15,
+      "beforeMs": [
+        3.372458999999992,
+        3.2424999999999926,
+        3.0537909999999897
+      ],
+      "afterMs": [
+        0.48341699999998866,
+        0.40491699999999753,
+        0.43941600000000847
+      ]
+    },
+    {
+      "paths": 5004,
+      "mode": 0,
+      "beforeMs": [
+        68.75524999999999,
+        66.895084,
+        67.44129199999998
+      ],
+      "afterMs": [
+        1.716791999999998,
+        4.4723749999999995,
+        1.958250000000021
+      ]
+    },
+    {
+      "paths": 5004,
+      "mode": 15,
+      "beforeMs": [
+        40.513666,
+        27.009000000000015,
+        17.286958000000027
+      ],
+      "afterMs": [
+        1.8659579999999778,
+        1.8349999999999795,
+        1.7084999999999582
+      ]
+    },
+    {
+      "paths": 10004,
+      "mode": 0,
+      "beforeMs": [
+        109.76191700000004,
+        114.066959,
+        114.02758400000005
+      ],
+      "afterMs": [
+        3.045167000000106,
+        3.438625000000002,
+        2.874125000000049
+      ]
+    },
+    {
+      "paths": 10004,
+      "mode": 15,
+      "beforeMs": [
+        78.23654199999987,
+        68.25475000000006,
+        68.50841700000001
+      ],
+      "afterMs": [
+        3.5348750000000564,
+        3.7911669999998594,
+        3.5313330000001315
+      ]
+    }
+  ],
+  "limits": [
+    "Synthetic port inventories based on a real work record, not a filesystem benchmark or qualification",
+    "Ordering, declared/human/mixed/keep-out/duplicate inclusion and inherited filenames are compared",
+    "No port calls, candidate identity, authority or attribution semantics are added or removed"
+  ]
+}

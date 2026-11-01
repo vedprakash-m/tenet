@@ -2,7 +2,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_TEST, callWithEnvelopeConsent, project } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, callWithEnvelopeConsent, project } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
@@ -41,6 +41,27 @@ describe("active work time [WRK-08]", () => {
     await r.call("check", { h, stage: "baseline" });
     assert.equal(r.budget().activeMinutesTotal, 13);
     assert.equal(r.budget().activeMinutesSinceCheckIn, 0, "answering the first-run execution consent is a check-in");
+  });
+
+  it("refuses after a successful-call post-call gap reaches the lane boundary, but not below it", async () => {
+    const r = rig();
+    const h = (await open(r)).handle!;
+    await r.call("decide", { h, kind: "basis", propose: BASIS });
+    r.p.write("src/greet.test.ts", GREET_TEST);
+    r.p.write("src/greet.ts", GREET_IMPL);
+    await r.call("check", { h, stage: "baseline" });
+    r.c.advance(15 - 1 / 60_000);
+    const before = r.budget().checksLaunched;
+    const below = await r.call("check", { h, stage: "candidate", touched: ["src/greet.ts"], targeted: true });
+    assert.equal(below.exit, 0, JSON.stringify(below));
+    assert.ok(r.budget().checksLaunched > before, "below-bound check launches");
+    assert.equal(r.budget().activeMinutesSinceCheckIn, 15 - 1 / 60_000);
+    r.c.advance(1 / 60_000);
+    const beforeRefusal = r.budget();
+    const refused = await r.call("check", { h, stage: "candidate", touched: ["src/greet.ts"], again: true });
+    assert.equal(refused.exit, 2, JSON.stringify(refused));
+    assert.ok(refused.reasons.some((x) => x.code === "budget-exhausted" && /15 minutes/.test(x.message)), JSON.stringify(refused.reasons));
+    assert.deepEqual(r.budget(), beforeRefusal, "boundary refusal does not launch a check or rewrite counters");
   });
 
   it("does not count the wait after a question, and a question starts a new interval", async () => {

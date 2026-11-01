@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { normalizePlaywright, playwrightArgv } from "../src/adapters/playwright.ts";
+import { createStack } from "../src/adapters/node-ts.ts";
 
 const result = (status: string, errors: Array<{ message?: string }> = []) => ({ status, errors });
 const spec = (title: string, ok: boolean, results: Array<ReturnType<typeof result>>) => ({
@@ -100,6 +101,33 @@ describe("Playwright report normalization [EVD-13]", () => {
     assert.ok(normalizePlaywright(report([suite("a.spec.ts", [flaky])], { flaky: 1 })).invalid);
     const expectedFailure = spec("one", true, [result("failed")]);
     assert.ok(normalizePlaywright(report([suite("a.spec.ts", [expectedFailure])], { expected: 1 })).invalid);
+  });
+
+  it("does not accept a pass when the test expected status says it should be skipped [EVD-05]", () => {
+    const raw = JSON.parse(report([suite("a.spec.ts", [spec("one", true, [result("passed")])])], { expected: 1 }));
+    raw.suites[0].specs[0].tests[0].expectedStatus = "skipped";
+    const normalized = normalizePlaywright(JSON.stringify(raw));
+    assert.equal(normalized.invalid, "the test summary and its execution disagree");
+    assert.equal(normalized.files.size, 0);
+    assert.equal(normalized.discovered, 0);
+    const skipped = JSON.parse(report([suite("a.spec.ts", [spec("one", true, [result("skipped")])])], { skipped: 1 }));
+    skipped.suites[0].specs[0].tests[0].expectedStatus = "skipped";
+    const valid = normalizePlaywright(JSON.stringify(skipped));
+    assert.equal(valid.invalid, undefined);
+    assert.equal(valid.files.get("a.spec.ts")!.skipped, 1);
+    assert.equal(valid.files.get("a.spec.ts")!.executed, 0);
+  });
+
+  it("does not accept a passed result carrying an error [EVD-05]", () => {
+    const empty = normalizePlaywright(report([suite("a.spec.ts", [spec("one", true, [result("passed", [])])])], { expected: 1 }));
+    assert.equal(empty.invalid, undefined);
+    assert.equal(empty.files.get("a.spec.ts")?.passed, 1);
+    const raw = report([suite("a.spec.ts", [spec("one", true, [result("passed", [{ message: "" }])])])], { expected: 1 });
+    assert.equal(normalizePlaywright(raw).invalid, "the test summary and its execution disagree");
+  });
+
+  it("does not reuse the adapter identity that accepted contradictory skip reports [EVD-03]", () => {
+    assert.notEqual(createStack().adapterVersion(), "node-ts@11");
   });
 
   it("rejects duplicate identities, global errors and inconsistent totals [EVD-05]", () => {

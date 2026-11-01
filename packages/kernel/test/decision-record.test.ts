@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { cleanup } from "./helpers.ts";
-import { project } from "./support/fixture.ts";
+import { BASIS, project } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -15,7 +15,7 @@ const d = (r: { data?: unknown }) => r.data as Record<string, any>;
 const BODY = { title: "Use SQLite", context: "One small server, no ops team.", decision: "Store data in SQLite.", consequences: "No horizontal scaling.", alternatives: [{ option: "Postgres", why: "needs a server to run" }] };
 const open = async (p: Project) => (await p.call("open", { profile: "plan", request: "decide the store" })).handle!;
 
-describe("recording a decision [INT-10, INT-02]", () => {
+describe("recording a decision [INT-09, INT-10, INT-02]", () => {
   it("needs the user's own words, then records it with a stable DEC ID, a summary element and the full record", async () => {
     const p = fresh();
     const h = await open(p);
@@ -66,13 +66,20 @@ describe("recording a decision [INT-10, INT-02]", () => {
 
   it("appears in full in INTENT.md once the intent is adopted", async () => {
     const p = fresh();
-    const h = await open(p);
-    await p.call("decide", { h, kind: "decision-record", propose: BODY, quote: "ok" });
+    const h = (await p.call("open", { profile: "feature", request: "decide the store", scopePaths: ["src/greet.ts"], lane: "quick" })).handle!;
+    const basis = await p.call("decide", { h, kind: "basis", propose: BASIS });
+    assert.equal(basis.exit, 0, JSON.stringify(basis));
+    const affectedId = state(p).project.intent.elements.find((e) => e.kind === "requirement")!.id;
+    const propose = { ...BODY, links: [affectedId] };
+    await p.call("decide", { h, kind: "decision-record", propose, quote: "ok" });
     await p.call("decide", { h, kind: "adopt", target: "intent" });
     await p.call("decide", { h, kind: "adopt", target: "intent", answers: { "adopt-confirm": "confirm" } });
     const text = readFileSync(join(p.root, "INTENT.md"), "utf8");
     assert.match(text, /Use SQLite/);
+    assert.match(text, /One small server, no ops team/);
+    assert.match(text, /Store data in SQLite/);
     assert.match(text, /No horizontal scaling/);
     assert.match(text, /Postgres/);
+    assert.match(text, new RegExp(`Affects: ${affectedId}`));
   });
 });

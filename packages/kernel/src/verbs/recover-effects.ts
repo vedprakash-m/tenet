@@ -4,6 +4,7 @@ import { adopted, type AdoptOp } from "../decisions/adopt.ts";
 import { completeForget } from "../decisions/forget.ts";
 import { restoreFiles, type DependencyOp } from "../decisions/dependency.ts";
 import { scaffolded, type ScaffoldOp } from "../decisions/scaffold.ts";
+import { recordedHardening, type HardeningOp } from "../decisions/hardening.ts";
 import type { UndoOp } from "../decisions/undo.ts";
 import { recordCommit, replayCommit } from "../core/attribution.ts";
 import { adoptionReplayNeeded } from "../core/state.ts";
@@ -176,6 +177,22 @@ async function dependency(r: Recovery, u: Unresolved) {
   }
 }
 
+async function hardening(r: Recovery, u: Unresolved) {
+  const op = u.op as HardeningOp;
+  let now: string | null;
+  try { now = r.ports.project.hashes([op.file])[op.file] ?? null; }
+  catch { r.uncertain.push("the interrupted hardening write has an unreadable postcondition; it remains unresolved"); return; }
+  if (now === op.after) {
+    const w = r.state.work[op.work];
+    if (w) put(r, recordedHardening(w, op));
+    r.tx.result("hardening", u.id, { completed: true });
+    r.completed.push("the hardening block was written before its result was recorded");
+  } else if (now === op.before) {
+    r.tx.result("hardening", u.id, { completed: false });
+    r.completed.push("an interrupted hardening write did not happen");
+  } else r.uncertain.push("the interrupted hardening write has an unknown postcondition; the file was left untouched");
+}
+
 async function branch(r: Recovery, u: Unresolved) {
   const op = u.op as { work: string; from: string | null; to: string };
   const now = (await r.ports.git.probe()).branch;
@@ -193,7 +210,7 @@ async function branch(r: Recovery, u: Unresolved) {
 }
 
 export const SETTLE: Record<string, (r: Recovery, u: Unresolved) => Promise<void>> = {
-  "index-sync": indexSync, commit, integration, undo, scaffold, adopt, dependency, branch,
+  "index-sync": indexSync, commit, integration, undo, scaffold, adopt, dependency, hardening, branch,
   async forget(r, u) {
     r.state = completeForget(r.ports, r.tx, r.state, (u.op as { lesson: string }).lesson).state;
     r.completed.push("an interrupted forget was finished");
@@ -204,9 +221,16 @@ export const SETTLE: Record<string, (r: Recovery, u: Unresolved) => Promise<void
 export const PUBLISH: Record<string, (r: Recovery, op: unknown, out: Outcome) => void> = {
   scaffold(r, o) {
     const op = o as ScaffoldOp, w = r.state.work[op.work];
-    if (!w || Object.keys(op.expected).every(path => path in w.vetted)) return;
+    if (!w || Object.keys(op.expected).every(path => Object.hasOwn(w.vetted, path))) return;
     applyScaffold(r, w, op);
     r.completed.push("the scaffold was recorded as done but not yet in the contract; it is now");
+  },
+  hardening(r, o, out) {
+    if (!out.completed) return;
+    const op = o as HardeningOp, w = r.state.work[op.work];
+    if (!w || (w.hardening?.block === op.block && w.hardening.hash === op.hash)) return;
+    put(r, recordedHardening(w, op));
+    r.completed.push("the hardening write was recorded but not yet in its contract; it is now");
   },
   adopt(r, o) {
     const op = o as AdoptOp;

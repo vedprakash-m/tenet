@@ -1,0 +1,135 @@
+{
+  "date": "2026-10-31",
+  "status": "locally-validated-uncommitted-unqualified",
+  "baseCommit": "28555763ee720b7b4f33c5380107c93b010afc98",
+  "branch": "main",
+  "source": {
+    "files": 389,
+    "sha256": "12ca9790fd6cee2d237391d26e6186562fc45275826faef09e183feb6056ca4c",
+    "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path + NUL + bytes + NUL."
+  },
+  "artifact": {
+    "bytes": 776010,
+    "sha256": "347f8edabf0619b756788ff0a37e5e188014dfcd63436e2efe9fe7f2d99c2f1d",
+    "changed": false,
+    "priorDualRuntimeBuiltUat": "takeover-validation.json; unchanged shipped artifact, not evidence for the host-tool repair"
+  },
+  "cancellation": {
+    "files": ["tools/host/copilot-cli.ts", "packages/kernel/test/host-cli.test.ts"],
+    "realFixture": "A POSIX shell splits a two-byte UTF-8 character between writes, emits a stop event, then starts a 30-second sleep.",
+    "redBeforeDecodingRepair": {
+      "exit": 1,
+      "actual": { "stopped": false, "timedOut": true, "signal": "SIGKILL" },
+      "expected": { "stopped": true, "timedOut": false, "signal": "SIGKILL" },
+      "log": "Current session files/process-utf8-red.log",
+      "sha256": "f58351eedd248129d9f646b84bb3a890e3b0c1a48e6d34d95db7460dd5d6df68"
+    },
+    "redWithDecodingRepairOnly": {
+      "exit": 1,
+      "actual": { "stopped": true, "timedOut": true, "signal": "SIGKILL" },
+      "log": "Current session files/process-exit-race-red.log",
+      "sha256": "3687fdc33eceef95420bf77e76cfc18cc27e44c7a63ab3c63a6672f9b1fde56b"
+    },
+    "repair": "Incremental UTF-8 decoding for stop predicates, preserving raw transcript bytes; re-signal the owned process group at leader exit after stop/timeout so a racing fork cannot retain the pipes until the watchdog.",
+    "green": {
+      "command": "node --test --test-name-pattern='offline|complete UTF-8 event split' packages/kernel/test/host-cli.test.ts packages/kernel/test/host-sp08.test.ts",
+      "exit": 0,
+      "tests": 38,
+      "suites": 2,
+      "pass": 38,
+      "fail": 0,
+      "skipped": 0,
+      "log": "Current session files/process-final-focused.log",
+      "sha256": "058e4d49ed936d8521e5ac88b84ce229e1e16aa8eedab04696174b20dd96beae"
+    },
+    "repetition": {
+      "runs": 30,
+      "commandEach": "node --test --test-name-pattern='complete UTF-8 event split|first output line' packages/kernel/test/host-cli.test.ts packages/kernel/test/host-sp08.test.ts",
+      "failedRuns": 0,
+      "log": "Current session files/process-stop-repetitions.log",
+      "sha256": "dbc05c47dab78ef14b951dd68e79e9e4f7a1242732c670725f8d03bc4043496d"
+    },
+    "unchanged": ["existing 20-second SP-08 watchdog", "existing under-10-second stop assertion", "timeout classification", "raw transcript capture", "live-run budget and authorization"],
+    "limits": ["Local real-process reproduction of the remote symptom is not an exact-new-source remote CI pass.", "This is an offline fake-binary control, not a Copilot native-host observation.", "Post-run synchronous version probes still have no explicit timeout; that adjacent boundedness gap is not claimed repaired."]
+  },
+  "ci": {
+    "command": "npm run ci",
+    "node": "v26.3.0",
+    "exit": 0,
+    "tests": 1259,
+    "suites": 204,
+    "pass": 1259,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "log": "Current session files/process-final-ci.log",
+    "sha256": "b3bbeebf65387957175e6f733cd654bd7b4181108db9b7ef0118b5cc557c98c2"
+  },
+  "postAuthorityWorkload": {
+    "source": "Unchanged current starter template with the complete current loan fixture overlay; copy .txt fixture bytes with only the filename suffix removed.",
+    "protocol": {
+      "warmupMs": 30000,
+      "measurementMs": 120000,
+      "clients": 20,
+      "maximumHttpConcurrency": 20,
+      "users": 2000,
+      "items": 10000,
+      "loans": 50000,
+      "minimumSuccessfulSamples": 5000,
+      "memoryCeilingBytes": 300000000,
+      "latencyP95CeilingMs": 200,
+      "eventLoopP95CeilingMs": 200
+    },
+    "current": {
+      "command": "npm run --silent workload",
+      "node": "v26.3.0",
+      "exit": 1,
+      "referencePass": false,
+      "reasons": ["server-memory-target-failed"],
+      "successfulSamples": 8756,
+      "listReserveReturnP95Ms": [17.078291999998328, 16.77187500000582, 17.63629100000253],
+      "peakRssBytes": 326828032,
+      "eventLoopP95Ms": 14.524415,
+      "successfulOneWinnerFourConflictBursts": 12,
+      "successfulSignInProbes": 48,
+      "expectedBusyResponses": 4,
+      "unexpectedErrors": 0,
+      "duplicateActiveItems": 0,
+      "foreignKeyViolations": 0,
+      "ownedProcessesExitedAndDatabaseRemoved": true,
+      "report": "Current session files/loan-current-workload.json",
+      "sha256": "73e3b3ff6bf59cc3fd45c30d7305b8969c519d25b67715d6e5b4ef5a074b1268"
+    },
+    "minimum": {
+      "command": "npm exec --yes --package=node@22.12.0 -- node --experimental-strip-types workload/run.ts",
+      "node": "v22.12.0",
+      "exit": 0,
+      "referencePass": true,
+      "reasons": [],
+      "successfulSamples": 8763,
+      "listReserveReturnP95Ms": [17.135625000009895, 16.31929100000707, 17.07208299999911],
+      "peakRssBytes": 298844160,
+      "eventLoopP95Ms": 14.491647,
+      "successfulOneWinnerFourConflictBursts": 12,
+      "successfulSignInProbes": 48,
+      "expectedBusyResponses": 4,
+      "unexpectedErrors": 0,
+      "duplicateActiveItems": 0,
+      "foreignKeyViolations": 0,
+      "ownedProcessesExitedAndDatabaseRemoved": true,
+      "report": "Current session files/loan-minimum-workload.json",
+      "sha256": "2b1b04bb68acd44099ca4b174143d8bbf07b553fd895f5e7bb7108c0e4a56a4d"
+    },
+    "dependencyRestoration": "The initial scratch command failed with missing modules, then npm ci restored its existing locked dependencies. The minimum-runtime probe failed with native ABI 147 versus 127; rebuild only better-sqlite3 under Node 22.12 before that measurement. No repository manifest or lockfile changed.",
+    "limits": ["One full isolated local observation per runtime, not repeatability or qualification.", "Machine memory is 38654705664 bytes, not the specified reference hardware.", "Minimum-runtime headroom is only 1155840 bytes; no whole-lifetime or cross-runtime memory guarantee.", "No heap flags, forced GC, crypto/quota/concurrency changes, dropped samples or threshold relaxation.", "No kernel workload receipt, trend or attention consumer is added."]
+  },
+  "scope": {
+    "inheritedChangesPreserved": true,
+    "newBranchOrWorktree": false,
+    "commitOrPush": false,
+    "budgetChanges": false,
+    "targetProtocolActivation": false,
+    "nativeHostOrHumanCampaign": false,
+    "entirePlanImplemented": false
+  }
+}

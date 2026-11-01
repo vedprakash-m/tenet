@@ -2,7 +2,7 @@
 import { randomUUID } from "node:crypto";
 import type { FastifyServerOptions } from "fastify";
 
-export const REDACT = ["req.headers.cookie", "req.headers.authorization", "req.headers['x-csrf-token']", "res.headers['set-cookie']", "*.password", "*.currentPassword", "*.newPassword", "*.csrfToken"];
+export const REDACT = ["req.headers.cookie", "req.headers.authorization", "req.headers['x-csrf-token']", "res.headers['set-cookie']", "password", "currentPassword", "newPassword", "csrfToken", "*.password", "*.currentPassword", "*.newPassword", "*.csrfToken"];
 
 export function loggerOptions(level: string): FastifyServerOptions["logger"] {
   return level === "silent" ? false : { level, redact: { paths: REDACT, censor: "[redacted]" } };

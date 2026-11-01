@@ -2,6 +2,7 @@
 // revoked on password change; 8-hour idle and 7-day absolute expiry; sign-out deletes the row; an invalid session is a 401.
 import { createHmac, randomBytes } from "node:crypto";
 import type { Db } from "../db.ts";
+import { AppError } from "../errors.ts";
 import { safeEqual as same } from "../safe-equal.ts";
 import { findUserById } from "../users.repository.ts";
 import type { UserRow } from "../users.repository.ts";
@@ -31,11 +32,24 @@ function inspectSession(db: Db, cookie: string | undefined, secret: string, now:
   if (dot < 1) return undefined;
   const id = cookie.slice(0, dot);
   if (!same(cookie.slice(dot + 1), mac(id, secret))) return undefined;
+  return inspectSessionId(db, id, now);
+}
+
+function inspectSessionId(db: Db, id: string, now: number): Live | { expiredId: string } | undefined {
   const session = findSession(db, id);
   if (!session) return undefined;
   if (now >= session.expires_at || now - session.last_seen_at >= IDLE_MS) return { expiredId: id };
   const user = findUserById(db, session.user_id);
   return user ? { session, user } : undefined;
+}
+
+/** Revalidate an earlier trusted actor inside a mutation's immediate transaction, including every busy retry. */
+export function refreshActor(db: Db, actor: Live, now: number): Live {
+  const found = inspectSessionId(db, actor.session.id, now);
+  if (!found || "expiredId" in found || found.user.id !== actor.user.id) {
+    throw new AppError(401, "unauthenticated", "Sign in to continue.");
+  }
+  return found;
 }
 
 /** Admission lookup only: no touch, deletion or authority carried into a handler. */

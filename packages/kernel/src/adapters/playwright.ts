@@ -71,6 +71,10 @@ function countSpec(counts: Counts, spec: PwSpec, title: string): string | undefi
     if (test.results.length !== 1 || test.status === "flaky" || test.expectedStatus === "failed")
       return "retries and expected failures cannot establish passing behavior";
     const observed = test.results[0]!;
+    if (observed.status === "passed" && observed.errors?.length)
+      return "the test summary and its execution disagree";
+    if (observed.status === "passed" && test.expectedStatus === "skipped")
+      return "the test summary and its execution disagree";
     if (observed.status === "interrupted") return "the test was interrupted";
     const status = observed.status === "timedOut" ? "failed" : observed.status;
     const expected = status === "skipped" ? "skipped" : status === "passed" ? "expected" : "unexpected";

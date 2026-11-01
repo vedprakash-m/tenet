@@ -1,0 +1,185 @@
+{
+  "date": "2026-10-31",
+  "status": "locally-validated-uncommitted-unqualified",
+  "baseCommit": "28555763ee720b7b4f33c5380107c93b010afc98",
+  "branch": "main",
+  "scope": {
+    "inheritedChangesPreserved": true,
+    "olderWorktreesPreserved": 4,
+    "newBranchOrWorktree": false,
+    "budgetChanges": false,
+    "targetProtocolActivation": false,
+    "commitOrPush": false,
+    "nativeHostOrHumanCampaign": false,
+    "entirePlanImplemented": false
+  },
+  "source": {
+    "files": 389,
+    "sha256": "14318e8191fbe45b1e3614ca9b8c143d10fd209059d3ca272924738f2971c958",
+    "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path + NUL + bytes + NUL for each file."
+  },
+  "artifact": {
+    "bytes": 776010,
+    "ceilingBytes": 819200,
+    "sha256": "347f8edabf0619b756788ff0a37e5e188014dfcd63436e2efe9fe7f2d99c2f1d"
+  },
+  "ci": {
+    "command": "npm run ci",
+    "node": "v26.3.0",
+    "inheritedBaseline": { "tests": 1257, "suites": 204, "pass": 1257, "fail": 0, "skipped": 0 },
+    "final": { "exit": 0, "tests": 1258, "suites": 204, "pass": 1258, "fail": 0, "skipped": 0, "cancelled": 0, "todo": 0 },
+    "gates": [
+      "typecheck",
+      "architecture/skills/quality lints",
+      "M0 structural coverage",
+      "bundle build",
+      "complete payload integrity",
+      "same-source repeat builds",
+      "all tests"
+    ],
+    "log": {
+      "storage": "Current session files/takeover-final-ci.log",
+      "sha256": "62ede3eb143c064986f02a26056e1fda49b0bb423f5ecbde2101ac789819ebb2"
+    }
+  },
+  "privateWriteRepair": {
+    "requirements": ["CON-04", "SEC-06"],
+    "red": {
+      "command": "node --test --test-name-pattern='oversized artifact bytes' packages/kernel/test/store-boundary.test.ts",
+      "exit": 1,
+      "tests": 1,
+      "fail": 1,
+      "symptom": "Missing expected exception: oversized multibyte artifact publication returned success and replaced existing leaf bytes.",
+      "log": {
+        "storage": "Current session files/takeover-artifact-red.log",
+        "sha256": "f1ea5e80a6828755c1840571f4228d23361c907e0366cf6717a2c5e7dabb08f8"
+      }
+    },
+    "green": {
+      "command": "node --test packages/kernel/test/store-boundary.test.ts packages/kernel/test/store.test.ts packages/kernel/test/store-crash.test.ts",
+      "exit": 0,
+      "tests": 80,
+      "suites": 5,
+      "pass": 80,
+      "fail": 0,
+      "skipped": 0,
+      "log": {
+        "storage": "Current session files/takeover-store.log",
+        "sha256": "4ec6a4e68382f86bf81e2cf30dedd7f83819395679c12b0616045e7410135927"
+      }
+    },
+    "threshold": {
+      "bytes": 52428800,
+      "exactBoundAcceptedWithMatchingContent": true,
+      "overBoundExistingLeafUnchanged": true,
+      "overBoundAbsentLeafNotCreated": true,
+      "counting": "Buffer.byteLength(data, utf8), before open/truncate"
+    },
+    "unchanged": ["no-follow descriptor admission", "regular-file check", "permissions", "fsync", "publication order", "read bound"]
+  },
+  "capacity": {
+    "store": { "beforeTakeoverRepair": 25581, "after": 25706, "ceiling": 25920, "free": 214 },
+    "central": { "after": 241647, "ceiling": 241805, "free": 158 },
+    "schemas": { "after": 26404, "ceiling": 26899, "free": 495 },
+    "accounting": { "after": 8362, "ceiling": 8640, "free": 278 },
+    "git": { "after": 37801, "ceiling": 37843, "free": 42 },
+    "intentCandidate": {
+      "centralBefore": 241647,
+      "centralCandidate": 241715,
+      "growth": 68,
+      "focusedTests": 119,
+      "focusedPass": 119,
+      "disposition": "Removed candidate helper, caller changes and its two candidate-only tests; original caller assembly retained."
+    },
+    "completeTargetFitDemonstrated": false
+  },
+  "builtUat": {
+    "current": {
+      "command": "node tools/uat/uat.mjs",
+      "node": "v26.3.0",
+      "exit": 0,
+      "observations": 152,
+      "evidence": {
+        "storage": "Current session files/takeover-uat-current.json",
+        "sha256": "0c7e798307d04b712292291a807340786cf01de6f9e9a78700bc3cc12752a754"
+      }
+    },
+    "minimum": {
+      "command": "npm exec --yes --package=node@22.12.0 -- node tools/uat/uat.mjs",
+      "node": "v22.12.0",
+      "exit": 0,
+      "observations": 152,
+      "evidence": {
+        "storage": "Current session files/takeover-uat-minimum.json",
+        "sha256": "3549d4d279268c199331fd51efe0569da900ee78592a805d6f17676e7814a762"
+      }
+    },
+    "featureCurrent": {
+      "command": "TENET_TEST_BUNDLE=<built bundle> node --test packages/kernel/test/starter.test.ts packages/kernel/test/golden-task-loan-desk.test.ts",
+      "node": "v26.3.0",
+      "exit": 0,
+      "tests": 3,
+      "pass": 3,
+      "neutral": { "app": 101, "browser": 12 },
+      "evolved": { "app": 133, "browser": 16 },
+      "log": {
+        "storage": "Current session files/takeover-feature-current.log",
+        "sha256": "b9b3d4e2e2c8036ec9c0d319b2329250c80f8592fd3060ce5b5022b63a37b25e"
+      }
+    },
+    "featureMinimum": {
+      "command": "TENET_TEST_BUNDLE=<built bundle> npm exec --yes --package=node@22.12.0 -- node --experimental-strip-types --test packages/kernel/test/starter.test.ts packages/kernel/test/golden-task-loan-desk.test.ts",
+      "node": "v22.12.0",
+      "exit": 0,
+      "tests": 3,
+      "pass": 3,
+      "neutral": { "app": 101, "browser": 12 },
+      "evolved": { "app": 133, "browser": 16 },
+      "log": {
+        "storage": "Current session files/takeover-feature-minimum.log",
+        "sha256": "c7609e272e34db015e275f4b9a164c038624a4fe2e96138865b129cf914de03e"
+      }
+    },
+    "limits": "Real scratch repositories and application/browser processes; synthetic Reviewer/Analyst submissions. Not native-host observations, per-feature oversized-write built reproduction, or qualification."
+  },
+  "coverage": {
+    "milestones": {
+      "M0": { "musts": 34, "mapped": 30, "host": 4, "unmapped": 0 },
+      "A": { "musts": 100, "mapped": 90, "host": 9, "unmapped": 1 },
+      "B": { "musts": 158, "mapped": 113, "host": 13, "unmapped": 32 },
+      "R1": { "musts": 181, "mapped": 115, "host": 16, "unmapped": 50 }
+    },
+    "integrityErrors": 0,
+    "semanticLedgerRecords": 0,
+    "qualifiedRequirements": 0,
+    "dueShoulds": 19,
+    "openShouldDispositions": 19,
+    "r1StructuralGate": "fails for 50 unmapped Musts",
+    "limit": "Tag mapping is not semantic completion; historical working-inventory recommendations remain unapproved."
+  },
+  "remote": {
+    "run": 41177820140,
+    "url": "https://github.com/vedprakash-m/tenet/actions/runs/41177820140",
+    "headSha": "28555763ee720b7b4f33c5380107c93b010afc98",
+    "conclusion": "failure",
+    "jobs": { "ubuntu": "success", "windows": "success", "macos": "failure" },
+    "macosFailures": [
+      "Both five-process loan return cases returned five busy/503 results and no winner.",
+      "Offline stream cancellation returned stopped=true and timedOut=true with SIGKILL."
+    ],
+    "isolatedLocalStopRepetitions": { "runs": 20, "pass": 20, "fail": 0 },
+    "rootCause": "unproven",
+    "repaired": false,
+    "logStorage": "Current session files/takeover-remote.log",
+    "latestUncommittedSourceRemotelyValidated": false
+  },
+  "remaining": [
+    "Complete measured target replacement fit within all fixed owners.",
+    "Final concrete configuration/migration/reconfirmation/shared/reconstruction/sealed contract review and sign-off.",
+    "Complete all actual producer, consumer, recovery, retention and quality obligations.",
+    "Semantic Must/AC acceptance and individual Should dispositions.",
+    "Current-runtime RSS/workload consumers and reference-hardware qualification.",
+    "Separately authorized exact-host, account, evaluation and human campaigns.",
+    "Independent clean source/dependency rebuild, installed lifecycle, notices/privacy/provenance and release approval."
+  ]
+}

@@ -304,13 +304,14 @@ describe("private store boundaries", () => {
     assert.deepEqual(readFileSync(path), bytes);
   });
   for (const operation of ["state", "marker", "log"] as const) {
-    for (const mode of ["store-overwrite", "short", "metadata-only"] as const) {
-      it(`${mode === "short" ? "accepts stable short reads of" : mode === "metadata-only" ? "accepts permission-only metadata changes to" : "refuses concurrent same-size changes to"} private ${operation} [CON-03, CON-04, SEC-06]`, async () => {
+    for (const mode of ["store-overwrite", "restored-mtime", "short", "metadata-only"] as const) {
+      it(`${mode === "short" ? "accepts stable short reads of" : mode === "metadata-only" ? "accepts permission-only metadata changes to" : mode === "restored-mtime" ? "refuses stale bytes after a same-size edit restores mtime on" : "refuses concurrent same-size changes to"} private ${operation} [CON-03, CON-04, SEC-06]`, async () => {
         const root = fresh(), store = await initState(root);
         if (operation === "log") await store.transaction("test", async tx => tx.intent("commit", "c1", { note: "a" }));
         const path = join(root, ".tenet", operation), before = readFileSync(path, "utf8");
+        if (mode === "restored-mtime") utimesSync(path, 1, 1);
         const result = JSON.parse(execFileSync(process.execPath, [join(import.meta.dirname, "fixtures/race-project-read.ts"), root, mode, operation], { encoding: "utf8" }));
-        if (mode !== "store-overwrite") {
+        if (mode === "short" || mode === "metadata-only") {
           assert.equal(result.value, 1, JSON.stringify(result));
           assert.equal(readFileSync(path, "utf8"), before);
         } else {
@@ -354,6 +355,24 @@ describe("private store boundaries", () => {
     }), /unsupported|bound|large|storage/i);
     assert.equal(existsSync(path), false);
     assert.equal(store.read()!.state.revision, 1);
+  });
+  it("refuses oversized artifact bytes before creating or truncating a private leaf [CON-04, SEC-06]", async () => {
+    const root = fresh(), store = await initState(root), dir = store.tempDir("run-artifact-bound");
+    try {
+      const existing = join(dir, "existing.json"), absent = join(dir, "new.json");
+      const before = '{"note":"preserve this artifact"}';
+      writeFileSync(existing, before);
+      const content = "\u00e9".repeat(25 * 1024 * 1024 + 1);
+      for (const name of ["existing.json", "new.json"]) {
+        assert.throws(() => store.writeArtifact(dir, name, content), /unsupported|bound|large/i);
+        assert.equal(readFileSync(existing, "utf8"), before);
+        assert.equal(existsSync(absent), false);
+      }
+      const exact = content.slice(0, -1);
+      assert.equal(store.writeArtifact(dir, "existing.json", exact), existing);
+      assert.equal(statSync(existing).size, 50 * 1024 * 1024);
+      assert.equal(readFileSync(existing, "utf8"), exact);
+    } finally { rmSync(join(dir, ".."), { recursive: true, force: true }); }
   });
   it("verifies blob identities and distinguishes missing blobs from corrupt or non-file records [CON-04, SEC-06]", async () => {
     const root = fresh(), store = await initState(root), hash = store.putBlob("original");

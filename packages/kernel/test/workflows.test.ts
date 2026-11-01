@@ -445,4 +445,34 @@ describe("parking, resuming and non-editing work", () => {
     assert.ok(f.reasons.some((r) => r.code === "review-missing"));
     void reviewResult;
   });
+
+  it("owner acceptance preserves missing and failed check evidence [EVD-06]", async () => {
+    for (const failed of [false, true]) {
+      const p = fresh();
+      const opened = await p.call("open", {
+        profile: "feature", request: "add a greeting", scopePaths: ["src/greet.ts"], lane: "quick",
+      });
+      const h = opened.handle!;
+      await p.call("decide", { h, kind: "basis", propose: BASIS });
+      p.write("src/greet.test.ts", GREET_TEST);
+      await p.call("check", { h, stage: "baseline" });
+      if (failed) {
+        p.write("src/greet.ts", "export const greet = (_n: string): string => 'wrong';\n");
+        await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+      }
+      const before = await p.call("inspect", { view: "why", h });
+      const receipts = structuredClone(Object.values(p.ports().store.read()!.state.work)[0]!.receipts);
+      const accepted = await p.call("decide", { h, kind: "acceptance", target: "accepted" });
+      assert.equal(accepted.exit, 0, JSON.stringify(accepted));
+      const after = await p.call("inspect", { view: "why", h });
+      assert.notEqual(d(before).endpoint, "checked-local");
+      assert.equal(d(after).endpoint, d(before).endpoint);
+      assert.deepEqual(after.reasons, before.reasons);
+      const work = Object.values(p.ports().store.read()!.state.work)[0]!;
+      assert.equal(work.acceptance, "accepted");
+      assert.deepEqual(work.receipts, receipts, "acceptance cannot issue or rewrite check evidence");
+      if (failed) assert.ok(receipts.some(receipt => receipt.stage === "candidate" && receipt.status === "fail"));
+      else assert.ok(!receipts.some(receipt => receipt.stage === "candidate"));
+    }
+  });
 });

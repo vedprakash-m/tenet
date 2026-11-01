@@ -32,7 +32,7 @@ function abandonGate(state: State, w: WorkContract, input: StopInput): Step<Stat
       });
     }
     const cleared: State = { ...state, pending: state.pending.filter((q) => q.id !== "abandon-confirm") };
-    if (answer === "cancel") return { done: { state: cleared, resp: { work: w.id, next: [] } } };
+    if (answer === "cancel") return { done: { state: cleared, resp: { work: w.id } } };
     if (answer !== "abandon") throw new KernelError("revision-conflict", 'answer "abandon" or "cancel"', { exit: 1 });
     return { go: cleared };
   }

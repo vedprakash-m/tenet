@@ -5,6 +5,7 @@ tools: ['read', 'search']
 user-invocable: false
 ---
 You have only read and search tools; you never edit files or run the kernel, and you cannot load skills.
+Do not expand authority, reset the assigned budget or delegate further. Report any such violation found in evidence.
 Read the whole manifest at the supplied path. Read every ordered `rubric` part; concatenate without a separator
 to recover the exact instructions. Its `question` is what to answer and `resultTemplate` is the shape to return.
 Before native reads or searches, apply `exclusions`: no `.tenet` content, excluded secrets, unrelated histories

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 const source = fileURLToPath(new URL('../../', import.meta.url));
-const bundle = join(source, 'plugin/kernel/tenet.mjs');
+const bundle = process.env.TENET_TEST_BUNDLE ?? join(source, 'plugin/kernel/tenet.mjs');
 const roots = [];
 const env = { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' };
 delete env.NODE_OPTIONS;
@@ -77,6 +77,54 @@ const waitUntil = async (fn, what) => {
  for (;;) { const found = fn(); if (found) return found; assert.ok(Date.now() < end, `timed out: ${what}`); await new Promise(r => setTimeout(r, 25)); }
 };
 try {
+ const inherited = create(), inheritedNames = ['constructor'];
+ const inheritedCandidate = staticCandidate(inherited, 'preserve human files whose names match inherited properties');
+ for (const name of inheritedNames) write(inherited, name, `human-owned ${name}\n`);
+ const inheritedCheck = call(inherited, 'check', { h: inheritedCandidate.h }, ['--touched=src/greet.ts']);
+ focused(inherited, inheritedCandidate.h, inheritedCheck);
+ const inheritedRefusal = call(inherited, 'finish', { h: inheritedCandidate.h });
+ for (const name of inheritedNames) assert.equal(git(inherited, 'ls-files', '--', name), '', 'a human file must never enter the commit');
+ assert.ok(inheritedRefusal.questions?.some(question => question.id === 'unexplained'), JSON.stringify(inheritedRefusal));
+ assert.equal(call(inherited, 'decide', { h: inheritedCandidate.h, kind: 'unexplained', answers: { unexplained: 'not-mine' } }).exit, 0);
+ const inheritedFinish = call(inherited, 'finish', { h: inheritedCandidate.h });
+ assert.equal(inheritedFinish.data.endpoint, 'checked-local', JSON.stringify(inheritedFinish));
+ for (const name of inheritedNames) {
+  assert.equal(git(inherited, 'ls-files', '--', name), '');
+  assert.equal(readFileSync(join(inherited, name), 'utf8'), `human-owned ${name}\n`);
+ }
+ observations.push({ scenario: 'built inherited filenames remain human work through explicit attribution and commit', names: inheritedNames, initialExit: inheritedRefusal.exit, endpoint: inheritedFinish.data.endpoint, humanFilesPreservedAndUntracked: true });
+
+ const protectedNames = create(), protectedFilenames = ['constructor', 'toString', 'hasOwnProperty', '__proto__'];
+ const protectedHandle = call(protectedNames, 'open', { profile: 'feature', request: 'preserve protected root filenames', lane: 'quick' }).handle;
+ write(protectedNames, 'tenet.policy.json', JSON.stringify({ protected_paths: protectedFilenames }));
+ assert.equal(call(protectedNames, 'decide', { h: protectedHandle, kind: 'adopt', target: 'policy' }).exit, 3);
+ assert.equal(call(protectedNames, 'decide', { h: protectedHandle, kind: 'adopt', target: 'policy', answers: { 'adopt-confirm': 'confirm' } }).exit, 0);
+ call(protectedNames, 'decide', { h: protectedHandle, kind: 'basis', propose: basis });
+ for (const name of protectedFilenames) write(protectedNames, name, 'declared protected change\n');
+ const protectedRefusal = call(protectedNames, 'check', { h: protectedHandle }, [`--touched=${protectedFilenames.join(',')}`]);
+ assert.equal(protectedRefusal.exit, 3, JSON.stringify(protectedRefusal));
+ assert.ok(protectedRefusal.reasons.some(reason => reason.code === 'authority-needed'));
+ assert.ok(protectedRefusal.questions?.some(question => question.id === 'grant-confirm'));
+ const protectedWork = Object.values(JSON.parse(readFileSync(join(protectedNames, '.tenet/state'), 'utf8')).work)[0];
+ assert.equal(protectedWork.budget.checksLaunched, 0); assert.equal(protectedWork.lane, 'standard');
+ observations.push({ scenario: 'built inherited filenames do not bypass protected-path authority or lane assessment', names: protectedFilenames, exit: protectedRefusal.exit, checksLaunched: 0, lane: protectedWork.lane });
+
+ const configAttention = create();
+ write(configAttention, 'src/greet.ts', 'export const greet = (name: string): string => `Hello, ${name}!`;\n');
+ write(configAttention, 'src/greet.test.ts', 'import { expect, it } from "vitest"; import { greet } from "./greet.ts"; it("greets", () => expect(greet("Ada")).toBe("Hello, Ada!"));\n');
+ write(configAttention, 'vitest.config.ts', 'export default {};\n'); git(configAttention, 'add', '-A'); git(configAttention, 'commit', '-qm', 'preservation baseline');
+ const configHandle = call(configAttention, 'open', { profile: 'refactor', request: 'adjust test timing', lane: 'quick', scopePaths: ['vitest.config.ts'] }).handle;
+ const configBasis = { ...basis, scopePaths: ['vitest.config.ts'], elements: basis.elements.map(element => element.kind === 'example' ? { ...element, test: 'preservation', expect: 'pass' } : element) };
+ call(configAttention, 'decide', { h: configHandle, kind: 'basis', propose: configBasis });
+ write(configAttention, 'vitest.config.ts', 'export default { test: { testTimeout: 4000 } };\n');
+ call(configAttention, 'check', { h: configHandle, stage: 'baseline' }, ['--touched=vitest.config.ts']);
+ const configChecked = call(configAttention, 'check', { h: configHandle }, ['--touched=vitest.config.ts']);
+ focused(configAttention, configHandle, configChecked);
+ const configFinish = call(configAttention, 'finish', { h: configHandle }, ['--no-commit']);
+ assert.notEqual(configFinish.data.endpoint, 'checked-local');
+ assert.ok(configFinish.reasons.some(reason => reason.code === 'major-undisposed' && reason.message.includes('test or build configuration')), JSON.stringify(configFinish));
+ observations.push({ scenario: 'built changed unvetted configuration requires explicit attention disposition', endpoint: configFinish.data.endpoint, undisposedConfigurationBlocksClaim: true });
+
  for (const point of ['normal', 'after-intent', 'after-purge', 'after-first', 'after-second', 'after-result']) {
   const forgetting = create(), text = 'UAT-ORCHID-lesson-96341', quote = 'UAT-ORCHID-quote-25739';
   const h = call(forgetting, 'open', { profile: 'plan', request: 'forget a project convention safely' }).handle;

@@ -1,0 +1,121 @@
+{
+  "date": "2026-10-31",
+  "status": "locally-validated-diagnostics-performance-acceptance-still-fails",
+  "branch": "main",
+  "baseCommit": "28555763ee720b7b4f33c5380107c93b010afc98",
+  "priorEvidence": "runtime-lts-validation.json",
+  "change": {
+    "files": [
+      "packages/kernel/test/fixtures/golden-tasks/loan-desk/workload/client.ts.txt",
+      "packages/kernel/test/fixtures/golden-tasks/loan-desk/workload/harness.ts.txt",
+      "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/workload.test.ts.txt",
+      "packages/kernel/test/fixtures/golden-tasks/loan-desk/docs/workload.md.txt",
+      "packages/kernel/test/golden-task-loan-desk.test.ts"
+    ],
+    "behavior": "Retain bounded failureReasons counts for authentication probes. Existing stages/statuses and missing-cookie errors are recognized exactly; abort, timeout, invalid JSON/response, type errors and unknown values have fixed categories. A TypeError alone is not labeled a network cause. No arbitrary exception message, response body, credential, cookie or address is retained.",
+    "preserved": "All login requests, gate, timeouts, scheduling, posted/success/failure counters and pass criteria; failed authentication is not counted as operation busy degradation.",
+    "red": {
+      "report": "Current session files/diagnostics-red.log",
+      "sha256": "c5351f9dfc279445d911161c01081dc301e78d3df4e4d86ca8c0ed3a9f866460",
+      "failure": "loginFailure is not a function"
+    },
+    "controls": "Known HTTP stages/statuses and cookie failures; abort/timeout/JSON/schema/type/unknown exception redaction; real local HTTP sign-in 503 with private body verifies status-only diagnostic, exactly one posted request and released gate; actual isolated workload smoke verifies diagnostic counts sum to failures.",
+    "generatedApplicationCases": 134
+  },
+  "finalValidation": {
+    "runtimeFiles": 389,
+    "sourceHashMethod": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; SHA256 path+NUL+bytes+NUL.",
+    "sourceSha256": "5023ab566db310214f85d0b28a89fca445bc0494e9288c6a774d1d20ea39176c",
+    "ci": {
+      "command": "npm run ci",
+      "tests": 1261,
+      "suites": 204,
+      "failuresCancelledSkipped": 0,
+      "report": "Current session files/diagnostics-final-ci.log",
+      "sha256": "9811c6bcf4d1d2d2c6d79fe078d7559167c998a1c213a2010c1569d393f9944d"
+    },
+    "bundle": {
+      "bytes": 776010,
+      "budgetBytes": 819200,
+      "sha256": "347f8edabf0619b756788ff0a37e5e188014dfcd63436e2efe9fe7f2d99c2f1d",
+      "changed": false
+    },
+    "builtJourneys": [
+      {
+        "node": "26.3.0",
+        "command": "TENET_TEST_BUNDLE=$PWD/plugin/kernel/tenet.mjs node --test packages/kernel/test/golden-task-loan-desk.test.ts",
+        "neutralAppBrowser": [101, 12],
+        "evolvedAppBrowser": [134, 16],
+        "report": "Current session files/diagnostics-built-current.log",
+        "sha256": "acc8622092b09bf196506a31ae32d82607a647c3a6fc1754ce349bf1262c708f"
+      },
+      {
+        "node": "22.12.0",
+        "command": "TENET_TEST_BUNDLE=$PWD/plugin/kernel/tenet.mjs npm exec --yes --package=node@22.12.0 -- node --experimental-strip-types --test packages/kernel/test/golden-task-loan-desk.test.ts",
+        "neutralAppBrowser": [101, 12],
+        "evolvedAppBrowser": [134, 16],
+        "report": "Current session files/diagnostics-built-minimum.log",
+        "sha256": "cc242b0cadd496dac44822915f7556f20beae722678393bbfad9eef8b3918909"
+      }
+    ],
+    "supportedNode24": {
+      "node": "24.22.2",
+      "typecheckLintAndAll134AppCasesPass": true,
+      "report": "Current session files/diagnostics-node24-app.log",
+      "sha256": "3535b266b415dfa77080ac9b46622d1da3a08f7239056059c511e42f48aeaea7"
+    }
+  },
+  "measurements": {
+    "runtime": "24.22.2",
+    "protocol": "Unchanged 2000 users/10000 items/50000 loans, 20 clients, 70/20/10 mix, 250ms pacing, 30s warm-up + 120s measured, 12 bursts, 48 sign-in probes and 2s external writer.",
+    "measuredSourceSha256": "580e62b32d5b59dea680ac2ea77357779d5d91fa687181c56e7368b2c2d0a84d",
+    "sourceDifferenceFromFinal": "The final category for generic TypeError is type-error rather than transport-error, with corresponding control/documentation. Neither isolated report contains a TypeError failure. Do not call these final-artifact performance acceptance.",
+    "discardedTrial": "diagnostics-node24-workload.json overlapped full CI. It is retained as confounded and supplies no performance or acceptance claim. The following source and candidate trials each ran alone.",
+    "source": {
+      "report": "Current session files/diagnostics-node24-isolated-workload.json",
+      "sha256": "89908feb51a70f377b0ea8a159f4b6c1a08f63052c66d4a8bbba901599a4627f",
+      "referencePass": false,
+      "reasons": ["server-memory-target-failed"],
+      "peakRssBytes": 402784256,
+      "successfulSamples": 8739,
+      "listReserveReturnP95Ms": [16.80733300000429, 16.22529200000281, 17.07070899999235],
+      "successfulSignIns": 48,
+      "operationBusyResponses": 4
+    },
+    "uninstalledCandidate": {
+      "source": "Restore the same five retained finite-statement candidate files into owned scratch. Existing compiler emits JavaScript with rewriteRelativeImportExtensions; copy exact migrations and change only emitted workload server/writer child filenames to .js. No production build lifecycle or main installation.",
+      "report": "Current session files/diagnostics-candidate-node24-workload.json",
+      "sha256": "bbfee02a973afabf29707ae60e097efcc6e755190a7f02eebf1e306fcd6a8e85",
+      "referencePass": false,
+      "reasons": ["server-memory-target-failed", "busy-degradation-unobserved", "hash-capacity-probes-incomplete"],
+      "peakRssBytes": 358596608,
+      "successfulSamples": 8774,
+      "successfulSignIns": 44,
+      "operationBusyResponses": 0,
+      "failedProbe": {
+        "requested": 4,
+        "posted": 4,
+        "successful": 0,
+        "failures": 4,
+        "failureReasons": { "signin-status-503": 4 }
+      },
+      "disposition": "This new isolated reproduction establishes four HTTP refusals at sign-in, not missing posts, invalid DTOs or a transport exception. It does not retain the Problem type/body or request/writer-overlap times, so do not assert a particular busy/quota cause or retroactively diagnose the earlier report. All original acceptance failures remain."
+    },
+    "both": {
+      "oneWinnerFourConflictBursts": 12,
+      "unexpectedOperationErrors": 0,
+      "duplicateActiveItems": 0,
+      "foreignKeyViolations": 0,
+      "ownedCleanup": true,
+      "qualifiedReferenceHardware": false
+    }
+  },
+  "remaining": "Memory replacement with complete supported-runtime acceptance; final reviewed build/runtime sign-off; full within-budget protocol and actual consumers; semantic, native-host, human and release gates. Whole plan remains incomplete.",
+  "scope": {
+    "candidateInstalled": false,
+    "commitPushBranchWorktree": false,
+    "targetBudgetCryptoQuotaChanged": false,
+    "ownerApprovalInferred": false,
+    "nativeHostCampaignOrRelease": false
+  }
+}

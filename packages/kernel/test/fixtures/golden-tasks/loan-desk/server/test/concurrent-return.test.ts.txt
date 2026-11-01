@@ -1,5 +1,5 @@
-// A held write lock makes every process enter the service before any return can commit.
-// This exposes stale read/check/write behavior that sequential or single-connection HTTP calls miss.
+// Five ready processes race real returns; each observes its loan read inside a write transaction.
+// An external writer is not held across the startup barrier: that would consume the service's retry budget.
 import { execFile } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -45,13 +45,11 @@ it.each(["owner-and-admin", "wrong-members"])("serializes contended returns from
     const sessions = actors.map(id => createSession(db, id, secret, Date.now()).session.id);
     workers.push(...sessions.map((session, index) => worker(path, index, session)));
     await until(() => workers.every((_, index) => existsSync(join(dir, `ready-${index}`))), "worker startup");
-    db.exec("BEGIN IMMEDIATE");
     writeFileSync(join(dir, "start"), "");
-    await until(() => workers.every((_, index) => existsSync(join(dir, `attempted-${index}`))), "contended service entry");
-    db.exec("ROLLBACK");
     const outputs = await Promise.all(workers.map(w => w.finished));
     expect(outputs.every(output => output.error === null), JSON.stringify(outputs)).toBe(true);
     const results = outputs.map(output => JSON.parse(output.stdout));
+    expect(results.map(result => result.transactionReads)).toEqual(Array(5).fill(1));
     expect(results.filter(result => result.kind === "ok"), JSON.stringify(results)).toHaveLength(1);
     expect(results.filter(result => result.kind === (mode === "owner-and-admin" ? "already-returned" : "forbidden"))).toHaveLength(4);
     expect(results.filter(result => result.kind !== "ok").map(result => result.status)).toEqual(Array(4).fill(mode === "owner-and-admin" ? 409 : 403));

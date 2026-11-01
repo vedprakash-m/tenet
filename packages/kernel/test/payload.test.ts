@@ -57,6 +57,14 @@ describe("complete payload checksums", () => {
     assert.throws(() => payloadChecksums(root, inventory), /unexpected payload file: \.unexpected/);
   });
 
+  it("ignores generated dependency trees excluded by the repository", () => {
+    const root = fixture();
+    const expected = payloadChecksums(root, inventory);
+    mkdirSync(join(root, "node_modules", ".bin"), { recursive: true });
+    symlinkSync(join(root, "NOTICE"), join(root, "node_modules", ".bin", "tool"));
+    assert.equal(payloadChecksums(root, inventory), expected);
+  });
+
   it("rejects missing and unexpected payload files", () => {
     const root = fixture();
     rmSync(join(root, "NOTICE"));

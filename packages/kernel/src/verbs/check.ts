@@ -44,6 +44,7 @@ function admit(ports: Ports, cur: State, w: WorkContract, input: CheckInput, inp
       `excluded evidence inputs cannot be verified from stat alone: ${unreadable.slice(0, 3).join(", ")}; no check was launched`
     );
   const detected = ports.stack.detect(ports.root);
+  ports.stack.assertSupportedConfiguration(ports.root);
   if (!detected.runnerSupported || !detected.depsInstalled) {
     if (detected.runnerVersion)
       throw new KernelError(
@@ -181,6 +182,6 @@ export const check: Verb<CheckInput> = {
       execute: () => execute(run, inputs),
       finalize: async (_tx, st, result) => finalizeCheck(run, st, result),
     };
-    return { state: withWork(cur, prepared), resp: { work: w.id, progress: { phase: "checking" }, next: [] }, job };
+    return { state: withWork(cur, prepared), resp: { work: w.id, progress: { phase: "checking" } }, job };
   },
 };

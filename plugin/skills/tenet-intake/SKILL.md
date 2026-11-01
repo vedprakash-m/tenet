@@ -4,7 +4,7 @@ description: "Turn a request into an acceptance basis: clarify, write examples a
 ---
 # Intake: the acceptance basis
 
-Use when `next` says `basis`, `plan` or `decision`. Look facts up in the repository first; ask only for decisions.
+Use when `next` says `basis`, `plan` or `decision`. Look facts up in the repository first; ask only questions whose answers change the next dependent action.
 
 ## Draft the basis
 Write down, in the user's words where possible:
@@ -35,6 +35,7 @@ For a new project or the first Standard-or-deeper change in code you have not wo
 
 ## Rules
 - A thin answer on purpose, users or a non-goal gets one concrete follow-up before a plan is drafted, never a second round.
+- For each question, state a recommendation, its consequences, and a reversible default where one is justified.
 - Plan steps are vertical slices: each runnable, independently checkable, and says how it is checked. Resolve the biggest uncertainty first.
 
 ## Record the overview and the plan

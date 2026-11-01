@@ -23,7 +23,7 @@ export const plan: Decision = {
     const intent = state.project.intent;
     const built = buildPlan(intent.plan, r.data.items, highestSeq([...intent.elements, ...intent.plan]), () => ports.rand.base32(3));
     if (!built.ok) throw new KernelError("plan-invalid", built.message, { exit: 2 });
-    if (!built.changed.length) return { resp: { work: work.id, next: [], data: { changed: false } } };
+    if (!built.changed.length) return { resp: { work: work.id, data: { changed: false } } };
 
     const facts = factsHash({ plan: intent.plan.map((i) => [i.id, i.state]), items: r.data.items });
     const answer = input.answers?.["plan-confirm"];
@@ -41,6 +41,6 @@ export const plan: Decision = {
     if (!pending || pending.bind.factsHash !== facts) throw new KernelError("plan-invalid", "the proposal changed since the question was asked; ask again", { exit: 3 });
     const items = built.items.map((i) => (built.changed.includes(i.id) && i.state === "proposed" ? { ...i, state: "accepted" as const } : i));
     const next = { ...state, pending: rest, project: { ...state.project, intent: { ...intent, revision: intent.revision + 1, plan: items } } };
-    return { state: withWork(next, work), resp: { work: work.id, next: [], data: { changed: true, items: items.map((i) => ({ id: i.id, outcome: i.outcome, state: i.state })) } } };
+    return { state: withWork(next, work), resp: { work: work.id, data: { changed: true, items: items.map((i) => ({ id: i.id, outcome: i.outcome, state: i.state })) } } };
   },
 };

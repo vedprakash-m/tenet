@@ -70,7 +70,7 @@ async function blockers(ports: Ports, st: State, w: WorkContract): Promise<Plan 
   if (!baseTip || !workTip)
     throw new KernelError("capability-missing", `branch ${!baseTip ? base : work} no longer exists`, { exit: 2 });
   if (w.git.integrated?.commit && (await ports.git.refCommit(base)) === w.git.integrated.commit) {
-    return { resp: { work: w.id, next: [], data: { integrated: w.git.integrated } } };
+    return { resp: { work: w.id, data: { integrated: w.git.integrated } } };
   }
   // Conflicts are predicted before the editor leaves the work branch.
   const predicted = await ports.git.predictConflicts(base, work);
@@ -178,7 +178,7 @@ export async function startIntegrate(ports: Ports, tx: Tx, st: State, w: WorkCon
     execute: () => ports.git.integrate(base, work, { runDir, timeoutMs: 60_000 }),
     finalize: async (tx2, st2, result) => settle(tx2, st2, w, id, base, result),
   };
-  return { state: withWork(st, prepared), resp: { work: w.id, next: [] }, job };
+  return { state: withWork(st, prepared), resp: { work: w.id }, job };
 }
 
 export const integrate: Verb<IntegrateInput> = {

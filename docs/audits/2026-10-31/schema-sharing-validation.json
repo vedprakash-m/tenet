@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-31",
+  "status": "bounded-schema-1-refactor-locally-validated-not-complete-protocol-fit",
+  "branch": "main",
+  "baseCommit": "28555763ee720b7b4f33c5380107c93b010afc98",
+  "priorEvidence": "asvs-inventory-validation.json",
+  "scope": "Share identical existing validators and record projections inside their existing schema owner; preserve schema-1 behavior.",
+  "changes": [
+    "Obligations reuse the basis record's optional support/output/test/expectation validators.",
+    "Basis input derives its consecutive unchanged fields with pick; retain original order, explanatory comment and tighter input support bound.",
+    "Receipt and bounded receipt history share their identical four-state status validator."
+  ],
+  "capacity": {
+    "schemasBefore": 26404,
+    "schemasAfter": 26269,
+    "schemasCeiling": 26899,
+    "schemasSaved": 135,
+    "schemasFree": 630,
+    "central": [241647, 241805],
+    "accounting": [8362, 8640],
+    "store": [25706, 25920],
+    "git": [37801, 37843],
+    "bundleSavedBytes": 186,
+    "limits": "All owner matchers, ceilings, quality ratchets, token/bundle budgets, deadlines and production assertions unchanged. No responsibility moves. The whole 28-responsibility target remains unimplemented/unproven to fit."
+  },
+  "characterization": {
+    "tests": 2,
+    "beforeAndAfterPass": true,
+    "scope": "Exact parsed key order and stripping, missing/null optional fields, distinct input/obligation support bounds, common output bounds and independent receipt/history enum vocabulary and diagnostics.",
+    "mutations": "An input-only support bound incorrectly reused in a stored obligation and a dispatch-only completed status incorrectly admitted into receipts each fail the intended assertion. Baseline passes. Owned in-memory scratch bundles only, removed afterward."
+  },
+  "differential": {
+    "jsonSchemas": 52,
+    "distinctProducerRecords": 46,
+    "producerSchemaTypes": 18,
+    "probes": 5060,
+    "valid": 848,
+    "invalid": 4212,
+    "comparison": "Byte-identical generated JSON schemas and serialized acceptance, parsed values including key order, and structured diagnostics against the frozen before implementation.",
+    "producerScope": "Actual source-kernel Git fixture through open, basis, red, green, synthetic review and no-commit finish; field omissions, nulls, invalid types, unknown fields and array boundaries.",
+    "limits": "Bounded differential observations, not exhaustive equivalence, historical-record compatibility qualification or independent/native review."
+  },
+  "finalSource": {
+    "runtimeFiles": 394,
+    "sha256": "f559bf999a3d13ba356d01a235e78197cce3392676795dbf90e77b7d8892d8f8",
+    "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path+NUL+bytes+NUL.",
+    "bundleBytes": 775824,
+    "bundleSha256": "7a3ea964d85f14948c63e97301415aafca9224c8340a15e2c4899ed61ac4c3dd",
+    "payloadChecksumsSha256": "a246b76b26d286951b36939be1d02d5c10ca5a07ddf86394559162a89122cd14"
+  },
+  "validation": {
+    "ci": { "command": "npm run ci", "tests": 1266, "suites": 204, "failuresCancelledSkipped": 0 },
+    "supportedCharacterization": ["Node26.3.0", "Node22.12.0", "Node24.22.2"],
+    "builtCliUat": { "Node26.3.0": 152, "Node22.12.0": 152 },
+    "builtFeatureJourneys": {
+      "runtimes": ["Node26.3.0", "Node22.12.0"],
+      "testsPerRuntime": 2,
+      "scope": "Actual shipped bundle drives full loan scaffold/finish and brownfield CLI/library repair journeys.",
+      "applicationCases": { "neutral": 103, "evolved": 136, "neutralBrowser": 12, "evolvedBrowser": 16 },
+      "limits": "Review submissions are synthetic transport; no independent/native review or performance qualification."
+    }
+  },
+  "retainedSessionReports": {
+    "scope": "Current session files; exact report digests, not public embedded logs.",
+    "schema-sharing-before.log": "7df8302d0bf77d5d99e92c35394efaa2bf0c0418d4ac4a67498ec9d23fcb8694",
+    "schema-sharing-after.log": "5417b4c3297b1e29a88fc2e3c073c7ee3dabc2b8dd98d3b1fae03309e3142c0a",
+    "schema-sharing-comparison.json": "286a00fd5edcde45e2eb81963237e0783737946e0580f2fd02a67d3cdb3577be",
+    "schema-sharing-mutations.json": "2ff860c98b347813a522af3124467709bf652ee3443251c0fd90127c6a753802",
+    "schema-sharing-ci.log": "151cf8d68bab3d5d5d7c4e5902c5b697393b73c12ab29db9f10a48e4ec312e6f",
+    "schema-sharing-minimum.log": "f14d05e52c762014e03a6359fdf0a90b713cad6bc76ddb4c1c6f41c651834303",
+    "schema-sharing-node24.log": "8da34943bc382d90a968977068a0e16c3ba43688e65e9b6dd96b0fa299453928",
+    "schema-sharing-uat-current.json": "2205f9b28398e187bbf6520dd70ebcf0d8b03140eed0bca6969ec43ef828ce82",
+    "schema-sharing-uat-minimum.json": "7e539cadfec1accb5f7c0703f01c2d847de0180d02532ab4cbca804bfbe839ed",
+    "schema-sharing-built-current.log": "b65d8acfaf5bf36209e404ffa29fda97abf4315e71811082711f72a69f5754a1",
+    "schema-sharing-built-minimum.log": "1df44f20635d97b4a2e5849cbaf8823625e83967350679c24c9649f201457140"
+  },
+  "traceability": {
+    "mapped": 117,
+    "host": 16,
+    "unmapped": 48,
+    "semanticLedgerRecords": 0,
+    "qualified": 0,
+    "updates": "Refresh the nine directly changed contract.test.ts working references only; no mapping, semantic acceptance or qualification change."
+  },
+  "actionsNotTaken": "No schema-2 activation, contract/policy amendment, authentication/exposure change, ASVS waiver, dependency, owner sign-off inference, target/budget amendment, native spike/campaign, commit, push, branch, worktree or release."
+}

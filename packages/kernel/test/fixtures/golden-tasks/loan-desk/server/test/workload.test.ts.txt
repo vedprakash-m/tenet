@@ -16,6 +16,9 @@ it("runs the real isolated production workload smoke and never calls it a refere
   expect(report.metrics.peakRssBytes).toBeGreaterThan(0);
   expect(report.metrics.eventLoopSamples).toBeGreaterThan(0);
   expect(report.database.duplicateActiveItems).toBe(0);
+  for (const probe of report.signInProbes) {
+    expect(Object.values(probe.failureReasons).reduce((sum: number, count) => sum + Number(count), 0)).toBe(probe.failures);
+  }
   expect(report.cleanup).toEqual({ serverExited: true, writerExited: true, directoryRemoved: true });
 }, 35_000);
 
@@ -24,8 +27,52 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buckets, judge, operation, percentiles } from "../../workload/report.ts";
 import { seed } from "../../workload/seed.ts";
-import { initialLoans } from "../../workload/client.ts";
+import { Gate, initialLoans, login, loginFailure } from "../../workload/client.ts";
 import Database from "better-sqlite3";
+import { z } from "zod";
+import { createServer } from "node:http";
+
+it("retains bounded authentication failure categories without exposing credentials or response bodies [QLT-05]", async () => {
+  for (const stage of ["csrf", "signin", "session"]) {
+    for (const status of [401, 403, 429, 503]) {
+      expect(loginFailure(new Error(`${stage}-status-${status}`))).toBe(`${stage}-status-${status}`);
+    }
+  }
+  for (const reason of ["pre-cookie-missing", "session-cookie-missing"]) expect(loginFailure(new Error(reason))).toBe(reason);
+  expect(loginFailure(new DOMException("private response", "AbortError"))).toBe("aborted");
+  expect(loginFailure(new DOMException("private response", "TimeoutError"))).toBe("timeout");
+  expect(loginFailure(new SyntaxError("private response"))).toBe("invalid-json");
+  expect(loginFailure(z.string().safeParse({ private: "credential" }).error)).toBe("invalid-response");
+  expect(loginFailure(new TypeError("private network URL"))).toBe("type-error");
+  for (const error of [new Error("signin-status-503 private credential"), new Error("signin-status-999999"), "private credential", null]) {
+    expect(loginFailure(error)).toBe("unexpected-error");
+  }
+  const server = createServer((request, response) => {
+    request.resume();
+    response.setHeader("content-type", "application/json");
+    if (request.url === "/api/auth/csrf") {
+      response.setHeader("set-cookie", "pre_csrf=synthetic; Path=/");
+      response.end(JSON.stringify({ csrfToken: "synthetic" }));
+    } else {
+      response.statusCode = 503;
+      response.end(JSON.stringify({ private: "must not enter diagnostics" }));
+    }
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error("HTTP fixture did not bind a TCP port");
+    const gate = new Gate();
+    let posted = 0;
+    const failure = await login(`http://127.0.0.1:${address.port}`, 20, "synthetic fixture value", gate, new AbortController().signal, () => posted++)
+      .then(() => { throw new Error("refused sign-in succeeded"); }, error => loginFailure(error));
+    expect(failure).toBe("signin-status-503");
+    expect(posted).toBe(1);
+    expect(gate.active).toBe(0);
+  } finally {
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  }
+});
 
 function healthy() {
   const all = buckets();

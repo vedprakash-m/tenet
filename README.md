@@ -1,5 +1,4 @@
-<!-- DRAFT for owner review. Placeholders are marked PLACEHOLDER; each one is listed in the report that came with this draft. -->
-# PLACEHOLDER-NAME (working name: Tenet)
+# Tenet (working name)
 
 A governed, test-first engineering loop for GitHub Copilot in VS Code. A small local program (the kernel) records what is true about a piece of work. A plugin of agents, commands and skills does the work and cannot relabel what the kernel recorded.
 
@@ -21,11 +20,11 @@ What it does not do in this release line: deploy, push, or open pull requests on
 
 ## Status
 
-Dated record: [specs/plan.md](specs/plan.md) (sections 1, 4 and 13). In short, as of this draft:
+Dated record: [specs/plan.md](specs/plan.md) (sections 1, 4 and 13). Current source-checkout evidence, as of October 31, 2026:
 
 | Area | State |
 |---|---|
-| Kernel, plugin, starter recipe, deterministic tests | Full Linux/macOS CI (1,177 tests / 192 suites) and built UAT on current and minimum runtimes, plus Windows portability, passed remotely in [run 40270175062](https://github.com/vedprakash-m/tenet/actions/runs/40270175062) at `159caab`. The local Windows selection is a subset, not full CI. No host qualification follows. |
+| Kernel, plugin, starter recipe, deterministic tests | Local `npm run ci` passes typecheck, lints, M0 coverage, the 763 KB bundle build, payload verification, reproducibility and 1,296 tests / 206 suites. Built-bundle UAT, privacy and whitespace checks pass. This is local source evidence, not hosted CI or host qualification; the working tree is not a release artifact. |
 | Qualified tuple (host, extension, model, OS) | **Unrecorded.** No tuple is qualified. |
 | Installing and running on VS Code Copilot | **Partly observed** on VS Code 1.142.0 and 1.143.0 (October 19 and 20, 2026): the plugin loaded from a local plugin location; the kernel ran from the host's snapshot copy of the plugin; real multi-step tasks ran through `finish`. The Copilot extension version was not recorded. |
 | Reviewer subagent | **Partly observed.** A reviewer was dispatched several times on VS Code, and a partial result was refused and retried. Not observed: the reviewer's real tool list or host enforcement of its restrictions, actual context isolation, parallel dispatch, a cancelled or dead reviewer, and `usages`. |
@@ -35,21 +34,42 @@ Dated record: [specs/plan.md](specs/plan.md) (sections 1, 4 and 13). In short, a
 | Which instruction file the host loads, `.tenet/` exclusion from host indexing, token-estimate accuracy | **Unobserved or inconclusive.** |
 | Hooks | None ship. The kernel finds edits made outside its own calls by comparison. |
 | Copilot CLI | Early hypotheses only. Not part of this release line. |
-| Publisher, signed release, checksums, provenance | **Not published.** There is no release to verify yet. |
+| Publisher, signed release, checksums, provenance | **Not published.** The source build creates `plugin/SHA256SUMS` for local payload integrity; there is no signed release or provenance attestation. |
 
 Capabilities described in this repository are intended outcomes until their gates pass.
 
 ## Before you install
 
-**Do not rely on the items below until each says "qualified".** Today none of them does.
+**No host tuple or release is qualified.** Treat this repository as a source preview, not as a supported public installation.
 
 - **Prerequisites.** VS Code with GitHub Copilot Chat in agent mode and the setting that enables agent plugins; Node.js 22.12 or newer (Tenet reuses your Node and installs nothing); Git. Full checking needs a TypeScript or JavaScript project that uses Vitest. Other setups get a lower assistance level, which Tenet states in its first message.
-- **Support matrix.** No combination is supported. VS Code on macOS is the only environment that has been tried, and only partly (see [Status](#status)). Everything else is untested.
 - **Permissions and executable content.** The plugin ships one bundled file, `plugin/kernel/tenet.mjs`, that the agent runs with your Node through the host's terminal tool. The host asks you to approve terminal commands. Tenet's own project checks (your tests, linters, servers) also run as local processes. The plugin ships no hooks and no network client.
-- **Publisher and verification.** PLACEHOLDER-PUBLISHER and PLACEHOLDER-REPOSITORY-URL. No signed release, checksum file or provenance record exists yet; until they do, verification is reading the source in this repository and building it yourself.
+- **Publisher and verification.** The marketplace publisher is **not designated**, and no public release exists; “Tenet” remains a working name pending namespace clearance. The source repository is [vedprakash-m/tenet](https://github.com/vedprakash-m/tenet). There is no signed tag, provenance attestation or published release checksum. To verify this source preview, confirm the repository and commit, inspect the source, then run `npm ci` and `npm run build`; the generated `plugin/SHA256SUMS` checks local payload bytes only and does not authenticate a publisher or release.
 - **Autopilot.** Under Copilot's Autopilot, the host can answer native questions automatically, and Tenet cannot tell your answers from automatic ones. Questions about scope, protected paths, remote or destructive actions, risk and owner acceptance are therefore asked in plain chat, and every decision record made under Autopilot is unverifiable. Do not use Autopilot for work where that matters.
 
 Full details: [docs/user/install-and-remove.md](docs/user/install-and-remove.md).
+
+## Support matrix and assistance levels
+
+No combination is currently qualified. These observations are not support claims:
+
+| Environment | Status |
+|---|---|
+| VS Code with GitHub Copilot on macOS arm64 | Partly observed; no complete qualified tuple |
+| VS Code with GitHub Copilot on Linux | Host behavior unobserved; not qualified |
+| VS Code with GitHub Copilot on Windows | Read-only inspection only; mutating kernel calls are refused; not qualified |
+| Copilot CLI, other editors or agents | Outside this release line or untested; not supported |
+
+Tenet states one assistance level for each project and task:
+
+| Level | What Tenet can do | Highest endpoint |
+|---|---|---|
+| L0 Refuse | Explain why a required boundary cannot be met | `blocked` |
+| L1 Inspect | Read, explain and review source | `findings-only` |
+| L2 Plan | Propose requirements, plan items and a readiness task | `findings-only` |
+| L3 Implement, unqualified | Implement and run available checks outside the qualified profile | `implemented-unverified` |
+| L4 Qualified local | Implement inside the qualified profile with full evidence | `checked-local` |
+| L5 Deliver | Planned for R1.1; not available in this release line | `delivered` |
 
 ## Install
 
@@ -75,6 +95,10 @@ In Copilot Chat, agent mode:
 3. **A review.** `/tenet-review review my uncommitted changes` (read-only: it changes nothing in your project; its review file is written to the system temp folder. Only uncommitted changes against `HEAD` can be reviewed today.)
 
 More on each: [docs/user/starter-requests.md](docs/user/starter-requests.md).
+
+## Update
+
+There is no public update path, and plugin update and stored-record migration have not been qualified. For the source preview, select and review the exact repository commit you want to use, rebuild it, and point VS Code at that checkout's `plugin/` folder. Do not assume an active contract or older `.tenet/` state can migrate safely; see [Install and remove](docs/user/install-and-remove.md).
 
 ## Offline evaluation tools
 

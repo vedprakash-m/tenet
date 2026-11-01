@@ -48,7 +48,7 @@ describe("helpers stay inside the workspace [SEC-06]", () => {
 });
 
 describe("what ships makes no network connection and bundles no MCP [SEC-03, SEC-07]", () => {
-  it("has no network client in the bundle or the source, except a loopback bind-and-release for a free port (EVD-13)", () => {
+  it("has no network client in the bundle or the source, except a loopback bind-and-release for a free port (EVD-13, OSS-04)", () => {
     const bundle = join(ROOT, "plugin/kernel/tenet.mjs");
     const sources = walk(join(ROOT, "packages/kernel/src")).filter((f) => f.endsWith(".ts")).map((f) => [f, readFileSync(f, "utf8")] as const);
     const net = /from ["']node:(?:http|https|http2|dgram|tls|dns|inspector)["']|require\(["'](?:node:)?(?:http|https|dgram|tls|dns)["']\)|\bfetch\(|new WebSocket\(/;

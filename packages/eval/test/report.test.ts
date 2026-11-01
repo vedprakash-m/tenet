@@ -92,6 +92,73 @@ function cli(args: string[]) {
 }
 
 describe("offline campaign reporting", () => {
+  it("retains unplanned and dangling attempt time and counts in campaign resource totals [ENG-04]", () => {
+    for (const slotId of [null, "missing-slot"]) {
+      const result = report(input({
+        attempts: [
+          attempt("attempt-one", "slot-one"),
+          attempt("extra-attempt", slotId, 1, {
+            status: "cancelled",
+            time: { wallMs: 250, activeMs: 50, waitMs: 200 },
+            retries: 2,
+            delegations: 3,
+            checks: 4,
+            interventions: 5,
+          }),
+        ],
+      })).result;
+      for (const [metricId, total] of [
+        ["wall-time", 350], ["active-time", 50], ["wait-time", 200],
+        ["retry-count", 2], ["delegation-count", 3], ["check-count", 5], ["intervention-count", 5],
+      ] as const) {
+        const row = result.metrics.find((item) => item.metricId === metricId && item.group.level === "campaign");
+        assert.equal(row?.value, total, metricId);
+        assert.equal(row?.denominator, 2, metricId);
+      }
+      const subgroup = result.metrics.find((item) => item.metricId === "wall-time" && item.group.level === "case-stratum-role");
+      assert.equal(subgroup?.value, 100);
+      assert.equal(subgroup?.denominator, 1);
+      const active = result.metrics.find((item) => item.metricId === "active-time" && item.group.level === "campaign");
+      assert.equal(active?.unknown.count, 1);
+      assert.ok(active?.unknown.reasons.includes("attempt-one:missing-activeMs"));
+      assert.equal(result.eligibility, "inconclusive");
+    }
+  });
+
+  it("preserves non-completed terminal states in Markdown without granting known contract failures", () => {
+    for (const status of ["blocked", "cancelled", "invalid", "unknown"]) {
+      const result = report(input({
+        attempts: [attempt("attempt-one", "slot-one", 1, { status, contractOutcome: "fail" })],
+      })).result;
+      const markdown = renderCampaignReport(result, "markdown");
+      assert.ok(markdown.includes(`| slot-one | 1 | ${status} |`), status);
+      assert.ok(!markdown.includes("| slot-one | 1 | fail |"), status);
+    }
+  });
+
+  it("keeps JUnit attempt order numeric rather than lexicographic", () => {
+    const result = report(input({
+      attempts: [10, 2, 1].map((number) => attempt(`attempt-${number}`, "slot-one", number)),
+    })).result;
+    const names = [...renderCampaignReport(result, "junit").matchAll(/<testcase name="([^"]+)"/g)].map((match) => match[1]);
+    assert.deepEqual(names, ["slot-one:1", "slot-one:2", "slot-one:10"]);
+  });
+
+  it("retains known unplanned safety violations as JUnit failures", () => {
+    for (const slotId of [null, "missing-slot"]) {
+      const result = report(input({
+        attempts: [
+          attempt("attempt-one", "slot-one"),
+          attempt("extra-attempt", slotId, 1, { status: "cancelled", safetyResult: "violation" }),
+        ],
+      })).result;
+      const junit = renderCampaignReport(result, "junit");
+      assert.match(junit, /<testsuite name="unplanned" tests="1" failures="1" skipped="0">/);
+      assert.match(junit, /<testcase name="unplanned:extra-attempt"><properties><property name="tenet-status" value="fail"\/><\/properties><failure message="safety-violation"\/>/);
+      assert.equal(result.eligibility, "fail");
+    }
+  });
+
   it("counts safety for all attempts and fails every known violation", () => {
     for (const slotId of ["slot-one", null, "missing-slot"]) {
       const result = report(input({

@@ -59,13 +59,13 @@ async function reviseLock(ports: Ports, state: State, work: WorkContract, id: st
   const blob = (await gather(ports, work)).inv.entries.get(id)?.blob;
   if (!blob) throw new KernelError("revision-conflict", `${id} no longer exists; a deleted locked test needs a basis change`, { exit: 2 });
   const locks = state.locks.map((l) => {
-    if (l.path !== id && !(id in l.supportInputs)) return l;
+    if (l.path !== id && !(Object.hasOwn(l.supportInputs, id))) return l;
     const patch = l.path === id ? { hash: blob } : { supportInputs: { ...l.supportInputs, [id]: blob } };
     const rev = { path: id, from: l.path === id ? l.hash : l.supportInputs[id]!, to: blob, reason: why, at: now };
     return { ...l, ...patch, revisions: [...(l.revisions ?? []), rev] };
   });
   const obligations = work.obligations.map((o) =>
-    o.testFile === id || id in (o.baselineInputs ?? {}) ? { ...o, state: "revised" as const, baselineMatched: false } : o,
+    o.testFile === id || Object.hasOwn(o.baselineInputs ?? {}, id) ? { ...o, state: "revised" as const, baselineMatched: false } : o,
   );
   return {
     state: withWork({ ...state, locks }, { ...work, obligations }),
@@ -118,7 +118,7 @@ export const disposition: Decision = {
     if (!why) throw new KernelError("revision-conflict", "a disposition needs a reason", { exit: 1 });
     const now = ports.clock.now();
 
-    const lock = state.locks.find((l) => l.path === id || id in l.supportInputs);
+    const lock = state.locks.find((l) => l.path === id || Object.hasOwn(l.supportInputs, id));
     if (lock) return reviseLock(ports, state, work, id, why, now);
     const att = work.attention.find((a) => a.id === id);
     if (att) return dispositionAttention(state, work, id, body.outcome, why);
@@ -162,7 +162,7 @@ export const branchSwitch: Decision = {
     if (!q) throw new KernelError("revision-conflict", "there is no open question about switching branches", { exit: 2 });
     if (answer !== "continue" && answer !== "cancel") throw new KernelError("revision-conflict", 'answer "continue" or "cancel"', { exit: 1 });
     const rest = state.pending.filter((p) => p.id !== "branch-switch");
-    if (answer === "cancel") return { state: withWork({ ...state, pending: rest }, work), resp: { work: work.id, next: [] } };
+    if (answer === "cancel") return { state: withWork({ ...state, pending: rest }, work), resp: { work: work.id } };
     const dirty = (await gather(ports, work, state.locks)).inv.status.map((s) => s.path);
     const base = work.git.start.branch ?? "";
     if (switchFacts(base, dirty) !== q.bind.factsHash) throw new KernelError("revision-conflict", "your uncommitted files changed since the question was asked", { exit: 2 });
@@ -189,10 +189,10 @@ export const config: Decision = {
       ...(v.value === undefined ? { reset: true } : { value: v.value }),
       ...(hasConfigured ? { limits: ["Stored declaration only: configured execution is unavailable; checks and checked-local are blocked."] } : {}),
     };
-    if (JSON.stringify(had) === JSON.stringify(v.value)) return { resp: { work: work.id, next: [], data: { ...data, changed: false } } };
+    if (JSON.stringify(had) === JSON.stringify(v.value)) return { resp: { work: work.id, data: { ...data, changed: false } } };
     const next = v.value === undefined ? rest : { ...rest, [key]: v.value };
     const out = scope === "task" ? withWork(state, { ...work, settings: next }) : withWork({ ...state, config: { revision: state.config.revision + 1, local: next } }, work);
-    return { state: out, resp: { work: work.id, next: [], data: { ...data, changed: true } } };
+    return { state: out, resp: { work: work.id, data: { ...data, changed: true } } };
   },
 };
 
@@ -218,6 +218,6 @@ export const syncIndex: Decision = {
         },
       };
     }
-    return { resp: { work: work.id, next: [], data: { index: result } } };
+    return { resp: { work: work.id, data: { index: result } } };
   },
 };

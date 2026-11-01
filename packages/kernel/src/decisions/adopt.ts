@@ -79,7 +79,7 @@ function decideOn(c: Parameters<Decision["run"]>[0], key: "intent" | "policy", f
     const project = state.trust.some((t) => t.file === file)
       ? state.project
       : { ...state.project, adoption: { ...state.project.adoption, [key]: "declined" as const } };
-    return { state: { ...state, pending: asked(state), project }, resp: { work: work.id, next: [], data: { adopted: false } } };
+    return { state: { ...state, pending: asked(state), project }, resp: { work: work.id, data: { adopted: false } } };
   }
   if (answer === "confirm" && state.pending.some((p) => p.id === "adopt-confirm" && p.bind.factsHash === facts)) return apply();
   return {
@@ -111,7 +111,7 @@ export const adopt: Decision = {
       if (!parsed.ok) throw new KernelError("restriction-key-unknown", parsed.message, { exit: 2 });
       const hash = sha256(text);
       const prev = state.trust.find((t) => t.file === POLICY_FILE);
-      if (prev?.hash === hash) return { resp: { work: work.id, next: [], data: { file: POLICY_FILE, message: `${POLICY_FILE} is up to date` } } };
+      if (prev?.hash === hash) return { resp: { work: work.id, data: { file: POLICY_FILE, message: `${POLICY_FILE} is up to date` } } };
       const changes = prev ? comparePolicy(prev.restrictions as Policy, parsed.policy) : [];
       const shown = prev
         ? `${changes.length} change${changes.length === 1 ? "" : "s"}: ${changes.map((x) => `${x.field} ${x.kind} (${x.detail})`).join("; ")}`
@@ -126,7 +126,7 @@ export const adopt: Decision = {
             trust: [...state.trust.filter((t) => t.file !== POLICY_FILE), entry],
             project: { ...state.project, adoption: { ...state.project.adoption, policy: "adopted" } },
           },
-          resp: { work: work.id, next: [], data: { file: POLICY_FILE, adopted: true } },
+          resp: { work: work.id, data: { file: POLICY_FILE, adopted: true } },
         };
       });
     }
@@ -141,7 +141,7 @@ export const adopt: Decision = {
     const op: AdoptOp = { work: work.id, file: INTENT_FILE, before: text === null ? null : sha256(text), after,
       blocks: pr.written, at, previousTrust: prev ? hashOf(prev) : null };
     if (pr.text === (text ?? null)) {
-      return { state: adopted(state, op), resp: { work: work.id, next: [], data: { file: INTENT_FILE, message: `${INTENT_FILE} is up to date`, external: pr.external } } };
+      return { state: adopted(state, op), resp: { work: work.id, data: { file: INTENT_FILE, message: `${INTENT_FILE} is up to date`, external: pr.external } } };
     }
     const remote = (await ports.git.probe()).remotes[0];
     const heads = pr.changed.slice(0, 6).join(", ");
@@ -161,7 +161,7 @@ export const adopt: Decision = {
         tx.result("adopt", id, { completed: true });
         return {
           state: adopted({ ...state, pending: asked(state) }, op),
-          resp: { work: work.id, next: [], data: { file: INTENT_FILE, adopted: true, blocks: pr.changed, committed: false } },
+          resp: { work: work.id, data: { file: INTENT_FILE, adopted: true, blocks: pr.changed, committed: false } },
         };
       },
     );

@@ -15,18 +15,34 @@ export const newBudget = (): BudgetState => ({
 });
 
 const frac = (n: number, max: number) => `${n}/${max}`;
-export function summarize(b: BudgetState, lane: Lane): { attempts: string; rounds: string; delegations: string } {
+const activeGapMs = (b: BudgetState, at: number): number =>
+  b.lastCall?.exit === 0 ? Math.max(0, at - Date.parse(b.lastCall.at)) : 0;
+export function summarize(b: BudgetState, lane: Lane) {
   const l = LIMITS[lane];
-  return { attempts: frac(b.attempts, l.attempts), rounds: frac(b.reviewRounds, l.rounds), delegations: frac(b.delegations + b.reservations.length, l.delegations) };
+  return {
+    attempts: frac(b.attempts, l.attempts),
+    rounds: frac(b.reviewRounds, l.rounds),
+    delegations: frac(b.delegations + b.reservations.length, l.delegations),
+    attemptCount: b.attempts,
+    reviewRoundCount: b.reviewRounds,
+    delegationCount: b.delegations,
+    checksLaunched: b.checksLaunched,
+    activeMinutesTotal: b.activeMinutesTotal,
+  };
+}
+
+export const budgetProgress = ({ attempts, rounds, delegations }: ReturnType<typeof summarize>) => ({ attempts, rounds, delegations });
+
+export function attachUsage(data: unknown, usage: ReturnType<typeof summarize> | undefined): unknown {
+  if (!usage || !data || typeof data !== "object" || Array.isArray(data) || !Object.hasOwn(data, "usage")) return data;
+  return { ...data, usage };
 }
 
 /** True at or above 80% of any counter (WRK-12): the handoff is written proactively. */
 export function nearLimit(b: BudgetState, lane: Lane, now?: string): boolean {
   const l = LIMITS[lane];
   const used = b.delegations + b.reservations.length;
-  const activeGap = now && b.lastCall?.exit === 0
-    ? Math.max(0, Date.parse(now) - Date.parse(b.lastCall.at)) / 60_000
-    : 0;
+  const activeGap = now ? activeGapMs(b, Date.parse(now)) / 60_000 : 0;
   return b.attempts >= l.attempts * 0.8 || b.reviewRounds >= l.rounds * 0.8 || used >= l.delegations * 0.8 ||
     b.activeMinutesSinceCheckIn + activeGap >= l.minutes * 0.8;
 }
@@ -34,7 +50,7 @@ export function nearLimit(b: BudgetState, lane: Lane, now?: string): boolean {
 /** Active time: call durations plus the gap after a call that said to keep working; the wait after a question is not work (TS §8.6). */
 export function accrueTime(b: BudgetState, call: { startedAt: string; endedAt: string; exit: number; checkIn: boolean }): BudgetState {
   const start = Date.parse(call.startedAt), end = Date.parse(call.endedAt);
-  const gap = b.lastCall?.exit === 0 ? Math.max(0, start - Date.parse(b.lastCall.at)) : 0;
+  const gap = activeGapMs(b, start);
   const minutes = (Math.max(0, end - start) + gap) / 60_000;
   return {
     ...b, activeMinutesTotal: b.activeMinutesTotal + minutes,
@@ -44,7 +60,7 @@ export function accrueTime(b: BudgetState, call: { startedAt: string; endedAt: s
 
 /** Checked before a new attempt, counting the gap since the last call; a step already running is never stopped (PRD 4.4.2). */
 export function timeUp(b: BudgetState, lane: Lane, now: string): boolean {
-  const gap = b.lastCall?.exit === 0 ? Math.max(0, Date.parse(now) - Date.parse(b.lastCall.at)) / 60_000 : 0;
+  const gap = activeGapMs(b, Date.parse(now)) / 60_000;
   return b.activeMinutesSinceCheckIn + gap >= LIMITS[lane].minutes;
 }
 
@@ -117,9 +133,13 @@ export function accountingCheckpoint(next: State, previous: State | undefined): 
   };
 }
 
+const MONOTONE_COUNTERS = [
+  "attempts", "reviewRounds", "rechecks", "delegations", "checksLaunched", "tenetTokens", "activeMinutesTotal",
+] as const;
+
 /** A checkpoint can only raise used counters/sequences. It cannot reconstruct missing authority or evidence. */
 export function recoverAccounting(state: State, records: readonly unknown[]): { state: State; verified: boolean } {
-  let next: State = { ...state, work: Object.fromEntries(Object.entries(state.work).map(([id, w]) => [id, { ...w, budget: privateBudget(w.budget) }])) };
+  const next: State = { ...state, work: Object.fromEntries(Object.entries(state.work).map(([id, w]) => [id, { ...w, budget: privateBudget(w.budget) }])) };
   let invalid = false;
   const points = records.flatMap(record => {
     if (!record || typeof record !== "object" || (record as { kind?: unknown }).kind !== "accounting") return [];
@@ -129,28 +149,23 @@ export function recoverAccounting(state: State, records: readonly unknown[]): { 
   });
   for (const point of points) {
     if (point.workSeq < next.workSeq || point.generationSeq < next.generationSeq) invalid = true;
-    next = { ...next, workSeq: Math.max(next.workSeq, point.workSeq), generationSeq: Math.max(next.generationSeq, point.generationSeq) };
+    next.workSeq = Math.max(next.workSeq, point.workSeq);
+    next.generationSeq = Math.max(next.generationSeq, point.generationSeq);
     for (const entry of point.entries) {
       const w = next.work[entry.work];
       if (!w || entry.generation < w.session.generation) continue;
       const b = w.budget, observed = privateBudget(entry.budget);
-      if ((["attempts", "reviewRounds", "rechecks", "delegations", "checksLaunched", "tenetTokens", "activeMinutesTotal"] as const)
-        .some(key => observed[key] < b[key])) invalid = true;
+      if (MONOTONE_COUNTERS.some(key => observed[key] < b[key])) invalid = true;
       const budget: BudgetState = {
         ...observed,
-        attempts: Math.max(b.attempts, observed.attempts),
-        reviewRounds: Math.max(b.reviewRounds, observed.reviewRounds),
-        rechecks: Math.max(b.rechecks, observed.rechecks),
-        delegations: Math.max(b.delegations, observed.delegations),
-        checksLaunched: Math.max(b.checksLaunched, observed.checksLaunched),
-        tenetTokens: Math.max(b.tenetTokens, observed.tenetTokens),
-        activeMinutesTotal: Math.max(b.activeMinutesTotal, observed.activeMinutesTotal),
+        ...Object.fromEntries(MONOTONE_COUNTERS.map(key => [key, Math.max(b[key], observed[key])])),
         signatures: observed.attempts >= b.attempts ? observed.signatures : b.signatures,
       };
       const stopReason = stopFor(budget, w.lane) ?? w.stopReason;
       const updated = { ...w, budget, session: { ...w.session, generation: entry.generation }, ...(stopReason ? { stopReason } : {}) };
-      const owner = next.sourceOwner?.work === w.id ? { sourceOwner: { work: w.id, generation: entry.generation } } : {};
-      next = { ...next, work: { ...next.work, [w.id]: updated }, ...owner };
+      // Defining an own slot preserves data IDs such as "__proto__".
+      Object.defineProperty(next.work, w.id, { value: updated, enumerable: true, configurable: true, writable: true });
+      if (next.sourceOwner?.work === w.id) next.sourceOwner = { work: w.id, generation: entry.generation };
     }
   }
   let revision = state.revision, contiguous = true, checkpoint = "";

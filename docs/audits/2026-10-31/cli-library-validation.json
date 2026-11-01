@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-31",
+  "status": "locally-validated-non-web-fixture-not-complete-ac20",
+  "branch": "main",
+  "baseCommit": "28555763ee720b7b4f33c5380107c93b010afc98",
+  "priorEvidence": "prerequisite-validation.json",
+  "canonicalScope": "PRD D-15 and AC-20 require an R1 brownfield TypeScript CLI/library fixture, not a new starter family or adapter.",
+  "test": {
+    "path": "packages/kernel/test/golden-task-cli-library.test.ts",
+    "sha256": "ab99c401798f103ebad0f6c2e9eacd77dfb01260566358969edc94cb63fef201",
+    "baseline": "The original library returns plural for one. Library and real-process singular tests fail assertions; existing zero/plural/RangeError and CLI argument/exit/stdout/stderr characterization passes.",
+    "candidate": "All three cases pass. The preservation, distinguishing and suite receipts have executed populations 1, 2 and 3, all from one actual run; these overlapping populations must not be summed.",
+    "finish": "Real open/basis/baseline/candidate/findings/finish pipeline yields checked-local with noCommit; original caller, characterization, metadata and HEAD remain unchanged. Final actual CLI emits 1 file.",
+    "review": "Synthetic schema-conforming reviewResult transport from the existing helper. No independent reviewer or native/model behavior was exercised.",
+    "frontEndControl": "Initial built run refused string-valued noCommit. The test wrapper now emits the actual boolean flag, and the final unchanged-HEAD assertion passes.",
+    "warningControl": "Suppress only Node ExperimentalWarning in generated CLI child processes so minimum-runtime application stderr can be checked exactly; ordinary warnings/errors remain visible."
+  },
+  "finalSource": {
+    "runtimeFiles": 391,
+    "sha256": "8e0dd25a5251544b0c981a45883d2ef2c16d6cdd360d03065ce8355a091e3c67",
+    "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path+NUL+bytes+NUL.",
+    "bundleBytes": 776010,
+    "bundleBudgetBytes": 819200,
+    "bundleSha256": "347f8edabf0619b756788ff0a37e5e188014dfcd63436e2efe9fe7f2d99c2f1d",
+    "bundleChanged": false,
+    "payloadChanged": false
+  },
+  "validation": {
+    "ci": {
+      "command": "npm run ci",
+      "tests": 1263,
+      "suites": 204,
+      "failuresCancelledSkipped": 0,
+      "report": "Current session files/cli-library-ci.log",
+      "sha256": "f2b04c2061f2e62d82c000b03874fc5107f0f8a13fd9100365ed7326b7445f13"
+    },
+    "builtFixture": [
+      {
+        "command": "TENET_TEST_BUNDLE=<actual bundle> node --test packages/kernel/test/golden-task-cli-library.test.ts",
+        "node": "26.3.0",
+        "tests": 1,
+        "failuresCancelledSkipped": 0,
+        "report": "Current session files/cli-library-built-current.log",
+        "sha256": "88505f8359aec1200fba2839607e70ca32205f27b9e8e7818ae792111a9fdb61"
+      },
+      {
+        "command": "TENET_TEST_BUNDLE=<actual bundle> npm exec --yes --package=node@22.12.0 -- node --experimental-strip-types --test packages/kernel/test/golden-task-cli-library.test.ts",
+        "node": "22.12.0",
+        "tests": 1,
+        "failuresCancelledSkipped": 0,
+        "report": "Current session files/cli-library-built-minimum.log",
+        "sha256": "b73e7b83f29a3adfd25fc3d8078710cbae5a561a194151f5c963773a708a747d"
+      },
+      {
+        "command": "TENET_TEST_BUNDLE=<actual bundle> npm exec --yes --package=node@24.22.2 -- node --experimental-strip-types --test packages/kernel/test/golden-task-cli-library.test.ts",
+        "node": "24.22.2",
+        "tests": 1,
+        "failuresCancelledSkipped": 0,
+        "report": "Current session files/cli-library-built-node24.log",
+        "sha256": "74916c70832d38f48dd4a4d9ac38a6ff533c7f611a844f6fd3eaa6311ded5a2e"
+      }
+    ]
+  },
+  "traceability": {
+    "countsUnchanged": { "mapped": 116, "host": 16, "unmapped": 49 },
+    "semanticLedgerRecords": 0,
+    "qualified": 0,
+    "limits": "Additional scoped QLT-12/AC-20 reference only. No automatic CLI/library trait inference/obligations, broad business/security/accessibility/workload acceptance, fresh reviewer evidence, installed-host behavior or qualification is claimed."
+  },
+  "remaining": "Runtime memory replacement/acceptance; complete fixed-budget protocol design/review/sign-off and implementation; real trait/quality/result consumers and semantic/host/human/release gates; all19 Should dispositions.",
+  "actionsNotTaken": "No new adapter or dependency, native spike, system installation, schema/authority/budget/target change, commit, push, branch, worktree or release."
+}

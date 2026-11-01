@@ -27,6 +27,7 @@ export function payloadFiles(root: string, prefix = ""): string[] {
   if (directory.isSymbolicLink()) throw new Error(`linked payload path: ${prefix || "."}`);
   if (!directory.isDirectory()) throw new Error(`non-directory payload path: ${prefix || "."}`);
   return readdirSync(join(root, prefix)).sort().flatMap(name => {
+    if (name === "node_modules") return [];
     const rel = prefix ? `${prefix}/${name}` : name;
     const stat = lstatSync(join(root, rel));
     if (stat.isSymbolicLink()) throw new Error(`linked payload path: ${rel}`);

@@ -17,6 +17,12 @@ Include: what you found, the version or commit, the steps to reproduce, and what
 
 Today one person holds every maintainer role, so these targets depend on one person's availability.
 
+## Starter dependency maintenance
+
+Dependabot opens monthly version-update pull requests for the repository and the starter template. These scheduled version updates do not replace security alerts: repository owners must enable Dependabot alerts and security updates in the repository's security settings. This checkout does not verify whether those settings are enabled.
+
+Treat a critical vulnerability report or alert affecting a starter dependency under the same response targets above: acknowledge it within 3 days, then decide on a fix, mitigation or withdrawal within 7 days. The decision target is not a guarantee that a fix will be available in that period.
+
 ## Supported versions
 
 PLACEHOLDER-SUPPORTED-VERSIONS. No release exists yet, so no version is supported. The intended policy (PRD Q-09) is: the latest minor release gets fixes; the previous minor gets security fixes for 3 months after a new minor ships.

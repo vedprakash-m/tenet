@@ -29,32 +29,40 @@ fs.openSync = ((path, ...args) => {
   return descriptor;
 }) as typeof fs.openSync;
 fs.closeSync = ((descriptor) => { if (descriptor === target) target = -1; return close(descriptor); }) as typeof fs.closeSync;
-fs.fstatSync = ((descriptor, ...args) => {
-  const info = stat(descriptor, ...args);
-  if (descriptor === target && !changed && mode !== "short") {
-    changed = true;
-    execFileSync(process.execPath, ["-e", `
-      const fs = require('fs'), path = process.argv[1], mode = process.argv[2];
+const mutate = () => execFileSync(process.execPath, ["-e", `
+      const fs = require('fs'), path = process.argv[1], mode = process.argv[2], before = fs.statSync(path);
       if (mode === 'grow') fs.appendFileSync(path, 'new bytes');
       if (mode === 'oversized') fs.truncateSync(path, 21 * 1024 * 1024);
       if (mode === 'shrink') fs.truncateSync(path, 1);
       if (mode === 'overwrite') fs.writeFileSync(path, 'x'.repeat(fs.statSync(path).size));
       if (mode === 'overwrite-json') fs.writeFileSync(path, fs.readFileSync(path, 'utf8').replace('"note":"a"', '"note":"b"'));
       if (mode === 'metadata-only') fs.chmodSync(path, fs.statSync(path).mode & 0o777);
-      if (mode === 'store-overwrite') {
+      if (mode === 'store-overwrite' || mode === 'restored-mtime') {
         const text = fs.readFileSync(path, 'utf8');
         const changed = path.endsWith('/state') ? text.replace('"revision":1', '"revision":2') :
           path.endsWith('/marker') ? text.replace(/("nonce":")(.)/, (_, prefix, first) => prefix + (first === 'a' ? 'b' : 'a')) :
           text.replace('"note":"a"', '"note":"b"');
         if (text === changed) throw new Error('mutation did not change the target');
         fs.writeFileSync(path, changed);
+        if (mode === 'restored-mtime') fs.utimesSync(path, before.atime, before.mtime);
       }
     `, join(root, input), mode]);
+fs.fstatSync = ((descriptor, ...args) => {
+  const info = stat(descriptor, ...args);
+  if (descriptor === target && !changed && mode !== "short" && mode !== "restored-mtime") {
+    changed = true;
+    mutate();
   }
   return info;
 }) as typeof fs.fstatSync;
-fs.readSync = ((descriptor, buffer, offset, length, position) =>
-  read(descriptor, buffer, offset, mode === "short" && descriptor === target ? Math.min(length, 3) : length, position)) as typeof fs.readSync;
+fs.readSync = ((descriptor, buffer, offset, length, position) => {
+  const count = read(descriptor, buffer, offset, mode === "short" && descriptor === target ? Math.min(length, 3) : length, position);
+  if (descriptor === target && mode === "restored-mtime" && !changed && count > 0) {
+    changed = true;
+    mutate();
+  }
+  return count;
+}) as typeof fs.readSync;
 syncBuiltinESMExports();
 try {
   if (operation === "report") {

@@ -9,9 +9,9 @@ import { errorResponses, mutationSecurity, sessionSecurity, signInSecurity } fro
 import { requireActor } from "../actor.ts";
 import { writeTx } from "../db.ts";
 import { AppError } from "../errors.ts";
-import { ABSOLUTE_MS, COOKIE, createSession, deleteSession } from "../session/session.ts";
+import { ABSOLUTE_MS, COOKIE, createSession, deleteSession, readSession } from "../session/session.ts";
 import { deleteUserSessions } from "../session/sessions.repository.ts";
-import { findUserByEmail, setPasswordHash } from "../users.repository.ts";
+import { findUserByEmail, findUserById, setPasswordHash } from "../users.repository.ts";
 import { PRE_COOKIE } from "./csrf.ts";
 import { decoyHash, hashPassword, verifyPassword } from "./passwords.ts";
 
@@ -38,12 +38,17 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     if (!user || !ok) throw new AppError(401, "invalid-credentials", "That email and password do not match.");
     // Rotate: the session that was presented, if any, is gone before the new one exists.
     const old = req.actor?.session.id;
-    const { cookie, session } = await writeTx(app.db, () => {
+    const { cookie, session, current } = await writeTx(app.db, () => {
+      // Hash verification yields to other requests; bind it to the row that still exists at the write.
+      const current = findUserById(app.db, user.id);
+      if (!current || current.email !== email || current.password_hash !== user.password_hash) {
+        throw new AppError(401, "invalid-credentials", "That email and password do not match.");
+      }
       if (old) deleteSession(app.db, old);
-      return createSession(app.db, user.id, app.config.cookieSecret, app.now());
+      return { ...createSession(app.db, current.id, app.config.cookieSecret, app.now()), current };
     });
     setSession(reply, cookie);
-    return SessionResponse.parse({ user: { id: user.id, email: user.email, role: user.role }, csrfToken: session.csrf });
+    return SessionResponse.parse({ user: { id: current.id, email: current.email, role: current.role }, csrfToken: session.csrf });
   });
 
   r.post("/api/auth/sign-out", { schema: { security: mutationSecurity, response: { 204: z.undefined(), ...errorResponses } } }, async (req, reply) => {
@@ -63,12 +68,18 @@ export function registerAuthRoutes(app: FastifyInstance): void {
     if (!(await verifyPassword(req.body.currentPassword, user.password_hash))) throw new AppError(403, "invalid-credentials", "The current password is not right.");
     const hash = await hashPassword(req.body.newPassword);
     // Every session of this user is revoked, including this one; a fresh one is issued so the caller stays signed in.
-    const { cookie, session } = await writeTx(app.db, () => {
-      setPasswordHash(app.db, user.id, hash);
-      deleteUserSessions(app.db, user.id);
-      return createSession(app.db, user.id, app.config.cookieSecret, app.now());
+    const { cookie, session, current } = await writeTx(app.db, () => {
+      const found = readSession(app.db, req.cookies[COOKIE], app.config.cookieSecret, app.now());
+      if (!found) throw new AppError(401, "unauthenticated", "Sign in to continue.");
+      const current = found.user;
+      if (current.id !== user.id || current.password_hash !== user.password_hash) {
+        throw new AppError(403, "invalid-credentials", "The current password is not right.");
+      }
+      setPasswordHash(app.db, current.id, hash);
+      deleteUserSessions(app.db, current.id);
+      return { ...createSession(app.db, current.id, app.config.cookieSecret, app.now()), current };
     });
     setSession(reply, cookie);
-    return SessionResponse.parse({ user: { id: user.id, email: user.email, role: user.role }, csrfToken: session.csrf });
+    return SessionResponse.parse({ user: { id: current.id, email: current.email, role: current.role }, csrfToken: session.csrf });
   });
 }

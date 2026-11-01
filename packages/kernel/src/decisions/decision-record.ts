@@ -21,13 +21,13 @@ export const decisionRecord: Decision = {
     const intent = state.project.intent;
     const b = r.data;
     const same = intent.records.find((x) => x.title === b.title && x.decision === b.decision && x.context === b.context && x.status === "accepted");
-    if (same) return { resp: { work: work.id, next: [], data: { changed: false, id: same.id } } };
+    if (same) return { resp: { work: work.id, data: { changed: false, id: same.id } } };
     if (b.supersedes && !intent.records.some((x) => x.id === b.supersedes)) throw new KernelError("restriction-key-unknown", `there is no decision ${b.supersedes} to supersede`, { exit: 2 });
     const id = elementId("DEC", highestSeq([...intent.elements, ...intent.plan]) + 1, ports.rand.base32(3));
     const record = { id, title: b.title, status: "accepted" as const, date: ports.clock.now(), context: b.context, decision: b.decision, consequences: b.consequences, alternatives: b.alternatives, ...(b.supersedes ? { supersedes: b.supersedes } : {}), links: b.links, quote: input.quote.slice(0, 200) };
     const records = [...intent.records.map((x) => (x.id === b.supersedes ? { ...x, status: "superseded" as const } : x)), record];
     const element = { id, origin: "request" as const, kind: "decision" as const, text: `${b.title}: ${b.decision}`, verifiedBy: { notApplicable: "a decision carries no check of its own" } };
     const next = { ...state, project: { ...state.project, intent: { ...intent, revision: intent.revision + 1, elements: [...intent.elements, element], records } } };
-    return { state: withWork(next, work), resp: { work: work.id, next: [], data: { changed: true, id } } };
+    return { state: withWork(next, work), resp: { work: work.id, data: { changed: true, id } } };
   },
 };

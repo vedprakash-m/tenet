@@ -1,0 +1,86 @@
+{
+  "date": "2026-10-31",
+  "status": "locally-validated-uncommitted-unqualified",
+  "baseCommit": "28555763ee720b7b4f33c5380107c93b010afc98",
+  "branch": "main",
+  "source": {
+    "files": 389,
+    "sha256": "1885ce539d7de09a94bbd3ff962ae90fb46a24c8c33110a6b45ddb5008117d86",
+    "method": "Sorted unique git ls-files -co --exclude-standard -z -- packages tools plugin; hash path + NUL + bytes + NUL."
+  },
+  "artifact": {
+    "bytes": 776010,
+    "sha256": "347f8edabf0619b756788ff0a37e5e188014dfcd63436e2efe9fe7f2d99c2f1d",
+    "changed": false
+  },
+  "repair": {
+    "files": ["tools/host/copilot-cli.ts", "packages/kernel/test/host-cli.test.ts"],
+    "requirement": "Existing harness-eval HE-06/HE-07 bounded execution and owned-resource controls; RSC-03",
+    "before": "A synchronous two-second fake version probe blocks the harness event loop and makes an independent successful 100-ms command report timedOut=true under its unchanged 500-ms watchdog.",
+    "after": "Asynchronous detached version probes share the original remaining absolute run deadline, cap each output stream at the existing one-MiB synchronous-probe limit, and clean up the owned group at timeout/output limit and leader exit.",
+    "reporting": "Successful version output retains stdout-before-stderr, first-line and 80-character semantics. Nonzero probes remain unavailable. Timeout, deadline exhaustion, output limit and spawn error codes are explicitly unavailable diagnostics, never invented versions. The main command's exit/timeout fields describe that command; missing version metadata does not relabel it as timed out.",
+    "controls": [
+      "stalled version probe with a real shell and descendant cannot block an independent successful run",
+      "completed timeout run does not launch version work after its deadline",
+      "over-one-MiB version output is bounded and reports its limit without entering the model transcript",
+      "split UTF-8 stop event retains exact raw transcript bytes",
+      "existing first-line stop and 20-second watchdog/under-10-second assertion"
+    ],
+    "red": {
+      "command": "node --test --test-name-pattern='stalled version probe' packages/kernel/test/host-cli.test.ts",
+      "exit": 1,
+      "actualIndependent": { "exit": 0, "timedOut": true },
+      "expectedIndependent": { "exit": 0, "timedOut": false },
+      "log": "Current session files/probe-red.log",
+      "sha256": "0b120b06493fd8ea669080e647df82cf2a8ec57d03fe0cffba52c41398029b19"
+    },
+    "focused": {
+      "command": "node --test --test-name-pattern='offline' packages/kernel/test/host-cli.test.ts packages/kernel/test/host-sp08.test.ts",
+      "exit": 0,
+      "tests": 40,
+      "suites": 2,
+      "pass": 40,
+      "fail": 0,
+      "skipped": 0,
+      "log": "Current session files/probe-final-focused.log",
+      "sha256": "40328d829fec0d814b81c540cc1acfd00c068e80b85c3c5a68f71213ff131a18"
+    },
+    "repetition": {
+      "runs": 10,
+      "commandEach": "node --test --test-name-pattern='stalled version probe|version output|complete UTF-8 event split|first output line' packages/kernel/test/host-cli.test.ts packages/kernel/test/host-sp08.test.ts",
+      "failedRuns": 0,
+      "log": "Current session files/probe-repetitions.log",
+      "sha256": "5f1382e173a3d7f7552a622a34bbf15e8fbf0ea496566c1f631fc1126357afdb"
+    }
+  },
+  "ci": {
+    "command": "npm run ci",
+    "node": "v26.3.0",
+    "exit": 0,
+    "tests": 1261,
+    "suites": 204,
+    "pass": 1261,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "log": "Current session files/probe-final-ci.log",
+    "sha256": "c1633a30b637aeeed2d59dcd3c08c6429797eda3db3e5364da02cf2e461c9f09"
+  },
+  "priorStage": "process-workload-validation.json retains the prior 1,259-test source snapshot, real cancellation reds and full unchanged post-authority application workload reports. Its version-probe gap is closed by this later source; its workload/qualification limitations remain.",
+  "limits": [
+    "No exact-new-source remote CI or native Copilot-host evidence.",
+    "The loan fixture's all-worker held-writer barrier and macOS all-busy failure still need separate diagnosis.",
+    "Current-runtime application RSS remains failed; minimum-runtime single local pass is not repeatability or reference-hardware qualification.",
+    "Complete within-budget target protocol design/review/sign-off, semantic acceptance and native/human/release gates remain open.",
+    "No deadline, kernel budget, live-run authority, provider-spend claim or required test assertion is relaxed."
+  ],
+  "scope": {
+    "inheritedChangesPreserved": true,
+    "newBranchOrWorktree": false,
+    "commitOrPush": false,
+    "budgetChanges": false,
+    "targetProtocolActivation": false,
+    "nativeHostOrHumanCampaign": false,
+    "entirePlanImplemented": false
+  }
+}

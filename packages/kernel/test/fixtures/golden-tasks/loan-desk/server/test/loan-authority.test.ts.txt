@@ -1,0 +1,44 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { expect, it } from "vitest";
+import { openDb } from "../src/platform/db.ts";
+import { migrate } from "../src/platform/migrate.ts";
+import { createSession, IDLE_MS } from "../src/platform/session/session.ts";
+import { insertUser, findUserById } from "../src/platform/users.repository.ts";
+import { insertItem } from "../src/features/loans/items.repository.ts";
+import { insertLoan } from "../src/features/loans/loans.repository.ts";
+import { reserveItem, returnItem } from "../src/features/loans/service.ts";
+
+it.each([
+  ["reserve", "revoke", 401], ["reserve", "idle", 401],
+  ["return", "revoke", 401], ["return", "idle", 401], ["return", "demote", 403],
+] as const)("rechecks %s authority after %s during a held-writer retry [QLT-12]", async (operation, change, status) => {
+  const dir = mkdtempSync(join(tmpdir(), "loan-authority-")), path = join(dir, "app.db");
+  const db = openDb(path), writer = openDb(path);
+  let now = Date.now();
+  try {
+    migrate(db);
+    for (const id of ["owner", "admin"]) insertUser(db, { id, email: `${id}@example.test`, role: id === "admin" ? "admin" : "member", password_hash: "unused", created_at: now });
+    insertItem(db, { id: "item", name: "Microscope", created_at: now });
+    if (operation === "return") insertLoan(db, { id: "loan", item_id: "item", user_id: "owner", reserved_at: now });
+    const { session } = createSession(db, "admin", "synthetic signing material", now);
+    const actor = { session, user: findUserById(db, "admin")! };
+    const before = db.prepare("SELECT * FROM loans ORDER BY id").all();
+    writer.exec("BEGIN IMMEDIATE");
+    // Service execution reaches a real SQLITE_BUSY and yields; no timer or mocked transaction establishes the race.
+    const pending = operation === "reserve"
+      ? reserveItem(db, actor, "item", now, () => now)
+      : returnItem(db, actor, "loan", now, () => now);
+    if (change === "revoke") writer.prepare("DELETE FROM sessions WHERE id = ?").run(session.id);
+    if (change === "demote") writer.prepare("UPDATE users SET role = 'member' WHERE id = 'admin'").run();
+    if (change === "idle") now += IDLE_MS;
+    writer.exec("COMMIT");
+    await expect(pending).rejects.toMatchObject({ status });
+    expect(db.prepare("SELECT * FROM loans ORDER BY id").all()).toEqual(before);
+    expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+  } finally {
+    if (writer.inTransaction) writer.exec("ROLLBACK");
+    writer.close(); db.close(); rmSync(dir, { recursive: true, force: true });
+  }
+});

@@ -17,8 +17,8 @@ export const cleanup: Decision = {
     const age = scope === "machine" ? STALE_MS : 0;
     const confirmed = input.answers?.["cleanup-confirm"] === "yes";
     const plan = ports.store.cleanTemp(scope, age, confirmed);
-    if (confirmed) return { resp: { work: work.id, next: [], data: { removed: plan.removed } } };
+    if (confirmed) return { resp: { work: work.id, data: { removed: plan.removed } } };
     const { question, preview } = cleanupPreview(scope, plan);
-    return { resp: { exit: 3, work: work.id, questions: [question], next: [], data: { preview } } };
+    return { resp: { exit: 3, work: work.id, questions: [question], data: { preview } } };
   },
 };

@@ -16,7 +16,59 @@ const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 const fresh = () => { const p = project(); roots.push(p.root); return p; };
 
+function frozen<T>(value: T): T {
+  if (value && typeof value === "object" && !Object.isFrozen(value)) {
+    for (const child of Object.values(value)) frozen(child);
+    Object.freeze(value);
+  }
+  return value;
+}
+
 describe("durable recovery accounting [WRK-08, CON-03]", () => {
+  it("replays multiple contracts from frozen inputs without changing their budgets or owner [CON-03]", async () => {
+    const p = fresh(); await p.call("open", { profile: "investigate", request: "immutable recovery inputs" });
+    const source = p.ports().store.read()!.state, w = Object.values(source.work)[0]!;
+    const oldBudget = { ...newBudget(), attempts: 2, reviewRounds: 1, rechecks: 3, delegations: 4, checksLaunched: 5, tenetTokens: 6, activeMinutesTotal: 7 };
+    const before = frozen({ ...source, sourceOwner: { work: "first", generation: 1 }, work: {
+      first: { ...w, id: "first", session: { generation: 1 }, budget: oldBudget },
+      second: { ...w, id: "second", session: { generation: 2 }, budget: newBudget() },
+    } });
+    const observations = { ...newBudget(), attempts: 1, reviewRounds: 2, rechecks: 2, delegations: 5, checksLaunched: 4, tenetTokens: 7, activeMinutesTotal: 6 };
+    const point = frozen({ kind: "accounting", t: "now", workspaceId: before.workspaceId, revision: before.revision + 1,
+      workSeq: before.workSeq, generationSeq: 3, complete: true, inFlight: [], entries: [
+        { work: "first", generation: 3, budget: observations },
+        { work: "second", generation: 1, budget: observations }, // older generation is not eligible
+        { work: "missing", generation: 3, budget: observations }, // lost work is never reconstructed
+      ] });
+    const bytes = JSON.stringify({ before, point });
+    const recovered = recoverAccounting(before, [point, point]);
+    assert.equal(recovered.verified, false, "counter regressions retain conservative recovery");
+    assert.deepEqual(recovered.state.work.first!.budget, { ...oldBudget, reviewRounds: 2, delegations: 5, tenetTokens: 7 });
+    assert.equal(recovered.state.work.first!.session.generation, 3);
+    assert.deepEqual(recovered.state.sourceOwner, { work: "first", generation: 3 });
+    assert.deepEqual(recovered.state.work.second!.budget, newBudget());
+    assert.deepEqual(Object.keys(recovered.state.work), ["first", "second"]);
+    assert.equal(JSON.stringify({ before, point }), bytes);
+    assert.notEqual(recovered.state.work, before.work);
+    assert.deepEqual(recoverAccounting(before, [point, point]), recovered, "replay does not depend on a previous invocation");
+  });
+
+  it("retains ordinary map prototypes and own data IDs during recovery [CON-03, SEC-06]", async () => {
+    const p = fresh(); await p.call("open", { profile: "investigate", request: "recovery map identity" });
+    const source = p.ports().store.read()!.state, w = Object.values(source.work)[0]!;
+    const before = frozen({ ...source, work: { alias: { ...w, id: "__proto__", budget: newBudget() } } });
+    const point = frozen({ kind: "accounting", t: "now", workspaceId: before.workspaceId, revision: before.revision + 1,
+      workSeq: before.workSeq, generationSeq: before.generationSeq, complete: true, inFlight: [],
+      entries: [{ work: "alias", generation: w.session.generation, budget: { ...newBudget(), attempts: 1 } }],
+    });
+    const result = recoverAccounting(before, [point]);
+    assert.equal(Object.getPrototypeOf(result.state.work), Object.prototype);
+    assert.equal(Object.hasOwn(result.state.work, "__proto__"), true);
+    assert.equal(result.state.work["__proto__"]!.budget.attempts, 1);
+    assert.equal(result.state.work.alias!.budget.attempts, 0, "the original alias keeps the existing replay semantics");
+    assert.equal(Object.hasOwn(before.work, "__proto__"), false);
+  });
+
   for (const conflict of ["in-flight", "completeness", "budget", "sequence"]) {
     it(`refuses same-revision ${conflict} conflicts or regressions while retaining observed usage [WRK-08, CON-03]`, async () => {
       const p = fresh(); await p.call("open", { profile: "investigate", request: "conflicting accounting checkpoints" });

@@ -24,12 +24,12 @@ export function registerLoanRoutes(app: FastifyInstance): void {
 
   r.post("/api/items/:id/reserve", { schema: { security: mutationSecurity, params: z.object({ id: z.string() }), response: { 200: LoanResponse, ...errorResponses } } }, async (req) => {
     const actor = requireActor(req);
-    return reserveItem(app.db, actor, req.params.id, app.now());
+    return reserveItem(app.db, actor, req.params.id, app.now(), app.now);
   });
 
   r.post("/api/loans/:id/return", { schema: { security: mutationSecurity, params: z.object({ id: z.string() }), response: { 200: LoanResponse, ...errorResponses } } }, async (req) => {
     const actor = requireActor(req);
-    return returnItem(app.db, actor, req.params.id, app.now());
+    return returnItem(app.db, actor, req.params.id, app.now(), app.now);
   });
 
   r.get("/api/admin/loans", { schema: { description: "Admin only: borrower identity and loan history.", security: sessionSecurity, querystring: PageQuery, response: { 200: Page(AdminLoanResponse), ...errorResponses } } }, async (req) => {

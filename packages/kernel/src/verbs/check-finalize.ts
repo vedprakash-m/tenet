@@ -1,6 +1,7 @@
 // What a finished check run turns into: the reasons, the next action, the review manifest, and the published contract.
 import { attemptsLeft, nearLimit } from "../core/budget.ts";
 import { KernelError } from "../core/errors.ts";
+import { executionDisclosures } from "../core/execution-envelope.ts";
 import { handoffText } from "../core/handoff.ts";
 import { reason } from "../core/reasons.ts";
 import { receiptReasons } from "../core/receipts.ts";
@@ -121,6 +122,7 @@ async function snapshot(run: Run, nw: WorkContract, reasons: Reason[]) {
 
 export async function finalizeCheck(run: Run, st: State, result: unknown): Promise<Done> {
   const { ports, facts, stage } = run;
+  const data = { executionEnvelopes: executionDisclosures([run.executionEnvelope], st.consents) };
   const cw = st.work[run.w.id];
   // A check that finishes after `stop cancel` or replacement can never publish passing receipts.
   if (!cw || cw.state !== "checking" || cw.session.inCall?.runId !== run.runId) {
@@ -131,6 +133,7 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
         exit: 2,
         reasons: [reason("run-superseded")],
         next: [nx("stop", "The check was cancelled or replaced; its result was discarded.")],
+        data,
       },
     };
   }
@@ -144,6 +147,7 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
         exit: 5,
         reasons: [{ code: "internal-error", message: o.error }],
         next: [nx("check", "Retry the check.")],
+        data,
       },
     };
   }
@@ -189,7 +193,7 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
       work: nw.id,
       reasons: step.reasons,
       next: step.next,
-      data: step.data,
+      data: { ...step.data, ...data },
       progress: { phase: "checking", ...(step.passedAll ? { boundary: "milestone" as const } : {}) },
       ...(stop ? { exit: 2 as const } : {}),
     },

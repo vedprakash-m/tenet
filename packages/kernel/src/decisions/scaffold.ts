@@ -171,6 +171,6 @@ export const scaffold: Decision = {
       execute: () => install(ports, p.recipe, runDir),
       finalize: async (_tx, st, result) => installed(ports, st, work, p, result),
     };
-    return { state: withWork(wrote.state, w), resp: { work: w.id, next: [] }, job };
+    return { state: withWork(wrote.state, w), resp: { work: w.id }, job };
   },
 };

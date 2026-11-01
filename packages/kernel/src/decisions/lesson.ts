@@ -7,7 +7,7 @@ export const lesson: Decision = {
   kind: "lesson",
   run({ ports, state, work, input }) {
     const r = addLesson(state, work, { now: ports.clock.now(), suffix: ports.rand.base32(3) }, input.quote, input.propose);
-    const resp = { work: work.id, next: [], data: { changed: r.changed, id: r.id } };
+    const resp = { work: work.id, data: { changed: r.changed, id: r.id } };
     return r.changed ? { state: withWork({ ...state, lessons: r.lessons }, work), resp } : { resp };
   },
 };

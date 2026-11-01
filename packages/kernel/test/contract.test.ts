@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { ReviewCoverage } from "../src/core/schemas.ts";
+import { BasisElementInput, Obligation, Receipt, ReviewCoverage } from "../src/core/schemas.ts";
 import { buildManifest, isManifest } from "../src/core/review.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, project, reviewResult, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
@@ -15,6 +15,45 @@ const d = (r: { data?: unknown }) => r.data as Record<string, any>;
 const work = (p: Project) => Object.values(p.ports().store.read()!.state.work)[0]!;
 
 describe("the work contract", () => {
+  it("preserves schema-1 basis-input field order and distinct input/obligation bounds", () => {
+    const example = {
+      outputs: ["result.json"], support: ["helper.ts"], testFile: "test.ts", expect: "fail",
+      test: "distinguishing", of: "REQ-1", origin: "request", text: "example", kind: "example", ref: "EX-1", extra: true,
+    };
+    const parsed = BasisElementInput.parse(example);
+    assert.deepEqual(Object.keys(parsed), ["ref", "kind", "text", "origin", "of", "test", "expect", "testFile", "support", "outputs"]);
+    assert.equal(JSON.stringify(parsed), '{"ref":"EX-1","kind":"example","text":"example","origin":"request","of":"REQ-1","test":"distinguishing","expect":"fail","testFile":"test.ts","support":["helper.ts"],"outputs":["result.json"]}');
+    const required = { kind: "example", origin: "request", text: "example" };
+    assert.deepEqual(BasisElementInput.parse(required), required);
+    const obligation = { id: "OB-1", kind: "test", category: "acceptance" };
+    assert.deepEqual(Obligation.parse(obligation), obligation);
+    for (const length of [20, 21]) {
+      const paths = Array.from({ length }, (_, i) => `support-${i}.ts`);
+      assert.equal(BasisElementInput.safeParse({ ...required, support: paths }).success, length === 20);
+      assert.equal(Obligation.safeParse({ ...obligation, support: paths }).success, true);
+      assert.equal(BasisElementInput.safeParse({ ...required, outputs: paths }).success, length === 20);
+      assert.equal(Obligation.safeParse({ ...obligation, outputs: paths }).success, length === 20);
+    }
+    for (const key of ["of", "test", "expect", "testFile", "support", "outputs"]) {
+      assert.equal(BasisElementInput.safeParse({ ...required, [key]: null }).success, false, key);
+    }
+  });
+
+  it("preserves the independent schema-1 receipt and history status vocabulary and diagnostics", () => {
+    const statuses = [Receipt.shape.status, Receipt.shape.history.unwrap().element.shape.status];
+    for (const status of statuses) {
+      for (const value of ["pass", "fail", "inconclusive", "skipped"]) assert.equal(status.parse(value), value);
+      for (const value of ["completed", "partial", null, undefined]) {
+        const parsed = status.safeParse(value);
+        assert.equal(parsed.success, false);
+        if (!parsed.success) assert.deepEqual(parsed.error.issues, [{
+          code: "invalid_value", values: ["pass", "fail", "inconclusive", "skipped"],
+          path: [], message: 'Invalid option: expected one of "pass"|"fail"|"inconclusive"|"skipped"',
+        }]);
+      }
+    }
+  });
+
   it("records outcome, basis, scope, protected paths, checks, budget, branch and base, pinned versions and a recovery point [WRK-01]", async () => {
     const p = fresh();
     const o = await p.call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts"], protectedPaths: ["src/auth/*"], lane: "standard" });

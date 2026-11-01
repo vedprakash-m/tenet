@@ -1,6 +1,7 @@
-// Real service calls in a separate process/connection; markers only synchronize the test's external writer.
+// Real service calls in separate processes/connections; observe driver results without replacing them.
 import { existsSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { mock } from "node:test";
 import { returnItem } from "../../src/features/loans/service.ts";
 import { openDb } from "../../src/platform/db.ts";
 import { AppError } from "../../src/platform/errors.ts";
@@ -13,6 +14,20 @@ try {
   const session = findSession(db, sessionId!);
   const user = session && findUserById(db, session.user_id);
   if (!session || !user) throw new Error("missing fixture actor");
+  let transactionReads = 0;
+  const prepare = db.prepare.bind(db);
+  mock.method(db, "prepare", (sql: string) => {
+    const statement = prepare(sql), get = statement.get.bind(statement);
+    Object.defineProperty(statement, "get", { value: (...params: unknown[]) => {
+      const inTransaction = db.inTransaction, row = get(...params);
+      if (row && typeof row === "object" && "id" in row && row.id === "contested-loan") {
+        if (!inTransaction) throw new Error("loan authority read outside the write transaction");
+        transactionReads++;
+      }
+      return row;
+    } });
+    return statement;
+  });
   writeFileSync(join(dir, `ready-${index}`), "");
   const deadline = Date.now() + 15_000;
   while (!existsSync(join(dir, "start"))) {
@@ -20,13 +35,11 @@ try {
     await new Promise(resolve => setTimeout(resolve, 5));
   }
   try {
-    const pending = returnItem(db, { session, user }, "contested-loan", Number(returnedAt));
-    // returnItem runs synchronously until writeTx encounters the held lock and yields for retry.
-    writeFileSync(join(dir, `attempted-${index}`), "");
-    process.stdout.write(JSON.stringify({ kind: "ok", loan: await pending }));
+    const loan = await returnItem(db, { session, user }, "contested-loan", Number(returnedAt));
+    process.stdout.write(JSON.stringify({ kind: "ok", loan, transactionReads }));
   } catch (error) {
     if (!(error instanceof AppError)) throw error;
-    process.stdout.write(JSON.stringify({ kind: error.code, status: error.status }));
+    process.stdout.write(JSON.stringify({ kind: error.code, status: error.status, transactionReads }));
   }
 } catch (error) {
   process.stderr.write(String(error)); process.exitCode = 1;

@@ -1,0 +1,31 @@
+--- a/packages/kernel/src/core/budget.ts
++++ b/packages/kernel/src/core/budget.ts
+@@ -117,6 +117,8 @@
+   };
+ }
+ 
++const MONOTONE_COUNTERS = ["attempts", "reviewRounds", "rechecks", "delegations", "checksLaunched", "tenetTokens", "activeMinutesTotal"] as const;
++
+ /** A checkpoint can only raise used counters/sequences. It cannot reconstruct missing authority or evidence. */
+ export function recoverAccounting(state: State, records: readonly unknown[]): { state: State; verified: boolean } {
+   let next: State = { ...state, work: Object.fromEntries(Object.entries(state.work).map(([id, w]) => [id, { ...w, budget: privateBudget(w.budget) }])) };
+@@ -134,17 +136,10 @@
+       const w = next.work[entry.work];
+       if (!w || entry.generation < w.session.generation) continue;
+       const b = w.budget, observed = privateBudget(entry.budget);
+-      if ((["attempts", "reviewRounds", "rechecks", "delegations", "checksLaunched", "tenetTokens", "activeMinutesTotal"] as const)
+-        .some(key => observed[key] < b[key])) invalid = true;
++      if (MONOTONE_COUNTERS.some(key => observed[key] < b[key])) invalid = true;
+       const budget: BudgetState = {
+         ...observed,
+-        attempts: Math.max(b.attempts, observed.attempts),
+-        reviewRounds: Math.max(b.reviewRounds, observed.reviewRounds),
+-        rechecks: Math.max(b.rechecks, observed.rechecks),
+-        delegations: Math.max(b.delegations, observed.delegations),
+-        checksLaunched: Math.max(b.checksLaunched, observed.checksLaunched),
+-        tenetTokens: Math.max(b.tenetTokens, observed.tenetTokens),
+-        activeMinutesTotal: Math.max(b.activeMinutesTotal, observed.activeMinutesTotal),
++        ...Object.fromEntries(MONOTONE_COUNTERS.map(key => [key, Math.max(b[key], observed[key])])),
+         signatures: observed.attempts >= b.attempts ? observed.signatures : b.signatures,
+       };
+       const stopReason = stopFor(budget, w.lane) ?? w.stopReason;

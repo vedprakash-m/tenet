@@ -101,10 +101,10 @@ export const Obligation = z.object({
   tool: z.string().optional(), // adapter tool id, e.g. "vitest"
   example: z.string().optional(),
   testFile: z.string().optional(),
-  support: z.array(z.string()).optional(),
-  outputs: z.array(z.string()).max(20).optional(),
-  test: z.enum(["distinguishing", "preservation", "boundary"]).optional(),
-  expectation: z.enum(["fail", "pass"]).optional(), // declared baseline expectation
+  support: BasisElement.shape.support,
+  outputs: BasisElement.shape.outputs,
+  test: BasisElement.shape.test,
+  expectation: BasisElement.shape.expect, // declared baseline expectation
   state: z.enum(["registered", "verified", "locked", "revised"]).optional(),
   baselineTestHash: z.string().optional(), // hash of the test file at its red run (red-invalidated, TS §8.1)
   baselineMatched: z.boolean().optional(),
@@ -114,6 +114,8 @@ export const Obligation = z.object({
 export type Obligation = z.infer<typeof Obligation>;
 
 export { ExecutionEnvelope };
+
+const ReceiptStatus = z.enum(["pass", "fail", "inconclusive", "skipped"]);
 
 export const Receipt = z.object({
   id: z.string(), obligation: z.string(), kind: z.string(),
@@ -131,10 +133,10 @@ export const Receipt = z.object({
   analyzedFiles: z.array(z.string()).max(2000).optional(),
   versions: z.object({ tool: z.string(), reporter: z.string(), adapter: z.string() }),
   provenance: z.object({ runId: z.string(), runDir: z.string(), startedAt: z.string(), pid: z.number().optional() }),
-  status: z.enum(["pass", "fail", "inconclusive", "skipped"]),
+  status: ReceiptStatus,
   qualifiers: z.array(z.enum(["flaky", "simulated", "partial", "history-unavailable"])),
   // The attempts behind a rerun result (EVD-08): at most 3, each with at most 5 failing test names.
-  history: z.array(z.object({ status: z.enum(["pass", "fail", "inconclusive", "skipped"]), failed: z.array(z.string()).max(5), at: z.string() })).max(3).optional(),
+  history: z.array(z.object({ status: ReceiptStatus, failed: z.array(z.string()).max(5), at: z.string() })).max(3).optional(),
   reasons: z.array(z.string()), limitations: z.array(z.string()),
   candidate: z.string(),
   executionEnvelope: ExecutionEnvelope.optional(),
@@ -170,27 +172,28 @@ export const ModelRecord = z.strictObject({
 });
 export type ModelRecord = z.infer<typeof ModelRecord>;
 
+const DispatchStatus = z.enum(["completed", "partial", "blocked", "failed", "cancelled"]);
+const DispatchMode = z.enum(["subagent-fresh", "same-session"]);
+
 export const ReviewLink = z.object({
   reservation: z.string(), mode: z.enum(["full", "recheck"]), candidate: z.string(), basisHash: z.string(),
   basedOn: z.string().optional(), uncovered: z.array(z.string()), verified: z.array(z.string()),
-  independence: z.enum(["subagent-fresh", "same-session"]), status: z.string(),
+  independence: DispatchMode, status: z.string(),
   files: z.record(z.string(), z.string()).default({}), // blob of each Tenet file when this review was issued
   axes: z.object({ behavior: z.enum(["pass", "fail"]), structure: z.enum(["pass", "fail"]) }).optional(), // the reviewer's judgment, never edited
   coverage: ReviewCoverage.optional(), openDependencies: z.array(z.string()).optional(), model: ModelRecord.optional(),
 });
 export type ReviewLink = z.infer<typeof ReviewLink>;
 
-export const AnalystFinding = z.object({
-  location: z.object({ path: z.string(), line: z.number().optional() }), claim: z.string(), evidence: z.string(),
-});
+export const AnalystFinding = Finding.pick({ location: true, claim: true, evidence: true });
 export type AnalystFinding = z.infer<typeof AnalystFinding>;
 
 // An analyst packet's settled result (TS §5.4): read-only, no severity or disposition state machine — the coordinator
 // and the user judge it, the kernel only records what was asked, observed and found (AGT-03, AGT-05, AGT-11).
 export const AnalystLink = z.object({
   reservation: z.string(), role: z.enum(["researcher", "architect", "security"]), question: z.string(),
-  revision: z.string(), status: z.enum(["completed", "partial", "blocked", "failed", "cancelled"]),
-  independence: z.enum(["subagent-fresh", "same-session"]),
+  revision: z.string(), status: DispatchStatus,
+  independence: DispatchMode,
   artifacts: z.array(z.string()), findings: z.array(AnalystFinding), openDependencies: z.array(z.string()),
   stale: z.boolean().optional(), // the candidate moved after this analyst observed its revision (AGT-11)
   sketch: z.string().optional(), decisionRecord: z.string().optional(), // architect only
@@ -254,6 +257,7 @@ export const WorkContract = z.object({
   }),
   outcome: z.string(), planItem: z.string().optional(),
   scope: z.strictObject({ paths: z.array(z.string()), protected: z.array(z.string()) }),
+  hardening: z.object({ block: z.string(), hash: z.string() }).optional(),
   basis: z.object({
     intentRevision: z.number(), elementIds: z.array(z.string()), design: z.string().optional(),
     hash: z.string(), traits: z.array(z.string()),
@@ -348,17 +352,13 @@ export type State = z.infer<typeof State>;
 export const ReviewResult = z.strictObject({
   kind: z.literal("review"),
   manifest: z.string(), reservation: z.string(), attempt: z.number().int(), mode: z.enum(["full", "recheck"]),
-  status: z.enum(["completed", "partial", "blocked", "failed", "cancelled"]),
-  dispatchMode: z.enum(["subagent-fresh", "same-session"]),
-  axes: z.object({ behavior: z.enum(["pass", "fail"]), structure: z.enum(["pass", "fail"]) }),
+  status: DispatchStatus,
+  dispatchMode: DispatchMode,
+  axes: ReviewLink.shape.axes.unwrap(),
   coverage: ReviewCoverage,
   attention: z.array(z.object({ id: z.string(), disposition: z.enum(["accepted", "finding"]), reason: z.string() })),
   rechecked: z.array(z.object({ finding: z.string(), outcome: z.enum(["verified", "still-open"]), evidence: z.string() })).optional(),
-  findings: z.array(z.object({
-    severity: Severity, axis: z.enum(["behavior", "structure"]),
-    location: z.object({ path: z.string(), line: z.number().optional() }),
-    claim: z.string(), evidence: z.string(), fix: z.string().optional(),
-  })),
+  findings: z.array(Finding.pick({ severity: true, axis: true, location: true, claim: true, evidence: true, fix: true })),
   basisGaps: z.array(z.object({
     kind: z.enum(["missing-requirement", "missing-invariant", "weak-test", "out-of-scope-change"]), detail: z.string(),
   })),
@@ -373,8 +373,8 @@ export const AnalystResult = z.strictObject({
   kind: z.literal("analyst"),
   manifest: z.string(), reservation: z.string(), attempt: z.number().int(),
   role: z.enum(["researcher", "architect", "security"]),
-  status: z.enum(["completed", "partial", "blocked", "failed", "cancelled"]),
-  dispatchMode: z.enum(["subagent-fresh", "same-session"]),
+  status: DispatchStatus,
+  dispatchMode: DispatchMode,
   revision: z.string(),
   artifacts: z.array(z.string()),
   findings: z.array(AnalystFinding),
@@ -429,15 +429,12 @@ export type OpenInput = z.infer<typeof OpenInput>;
 
 export const BasisElementInput = z.object({
   ref: z.string().optional(),
-  kind: z.enum(["requirement", "example", "invariant", "constraint", "assumption", "decision", "deferred"]),
+  kind: BasisElement.shape.kind,
   text: z.string().min(1).max(2000),
-  origin: z.enum(["request", "tenet"]),
-  of: z.string().optional(), // ref of the requirement an example or invariant belongs to
-  test: z.enum(["distinguishing", "preservation", "boundary"]).optional(),
-  expect: z.enum(["fail", "pass"]).optional(),
-  testFile: z.string().optional(),
+  // of: ref of the requirement an example or invariant belongs to
+  ...BasisElement.pick({ origin: true, of: true, test: true, expect: true, testFile: true }).shape,
   support: z.array(z.string()).max(20).optional(),
-  outputs: z.array(z.string()).max(20).optional(),
+  outputs: BasisElement.shape.outputs,
 });
 
 export const BasisProposal = z.object({
@@ -453,6 +450,7 @@ export const DecideInput = z.object({
   h: Handle.optional(),
   kind: z.string(), // decision kind (registry key)
   propose: z.unknown().optional(), // content for propose-form kinds
+  gaps: z.array(z.string()).optional(),
   answers: z.record(z.string(), z.string()).optional(),
   target: z.string().optional(),
   quote: z.string().optional(),

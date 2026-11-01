@@ -2,7 +2,7 @@
 
 A governed, test-first engineering loop for GitHub Copilot in VS Code. A small local kernel (`kernel/tenet.mjs`) records what is true; the `tenet` agent does the work; a reviewer subagent reviews it.
 
-**Status: preview; no host tuple is qualified.** On VS Code, plugin loading from a local plugin location, skill-relative kernel invocation from the host's snapshot copy, and reviewer dispatch have been observed. Context isolation and host enforcement of the reviewer's tool restrictions remain unobserved. Approval behavior was observed only as one terminal approval per session; the approval mode remains unknown. These partial observations do not establish an installed-and-working or qualified product.
+**Status: preview; no host tuple is qualified.** On October 19–20, 2026, local plugin loading and multi-step work through `finish` were observed in VS Code on macOS. One observation used VS Code 1.143.0 with `@github/copilot` 1.0.100-1; the earlier VS Code 1.142.0 run did not record the Copilot extension version. Reviewer dispatch was observed, including refusal and retry of a partial result. Host enforcement of reviewer tool restrictions, context isolation, update and uninstall remain unobserved. Approval behavior was observed only as one terminal approval per session; the approval mode remains unknown. These partial observations do not establish an installed-and-working or qualified product. See the [qualified tuple record](../docs/user/qualified-tuple.md).
 
 ## What you need
 - VS Code with GitHub Copilot Chat in agent mode, and the setting that enables agent plugins

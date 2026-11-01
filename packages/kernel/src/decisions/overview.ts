@@ -17,8 +17,8 @@ export const overview: Decision = {
     if (!r.success) throw new KernelError("restriction-key-unknown", `overview: ${r.error.issues[0]!.path.join(".") || "body"}: ${r.error.issues[0]!.message}`, { exit: 2 });
     const intent = state.project.intent;
     const merged = { ...intent.overview, ...Object.fromEntries(Object.entries(r.data).filter(([, v]) => v !== undefined)) };
-    if (JSON.stringify(merged) === JSON.stringify(intent.overview)) return { resp: { work: work.id, next: [], data: { changed: false } } };
+    if (JSON.stringify(merged) === JSON.stringify(intent.overview)) return { resp: { work: work.id, data: { changed: false } } };
     const next = { ...state, project: { ...state.project, intent: { ...intent, revision: intent.revision + 1, overview: merged } } };
-    return { state: withWork(next, work), resp: { work: work.id, next: [], data: { changed: true, overview: merged } } };
+    return { state: withWork(next, work), resp: { work: work.id, data: { changed: true, overview: merged } } };
   },
 };

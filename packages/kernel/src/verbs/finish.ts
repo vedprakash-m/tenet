@@ -4,6 +4,7 @@ import { summarize } from "../core/budget.ts";
 import { controlsFor } from "../core/controls.ts";
 import { handoffText } from "../core/handoff.ts";
 import { KernelError } from "../core/errors.ts";
+import { executionDisclosures } from "../core/execution-envelope.ts";
 import { releaseItem } from "../core/plan.ts";
 import { reason } from "../core/reasons.ts";
 import { FinishInput } from "../core/schemas.ts";
@@ -23,11 +24,16 @@ const MAX_REASONS = 8;
 
 /** The result the user reads: outcome first, then checks, limits and the next action (RES-01). */
 function result(
-  ports: Ports, w: WorkContract, v: Verdict, facts: Facts, extra: Reason[], setting: IntegrationSetting, offer = false,
+  ports: Ports, st: State, w: WorkContract, v: Verdict, facts: Facts, extra: Reason[], setting: IntegrationSetting, offer = false,
 ): Resp {
   const humanFiles = facts.att.human.length + facts.att.concurrent.length + facts.att.unexplained.length;
   const label = headline(v, { profile: w.profile, branch: w.git.branch, humanFiles });
-  const reasons = [...v.reasons.filter((r) => !r.note), ...v.reasons.filter((r) => r.note), ...extra];
+  const missingHardening = w.profile === "prototype" && !w.hardening;
+  const missingReason = missingHardening ? reason("hardening-gaps-missing", undefined, { note: true }) : undefined;
+  const reasons = [...v.reasons.filter((r) => !r.note), ...v.reasons.filter((r) => r.note),
+    ...(missingReason ? [missingReason] : []), ...extra];
+  const shown = reasons.slice(0, MAX_REASONS);
+  if (missingReason && !shown.includes(missingReason)) shown[MAX_REASONS - 1] = missingReason;
   const latestByOb = new Map(w.receipts.filter((r) => r.stage !== "baseline").map((r) => [r.obligation, r]));
   const checks = [...latestByOb.values()].map((r) => ({ obligation: r.obligation, status: r.status, counts: r.counts }));
   const lastReview = w.reviews.at(-1);
@@ -42,8 +48,8 @@ function result(
   };
   return {
     work: w.id,
-    reasons: reasons.slice(0, MAX_REASONS),
-    next: [],
+    reasons: shown,
+    ...(missingHardening ? { next: [nx("decision", "Record the prototype's hardening gaps with `decide hardening`.")] } : {}),
     progress: { phase: "finished", boundary: "milestone" },
     data: {
       ...(offer ? { offer: "adopt" } : {}),
@@ -55,6 +61,7 @@ function result(
       ...(v.stopReason ? { stopReason: v.stopReason } : {}),
       acceptance: w.acceptance,
       checks,
+      executionEnvelopes: executionDisclosures(w.receipts.flatMap(r => r.executionEnvelope ?? []), st.consents),
       usage: summarize(w.budget, w.lane),
       ...(w.model ? { model: w.model } : {}),
       ...controlsFor(w, v.endpoint, ports.host.capabilities()),
@@ -63,7 +70,7 @@ function result(
       branch: w.git.branch,
       integration,
       handoff: w.handoff ?? null,
-      omitted: Math.max(0, reasons.length - MAX_REASONS),
+      omitted: Math.max(0, reasons.length - shown.length),
     },
   };
 }
@@ -77,24 +84,12 @@ function close(ports: Ports, st: State, nw: WorkContract, f: Facts, v: Verdict, 
   const out: State = sourceOwner && sourceOwner.work !== nw.id ? { ...rest, sourceOwner } : rest;
   const offer =
     v.endpoint === "checked-local" && isEditing(nw) && st.project.adoption.intent === "undecided" && !st.project.adoption.offered;
-  const resp = result(ports, closed, v, f, extra, integrationSetting(ports, st, closed), offer);
+  const resp = result(ports, st, closed, v, f, extra, integrationSetting(ports, st, closed), offer);
   // The plan item this contract worked on is done when it reached checked-local, otherwise available again (INT-12).
   const plan = releaseItem(out.project.intent.plan, nw.id, v.endpoint === "checked-local");
   const settled: State = { ...out, project: { ...out.project, intent: { ...out.project.intent, plan } } };
   const adoption = { ...settled.project.adoption, offered: true };
   return { state: offer ? { ...settled, project: { ...settled.project, adoption } } : settled, resp };
-}
-
-/** Answers that need no commit and no verdict work: a finished contract's current result, or an open question first. */
-async function answerEarly(ports: Ports, cur: State, w: WorkContract): Promise<Plan | undefined> {
-  if (w.state === "finished") {
-    // Already closed: report the verdict as it stands now, change nothing, commit nothing.
-    const f = await gather(ports, w, cur.locks);
-    const v = verdict(verdictInput(ports, cur, w, f));
-    return { resp: result(ports, w, v, f, [], integrationSetting(ports, cur, w)) };
-  }
-  if (!cur.pending.length) return undefined;
-  return { resp: { work: w.id, exit: 3, questions: cur.pending, next: [nx("ask", "Answer the open question first.", true)] } };
 }
 
 const finishVerb: Verb<FinishInput> = {
@@ -108,12 +103,16 @@ const finishVerb: Verb<FinishInput> = {
     const cur = state!;
     const w = workOf(cur, input.h);
     if (!w.basis && isEditing(w)) throw new KernelError("continue-required", "record a basis before finishing", { exit: 2 });
-    const early = await answerEarly(ports, cur, w);
-    if (early) return early;
+    /** Answers that need no commit and no verdict work: a finished contract's current result, or an open question first. */
+    if (w.state !== "finished" && cur.pending.length)
+      return { resp: { work: w.id, exit: 3, questions: cur.pending, next: [nx("ask", "Answer the open question first.", true)] } };
 
     const facts = await gather(ports, w, cur.locks);
     const vi = verdictInput(ports, cur, w, facts);
     const v0 = verdict(vi);
+    // Already closed: report the verdict as it stands now, change nothing, commit nothing.
+    if (w.state === "finished")
+      return { resp: result(ports, cur, w, v0, facts, [], integrationSetting(ports, cur, w)) };
     if (continueRequired(v0, { attemptsLeft: vi.attemptsLeft, stopReason: w.stopReason })) {
       const reasons = [
         reason("continue-required", "an introduced failure remains and attempts are left"),

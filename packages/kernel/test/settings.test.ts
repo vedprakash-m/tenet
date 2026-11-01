@@ -1,8 +1,10 @@
 // Settings through the verbs: `decide config`, `inspect settings` and the places `open` reads them (PRD §7.5-7.7).
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { cleanup } from "./helpers.ts";
-import { project } from "./support/fixture.ts";
+import { BASIS, project } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -30,7 +32,7 @@ describe("decide config [CFG-06, CFG-07]", () => {
     assert.deepEqual(seen.overridden.map((o: any) => [o.source, o.value]), [["project", "guided"], ["default", "balanced"]]);
   });
 
-  it("reapplying an unchanged setting creates no revision, and a reset restores the inherited value", async () => {
+  it("reapplying an unchanged setting creates no revision, and a reset restores the inherited value [CFG-10]", async () => {
     const p = fresh();
     const h = (await open(p)).handle!;
     await p.call("decide", { h, kind: "config", target: "integration", propose: { value: "never" } });
@@ -77,6 +79,31 @@ describe("inspect settings [CFG-05]", () => {
 });
 
 describe("open reads the settings", () => {
+  it("leaves other instruction files and plugin content unchanged while settings and intent are adopted [CFG-09]", async () => {
+    const external = {
+      "AGENTS.md": "# Repository guidance\nDo not rewrite.\n",
+      ".github/copilot-instructions.md": "# Copilot guidance\nKeep these bytes.\n",
+      ".github/plugins/example/plugin.json": '{"name":"example-plugin"}\n',
+    };
+    const p = fresh(external);
+    const before = Object.entries(external).map(([path]) => {
+      const file = join(p.root, path);
+      return { path, bytes: readFileSync(file), mode: statSync(file).mode & 0o777 };
+    });
+    const h = (await p.call("open", { profile: "feature", request: "add a greeting", scopePaths: ["src/greet.ts"] })).handle!;
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    await p.call("decide", { h, kind: "config", target: "style", propose: { value: "concise", scope: "project" } });
+    const preview = await p.call("decide", { h, kind: "adopt", target: "intent" });
+    assert.equal(preview.exit, 3, JSON.stringify(preview));
+    const adopted = await p.call("decide", { h, kind: "adopt", target: "intent", answers: { "adopt-confirm": "confirm" } });
+    assert.equal(adopted.exit, 0, JSON.stringify(adopted));
+    for (const original of before) {
+      const file = join(p.root, original.path);
+      assert.deepEqual(readFileSync(file), original.bytes, `${original.path} bytes`);
+      assert.equal(statSync(file).mode & 0o777, original.mode, `${original.path} permissions`);
+    }
+  });
+
   it("uses the lane preference as the default lane, never below the floor", async () => {
     const p = fresh();
     const h = (await open(p)).handle!;

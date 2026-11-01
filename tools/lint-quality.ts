@@ -1,6 +1,7 @@
 // Quality ratchet (.github/copilot-instructions.md: simplicity first). New code meets the limits below. Code that already
 // exceeded them is recorded in tools/quality-baseline.json and may only shrink; a new offender, or growth in a recorded
-// one, fails. `--update` lowers the record after a refactor; `--init` writes it once. Nothing here raises a limit.
+// one, fails. `--update` lowers the record after a refactor; `--init` writes it once. Budget changes require a measured,
+// documented owner decision.
 // Module sizes (TS §6.2) follow the same rule: a module over its owner-set budget may not grow past its recorded ceiling.
 // Size is counted in non-whitespace characters, so wrapping a line or splitting a function is not growth (owner decision, 2026-10-20).
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
@@ -21,14 +22,14 @@ export const budgetChars = (name: string): number => Math.round(BUDGETS[name]!.l
 export const BUDGETS: Record<string, { match: RegExp; lines: number }> = {
   "core/schemas": { match: /^core\/schemas\.ts$/, lines: 467 }, // +3 receipt history (EVD-08; 0.58%), +3 outputs fields (EVD-09; 0.6%), +1 pinned adapter (LFC-03); pre-approved 2026-10-24 // +6 ModelRecord (RSC-02), +4 active-time fields (WRK-08), +5 dependency.manager (pnpm), 2026-10
   "core/risk": { match: /^core\/risk\.ts$/, lines: 150 },
-  "core/budget": { match: /^core\/budget\.ts$/, lines: 150 },
+  "core/budget": { match: /^core\/budget\.ts$/, lines: 154 }, // +4 lines for exact usage reporting (RSC-04); owner authorized friction-related rule amendments 2026-10-31
   "core/verdict": { match: /^core\/verdict\.ts$/, lines: 300 },
   "core/review": { match: /^core\/review\.ts$/, lines: 350 },
   "adapters/store-fs": { match: /^adapters\/store-fs\.ts$/, lines: 450 },
   "adapters/git-cli": { match: /^adapters\/git-cli\.ts$/, lines: 657 }, // +3 lines for the layout probe call (GIT-13; 0.38%), +4 for the declared-output parameter (EVD-09; 0.5%); both pre-approved 2026-10-24
   "adapters/runner": { match: /^adapters\/runner\.ts$/, lines: 350 },
   "adapters/node-ts": { match: /^adapters\/node-ts\.ts$/, lines: 350 },
-  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 4198 }, // +10 crash-safe schema-1 forget (0.24%, owner-approved 2026-10-27; measured 2026-10-28). +4 for early unsupported-platform admission (TS §4.9; 0.096%, existing under-1% pre-approval, 2026-10-25). Prior increments: +36 lines (~2,073 chars) for hash-bound project-check envelopes and pre-spawn consent (RC1, owner-approved 2026-10-22), +36 lines for `decide lesson`/`forget`, the lessons view and packet excerpt (LRN-02, CON-10; owner-confirmed), +4 lines for `inspect --view impact` (INT-08; under the 1% pre-approval), +23 lines for `decide cleanup` and `inspect --view residue` (LFC-05; 0.57%, pre-approved), +19 lines for journal reduction, run-file cap and the ceiling at open/finish (CON-08; 0.45%, pre-approved), +11 lines for layout notes and the submodule refusal at open (GIT-13; 0.26%, pre-approved), +3 lines for impact in the plan preview (INT-08; 0.05%, pre-approved), +80 lines (2.0%) for check reruns, the flaky qualifier and the end-of-run toolchain comparison (EVD-08/EVD-11; owner-confirmed 2026-10-24, above the 1% pre-approval), +41 lines for declared outputs and named-file diagnostics (EVD-09; 1.0%, pre-approved), +75 lines (1.8%) for version pinning, the pause, the resume question and `decide version-reconcile` (LFC-03; approved in advance by the owner on 2026-10-24)
+  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 4292 }, // WRK-06: +92 lines (owner-approved 2026-10-31) for prototype data gating, managed hardening blocks and journaled recovery; RSC-04 +2 lines owner-authorized 2026-10-31. Earlier increments: +10 crash-safe schema-1 forget; +4 early unsupported-platform admission; +36 hash-bound project-check envelopes; +36 lesson/forget workflow; +4 impact view; +23 cleanup/residue; +19 journal reduction; +11 layout notes; +3 plan impact; +80 check reruns/flaky/toolchain comparison; +41 declared outputs; +75 version reconciliation.
 };
 
 const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => {

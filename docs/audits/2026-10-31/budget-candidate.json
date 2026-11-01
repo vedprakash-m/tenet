@@ -1,0 +1,12 @@
+{
+  "owner": "core/budget",
+  "before": 8585,
+  "candidate": 8298,
+  "saved": 287,
+  "comparisons": 8000,
+  "scope": "Scratch candidate only. Deterministic generated examples cover counter regressions and duplicate/gapped/absent checkpoints; not exhaustive equivalence or target feasibility.",
+  "sourceSha256": "212394d1c7b3379bd0ba66735ff4cc61008ff323ed33dde66ae4e217935dd97d",
+  "candidateSha256": "aef64fc8352c94e02ab5059ecdadb653f764d03cbbe5c4fe5b81fab0b463e8a5",
+  "patchSha256": "661753d25c79fc6bb9171459279d45ef1faf65c2bc2d5710cf58711d5405caca",
+  "installed": false
+}

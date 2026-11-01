@@ -17,6 +17,19 @@ const d = (r: { data?: unknown }) => r.data as Record<string, any>;
 const PLUGIN = join(import.meta.dirname, "../../../plugin/skills/tenet-starter-ts-web-api");
 
 describe("the ts-web-api recipe", () => {
+  it("ships a hardening inventory for use before shared, networked, or production deployment [QLT-17]", () => {
+    const hardening = readFileSync(join(PLUGIN, "template/docs/hardening.md"), "utf8");
+    for (const section of [
+      "Development identities only",
+      "Local binding only",
+      "No TLS",
+      "One node",
+      "Backups are manual",
+      "Production secrets",
+      "Deployment checklist",
+    ]) assert.ok(hardening.includes(section), `hardening inventory omits ${section}`);
+  });
+
   it("pins the lockfile it ships", () => {
     const recipe = JSON.parse(readFileSync(join(PLUGIN, "recipe.json"), "utf8"));
     assert.equal(createHash("sha256").update(readFileSync(join(PLUGIN, "template/package-lock.json"))).digest("hex"), recipe.lockfileSha256, "re-lock the recipe: update recipe.json with the new hash");
@@ -31,7 +44,7 @@ describe("the ts-web-api recipe", () => {
     assert.equal(template.engines.node, ">=22.12.0");
   });
 
-  it("scaffolds, and receipts the starter's tests, types and lint and a real end-to-end run against its own dedicated database [EVD-13], all run by the kernel", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
+  it("scaffolds and receipts the starter's migration, restore, test, type, lint and browser checks through the kernel [EVD-13, QLT-03, QLT-04, QLT-07, QLT-14]", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
     const root = tmp("tenet-starter-"); roots.push(root);
     initRepo(root);
     const rawCall = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
@@ -47,13 +60,13 @@ describe("the ts-web-api recipe", () => {
     } });
     const s = await call("decide", { h, kind: "scaffold", propose: { name: "loan-desk" } });
     assert.equal(s.exit, 0, JSON.stringify(s));
-    assert.equal(d(s).version, "0.4.0");
+    assert.equal(d(s).version, "0.4.5");
 
     const c = await call("check", { h, stage: "candidate" });
     assert.equal(c.exit, 0, JSON.stringify(c));
     const suite = d(c).receipts.find((r: { obligation: string }) => r.obligation === "OB-suite");
     assert.equal(suite.status, "pass", JSON.stringify(suite));
-    assert.equal(suite.counts.executed, 89, "all platform, client and generated-contract cases ran");
+    assert.equal(suite.counts.executed, 105, "all platform, client and generated-contract cases ran");
 
     for (const id of ["OB-types", "OB-lint"]) {
       const receipt = d(c).receipts.find((r: { obligation: string }) => r.obligation === id);
