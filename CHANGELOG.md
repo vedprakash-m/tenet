@@ -1,5 +1,560 @@
 # Changelog
 
+## 2026-11-01 — Check and commit accumulated implementation work
+
+- Commit accumulated implementation, tests, starter payload, tooling and evidence as `e9f3f1e`; specs and progress follow separately. All staged added-line privacy checks pass after documenting two redaction-sentinel false positives.
+- Full prepublication CI passes **1,308 tests / 207 suites** and rebuilt CLI UAT passes. Push is withheld because the first commit acquired automatic local-machine identity metadata; identity-only amendment awaits explicit approval. No hosted CI or release qualification is claimed.
+
+## 2026-11-01 — Refuse passed Playwright results carrying errors (uncommitted)
+
+- Reject a passed execution with nonempty errors, including an empty error message; preserve explicit empty errors as valid. Reuse the existing contradiction diagnostic and the unpublished adapter-version-12 repair batch.
+- Red-first regression and all 15 focused adapter tests pass. Full local CI passes **1,308 tests / 207 suites**; rebuilt CLI UAT passes. Report fixtures are not live Playwright qualification.
+- Files: `packages/kernel/src/adapters/playwright.ts`, `packages/kernel/test/playwright-adapter.test.ts`, `specs/plan.md`, `CHANGELOG.md`.
+
+## 2026-11-01 — Refuse contradictory Playwright skip expectations (uncommitted)
+
+- Reject a report that marks a test expected-skipped but claims it passed, even when aggregate counts agree. Emit the existing contradiction diagnostic and no normalized population; preserve genuine skipped reports as skipped, not executed.
+- Advance the Node adapter identity to `node-ts@12` so prior normalization evidence is not reused under repaired semantics. Existing version reconciliation remains required; receipts are not relabeled.
+- Red-first contradiction/version controls and a valid-skip control pass. Full local CI passes **1,307 tests / 207 suites** and rebuilt CLI UAT passes; fixed budgets are unchanged.
+- Files: `packages/kernel/src/adapters/playwright.ts`, `packages/kernel/src/adapters/node-ts.ts`, `packages/kernel/test/playwright-adapter.test.ts`, `specs/plan.md`, `CHANGELOG.md`.
+
+## 2026-11-01 — Verify exact active-time admission boundary (uncommitted)
+
+- Add a real-repository WRK-08 regression: a candidate check launches one millisecond below the Quick limit, then is refused at exactly 15 active minutes including the gap after the successful call. Refusal preserves counters and launches no check.
+- Four focused active-time controls pass; final combined CI passes **1,307 tests / 207 suites**, and rebuilt CLI UAT passes. Runtime behavior and time-accounting policy are unchanged; provider/tool/network waiting-time separation remains open.
+- Files: `packages/kernel/test/active-time.test.ts`, `specs/plan.md`, `CHANGELOG.md`.
+
+## 2026-11-01 — Bind check identity to the pinned contract base (uncommitted)
+
+- Repair the `[EVD-01, EVD-03]` identity omission reproduced with a real repository: identical candidate files under different contract bases no longer share a check ID. Later HEAD commits do not change the pinned base or content digest; earlier receipts retain their recorded IDs.
+- Preserve obligation projection fields/order and identity length; fixed source budgets remain unchanged. Full local `npm run ci` passes **1,304 tests / 207 suites**; rebuilt CLI UAT passes. This is not configuration/cache/migration protocol closure or semantic qualification.
+- Files: `packages/kernel/src/verbs/facts.ts`, `packages/kernel/test/audit-regressions.test.ts`, `specs/plan.md`, `CHANGELOG.md`.
+
+## 2026-11-01 — Verify acceptance cannot promote check evidence (uncommitted)
+
+- Add a real-repository `[EVD-06]` workflow regression for owner acceptance with missing candidate checks and with failed candidate checks. Acceptance leaves receipts, verdict endpoint and blocking reasons unchanged.
+- Full local `npm run ci` passes **1,303 tests / 207 suites**; built CLI UAT passes. Runtime behavior is unchanged; no semantic ledger disposition or qualification is assigned.
+- Files: `packages/kernel/test/workflows.test.ts`, `specs/plan.md`, `CHANGELOG.md`.
+
+## 2026-10-31 — Refuse conflicting Vitest JSON reporter settings (uncommitted)
+
+- Before launching a check, refuse a Vitest/Vite config that redirects the JSON reporter output away from the adapter's private report file; also refuse reporter declarations the bounded source inspection cannot verify.
+- Add two `[TQ-10]` real-runner regressions. Full `npm run ci` passes, including **1,301 tests / 207 suites**; the built bundle refuses an opaque reporter config with no receipt or project output.
+- The source inspection is not a full JavaScript config parser. This is a narrow adapter guard, not SP-10 qualification or a Phase A mapping; Vitest/Jest/Playwright/ESLint/tsc qualification remains open.
+- Files: `packages/kernel/src/adapters/node-ts.ts`, `packages/kernel/src/ports/types.ts`, `packages/kernel/src/verbs/check.ts`, `packages/kernel/test/static-conformance.test.ts`, `specs/plan.md`.
+
+## 2026-10-31 — Distinguish shotgun surgery in reviewer guidance (uncommitted)
+
+- Match the Stage B reviewer wording to Tech Spec §8.7 by separating shotgun surgery from blast radius; add a focused regression in `packages/kernel/test/prerequisite-guidance.test.ts`.
+- Full local `npm run ci` passes, including all 1,299 tests across 207 suites. This closes one Beta checklist item; it does not change requirement mapping or qualification.
+- Files: `plugin/skills/tenet-review/SKILL.md`, `packages/kernel/test/prerequisite-guidance.test.ts`, `specs/plan.md`.
+
+## 2026-10-31 — Audit QLT-11 implementation boundary (uncommitted)
+
+- Trace the existing trait field through state, risk assessment and tests. The code only stores/consumes caller-supplied project traits; no trait registry, project/change inference, user correction workflow or missed-trait review path exists.
+- Record the unresolved inference, correction-binding and review-discovery contract in `specs/plan.md`; do not implement or map partial behavior without the owner's decision. R1 remains 139/181 mapped, 16 host-only and 26 unmapped.
+
+## 2026-10-31 — Re-audit the remaining Phase A mappings (uncommitted)
+
+- Run three disjoint read-only reviews of the 26 unmapped Musts against canonical requirements, implementation, and test evidence. No additional existing test proves a whole Must safely enough to tag.
+- Record bounded implementation candidates and distinguish them from release, owner-decision, and native-host gates in `specs/plan.md`; no code or mapping changes result from the audit.
+
+## 2026-10-31 — Record candidate implementation gates (uncommitted)
+
+- Review ENG-09 as the smallest apparent local implementation path; defer it because the trace location, event correlation, missing-value vocabulary, taxonomy, termination and retention/export contract is not settled. Record the spec gap in `specs/plan.md` §12.3.
+- Identify CFG-08 as a locally testable privacy slice, but defer edits until its supporting configuration-completion spec receives the required final sign-off. Phase A remains 139/181 mapped; no requirement is qualified.
+
+## 2026-10-31 — Render decision links in adopted intent (uncommitted)
+
+- Include affected IDs in each adopted decision summary so the MADR context, options, choice, consequences and links remain visible in `INTENT.md`; decisions without links keep their prior rendering.
+- Add a failing-first `[INT-09]` integration assertion using a real requirement ID and verify the full decision projection. Focused decision and intent projection tests pass 24/24; full `npm run ci` passes with 1,298 tests across 207 suites, and `git diff --check` passes.
+- Files: `packages/kernel/src/core/intent-md.ts`, `packages/kernel/test/decision-record.test.ts`, `specs/tech-spec.md`, `specs/plan.md`.
+- R1 structural mapping is 139/181, with 16 host-only and 26 unmapped. Built-bundle UAT and `git diff --check` pass; no requirement is qualified.
+
+## 2026-10-31 — Document pre-publication source review (uncommitted)
+
+- Add a release checklist separating review of the working source tree, reachable Git history, and built package inclusion; clarify the privacy checker scans added lines in a specified range and is not full-history proof.
+- Add a regression for the checklist requirements and review record. The focused test passes; R1 mapping moves to 138/181 (16 host-only, 27 unmapped), but actual pre-publication review and requirement qualification remain open.
+
+## 2026-10-31 — Investigate result demo paths (uncommitted)
+
+- Add coordinator guidance to include verified demo steps for user-facing changes and captured UI screenshots when available; add an untagged regression because the current kernel does not return demo or screenshot data.
+- Draft `specs/result-demo-path.md`; independent review found blocking decisions around command provenance, demo input and screenshot artifacts. Findings are dispositioned, but owner sign-off is required before implementation.
+- Phase A remains at 137/181 mapped (16 host-only, 28 unmapped); no RES-05 mapping or qualification is claimed.
+- Full `npm run ci` passes: 1,298 tests across 207 suites, zero failures, cancellations or skips. R1 coverage is 138/181 (16 host-only, 27 unmapped); its nonzero exit is expected while unmapped Musts remain. Built-bundle UAT and final `git diff --check` pass.
+
+## 2026-10-31 — State child-agent authority limits (uncommitted)
+
+- State in the reviewer and analyst agent definitions that child work must not expand authority, reset assigned budgets or delegate further, and must report such violations found in evidence.
+- Add a red-first `[AGT-06]` regression. Full local CI passes **1,296 tests / 206 suites**; built-bundle UAT, privacy and whitespace checks pass.
+- R1 structural mapping is 137/181, with 16 host-only and 28 unmapped. Tool access is read-only, but prompt adherence and trace detection are not verified; Phase A remains incomplete.
+
+## 2026-10-31 — Clarify coordinator conflict handling (uncommitted)
+
+- State that factual disagreements are resolved by comparing evidence and normative product/risk choices are presented as options with a recommendation.
+- Add a red-first `[AGT-07]` skill regression. The seven-test guidance suite and all lints pass; the skill remains within its token budget.
+- R1 structural mapping is 136/181, with 16 host-only and 29 unmapped. This is instruction-presence evidence, not observed coordinator behavior or qualification; Phase A remains incomplete.
+
+## 2026-10-31 — Extend reviewer security checklist (uncommitted)
+
+- Direct the reviewer skill to flag new network destinations, telemetry calls, credential handling and permission changes introduced in generated code.
+- Add a red-first `[SEC-09]` regression. The combined guidance suite passes 6/6; all lints and `git diff --check` pass. The latest full CI predates this slice and passes 1,293 tests / 206 suites.
+- R1 structural mapping is 135/181, with 16 host-only and 30 unmapped. This is instruction-presence evidence, not observed review behavior or qualification; Phase A remains incomplete.
+
+## 2026-10-31 — Verify reviewer acceptance-basis guidance (uncommitted)
+
+- Add a `[REV-09]` regression confirming the shipped review skill checks example fidelity, identifies missing examples/checks and reports out-of-scope changes.
+- The combined guidance suite passes 5/5. Full local CI passes 1,293 tests / 206 suites, and built UAT, privacy, whitespace and all lints pass.
+- R1 structural mapping is 134/181, with 16 host-only and 31 unmapped. This checks reviewer instructions only, not observed reviewer behavior or qualification; Phase A remains incomplete.
+
+## 2026-10-31 — Clarify intake decision questions (uncommitted)
+
+- Limit intake questions to decisions that change the next dependent action; state a recommendation, consequences and a reversible default where justified.
+- Add a red-first `[INT-03]` instruction regression. The focused guidance suite passes 4/4, and architecture, skill and quality lint pass.
+- R1 structural mapping is 133/181, with 16 host-only and 32 unmapped. This is instruction-presence evidence, not observed model adherence or qualification; Phase A remains incomplete.
+
+## 2026-10-31 — Map the starter ASVS inventory test (uncommitted)
+
+- Tag the existing ASVS inventory regression with `[QLT-02]`; it verifies the complete pinned Level 1 ID set, declared methods/results/applicability and explicit non-conformance boundaries.
+- The focused inventory test passes. The previously completed local full CI run for the QLT-16 slice passes 1,291 tests / 206 suites; built UAT, privacy and whitespace checks pass.
+- R1 structural mapping is 132/181, with 16 host-only and 33 unmapped. Phase A remains incomplete; the inventory does not establish ASVS conformance or qualify any Must.
+
+## 2026-10-31 — Add starter dependency maintenance controls (uncommitted)
+
+- Schedule monthly Dependabot npm update pull requests for both the repository and the starter template.
+- State that critical starter dependency reports or alerts use the existing 3-day acknowledgement and 7-day decision targets, and disclose that repository security settings are not verified by this checkout.
+- Add `[QLT-16]` regressions for both scheduled update directories and the published response policy.
+- Full local `npm run ci` passes: typecheck, lints, M0 coverage, build, payload verification, reproducibility and 1,291 tests / 206 suites. Built UAT, privacy and `git diff --check` pass.
+- R1 structural mapping is 131/181, with 16 host-only and 34 unmapped. Phase A remains incomplete; no host qualification, commit or push.
+
+## 2026-10-31 — Complete local CI for usage, guidance and alternative checks (uncommitted)
+
+- Report per-contract attempt, review-round, delegation, launched-check and active-time totals consistently in work, status and finalized finish responses; record the contract without changing the response envelope or state schema.
+- Replace draft README placeholders with source-preview prerequisites, support/assistance matrix, execution permissions, publisher/verification limits, first tasks and update/removal boundaries. Add `[RSC-04]` and `[INS-02]` regressions.
+- State that nonbehavioral work uses a named alternative check rather than an artificial test, and report its result; add a `[TDD-06]` skill regression.
+- Exclude ignored `node_modules` trees from payload inventory; symlinks inside admitted payload content remain rejected. The bundle is 763 KB and local payload checksums/reproducibility pass.
+- Full local `npm run ci` passes: typecheck, lints, M0 coverage, build, payload verification, reproducibility and 1,289 tests / 206 suites. Built UAT, diff check and privacy scan pass.
+- R1 structural mapping is 130/181, with 16 host-only and 35 unmapped. Phase A remains incomplete; no host qualification, commit or push.
+
+## 2026-10-31 — Implement approved WRK-06 prototype hardening slice (uncommitted)
+
+- Refuse prototypes when the declared sensitive-data assessment is High, write and update a protected per-prototype hardening block, report missing gaps at finish, and recover the write from its journal.
+- Add the dedicated `hardening-gaps-invalid` reason; test gap validation, preserved user content, immediate pre-write rehash, absent-file creation and snapshot inclusion, plus three real SIGKILL recovery points. Update the Tech Spec, UX Spec, skill and plan for the approved SF-21–24 behavior.
+- Focused prototype tests pass 11/11; typecheck, lints, full tests 1,280/204, general built-bundle UAT and targeted scratch-folder built-CLI UAT pass. `npm run ci` builds the 762 KB bundle, then stops at payload verification because an ignored template `node_modules/.bin/acorn` symlink is rejected; reproducibility is not reached.
+- R1 structural mapping is 119/181 (65.7%), with 16 host-only and 46 unmapped. WRK-06 is not qualified; Phase A remains incomplete. S1 and S3 remain unsigned. No commit or push.
+
+## 2026-10-31 — Implement SEC-15 execution-envelope disclosure (uncommitted)
+
+- Require consent for the exact unknown-exposure envelope before spawning project checks; disclose the envelope, matching authorization and network/data/credential limits in check and finish results.
+- Add regression coverage for pre-consent no-spawn, hash-bound authorization, runner errors, repeated finish, disclosure deduplication and unchanged schema-1 envelope history.
+- Document the response field and UX exception for abnormal unknown exposure. Focused cohort passes 79/79; the full test suite, typecheck and lint pass. Full CI is blocked at payload verification by an ignored local template `node_modules` symlink.
+- R1 structural mapping increases from 117/181 to 118/181 (65.2%); Phase A remains incomplete and no qualification is claimed.
+
+## 2026-10-31 — Add Phase A–D evidence-mapping plan (uncommitted)
+
+- Define the percentage ladder as structural requirement-to-test mapping only: 154/181, 172/181, 180/181 and 181/181; keep implementation, qualification and release readiness separate.
+- Add phase gates, estimates, capacity prerequisite, parallel-read/serial-write strategy, host/pilot scheduling dependencies, and a one-hour Phase A scope that does not overclaim completion.
+- Start four disjoint read-only audits of the 48 unmapped Musts; no behavior or completion tags are changed by audit alone.
+
+## 2026-10-31 — Complete parallel audit of 48 unmapped Musts (uncommitted)
+
+- Four disjoint read-only audits classify the unmapped IDs against canonical ACs, existing tests/behavior, likely real gaps, and host/release dependencies.
+- Most findings are substantive implementation or qualification gaps; WRK-06 appears substantially present but needs a true data-limit/per-prototype regression. No tag-only closure or completion credit is recorded.
+- A one-hour run cannot defensibly satisfy the Phase A +37 mapping target; proceed with a bounded red-first local slice and keep external evidence dependencies visible.
+- The first candidate, WRK-06, is blocked on unsigned SF-21–24 policy; no source or tests were changed.
+- QLT-07's local migration/restore contract is already covered by 28 focused tests, so no change or mapping was justified; supported-platform qualification remains open. Next target is a bounded SEC-15 consent/disclosure regression against the settled AC.
+
+## 2026-10-31 — Revalidate main CI during Phase A (uncommitted)
+
+- Current full `npm run ci` passes typecheck, lints, coverage, build, payload and reproducibility; tests pass 1,269/1,270.
+- The sole failure is an EVD-13/QLT-04 starter test timeout waiting for the actual Chromium process identity; its isolated retry passes 2/2 in 33 seconds, suggesting but not proving test-process contention/intermittency.
+
+## 2026-10-31 — Measure fixed-capacity simplification candidates (uncommitted)
+
+- Preserve one measured store simplification (−739 characters) and one launch-phase accounting simplification (−45); focused store/accounting tests, typecheck and accounting differential cases pass.
+- Re-measure complete charged accounting responsibility at 33,779/8,640; store remains 38,370/25,920, budget owner 23,066/8,640, and central 293,700/241,805.
+- No cap, matcher, baseline, assertion or requirement changed. Central analysis found no behavior-preserving bounded edit that could plausibly close its deficit; full source suite has not been rerun after these scratch-only edits.
+
+## 2026-10-31 — Hold receipt identity change at contract conflict (uncommitted)
+
+- Trace the schema-2 receipt identity from issuance through check, manifest, verdict and review consumers; current producer/consumer/test behavior conflicts with canonical §16.2's versioned full-binding identity and prohibition on legacy-ID authority.
+- Do not change source or tests because historical duplicate-field acceptance is not specified; record the exact owner decision required and the evidence in the plan/session report.
+
+## 2026-10-31 — Prototype canonical receipt identity in scratch (uncommitted)
+
+- Preserve existing `configEvidence` as inert history and use canonical full-binding IDs for newly issued schema-2 receipts; stale legacy IDs plus the old stamp do not gain current authority.
+- Five new failing-first regressions pass and typecheck passes; the focused cohort is 285/286 due one manifest fixture missing `stack.fingerprint`.
+- Changes remain in the authorized scratch feasibility copy, not main. Fixed source owners still fail quality and no full source suite/build was run.
+
+## 2026-10-31 — Clarify plan progress and correct confirmation fixtures (uncommitted)
+
+- Record honest R1 mapping/host/unmapped percentages separately from qualification: 64.6% structurally mapped, 0/181 Musts qualified, 0/19 Should dispositions closed.
+- Adapt four scratch required-composition tests to confirm the exact proposal under the canonical configuration contract; all original safety assertions remain.
+- Full scratch source is 1,574/1,575 passing; its only failure is the unchanged three-owner capacity gate.
+
+## 2026-10-31 — Record full scratch closure regression checkpoint (uncommitted)
+
+- Whole typecheck/architecture/skills pass; source suite passes 1,570/1,575 tests across 226 suites.
+- Four required-check composition regressions are assigned for repair; the fifth failure is the unchanged three-owner capacity gate.
+- No failing assertion, capacity limit or completion claim is weakened.
+
+## 2026-10-31 — Verify scratch real effect crash prefixes (uncommitted)
+
+- Effect lane reports 110 focused controls plus one legacy regression, including 43 actual SIGKILL exits across 39 controls; repair recovered operation-closure ordering and introduced quality defects.
+- Nested required-check alternatives normalization preserves equivalent external bindings while meaningful changes invalidate; 54 coupled controls/typecheck pass.
+- Coordinator full scratch checkpoint is running; receipt alignment, source capacity and complete migration/qualification remain open.
+
+## 2026-10-31 — Repair scratch proof-owner quality (uncommitted)
+
+- Newly added shared Deep predicates reside in the budgeted verdict owner; actual review/verdict matcher limits pass and 110 focused controls/typecheck pass.
+- Exact duplicate-free receipt issuance/admission repair is identified; coordinated producer/schema/consumer changes remain pending.
+- Whole-candidate capacity and acceptance remain open; no limit change or installation.
+
+## 2026-10-31 — Close local effect proof slice; retain acceptance failures (uncommitted)
+
+- Scratch normal/recovered effect identity, asynchronous publication and verdict caller gating report 71 focused controls, one real legacy integration regression and typecheck passing.
+- Remaining configuration matrices and real crash prefixes continue in parallel; introduced quality violations are assigned for repair.
+- Four source owners remain over capacity; receipt duplicate-stamp discrepancy is logged against the canonical contract. No whole-candidate acceptance or installation.
+
+## 2026-10-31 — Implement scratch D6 safe-subset configuration (uncommitted)
+
+- Save only disclosed tighter additions from well-shaped content-invalid proposals; preserve held restrictions and reject malformed/conflicting checks.
+- Lane reports 50 focused passes and typecheck; remaining transition matrices and combined candidate validation are open.
+- Central responsibility is 290,159/241,805, still failed under unchanged limits. No candidate installation or activation.
+
+## 2026-10-31 — Advance scratch configuration transitions (uncommitted)
+
+- Candidate implements strict scoped previews, confirmation/decline, all-valid batches, resets, source-sensitive retries and atomic all-work refresh.
+- Lane reports 43 focused passes; D6 safe-subset composition and complete transition matrices remain pending.
+- Central source remains above its unchanged limit; no candidate installation or full-protocol acceptance.
+
+## 2026-10-31 — Close scratch manifest proof shortcuts (uncommitted)
+
+- Candidate manifest and verdict share latest-role/current/native/completeness checks; review done reuse requires a current completed full parent.
+- Five proof-closure controls and coupled cohort report 110 passes; whole candidate typecheck awaits concurrent effect-test repair.
+- Changes remain in the authorized scratch candidate, not the shipped kernel. Fresh recovered-proof callback integration is assigned to the existing effect lane.
+
+## 2026-10-31 — Preserve all offline reporting evidence (uncommitted)
+
+- Fix `packages/eval/src/report.ts` campaign time/count totals to include unplanned and dangling attempts without attributing them to planned subgroups.
+- Preserve non-completed statuses in Markdown, numeric attempt order in JUnit, and known unplanned safety violations as failures rather than skips.
+- Add four discriminating controls in `packages/eval/test/report.test.ts`; actual offline CLI UAT covers all formats. Full main CI passes 1,270 tests/204 suites, with no skipped/cancelled tests.
+- Protocol configuration and pure proof-consumer closure continue in exclusive authorized scratch lanes; no new persisted-format or limit approval is inferred.
+
+## 2026-10-31 — Verify recovery proposal dispositions (uncommitted)
+
+- Independent verification resolves paired contract blockers without new scope.
+- Narrow manifest identity amendment is requested but unapproved; canonical wording, runtime refusal and active limits remain unchanged.
+
+## 2026-10-31 — Reconcile paired recovery proposal boundaries (uncommitted)
+
+- Disposition independent review blockers with one proposed persisted encoding and explicit internal-observation mapping, plus packet-decoder dependency.
+- Focused verification remains pending; no new persisted format, owner approval or limit change.
+
+## 2026-10-31 — Review paired missing recovery contracts (uncommitted)
+
+- Complete session-only finite inventory and recovery-set proposals, then commission fresh cross-contract review.
+- New descriptor/decoder decisions and unsupported-family blockers remain explicit; no persistence, capacity or activation change.
+
+## 2026-10-31 — Prepare missing complete protocol contracts (uncommitted)
+
+- Assign session-only retained-inventory and migration recovery-set contract proposals rather than add disconnected primitives.
+- Current reachable bundle is 808,969 bytes with local payload integrity verified; unused future paths and missing sign-offs prevent complete-protocol claims.
+
+## 2026-10-31 — Verify full snapshot/copy regression checkpoint (uncommitted)
+
+- Full scratch source run passes 1,431/1,432 controls with zero skips/cancellations; sole failure remains fixed source capacities.
+- Independent inventory/install and complete migration recovery-set contracts remain missing, and limits are unchanged.
+
+## 2026-10-31 — Repair snapshot constructor function quality (uncommitted)
+
+- Focused validation helpers restore function/width limits without relocating responsibility; 69 controls and typecheck reported passing.
+- Budget capacity and independent inventory/install proof remain missing; full snapshot/copy source checkpoint is underway.
+
+## 2026-10-31 — Record snapshot/copy primitive limits (uncommitted)
+
+- Scratch private-copy primitive passes real kill-prefix controls but is not a complete recovery set or Store/Tx contract.
+- Coordinator typing/architecture/skills pass; new constructor function-quality defects and larger source-capacity failures remain. Assign coupled constructor repair without changing limits.
+
+## 2026-10-31 — Implement witnessed checkpoint constructor in scratch (uncommitted)
+
+- Pure construction requires independently witnessed retained-key coverage and preserves launch uncertainty; lane reports 69 focused passes and typecheck.
+- Actual full inventory, durable installation and protected restart remain unimplemented; no capacity or activation claim.
+
+## 2026-10-31 — Advance remaining recovery protocol boundaries (uncommitted)
+
+- Assign independent accounting snapshot construction and protected migration-copy implementation to exclusive scratch lanes.
+- Reconcile stale task blockers to the complete repaired regression checkpoint; source capacity and full migration/qualification remain open, with no limit or activation change.
+
+## 2026-10-31 — Verify complete source after retained-floor repair (uncommitted)
+
+- Full scratch run passes 1,413/1,414 tests with zero skips/cancellations; all retained-state regressions pass together.
+- Only the unchanged source-owner capacity gate fails. Reviewed policy direction remains unapproved; full protocol and qualification are not complete.
+
+## 2026-10-31 — Repair retained-budget semantic rollback (uncommitted)
+
+- Retained copies now raise high-water counters without restoring old reservations, signatures, last-call timestamps or resettable active time.
+- Schema-1/schema-2 store regressions cover the defect; coupled run reports 408/409 with only capacity failing. Full source checkpoint is underway, safety fences unchanged.
+
+## 2026-10-31 — Disposition capacity proposal review (uncommitted)
+
+- Independent review reports no blocking defect for a direction-only request; clarify two-stage approval and consistent partial-work credit.
+- No owner approval or active cap change follows; recovery regression repair remains open.
+
+## 2026-10-31 — Review session-only capacity policy proposal (uncommitted)
+
+- Prepare alternatives with no current cap changes, then commission independent review of complete-target criteria, responsibility accounting and evidence accuracy.
+- Recovery behavior repair remains separate; proposal does not authorize activation or qualify the candidate.
+
+## 2026-10-31 — Repair retained full-suite regressions and prepare policy alternative (uncommitted)
+
+- Latest full source run passes 1,374/1,412; coupled review/workflow regressions require root-cause repair, not weakened proof assertions.
+- Prepare a session-only source-capacity policy proposal under renewed friction-removal direction; no active limit, safety gate or schema activation changes.
+
+## 2026-10-31 — Verify retained-store integration boundary (uncommitted)
+
+- Admit actual primary/previous originals before selection; retain conservative unknown fallback and fenced schema-2 compaction. Lane reports 167 focused controls and ten real kill boundaries.
+- Typecheck/architecture/skills pass; three fixed source-owner caps fail. Updated reachable bundle is 808,883 bytes with local payload integrity verified; full source run remains underway.
+- Capacity amendment is pending owner review, not approved; complete retained inventory/snapshots, migration and activation remain open.
+
+## 2026-10-31 — Disposition legal unresolved-launch delta (uncommitted)
+
+- Preserve original differential mismatch and explicitly justify prepared→starting diagnostic correction without changing accounting facts.
+- Report unchanged comparison populations with exact/justified deltas separately; snapshot construction and full retained inventory remain unimplemented.
+
+## 2026-10-31 — Advance retained recovery into the store boundary (uncommitted)
+
+- Pure horizon reports 71 focused passes; retain launch differential mismatch pending explicit legal-transition proof.
+- Assign actual admitted-copy/checkpoint store integration; unsupported full inventory remains conservative refusal. Capacity and whole protocol closure remain open.
+
+## 2026-10-31 — Reject inadequate central abstraction (uncommitted)
+
+- Six-job abstraction passes its frozen controls but saves only 371 characters; restore original central source byte-identically rather than retain unjustified indirection.
+- Central capacity remains 19,015 over; recovery adapter contracts are the next concrete integration dependency.
+
+## 2026-10-31 — Record frozen candidate CLI UAT (uncommitted)
+
+- Existing UAT reports 152 observations with stable bundle identity and exit zero on Node26.
+- Retain explicit unimplemented committed-tree and synthetic-review limits; summary is agent-reported because the requested full log was not persisted.
+
+## 2026-10-31 — Verify repaired full source and reachable bundle (uncommitted)
+
+- Full scratch source run passes 1,382/1,383 controls; only fixed-owner quality fails. Build is 804,905 bytes within its unchanged limit; complete local payload checksum verification passes.
+- Reachable-bundle fit is not complete protocol fit. Assign central structural replacement and retained recovery-horizon closure in parallel, with coordinator-owned adapter integration.
+
+## 2026-10-31 — Record central and accounting repair checkpoints (uncommitted)
+
+- Central reports four full-suite regression repairs and guarded checkpoint-laundering paths, with 90 focused passes.
+- Accounting reports witness/replay guards, 42 controls and 24,000 differential comparisons; responsibility-total capacity still fails by 9,494 characters.
+- Central capacity and complete recovery horizon remain open; coordinator full repaired regression run is underway.
+
+## 2026-10-31 — Correct store replacement evidence (uncommitted)
+
+- Record final targeted outcome as 124 passing, one failed and one cancelled under unchanged deadlines; isolated retry is not full-cohort resolution.
+- Restore original reported source identities as historical after the replacement overwrote them; separate later captures and disclose unverified original-byte retention.
+
+## 2026-10-31 — Record replay repair and store replacement limits (uncommitted)
+
+- Scratch replay rejects cross child/tool start-ID collisions; focused combined eval reports 51 passes with inert effect traps and byte/event bounds. Results remain synthetic.
+- Store reuse saves 274 characters but remains 6,948 over budget; final targeted run has two deadline failures. Record failures rather than accepting isolated retry as proof of resolution.
+
+## 2026-10-31 — Repair static protocol referenced UTF-8 validation (uncommitted)
+
+- Scratch protocol validation now rejects matching-digest malformed UTF-8 in fixture/grader references while hashing original bytes and accepting valid non-ASCII content.
+- Lane reports 24 focused passes and typecheck; full acceptance/CI and native qualification remain open. No CLI or authorization change.
+
+## 2026-10-31 — Add independent approved evaluation lanes (uncommitted)
+
+- Assign static protocol and synthetic replay acceptance closure alongside the three kernel repair lanes, with exclusive shared-validator/replay ownership and coordinator CLI integration.
+- Require concrete missing cases rather than redundant test churn; sealed baseline remains approval-blocked and no native qualification follows.
+
+## 2026-10-31 — Apply dependency-based parallel scheduling (uncommitted)
+
+- Adopt structural replacement and distinct engineering/native/qualification evidence from the supplied assessment; correct stale candidate figures, tag-as-completion claims and requirement-label mismatches.
+- Continue three exclusive implementation lanes and one read-only next-work lane rather than a serial six-sprint schedule or overlapping writers. No invented capacity threshold, spec amendment, campaign approval or qualification follows.
+
+## 2026-10-31 — Repair full candidate failures in parallel (uncommitted)
+
+- Full scratch source suite reports 1,357/1,363 passing; retain four central proof regressions and actual quality-cap failure as open.
+- Make the Git ignore control self-contained in a real isolated fixture; targeted assertion passes without touching main Git state.
+- Assign exclusive central, accounting and store structural repair lanes, preserving safeguards, budgets and failing assertions.
+
+## 2026-10-31 — Record observed migration source slice (uncommitted)
+
+- Record actual bounded source/reference/process capture and two-snapshot comparison; assertion-only migration admission refuses. Lane reports 110 targeted passes and resolved function-quality defects.
+- Store exceeds its fixed ceiling by 7,222 characters. Log the actual manifest producer/identity spec mismatch and retain conservative refusal; installation/rollback and complete protocol acceptance remain open.
+
+## 2026-10-31 — Validate integrated scratch runtime (uncommitted)
+
+- Apply subtype-preserving shared runtime-state signatures; whole scratch typecheck passes.
+- Coordinator validates 90 protocol/runner controls and 23 coupled legacy backup/stop controls. Architecture/skills pass; owner capacity and migration function-quality gates fail and remain recorded.
+- Complete recovery horizon, coverage integrity, migration and full acceptance remain open; no installation, activation or cap change.
+
+## 2026-10-31 — Record active integration blockers precisely (uncommitted)
+
+- Central runtime integration reports remaining shared-wrapper type errors and central/accounting cap overruns; request exact state-preserving boundary patches.
+- Correct corpus retention evidence: the retained manifest describes scenarios, not raw journal payloads. Migration observation must capture actual source records.
+
+## 2026-10-31 — Advance observed migration closure in parallel (uncommitted)
+
+- Add an exclusive scratch lane for actual bounded source/reference/process observation while central launch integration and proof import/collision repair continue.
+- Preserve fixed-owner budgets and safeguards; source capture does not establish migration installation, rollback or whole-candidate acceptance.
+
+## 2026-10-31 — Track conservative collision guard and import blocker (uncommitted)
+
+- Proof lane reports five conservative collision controls; stored unproved declarations cannot inherit intrinsic or recipe-tool proof.
+- Config-first import reveals a coupled initialization cycle; repair and import-order regressions are in progress. Whole-candidate success remains unproved.
+- Record the store lane's exact refusal/publication coverage and limits rather than claiming all maintenance races or migration closure.
+
+## 2026-10-31 — Record versioned store slice and align scratch ports (uncommitted)
+
+- Store lane reports 97 targeted passes for strict version admission/publication and preserved recovery/evidence. Its current store owner is 798 characters over the fixed ceiling; schemas fits.
+- Coordinator applies generic state-preserving `Tx`/`Store`/`Ports` with legacy defaults in scratch. Central recovery typing, whole-candidate validation, writer closure and migration remain pending; no shipped activation or budget change.
+
+## 2026-10-31 — Record scratch proof-consumer integration (uncommitted)
+
+- Record the core lane's exact hash/serial/durable-floor admission and retained schema-1 behavior/history. It reports 60 targeted passes, owned-graph typecheck and owned quality checks; review/verdict remain within their fixed ceilings.
+- Central caller wiring, complete-candidate validation and fixed-adapter equivalence/collision clarification remain open. No shipped implementation or activation follows from this bounded report.
+- Clarify that whole scratch typecheck failed during concurrent edits. Existing §16.6 conservative collision guards are unfinished implementation, not a new policy blocker; assign that bounded follow-up without inventing positive declaration equivalence.
+
+## 2026-10-31 — Validate scratch foundations and start runtime integration (uncommitted)
+
+- Coordinator checkpoint passes 59 protocol/runner controls across eight suites, typecheck, architecture and skills lint. Quality lint fails only accounting at 8,841/8,640; preserve this measured failure.
+- Correct current test-selector evidence: Node glob discovery includes protocol and runner-launch files in the base selector; the earlier omission claim is not established for this runtime.
+- Central-capacity report saves 363 characters; runner acknowledgment and actual-producer corpus now have combined checkpoint evidence. Record checkpoint hashes separately from subsequent active edits.
+- Assign disjoint existing-runtime integration for pipeline/accounting, core proof consumers and store/schema version admission. No second pipeline, owner relocation, budget change, installation, activation, commit or push.
+
+## 2026-10-31 — Record scratch schema fit and reconcile store diagnostics (uncommitted)
+
+- Schema-owner report: 31,541 to 26,790 non-whitespace characters, 109 under its unchanged ceiling; 61 relevant controls pass. Schema-1 permissive and schema-2 strict contracts remain.
+- Store confirms its earlier return-type errors were corrected before its passing final typecheck. Runner tests are still being edited; stable integrated typecheck, accounting fit and whole-protocol acceptance remain pending.
+
+## 2026-10-31 — Record incomplete scratch accounting fit (uncommitted)
+
+- Budget-owner report: save 136 non-whitespace characters (8,997 to 8,861), with 55 focused passing controls. The fixed 8,640 ceiling is still exceeded by 221; no required contract was removed.
+- Concurrent store typecheck diagnostics require reconciliation at the stable integrated checkpoint. Accounting fit and full candidate validation remain open.
+
+## 2026-10-31 — Record scratch store fit and producer coverage (uncommitted)
+
+- Store-owner report: 25,877/25,920 characters, 84 focused passing controls, typecheck pass and no remaining store quality finding. Fixed caps and owner matching are unchanged.
+- New scratch corpus reports all nine actual schema-1 effect producers, cached response, previous-state recovery and real-SIGKILL interrupted work. Dependency is simulated failure-path coverage only. Stable-source rerun and combined integration gates remain pending; no activation or installation.
+
+## 2026-10-31 — Use dependency-based parallel scratch delivery (uncommitted)
+
+- Update `specs/plan.md` and `specs/protocol-prototype.md` with disjoint owner-based lanes, coordinator integration and serialized heavyweight gates. Add runner/ports launch acknowledgment and central-capacity assignments alongside the existing feasibility work.
+- Correct the supplied acceleration assessment's unsupported scope cuts, blanket Should omissions, invented qualification tuple and serial calendar estimate. Preserve the actual §11.2 cut list, fixed budgets, every required safeguard and independent host/release authority.
+- Protocol-quality refactoring has an agent-reported 30-test pass; integrated validation and whole-protocol closure remain pending. No production activation, installation, new branch/worktree, commit or push.
+
+## 2026-10-31 — Continue isolated protocol feasibility work (uncommitted)
+
+- The owner explicitly authorized a swarm for disjoint scratch-only work, superseding the earlier single-agent restriction. The candidate now has schema-version/upcast, configuration-evidence, effect-replay, durable launch-journal and migration-admission slices.
+- All 49 protocol tests across six suites and scratch typecheck pass on Node 26.3.0; the existing repository suite separately passes 1,266/204. Its default glob omitted the new top-level protocol tests, so the scratch test script now includes them explicitly and a combined run is pending. Initial lint reports three fixed-owner overages and complexity/width findings; disjoint scratch-only remediation is active. No whole-protocol, migration/kill acceptance, fit or activation is claimed. Migration facts are supplied to a pure gate and are not independently observed.
+- No shipped-tree implementation, budget change, schema activation, installation, commit, push or final sign-off. [Scope and current evidence](specs/protocol-prototype.md).
+
+## 2026-10-31 — Authorize isolated protocol feasibility prototype (uncommitted)
+
+- On the owner's direction to “go full pace” and amend friction-causing rules, the schema-migration gate now narrowly allows the complete configuration/migration candidate in isolated scratch. No shipped-tree implementation, schema activation, parallel agents, commit or push is authorized. Fixed owner budgets, safeguards, independent review and final implementation sign-off remain.
+- The candidate scope, 28 responsibility checklist, compatibility/kill evidence and stop conditions are in [protocol-prototype.md](specs/protocol-prototype.md). No fit or feasibility conclusion is claimed until it passes.
+
+## 2026-10-31 — Begin isolated protocol record and settlement slice (uncommitted)
+
+- Scratch-only candidate adds strict schema-2 identities, recovery/checkpoint/launch records and a pure contiguous launch-settlement fold. Red-first controls cover exact phase unions, conflicting ownership, replay, holes, known-later obligation units, positive no-launch evidence and safe counter settlement.
+- Twelve focused tests and scratch typecheck pass. These helpers are not wired into the main pipeline, durable journal, runner or migration; the actual schema-1 producer corpus, whole-protocol fit and process/kill/recovery acceptance remain pending. [Current scope and evidence](specs/protocol-prototype.md). Main schema-1 source and bundle remain unchanged.
+
+## 2026-10-31 — Verify exact password replacement behavior (uncommitted)
+
+- Recipe 0.4.5 extends real starter API coverage: the password-change route rejects a canonically decomposed current password, accepts the exact composed Unicode value, and subsequent sign-in accepts only the exact new password while rejecting case, whitespace, normalization and the previous password.
+- Final source CI passes 1,266/204. Final bundled starter/loan/browser and CLI-library journeys pass on Node26 with 105/138 neutral/evolved app cases and 12/16 browser cases; 152 bundled CLI scenarios pass. Node22/24 were not available for this source version; earlier 0.4.4 runtime evidence is historical. [Exact evidence and limits](docs/audits/2026-10-31/asvs-password-change-validation.json). ASVS rows remain pending; authentication policy is unchanged.
+
+## 2026-10-31 — Add bounded password assurance controls (uncommitted)
+
+- Recipe 0.4.4 adds starter tests for current 12/256 length boundaries, unrestricted representative password composition, and exact Unicode password verification through the actual sign-in API. ASVS rows V6.2.1, V6.2.5 and V6.2.8 cite these controls but remain pending for complete/manual review.
+- Preserve current authentication policy. The inventory records that Level 1 requires at least 8 characters and strongly recommends 15; no 15-character policy, waiver or other identity change is inferred.
+- Full CI passes 1,266/204. Final bundled starter/loan and CLI-library journeys pass on Node22/24/26 with 105/138 neutral/evolved app cases and unchanged 12/16 browser cases. Node26/22 each pass 152 bundled CLI scenarios. [Exact evidence and limitations](docs/audits/2026-10-31/asvs-password-validation.json). QLT-02 and all requirement statuses remain unchanged; no commit/push or new branch/worktree.
+
+## 2026-10-31 — Record private-read consistency and prototype boundary (uncommitted)
+
+- Retain the three red-first restored-mtime private-read controls, bounded same-descriptor byte comparison and shared temp-leaf enumeration already included in the later takeover validation. Preserve permission/link-only changes, short reads and distinct age/cap policies. [Evidence reconciliation](docs/audits/2026-10-31/store-continuation.md), [final validation](docs/audits/2026-10-31/store-validation.json). Later bounded-write/starter/schema changes remain intact and are not counted again.
+- On owner speed feedback, define one isolated complete configuration/migration candidate, focused iteration and batched final gates. [Exact scope](specs/protocol-prototype.md) is authorized in scratch only; no budget change, target activation, installation, qualification or publication.
+
+## 2026-10-31 — Share existing schema-1 validators (uncommitted)
+
+- `core/schemas.ts` reuses actual basis validators in obligations, derives consecutive unchanged input fields and shares receipt/history status. Preserve parsed key order, distinct input support bounds, strictness, defaults and diagnostics; no new schema language or contract.
+- `contract.test.ts` adds two before/after characterization controls. All 52 generated JSON schemas and 5,060 differential probes, including 46 distinct actual producer records, match the frozen implementation; two scratch mutations are caught. Source saves 135 characters, bundle saves 186 bytes, all budgets and other owners unchanged.
+- Full CI passes 1,266/204; Node22/24/26 pass the new controls. Node26/22 each pass 152 actual bundled CLI scenarios and complete 103/12 neutral, 136/16 evolved app/browser plus brownfield CLI/library journeys. Update fixed-budget work plan, progress and scoped working references. [Exact evidence and limits](docs/audits/2026-10-31/schema-sharing-validation.json). No full protocol-fit/sign-off, schema activation, ASVS waiver, qualification, commit/push or new branch/worktree.
+
+## 2026-10-31 — Publish pinned starter ASVS applicability (uncommitted)
+
+- Recipe 0.4.3 ships `docs/asvs.md`, linked from README/hardening and included in the explicit payload. Account for all 70 official ASVS v5.0.0 Level 1 IDs: 46 pending, 19 scoped non-applicable and five gaps; none passed. Identify verification methods, actual source/test starting points, expiry of non-applicability and remaining manual/independent work.
+- Add red-first `starter-assurance.test.ts` and four scratch mutation falsifiers for missing/invented IDs, false passing claims and missing scope reasons. The actual golden scaffold/finish loop confirms the published document is byte-identical and Git-tracked. Full CI passes 1,264/204; inventory controls pass Node22/24/26; built Node26/22 complete journeys retain 103/12 neutral and 136/16 evolved app/browser cases.
+- [Exact evidence](docs/audits/2026-10-31/asvs-inventory-validation.json). QLT-02 remains unmapped: a complete inventory is not ASVS conformance. Authentication/exposure and stewardship gaps need their review/dispositions; no silent policy change, waiver, target/budget amendment, commit/push or new branch/worktree.
+
+## 2026-10-31 — Redact root authentication log fields (uncommitted)
+
+- Recipe 0.4.2 adds root `password`, `currentPassword`, `newPassword` and `csrfToken` redaction alongside the existing nested/header paths. A real app-logger stdout control first reproduces the leak, then verifies redaction and retained safe structured fields. Actual health/404/500 controls preserve correlation IDs and exact non-leaking response shapes.
+- Files: starter logging, new logging tests, hardening scope, recipe version, payload inventory and exact scaffold/loan population assertions. Full CI passes 1,263/204; built Node26/22 journeys pass 103/12 neutral and 136/16 evolved app/browser cases; each runtime also passes 152 built CLI scenarios. Supported Node24 actual-app controls and current-runtime scratch types/lint pass locally. Bundle unchanged; payload checksums rebuilt. [Exact evidence and limits](docs/audits/2026-10-31/logging-validation.json).
+- QLT-04 gains a structural mapping only: R1 117 mapped/16 host/48 unmapped, no semantic acceptance or qualification. No arbitrary-content sanitizer, dependency change, target/budget amendment, commit/push or new branch/worktree.
+
+## 2026-10-31 — Exercise a brownfield TypeScript CLI/library (uncommitted)
+
+- Add `packages/kernel/test/golden-task-cli-library.test.ts`: real library/caller characterization, two assertion-failing baseline cases, singular-output repair, three passing candidate cases and no-commit finish. Preserve existing caller, characterization, metadata and HEAD; use the existing adapter without a web recipe or dependency.
+- Full source CI passes 1,263/204; the shipped bundle passes this journey on Node22/24/26. Review submission is synthetic transport only, not independent review evidence; trait consumers, complete AC-20 and qualification remain open.
+- Update plan and scoped working-inventory references. Bundle/payload and all budgets/targets remain unchanged. [Exact evidence and limits](docs/audits/2026-10-31/cli-library-validation.json). No commit, push or new branch/worktree.
+
+## 2026-10-31 — Complete prerequisite recovery instructions (uncommitted)
+
+- Add canonical missing-Node/Git/package-manager guidance to the shipped entry agent and intake onboarding: official links, user-managed installation, manager identity, actual version/doctor recheck, restart permission and advisory no-kernel limits. Distinguish missing dependencies, unsupported versions and launch errors. Red-first shipped-instruction control added; native adherence remains unobserved, not enforced or qualified.
+- Full CI passes 1,262/204 and both Node26/22 pass all 152 built CLI scenarios. Existing budgets and kernel bundle unchanged; complete payload checksums rebuild. Update technical mechanism, plan and working requirement inventory. [Exact evidence](docs/audits/2026-10-31/prerequisite-validation.json).
+- Record rejected isolated Node24 transaction-dispatcher/header-compilation/API-bundling trials and RSS/heap/allocation profiles. None solves memory acceptance; no candidate installed, target/security/quota change, native spike, commit/push or new branch/worktree. [Trials and limits](docs/audits/2026-10-31/runtime-profile-validation.json).
+
+## 2026-10-31 — Retain bounded workload authentication diagnostics (uncommitted)
+
+- Add redacted `failureReasons` counts to each failed sign-in probe without changing login/gate/timeouts, scheduling, counters or acceptance criteria. Exact known status/cookie categories and fixed error classes never retain arbitrary exception/body/credential data. A real HTTP 503 control proves status retention and gate release; smoke checks diagnostic counts. Files: loan workload client/harness/test/docs and golden exact-case assertion.
+- Final full CI passes 1,261/204; built Node26/22 loan journeys pass 101/12 neutral and 134/16 evolved app/browser cases; supported Node24 types/lint/all 134 app cases pass. The unchanged bundle is byte-identical.
+- Isolated Node24 source still fails memory at 402,784,256 bytes. The same uninstalled compiled/statement candidate fails at 358,596,608 bytes and reproduces four `signin-status-503` refusals, with no operation busy responses. This is status-stage evidence, not proof of the precise busy/quota cause or historical timing. Discard an initial CI-overlapped trial as confounded. [Exact evidence](docs/audits/2026-10-31/workload-diagnostics-validation.json); update plan/runtime draft. No relaxed targets, candidate installation, absent approval, qualification, branch/worktree, commit or push.
+
+## 2026-10-31 — Reject premature runtime-candidate acceptance (uncommitted)
+
+- Validate the combined scratch runtime on supported Node24.22.2: memory fails at 357,793,792 bytes, four sign-in probes fail and operation busy degradation is unobserved. Unchanged source also fails memory at 403,046,400 bytes. Preserve both failed full reports, correct bursts/invariants/cleanup and exact runtime/ABI restoration evidence.
+- Update `specs/starter-runtime.md` to not ready for implementation sign-off; its two Node26 passes cannot replace supported-LTS acceptance. No candidate installation, absent owner approval, target/crypto/quota change or qualification claim. Main fixture code/full CI remains the previously validated source. [Evidence](docs/audits/2026-10-31/runtime-lts-validation.json); plan updated.
+
+## 2026-10-31 — Strengthen return concurrency proof and evaluate runtime memory (uncommitted)
+
+- Replace the generated loan test's deadline-consuming external-writer startup barrier with five ready real processes plus actual SQLite protected-read observation. Preserve the exact one-winner/four409or403 and persisted timestamp/row/FK assertions. Both cases reject an unprotected-read mutation; 20 current and 10 minimum-runtime repetitions, full built loan journeys and full CI 1,261/204 pass. No production service/deadline change. Files: the loan `concurrent-return` test/worker fixtures; [exact evidence](docs/audits/2026-10-31/return-memory-validation.json).
+- Standalone finite-statement reuse and JavaScript production-output trials fail the unchanged memory target. Their scratch-only combination passes two full current-runtime workloads at 292.4/293.4 MB with all checks intact. No candidate is installed. Add independently reviewed `specs/starter-runtime.md`; accept its Node24 matrix/citation/publication findings. Owner sign-off and final installed-artifact validation remain pending. Update plan/defect log; no dependency, budget, target, crypto, quota, commit/push or qualification change.
+
+## 2026-10-31 — Bound host version diagnostics (uncommitted)
+
+- Replace blocking, unbounded version probes with asynchronous owned process groups using the run's remaining absolute deadline and the existing one-MiB per-stream limit. Preserve successful version text; report timeout/deadline/output/spawn unavailability explicitly without relabeling the main command's outcome or changing its transcript. Reuse narrow owned-group cleanup, including leader exit.
+- A real red proves one stalled version probe falsely times out an independent successful command. Real shell/descendant, output-limit and deadline-exhaustion controls, ten repeated final probe/stop runs and all 40 offline harness controls pass. Final full CI passes 1,261 tests/204 suites without failures/skips. Files: `tools/host/copilot-cli.ts`, `packages/kernel/test/host-cli.test.ts`, plan and [exact evidence](docs/audits/2026-10-31/host-probe-validation.json). Shipped artifact and application workload source are unchanged; no new-source remote/native qualification, commit/push or branch/worktree.
+
+## 2026-10-31 — Repair offline cancellation and remeasure current application (uncommitted)
+
+- Preserve complete UTF-8 stop events across stdout chunk boundaries and re-signal the owned process group at leader exit after stop/timeout. Real red controls reproduce missed recognition and stopped=true/timedOut=true; raw transcript bytes, existing watchdog/stop assertions and live-run authority remain unchanged. Files: `tools/host/copilot-cli.ts`, `packages/kernel/test/host-cli.test.ts`.
+- Thirty repeated real-process runs, 38 focused controls and full CI 1,259 tests/204 suites pass without failures/skips. The shipped bundle remains byte-identical; no new-source remote or native-host pass is claimed.
+- Remeasure the complete unchanged post-authentication application on both runtimes. Current Node 26 has 8,756 successful samples but fails the 300 MB memory target at 326,828,032 bytes; Node 22 locally passes with 8,763 samples and 298,844,160 bytes. Both retain twelve correct bursts, 48 successful sign-ins, bounded busy degradation and database invariants. Single local observations are not reference-hardware qualification. [Exact evidence](docs/audits/2026-10-31/process-workload-validation.json). Update plan; memory, loan-barrier/version-probe diagnosis, protocol fit/sign-off and qualification/release remain open. No commit/push or new branch/worktree.
+
+## 2026-10-31 — Bound private writes and reconcile main takeover (uncommitted)
+
+- Apply the existing 50 MB private-record bound to UTF-8 bytes before the shared synchronized writer opens or truncates a leaf. A real red reproduces oversized artifact overwrite; the regression preserves existing/absent leaves on refusal and accepts exact-bound content. Files: `packages/kernel/src/adapters/store-fs.ts`, `packages/kernel/test/store-boundary.test.ts`.
+- Preserve inherited `main` edits and four inert older worktrees. Reject/remove a central intent-helper candidate that grew its measured owner by 68 characters. All ceilings, deadlines and test populations remain unchanged; store headroom is 214 characters.
+- Final full CI passes 1,258 tests/204 suites, zero failures/skips; both Node runtimes pass 152 built CLI scenarios and complete 101/12 neutral, 133/16 evolved app/browser journeys. [Exact local evidence](docs/audits/2026-10-31/takeover-validation.json).
+- Refresh `specs/plan.md` with the dependency-ordered completion backlog, all 50 unmapped Musts, all 19 due Should dispositions and actual failed remote CI. Linux/Windows passed run 41177820140; macOS loan/process-stop failures have no proven cause despite passing local repetitions. Final protocol fit/sign-off, semantic acceptance, native/human campaigns and release remain open. No commit/push, new branch/worktree or qualification.
+
+## 2026-10-31 — Fixed-budget simplification and preservation repairs (uncommitted)
+
+- Require own vetted/support entries for filename attribution, protected paths, behavioral-change assessment, scaffold replay and lock disposition. Real old-bundle control proves a human `constructor` file entered a commit; repaired execution preserves it and requires attribution. Changed unvetted test/build configuration now requires explicit attention disposition.
+- Share identical schema views/counter operations, copy the recovery map once with safe own data slots, use set membership for inventory scans, and remove redundant empty response defaults. Net saving 818 source characters; all fixed ceilings and schema-1 contracts retained. Bounded differential checks and synthetic timing are local evidence, not complete target-fit or performance qualification.
+- Files: kernel core accounting/schemas/attribution, central decisions/verbs, backup/prototype/configuration/golden tests, built UAT driver and canonical progress/audit documents. Full CI passes 1,254 tests/204 suites with zero failures/skips. [Exact built evidence and limitations](docs/audits/2026-10-31/continuation-validation.json); [findings and remaining sequence](docs/audits/2026-10-31/continuation.md). Full migration/configuration protocol, semantic ledger and host/human/release gates remain open. No budget increase, activation, commit or push.
+
+## 2026-10-31 — Revalidate authentication at the final write boundary
+
+- Recipe 0.4.1 prevents sign-in from issuing sessions for obsolete credentials or deleted users, and prevents password replacement from reviving revoked/expired authority or overwriting a concurrent replacement. Current user fields are read inside the final immediate transaction, including every busy retry. Crypto, quotas, DTOs, dependencies, SQL schema and kernel budgets are unchanged.
+- Add twelve regressions using real scrypt, independent SQLite connections, actual contention and parallel HTTP requests. All twelve fail against the original implementation and pass after the repair; rejected operations preserve concurrent state and issue no replacement cookie. Expected neutral/evolved app populations become 101/133; existing browser populations remain 12/16. Final CI/built evidence and limitations are retained in `docs/audits/2026-10-31/validation.json`.
+- Follow the same defect into loan mutations: five held-writer controls reproduce reserve/return after revocation/expiry and administrative return after demotion. Reuse the protected session inspector through `refreshActor` inside each write attempt, pass the application clock, preserve loans on refusal and clear a presented invalid cookie after late authentication failure. Document the feature-authoring pattern. The complete new regression population is seventeen.
+- Final validation: all 1,238 repository tests/202 suites pass with zero skips/failures; both Node 26.3.0/22.12.0 pass 149 built UAT scenarios and the full 101/12 neutral, 133/16 evolved app/browser journey. The complete payload has 92 files; kernel source, its 776,837-byte bundle and both lockfiles are unchanged.
+- Refresh the 200-requirement working inventory, implementation audit, ordered completion plan and owner-selected fixed-budget simplification work plan. A scratch accounting candidate saves 287 source characters with 8,000 matching generated recovery comparisons; it remains uninstalled and does not establish full protocol feasibility. No requirement is newly qualified; no commit, push, host campaign or release.
+
 ## 2026-10-31 — Publish preserved work and repair cold-browser CI setup
 
 - Published implementation/tests (`35c26df`) and specification/audit records (`2bf4c38`) separately after staged and outgoing-range privacy checks. The owner explicitly retained Git's inferred identity. No amendment, new branch, force push or unsigned protocol/cap activation.

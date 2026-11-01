@@ -1,6 +1,6 @@
 # Feature spec: decision files, the hardening block and the prototype rules, and shared-file collisions (INT-09, QLT-17, WRK-06, GIT-09 part)
 
-Status: **v2, after independent review** (2026-10-24). Not signed off; owner decisions in §12. Nothing here is implemented.
+Status: **v2, after independent review** (2026-10-24); **S2 SF-21–24 owner-approved** (2026-10-31) and implemented locally. Focused tests, typecheck, lints and built-bundle UAT pass; full CI stops at payload verification because an ignored template dependency symlink is rejected. S1 and S3 remain unsigned and unimplemented; no approval beyond S2 is implied.
 Canonical text: PRD INT-09, INT-10, INT-14, QLT-17, WRK-06, GIT-09, CON-01, §3.2, §3.7.3, §5.6; tech-spec §7.8, §7.9, §10.4; ux-spec UX-D15, J-09. If this file and a canonical spec disagree, the spec wins.
 
 ## 1. Outcome and scope
@@ -17,7 +17,7 @@ v1 covered five features in one change. The review (§11) showed they share litt
 - **GIT-09's applied resolution (S3b).** It needs a new way to build the merge commit and, for `INTENT.md`, a reverse parse that does not exist (plan §7.2). It is sequenced in §9 and is an owner decision (D7, D8). GIT-09 stays open after S3a; this spec does not claim otherwise.
 - **`docs/architecture.md` blocks (INT-14, Should).** The coordinator drafts the text and the kernel only places it, the job S2 does for hardening. A generic `projectBlocks` is extracted in S2 (second consumer); a `decide architecture` verb is a later small step after S2 proves the shape.
 
-## 2. Current state (verified in code, 2026-10-24)
+## 2. State before S2 implementation (verified in code, 2026-10-24)
 
 - Adoption writes one file. `AdoptOp.file` is the literal `INTENT.md` (`decisions/adopt.ts:19-27`). `adopted()` writes the INTENT.md trust entry, adds the file to the contract's `vetted` and `touched`, and **always sets `adoption.intent = "adopted"`** (`adopt.ts:30-44`). `decideOn` asks once with `id "adopt-confirm"`, binds the answer to `factsHash` of the exact content, applies on a matching confirm, and on `decline` removes every `adopt-confirm` question (`adopt.ts:46-94`). The write is `tx.intent("adopt")`, `project.write`, `tx.result`, then the state publish (`adopt.ts:158-166`).
 - Recovery: `SETTLE.adopt` compares the file hash with `op.after` and `op.before`; any other hash is `uncertain` (`verbs/recover-effects.ts:140-158`). `PUBLISH.adopt` replays the trust entry when `adoptionReplayNeeded` allows (`recover-effects.ts:206-211`, `core/state.ts:8-14`). `uncertain` fences every verb except `stop` (`pipeline-mutate.ts:158`).
@@ -30,6 +30,8 @@ v1 covered five features in one change. The review (§11) showed they share litt
 - Integration: any predicted conflict path stops with `integration-conflict` (`verbs/integrate.ts:76-77`); `predictConflicts` returns `supported: false` before Git 2.38 and `blockers` ignores that (`adapters/git-cli.ts:966-974`). The Git port can read blob ids (`blobsAt`) but not file content or directory listings at a tree-ish (`ports/types.ts`, `Git`).
 - Shared IDs: `KIND_PREFIX` has `REQ EX INV CNS ASM DEC DEF` (`core/ids.ts:46`); tech-spec §7.9 omits `INV`.
 - Not built and out of scope: re-projecting INTENT.md after the intent changes, the reverse parse, committing INTENT.md when its contract already finished (plan §7.2).
+
+**S2 implementation status (2026-10-31):** the approved prototype slice adds the declared-sensitive-data refusal, `decide hardening`, managed-block preservation and external-edit refusal, finish guidance, and journal recovery for the hardening write. `packages/kernel/test/prototype.test.ts` covers these behaviors, including three real-process kill points. Focused tests, typecheck, lints and built-bundle UAT pass; full CI is blocked at payload verification by the ignored template dependency symlink. S1 decision files and S3 collision detection are unchanged and remain unimplemented.
 
 ## 3. Requirements
 
@@ -54,8 +56,8 @@ v1 covered five features in one change. The review (§11) showed they share litt
 
 **S2: hardening block and prototype**
 - SF-20 `projectBlocks(existing, desired, written, header)` is extracted from `projectIntent` (`core/intent-md.ts:81`); INTENT.md and hardening use it. Behavior of `projectIntent` and its tests is unchanged.
-- SF-21 `decide hardening {gaps}` (1–12 strings, each a single line of at most 200 characters, none containing `tenet:begin` or `tenet:end`) writes the block `<!-- tenet:begin HARDENING-<work id> -->` into `docs/hardening.md`, creating the file with a heading when it is absent and leaving every other byte when it exists. The block ID uses the work ID, so it is branch-safe and needs no new ID prefix (D6). Body: `**Prototype <label>: unhardened** (<date>)`, `- Data: synthetic or public data only`, then one `- Gap: …` line each.
-- SF-22 It is an ordinary effect with the SF-06 re-hash. The contract stores `hardening: {block, hash}` of what Tenet wrote. A second call replaces the block only if the file's block still hashes to that value; otherwise it leaves it and returns `intent-edited-outside` naming the file. `open prototype` adds `docs/hardening.md` to the contract's scope paths, so the existing dirty-overlap handling covers a person's uncommitted edits there (to verify at implementation, §10). No trust entry and no adoption: the file is ordinary source (PRD §3.2) and a checked input (tech-spec §7.8), so the write is made before `check` and, like any edit, makes earlier receipts stale.
+- SF-21 `decide hardening {gaps}` (1–12 strings, each a single line of at most 200 characters, none containing `tenet:begin` or `tenet:end`) writes the block `<!-- tenet:begin HARDENING-<work id> -->` into `docs/hardening.md`, creating the file with a heading when it is absent and leaving every other byte when it exists. Invalid entries return `hardening-gaps-invalid`. The block ID uses the work ID, so it is branch-safe and needs no new ID prefix (D6). Body: `**Prototype <label>: unhardened** (<date>)`, `- Data: synthetic or public data only`, then one `- Gap: …` line each.
+- SF-22 It is an ordinary effect with the SF-06 re-hash. The contract stores `hardening: {block, hash}` of what Tenet wrote. A second call replaces the block only if the file's block still hashes to that value; otherwise it leaves it and returns `intent-edited-outside` naming the file. `open prototype` adds `docs/hardening.md` to the contract's scope paths; `prototype.test.ts` verifies scope inclusion and that a later shadow snapshot contains the file. A separate dirty-overlap interaction is not exercised (§10). No trust entry and no adoption: the file is ordinary source (PRD §3.2) and a checked input (tech-spec §7.8), so the write is made before `check` and, like any edit, makes earlier receipts stale.
 - SF-23 `open prototype` stops with `prototype-data-limit` (exit 3, a question: make it a checked change, or stop) when the sensitive-data dimension is High after `raise`. The kernel sees only the assessment and signals it is given; this is a declared limit with a refusal on the signals it can see, not a detection of real data, and every text says so.
 - SF-24 `finish` on a `prototype` contract with no `hardening` field adds the note `hardening-gaps-missing` and the next action `decide hardening`. The endpoint is `prototype` when anything was built and stays `blocked` when nothing was (`verdict.ts:214`); it is never `checked-local` and the result never offers adoption (`finish.ts:79` already requires `checked-local`).
 
@@ -82,9 +84,9 @@ v1 covered five features in one change. The review (§11) showed they share litt
 | E9 | A teammate's file appears after a pull: `decision-found` with path and ID only (a title with an injected instruction never appears in any response); it is not in intent until `adopt --target decisions` takes it in with `quote: ""` [INT-09] | `decision-reconcile.test.ts` |
 | E10 | A file status changed by a person is never rewritten by Tenet; `adopt --target decisions` shows it under *take in* [INT-09] | `decision-reconcile.test.ts` |
 | E11 | One symlink and one oversized file in `docs/decisions/` give two `decision-file-invalid` notes and no thrown error; the other files are still judged [INT-09] | `decision-reconcile.test.ts` |
-| E12 | `decide hardening` appends a `HARDENING-<work id>` block after the starter prose, creates the file when absent, replaces its own block on a second call, and leaves an edited block alone with `intent-edited-outside` [QLT-17, WRK-06] | `hardening-block.test.ts` |
-| E13 | `open prototype` with the `personal-data` trait stops with `prototype-data-limit`; `open prototype` with synthetic data opens and lists `docs/hardening.md` in scope [WRK-06] | `prototype-gaps.test.ts` |
-| E14 | `finish` of a prototype with no gap record returns `prototype`, the note `hardening-gaps-missing` and no adoption offer; with a record the note is absent [WRK-06] | `prototype-gaps.test.ts` |
+| E12 | `decide hardening` appends a `HARDENING-<work id>` block after the starter prose, creates the file when absent, replaces its own block on a second call, and leaves an edited block alone with `intent-edited-outside` [QLT-17, WRK-06] | `prototype.test.ts` |
+| E13 | `open prototype` with the `personal-data` trait stops with `prototype-data-limit`; `open prototype` with synthetic data opens and lists `docs/hardening.md` in scope [WRK-06] | `prototype.test.ts` |
+| E14 | `finish` of a prototype with no gap record returns `prototype`, the note `hardening-gaps-missing` and no adoption offer; with a record the note is absent [WRK-06] | `prototype.test.ts` |
 | E15 | Two real branches each edit the same `REQ` block: `integrate` stops with `shared-id-collision` kind `content` and the three texts, before the editor moves [GIT-09] | `integrate-shared.test.ts` |
 | E16 | Two branches add `DEC-004-abc` in files with different names and Git reports no conflict: kind `duplicate` is reported; integrate does not merge [GIT-09] | `integrate-shared.test.ts` |
 | E17 | One side only changes a block: no collision, integrate proceeds as today; a fast-forward runs no extra Git calls; a shallow clone with no merge base falls back to today's behavior [GIT-09] | `integrate-shared.test.ts` |
@@ -142,8 +144,8 @@ v1 covered five features in one change. The review (§11) showed they share litt
 
 ## 10. Assumptions and unobserved
 
-- A kernel-added scope path is covered by `open`'s dirty-overlap handling (SF-22): **unverified**, must pass a test before the slice is called done.
-- A non-Git prototype (shadow repository) has `docs/hardening.md` in its folder and snapshot; `Project.list` works there: **unverified**.
+- `docs/hardening.md` is included in a prototype's scope: **verified** by `prototype.test.ts`; a separate dirty-overlap interaction is not yet demonstrated.
+- The non-Git prototype writes the hardening file in the project folder and the next shadow snapshot includes it, verified by `prototype.test.ts`. The built CLI also created the file in a scratch-folder UAT; host behavior remains unobserved.
 - Decision-file limits (200 files, 64 KiB) are a starting choice (D9).
 - No host behavior is claimed. Nothing here needs a spike.
 - Windows line endings and `autocrlf`: handled by normalization in `body`; tested with CRLF fixtures only, not on Windows.
@@ -203,10 +205,11 @@ Unverified by the reviewer and still open: plan §7.2's "not done" list was read
 - **D7 S3b mechanism and order:** temporary index plus `commit-tree`, only after the reverse parse exists for `INTENT.md`; GIT-09 stays open after S3a. Recommend yes. Alternative: a text-only proposal forever (weaker than Git's own conflict view).
 - **D8 Tech-spec §10.4 and §7.8 amendment** for S3b ("never a reconciliation engine" is limited to the trust path today). Ask at S3b, not now.
 - **D9 Limits:** 200 decision files and 64 KiB each per call. Alternative: other numbers; a larger project needs an index file, which is a later design.
+- **D10 S2 authorization (2026-10-31).** Approve implementation of SF-21–24 as written, limited to the hardening block and prototype rules. S1, S3a and S3b are not authorized by this decision. The slice adds prototype-specific reason codes and requires the corresponding Tech Spec, UX Spec, skill and plan updates.
 
 ## 13. Acceptance criteria
 
-- `npm run ci` passes, including coverage tags `[INT-09]`, `[CON-01]`, `[QLT-17]`, `[WRK-06]`, `[GIT-09]` on tests that prove them, and the six new reason codes with fixtures.
+- `npm run ci` passes, including coverage tags `[INT-09]`, `[CON-01]`, `[QLT-17]`, `[WRK-06]`, `[GIT-09]` on tests that prove them, and the seven new reason codes with fixtures.
 - E1–E17 pass; E4, E5, E15, E16 use real processes and real Git (kill at each step; two real branches).
 - Built-bundle UAT on a scratch repository for E3, E6, E7, E12, E15; compare with the examples; record what was and was not observed. GIT-09 is reported as **partially met** (detection) after S3a.
 - Privacy check as the lifecycle requires; no decision text appears in any note.

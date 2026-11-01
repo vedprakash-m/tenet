@@ -1,0 +1,57 @@
+# Whole-protocol prototype: isolated feasibility boundary
+
+October 31, 2026. **Owner-authorized feasibility prototype; scratch implementation remains incomplete.**
+
+**Historical October 31 integrated checkpoint (superseded):** typecheck passed; 90 protocol/runner tests across 13 suites and 23 legacy/backup/stop tests across two suites passed; architecture and skills lint passed. Quality lint had nine findings. That run reported central source at **259,545/241,805**, accounting at **11,848/8,640**, and active migration-store source at **31,022/25,920**. Separate owner-lane reports disagreed (central **293,700/241,805**, store **26,718/25,920**); those source identities were not reconciled into one stable candidate. This checkpoint is retained as history, not current sizing. No full candidate CI/build/UAT, complete crash matrix, migration rollback, or dual-runtime acceptance was established; recovery-horizon/compaction and readable-state coverage remained open.
+
+**November 1 scratch capacity update:** after four disjoint owner lanes, the current quality matcher measures central **293,446/247,219**, store **38,294/25,920**, and accounting **23,066/8,640**. The central lane saved 453 characters and passed 135 focused controls; store/accounting lanes found no safe reduction. The schema remains **26,891/26,899**, with no trait-state implementation. Scratch typecheck passes; quality lint fails the three owner caps. The earlier central ceiling of 241,805 in the October 31 report was a stale scratch threshold and has been synced to the current approved main cap without changing it. The isolated migration-contract copy has now been reconciled with the owner-approved QLT-11 schema-2 addition and lossless-but-inert legacy conversion; this is documentation only, not implementation sign-off or runtime authority. These per-lane results do not establish whole-candidate equivalence, full CI, build/UAT, budget fit, migration closure, schema activation or qualification.
+
+**November 1 broader central replacement attempt:** an independent scratch-only investigation examined the remaining pipeline, verbs and decisions for behavior-preserving consolidation, excluding the already-owned recovery helper. It found no substantial safe reduction: common effect-proof admission and configuration assembly are already centralized, while remaining invocation points differ in authority, journaling, revision, publication, or response-ordering responsibilities. A helper for repeated schema-1 dispatch expressions would save only a small amount without removing responsibility. No source or tests changed; central remains **293,446/247,219**. Its 93 focused protocol tests, typecheck and architecture lint passed; quality lint still fails central, store and accounting owner caps. This bounded investigation does not prove that every possible replacement design is impossible and does not establish candidate fit, full CI, activation or release.
+
+**November 1 broader store replacement attempt:** a separate scratch-only investigation evaluated unified descriptor-read, lock, publication and traversal designs against the store adapter's existing invariants. It found no safe substantial replacement: shared mechanics are already centralized, while remaining paths preserve distinct admission, identity, error and crash-barrier behavior. No source or tests changed; store remains **38,294/25,920**. The store/lock/migration/recovery cohort passed **241 tests across 19 suites**, typecheck and architecture lint; quality lint still fails store, central and accounting ceilings. This is bounded evidence, not proof all replacement designs are impossible or that the candidate fits.
+
+## Purpose
+
+Replace repeated small capacity probes with one complete, executable candidate for the existing configuration/migration design. The owner's fixed budgets remain binding. The prototype answers whether a complete replacement fits, what fails, and which concrete changes need final review. It does not activate schema 2 or supply final implementation sign-off.
+
+The current loop has a sequencing problem: final sign-off requires credible complete sizing, while `schema-migration.md` prohibits migration code before sign-off. The owner has authorized the exact isolated prototype here after directing: “go full pace. Ok to amend rules that are resulting in friction in progress”. This narrowly permits feasibility code in scratch only. It does not relax any fixed capacity or product safeguard, and it does not authorize implementation in the shipped tree, schema activation, publication, or release.
+
+## Concrete scope
+
+Use an isolated local scratch copy of the current source as the candidate, with its own build output, test repositories and databases. Create no Git branch or Git worktree. Preserve the user's existing working tree and shipped schema-1 artifact. No target module, future command or new schema is installed in the main workspace/payload as part of this prototype. Keep existing owner matching when measuring the candidate; extra files are charged to their original responsibility owners. Do not move code into uncapped modules to make it fit.
+
+Implement the existing reviewed design together, as replacement code rather than a set of additive patches. Carry all 28 responsibilities in `protocol-capacity.md` §4 plus the owner's later-approved QLT-11 trait-state inclusion in schema 2. Charge that addition to its real owners; do not hide it in the 28-row estimate:
+
+| Candidate area | Inventory IDs | Required closure |
+|---|---|---|
+| Data contracts and legacy bridge | S1–S4, O5–O6 | Strict keys/stamps/counters and all actual schema-1 producers; explicit finite upcast/refusal; legacy proof remains historical |
+| Configuration transition | C1–C2, O1–O3 | Preview/confirmation/reset/source identity, atomic all-work refresh, pre-cache identity, readback and restart |
+| QLT-11 trait state | Owner-approved addition | Typed project/work assessments and corrections, canonical registry/evidence/resolution/diff identity, inert legacy conversion, and every risk/obligation/evidence consumer |
+| Launch and process ownership | C3–C5, C7, B1, R1, O7 | Typed check/operation domains, every ordinal, bounded spawn acknowledgment, settlement holes, all groups stopped or explicitly uncertain, retained associations |
+| Proof and effects | C6, V1–V2, G1 | All normal/recovered receipt/red/preservation/review/Analyst/Deep/effect consumers; completion history does not become current proof |
+| Migration and privacy | C8, A1–A3, O4, O8 | Early routing, stable source set, reserve/preview/fence/stage/install/terminal, finite recovery prefixes, pristine rollback, ordinary-writer forfeiture, protected retention and whole-set forgetting |
+
+The authoritative contracts stay `config-completion.md` §§14/16/18/20, `schema-migration.md` §§16/18/19 and the approved `migration-closure.md` dispositions. A gap between these contracts is recorded as unresolved and blocks that candidate claim; do not silently choose a new product policy. The unspecified explicit recovery-set deletion interface is a concrete outstanding design item, not an existing command to advertise.
+
+## Execution and evidence
+
+Current October 31 closure ownership: one lane owns existing central configuration-transition paths and new configuration-closure controls; another owns pure review/verdict/obligations proof-consumer paths and new proof-closure controls. Neither owns adapters, schemas, ports, runner or accounting. Coordinator owns the already approved offline-report repair on main and scratch and serializes the full main checkpoint. This does not install candidate kernel code or authorize missing recovery-set formats.
+
+Scheduling is dependency-based, not milestone-wide serialization. Disjoint authorized scratch lanes can advance before native qualification; that does not pass the native entry/exit gates. Keep one writer per file set and original capacity owner. Earlier integration lanes owned central pipeline/verbs/decisions/accounting, core review/verdict/obligations/binding consumers, and store/schema/versioned decoding respectively; current ownership is listed above. Runner/ports stay stable and coordinator-owned; agents exchange precise API prerequisites without overlapping edits. A lane reports code, exact checks, measurements and outstanding integration obligations; helper-level success is not whole-protocol success. The coordinator integrates stable results before the combined checkpoint. New behavior outside this prototype still needs its own specification/review/sign-off.
+
+1. Freeze the current source/bundle and generate actual legacy records using its real pipeline, including nine effect kinds, nonempty cached responses, backup recovery and interrupted work. Record raw-byte and source identities.
+2. Build one complete candidate with shared legacy/target validator definitions, one transition path and the existing ports. Do not create a second live dispatch system. Record every inventory row's implementation and distinguishing checks.
+3. Iterate with focused real-process and compatibility checks. The owner has authorized parallel agents for disjoint scratch-only feasibility slices; keep shared-contract edits coordinated and serialize heavyweight CI/browser/workload cohorts to avoid competing for the same machine. Do not rerun the complete source/starter/browser suite after each local edit. Keep red controls and every failed budget/build result.
+4. Once the candidate is coherent, run all owner, bundle, payload, instruction and quality gates together. A candidate may fail a gate during investigation; it is never eligible for installation while any gate fails. No ceiling, matcher, ratchet, timeout, assertion or population is weakened.
+5. Run the complete source suite and dual-runtime built acceptance once at the candidate checkpoint. Run every applicable migration/launch kill prefix and repeated recovery with actual processes. Synthetic reviewers do not establish native-host isolation.
+6. Deliver the complete candidate patch, actual owner measurements, missing/failed responsibility rows and proposed final implementation slice for review. If it does not fit, report the measured failed candidate and alternatives; do not declare all possible designs impossible.
+
+Do not replace §11.2's actual cut list with new adapter/hook omissions or blanket Should dispositions. Qualification tuples, front-end selection, campaigns, manual assurance results and release approvals require their own evidence and authority; estimates are not calendar commitments.
+
+No network/model/host calls, account usage, campaign, reference-hardware qualification, commit, push, installation, publishing or release. Existing cached/proof compatibility is tested explicitly, not repaired by relabeling old records. No performance claim follows from a local microbenchmark.
+
+## Authorization and limits
+
+The owner authorizes the isolated whole-protocol feasibility prototype described above and has explicitly authorized parallel agents for disjoint scratch-only work. All budgets remain fixed; there is no activation, installation, main-tree implementation, commit or push authority. Final independent review, owner implementation sign-off and release gates remain required.
+
+If authorization is withheld, continue only the existing schema-1 repairs and behavior-preserving simplification. Do not imply that this narrower scope can complete the protocol by itself.

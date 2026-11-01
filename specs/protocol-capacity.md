@@ -12,6 +12,8 @@ The complete responsibility inventory below produces a **planning estimate**, no
 
 This is a capacity proposal, not a replacement for the configuration/migration contracts. Settled D1-D8/MC/R1/R2 policies stand. [Configuration sections 14, 16, 18 and 20](config-completion.md), [migration sections 16 and 18](schema-migration.md), and approved [migration closure](migration-closure.md) remain the mechanism inputs. R08 remains deferred. No new product policy is selected.
 
+**Owner scope amendment, 2026-10-31:** the owner added QLT-11 trait state to the schema-2 migration. This inventory and its 43,290–72,160-character estimate predate that addition and do not size the static registry, project/change evidence, correction state, candidate-diff capture or affected consumers. The scratch candidate must charge those changes to their actual existing source owners and include them in the complete measured budget; this document's estimates are not a fit claim for the expanded scope.
+
 ## 2. Baseline and measurement
 
 Baseline: local `main` at `8b7bbc4190fc76599b51e1fcfe50f23947a2963c` plus preserved uncommitted changes, exactly the source identified by [reassessment-validation.json](../docs/audits/2026-10-29/reassessment-validation.json). Source hash `d77aff0043399b0b10677a72020d12ff2c8c7aad67a8ffffff2d4e4d851e9c85`; runtime source is unchanged by this proposal.
