@@ -134,11 +134,20 @@ export async function runCopilot(run: HostRun, opts: HostOptions): Promise<Obser
   let timedOut = false;
   const timer = setTimeout(() => { timedOut = true; kill(); }, run.timeoutMs);
   // A fork racing the first group signal can keep stdout open after its leader dies.
-  child.once("exit", () => { if (stopped || timedOut) kill(); });
+  let exitCleanup: NodeJS.Timeout | undefined;
+  child.once("exit", () => {
+    if (!stopped && !timedOut) return;
+    exitCleanup = setTimeout(() => {
+      if (!child.stdout?.destroyed || !child.stderr?.destroyed) kill();
+    }, 10);
+  });
   let end: { exit: number | null; signal: string | null };
   try {
     end = await new Promise<{ exit: number | null; signal: string | null }>((resolve, reject) => {
-      child.on("close", (exit, signal) => resolve({ exit, signal }));
+      child.on("close", (exit, signal) => {
+        if (exitCleanup) clearTimeout(exitCleanup);
+        resolve({ exit, signal });
+      });
       child.on("error", reject);
     });
   } finally {
