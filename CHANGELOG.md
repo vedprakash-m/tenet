@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-02 — Repair report identities, offline projections and build-input integrity
+
+- Canonicalize Vitest, Playwright, ESLint and TypeScript report identities, reject directory/parent/cross-drive identities, and accept real CRLF compiler populations. Advance to `node-ts@20`; older normalization evidence stays stale.
+- Preserve exceeded/unknown wall budgets in Markdown/JUnit, include false positives at severities absent from seeded truth in review precision, and explicitly list missing first attempts despite passing retries. Snapshot installed esbuild loader/platform compiler bytes during reproducibility checks.
+- Add 18 red-first tests and include report/receipt regressions in Windows CI on both runtime versions, plus pure static regression selection. All 367 selected Windows-compatible checks pass on Node24.22.1 and Node22.12.0; a retained walkthrough passes fifteen built/offline CLI calls on each runtime. Real installed-compiler pass/fail CRLF output also passes on Node24. Full supported-POSIX CI/mutating UAT remains pending, not inherited from the earlier green base.
+- Files: kernel adapters and `report-paths.test.ts`; evaluator report and tests; reproducibility tool/test; `.github/workflows/untrusted.yml`; `CONTRIBUTING.md`; technical/harness specs; `specs/plan.md`; dated validation record. Fixed budgets, mapping, qualification and release gates are unchanged.
+
 ## 2026-11-01 — Enforce offline input and assertion-proof boundaries
 
 - Reject malformed UTF-8 in referenced fixture/grader bytes even with matching hashes; preserve exact-byte identities. Reject replay child/tool start-ID collisions in either source order.

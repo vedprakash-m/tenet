@@ -384,11 +384,11 @@ Dev commands (implemented status shown below; these are tool commands, not kerne
 npm run eval:validate -- --protocol <path>
 npm run eval:replay -- --capture <path>
 npm run eval:native -- --protocol <path> --authorization <path>
-npm run eval:report -- --campaign <path>
+npm run eval:report -- --input <path> --format json|markdown|junit
 npm run eval:experiment -- --experiment <path> --authorization <path>
 ```
 
-`eval:validate` is implemented as an offline static validator (usage error 1, invalid input 2, valid static protocol 0). `eval:replay` remains approved by G0 but unimplemented. Native/experiment commands remain unapproved and must refuse missing authorization/live prerequisites. The report command's exit contract remains proposed (usage error 1, completed passing gate 0, non-passing/incomplete gate 2); a transport crash without a result is non-passing. These evaluator exits do not replace the kernel's 0-5 codes.
+`eval:validate` is implemented as an offline static validator (usage error 1, invalid input 2, valid static protocol 0). `eval:replay` implements only the approved synthetic pure-helper scope in `eval-replay.md`; it does not execute the kernel pipeline or a native host. `eval:report` implements `eval-report.md`: usage error 1, invalid input 2, valid passing report 0, and valid failing/inconclusive report 3 after rendering. Native/experiment commands remain unapproved and unavailable; the names above are proposals, not installed scripts. A transport crash without a result is non-passing. These evaluator exits do not replace the kernel's 0-5 codes.
 
 ### 7.5 Execution, Termination and Recovery
 

@@ -1,0 +1,108 @@
+{
+  "observedAt": "2026-11-02T01:24:35.131Z",
+  "status": "locally-validated-subset",
+  "branch": "main",
+  "baseCommit": "2986067fb3ce848624f71a5192c5ec35759d36e9",
+  "runtime": {
+    "platform": "win32",
+    "node": "24.22.1",
+    "typescript": "5.9.3",
+    "esbuild": "0.28.2"
+  },
+  "source": {
+    "scope": "packages/**, tools/**, package.json, package-lock.json, tsconfig.json; tracked plus nonignored untracked files",
+    "files": 314,
+    "serialization": "JSON.stringify(sorted [repository-relative path, exact-byte SHA-256] pairs)",
+    "sha256": "785de322e4a71c101e608033a800d5b2fe300cd0982bda52fef0b77160f16b5f",
+    "workflowSha256": "82f66a72ce3bd1d6dafcdb12eaf7975c6d7ab980b6a699ba2d731eb75bc49ba3"
+  },
+  "repairs": [
+    "Canonical relative report identities, directory/parent/cross-drive refusal and CRLF compiler population; node-ts@20 invalidates earlier normalization evidence.",
+    "Markdown and JUnit preserve exceeded/unknown wall budgets instead of presenting supplied passes as passing outcomes.",
+    "Review precision counts false positives at severities absent from seeded truth; incomplete truth still withholds ratios.",
+    "Reproducibility snapshots installed esbuild loader/platform compiler bytes as well as installed TypeScript."
+  ],
+  "redFirst": {
+    "newTests": 17,
+    "reportIdentityTests": 14,
+    "additionalNestedParentControlsFailedBeforeRepair": 4,
+    "offlineReportTests": 2,
+    "compilerMutationTest": 1
+  },
+  "checks": {
+    "typecheck": "pass",
+    "lintArchitectureSkillsQuality": "pass; budgets and ratchets unchanged",
+    "m0StructuralCoverage": "30 mapped, 4 host-only, 0 unmapped",
+    "windowsWorkflowSelection": {
+      "source": ".github/workflows/untrusted.yml: windows-portability / Windows tooling, pure rules, offline evaluation and platform refusal only",
+      "tests": 331,
+      "suites": 36,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0
+    },
+    "additionalStaticSelection": {
+      "command": "node --test --test-name-pattern=\"static report population and bounds|normalizing typecheck output|normalizing lint output|static receipts|which static checks a contract needs\" packages/kernel/test/static-conformance.test.ts packages/kernel/test/static-checks.test.ts",
+      "tests": 31,
+      "suites": 5,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0
+    },
+    "windowsCleanupSelection": {
+      "command": "node --test --test-name-pattern=\"automatic temp cleanup boundaries\" packages/kernel/test/store-boundary.test.ts",
+      "tests": 4,
+      "suites": 1,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0
+    },
+    "build": "pass",
+    "payload": "94 complete inclusion-list files verified",
+    "reproducibility": "pass; same checkout and installed toolchain, two independent empty outputs, not independent dependency restores or authenticity",
+    "privacyActualAdditions": "no findings across tracked additions and both untracked files; heuristic only",
+    "whitespace": "tracked diff and untracked-file trailing-whitespace checks pass",
+    "ignoredOutputs": "generated kernel/checksums and private .tenet state remain excluded",
+    "scratchCleanup": "test-fixtures directory is empty after final runs"
+  },
+  "artifact": {
+    "bytes": 784061,
+    "budgetBytes": 819200,
+    "sha256": "0818ed74bf8a8fd5f10ce53735e11150b252a3c4e885c84d46787922f5bbcb8e",
+    "manifestSha256": "bfa75d567113c153a11bdddf19cc202b6a7380716bdc98c28420b52c242785e8",
+    "adapter": "node-ts@20"
+  },
+  "owners": {
+    "central": { "used": 247182, "ceiling": 247219 },
+    "nodeAdapter": { "used": 20160, "ceiling": 20160 },
+    "store": { "used": 25706, "ceiling": 25920 },
+    "accounting": { "used": 8806, "ceiling": 8870 },
+    "schemas": { "used": 26371, "ceiling": 26899 },
+    "git": { "used": 37801, "ceiling": 37843 }
+  },
+  "scratchUat": {
+    "builtKernel": "inspect help/status exit 0; open feature exits 2 with capability-missing; all preserve the scratch listing and create no .tenet state",
+    "installedCompiler": "real TypeScript CRLF output normalizes both failing exit 2 and passing exit 0 populations to app.ts; diagnostics retain app.ts:1; no emitted JavaScript",
+    "offlineReportCli": "10 actual CLI calls cover json/markdown/junit at exceeded, missing and exact-boundary wall times; invented severity yields precision 1/2 and exit 3",
+    "cleanup": "uniquely allocated scratch repositories removed in finally"
+  },
+  "r1": {
+    "musts": 181,
+    "mapped": 139,
+    "hostOnly": 16,
+    "unmapped": 26,
+    "qualified": 0,
+    "integrityErrors": [],
+    "openShouldDispositions": 19
+  },
+  "limitations": [
+    "Full supported-POSIX npm run ci and mutating built-bundle UAT have not run against these uncommitted changes.",
+    "An exploratory broad static-conformance invocation hit deliberate Windows mutation/no-follow limitations; no assertion, platform refusal or gate was weakened.",
+    "Node 22.12.0 was not rerun locally; earlier-source remote successes do not validate this changed source.",
+    "No WSL distribution or Docker execution route is installed in this checkout environment.",
+    "Whole-target fixed-budget capacity, unsigned coupled protocols and starter supported-runtime acceptance remain unresolved.",
+    "Native-host installation/lifecycle, reserved/protected campaigns, human studies and release approvals remain separately gated."
+  ],
+  "publication": "no commit, push, branch, worktree, host spike, campaign or release",
+  "qualificationClaim": false
+}

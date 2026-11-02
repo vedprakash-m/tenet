@@ -1,0 +1,74 @@
+{
+  "observedAt": "2026-11-02T01:35:41.741Z",
+  "status": "locally-validated-subset",
+  "supersedes": "windows-continuation-validation.json for current source and minimum-runtime status; earlier observations remain historical",
+  "branch": "main",
+  "baseCommit": "2986067fb3ce848624f71a5192c5ec35759d36e9",
+  "runtimes": ["24.22.1", "22.12.0"],
+  "platform": "win32",
+  "runtimeAcquisition": "Offline cache probe failed ENOTCACHED; npm exec acquired Node22.12.0 in its execution cache. No repository dependency, lockfile, global runtime or OS feature changed.",
+  "source": {
+    "scope": "packages/**, tools/**, package.json, package-lock.json, tsconfig.json; tracked plus nonignored untracked files",
+    "files": 314,
+    "serialization": "JSON.stringify(sorted [repository-relative path, exact-byte SHA-256] pairs)",
+    "sha256": "44099236f0d0b6ac88b850d7ab9dd9e9a6dbe97cc6d9bc8233404623624b3c52",
+    "workflowSha256": "bb7cf48d6a52e7fec259faa2eddc6f8ea1b7cdb2fa4f68d8a4af98e0e430b4f2"
+  },
+  "additionalRepair": {
+    "contract": "eval-report AC-2/AC-3/AC-6",
+    "redFirst": "A retry-only slot lacked its missing-first-attempt Markdown exception; the focused regression failed before repair.",
+    "behavior": "Name the absent attempt 1 even when a passing retry exists; preserve the retry, denominator, JUnit record and inconclusive eligibility.",
+    "totalNewTestsInContinuation": 18
+  },
+  "checks": {
+    "windowsWorkflowSelectionPerRuntime": {
+      "tests": 332,
+      "suites": 36,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "minimumRuntimeFlags": "NODE_OPTIONS=--experimental-strip-types inherited by source child CLIs"
+    },
+    "additionalStaticPerRuntime": { "tests": 31, "suites": 5, "failed": 0, "skipped": 0 },
+    "filesystemCleanupPerRuntime": { "tests": 4, "suites": 1, "failed": 0, "skipped": 0 },
+    "distinctSelectedTestsPerRuntime": 367,
+    "typecheck": "pass",
+    "lintArchitectureSkillsQuality": "pass; budgets and ratchets unchanged",
+    "build": "pass",
+    "payload": "94 complete inclusion-list files verified",
+    "reproducibility": "pass on Node24; same checkout and installed toolchain, two independent empty outputs, not independent dependency restores or authenticity"
+  },
+  "continuousCoverage": [
+    "Minimum-Node Windows job now includes report-paths, Playwright and receipt suites.",
+    "Windows Node24 job explicitly selects pure static normalization/population suites without POSIX-only execution tests.",
+    "Workflow guard assertions require those selections to remain present."
+  ],
+  "walkthrough": {
+    "path": "docs/audits/2026-11-02/report-bundle-uat.mjs",
+    "sha256": "0675e596511ea4c96605874190ff6e26f1367e8516bf78d9b032f84d4b08a933",
+    "commands": [
+      "node docs/audits/2026-11-02/report-bundle-uat.mjs",
+      "npm exec --package=node@22.12.0 -- node --experimental-strip-types docs/audits/2026-11-02/report-bundle-uat.mjs"
+    ],
+    "callsPerRuntime": 15,
+    "scope": "Three built-kernel help/status/Windows-refusal calls plus twelve offline-report CLI calls: all formats at exceeded/missing/exact wall budgets, precision 1/2 for unseeded severity, and retry-only Markdown/JSON.",
+    "effects": "Scratch-only report input; no kernel state, repository dependency, model call or campaign. Owned scratch directory removed in finally.",
+    "passedOnBothRuntimes": true
+  },
+  "artifact": {
+    "bytes": 784061,
+    "budgetBytes": 819200,
+    "sha256": "0818ed74bf8a8fd5f10ce53735e11150b252a3c4e885c84d46787922f5bbcb8e",
+    "manifestSha256": "bfa75d567113c153a11bdddf19cc202b6a7380716bdc98c28420b52c242785e8",
+    "adapter": "node-ts@20"
+  },
+  "remainingGates": [
+    "Full supported-POSIX npm run ci and mutating built-bundle UAT for the exact changed source.",
+    "Complete-target fixed-budget capacity and unsigned configuration/migration/execution/result contracts.",
+    "Supported-runtime starter workload acceptance.",
+    "Separately authorized native-host, reserved/protected campaigns, human studies and release approvals."
+  ],
+  "r1": { "mapped": 139, "hostOnly": 16, "unmapped": 26, "qualified": 0, "openShouldDispositions": 19 },
+  "publication": "local main only; no commit, push, new branch, worktree or release",
+  "qualificationClaim": false
+}
