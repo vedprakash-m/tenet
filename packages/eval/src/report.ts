@@ -309,13 +309,16 @@ function collectObservationDiagnostics(slots: Slot[], attemptsBySlot: Map<string
 
 function makeReviewMetrics(input: Input, slots: Slot[], attemptsBySlot: Map<string, Attempt[]>): ReviewMetric[] {
   const rows: ReviewMetric[] = [];
-  const severities = [...new Set(input.seededTruth.map((item) => item.severity))].sort(compareText);
   for (const group of groups(slots)) {
     const selected = slots.filter((slot) => matchesGroup(slot, group));
     const truth = input.seededTruth.filter((item) => selected.some((slot) => slot.caseId === item.caseId && slot.stratumId === item.stratumId));
+    if (truth.length === 0) continue;
+    const severities = [...new Set([
+      ...truth.map((item) => item.severity),
+      ...selected.flatMap((slot) => (attemptsBySlot.get(slot.slotId) ?? []).find((item) => item.attemptNumber === 1)?.findings.map((item) => item.severity) ?? []),
+    ])].sort(compareText);
     for (const severity of severities) {
       const severityTruth = truth.filter((item) => item.severity === severity);
-      if (severityTruth.length === 0) continue;
       const unknownSlotIds: string[] = [];
       let attemptedSlots = 0;
       const findings: Array<{ slotId: string; caseId: string; stratumId: string; findingId: string; severity: string }> = [];
@@ -350,7 +353,7 @@ function makeReviewMetrics(input: Input, slots: Slot[], attemptsBySlot: Map<stri
         falseNegatives: severityTruth.length - foundIds.size,
         unknownSlots: unknown.length,
         unknownSlotIds: unknown,
-        recall: complete ? foundIds.size / severityTruth.length : null,
+        recall: complete && severityTruth.length > 0 ? foundIds.size / severityTruth.length : null,
         precision: complete && foundIds.size + falsePositiveIds.size > 0 ? foundIds.size / (foundIds.size + falsePositiveIds.size) : null,
       });
     }
@@ -642,12 +645,17 @@ function renderMarkdown(report: CampaignReport): string {
   lines.push("", "## Exceptions", "", "| Slot | Attempt | Status | Detail |", "|---|---:|---|---|");
   for (const slot of report.plannedSlots) {
     const attempts = report.attempts.filter((item) => item.slotId === slot.slotId);
-    if (attempts.length === 0) lines.push(`| ${slot.slotId} | 1 | missing | no attempt record |`);
+    if (!attempts.some((attempt) => attempt.attemptNumber === 1)) {
+      lines.push(`| ${slot.slotId} | 1 | missing | ${attempts.length ? "no attempt 1 record" : "no attempt record"} |`);
+    }
     for (const attempt of attempts) {
+      const outcome = attemptOutcome(slot, attempt);
+      const wallIssue = attempt.status === "completed" && attempt.contractOutcome === "pass" && outcome !== "pass"
+        ? attempt.time.wallMs === null ? "missing-wall-time" : "wall-budget-exceeded" : null;
       const safetyRequired = slot.safetyRequired || slot.requiredObservations.some((item) => item.required && item.kind === "safety");
-      if (attempt.status !== "completed" || attempt.contractOutcome !== "pass" || attempt.safetyResult === "violation" || attempt.safetyResult === "unknown" || (safetyRequired && attempt.safetyResult === "not-run")) {
-        const status = attempt.safetyResult === "violation" ? "safety-violation" : attempt.status === "completed" && attempt.contractOutcome === "fail" ? "fail" : attempt.status;
-        lines.push(`| ${slot.slotId} | ${attempt.attemptNumber} | ${status} | ${markdownCell([attempt.contractOutcome, ...attempt.failureCodes].join("; "))} |`);
+      if (outcome !== "pass" || attempt.safetyResult === "violation" || attempt.safetyResult === "unknown" || (safetyRequired && attempt.safetyResult === "not-run")) {
+        const status = attempt.safetyResult === "violation" ? "safety-violation" : attempt.status !== "completed" ? attempt.status : outcome === "fail" ? "fail" : "unknown";
+        lines.push(`| ${slot.slotId} | ${attempt.attemptNumber} | ${status} | ${markdownCell([attempt.contractOutcome, ...attempt.failureCodes, ...(wallIssue ? [wallIssue] : [])].join("; "))} |`);
       }
     }
     for (const item of report.diagnostics.missingRequiredObservations.filter((diagnostic) => diagnostic.slotId === slot.slotId)) {
@@ -681,13 +689,16 @@ function renderJunit(report: CampaignReport): string {
       continue;
     }
     for (const attempt of attempts) {
-      const failed = (attempt.status === "completed" && attempt.contractOutcome === "fail") || attempt.safetyResult === "violation";
+      const outcome = attemptOutcome(slot, attempt);
+      const wallIssue = attempt.status === "completed" && attempt.contractOutcome === "pass" && outcome !== "pass"
+        ? attempt.time.wallMs === null ? "missing-wall-time" : "wall-budget-exceeded" : null;
+      const failed = outcome === "fail" || attempt.safetyResult === "violation";
       const safetyRequired = slot.safetyRequired || slot.requiredObservations.some((item) => item.required && item.kind === "safety");
       const missingRequired = report.diagnostics.missingRequiredObservations.some((item) => item.attemptId === attempt.attemptId);
-      const skipped = !failed && (attempt.status !== "completed" || attempt.contractOutcome === "unknown" || attempt.safetyResult === "unknown" || (safetyRequired && attempt.safetyResult === "not-run") || missingRequired);
+      const skipped = !failed && (outcome === "unknown" || attempt.safetyResult === "unknown" || (safetyRequired && attempt.safetyResult === "not-run") || missingRequired);
       const status = failed ? "fail" : skipped ? attempt.status === "completed" ? "unknown" : attempt.status : "pass";
-      const body = failed ? `<failure message="${esc([...attempt.failureCodes, attempt.safetyResult === "violation" ? "safety-violation" : "contract-fail"].join(","))}"/>`
-        : skipped ? `<skipped message="${esc(status)}"/>` : "";
+      const body = failed ? `<failure message="${esc([...attempt.failureCodes, attempt.safetyResult === "violation" ? "safety-violation" : wallIssue ?? "contract-fail"].join(","))}"/>`
+        : skipped ? `<skipped message="${esc(wallIssue ?? status)}"/>` : "";
       plannedCases.push({ name: `${slot.slotId}:${attempt.attemptNumber}`, status, body });
     }
   }

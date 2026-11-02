@@ -92,6 +92,47 @@ function cli(args: string[]) {
 }
 
 describe("offline campaign reporting", () => {
+  it("lists missing first attempts even when a passing retry exists", () => {
+    const result = report(input({
+      attempts: [attempt("attempt-retry", "slot-one", 2)],
+    })).result;
+    assert.equal(result.eligibility, "inconclusive");
+    assert.equal(result.attempts.length, 1);
+    const markdown = renderCampaignReport(result, "markdown");
+    assert.match(markdown, /\| slot-one \| 1 \| missing \| no attempt 1 record \|/);
+    assert.doesNotMatch(markdown, /no exceptions/);
+    const junit = renderCampaignReport(result, "junit");
+    assert.match(junit, /<testcase name="slot-one:2">/);
+    assert.match(junit, /name="tenet-status" value="inconclusive"/);
+  });
+
+  it("preserves exceeded and unknown wall budgets in Markdown and JUnit projections", () => {
+    for (const wallMs of [1001, null]) {
+      const result = report(input({
+        attempts: [attempt("attempt-one", "slot-one", 1, {
+          time: { wallMs, activeMs: null, waitMs: null },
+        })],
+      })).result;
+      const status = wallMs === null ? "unknown" : "fail";
+      const reason = wallMs === null ? "missing-wall-time" : "wall-budget-exceeded";
+      assert.equal(result.eligibility, wallMs === null ? "inconclusive" : "fail");
+      const markdown = renderCampaignReport(result, "markdown");
+      assert.ok(markdown.includes(`| slot-one | 1 | ${status} |`), markdown);
+      assert.ok(markdown.includes(reason), markdown);
+      const junit = renderCampaignReport(result, "junit");
+      assert.match(junit, new RegExp(`<testcase name="slot-one:1"><properties><property name="tenet-status" value="${status}"`));
+      assert.ok(junit.includes(`<${wallMs === null ? "skipped" : "failure"} message="${reason}"/>`), junit);
+      assert.doesNotMatch(junit, /name="passed" value="1"/);
+    }
+    const boundary = report(input({
+      attempts: [attempt("attempt-one", "slot-one", 1, {
+        time: { wallMs: 1000, activeMs: null, waitMs: null },
+      })],
+    })).result;
+    assert.equal(boundary.eligibility, "pass");
+    assert.match(renderCampaignReport(boundary, "junit"), /name="passed" value="1"/);
+  });
+
   it("retains unplanned and dangling attempt time and counts in campaign resource totals [ENG-04]", () => {
     for (const slotId of [null, "missing-slot"]) {
       const result = report(input({
@@ -212,6 +253,35 @@ describe("offline campaign reporting", () => {
       assert.equal(campaign?.recall, 0);
       assert.equal(campaign?.precision, 0);
     }
+  });
+
+  it("counts false positives whose severity has no seeded defect instead of inflating precision", () => {
+    const result = report(input({
+      seededTruth: [{ defectId: "defect-one", caseId: "case-one", stratumId: "local", severity: "major" }],
+      attempts: [attempt("attempt-one", "slot-one", 1, {
+        findings: [
+          { findingId: "defect-one", severity: "major" },
+          { findingId: "unseeded-defect", severity: "minor" },
+        ],
+      })],
+      thresholds: [
+        ...input().thresholds,
+        { metricId: "review-precision", groupScope: { level: "campaign" }, comparator: "min", value: 1, unit: "ratio", measurementScope: null },
+      ],
+    })).result;
+    for (const level of ["campaign", "case-stratum-role"]) {
+      const row = result.reviewMetrics.find((item) => item.group.level === level && item.severity === "minor");
+      assert.ok(row);
+      assert.equal(row.seeded, 0);
+      assert.equal(row.falsePositives, 1);
+      assert.equal(row.recall, null);
+      assert.equal(row.precision, 0);
+      const precision = result.metrics.find((item) => item.group.level === level && item.metricId === "review-precision");
+      assert.equal(precision?.numerator, 1);
+      assert.equal(precision?.denominator, 2);
+      assert.equal(precision?.value, 0.5);
+    }
+    assert.equal(result.eligibility, "fail");
   });
 
   it("withholds campaign review ratios when any planned case lacks seeded truth", () => {

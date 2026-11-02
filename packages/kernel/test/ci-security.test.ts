@@ -55,6 +55,12 @@ describe("workflows keep the untrusted tier untrusted [ENG-10]", () => {
       && command.includes("packages\\kernel\\test\\store-boundary.test.ts")));
     assert.ok(commands.some(command => command.includes("--experimental-strip-types --test")
       && command.includes("packages\\eval\\test\\protocol.test.ts") && command.includes("packages\\kernel\\test\\payload.test.ts")));
+    const minimumTests = commands.find(command => command.includes("--experimental-strip-types --test"))!;
+    for (const file of ["report-paths", "playwright-adapter", "receipts"]) {
+      assert.ok(minimumTests.includes(`packages\\kernel\\test\\${file}.test.ts`), `${file} must run on minimum Node`);
+    }
+    assert.ok(commands.some(command => command.includes("--test-name-pattern=\"static report population and bounds|")
+      && command.includes("packages\\kernel\\test\\static-checks.test.ts")));
     assert.ok(!commands.includes("npm run ci"), "Windows focused checks do not replace full supported-POSIX CI");
     assert.deepEqual(workflow.jobs.t1.strategy.matrix.os, ["ubuntu-latest", "macos-latest"]);
   });

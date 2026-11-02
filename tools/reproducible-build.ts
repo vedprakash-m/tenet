@@ -11,6 +11,8 @@ function inputSnapshot(root: string): string {
     "LICENSE", "NOTICE", "package.json", "package-lock.json", "tsconfig.json",
     "node_modules/typescript/package.json", "node_modules/typescript/bin/tsc",
     ...payloadFiles(join(root, "node_modules/typescript/lib")).map(path => `node_modules/typescript/lib/${path}`),
+    ...["node_modules/esbuild", "node_modules/@esbuild"].flatMap(dir =>
+      payloadFiles(join(root, dir)).map(path => `${dir}/${path}`)),
     ...["packages", "tools"].flatMap(dir => payloadFiles(join(root, dir)).map(path => `${dir}/${path}`)),
     ...payloadFiles(join(root, "plugin")).filter(path => !GENERATED.includes(path)).map(path => `plugin/${path}`),
   ].sort();

@@ -85,6 +85,36 @@ describe("clean-output payload reproducibility", () => {
     assert.deepEqual(readdirSync(scratch), []);
   });
 
+  it("rejects changes to the installed esbuild compiler between builds", async () => {
+    const root = fixture(), scratch = projectScratch("repro-owned-");
+    roots.push(scratch);
+    rmSync(join(root, "node_modules"));
+    for (const [path, content] of Object.entries({
+      "typescript/package.json": '{"version":"fixture"}',
+      "typescript/bin/tsc": "compiler entry\n",
+      "typescript/lib/lib.d.ts": "typescript library\n",
+      "esbuild/package.json": '{"version":"fixture"}',
+      "esbuild/lib/main.js": "esbuild loader\n",
+      "@esbuild/win32-x64/package.json": '{"version":"fixture"}',
+      "@esbuild/win32-x64/bin/esbuild.exe": "compiler bytes\n",
+    })) {
+      mkdirSync(join(root, "node_modules", path, ".."), { recursive: true });
+      writeFileSync(join(root, "node_modules", path), content);
+    }
+
+    let builds = 0;
+    await assert.rejects(verifyReproducible(root, scratch, async (_source, output) => {
+      const inventory: string[] = JSON.parse(readFileSync(join(root, "tools/payload-files.json"), "utf8"));
+      for (const path of inventory) {
+        mkdirSync(join(output, path, ".."), { recursive: true });
+        writeFileSync(join(output, path), "same payload\n");
+      }
+      writeFileSync(join(output, "SHA256SUMS"), payloadChecksums(output, inventory));
+      if (builds++ === 0) writeFileSync(join(root, "node_modules/@esbuild/win32-x64/bin/esbuild.exe"), "changed compiler bytes\n");
+    }), /build inputs changed/);
+    assert.deepEqual(readdirSync(scratch), []);
+  });
+
   it("detects new source files added after the second build", async () => {
     const root = fixture(), scratch = projectScratch("repro-owned-");
     roots.push(scratch);

@@ -1,7 +1,7 @@
 // Node/TypeScript adapter (TS §9.5): detection, the Vitest invocation, one pure normalization of its JSON report
 // and the attention-pattern table. Mostly data. The adapter normalizes; it never decides acceptance.
 import { closeSync, constants, existsSync, fstatSync, openSync, readSync } from "node:fs";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { AttentionPattern, FileChange } from "../core/review.ts";
 import type { Detection, Normalized, StaticNorm, StaticTool, Stack, ToolVersions } from "../ports/types.ts";
 import { allowed } from "../core/exclusions.ts";
@@ -12,7 +12,7 @@ import { FsProject } from "./project-fs.ts";
 import { nestsTooDeep } from "./report-bounds.ts";
 import { normalizePlaywright, playwrightArgv } from "./playwright.ts";
 
-const ADAPTER = "node-ts@19"; // 19: retain formatted Playwright assertion prefixes.
+const ADAPTER = "node-ts@20"; // 20: report paths/CRLF.
 function installedMetadata(path: string, kind: "tool" | "dependency"): { record: Record<string, any>; digest: string } | null {
   let descriptor = -1;
   try {
@@ -202,8 +202,9 @@ type Counts = NonNullable<ReturnType<Normalized["files"]["get"]>>;
 function admitFile(t: any, root: string, seen: ReadonlyMap<string, unknown>): { path: string } | { problem: string } {
   if (!t || typeof t.name !== "string" || !FILE_STATUS.includes(t.status) || !Array.isArray(t.assertionResults))
     return { problem: "invalid test file record" };
-  const path = root ? relative(resolve(root), resolve(root, t.name)) : t.name;
-  if (!t.name || t.name.includes("\0") || !path || path === "." || path === ".." || path.startsWith("../") || (!root && isAbsolute(path)))
+  const path = relative(resolve(root), resolve(root, t.name)).split(sep).join("/");
+  if ((!root && isAbsolute(t.name)) || t.name.includes("\0") || !path || path === "." || path === ".." ||
+    path.startsWith("../") || isAbsolute(path))
     return { problem: "a report path leaves the workspace" };
   if (seen.has(path)) return { problem: "duplicate test file identity" };
   if (t.assertionResults.length > 20000) return { problem: "too many assertions in one test file" };
@@ -317,10 +318,10 @@ const verdictOf = (failures: StaticNorm["failures"], files: string[]): StaticNor
 
 /** A normalized workspace identity, null for compiler dependencies, undefined for an unsupported path. */
 function staticPath(path: string, root: string, dependencies = false): string | null | undefined {
-  if (!path || path.includes("\0")) return undefined;
+  if (!path || path.includes("\0") || (!root && isAbsolute(path))) return undefined;
   if (/(^|[\\/])node_modules[\\/]/.test(path)) return dependencies ? null : undefined;
-  const p = root ? relative(resolve(root), resolve(root, path)) : path;
-  return !p || p === ".." || p.startsWith("../") || (!root && isAbsolute(p)) ? undefined : p;
+  const p = relative(resolve(root), resolve(root, path)).split(sep).join("/");
+  return !p || p === "." || p === ".." || p.startsWith("../") || isAbsolute(p) ? undefined : p;
 }
 
 function tscDiagnostic(
@@ -343,7 +344,7 @@ function normalizeTsc(exit: number | undefined, raw: string | null, root: string
   const failures: StaticNorm["failures"] = [];
   const files = new Set<string>();
   let continuation = false, messageLength = 0;
-  for (const line of raw.split("\n").filter((l) => l.trim())) {
+  for (const line of raw.split(/\r?\n/).filter((l) => l.trim())) {
     const diagnostic = tscDiagnostic(line, root);
     if (diagnostic) {
       if ("problem" in diagnostic) return staticInvalid(diagnostic.problem);

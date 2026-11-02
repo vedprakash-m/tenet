@@ -75,6 +75,15 @@ jobs:
           packages\kernel\test\core.test.ts
           packages\kernel\test\config.test.ts
           packages\kernel\test\verdict.test.ts
+          packages\kernel\test\report-paths.test.ts
+          packages\kernel\test\playwright-adapter.test.ts
+          packages\kernel\test\receipts.test.ts
+      - name: Windows pure static normalization and report population
+        run: >-
+          node --test
+          --test-name-pattern="static report population and bounds|normalizing typecheck output|normalizing lint output|static receipts|which static checks a contract needs"
+          packages\kernel\test\static-conformance.test.ts
+          packages\kernel\test\static-checks.test.ts
       - name: Real filesystem cleanup boundaries without POSIX transactions
         run: >-
           node --test --test-name-pattern="automatic temp cleanup boundaries"
@@ -90,3 +99,6 @@ jobs:
           packages\eval\test\report.test.ts
           packages\kernel\test\payload.test.ts
           packages\kernel\test\host-launch.test.ts
+          packages\kernel\test\report-paths.test.ts
+          packages\kernel\test\playwright-adapter.test.ts
+          packages\kernel\test\receipts.test.ts

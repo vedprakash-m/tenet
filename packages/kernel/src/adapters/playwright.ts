@@ -3,7 +3,7 @@
 // test obligations (contradiction, population, focused, zero-tests) applies unchanged. The adapter normalizes;
 // it never decides acceptance.
 import { existsSync } from "node:fs";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { z } from "zod";
 import { stripVTControlCharacters } from "node:util";
 import type { Normalized } from "../ports/types.ts";
@@ -102,8 +102,9 @@ function countSpec(counts: Counts, spec: PwSpec, title: string): string | undefi
 }
 
 function reportPath(file: string, root: string): string | null {
-  const path = root ? relative(resolve(root), resolve(root, file)) : file;
-  return !file || !path || file.includes("\0") || path === ".." || path.startsWith("../") || (!root && isAbsolute(path))
+  const path = relative(resolve(root), resolve(root, file)).split(sep).join("/");
+  return (!root && isAbsolute(file)) || !path || file.includes("\0") || path === "." || path === ".." ||
+    path.startsWith("../") || isAbsolute(path)
     ? null : path;
 }
 
