@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-02 — Validate process cleanup and SQLite retry test fixes
+
+- Exact-source GitHub Actions run [41516188207](https://github.com/vedprakash-m/tenet/actions/runs/41516188207) at `5c965572576a88aea35042a68b5176b3bbc3fda7` passes Ubuntu full CI/built UAT, macOS full CI/built UAT, and Windows portability.
+- The stream-aware process-group re-signal passes the previously failing macOS host timeout test; the starter auth-freshness tests and full loan-desk golden task also pass on both supported POSIX runners. Existing failure histories remain unchanged, and no host qualification or full-plan completion is claimed.
+- Local typecheck, lints, M0 coverage, build, payload verification and same-toolchain reproducibility pass.
+- Files: `tools/host/copilot-cli.ts`; starter and golden SQLite test fixtures; `specs/plan.md`.
+
 ## 2026-11-02 — Defer host re-signal until stream state settles (local candidate)
 
 - Run [41390356159](https://github.com/vedprakash-m/tenet/actions/runs/41390356159) passes Ubuntu full CI/built UAT and Windows portability; macOS passes the SQLite contention journeys and fails only the host CLI timeout test with `kill EPERM` from a post-exit process-group re-signal.
