@@ -1,3 +1,4 @@
+import { isUtf8 } from "node:buffer";
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { closeSync, fstatSync, lstatSync, openSync, readSync, realpathSync } from "node:fs";
@@ -236,6 +237,7 @@ export function validateProtocolFile(protocolPath: string): StaticProtocolResult
     for (const reference of [...item.fixtureRefs, ...item.graderRefs]) {
       const path = resolveRegularArtifact(root, reference.path);
       const artifact = readBoundedRegularFile(path, MAX_ARTIFACT_BYTES);
+      if (!isUtf8(artifact)) throw new ProtocolValidationError("invalid-utf8");
       const digest = createHash("sha256").update(artifact).digest("hex");
       if (digest !== reference.sha256) throw new ProtocolValidationError("artifact-hash-mismatch");
     }

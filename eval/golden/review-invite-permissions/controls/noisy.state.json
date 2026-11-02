@@ -1,0 +1,61 @@
+{
+  "archive": [
+    {
+      "endpoint": "findings-only"
+    }
+  ],
+  "project": {
+    "intent": {
+      "plan": []
+    }
+  },
+  "work": {
+    "W-1": {
+      "state": "finished",
+      "findings": [
+        {
+          "id": "F-1",
+          "n": 1,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/permissions.mjs",
+            "line": 4
+          },
+          "claim": "Ordinary members can invite although only owner/admin roles are permitted.",
+          "evidence": "Ordinary members can invite although only owner/admin roles are permitted.",
+          "state": "open",
+          "history": []
+        },
+        {
+          "id": "F-2",
+          "n": 2,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/expiry.mjs",
+            "line": 3
+          },
+          "claim": "The expiry boundary permits a token at the exact expiresAt instant; equality must be expired.",
+          "evidence": "The expiry boundary permits a token at the exact expiresAt instant; equality must be expired.",
+          "state": "open",
+          "history": []
+        },
+        {
+          "id": "F-3",
+          "n": 3,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/identifiers.mjs",
+            "line": 2
+          },
+          "claim": "The correct helper has a critical correctness failure.",
+          "evidence": "The correct helper has a critical correctness failure.",
+          "state": "open",
+          "history": []
+        }
+      ]
+    }
+  }
+}

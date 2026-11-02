@@ -3,8 +3,8 @@
 //   node eval/golden/lib/grade.mjs <taskDir> <workdir> --base <sha>
 //
 // It decides from evidence the agent does not control: files on disk, `.tenet/state` (as the kernel wrote it) and Git
-// history in <workdir>. The agent's own report is never read. Output is JSON with no times or paths, so the same
-// workdir always grades to the same bytes. Exit code 0 means every check passed.
+// history in <workdir>. The agent's own report is never read. Known requested fixture-root prefixes in probe
+// diagnostics are normalized; other diagnostic contents remain untrusted. The same workdir grades to the same bytes. Exit code 0 means every check passed.
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
@@ -32,7 +32,14 @@ export const endpointClaim = (state) => state?.archive?.at(-1)?.endpoint ?? null
 export function probe(workdir, source) {
   const r = spawnSync(process.execPath, ["--input-type=module", "-e", source], { cwd: workdir, encoding: "utf8", timeout: 20_000, env: { PATH: ENV.PATH } });
   const last = (r.stdout ?? "").trim().split("\n").at(-1) ?? "";
-  try { return { ok: r.status === 0, value: JSON.parse(last), error: "" }; } catch { return { ok: false, value: null, error: (r.stderr ?? "").split("\n").find((l) => l.trim()) ?? "no output" }; }
+  try { return { ok: r.status === 0, value: JSON.parse(last), error: "" }; }
+  catch {
+    const line = (r.stderr ?? "").split("\n").find((l) => l.trim()) ?? "no output";
+    const root = resolve(workdir);
+    // Normalize only this known fixture root; keep the failure text and other origins unchanged.
+    const error = line.replaceAll(pathToFileURL(root).href, "<workdir>").replaceAll(root, "<workdir>");
+    return { ok: false, value: null, error };
+  }
 }
 
 const globRe = (g) => new RegExp("^" + g.replace(/[.+^${}()|[\]\\?]/g, "\\$&").replace(/\*\*/g, "\0").replace(/\*/g, "[^/]*").replaceAll("\0", ".*") + "$");

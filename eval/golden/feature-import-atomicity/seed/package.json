@@ -1,0 +1,8 @@
+{
+  "name": "feature-import-atomicity",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test check.mjs"
+  }
+}

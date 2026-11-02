@@ -54,7 +54,7 @@ function taggedOnly(per: readonly FileCounts[], tag: string): FileCounts[] | nul
   return [{
     executed: passed + failed, passed, failed, skipped, focused: 0,
     tests: outcomes.map(test => test.test), outcomes,
-    failureKinds: [...new Set(outcomes.flatMap(test => test.kind ?? []))], failures,
+    failureKinds: [...new Set(outcomes.flatMap(test => test.kinds ?? test.kind ?? []))], failures,
   }];
 }
 
@@ -108,9 +108,9 @@ const sumOf = (per: readonly FileCounts[]): Sum =>
   );
 
 /** Exit status and report disagree. The exit status belongs to the whole run: a file that passed beside a failing one is no contradiction (found with TDD-04). */
-function contradicts(o: RunFacts, norm: Normalized, sum: Sum): boolean {
-  if (o.exit === 0 && sum.failed > 0) return true;
-  return o.exit !== undefined && o.exit !== 0 && ![...norm.files.values()].some((p) => p.failed > 0);
+function contradicts(o: RunFacts, norm: Normalized): boolean {
+  const failed = [...norm.files.values()].some((p) => p.failed > 0);
+  return o.exit === 0 ? failed : o.exit !== undefined && !failed;
 }
 
 /** Did it execute, is the report valid and attributable, do exit status and report agree, is the population right? */
@@ -148,7 +148,7 @@ function receiptFor(o: RunFacts, norm: Normalized | null, ob: Obligation, i: num
     rec.limitations.push(`${sum.skipped} skipped`);
     return stop("population-mismatch");
   }
-  if (contradicts(o, norm, sum)) return stop("report-contradiction");
+  if (contradicts(o, norm)) return stop("report-contradiction");
   rec.status = sum.failed > 0 ? "fail" : "pass";
   return rec;
 }

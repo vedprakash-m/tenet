@@ -30,6 +30,16 @@ describe("redaction [SEC-11]", () => {
     assert.equal(redact("connect to https://admin:s3cr3tpass@db.internal/app"), "connect to https://admin:[redacted]@db.internal/app"); // privacy-ok: a fake URL credential
     assert.equal(redact("Authorization: Bearer " + "x".repeat(30)), "Authorization: Bearer [redacted]");
   });
+  it("redacts quoted JSON credential keys while preserving their names and the existing value heuristic", () => {
+    const value = ["synthetic", "123456"].join("");
+    for (const key of ["password", "DB_PASSWORD", "api_key", "access-key", "privateKey", "token"]) {
+      const input = JSON.stringify({ [key]: value, ordinary: "kept" });
+      assert.equal(redact(input), JSON.stringify({ [key]: "[redacted]", ordinary: "kept" }), key);
+      assert.equal(redact(`'${key}': '${value}'`), `'${key}': '[redacted]'`, key);
+    }
+    for (const input of [JSON.stringify({ password: "required" }), JSON.stringify({ password: "short1" }), // privacy-ok: literal required is a synthetic non-secret placeholder control.
+      JSON.stringify({ [`password${"x".repeat(41)}`]: value })]) assert.equal(redact(input), input);
+  });
   it("redacts Cookie and Set-Cookie header values without consuming the next line", () => {
     assert.equal(redact("Cookie: sid=synthetic-session; csrf=synthetic-csrf\nNext: ordinary"), "Cookie: [redacted]\nNext: ordinary");
     assert.equal(redact("Set-Cookie: sid=synthetic-session; HttpOnly; SameSite=Lax"), "Set-Cookie: [redacted]");
@@ -48,7 +58,7 @@ describe("redaction [SEC-11]", () => {
 
 describe("redaction stays linear on hostile or merely odd input [SEC-11, NFR-04]", () => {
   it("handles 200 KB of repeated separators, schemes and keywords in well under a second each", () => {
-    const inputs = ["a.".repeat(100_000), "ab-".repeat(70_000), "api_key".repeat(30_000), "token_".repeat(40_000), "a://b:".repeat(30_000), "Bearer ".repeat(30_000)];
+    const inputs = ["a.".repeat(100_000), "ab-".repeat(70_000), "api_key".repeat(30_000), "token_".repeat(40_000), "a://b:".repeat(30_000), "Bearer ".repeat(30_000), '"password":'.repeat(20_000)];
     for (const s of inputs) {
       const t = Date.now();
       redact(s);

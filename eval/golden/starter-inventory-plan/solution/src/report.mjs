@@ -1,0 +1,1 @@
+export function reorderReport(catalog){return catalog.filter(r=>r.quantity<=r.reorderAt).map(r=>({sku:r.sku,quantity:r.quantity,needed:r.reorderAt+1-r.quantity})).sort((a,b)=>a.sku.localeCompare(b.sku));}

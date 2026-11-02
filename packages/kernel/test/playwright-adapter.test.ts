@@ -34,6 +34,49 @@ describe("Playwright report normalization [EVD-13]", () => {
     assert.ok(f.failures[0]!.message.length <= 500);
   });
 
+  it("retains a later runtime error beside an assertion failure [EVD-05, TDD-02]", () => {
+    const raw = report([suite("e2e/a.spec.ts", [spec("one", false,
+      [result("failed", [{ message: "AssertionError: expected true" }, { message: "TypeError: cleanup crashed" }])])])], { unexpected: 1 });
+    const file = normalizePlaywright(raw).files.get("e2e/a.spec.ts")!;
+    assert.deepEqual(new Set(file.failureKinds), new Set(["assertion", "runtime-error"]));
+    assert.deepEqual(new Set(file.outcomes![0]!.kinds), new Set(["assertion", "runtime-error"]));
+  });
+  it("does not classify assertion-looking runtime stack frames as assertion failures [EVD-05, TDD-02]", () => {
+    const raw = report([suite("e2e/a.spec.ts", [spec("one", false,
+      [result("failed", [{ message: "TypeError: cleanup crashed\n at AssertionError.expect(cleanup.ts:1:1)" }])])])], { unexpected: 1 });
+    assert.deepEqual(normalizePlaywright(raw).files.get("e2e/a.spec.ts")!.failureKinds, ["runtime-error"]);
+  });
+  it("classifies diagnostic prefixes rather than assertion words in runtime messages [EVD-05, TDD-02]", () => {
+    const runtime = [
+      "TypeError: cannot call expect(received)",
+      "ReferenceError: AssertionError is not defined",
+      "RangeError: expect(value) exceeded the runtime limit",
+      "Error: setup failed before expect(value)",
+    ];
+    for (const message of runtime) {
+      const raw = report([suite("a.spec.ts", [spec("one", false, [result("failed", [{ message }])])])], { unexpected: 1 });
+      const file = normalizePlaywright(raw).files.get("a.spec.ts")!;
+      assert.deepEqual(file.failureKinds, ["runtime-error"], message);
+      assert.deepEqual(file.outcomes![0]!.kinds, ["runtime-error"], message);
+    }
+    for (const message of ["AssertionError: expected true", "Error: expect(received).toBe(expected)", "expect(locator).toBeVisible() failed"]) {
+      const raw = report([suite("a.spec.ts", [spec("one", false, [result("failed", [{ message }])])])], { unexpected: 1 });
+      assert.deepEqual(normalizePlaywright(raw).files.get("a.spec.ts")!.failureKinds, ["assertion"], message);
+    }
+  });
+  it("classifies real ANSI-formatted assertion prefixes without rewriting recorded diagnostics [EVD-05, TDD-02]", () => {
+    const message = "Error: \u001b[2mexpect(\u001b[22mreceived\u001b[2m).toBe(\u001b[22mexpected\u001b[2m)\u001b[22m";
+    const raw = report([suite("a.spec.ts", [spec("one", false, [result("failed", [{ message }])])])], { unexpected: 1 });
+    const file = normalizePlaywright(raw).files.get("a.spec.ts")!;
+    assert.deepEqual(file.failureKinds, ["assertion"]);
+    assert.equal(file.failures[0]!.message, message);
+    const runtime = "\u001b[31mTypeError: cannot call expect(received)\u001b[39m";
+    const failed = report([suite("a.spec.ts", [spec("one", false, [result("failed", [{ message: runtime }])])])], { unexpected: 1 });
+    assert.deepEqual(normalizePlaywright(failed).files.get("a.spec.ts")!.failureKinds, ["runtime-error"]);
+  });
+  it("invalidates normalization evidence before formatted assertion prefix admission [EVD-03]", () => {
+    assert.notEqual(createStack().adapterVersion(), "node-ts@18");
+  });
   it("counts a skipped spec as skipped, not executed", () => {
     const raw = report([suite("e2e/a.spec.ts", [spec("one", true, [result("skipped")])])], { skipped: 1 });
     const norm = normalizePlaywright(raw);

@@ -1,0 +1,1 @@
+Parked work W-1: implement loadConfig(defaults, overrides) without mutating either argument. Keep false, zero, null and empty-string overrides; undefined inherits. A person staged preferences while work was interrupted.

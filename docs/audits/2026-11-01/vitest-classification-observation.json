@@ -1,0 +1,37 @@
+{
+  "date": "2026-11-01",
+  "scope": "Actual local installed Vitest diagnostic shape; synthetic tests, no native host, model or qualification campaign.",
+  "runtime": "v26.3.0",
+  "vitestVersion": "5.0.5",
+  "exit": 1,
+  "reportBytes": 3920,
+  "rawReportSha256": "bdf644ebda4c728a7f8ded82c23da0d2cd39f62d0329a8334fa96790f0b7cdf0",
+  "firstLines": [
+    {
+      "name": "matcher",
+      "status": "failed",
+      "diagnostics": [
+        "AssertionError: expected 1 to deeply equal 2"
+      ]
+    },
+    {
+      "name": "chai",
+      "status": "failed",
+      "diagnostics": [
+        "AssertionError: expected 1 to equal 2"
+      ]
+    },
+    {
+      "name": "typeerror",
+      "status": "failed",
+      "diagnostics": [
+        "TypeError: Cannot read properties of undefined (reading 'toEqual')"
+      ]
+    }
+  ],
+  "limits": [
+    "One installed Vitest 5.0.5 run; no fresh Vitest 2-4 observation.",
+    "Temporary fixture and raw report removed after extracting these diagnostic first lines.",
+    "No installs, downloads, app server, host authorization, native model run or qualification."
+  ]
+}

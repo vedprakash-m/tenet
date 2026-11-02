@@ -2,8 +2,9 @@ import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { replayFixtureFile } from "../src/replay.ts";
 import { maxConcurrency } from "../../../tools/host/evaluate.ts";
 import { projectScratch } from "../../../tools/test-scratch.ts";
@@ -62,6 +63,54 @@ describe("offline synthetic observation replay", () => {
     assert.equal(result.fixtureSha256, createHash("sha256").update(input.bytes).digest("hex"));
     assert.deepEqual(result.output, expected);
     assert.equal(result.sourceTier, "synthetic");
+  });
+
+  it("rejects child/tool start ID collisions in either order before comparison", () => {
+    const root = scratch();
+    const child = (callId: string, name: string, startMs: number, endMs: number, calls: unknown[]) =>
+      ({ callId, name, startMs, endMs, declaredTools: [], calls });
+    const cases = [
+      {
+        events: [
+          start(0, "subagent.started", { toolCallId: "shared", agentName: "agent" }),
+          start(1, "tool.execution_start", { toolCallId: "shared", toolName: "create", parentToolCallId: "shared" }),
+          start(2, "tool.execution_complete", { toolCallId: "shared", success: false, error: { code: "denied" } }),
+          start(3, "subagent.completed", { toolCallId: "shared" }),
+        ],
+        expected: {
+          children: [child("shared", "agent", 1792843200000, 1792843203000, [{ tool: "create", refused: true }])],
+          maxConcurrency: 1,
+          toolVerdicts: [{ callId: "shared", verdict: "enforced-by-host", attempted: ["create"], refused: ["create"] }],
+        },
+      },
+      {
+        events: [
+          start(0, "subagent.started", { toolCallId: "parent", agentName: "parent-agent" }),
+          start(1, "tool.execution_start", { toolCallId: "shared", toolName: "create", parentToolCallId: "parent" }),
+          start(2, "subagent.started", { toolCallId: "shared", agentName: "child-agent" }),
+          start(3, "tool.execution_complete", { toolCallId: "shared", success: false, error: { code: "denied" } }),
+          start(4, "subagent.completed", { toolCallId: "shared" }),
+          start(5, "subagent.completed", { toolCallId: "parent" }),
+        ],
+        expected: {
+          children: [
+            child("parent", "parent-agent", 1792843200000, 1792843205000, [{ tool: "create", refused: true }]),
+            child("shared", "child-agent", 1792843202000, 1792843204000, []),
+          ],
+          maxConcurrency: 2,
+          toolVerdicts: [
+            { callId: "parent", verdict: "enforced-by-host", attempted: ["create"], refused: ["create"] },
+            { callId: "shared", verdict: "cooperative", attempted: [], refused: [] },
+          ],
+        },
+      },
+    ];
+    const errors = cases.map((input, index) => {
+      const { path } = writeFixture(root, fixture(`colliding-start-${index}`, input.events, false, input.expected));
+      try { replayFixtureFile(path); return null; }
+      catch (error) { return (error as { code?: string }).code; }
+    });
+    assert.deepEqual(errors, ["replay-invalid", "replay-invalid"]);
   });
 
   it("keeps generic tool failures unknown and never promotes them to host enforcement", () => {
@@ -167,6 +216,140 @@ describe("offline synthetic observation replay", () => {
     assert.throws(() => replayFixtureFile(writeFixture(root, oversizedFixtureId).path));
     const oversizedEvent = fixture("bounded-id", [start(0, "subagent.started", { toolCallId: "x".repeat(4097), agentName: "agent" })], false, expected);
     assert.throws(() => replayFixtureFile(writeFixture(root, oversizedEvent, "oversized-event.json").path));
+  });
+
+  it("rejects malformed UTF-8 and enforces the exact fixture-byte limit", () => {
+    const root = scratch();
+    const path = join(root, "bounded.json");
+    writeFileSync(path, Buffer.from([0x7b, 0xff, 0x7d]));
+    assert.throws(() => replayFixtureFile(path), { code: "invalid-utf8" });
+    const bytes = Buffer.from(JSON.stringify(fixture("bounded-bytes", [], false,
+      { children: [], maxConcurrency: 0, toolVerdicts: [] })));
+    const atLimit = Buffer.concat([bytes, Buffer.alloc(1024 * 1024 - bytes.length, 0x20)]);
+    writeFileSync(path, atLimit);
+    assert.equal(replayFixtureFile(path).fixtureSha256, createHash("sha256").update(atLimit).digest("hex"));
+    writeFileSync(path, Buffer.concat([atLimit, Buffer.from(" ")]));
+    assert.throws(() => replayFixtureFile(path), { code: "unsafe-file" });
+  });
+
+  it("enforces the event-count limit within the fixture-byte limit", () => {
+    const root = scratch();
+    const opened = start(0, "subagent.started", { toolCallId: "c", agentName: "a" });
+    const completed = start(1, "subagent.completed", { toolCallId: "c" });
+    const expected: Expected = {
+      children: [{ callId: "c", name: "a", startMs: 1792843200000, endMs: 1792843201000, declaredTools: [], calls: [] }],
+      maxConcurrency: 1,
+      toolVerdicts: [{ callId: "c", verdict: "cooperative", attempted: [], refused: [] }],
+    };
+    // Repeated completions have no new start identity; v1 forbids duplicate starts, not duplicate completions.
+    for (const count of [10_000, 10_001]) {
+      const events = [opened, ...Array<SyntheticEvent>(count - 1).fill(completed)];
+      const bytes = Buffer.from(JSON.stringify(fixture("bounded-events", events, false, expected)));
+      assert.ok(bytes.length <= 1024 * 1024, "exercise event count independently of the file bound");
+      const path = join(root, `events-${count}.json`);
+      writeFileSync(path, bytes);
+      if (count === 10_000) assert.deepEqual(replayFixtureFile(path).output, expected);
+      else assert.throws(() => replayFixtureFile(path), { code: "replay-invalid" });
+    }
+  });
+
+  it("measures event text limits in UTF-8 bytes while retaining valid non-ASCII text", () => {
+    const root = scratch();
+    const name = "é".repeat(2048);
+    const expected: Expected = {
+      children: [{ callId: "c", name, startMs: 1792843200000, endMs: 1792843201000, declaredTools: [], calls: [] }],
+      maxConcurrency: 1,
+      toolVerdicts: [{ callId: "c", verdict: "cooperative", attempted: [], refused: [] }],
+    };
+    for (const text of [name, name + "é"]) {
+      const events = [start(0, "subagent.started", { toolCallId: "c", agentName: text }),
+        start(1, "subagent.completed", { toolCallId: "c" })];
+      const input = writeFixture(root, fixture("bounded-utf8", events, false, expected));
+      if (text === name) assert.deepEqual(replayFixtureFile(input.path).output, expected);
+      else assert.throws(() => replayFixtureFile(input.path), { code: "replay-invalid" });
+    }
+  });
+
+  it("keeps poison strings inert under process, network and filesystem-write traps", () => {
+    const root = scratch();
+    const marker = join(root, "poison-marker");
+    const poison = `globalThis.__replayPoisonExecuted = true; require("node:fs").writeFileSync(${JSON.stringify(marker)}, "poison");`;
+    const events = [
+      start(0, "subagent.started", { toolCallId: "child", agentName: poison }),
+      start(1, "subagent.selected", { agentName: poison, tools: [poison] }),
+      start(2, "tool.execution_start", { toolCallId: "tool", toolName: poison, parentToolCallId: "child" }),
+      start(3, "tool.execution_complete", { toolCallId: "tool", success: false, error: { code: poison } }),
+      start(4, "subagent.completed", { toolCallId: "child" }),
+    ];
+    const expected: Expected = {
+      children: [{ callId: "child", name: poison, startMs: 1792843200000, endMs: 1792843204000,
+        declaredTools: [poison], calls: [{ tool: poison, refused: false }] }],
+      maxConcurrency: 1,
+      toolVerdicts: [{ callId: "child", verdict: "unknown", attempted: [poison], refused: [] }],
+    };
+    const input = writeFixture(root, fixture("inert-poison", events, false, expected));
+    const script = `
+      import assert from "node:assert/strict";
+      import fs from "node:fs";
+      import fsp from "node:fs/promises";
+      import cp from "node:child_process";
+      import net from "node:net";
+      import tls from "node:tls";
+      import http from "node:http";
+      import https from "node:https";
+      import http2 from "node:http2";
+      import dgram from "node:dgram";
+      import { syncBuiltinESMExports } from "node:module";
+      const attempted = [];
+      const deny = name => (...args) => { attempted.push(name); throw new Error("effect-trap:" + name); };
+      for (const key of ["spawn", "spawnSync", "exec", "execSync", "execFile", "execFileSync", "fork"])
+        cp[key] = deny("child_process." + key);
+      cp.ChildProcess.prototype.spawn = deny("ChildProcess.spawn");
+      const mutations = ["writeFile", "appendFile", "write", "writev", "truncate", "ftruncate", "copyFile", "cp",
+        "rename", "unlink", "rm", "rmdir", "mkdir", "mkdtemp", "link", "symlink", "chmod", "fchmod", "lchmod",
+        "chown", "fchown", "lchown", "utimes", "futimes", "lutimes", "fsync", "fdatasync"];
+      for (const name of mutations) {
+        for (const key of [name, name + "Sync"]) if (typeof fs[key] === "function") fs[key] = deny("fs." + key);
+        if (typeof fsp[name] === "function") fsp[name] = deny("fsp." + name);
+      }
+      fs.createWriteStream = deny("fs.createWriteStream");
+      const open = fs.openSync;
+      fs.openSync = (path, flags, ...args) => {
+        const writeFlags = fs.constants.O_WRONLY | fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_TRUNC | fs.constants.O_APPEND;
+        if (typeof flags === "string" ? flags !== "r" : (flags & writeFlags) !== 0) return deny("fs.openSync.write")(path);
+        return open(path, flags, ...args);
+      };
+      fs.open = deny("fs.open");
+      fsp.open = deny("fsp.open");
+      for (const [module, names] of [[net, ["connect", "createConnection"]], [tls, ["connect"]],
+        [http, ["request", "get"]], [https, ["request", "get"]], [http2, ["connect"]], [dgram, ["createSocket"]]])
+        for (const key of names) module[key] = deny(key);
+      net.Socket.prototype.connect = deny("Socket.connect");
+      net.Server.prototype.listen = deny("Server.listen");
+      dgram.Socket.prototype.send = deny("datagram.send");
+      dgram.Socket.prototype.connect = deny("datagram.connect");
+      dgram.Socket.prototype.bind = deny("datagram.bind");
+      globalThis.fetch = deny("fetch");
+      globalThis.WebSocket = deny("WebSocket");
+      globalThis.__replayPoisonExecuted = false;
+      syncBuiltinESMExports();
+      const { replayFixtureFile } = await import(${JSON.stringify(pathToFileURL(resolve("packages/eval/src/replay.ts")).href)});
+      const first = replayFixtureFile(${JSON.stringify(input.path)});
+      const second = replayFixtureFile(${JSON.stringify(input.path)});
+      assert.deepEqual(first.output, ${JSON.stringify(expected)});
+      assert.equal(JSON.stringify(first), JSON.stringify(second));
+      assert.equal(first.sourceTier, "synthetic");
+      assert.equal(globalThis.__replayPoisonExecuted, false);
+      assert.deepEqual(attempted, []);
+      process.stdout.write(JSON.stringify({ result: first.result, sourceTier: first.sourceTier, effects: attempted }));
+    `;
+    const stripTypes = Number(process.versions.node.split(".")[0]) < 24 ? ["--experimental-strip-types"] : [];
+    const result = spawnSync(process.execPath, [...stripTypes, "--input-type=module", "--eval", script],
+      { encoding: "utf8", timeout: 15_000 });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { result: "replay-passed", sourceTier: "synthetic", effects: [] });
+    assert.equal(existsSync(marker), false);
+    assert.deepEqual(readFileSync(input.path), input.bytes);
   });
 
   it("rejects linked replay fixtures and never touches their target", () => {

@@ -1,0 +1,61 @@
+{
+  "archive": [
+    {
+      "endpoint": "findings-only"
+    }
+  ],
+  "project": {
+    "intent": {
+      "plan": []
+    }
+  },
+  "work": {
+    "W-1": {
+      "state": "finished",
+      "findings": [
+        {
+          "id": "F-1",
+          "n": 1,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/archive.py",
+            "line": 6
+          },
+          "claim": "startswith accepts a sibling directory sharing the destination prefix; compare path components.",
+          "evidence": "startswith accepts a sibling directory sharing the destination prefix; compare path components.",
+          "state": "open",
+          "history": []
+        },
+        {
+          "id": "F-2",
+          "n": 2,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/archive.py",
+            "line": 8
+          },
+          "claim": "A symbolic-link member is extracted without validation, permitting later writes through the symlink to escape extraction scope.",
+          "evidence": "A symbolic-link member is extracted without validation, permitting later writes through the symlink to escape extraction scope.",
+          "state": "open",
+          "history": []
+        },
+        {
+          "id": "F-3",
+          "n": 3,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/suffix.py",
+            "line": 2
+          },
+          "claim": "The correct helper has a critical correctness failure.",
+          "evidence": "The correct helper has a critical correctness failure.",
+          "state": "open",
+          "history": []
+        }
+      ]
+    }
+  }
+}

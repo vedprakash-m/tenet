@@ -12,7 +12,7 @@ import { FsProject } from "./project-fs.ts";
 import { nestsTooDeep } from "./report-bounds.ts";
 import { normalizePlaywright, playwrightArgv } from "./playwright.ts";
 
-const ADAPTER = "node-ts@12"; // 12: contradictory Playwright skip expectations cannot pass.
+const ADAPTER = "node-ts@19"; // 19: retain formatted Playwright assertion prefixes.
 function installedMetadata(path: string, kind: "tool" | "dependency"): { record: Record<string, any>; digest: string } | null {
   let descriptor = -1;
   try {
@@ -183,11 +183,11 @@ function detect(root: string, exclusions: readonly Exclusion[]): Detection {
   return d;
 }
 
-const message = (a: { failureMessages?: string[] }) => (a.failureMessages?.[0] ?? "").split("\n")[0]!.slice(0, 500);
+const message = (messages: string[] = []) => (messages[0] ?? "").split("\n")[0]!.slice(0, 500);
 const failureKind = (msg: string): string =>
   /Unexpected \.only/.test(msg)
     ? "focused"
-    : /AssertionError|expected .* to |toBe|toEqual|to (?:be|equal|have|match|contain)/.test(msg)
+    : /^(?:AssertionError\b|(?:Error: )?expect\(|expected .* to )/.test(msg)
       ? "assertion"
       : /timed? ?out/i.test(msg)
         ? "timeout"
@@ -198,26 +198,12 @@ const FILE_STATUS = ["passed", "failed", "pending", "skipped"];
 const ASSERTION_STATUS = ["passed", "failed", "pending", "skipped", "todo", "disabled"];
 type Counts = NonNullable<ReturnType<Normalized["files"]["get"]>>;
 
-/** The report as an object with a `testResults` array, or the reason it cannot be used. */
-function parseReport(raw: string): { d: any } | { problem: string } {
-  if (Buffer.byteLength(raw) > 10 * 1024 * 1024) return { problem: "the report exceeds 10 MB" };
-  let d: any;
-  try {
-    d = JSON.parse(raw);
-  } catch {
-    return { problem: "the report is not valid JSON" };
-  }
-  if (!d || !Array.isArray(d.testResults)) return { problem: "the report has no testResults" };
-  if (d.testResults.length > 2000) return { problem: "too many test files; the report was not fully normalized" };
-  return nestsTooDeep(d) ? { problem: "the report exceeds depth 64" } : { d };
-}
-
 /** One test file's record and its path inside the workspace, or the reason it is invalid. */
 function admitFile(t: any, root: string, seen: ReadonlyMap<string, unknown>): { path: string } | { problem: string } {
   if (!t || typeof t.name !== "string" || !FILE_STATUS.includes(t.status) || !Array.isArray(t.assertionResults))
     return { problem: "invalid test file record" };
   const path = root ? relative(resolve(root), resolve(root, t.name)) : t.name;
-  if (path === ".." || path.startsWith("../") || (!root && isAbsolute(path)))
+  if (!t.name || t.name.includes("\0") || !path || path === "." || path === ".." || path.startsWith("../") || (!root && isAbsolute(path)))
     return { problem: "a report path leaves the workspace" };
   if (seen.has(path)) return { problem: "duplicate test file identity" };
   if (t.assertionResults.length > 20000) return { problem: "too many assertions in one test file" };
@@ -229,9 +215,10 @@ function admitAssertion(a: any, seen: Set<string>): string | undefined {
   if (!a || typeof a.fullName !== "string" || !ASSERTION_STATUS.includes(a.status)) return "invalid assertion identity or status";
   if (
     a.failureMessages !== undefined &&
-    (!Array.isArray(a.failureMessages) || a.failureMessages.some((m: unknown) => typeof m !== "string"))
+    (!Array.isArray(a.failureMessages) || a.failureMessages.some((m: unknown) => typeof m !== "string" || m.length > 2000))
   )
     return "invalid assertion failure messages";
+  if (a.status === "passed" && a.failureMessages?.length) return "the assertion status and its failure messages disagree";
   if (seen.has(a.fullName)) return "duplicate test identity";
   seen.add(a.fullName);
   return undefined;
@@ -241,8 +228,10 @@ function admitAssertion(a: any, seen: Set<string>): string | undefined {
 function count(f: Counts, a: any): void {
   f.tests.push(a.fullName);
   const status = a.status === "passed" || a.status === "failed" ? a.status : "skipped";
-  const kind = status === "failed" ? failureKind(message(a)) : undefined;
-  f.outcomes!.push({ test: a.fullName, status, ...(kind ? { kind } : {}) });
+  const kinds: string[] = status === "failed"
+    ? [...new Set<string>((a.failureMessages?.length ? a.failureMessages : [""]).map((m: string) => failureKind(message([m]))))] : [];
+  const kind = kinds[0];
+  f.outcomes!.push({ test: a.fullName, status, ...(kind ? { kind, kinds } : {}) });
   if (a.status === "passed") {
     f.executed++;
     f.passed++;
@@ -254,9 +243,9 @@ function count(f: Counts, a: any): void {
   }
   f.executed++;
   f.failed++;
-  const m = message(a);
-  if (!f.failureKinds.includes(kind!)) f.failureKinds.push(kind!);
-  if (kind === "focused") f.focused++;
+  const m = message(a.failureMessages);
+  f.failureKinds = [...new Set([...f.failureKinds, ...kinds])];
+  if (kinds.includes("focused")) f.focused++;
   if (f.failures.length < 5) f.failures.push({ test: a.fullName, kind: kind!, message: m });
 }
 
@@ -271,6 +260,7 @@ function countFile(t: any, path: string): Counts | string {
     if (problem) return problem;
     count(f, a);
   }
+  if (f.executed && ["pending", "skipped"].includes(t.status)) return "a skipped file contains executed tests";
   // A file that failed before any test ran (import or compile error) is a failure, never a pass or a skip.
   if (t.status === "failed" && f.failed === 0) {
     f.failed++;
@@ -288,11 +278,19 @@ function countFile(t: any, path: string): Counts | string {
 
 /** Pure: Vitest's JSON report to per-file counts and bounded failures. A report that does not parse is `invalid`. */
 export function normalize(raw: string, root = ""): Normalized {
-  const parsed = parseReport(raw);
-  if ("problem" in parsed) return invalid(parsed.problem);
+  if (Buffer.byteLength(raw) > 10 * 1024 * 1024) return invalid("the report exceeds 10 MB");
+  let d: any;
+  try {
+    d = JSON.parse(raw);
+  } catch {
+    return invalid("the report is not valid JSON");
+  }
+  if (!d || !Array.isArray(d.testResults)) return invalid("the report has no testResults");
+  if (d.testResults.length > 2000) return invalid("too many test files; the report was not fully normalized");
+  if (nestsTooDeep(d)) return invalid("the report exceeds depth 64");
   const files: Normalized["files"] = new Map();
   let discovered = 0;
-  for (const t of parsed.d.testResults) {
+  for (const t of d.testResults) {
     const file = admitFile(t, root, files);
     if ("problem" in file) return invalid(file.problem);
     const counts = countFile(t, file.path);
@@ -300,6 +298,8 @@ export function normalize(raw: string, root = ""): Normalized {
     discovered += t.assertionResults.length;
     files.set(file.path, counts);
   }
+  if (d.numTotalTests !== undefined && d.numTotalTests !== discovered)
+    return invalid("the report's total and its assertions disagree");
   return { files, discovered };
 }
 

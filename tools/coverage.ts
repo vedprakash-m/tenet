@@ -307,7 +307,10 @@ function validateCampaign(
   if (isAbsolute(campaign.protocolPath) || relative(root, resolve(root, campaign.protocolPath)).startsWith("..")) {
     errors.push(`${requirement.id}: protocol path escapes repository`);
   } else {
-    try { execFileSync("git", ["cat-file", "-e", `${campaign.protocolCommit}:${campaign.protocolPath}`], { cwd: root, stdio: "ignore" }); }
+    try {
+      const type = execFileSync("git", ["cat-file", "-t", `${campaign.protocolCommit}:${campaign.protocolPath}`], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+      if (type !== "blob") errors.push(`${requirement.id}: protocol file is not a blob in the frozen Git commit`);
+    }
     catch { errors.push(`${requirement.id}: protocol file is absent from the frozen Git commit`); }
   }
   if (!campaign.scope.requirementIds.includes(requirement.id)) errors.push(`${requirement.id}: campaign scope omits the requirement`);

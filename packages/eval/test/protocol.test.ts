@@ -197,6 +197,36 @@ describe("static protocol validation (offline)", () => {
     assert.throws(() => validateProtocolFile(malformedUtf8));
   });
 
+  for (const kind of ["fixtureRefs", "graderRefs"] as const) {
+    it(`rejects matching-digest malformed UTF-8 in ${kind}`, () => {
+      for (const invalid of [Buffer.from([0xff]), Buffer.from([0xc3]), Buffer.from([0xc0, 0xaf])]) {
+        const input = scratch();
+        const reference = input.value.cases[0]![kind][0]!;
+        writeFileSync(join(input.root, reference.path), invalid);
+        reference.sha256 = createHash("sha256").update(invalid).digest("hex");
+        writeFileSync(input.protocolPath, JSON.stringify(input.value));
+        assert.throws(() => validateProtocolFile(input.protocolPath), { code: "invalid-utf8" });
+      }
+    });
+  }
+
+  it("accepts valid non-ASCII artifact bytes and binds their exact original digests", () => {
+    const input = scratch();
+    for (const kind of ["fixtureRefs", "graderRefs"] as const) {
+      const reference = input.value.cases[0]![kind][0]!;
+      const bytes = Buffer.from(`synthetic café / 日本語 / 🧪 ${kind}\n`, "utf8");
+      writeFileSync(join(input.root, reference.path), bytes);
+      reference.sha256 = createHash("sha256").update(bytes).digest("hex");
+    }
+    const protocolBytes = Buffer.from(JSON.stringify(input.value));
+    writeFileSync(input.protocolPath, protocolBytes);
+    assert.equal(validateProtocolFile(input.protocolPath).protocolSha256,
+      createHash("sha256").update(protocolBytes).digest("hex"));
+    input.value.cases[0]!.fixtureRefs[0]!.sha256 = "0".repeat(64);
+    writeFileSync(input.protocolPath, JSON.stringify(input.value));
+    assert.throws(() => validateProtocolFile(input.protocolPath), { code: "artifact-hash-mismatch" });
+  });
+
   it("rejects invalid tuple provenance, unknown fields, and oversized text", () => {
     const input = scratch();
     const invalid = [

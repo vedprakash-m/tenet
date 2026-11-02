@@ -64,8 +64,10 @@ Two scopes. Each shows a preview first, then waits for a yes. It only removes ru
 
 | Scope | Removes | Notes |
 |---|---|---|
-| This project | This project's run folder | Refused while a review or analyst packet is still open; record or retry it first |
-| This machine | Every Tenet run folder in the temp folder that has not changed in the last hour | Recent folders are kept and listed |
+| This project | This project's run folder | Refused while a check or review/analyst packet still holds run files |
+| This machine | Stale run folders whose ownership Tenet can verify for this workspace | Recent folders and folders belonging to other or unverifiable workspaces are kept and listed |
+
+Both scopes protect active checks and open packets. Stopping a check and completing a review are separate actions: pausing or abandoning work does not release an outstanding packet. Record its actual result when available; retrying keeps a packet open. Never fabricate a review to enable cleanup. Safe disposal of an unfinished packet has not been implemented.
 
 Say "clean up" and then choose project or machine. Tenet shows what would go and what stays, and states that `.tenet/` and your files are not touched. Nothing is removed until you answer yes.
 

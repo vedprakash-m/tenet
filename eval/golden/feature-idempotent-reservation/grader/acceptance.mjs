@@ -1,0 +1,10 @@
+export default async function acceptance({probe,state}) {
+ const checks=[];
+ const run=(id,source,expected)=>{const r=probe(source);const pass=r.ok&&JSON.stringify(r.value)===JSON.stringify(expected);checks.push({id,pass,detail:pass?"independent cases passed":r.ok?JSON.stringify(r.value):r.error});};
+ run("stock-and-retry","import {createReservations} from \"./src/reservations.mjs\";const code=fn=>{try{fn();return \"ok\"}catch(e){return e.code??\"error\"}};const r=createReservations({x:3});const a=r.reserve(\"c\",\"x\",2,\"k\");a.quantity=99;const b=r.reserve(\"c\",\"x\",2,\"k\");console.log(JSON.stringify([b,r.available(\"x\")]));",[{"id": "R1", "customer": "c", "sku": "x", "quantity": 2}, 1]);
+ run("key-conflict","import {createReservations} from \"./src/reservations.mjs\";const code=fn=>{try{fn();return \"ok\"}catch(e){return e.code??\"error\"}};const r=createReservations({x:5,y:5});r.reserve(\"c\",\"x\",1,\"k\");console.log(JSON.stringify([code(()=>r.reserve(\"c\",\"x\",2,\"k\")),code(()=>r.reserve(\"c\",\"y\",1,\"k\")),r.available(\"x\"),r.available(\"y\")]));",["conflict", "conflict", 4, 5]);
+ run("customer-scoped-keys","import {createReservations} from \"./src/reservations.mjs\";const code=fn=>{try{fn();return \"ok\"}catch(e){return e.code??\"error\"}};const r=createReservations({x:5});const a=r.reserve(\"a\",\"x\",1,\"same\");const b=r.reserve(\"b\",\"x\",1,\"same\");const c=r.reserve(\"a:b\",\"x\",1,\"c\");const d=r.reserve(\"a\",\"x\",1,\"b:c\");console.log(JSON.stringify([new Set([a.id,b.id,c.id,d.id]).size,r.available(\"x\")]));",[4, 1]);
+ run("denied-request-safe","import {createReservations} from \"./src/reservations.mjs\";const code=fn=>{try{fn();return \"ok\"}catch(e){return e.code??\"error\"}};const r=createReservations({x:2});const failed=code(()=>r.reserve(\"c\",\"x\",3,\"retry\"));const a=r.reserve(\"c\",\"x\",1,\"retry\");console.log(JSON.stringify([failed,a.id,r.available(\"x\"),[0,-1,1.5,Infinity].map(n=>code(()=>r.reserve(\"c\",\"x\",n,\"bad\"))),code(()=>r.reserve(\"c\",\"missing\",1,\"missing\"))]));",["unavailable", "R1", 1, ["invalid", "invalid", "invalid", "invalid"], "not-found"]);
+
+ return checks;
+}

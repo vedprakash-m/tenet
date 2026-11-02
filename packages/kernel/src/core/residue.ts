@@ -18,9 +18,9 @@ export function residueView(
   };
 }
 
-/** Run files stay while any contract holds a review or analyst packet in them. */
-export const openPackets = (state: Pick<State, "work">): boolean =>
-  Object.values(state.work).some((w) => w.budget.reservations.length > 0);
+/** Cleanup cannot remove files held by a running check, focused review or child packet. */
+export const tempBusy = (state: Pick<State, "work">): boolean =>
+  Object.values(state.work).some((w) => w.session.inCall || w.focusedReview || w.budget.reservations.length > 0);
 
 export const STALE_MS = 3600_000;
 

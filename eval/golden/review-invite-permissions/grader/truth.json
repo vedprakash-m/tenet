@@ -1,0 +1,22 @@
+[
+  {
+    "id": "member-invite",
+    "path": "src/permissions.mjs",
+    "line": 4,
+    "minSeverity": "major",
+    "terms": [
+      "member",
+      "owner|admin"
+    ]
+  },
+  {
+    "id": "expired-invite",
+    "path": "src/expiry.mjs",
+    "line": 3,
+    "minSeverity": "major",
+    "terms": [
+      "expir",
+      "equal|instant|boundary"
+    ]
+  }
+]

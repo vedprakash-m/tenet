@@ -1,0 +1,61 @@
+{
+  "archive": [
+    {
+      "endpoint": "findings-only"
+    }
+  ],
+  "project": {
+    "intent": {
+      "plan": []
+    }
+  },
+  "work": {
+    "W-1": {
+      "state": "finished",
+      "findings": [
+        {
+          "id": "F-1",
+          "n": 1,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/retry.go",
+            "line": 8
+          },
+          "claim": "The inclusive loop makes an extra invocation: maxAttempts plus one calls, an off-by-one attempt bound.",
+          "evidence": "The inclusive loop makes an extra invocation: maxAttempts plus one calls, an off-by-one attempt bound.",
+          "state": "open",
+          "history": []
+        },
+        {
+          "id": "F-2",
+          "n": 2,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/retry.go",
+            "line": 9
+          },
+          "claim": "An already cancelled context still invokes call before the cancellation check, so cancellation does not prevent side effects.",
+          "evidence": "An already cancelled context still invokes call before the cancellation check, so cancellation does not prevent side effects.",
+          "state": "open",
+          "history": []
+        },
+        {
+          "id": "F-3",
+          "n": 3,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/delay.go",
+            "line": 2
+          },
+          "claim": "The correct helper has a critical correctness failure.",
+          "evidence": "The correct helper has a critical correctness failure.",
+          "state": "open",
+          "history": []
+        }
+      ]
+    }
+  }
+}

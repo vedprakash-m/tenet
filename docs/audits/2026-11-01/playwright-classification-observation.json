@@ -1,0 +1,58 @@
+{
+  "date": "2026-11-01",
+  "scope": "Local synthetic Playwright plain tests only; no browser, page, server, network, installation, model or native-host observation.",
+  "runtime": "v26.3.0",
+  "playwrightVersion": "1.64.1",
+  "environment": {
+    "CI": "1",
+    "NO_COLOR": "1",
+    "FORCE_COLOR": "0",
+    "TERM": "dumb"
+  },
+  "processExit": 1,
+  "reportBytes": 10735,
+  "reportSha256": "7a791e7a9a2ad38ec1dd046966f8f15a3359e70ce8673734a966a4a5a3921ca9",
+  "stdoutBytes": 2176,
+  "stderrBytes": 328,
+  "normalizationInvalid": null,
+  "observations": [
+    {
+      "title": "real assertion",
+      "diagnostics": [
+        {
+          "firstLine": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m",
+          "messageBytes": 615,
+          "hasAnsi": true
+        }
+      ],
+      "outcomes": [
+        {
+          "status": "failed",
+          "kind": "runtime-error",
+          "kinds": [
+            "runtime-error"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "real runtime",
+      "diagnostics": [
+        {
+          "firstLine": "TypeError: Cannot read properties of undefined (reading 'expect')",
+          "messageBytes": 538,
+          "hasAnsi": false
+        }
+      ],
+      "outcomes": [
+        {
+          "status": "failed",
+          "kind": "runtime-error",
+          "kinds": [
+            "runtime-error"
+          ]
+        }
+      ]
+    }
+  ]
+}

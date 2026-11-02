@@ -189,7 +189,7 @@ export interface Detection {
 export interface Normalized {
   files: Map<string, {
     executed: number; passed: number; failed: number; skipped: number; focused: number; tests: string[];
-    outcomes?: Array<{ test: string; status: "passed" | "failed" | "skipped"; kind?: string }>;
+    outcomes?: Array<{ test: string; status: "passed" | "failed" | "skipped"; kind?: string; kinds?: string[] }>;
     failureKinds: string[]; failures: Array<{ test: string; kind: string; message: string }>;
   }>;
   invalid?: string; discovered: number;
@@ -233,6 +233,8 @@ export interface Recipes {
   /** A text file shipped in the plugin, for example a skill; null when absent. */
   text(rel: string): string | null;
 }
+export type ProjectReadCause = "missing" | "excluded" | "linked" | "outside" | "not-regular" | "too-large" | "invalid-utf8" | "moved" | "unreadable";
+export type ProjectReadResult = { status: "available"; text: string; sha256: string } | { status: "unavailable"; cause: ProjectReadCause };
 export interface Project {
   setExclusions(exclusions: readonly Exclusion[]): void;
   /** Creates each file exclusively (never overwrites), making directories as needed. */
@@ -241,6 +243,8 @@ export interface Project {
   hashes(paths: readonly string[]): Record<string, string | null>;
   /** A regular file's text; null only when absent. Linked/excluded/unreadable inputs throw. */
   read(path: string): string | null;
+  /** Strict UTF-8 source admission under a trusted byte limit; legacy read semantics stay unchanged. */
+  readBounded(path: string, maxBytes: number): ProjectReadResult;
   /** Replaces one file atomically (a temporary file renamed over it), making directories as needed. */
   write(path: string, content: string): void;
   remove(paths: readonly string[]): void;

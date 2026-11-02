@@ -1,0 +1,8 @@
+{
+  "name": "feature-pagination-filter",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test check.mjs"
+  }
+}

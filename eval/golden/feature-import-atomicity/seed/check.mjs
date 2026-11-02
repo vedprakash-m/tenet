@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {createDirectory} from './src/directory.mjs';
+test('import and list a contact',()=>{const d=createDirectory();assert.equal(d.importRows([{name:'Reader',email:'reader@example.invalid'}]),1);assert.deepEqual(d.list(),[{name:'Reader',email:'reader@example.invalid'}]);}); // privacy-ok: synthetic example.invalid addresses only.

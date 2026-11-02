@@ -92,6 +92,49 @@ describe("cleanup previews and scopes [LFC-05, CON-10]", () => {
     assert.equal(r.reasons[0]!.code, "work-busy");
   });
 
+  it("preserves another contract's active run during project or machine cleanup [CON-12]", async () => {
+    const p = fresh();
+    await open(p);
+    const h = (await p.call("open", { profile: "plan", request: "another task" })).handle!;
+    const store = p.ports().store, runDir = store.tempDir("run-cleanup-live");
+    const artifact = store.writeArtifact(runDir, "run.json", "{}");
+    await store.transaction("fixture", async tx => {
+      const state = tx.state!, first = Object.values(state.work)[0]!;
+      tx.publish({ ...state, work: { ...state.work, [first.id]: { ...first,
+        session: { ...first.session, inCall: { verb: "check", runId: "cleanup-live", runDir,
+          ...store.self(), since: new Date().toISOString() } },
+      } } });
+    });
+    const old = new Date(Date.now() - 3 * 3600_000);
+    for (const path of [artifact, runDir, join(runDir, "..")]) utimesSync(path, old, old);
+    for (const target of ["project", "machine"]) {
+      const r = await p.call("decide", { h, kind: "cleanup", target, answers: { "cleanup-confirm": "yes" } });
+      assert.equal(r.exit, 2, JSON.stringify(r));
+      assert.equal(r.reasons[0]!.code, "work-busy");
+      assert.ok(existsSync(artifact));
+    }
+  });
+
+  it("protects an open packet from machine cleanup even when its files are old", async () => {
+    const p = fresh();
+    const h = await withTemp(p);
+    const store = p.ports().store, root = store.residue().temp!.path;
+    const old = new Date(Date.now() - 3 * 3600_000);
+    const age = (dir: string) => {
+      for (const name of readdirSync(dir, { withFileTypes: true })) {
+        const path = join(dir, name.name);
+        if (name.isDirectory()) age(path);
+        utimesSync(path, old, old);
+      }
+      utimesSync(dir, old, old);
+    };
+    age(root);
+    const r = await p.call("decide", { h, kind: "cleanup", target: "machine", answers: { "cleanup-confirm": "yes" } });
+    assert.equal(r.exit, 2, JSON.stringify(r));
+    assert.equal(r.reasons[0]!.code, "work-busy");
+    assert.ok(existsSync(root));
+  });
+
   it("machine cleanup retains stale candidates whose ownership and compatibility cannot be proved [LFC-05, CON-10]", async () => {
     const p = fresh();
     const h = await open(p);

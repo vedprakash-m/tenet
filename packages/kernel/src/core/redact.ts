@@ -14,7 +14,7 @@ const PATTERNS: Array<[RegExp, string]> = [
   [/\b(Bearer\s+)[A-Za-z0-9._~+/-]{20,}=*/gi, `$1${MARK}`],
   [/\b((?:Set-)?Cookie:[ \t]*)[^\r\n]+/gi, `$1${MARK}`],
   [/(\b[a-z][a-z0-9+.-]{0,20}:\/\/[^\s:@/]{1,200}:)[^\s@/]{1,500}@/gi, `$1${MARK}@`], // bounded: an unbounded scheme or user part is quadratic on a long dotted run
-  [new RegExp(String.raw`((?:password|passwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)[\w-]{0,40}\s{0,3}[:=]\s{0,3}["']?)${VALUE}`, "gi"), `$1${MARK}`], // no leading \w*: scanning from every word start is quadratic
+  [new RegExp(String.raw`((?:password|passwd|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)[\w-]{0,40}["']?\s{0,3}[:=]\s{0,3}["']?)${VALUE}`, "gi"), `$1${MARK}`], // quoted JSON keys too; no leading \w*: scanning from every word start is quadratic
 ];
 
 export const redact = (s: string): string => PATTERNS.reduce((t, [re, to]) => t.replace(re, to), s);

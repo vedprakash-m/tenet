@@ -13,8 +13,13 @@ const input = operation === "process" ? "run.json" : operation === "tool" ? "nod
   ["state", "marker", "log"].includes(operation) ? `.tenet/${operation}` : operation === "report" ? "run/report.json" : "input";
 const open = fs.openSync, close = fs.closeSync, stat = fs.fstatSync, read = fs.readSync;
 let target = -1, changed = false;
+const allocationBytes: number[] = [], allocate = Buffer.alloc;
+Buffer.alloc = ((size, ...args) => {
+  if (operation === "bounded" && target >= 0) allocationBytes.push(size);
+  return allocate(size, ...args);
+}) as typeof Buffer.alloc;
 fs.openSync = ((path, ...args) => {
-  if (String(path) === join(root, input) && operation === "report" && mode.startsWith("replace-") && !changed) {
+  if (String(path) === join(root, input) && (operation === "report" || operation === "bounded") && mode.startsWith("replace-") && !changed) {
     changed = true;
     execFileSync(process.execPath, ["-e", `
       const fs = require('fs'), path = process.argv[1], mode = process.argv[2];
@@ -56,6 +61,8 @@ fs.fstatSync = ((descriptor, ...args) => {
   return info;
 }) as typeof fs.fstatSync;
 fs.readSync = ((descriptor, buffer, offset, length, position) => {
+  if (operation === "bounded" && descriptor === target && mode === "unreadable") throw Object.assign(new Error("injected unreadable input"), { code: "EACCES" });
+  if (operation === "bounded" && descriptor === target && mode === "unexpected") throw new Error("injected programmer failure");
   const count = read(descriptor, buffer, offset, mode === "short" && descriptor === target ? Math.min(length, 3) : length, position);
   if (descriptor === target && mode === "restored-mtime" && !changed && count > 0) {
     changed = true;
@@ -85,6 +92,9 @@ try {
     const stack = createStack();
     const value = operation === "tool" ? stack.detect(root).runnerVersion : stack.fingerprint(root).dependencies;
     process.stdout.write(JSON.stringify({ value }));
+  } else if (operation === "bounded") {
+    const value = new FsProject(root).readBounded("input", 64);
+    process.stdout.write(JSON.stringify({ value, allocationBytes }));
   } else {
     const project = new FsProject(root);
     const value = operation === "hash" ? project.hashes(["input"]).input : project.read("input");

@@ -1,0 +1,33 @@
+{
+  "archive": [
+    {
+      "endpoint": "findings-only"
+    }
+  ],
+  "project": {
+    "intent": {
+      "plan": []
+    }
+  },
+  "work": {
+    "W-1": {
+      "state": "finished",
+      "findings": [
+        {
+          "id": "F-1",
+          "n": 1,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/retry.go",
+            "line": 8
+          },
+          "claim": "The inclusive loop makes an extra invocation: maxAttempts plus one calls, an off-by-one attempt bound.",
+          "evidence": "The inclusive loop makes an extra invocation: maxAttempts plus one calls, an off-by-one attempt bound.",
+          "state": "open",
+          "history": []
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "starter-library-catalog",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test check.mjs"
+  }
+}

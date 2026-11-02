@@ -1,0 +1,42 @@
+{
+  "archive": [
+    {
+      "endpoint": "checked-local"
+    }
+  ],
+  "work": {},
+  "project": {
+    "intent": {
+      "plan": [
+        {
+          "id": "P1",
+          "outcome": "Catalog validation in src/catalog.mjs",
+          "elementIds": [],
+          "dependsOn": [],
+          "check": "catalog boundary checks",
+          "state": "done"
+        },
+        {
+          "id": "P2",
+          "outcome": "Atomic movements in src/movements.mjs",
+          "elementIds": [],
+          "dependsOn": [
+            "P1"
+          ],
+          "check": "movement rollback checks",
+          "state": "done"
+        },
+        {
+          "id": "P3",
+          "outcome": "Reorder report journey in src/report.mjs",
+          "elementIds": [],
+          "dependsOn": [
+            "P2"
+          ],
+          "check": "report threshold journey",
+          "state": "done"
+        }
+      ]
+    }
+  }
+}

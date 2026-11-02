@@ -1,4 +1,4 @@
-// The public Alpha golden tasks (eval/golden, PRD §6.4.1, plan §7.5/RC6), validated offline.
+// The public Alpha/R1 golden tasks (eval/golden, PRD §6.4.1, plan §7.5/RC6), validated offline.
 // This proves the fixtures and their external graders: seeded failures fail, clean controls pass, traps are caught,
 // grading is repeatable and needs no network or model. It does not run an agent, so it says nothing about how the loop
 // behaves on these tasks, and it is not the live evaluation tier (PRD §6.4.3). No PRD requirement is tagged on purpose:
@@ -9,7 +9,7 @@ import { dirname, join, relative } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup, tmp } from "./helpers.ts";
-import { ALPHA_MIX, CATEGORIES, GOLDEN_DIR, validateAll, validateTask } from "../../../tools/eval-validate.ts";
+import { ALPHA_MIX, ALPHA_TASK_IDS, R1_MIX, CATEGORIES, GOLDEN_DIR, validateAll, validateTask } from "../../../tools/eval-validate.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -26,8 +26,9 @@ function copyTask(id: string): string {
 
 describe("golden tasks: the Alpha set", () => {
   it("has the PRD §6.4.1 Alpha category mix, ten tasks in all", () => {
-    assert.equal(tasks.length, 10);
-    const categories = tasks.map((t) => JSON.parse(readFileSync(join(GOLDEN_DIR, t, "task.json"), "utf8")).category as string);
+    const alpha = tasks.filter(id => (ALPHA_TASK_IDS as readonly string[]).includes(id));
+    assert.equal(alpha.length, 10);
+    const categories = alpha.map((t) => JSON.parse(readFileSync(join(GOLDEN_DIR, t, "task.json"), "utf8")).category as string);
     const counts = Object.fromEntries(CATEGORIES.map((c) => [c, categories.filter((x) => x === c).length]));
     assert.deepEqual(counts, ALPHA_MIX);
   });
@@ -41,6 +42,16 @@ describe("golden tasks: the Alpha set", () => {
   });
 });
 
+describe("golden tasks: R1 public catalog", () => {
+  it("has the exact PRD R1 category mix while preserving the pinned Alpha ten", () => {
+    assert.equal(tasks.length, 30);
+    const categories = tasks.map(id => JSON.parse(readFileSync(join(GOLDEN_DIR, id, "task.json"), "utf8")).category);
+    assert.deepEqual(Object.fromEntries(CATEGORIES.map(c => [c, categories.filter(x => x === c).length])), R1_MIX);
+    assert.equal(ALPHA_TASK_IDS.length, 10);
+    for (const id of ALPHA_TASK_IDS) assert.ok(tasks.includes(id));
+  });
+});
+
 describe("golden tasks: each task validates offline", { timeout: 300_000 }, () => {
   for (const t of tasks) {
     it(`${t}: schema, seed fails and clean passes its check, every control grades as declared, grading repeats, no network or model`, () => {
@@ -51,6 +62,7 @@ describe("golden tasks: each task validates offline", { timeout: 300_000 }, () =
 
   it("the whole set passes the Alpha validation the CLI runs", () => {
     const r = validateAll({ alpha: true });
+    assert.deepEqual(r.tasks.map(task => task.id).sort(), [...ALPHA_TASK_IDS].sort());
     assert.deepEqual(r.errors, []);
     assert.deepEqual(r.tasks.flatMap((x) => x.errors), []);
   });

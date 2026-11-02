@@ -1,0 +1,226 @@
+{
+  "date": "2026-11-01",
+  "method": "Real throwaway Git repositories, actual Vitest red/green checks, public runVerb calls, scripted same-session reviewer result. No native host/child observation.",
+  "scope": "Focused packet marker after pause/abandon; project cleanup via second plan handle; no production/test edits or automatic packet deletion.",
+  "nodeVersion": "26.3.0",
+  "platform": "darwin",
+  "rows": [
+    {
+      "mode": "pause",
+      "action": "record",
+      "baseline": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "green": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "abandonPreview": null,
+      "stop": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "stateAfterStop": "parked",
+      "focusedReviewAfterStop": true,
+      "cleanupBeforeAction": {
+        "exit": 2,
+        "reasons": [
+          "work-busy"
+        ],
+        "questions": [],
+        "historical": false
+      },
+      "actionResponse": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "stateAfterAction": "parked",
+      "focusedReviewAfterAction": false,
+      "cleanupAfterAction": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      }
+    },
+    {
+      "mode": "pause",
+      "action": "retry",
+      "baseline": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "green": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "abandonPreview": null,
+      "stop": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "stateAfterStop": "parked",
+      "focusedReviewAfterStop": true,
+      "cleanupBeforeAction": {
+        "exit": 2,
+        "reasons": [
+          "work-busy"
+        ],
+        "questions": [],
+        "historical": false
+      },
+      "actionResponse": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "stateAfterAction": "parked",
+      "focusedReviewAfterAction": true,
+      "cleanupAfterAction": {
+        "exit": 2,
+        "reasons": [
+          "work-busy"
+        ],
+        "questions": [],
+        "historical": false
+      }
+    },
+    {
+      "mode": "abandon",
+      "action": "record",
+      "baseline": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "green": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "abandonPreview": {
+        "exit": 3,
+        "reasons": [
+          "approval-gate"
+        ],
+        "questions": [
+          "abandon-confirm"
+        ],
+        "historical": false
+      },
+      "stop": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "stateAfterStop": "cancelled",
+      "focusedReviewAfterStop": true,
+      "cleanupBeforeAction": {
+        "exit": 2,
+        "reasons": [
+          "work-busy"
+        ],
+        "questions": [],
+        "historical": false
+      },
+      "actionResponse": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "stateAfterAction": "cancelled",
+      "focusedReviewAfterAction": false,
+      "cleanupAfterAction": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      }
+    },
+    {
+      "mode": "abandon",
+      "action": "retry",
+      "baseline": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "green": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "abandonPreview": {
+        "exit": 3,
+        "reasons": [
+          "approval-gate"
+        ],
+        "questions": [
+          "abandon-confirm"
+        ],
+        "historical": false
+      },
+      "stop": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "stateAfterStop": "cancelled",
+      "focusedReviewAfterStop": true,
+      "cleanupBeforeAction": {
+        "exit": 2,
+        "reasons": [
+          "work-busy"
+        ],
+        "questions": [],
+        "historical": false
+      },
+      "actionResponse": {
+        "exit": 0,
+        "reasons": [],
+        "questions": [],
+        "historical": false
+      },
+      "stateAfterAction": "cancelled",
+      "focusedReviewAfterAction": true,
+      "cleanupAfterAction": {
+        "exit": 2,
+        "reasons": [
+          "work-busy"
+        ],
+        "questions": [],
+        "historical": false
+      }
+    }
+  ],
+  "conclusions": [
+    "Pause and confirmed abandon retain the focused-review marker; project cleanup from a second plan contract refuses with work-busy.",
+    "Recording a matching scripted same-session review remains reachable after both pause and abandon, clears the focused marker, and permits cleanup without changing parked/cancelled state.",
+    "Requesting a retry remains reachable after both stop modes but leaves a packet outstanding, so cleanup correctly remains refused.",
+    "This is a conservative safety fence with a reachable settlement path, not a demonstrated permanent cleanup deadlock. Stopping a run and settling a packet are distinct operations.",
+    "No real reviewer was invoked; the synthetic completed result does not prescribe fabricating a review merely to enable cleanup. A user unable to complete a packet still needs an explicitly specified safe packet-retirement workflow."
+  ]
+}

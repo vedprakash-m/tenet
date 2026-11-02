@@ -1,5 +1,37 @@
 # Changelog
 
+## 2026-11-01 — Enforce offline input and assertion-proof boundaries
+
+- Reject malformed UTF-8 in referenced fixture/grader bytes even with matching hashes; preserve exact-byte identities. Reject replay child/tool start-ID collisions in either source order.
+- Recognize bounded quoted JSON credential assignments so structured proposals refuse before persisting likely secrets. Public built CLI controls preserve state/backup/journal on Node26/22; ordinary placeholders remain usable. This remains a heuristic.
+- Reject executed assertions under skipped/pending Vitest files. Anchor Vitest/Playwright assertion diagnostics so native runtime errors cannot establish assertion-only baseline red; enforce the 2,000-character bound on every Vitest diagnostic; advance to `node-ts@18`, leaving earlier evidence stale.
+- Add exact replay byte/event/multibyte bounds and inert-data process/network/write effect traps. All 119 focused Node22 checks and independent review pass; integrated CI/general UAT are in progress. No capacity, native campaign or qualification gate is closed.
+
+## 2026-11-01 — Complete the public R1 golden-task catalog
+
+- Add twenty public tasks for the exact thirty-task PRD mix, including staged-human continuity and Python/Go source inspection. All thirty validate offline with 122 controls and deterministic repeated grading; the original Alpha ten remain pinned.
+- Add `--r1` catalog preflight, reject conflicting selectors, validate staged dirty paths, preserve unrelated staging during selective control commits, and normalize task directory identity with the native path API. Independent validator review and four focused controls pass.
+- Correct one shortcut control’s behavior without changing its expected failures; document five synthetic reserved-domain privacy false positives without weakening normalization cases. Final integrated CI passes **1,367 tests / 209 suites**; minimum Node22 R1 validation passes all thirty tasks. Probe diagnostics normalize only known workdir prefixes, with three red-first controls; other origins remain untrusted. No reserved tasks, agent/model/native runs or qualification claim.
+
+## 2026-11-01 — Continue evidence, cleanup and bounded-source implementation
+
+- Preserve complete failure kinds across Vitest/Playwright diagnostics and tagged results, classify diagnostic first lines, and reject whole-run exit contradictions outside selected tests. Reject contradictory supplied Vitest total populations; advance to `node-ts@15` to invalidate earlier local normalization evidence.
+- Protect active run/focused-review/child-packet temp files from both cleanup scopes. Add the independently reviewed bounded source-reader API with strict UTF-8, typed refusals and exact caller allocation limits; preserve legacy readers.
+- Record actual synthetic Playwright attachment shape and the owner’s five-current-screenshots policy. Capture retirement/result/schema activation remain separately gated. Final integrated CI passes **1,367/209**, minimum Node22 focused runtime checks **100/100**, and built CLI UAT **152 observations each on Node26/22**. Exact identities are in the dated continuation validation record.
+
+## 2026-11-01 — Develop and review the RES-05 kernel proposal contract
+
+- Record the owner-selected kernel-validated proposal direction and draft the bounded input/result, command/cwd, example, screenshot provenance, retention and finish-replay contract in `specs/result-demo-path.md` §§9–17.
+- Disposition three independent review findings and confirm the revised cwd, source-reader and issuing-generation boundaries. Update the plan; owner implementation decisions, compatibility, capture/retirement mechanics and complete capacity remain open.
+- Documentation only; runtime source hashes remain unchanged. No new RES-05 implementation, passing test, mapping, native observation or qualification is claimed.
+
+## 2026-11-01 — Audit main and repair evidence/configuration boundaries (uncommitted)
+
+- Add a dated implementation review, dependency-ordered completion plan and generated 200-requirement inventory; correct stale current HEAD and cumulative Alpha/Beta counts in `specs/plan.md`. Preserve existing commits and inherited prototypes; all new work stays on `main`.
+- Reject passed Vitest assertions with failure messages and unusable report file identities; advance the adapter to `node-ts@13` so old normalization evidence is not reused. Reject invalid-scope configuration reset before it can remove project overrides. Require a Git blob for frozen campaign protocols instead of accepting a directory.
+- Five behavior defects have failing-first controls, including the final reproduction of truthy nonboolean reset markers deleting overrides. Only literal `true` triggers reset; strict proposal-envelope design remains gated. Independent final review found no actionable runtime regression; focused receipts/settings/coverage controls pass. Final local CI passes **1,314 tests / 207 suites**, 81 minimum-runtime focused checks pass, and final built reset UAT passes on Node26/22. Full general CLI UAT passed on both runtimes before the final marker follow-up; exact artifact scopes are retained in the dated validation record. Fixed budgets and qualification gates remain unchanged.
+- Files: `packages/kernel/src/adapters/node-ts.ts`, `packages/kernel/src/decisions/simple.ts`, their regression tests, `tools/coverage.ts`, `packages/kernel/test/coverage.test.ts`, `docs/audits/2026-11-01/`, `specs/plan.md`, `CHANGELOG.md`.
+
 ## 2026-11-01 — Check and commit accumulated implementation work
 
 - Commit accumulated implementation, tests, starter payload, tooling and evidence as `e9f3f1e`; specs and progress follow separately. All staged added-line privacy checks pass after documenting two redaction-sentinel false positives.

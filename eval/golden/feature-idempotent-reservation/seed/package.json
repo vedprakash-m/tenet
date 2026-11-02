@@ -1,0 +1,8 @@
+{
+  "name": "feature-idempotent-reservation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test check.mjs"
+  }
+}

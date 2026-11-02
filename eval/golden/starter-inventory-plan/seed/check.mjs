@@ -1,0 +1,2 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {createCatalog} from './src/catalog.mjs';import {applyMovements} from './src/movements.mjs';import {reorderReport} from './src/report.mjs';
+test('stock movement changes reorder report',()=>{const c=createCatalog([{sku:'part',quantity:2,reorderAt:0}]);assert.deepEqual(reorderReport(applyMovements(c,[{sku:'part',delta:-2}])),[{sku:'part',quantity:0,needed:1}]);});

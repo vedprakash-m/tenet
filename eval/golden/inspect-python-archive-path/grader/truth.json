@@ -1,0 +1,22 @@
+[
+  {
+    "id": "sibling-prefix",
+    "path": "src/archive.py",
+    "line": 6,
+    "minSeverity": "major",
+    "terms": [
+      "prefix|startswith",
+      "sibling|component"
+    ]
+  },
+  {
+    "id": "link-member",
+    "path": "src/archive.py",
+    "line": 8,
+    "minSeverity": "major",
+    "terms": [
+      "symlink|symbolic.link",
+      "extract|escape"
+    ]
+  }
+]

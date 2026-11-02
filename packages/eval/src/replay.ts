@@ -44,7 +44,7 @@ const ReplayFixture = z.strictObject({
   }
   for (const [index, event] of fixture.events.entries()) {
     if (event.type === "subagent.started") {
-      if (childIds.has(event.data.toolCallId)) context.addIssue({ code: "custom", path: ["events", index], message: "duplicate child start ID" });
+      if (childIds.has(event.data.toolCallId) || toolIds.has(event.data.toolCallId)) context.addIssue({ code: "custom", path: ["events", index], message: "duplicate child start ID" });
       childIds.add(event.data.toolCallId);
       startedNames.add(event.data.agentName);
     }
@@ -55,7 +55,7 @@ const ReplayFixture = z.strictObject({
       selectedNames.add(event.data.agentName);
     }
     if (event.type === "tool.execution_start") {
-      if (toolIds.has(event.data.toolCallId)) context.addIssue({ code: "custom", path: ["events", index], message: "duplicate tool start ID" });
+      if (toolIds.has(event.data.toolCallId) || childIds.has(event.data.toolCallId)) context.addIssue({ code: "custom", path: ["events", index], message: "duplicate tool start ID" });
       toolIds.add(event.data.toolCallId);
       if (!childIds.has(event.data.parentToolCallId)) context.addIssue({ code: "custom", path: ["events", index], message: "tool parent must start first" });
     }

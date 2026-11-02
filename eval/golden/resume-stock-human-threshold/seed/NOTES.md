@@ -1,0 +1,1 @@
+Parked work W-1: finish stockStatus in src/stock.mjs. Zero is empty, below the configured threshold is low, otherwise ok. Reject negative or noninteger quantities. Resume this work rather than leaving it parked.

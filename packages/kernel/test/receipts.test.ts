@@ -3,8 +3,10 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { receiptsFrom, settleReruns } from "../src/core/receipts.ts";
 import type { ReceiptContext, RunFacts } from "../src/core/receipts.ts";
-import type { Obligation } from "../src/core/schemas.ts";
-import { normalize } from "../src/adapters/node-ts.ts";
+import type { Obligation, Receipt, WorkContract } from "../src/core/schemas.ts";
+import { createStack, normalize } from "../src/adapters/node-ts.ts";
+import { matchBaseline } from "../src/verbs/check-evidence.ts";
+import type { Run } from "../src/verbs/check-evidence.ts";
 
 const ob: Obligation = { id: "OB-1", kind: "test", category: "acceptance", testFile: "a.test.ts" };
 const suite: Obligation = { id: "OB-suite", kind: "test", category: "affected" };
@@ -19,8 +21,54 @@ const report = (tests: Array<{ status: string; failure?: string }>, file = "/p/a
 });
 const norm = (raw: string) => normalize(raw, "/p");
 const one = (o: Obligation, r: RunFacts, n: ReturnType<typeof norm> | null, c = ctx) => receiptsFrom(r, n, [o], c)[0]!;
+const baselineRed = (receipt: Receipt) => matchBaseline(
+  { baseline: true, facts: { inv: { entries: new Map() } } } as Run,
+  { obligations: [{ ...ob, expectation: "fail" }] } as WorkContract, [receipt],
+)[0]!.baselineMatched;
 
 describe("receipts", () => {
+  it("invalidates normalization evidence that admitted oversized failure diagnostics [EVD-03]", () => {
+    assert.notEqual(createStack().adapterVersion(), "node-ts@17");
+  });
+  it("bounds every assertion failure diagnostic at 2000 characters before display truncation [EVD-05]", () => {
+    const raw = JSON.parse(report([{ status: "failed", failure: "AssertionError" }], "/p/a.test.ts", false));
+    for (const message of ["x".repeat(2001), 42, null, {}]) {
+      raw.testResults[0].assertionResults[0].failureMessages = ["AssertionError", message];
+      const normalized = norm(JSON.stringify(raw));
+      assert.equal(normalized.invalid, "invalid assertion failure messages");
+      assert.equal(normalized.files.size, 0);
+      assert.equal(normalized.discovered, 0);
+      assert.equal(one(ob, run({ exit: 1 }), normalized).status, "inconclusive");
+    }
+    raw.testResults[0].assertionResults[0].failureMessages = ["AssertionError", "x".repeat(2000)];
+    const normalized = norm(JSON.stringify(raw));
+    assert.equal(normalized.invalid, undefined);
+    assert.equal(one(ob, run({ exit: 1 }), normalized).status, "fail");
+    assert.deepEqual(normalized.files.get("a.test.ts")!.failureKinds, ["assertion", "runtime-error"]);
+  });
+  it("invalidates normalization evidence that accepted execution in skipped files [EVD-03]", () => {
+    assert.notEqual(createStack().adapterVersion(), "node-ts@15");
+  });
+  it("rejects executed assertions under pending or skipped file summaries [EVD-05]", () => {
+    for (const status of ["pending", "skipped"]) {
+      for (const assertion of ["passed", "failed"]) {
+        const raw = JSON.parse(report([{ status: assertion }], "/p/a.test.ts", false));
+        raw.testResults[0].status = status;
+        const normalized = norm(JSON.stringify(raw));
+        assert.equal(normalized.invalid, "a skipped file contains executed tests", `${status}/${assertion}`);
+        assert.equal(normalized.files.size, 0);
+        assert.equal(normalized.discovered, 0);
+        assert.equal(one(ob, run({ exit: assertion === "failed" ? 1 : 0 }), normalized).status, "inconclusive");
+      }
+      const raw = JSON.parse(report([{ status: "skipped" }], "/p/a.test.ts", false));
+      raw.testResults[0].status = status;
+      const normalized = norm(JSON.stringify(raw));
+      assert.equal(normalized.invalid, undefined);
+      assert.equal(normalized.files.get("a.test.ts")!.executed, 0);
+      assert.equal(normalized.files.get("a.test.ts")!.skipped, 1);
+      assert.equal(one(ob, run(), normalized).status, "inconclusive");
+    }
+  });
   it("returns invalid for malformed file statuses and failure messages without throwing [EVD-05]", () => {
     for (const variant of ["file-status", "message-type"]) {
       const raw = JSON.parse(report([{ status: "failed", failure: "AssertionError" }]));
@@ -31,11 +79,123 @@ describe("receipts", () => {
       assert.ok(result?.invalid, variant);
     }
   });
+  it("invalidates normalization evidence from before total-population admission [EVD-03]", () => {
+    assert.notEqual(createStack().adapterVersion(), "node-ts@14");
+  });
+  it("rejects supplied total-test counts that disagree with the complete assertion population [EVD-05]", () => {
+    const raw = JSON.parse(report([{ status: "passed" }], "/p/a.test.ts", false));
+    for (const numTotalTests of [2, 0, -1, 1.5, "1", null, {}, []]) {
+      const normalized = norm(JSON.stringify({ ...raw, numTotalTests }));
+      assert.equal(normalized.invalid, "the report's total and its assertions disagree", JSON.stringify(numTotalTests));
+      assert.equal(normalized.files.size, 0);
+      assert.equal(normalized.discovered, 0);
+      assert.equal(one(ob, run(), normalized).status, "inconclusive");
+    }
+    for (const report of [raw, { ...raw, numTotalTests: 1 }]) {
+      const normalized = norm(JSON.stringify(report));
+      assert.equal(normalized.invalid, undefined);
+      assert.equal(normalized.discovered, 1);
+      assert.equal(one(ob, run(), normalized).status, "pass");
+    }
+  });
+  it("preserves bounded report admission diagnostics before population normalization [EVD-05]", () => {
+    let deep: unknown = 0;
+    for (let i = 0; i < 65; i++) deep = { nested: deep };
+    const cases: Array<[string, string]> = [
+      [" ".repeat(10 * 1024 * 1024 + 1), "the report exceeds 10 MB"],
+      ["{", "the report is not valid JSON"],
+      ["null", "the report has no testResults"],
+      ['{"testResults":{}}', "the report has no testResults"],
+      [JSON.stringify({ testResults: Array(2001).fill(null) }), "too many test files; the report was not fully normalized"],
+      [JSON.stringify({ testResults: [], deep }), "the report exceeds depth 64"],
+    ];
+    for (const [raw, expected] of cases) {
+      const normalized = norm(raw);
+      assert.equal(normalized.invalid, expected);
+      assert.equal(normalized.files.size, 0);
+      assert.equal(normalized.discovered, 0);
+    }
+  });
+  it("invalidates the adapter identity that accepted contradictory Vitest reports [EVD-03]", () => {
+    assert.notEqual(createStack().adapterVersion(), "node-ts@12");
+  });
+  it("invalidates normalization evidence from the earlier failure-classification adapter [EVD-03]", () => {
+    assert.notEqual(createStack().adapterVersion(), "node-ts@13");
+  });
+  it("rejects passing assertions carrying failure messages, including empty diagnostics [EVD-05]", () => {
+    for (const messages of [["AssertionError: expected true"], [""]]) {
+      const raw = JSON.parse(report([{ status: "passed" }]));
+      raw.testResults[0].assertionResults[0].failureMessages = messages;
+      const normalized = norm(JSON.stringify(raw));
+      assert.equal(normalized.invalid, "the assertion status and its failure messages disagree");
+      assert.equal(normalized.files.size, 0);
+      assert.equal(normalized.discovered, 0);
+      assert.equal(one(ob, run(), normalized).status, "inconclusive");
+    }
+    assert.equal(one(ob, run(), norm(report([{ status: "passed" }]))).status, "pass");
+  });
+  it("rejects report file identities that are empty, workspace directories or contain NUL [EVD-05]", () => {
+    for (const path of ["", ".", "/p", "a\0.test.ts"]) {
+      const normalized = norm(report([{ status: "passed" }], path, false));
+      assert.ok(normalized.invalid, JSON.stringify(path));
+      assert.equal(normalized.files.size, 0);
+      assert.equal(one(suite, run(), normalized).status, "inconclusive");
+    }
+  });
   it("keeps classification of every failure even when diagnostic examples are capped [EVD-05]", () => {
     const tests = [...Array.from({ length: 5 }, () => ({ status: "failed", failure: "AssertionError: expected 1 to be 2" })), { status: "failed", failure: "TypeError: setup crashed" }];
     const r = one(ob, run({ exit: 1 }), norm(report(tests)));
     assert.equal(r.failures!.length, 5);
     assert.deepEqual(new Set(r.failureKinds), new Set(["assertion", "runtime-error"]));
+  });
+  it("retains all errors on one failed assertion, including after tagged selection [EVD-05, TDD-02]", () => {
+    const raw = JSON.parse(report([{ status: "failed", failure: "AssertionError: expected true" }], "/p/a.test.ts", false));
+    raw.testResults[0].assertionResults[0].fullName = "[EX-1] mixed failures";
+    raw.testResults[0].assertionResults[0].failureMessages.push("TypeError: cleanup crashed");
+    for (const obligation of [ob, { ...ob, example: "EX-1" }]) {
+      const receipt = one(obligation, run({ exit: 1 }), norm(JSON.stringify(raw)));
+      assert.equal(receipt.status, "fail");
+      assert.deepEqual(new Set(receipt.failureKinds), new Set(["assertion", "runtime-error"]));
+    }
+    raw.testResults[0].assertionResults[0].failureMessages.push("Error: [Vitest] Unexpected .only modifier.");
+    assert.deepEqual(one({ ...ob, example: "EX-1" }, run({ exit: 1 }), norm(JSON.stringify(raw))).reasons, ["focused-tests"]);
+  });
+  it("does not classify assertion-looking runtime stack frames as assertion failures [EVD-05, TDD-02]", () => {
+    const raw = JSON.parse(report([{ status: "failed", failure: "TypeError: cleanup crashed\n at AssertionError.toEqual (cleanup.ts:1:1)" }], "/p/a.test.ts", false));
+    assert.deepEqual(one(ob, run({ exit: 1 }), norm(JSON.stringify(raw))).failureKinds, ["runtime-error"]);
+  });
+  it("invalidates normalization evidence that matched assertion words inside runtime diagnostics [EVD-03]", () => {
+    assert.notEqual(createStack().adapterVersion(), "node-ts@16");
+  });
+  it("does not classify assertion-looking runtime first lines as assertion failures [EVD-05, TDD-02]", () => {
+    let actual: string | undefined;
+    try { (undefined as unknown as { toEqual(): void }).toEqual(); }
+    catch (error) { actual = String(error); }
+    assert.match(actual!, /^TypeError:/);
+    const diagnostics = [actual!, "TypeError: expect(value) is not a function", "ReferenceError: toBe is not defined",
+      "RangeError: expected length to be positive", "SyntaxError: unexpected AssertionError token",
+      "Error: failed to match a route", "URIError: malformed toEqual input"];
+    for (const failure of diagnostics) {
+      const receipt = one(ob, run({ exit: 1 }), norm(report([{ status: "failed", failure }], "/p/a.test.ts", false)));
+      assert.deepEqual(receipt.failureKinds, ["runtime-error"], failure);
+      assert.equal(receipt.status, "fail");
+      assert.equal(baselineRed(receipt), false, failure);
+    }
+  });
+  it("retains supported assertion, focused and timeout diagnostic prefixes [EVD-05, TDD-02]", () => {
+    const cases = [
+      ["AssertionError: expected 1 to deeply equal 2", "assertion"],
+      ["expected 1 to be 2", "assertion"],
+      ["expect(received).toEqual(expected)", "assertion"],
+      ["Error: expect(received).toBe(expected)", "assertion"],
+      ["Error: Test timed out in 1000ms.", "timeout"],
+      ["Error: [Vitest] Unexpected .only modifier.", "focused"],
+    ];
+    for (const [failure, expected] of cases) {
+      const receipt = one(ob, run({ exit: 1 }), norm(report([{ status: "failed", failure }], "/p/a.test.ts", false)));
+      assert.deepEqual(receipt.failureKinds, [expected], failure);
+      assert.equal(baselineRed(receipt), expected === "assertion", failure);
+    }
   });
   it("never passes a terminated process or a duplicate report identity [EVD-02, EVD-05]", () => {
     const good = report([{ status: "passed" }]);
@@ -78,6 +238,21 @@ describe("receipts", () => {
       { name: "/p/b.test.ts", status: "failed", assertionResults: [{ fullName: "b", status: "failed", failureMessages: ["AssertionError: expected 1 to be 2"] }] },
     ] });
     assert.deepEqual([one(ob, run({ exit: 1 }), norm(raw)).status, one({ ...ob, testFile: "b.test.ts" }, run({ exit: 1 }), norm(raw)).status], ["pass", "fail"]);
+  });
+  it("rejects a zero exit against a failure anywhere in the run, including outside tagged selection [EVD-02, EVD-05]", () => {
+    const raw = JSON.parse(report([{ status: "passed" }]));
+    raw.testResults[0].assertionResults[0].fullName = "[EX-1] selected pass";
+    raw.testResults[1].status = "failed";
+    raw.testResults[1].assertionResults[0] = { fullName: "sibling failure", status: "failed", failureMessages: ["AssertionError"] };
+    for (const obligation of [ob, { ...ob, example: "EX-1" }, suite]) {
+      const receipt = one(obligation, run(), norm(JSON.stringify(raw)));
+      assert.equal(receipt.status, "inconclusive");
+      assert.deepEqual(receipt.reasons, ["report-contradiction"]);
+    }
+    raw.testResults[0].assertionResults.push(raw.testResults[1].assertionResults[0]);
+    const tagged = one({ ...ob, example: "EX-1" }, run(), norm(JSON.stringify(raw)));
+    assert.equal(tagged.status, "inconclusive");
+    assert.deepEqual(tagged.reasons, ["report-contradiction"]);
   });
   it("is inconclusive when the file the obligation names was not in the report", () => {
     assert.deepEqual(one({ ...ob, testFile: "missing.test.ts" }, run(), norm(report([{ status: "passed" }]))).reasons, ["population-mismatch"]);

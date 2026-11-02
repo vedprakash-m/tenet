@@ -1,0 +1,17 @@
+{
+  "archive": [
+    {
+      "endpoint": "checked-local"
+    }
+  ],
+  "project": {
+    "intent": {
+      "plan": []
+    }
+  },
+  "work": {
+    "W-1": {
+      "state": "finished"
+    }
+  }
+}

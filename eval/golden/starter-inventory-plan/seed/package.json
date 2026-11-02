@@ -1,0 +1,8 @@
+{
+  "name": "starter-inventory-plan",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test check.mjs"
+  }
+}

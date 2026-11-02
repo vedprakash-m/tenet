@@ -5,6 +5,7 @@
 import { existsSync } from "node:fs";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { z } from "zod";
+import { stripVTControlCharacters } from "node:util";
 import type { Normalized } from "../ports/types.ts";
 import { nestsTooDeep } from "./report-bounds.ts";
 
@@ -82,14 +83,18 @@ function countSpec(counts: Counts, spec: PwSpec, title: string): string | undefi
     const identity = `${title} [project:${test.projectName ?? ""}]`;
     if (counts.tests.includes(identity)) return "duplicate test identity";
     const message = firstError({ ...spec, tests: [test] });
-    const kind = observed.status === "timedOut" ? "timeout" : /expect\(|AssertionError/.test(message) ? "assertion" : "runtime-error";
+    const kinds = observed.status === "timedOut" ? ["timeout"] : [...new Set(
+      (observed.errors?.length ? observed.errors : [{}]).map(error =>
+        /^(?:AssertionError\b|(?:Error: )?expect\()/.test(stripVTControlCharacters((error.message ?? "").split("\n")[0]!))
+          ? "assertion" : "runtime-error"))];
+    const kind = kinds[0]!;
     counts.tests.push(identity);
-    counts.outcomes!.push({ test: identity, status, ...(status === "failed" ? { kind } : {}) });
+    counts.outcomes!.push({ test: identity, status, ...(status === "failed" ? { kind, kinds } : {}) });
     if (status === "skipped") { counts.skipped++; continue; }
     counts.executed++;
     if (status === "passed") { counts.passed++; continue; }
     counts.failed++;
-    if (!counts.failureKinds.includes(kind)) counts.failureKinds.push(kind);
+    counts.failureKinds = [...new Set([...counts.failureKinds, ...kinds])];
     if (counts.failures.length < 5) counts.failures.push({ test: identity, kind, message });
   }
   const ok = spec.tests.every(test => ["expected", "skipped"].includes(test.status));

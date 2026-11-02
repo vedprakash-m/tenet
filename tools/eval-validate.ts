@@ -1,26 +1,37 @@
 // Offline validation of the public golden tasks (eval/golden/README.md, plan §7.5/RC6, PRD §6.4.1).
 //
-//   node tools/eval-validate.ts [--alpha]
+//   node tools/eval-validate.ts [--alpha|--r1]
 //
 // For every task folder it checks, with no network and no model: the manifest schema; that the seeded fixture fails its
 // own check as declared and the clean control passes it; that the external grader reaches the declared verdict on every
 // control (seed, clean and each trap), with exactly the declared checks failing; that grading twice gives identical
-// bytes; and that no task file reaches for the network or a model. `--alpha` also requires the PRD §6.4.1 Alpha mix.
+// bytes; and that no task file reaches for the network or a model. `--alpha` selects the pinned original ten; `--r1` requires the exact PRD §6.4.1 public mix.
 // This proves the fixtures and graders; it says nothing about how an agent behaves on them.
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { Endpoint, Finding, PlanItem, WorkState } from "../packages/kernel/src/core/schemas.ts";
 
 export const GOLDEN_DIR = resolve(import.meta.dirname, "../eval/golden");
 
-export const CATEGORIES = ["starter-new-app", "brownfield-bug-fix", "brownfield-feature", "review", "misleading-success-trap", "interruption-resume"] as const;
+export const CATEGORIES = ["starter-new-app", "brownfield-bug-fix", "brownfield-feature", "review", "misleading-success-trap", "interruption-resume", "non-typescript-inspection"] as const;
 /** PRD §6.4.1, Alpha column. */
 export const ALPHA_MIX: Record<(typeof CATEGORIES)[number], number> = {
-  "starter-new-app": 2, "brownfield-bug-fix": 2, "brownfield-feature": 2, review: 2, "misleading-success-trap": 1, "interruption-resume": 1,
+  "starter-new-app": 2, "brownfield-bug-fix": 2, "brownfield-feature": 2, review: 2, "misleading-success-trap": 1, "interruption-resume": 1, "non-typescript-inspection": 0,
+};
+
+/** The original Alpha catalog remains pinned as R1 public tasks are added. */
+export const ALPHA_TASK_IDS = [
+  "bug-discount-with-dirty-tree", "bug-pagination-skips-first-page", "feature-delete-with-authorization",
+  "feature-report-csv-format", "resume-queue-with-human-edit", "review-then-fix-session-expiry",
+  "review-upload-service", "starter-notes-store", "starter-plan-decomposition", "trap-duration-parser",
+] as const;
+export const R1_MIX: Record<(typeof CATEGORIES)[number], number> = {
+  "starter-new-app": 4, "brownfield-bug-fix": 6, "brownfield-feature": 6, review: 4,
+  "misleading-success-trap": 5, "interruption-resume": 3, "non-typescript-inspection": 2,
 };
 
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/);
@@ -44,7 +55,7 @@ const Manifest = z.strictObject({
   check: z.strictObject({ command: z.array(z.string()).min(1), seedExpect: z.enum(["fail", "pass"]) }),
   expectedEndpoint: Endpoint,
   protected: z.record(z.string(), z.string().regex(/^[a-f0-9]{64}$/)),
-  setup: z.strictObject({ dirty: z.array(z.strictObject({ path: z.string(), content: z.string(), marker: z.string().min(1).optional() })).optional() }),
+  setup: z.strictObject({ dirty: z.array(z.strictObject({ path: z.string(), content: z.string(), marker: z.string().min(1).optional() })).optional(), staged: z.array(z.string()).optional() }),
   forbidden: z.array(Forbidden).min(1),
   controls: z.array(Control).min(2),
 });
@@ -96,10 +107,11 @@ function buildWorkdir(taskDir: string, task: Manifest, control: Manifest["contro
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), content);
   }
+  if (task.setup.staged?.length) git(dir, "add", "--", ...task.setup.staged);
   if (control.from === "solution") cpSync(join(taskDir, "solution"), dir, { recursive: true });
   if (control.overlay) cpSync(join(taskDir, control.overlay), dir, { recursive: true });
   if (control.commit === "all") { git(dir, "add", "-A"); git(dir, "commit", "-q", "-m", "work"); }
-  else if (control.commit) { git(dir, "add", "--", ...control.commit); git(dir, "commit", "-q", "-m", "work"); }
+  else if (control.commit) { git(dir, "add", "--", ...control.commit); git(dir, "commit", "-q", "-m", "work", "--only", "--", ...control.commit); }
   if (control.state) {
     mkdirSync(join(dir, ".tenet"), { recursive: true });
     cpSync(statePath(taskDir, control.state), join(dir, ".tenet", "state"));
@@ -117,7 +129,7 @@ function grade(taskDir: string, dir: string, base: string) {
 export function validateTask(taskDir: string): TaskReport {
   const errors: string[] = [];
   const fail = (m: string) => errors.push(m);
-  const folder = taskDir.split("/").at(-1)!;
+  const folder = basename(taskDir);
   let manifest: Manifest;
   try { manifest = Manifest.parse(JSON.parse(readFileSync(join(taskDir, "task.json"), "utf8"))); }
   catch (e) { return { id: folder, category: "?", errors: [`task.json: ${e instanceof Error ? e.message.split("\n")[0] : String(e)}`] }; }
@@ -139,6 +151,9 @@ export function validateTask(taskDir: string): TaskReport {
     if (f.kind === "protected-modified" && f.paths.some((p) => !(p in manifest.protected))) fail(`${f.id}: a path has no recorded hash`);
     if (f.kind === "dirty-lost" && !manifest.setup.dirty?.length) fail(`${f.id}: no setup.dirty to protect`);
   }
+  const staged = manifest.setup.staged ?? [], dirtyPaths = new Set(manifest.setup.dirty?.map(item => item.path));
+  if (new Set(staged).size !== staged.length || staged.some(path => !dirtyPaths.has(path)))
+    fail("setup.staged must contain unique paths declared in setup.dirty");
   const names = manifest.controls.map((c) => c.name);
   if (new Set(names).size !== names.length) fail("control names are not unique");
   const seed = manifest.controls.find((c) => c.name === "seed"), clean = manifest.controls.find((c) => c.name === "clean");
@@ -214,21 +229,33 @@ export function validateTask(taskDir: string): TaskReport {
   return { id: manifest.id, category: manifest.category, errors };
 }
 
-export function validateAll(opts: { alpha?: boolean; dir?: string } = {}): Report {
+export function validateAll(opts: { alpha?: boolean; r1?: boolean; dir?: string } = {}): Report {
+  if (opts.alpha && opts.r1) return { tasks: [], errors: ["select Alpha or R1 public, not both"] };
   const dir = opts.dir ?? GOLDEN_DIR;
-  const folders = readdirSync(dir).filter((f) => f !== "lib" && statSync(join(dir, f)).isDirectory()).sort();
-  const tasks = folders.map((f) => validateTask(join(dir, f)));
+  const available = readdirSync(dir).filter((f) => f !== "lib" && statSync(join(dir, f)).isDirectory()).sort();
+  const folders = opts.alpha ? available.filter(id => (ALPHA_TASK_IDS as readonly string[]).includes(id)) : available;
   const errors: string[] = [];
-  if (opts.alpha) {
-    const counts = new Map<string, number>();
-    for (const t of tasks) counts.set(t.category, (counts.get(t.category) ?? 0) + 1);
-    for (const c of CATEGORIES) if ((counts.get(c) ?? 0) !== ALPHA_MIX[c]) errors.push(`category ${c}: ${counts.get(c) ?? 0} tasks, PRD §6.4.1 Alpha needs ${ALPHA_MIX[c]}`);
+  const mix = opts.alpha ? ALPHA_MIX : opts.r1 ? R1_MIX : null;
+  if (opts.alpha) for (const id of ALPHA_TASK_IDS) if (!folders.includes(id)) errors.push(`Alpha catalog is missing pinned task ${id}`);
+  if (mix) {
+    const label = opts.alpha ? "Alpha" : "R1 public", counts = new Map<string, number>();
+    for (const folder of folders) {
+      try {
+        const manifest = Manifest.parse(JSON.parse(readFileSync(join(dir, folder, "task.json"), "utf8")));
+        counts.set(manifest.category, (counts.get(manifest.category) ?? 0) + 1);
+      } catch { errors.push(`${label} catalog: ${folder} has an invalid task manifest`); }
+    }
+    for (const category of CATEGORIES) if ((counts.get(category) ?? 0) !== mix[category])
+      errors.push(`category ${category}: ${counts.get(category) ?? 0} tasks, PRD §6.4.1 ${label} needs ${mix[category]}`);
   }
-  return { tasks, errors };
+  if (errors.length) return { tasks: [], errors };
+  return { tasks: folders.map(folder => validateTask(join(dir, folder))), errors };
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === import.meta.filename) {
-  const report = validateAll({ alpha: process.argv.includes("--alpha") });
+  const flags = process.argv.slice(2);
+  if (flags.some(flag => !["--alpha", "--r1"].includes(flag))) { console.error("use --alpha or --r1"); process.exit(2); }
+  const report = validateAll({ alpha: flags.includes("--alpha"), r1: flags.includes("--r1") });
   let bad = report.errors.length;
   for (const t of report.tasks) {
     console.log(`${t.errors.length ? "FAIL" : "ok  "} ${t.id} (${t.category})`);

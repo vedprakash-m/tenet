@@ -1,0 +1,33 @@
+{
+  "archive": [
+    {
+      "endpoint": "findings-only"
+    }
+  ],
+  "project": {
+    "intent": {
+      "plan": []
+    }
+  },
+  "work": {
+    "W-1": {
+      "state": "finished",
+      "findings": [
+        {
+          "id": "F-1",
+          "n": 1,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/permissions.mjs",
+            "line": 4
+          },
+          "claim": "Ordinary members can invite although only owner/admin roles are permitted.",
+          "evidence": "Ordinary members can invite although only owner/admin roles are permitted.",
+          "state": "open",
+          "history": []
+        }
+      ]
+    }
+  }
+}

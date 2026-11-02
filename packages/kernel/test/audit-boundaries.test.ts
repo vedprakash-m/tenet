@@ -14,6 +14,7 @@ import { receiptsOf } from "../src/verbs/check-evidence.ts";
 import type { Run } from "../src/verbs/check-evidence.ts";
 import { makeExecutionEnvelope } from "../src/core/execution-envelope.ts";
 import { checkInputId, gather } from "../src/verbs/facts.ts";
+import { recordInput } from "../src/core/input.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -141,6 +142,32 @@ describe("closed registry membership", () => {
 });
 
 describe("secret-bearing structured proposals", () => {
+  it("refuses nested quoted-key credential assignments without rewriting structured input [SEC-11]", () => {
+    const value = ["synthetic", "123456"].join("");
+    for (const key of ["password", "api_key", "access-key", "token"]) {
+      assert.equal(recordInput({ propose: { nested: [{ [key]: value }] } }), null, key);
+    }
+    const ordinary = { propose: { nested: [{ password: "required", token: "short1" }] } }; // privacy-ok: literal required is a synthetic non-secret placeholder control.
+    assert.deepEqual(recordInput(ordinary), ordinary);
+  });
+  it("refuses JSON credential assignments inside a public decision before changing private records [SEC-11]", async () => {
+    const p = project(); roots.push(p.root);
+    const h = (await p.call("open", { profile: "plan", request: "record a storage decision" })).handle!;
+    const directory = join(p.root, ".tenet");
+    const contents = () => Object.fromEntries(readdirSync(directory).map(name => [name, readFileSync(join(directory, name), "utf8")]));
+    const before = contents();
+    const canary = ["synthetic", "123456"].join("");
+    const response = await p.call("decide", { h, kind: "decision-record", quote: "Use the local store", propose: {
+      title: "Store locally", context: JSON.stringify({ password: canary }),
+      decision: "Use SQLite", consequences: "One local process",
+    } });
+    const after = contents();
+    assert.equal(Object.values(after).some(content => content.includes(canary)), false, "the synthetic JSON credential reached a private record");
+    assert.equal(response.exit, 1, JSON.stringify(response));
+    assert.equal(response.reasons[0]?.code, "invalid-input");
+    assert.equal(JSON.stringify(response).includes(canary), false);
+    assert.deepEqual(after, before, "refused JSON credentials must not enter state, backups or journal");
+  });
   it("refuses a proposal before writing its synthetic secret to state or the journal [SEC-11]", async () => {
     const p = project(); roots.push(p.root);
     const h = (await p.call("open", { profile: "plan", request: "record a storage decision" })).handle!;

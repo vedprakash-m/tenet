@@ -1,0 +1,22 @@
+[
+  {
+    "id": "attempt-bound",
+    "path": "src/retry.go",
+    "line": 8,
+    "minSeverity": "major",
+    "terms": [
+      "attempt|invocation",
+      "extra|plus.one|off.by.one"
+    ]
+  },
+  {
+    "id": "cancel-before-call",
+    "path": "src/retry.go",
+    "line": 9,
+    "minSeverity": "major",
+    "terms": [
+      "cancel",
+      "before|already"
+    ]
+  }
+]

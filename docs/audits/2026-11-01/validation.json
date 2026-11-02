@@ -1,0 +1,266 @@
+{
+  "date": "2026-11-01",
+  "baseCommit": "35216fa63ea15ec8df807f6a384873d09d6c2ccd",
+  "branch": "main",
+  "state": "final reviewed working source; uncommitted",
+  "environment": {
+    "node": "v26.3.0",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "osRelease": "27.0.0",
+    "git": "git version 2.56.0"
+  },
+  "sourceFiles": {
+    "packages/kernel/src/adapters/node-ts.ts": "7fde69c5de47d59248ae399541dfb080861a4a175dcc40afaa0b53c494c4361e",
+    "packages/kernel/src/decisions/simple.ts": "514c2589e49ed1459638fd08fc512b34b234e79426271ec28374e8693315864a",
+    "tools/coverage.ts": "40b75bceca4275053c35eeb349217d0774880ceeb0b22927e5705d2734b1ab8f",
+    "packages/kernel/test/receipts.test.ts": "62ccf8f1c616e0b0b0edb38eb3b92a569c67458f8c9f36d0683e7c728b7f36a1",
+    "packages/kernel/test/settings.test.ts": "f222a5715d63000746f28e4eb031ac231901416f390b2511f6f0ad6e4aa41350",
+    "packages/kernel/test/coverage.test.ts": "b545682a4d57137f5e9396aeebaac78be4062b3dbf7d648cea199db1032daa3d"
+  },
+  "bundle": {
+    "path": "plugin/kernel/tenet.mjs",
+    "bytes": 782742,
+    "sha256": "a1b09218977fa9f7b22010b3c99535fd325607a3757b72b099a7273c4364be13"
+  },
+  "ci": {
+    "command": "npm run ci",
+    "exit": 0,
+    "tests": 1314,
+    "suites": 207,
+    "passed": 1314,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "transcriptSha256": "0fe09a79b76b134521c3bb0ee8f2a82a9d100424f608b0775a8cd076ce005d4d"
+  },
+  "focusedMinimum": {
+    "runtime": "v22.12.0",
+    "tests": 81,
+    "passed": 81,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0,
+    "sourceTypeStrippingInherited": true,
+    "transcriptSha256": "37d705103934109d041bf31c9ecea0a51db979d1daa0bc986ba938fd28095686"
+  },
+  "uat": {
+    "finalBundle": {
+      "exit": 0,
+      "scope": "Targeted real built-CLI reset workflow on isolated actual Git repositories; seven invalid cases per runtime preserve config/revision; valid literal-true reset preserves unrelated preferences; new reapplication is a no-op.",
+      "script": "docs/audits/2026-11-01/reset-bundle-uat.mjs",
+      "scriptSha256": "a7576b7aabafcdf58194379840a37468d195c968bc847fbc6edb3a7a146d5630",
+      "bundle": {
+        "bytes": 782742,
+        "sha256": "a1b09218977fa9f7b22010b3c99535fd325607a3757b72b099a7273c4364be13"
+      },
+      "observations": [
+        {
+          "runtime": "v26.3.0",
+          "invalidCases": 7,
+          "configurationPreserved": true,
+          "literalTrueReset": true,
+          "unrelatedPreferencePreserved": true,
+          "repeatedResetNoop": true
+        },
+        {
+          "runtime": "v22.12.0",
+          "invalidCases": 7,
+          "configurationPreserved": true,
+          "literalTrueReset": true,
+          "unrelatedPreferencePreserved": true,
+          "repeatedResetNoop": true
+        }
+      ],
+      "note": "The initial scratch UAT expected changed:false on an exact cached response. The retained UAT uses documented again:true for a new call; no runtime change was needed for that expectation."
+    },
+    "generalCampaignScope": "The full general CLI UAT passed on both Node26 and Node22 before the final reset-marker follow-up; its exact earlier bundle is retained below. It is not claimed as a general campaign on this final bundle."
+  },
+  "qualityOwners": {
+    "adapters/git-cli": {
+      "used": 37801,
+      "limit": 37843
+    },
+    "adapters/node-ts": {
+      "used": 20033,
+      "limit": 20160
+    },
+    "adapters/runner": {
+      "used": 9928,
+      "limit": 20160
+    },
+    "adapters/store-fs": {
+      "used": 25706,
+      "limit": 25920
+    },
+    "core/budget": {
+      "used": 8806,
+      "limit": 8870
+    },
+    "core/review": {
+      "used": 16981,
+      "limit": 20160
+    },
+    "core/risk": {
+      "used": 4779,
+      "limit": 8640
+    },
+    "core/schemas": {
+      "used": 26371,
+      "limit": 26899
+    },
+    "core/verdict": {
+      "used": 12549,
+      "limit": 17280
+    },
+    "pipeline + verbs + decisions": {
+      "used": 247214,
+      "limit": 247219
+    }
+  },
+  "review": {
+    "independentReview": "No actionable runtime/test regression in original repair batch or final literal-true reset delta.",
+    "redControls": [
+      "Vitest passed assertion with failureMessages",
+      "Empty/workspace-directory/NUL report path",
+      "Invalid-scope configuration reset deletes protected-path override",
+      "Git tree accepted as frozen campaign protocol",
+      "Truthy nonboolean reset marker deletes project override"
+    ],
+    "scope": "Existing contracts only; no schema activation, owner decision, native observation, campaign qualification, commit or push."
+  },
+  "privacy": {
+    "scope": "All tracked additions and nonignored untracked files; final scan recorded in plan",
+    "findings": 0
+  },
+  "limits": [
+    "Local validation only; hosted CI unobserved on this source.",
+    "Current source passes fixed gates; oversized incomplete scratch target is not installed.",
+    "Protocol blob type is checked; Git regular-file mode and campaign truth are not certified.",
+    "No accepted ledger records; 181 Musts remain unqualified, 19 Should dispositions open.",
+    "No host/model calls, paid usage, human study or release performed."
+  ],
+  "earlierCheckpoint": {
+    "date": "2026-11-01",
+    "baseCommit": "35216fa63ea15ec8df807f6a384873d09d6c2ccd",
+    "branch": "main",
+    "state": "uncommitted reviewed corrections",
+    "environment": {
+      "node": "v26.3.0",
+      "platform": "darwin",
+      "architecture": "arm64",
+      "osRelease": "27.0.0",
+      "git": "git version 2.56.0"
+    },
+    "sourceFiles": {
+      "packages/kernel/src/adapters/node-ts.ts": "7fde69c5de47d59248ae399541dfb080861a4a175dcc40afaa0b53c494c4361e",
+      "packages/kernel/src/decisions/simple.ts": "6bf3786c7a96f913f0c9c9616143a5533e239b536aacc5770dab4fce5254bdc7",
+      "tools/coverage.ts": "40b75bceca4275053c35eeb349217d0774880ceeb0b22927e5705d2734b1ab8f",
+      "packages/kernel/test/receipts.test.ts": "62ccf8f1c616e0b0b0edb38eb3b92a569c67458f8c9f36d0683e7c728b7f36a1",
+      "packages/kernel/test/settings.test.ts": "2f6578255580d898171a080a8e7552baab10cb9c7106427e63ae3f8ad51633e9",
+      "packages/kernel/test/coverage.test.ts": "b545682a4d57137f5e9396aeebaac78be4062b3dbf7d648cea199db1032daa3d"
+    },
+    "bundle": {
+      "path": "plugin/kernel/tenet.mjs",
+      "bytes": 782732,
+      "sha256": "e7e7b6f2ca92485275830ddf5448b50a7ccb7c57068106aba06f0a25d6544eb4"
+    },
+    "ci": {
+      "command": "npm run ci",
+      "exit": 0,
+      "tests": 1313,
+      "suites": 207,
+      "passed": 1313,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "transcriptSha256": "9f928e2983b953ebbabdbd5f293799a4b442555b14e75191b1f94185458818df"
+    },
+    "focusedMinimum": {
+      "runtime": "v22.12.0",
+      "tests": 80,
+      "passed": 80,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "note": "Source tests require NODE_OPTIONS=--experimental-strip-types inherited by child source CLI. Initial noninherited flag invocation passed 79/80; its sole failure was unknown .ts extension in a child. No source assertion or implementation was changed to obtain the corrected pass.",
+      "transcriptSha256": "f173570fe96b63acb7d286486c94cb66f136aed5a5b994ed680344fea1a2e33b"
+    },
+    "uat": {
+      "current": {
+        "runtime": "v26.3.0",
+        "exit": 0,
+        "command": "npm run uat"
+      },
+      "minimum": {
+        "runtime": "v22.12.0",
+        "exit": 0,
+        "observations": 152,
+        "bundle": {
+          "bytes": 782732,
+          "sha256": "e7e7b6f2ca92485275830ddf5448b50a7ccb7c57068106aba06f0a25d6544eb4"
+        }
+      },
+      "scope": "This checkpoint predates the literal-true reset-marker follow-up; final source validation will be recorded separately."
+    },
+    "qualityOwners": {
+      "adapters/git-cli": {
+        "used": 37801,
+        "limit": 37843
+      },
+      "adapters/node-ts": {
+        "used": 20033,
+        "limit": 20160
+      },
+      "adapters/runner": {
+        "used": 9928,
+        "limit": 20160
+      },
+      "adapters/store-fs": {
+        "used": 25706,
+        "limit": 25920
+      },
+      "core/budget": {
+        "used": 8806,
+        "limit": 8870
+      },
+      "core/review": {
+        "used": 16981,
+        "limit": 20160
+      },
+      "core/risk": {
+        "used": 4779,
+        "limit": 8640
+      },
+      "core/schemas": {
+        "used": 26371,
+        "limit": 26899
+      },
+      "core/verdict": {
+        "used": 12549,
+        "limit": 17280
+      },
+      "pipeline + verbs + decisions": {
+        "used": 247208,
+        "limit": 247219
+      }
+    },
+    "review": {
+      "independentReview": "No actionable runtime/test regression; config reset documentation omission corrected.",
+      "redControls": [
+        "Vitest passed assertion with failureMessages",
+        "Empty/workspace-directory/NUL report path",
+        "Invalid-scope configuration reset deletes protected-path override",
+        "Git tree accepted as frozen campaign protocol"
+      ],
+      "scope": "Existing contracts only; no schema activation, owner decision, native observation, campaign qualification, commit or push."
+    },
+    "limits": [
+      "Local validation only; hosted CI unobserved on this source.",
+      "Current source passes fixed gates; oversized incomplete scratch target is not installed.",
+      "Protocol blob type is checked; Git regular-file mode and campaign truth are not certified.",
+      "No accepted ledger records; 181 Musts remain unqualified, 19 Should dispositions open.",
+      "No host/model calls, paid usage, human study or release performed."
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "archive": [
+    {
+      "endpoint": "checked-local"
+    }
+  ],
+  "work": {},
+  "project": {
+    "intent": {
+      "plan": [
+        {
+          "id": "P1",
+          "outcome": "Build catalog movements and report",
+          "elementIds": [],
+          "dependsOn": [],
+          "check": "node --test check.mjs",
+          "state": "done"
+        }
+      ]
+    }
+  }
+}

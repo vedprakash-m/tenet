@@ -54,6 +54,32 @@ describe("decide config [CFG-06, CFG-07]", () => {
     assert.equal(state(p).config.revision, 0);
   });
 
+  it("validates reset scopes before removing a project override [CFG-06, CFG-07]", async () => {
+    const p = fresh();
+    const h = (await open(p)).handle!;
+    await p.call("decide", { h, kind: "config", target: "protected_paths", propose: { value: ["db/**"] } });
+    const before = state(p).config;
+    for (const [target, scope] of [["protected_paths", "global"], ["protected_paths", "task"], ["shared_memory", "project"]]) {
+      const response = await p.call("decide", { h, kind: "config", target, propose: { reset: true, scope } });
+      assert.equal(response.exit, 2, JSON.stringify(response));
+      assert.equal(response.reasons[0]!.code, "restriction-key-unknown");
+      assert.deepEqual(state(p).config, before);
+    }
+  });
+
+  it("does not interpret truthy nonboolean reset markers as permission to remove an override [CFG-06, CFG-07]", async () => {
+    const p = fresh();
+    const h = (await open(p)).handle!;
+    await p.call("decide", { h, kind: "config", target: "protected_paths", propose: { value: ["db/**"] } });
+    const before = state(p).config;
+    for (const reset of ["false", "true", 1, {}, []]) {
+      const response = await p.call("decide", { h, kind: "config", target: "protected_paths", propose: { reset } });
+      assert.equal(response.exit, 2, JSON.stringify(response));
+      assert.equal(response.reasons[0]!.code, "restriction-key-unknown");
+      assert.deepEqual(state(p).config, before);
+    }
+  });
+
   it("keeps a restriction a person set: a protected path from the project settings applies to the next contract", async () => {
     const p = fresh();
     const h = (await open(p)).handle!;

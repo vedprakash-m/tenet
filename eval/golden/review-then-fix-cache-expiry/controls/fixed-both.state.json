@@ -1,0 +1,47 @@
+{
+  "archive": [
+    {
+      "endpoint": "checked-local"
+    }
+  ],
+  "project": {
+    "intent": {
+      "plan": []
+    }
+  },
+  "work": {
+    "W-1": {
+      "state": "finished",
+      "findings": [
+        {
+          "id": "F-1",
+          "n": 1,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/cache.mjs",
+            "line": 3
+          },
+          "claim": "Cache expiry equality returns stale values at the exclusive boundary.",
+          "evidence": "Cache expiry equality returns stale values at the exclusive boundary.",
+          "state": "fixed",
+          "history": []
+        },
+        {
+          "id": "F-2",
+          "n": 2,
+          "severity": "major",
+          "axis": "behavior",
+          "location": {
+            "path": "src/key.mjs",
+            "line": 2
+          },
+          "claim": "Concatenation collides for tenant/item pairs (ab,c) and (a,bc).",
+          "evidence": "Concatenation collides for tenant/item pairs (ab,c) and (a,bc).",
+          "state": "fixed",
+          "history": []
+        }
+      ]
+    }
+  }
+}

@@ -289,6 +289,18 @@ test("a qualified disposition requires a passing manifest bound to the frozen pr
       campaignRef.sha256 = createHash("sha256").update(text).digest("hex");
       write(root, "docs/audits/evidence-ledger.json", JSON.stringify(ledger));
     };
+    await context.test("qualification rejects a directory in place of the frozen protocol file", () => {
+      manifest.protocolPath = "docs/audits/protocols";
+      writeCampaign();
+
+      const rejected = report(root, "M0");
+
+      assert.ok(rejected.integrityErrors.some((error) => error.includes("protocol file")));
+      assert.equal(rejected.evidence[0]?.qualification, "not-qualified");
+      assert.deepEqual(releaseAudit(root, "R1").blockedRequirements, ["TST-01"]);
+      manifest.protocolPath = protocolPath;
+      writeCampaign();
+    });
     for (const outcome of ["fail", "partial", "inconclusive"]) {
       await context.test(`qualification rejects sole ${outcome} evidence despite a valid manifest hash`, () => {
         manifest.outcomes[0]!.evidenceRefs = [{ ...resultRef, outcome }];

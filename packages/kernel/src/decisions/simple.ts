@@ -178,11 +178,12 @@ export const config: Decision = {
     if (!isSettingKey(key)) throw new KernelError("restriction-key-unknown", `"${key}" is not a setting; known: ${Object.keys(CATALOG).join(", ")}`, { exit: 2 });
     const body = (input.propose ?? {}) as { value?: unknown; scope?: Scope; reset?: boolean };
     const scope: Scope = body.scope ?? CATALOG[key].scopes[0] ?? "project";
-    const v = body.reset ? { ok: true as const, value: undefined } : validateSetting(key, body.value, scope);
+    const v = validateSetting(key, body.reset === true ? CATALOG[key].default : body.value, scope);
     if (!v.ok) throw new KernelError("restriction-key-unknown", v.message, { exit: 2 });
+    if (body.reset === true) v.value = undefined;
     const held = scope === "task" ? work.settings ?? {} : state.config.local;
     const { [key]: had, ...rest } = held;
-    const hasConfigured = (key === "commands" || key === "required_checks") && v.value && Object.keys(v.value as object).length;
+    const hasConfigured = (key === "commands" || key === "required_checks") && v.value && Object.keys(v.value).length;
     const data = {
       setting: key,
       scope,
