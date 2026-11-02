@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-02 — Narrow starter auth-freshness busy waits (local candidate)
+
+- Run [41387472377](https://github.com/vedprakash-m/tenet/actions/runs/41387472377) passes Ubuntu CI/built UAT and Windows portability but macOS stops at the starter scaffold check: `OB-suite` is qualified flaky despite 105/105 passing on its final attempt. The earlier failed assertion is not present in the retained receipt. The golden task stops before writing the loan-desk fixture, so the fixture-only change from the prior entry is not exercised by this run; run [41384392664](https://github.com/vedprakash-m/tenet/actions/runs/41384392664) had reached it and recorded two 503 authority-recheck failures.
+- In the starter's real-busy auth-freshness test only, set the service connection's SQLite busy timeout to 1 ms before the held-writer request. This retains the real SQLite lock and application retry while avoiding the connection driver's 250 ms wait; production behavior and assertions are unchanged.
+- In a scratch starter, all 12 auth-freshness cases pass in five consecutive runs (60/60); template typecheck passes. The root integration cannot run on this Windows host because mutating work is intentionally refused. This candidate remains local pending separate publication approval; no cause or hosted fix is claimed.
+- Files: `plugin/skills/tenet-starter-ts-web-api/template/server/test/auth-freshness.test.ts`, `specs/plan.md`.
+
 ## 2026-11-02 — Isolate QLT-12 retry timing in the golden fixture
 
 - Exact-source hosted run [41384392664](https://github.com/vedprakash-m/tenet/actions/runs/41384392664) passes Ubuntu CI/built UAT and Windows portability but still fails macOS: two final-attempt held-writer authority-recheck cases return 503 instead of 401/403. The earlier reduction to two outer test files did not eliminate the failure.
