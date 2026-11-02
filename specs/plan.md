@@ -44,6 +44,8 @@ PRD owns meaning. Tech Spec owns mechanism. UX Spec owns wording. This plan owns
 
 ## 1. Dashboard (update this first on every session)
 
+**Published; macOS CI remains blocked (2026-11-02 UTC) — ◐ main:** the repository owner switched to the writable GitHub account and the approved commits `a0fbcaf` and `9c6bec8` were pushed to `origin/main`. Exact-source run [41375501764](https://github.com/vedprakash-m/tenet/actions/runs/41375501764) and its owner-approved same-source macOS diagnostic rerun both pass Ubuntu CI/built UAT and Windows portability; macOS `npm run ci` fails both times. In each macOS attempt the loan-desk `auth-freshness` contention test fails twice then passes on retry, correctly classifying `OB-suite` as `evidence-flaky`; the starter test then receives `implement` rather than its expected `focused-review`. On Windows, the isolated auth-freshness file passes five consecutive runs and all 12 cases pass within the full 105-test starter suite; that suite as a whole is not a Windows gate because POSIX-only cleanup and kill expectations fail there. This suggests, but does not prove, macOS runner load sensitivity. The owner authorized reducing outer test-file concurrency from 4 to 2; focused report-path tests, typecheck, lints, coverage, build, payload and reproducibility pass locally. Exact-source hosted CI with the adjustment is pending; all assertions and flaky-evidence semantics remain unchanged.
+
 **Owner capacity direction (2026-11-02 UTC) — ◐ authorized investigation:** the owner selected **“Approve a complete sizing candidate and one independent review (Recommended)”**. This authorizes an isolated, non-shipping candidate covering coupled configuration, launch/accounting, migration and trait consumers; candidate-only measurements may exceed current limits. Return with complete measurements, omissions, simplifications and proposed exact production limits for a separate decision. Existing main-runtime limits remain unchanged. No schema activation, production implementation sign-off, commit/push, host campaign or release follows. Execution environment is the next separate decision.
 
 **Owner execution-route selection (2026-11-02 UTC):** the owner selected **“Use GitHub CI; bring commit/push approval separately”**, rather than local WSL setup or another machine. This selects GitHub-hosted development validation only; it does not yet authorize publication, a new branch, prototype activation, native/model/human campaigns or a release. Exact commit/push scope is the next decision.
@@ -1497,6 +1499,26 @@ An independent read-only review of the configuration/migration/capacity proposal
 - [ ] Complete separately authorized native/protected/reserved/human campaigns, all 181 Must qualifications, 19 Should dispositions and release approvals. No release or full-plan completion is claimed.
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
+
+### 2026-11-02 UTC (concurrency-two experiment implemented; hosted validation pending)
+
+Set the root `npm test` command to `--test-concurrency=2`; no test, product behavior, retry deadline, receipt, or evidence rule changed. Local Node24.22.1 focused report-path tests pass **14/14**; typecheck, all lints, M0 coverage, build, complete 94-file payload verification and same-toolchain reproducibility pass. The local bundle is **766 KB**, under the 800 KB cap. The exact-source hosted run is still required to evaluate the macOS flake; this is not a full CI pass.
+
+### 2026-11-02 UTC (owner-account publication; same-source macOS failure repeats)
+
+The owner switched to the repository-owner GitHub account after the initial `vemishra_microsoft` HTTP 403; the already-approved commits `a0fbcaf` and `9c6bec8` then pushed successfully to `origin/main`. Exact-source run [41375501764](https://github.com/vedprakash-m/tenet/actions/runs/41375501764) passed Ubuntu full CI and both built-UAT stages plus Windows portability, but macOS full CI failed. With owner approval, reran the failed macOS job unchanged; the run repeated the same failures, with Ubuntu and Windows passing again. Both macOS attempts show `golden-task-loan-desk.test.ts:41` receiving `evidence-flaky` because the real busy-transaction `auth-freshness` test failed twice before passing on retry. `starter.test.ts:47` then sees `implement` instead of `focused-review`; this is consistent with the flaky suite receipt, but the precise underlying test failure is not exposed by the receipt history. No assertion, retry policy or evidence gate was weakened, and no source fix is inferred yet. Full supported CI remains unpassed; source-level diagnosis and any starter/test change need a separate owner decision.
+
+### 2026-11-02 UTC (local QLT-12 diagnosis; macOS cause remains unproven)
+
+The starter's `auth-freshness.test.ts` passes all 12 tests in five consecutive targeted Windows runs; all 12 also pass in the full 105-test starter suite. The full suite itself is not a Windows validation gate: 13 unrelated cases fail on Windows-only `EPERM` cleanup and expected `SIGKILL` semantics. The isolated test has no custom Vitest timeout, and the outer kernel suite runs four test files concurrently while nested starter Vitest uses its default worker pool. The two macOS CI attempts fail different auth modes (`sign-in` then `password`) before eventual pass, consistent with load sensitivity but not proof of cause. The CI receipt history omits assertion diagnostics. No product or test source was changed; a concurrency adjustment would preserve assertions and flaky handling but trade CI speed for lower parallel load.
+
+### 2026-11-02 UTC (owner approves lower outer test concurrency for diagnosis)
+
+The owner approved changing the root Node test-file concurrency from four to two and committing/pushing that single test-runner change for hosted validation. This is a bounded diagnostic experiment motivated by, but does not assume, macOS runner load sensitivity. All test assertions, app retry deadlines, Tenet flaky classification and other gates must remain unchanged; exact-source CI and any runtime tradeoff will be recorded before judging whether it helped.
+
+### 2026-11-02 UTC (approved commits retained; push denied by GitHub)
+
+Committed code/tests/workflow as `a0fbcaf`, then related documentation/evidence/decision records as `9c6bec8`, each after passing staged privacy and whitespace checks. The `@{u}..HEAD` added-line privacy scan also passed. `git push origin main` failed HTTP 403 with repository access denied to `vemishra_microsoft`; CLI authentication confirms that account is active through the supplied `GH_TOKEN`, without exposing its value. Both commits remain on local `main`, two ahead of fetched upstream; there is no new-source hosted CI result. Account/access correction is a separate owner decision. No credential, account, permission, remote or branch was changed to bypass the denial.
 
 ### 2026-11-02 UTC (owner approves publishing existing bounded repairs to main)
 

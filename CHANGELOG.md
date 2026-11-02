@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-02 — Reduce nested CI test contention
+
+- After two exact-source macOS runs classified the starter's real SQLite contention suite as flaky, reduce the outer Node test-file concurrency from four to two. This is a bounded diagnostic to reduce overlapping integration workloads; it does not change test assertions, app retry deadlines, or flaky-evidence handling.
+- Local Node 24.22.1 validation passes the focused 14-test report-path suite, typecheck, all lints, M0 coverage, build, payload verification and same-toolchain reproducibility (94 payload files, 766 KB bundle). Exact-source hosted CI at concurrency two is pending; no full CI pass is claimed.
+- Files: `package.json`, `specs/plan.md`, `CHANGELOG.md`.
+
 ## 2026-11-02 — Repair report identities, offline projections and build-input integrity
 
 - Canonicalize Vitest, Playwright, ESLint and TypeScript report identities, reject directory/parent/cross-drive identities, and accept real CRLF compiler populations. Advance to `node-ts@20`; older normalization evidence stays stale.
