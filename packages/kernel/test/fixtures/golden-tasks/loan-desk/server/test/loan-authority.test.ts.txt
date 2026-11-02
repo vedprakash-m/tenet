@@ -25,6 +25,8 @@ it.each([
     const { session } = createSession(db, "admin", "synthetic signing material", now);
     const actor = { session, user: findUserById(db, "admin")! };
     const before = db.prepare("SELECT * FROM loans ORDER BY id").all();
+    // Keep the driver's own wait short so this tests writeTx's real retry, not SQLite's 250 ms busy timeout.
+    db.pragma("busy_timeout = 1");
     writer.exec("BEGIN IMMEDIATE");
     // Service execution reaches a real SQLITE_BUSY and yields; no timer or mocked transaction establishes the race.
     const pending = operation === "reserve"
