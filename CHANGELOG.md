@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-11-02 — Defer host re-signal until stream state settles (local candidate)
+
+- Run [41390356159](https://github.com/vedprakash-m/tenet/actions/runs/41390356159) passes Ubuntu full CI/built UAT and Windows portability; macOS passes the SQLite contention journeys and fails only the host CLI timeout test with `kill EPERM` from a post-exit process-group re-signal.
+- After a stopped/timed-out leader exits, wait 10 ms and re-signal only while stdout or stderr remains open; cancel the pending signal on child `close`. This retains cleanup for descendants holding the pipes without signaling a group whose streams already closed. Signal errors remain visible; assertions and production SQLite behavior do not change.
+- Typecheck, lints, M0 coverage and whitespace checks pass. POSIX process tests cannot run on the Windows host (extensionless shell fixtures); WSL has no distribution installed. This change is uncommitted pending owner approval to publish for exact-source CI.
+- Files: `tools/host/copilot-cli.ts`, `specs/plan.md`.
+
+## 2026-11-02 — Record SQLite retry improvements and remaining macOS signal failure
+
+- Exact-source run [41390356159](https://github.com/vedprakash-m/tenet/actions/runs/41390356159) passes Ubuntu full CI/built UAT and Windows portability. On macOS, the auth-freshness suite and complete loan-desk golden task pass; the full run reports 1,405/1,406 tests.
+- The only failure is `host-cli.test.ts:28`: `kill EPERM` from `process.kill(-child.pid, "SIGKILL")` in the exit-handler re-signal at `tools/host/copilot-cli.ts:137`. That second signal exists to catch descendants racing the first group signal. Do not mask the error or relax timeout/signal assertions; the process-group fix remains undecided pending owner direction.
+- The SQLite busy-timeout changes are test-only, retain real locks and assertions, and leave the production retry deadline unchanged. This CI run shows both affected journeys passing, without proving root cause or future stability.
+- Files: process-cleanup investigation in `tools/host/copilot-cli.ts` and `packages/kernel/test/host-cli.test.ts`; `specs/plan.md`.
+
 ## 2026-11-02 — Narrow starter auth-freshness busy waits (local candidate)
 
 - Run [41387472377](https://github.com/vedprakash-m/tenet/actions/runs/41387472377) passes Ubuntu CI/built UAT and Windows portability but macOS stops at the starter scaffold check: `OB-suite` is qualified flaky despite 105/105 passing on its final attempt. The earlier failed assertion is not present in the retained receipt. The golden task stops before writing the loan-desk fixture, so the fixture-only change from the prior entry is not exercised by this run; run [41384392664](https://github.com/vedprakash-m/tenet/actions/runs/41384392664) had reached it and recorded two 503 authority-recheck failures.
