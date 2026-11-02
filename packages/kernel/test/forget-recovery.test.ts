@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { chmodSync, closeSync, existsSync, ftruncateSync, openSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { cleanup, tmp } from "./helpers.ts";
+import { captureLegacy, cleanup, tmp } from "./helpers.ts";
 import { project, type Project } from "./support/fixture.ts";
 import { workByHandle } from "../src/pipeline-render.ts";
 import { procStart } from "../src/adapters/proc.ts";
@@ -84,6 +84,7 @@ describe("crash-safe lesson forgetting [CON-10]", () => {
   it("FG-3 finishes after primary damage falls back to the lesson-bearing backup", { timeout: 20_000 }, async () => {
     const { p, h, base, input } = await seed();
     await crash(p, input, "after-first");
+    captureLegacy(p.root, "backup-recovery-before-primary-corruption");
     assert.ok(JSON.parse(readFileSync(join(p.root, ".tenet/state.prev"), "utf8")).lessons.some((l: any) => l.id === input.target));
     writeFileSync(join(p.root, ".tenet/state"), "{ damaged");
     assert.equal(p.ports().store.read()!.recovered, true);

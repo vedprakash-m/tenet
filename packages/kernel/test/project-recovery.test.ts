@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { createPorts } from "../src/wire.ts";
 import { recover } from "../src/verbs/recover.ts";
-import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
+import { captureLegacy, cleanup, git, initRepo, tmp, write } from "./helpers.ts";
 import { BASIS, callWith, fakeRecipes, project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -79,6 +79,7 @@ describe("unreadable project effect recovery [CON-03, SEC-06, SEC-14]", () => {
     await p.call("decide", { h, kind: "basis", propose: BASIS });
     await p.call("decide", { h, kind: "adopt", target: "intent" });
     await killAt("crash-adopt", p.root, { h, kind: "adopt", target: "intent", answers: { "adopt-confirm": "confirm" } }, "after-intent");
+    captureLegacy(p.root, "interrupted-adoption-before-recovery");
     const outside = tmp(); roots.push(outside); write(outside, "private", "UNTRUSTED_RECOVERY_CANARY");
     if (kind === "linked") symlinkSync(join(outside, "private"), join(p.root, "INTENT.md"));
     else p.write("tenet.policy.json", JSON.stringify({ exclusions: [{ pattern: "INTENT.md", kinds: ["no-read"] }] }));
