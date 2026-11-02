@@ -123,6 +123,8 @@ it.each(["sign-in", "password"])("rechecks %s authority after a real busy transa
   const original = createSession(c.db, "u1", c.config.cookieSecret, 1000);
   const replacement = await hashPassword("a concurrent replacement password");
   let contended = false;
+  // Keep the driver's own wait out of the application's one-second retry budget.
+  c.db.pragma("busy_timeout = 1");
   c.app.addHook("preHandler", async req => {
     if (req.url === `/api/auth/${mode}`) c.writer.exec("BEGIN IMMEDIATE");
   });
