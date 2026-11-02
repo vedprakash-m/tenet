@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-02 — Isolate QLT-12 retry timing in the golden fixture
+
+- Exact-source hosted run [41384392664](https://github.com/vedprakash-m/tenet/actions/runs/41384392664) passes Ubuntu CI/built UAT and Windows portability but still fails macOS: two final-attempt held-writer authority-recheck cases return 503 instead of 401/403. The earlier reduction to two outer test files did not eliminate the failure.
+- In the loan-authority fixture only, shorten the service connection's SQLite busy timeout to 1 ms before holding a real writer lock. This lets the test exercise `writeTx`'s application retry without spending its one-second deadline in repeated 250 ms driver waits; production settings, real-lock setup, authority assertions and evidence rules are unchanged.
+- In a scratch scaffold, all five authority cases pass in five consecutive runs (25/25). The root golden integration is not runnable on this Windows host because the kernel rejects mutating work by design. The owner approved committing the fixture test, then its plan/changelog record, and pushing for exact-source GitHub CI. That validation is pending; no macOS fix is claimed.
+- Files: `packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/loan-authority.test.ts.txt`, `specs/plan.md`.
+
 ## 2026-11-02 — Reduce nested CI test contention
 
 - After two exact-source macOS runs classified the starter's real SQLite contention suite as flaky, reduce the outer Node test-file concurrency from four to two. This is a bounded diagnostic to reduce overlapping integration workloads; it does not change test assertions, app retry deadlines, or flaky-evidence handling.
