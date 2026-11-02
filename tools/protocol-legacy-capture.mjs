@@ -91,6 +91,7 @@ console.log(`TENET_CAPTURE_META ${JSON.stringify({
   hasCachedResponses: hasCache,
   hasBackupRecovery,
   hasInterruptedRecord,
+  archiveSha256: createHash("sha256").update(compressed).digest("hex"),
   archiveBytes: compressed.length,
 })}`);
 const encoded = compressed.toString("base64");
