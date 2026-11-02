@@ -35,7 +35,7 @@ jobs:
           node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium
       - run: npm run ci
       - name: Capture actual schema-1 lifecycle records (one-shot)
-        if: matrix.os == 'ubuntu-latest' && github.event_name == 'push' && contains(github.event.head_commit.message, '[protocol-capture]')
+        if: always() && matrix.os == 'ubuntu-latest' && github.event_name == 'push' && contains(github.event.head_commit.message, '[protocol-capture]')
         run: |
           capture="$RUNNER_TEMP/tenet-legacy-capture"
           mkdir -p "$capture"
@@ -43,6 +43,7 @@ jobs:
             TENET_LEGACY_CAPTURE_DIR="$capture" node --test --test-name-pattern="$2" "$1"
           }
           run_capture packages/kernel/test/branch-admission.test.ts "allows branch creation when only a commit hook exists"
+          run_capture packages/kernel/test/workflows.test.ts "leaves the index untouched.*syncs in one step"
           run_capture packages/kernel/test/scaffold.test.ts "writes the template with the project name"
           run_capture packages/kernel/test/dependency.test.ts "resolves without installing, previews what changes"
           run_capture packages/kernel/test/adopt.test.ts "previews first, writes nothing until the user answers"

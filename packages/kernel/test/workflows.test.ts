@@ -4,7 +4,7 @@ import { chmodSync, existsSync, readFileSync, rmSync, symlinkSync } from "node:f
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { cleanup, git, tmp, write } from "./helpers.ts";
+import { captureLegacy, cleanup, git, tmp, write } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, callWithEnvelopeConsent, project, reviewResult, finishFixture, focusFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
@@ -343,6 +343,7 @@ describe("a Git process killed while holding the index lock [GIT-03]", () => {
     rmSync(join(p.root, ".git/index.lock"));
     const ok = await p.call("decide", { h, kind: "sync-index", again: true });
     assert.equal(ok.exit, 0, JSON.stringify(ok));
+    captureLegacy(p.root, "index-sync");
     assert.equal(p.git("status", "--porcelain"), "", "index and tree now agree with HEAD");
   });
 });
