@@ -19,7 +19,7 @@
     "openapi": "node --experimental-strip-types server/src/openapi.ts"
   },
   "dependencies": {
-    "@fastify/cookie": "11.1.3",
+    "@fastify/cookie": "11.1.5",
     "@fastify/helmet": "13.2.0",
     "@fastify/rate-limit": "11.2.1",
     "@fastify/swagger": "9.9.2",
