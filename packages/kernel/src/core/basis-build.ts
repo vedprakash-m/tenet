@@ -3,7 +3,7 @@
 import type { z } from "zod";
 import { KernelError } from "./errors.ts";
 import { allowed } from "./exclusions.ts";
-import { elementId, highestSeq, KIND_PREFIX } from "./ids.ts";
+import { elementId, hashOf, highestSeq, KIND_PREFIX } from "./ids.ts";
 import { linkElement } from "./obligations.ts";
 import type { BasisProposal } from "./schemas.ts";
 import type { BasisElement, State, WorkContract } from "./schemas.ts";
@@ -36,6 +36,10 @@ function shaped(e: Proposed, id: string, parent: string | undefined): BasisEleme
   }
   return el;
 }
+
+/** The basis hash: what the contract was asked for and the elements it is bound to, not how each was later verified. */
+export const basisHashOf = (outcome: string, design: string | undefined, elements: readonly BasisElement[]): string =>
+  hashOf({ outcome, design: design ?? null, elements: elements.map(({ verifiedBy: _v, ...rest }) => rest) });
 
 export function build(
   proposal: z.infer<typeof BasisProposal>,
