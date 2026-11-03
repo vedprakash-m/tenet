@@ -20,6 +20,8 @@ Baseline: local `main` at `8b7bbc4190fc76599b51e1fcfe50f23947a2963c` plus preser
 
 Use the existing `measure`/`budgetChars` exports in `tools/lint-quality.ts:17-34,73-99`. Counts include comments and remove whitespace exactly as that gate does. Existing paths remain in their current matched owners. No cap/baseline is rewritten.
 
+**Current source resnapshot (November 2, 2026):** the candidate baseline is local `main` commit `84730f97689b01841fd85a32276f568cb855affe`, tree `672beef0789724dcbf0a408c2c5c736eef9d9e5f`. The complete owner table and exact bundle/toolchain identities are recorded in [protocol-prototype.md](protocol-prototype.md). In particular, current store, Git, budget and central headroom differs from this October 29 proposal baseline. The table below remains historical sizing evidence for its cited source; use the November 2 snapshot and rerun `measure` before any present-day fit or excess conclusion.
+
 | Existing owner | Measured used | Ceiling | Free |
 |---|---:|---:|---:|
 | core/schemas | 26,863 | 26,899 | 36 |
@@ -86,7 +88,7 @@ Measured scale anchors: `core/budget.ts:108` checkpoint **706** characters and `
 | S1 schemas | Strict stamps, structured Work/Job/Launch/Effect keys, safe counters and exhaustion validation | 1,200-2,000 |
 | S2 schemas | Exact launch union, job settlement/association representation, complete recovery and versioned checkpoint | 1,600-2,600 |
 | S3 schemas | Transition/reference inventory, ordered phases, deletion metadata and strict five-key terminal | 1,800-3,000 |
-| S4 schemas | Raw version/source decoding before stripping; nine effect variants, cached-response producer classification/refusal and finite upcast | 2,500-4,000 |
+| S4 schemas | Raw version/source decoding before stripping; finite effect variants, cached-response producer classification/refusal and finite upcast | 2,500-4,000 |
 | C1 central | Single/batch proposal validation, scope/reset rules, D2 confirmation, D6 subset, interpreted readback | 3,000-5,000 |
 | C2 central | All-work refresh, shared reconciliation, read-only view, pre-cache/config-specific identity and publication | 1,800-3,000 |
 | C3 central | Job allocation, each ordinal, bounded acknowledgment, ledger settlement before result discard | 2,200-3,600 |
@@ -169,7 +171,7 @@ These are **planned checks**, except the explicitly labeled in-memory sizing pro
 | Atomic configuration and A-B-A | Same all-work transition publishes with config, stale cache never returned as current; equivalent presentation/reorder does not allocate a serial. `config.test.ts`, `settings.test.ts`, `required-composition.test.ts`, `adopt.test.ts` |
 | Typed launch/ownership and a hole | Real child, missing executable, lost acknowledgment, uncertain first/known second, cancellation and two restarts preserve honest counts and stop every admitted group. `runner-ownership.test.ts`, `execution-envelope.test.ts`, `project-recovery.test.ts`, `evidence-flaky.test.ts` |
 | Full proof consumer closure | Missing/stale stamps block red/receipt/review parent/Deep/effect proof, while landed Git facts and actual usage survive. `verdict.test.ts`, `review-admission.test.ts`, `focused-review.test.ts`, `analyst.test.ts`, `deep.test.ts`, `index-recovery.test.ts` |
-| Migration/rollback/privacy | Real generated schema-1 fixture, exact raw bytes/presence, nine effect forms, strict refusals, every real kill prefix, pristine rollback, forgetting and retained recovery snapshot compose. Planned `schema-migration.test.ts`; existing store/boundary/accounting/forgetting/recovery suites |
+| Migration/rollback/privacy | Real generated schema-1 fixture, exact raw bytes/presence, every current effect form, strict refusals, every real kill prefix, pristine rollback, forgetting and retained recovery snapshot compose. Planned `schema-migration.test.ts`; existing store/boundary/accounting/forgetting/recovery suites |
 | Actual source exceeds a signed envelope or a safety test fails | Stop before activation and return measured alternatives; never widen a cap/baseline, omit a consumer, or remove a falsifier |
 
 Named existing test homes were checked for existence; the table is ownership guidance, not a claim that every target assertion exists.

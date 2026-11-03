@@ -1,10 +1,40 @@
 # Changelog
 
-## 2026-11-03 — Defer version-probe process-group cleanup (CI pending)
+## 2026-11-03 — Pin line endings to LF
+
+- Add `.gitattributes` (`* text=auto eol=lf`, common binary types) so Windows checkouts no longer carry CRLF that breaks tests reading repository files. Both QLT-16 tests pass after conversion; the full suite needs supported POSIX CI because mutation is refused on `win32`.
+- Record the independent completion audit in `specs/plan.md` (dashboard summary, §12.3 row, §13 entry).
+- Files: `.gitattributes`, `specs/plan.md`, `CHANGELOG.md`.
+
+## 2026-11-03 — Verify source-generated schema-1 capture
+
+- Run [41547683311](https://github.com/vedprakash-m/tenet/actions/runs/41547683311) produced a complete capture: 123 hashed store files, all ten effect kinds, cached responses, backup recovery and interrupted intent. The archive SHA-256 is `2f3b7979afd871eb83a058b9200c65d44762f6554cfc41fc9ec190f5963c81e5`; producer source/runtime paths match frozen candidate `84730f9`. The dependency effect uses a simulated runner with the actual pipeline and journal.
+- Ubuntu full CI, capture, built UAT and Windows portability pass. The overall run is red because macOS full CI fails on a starter browser-focus assertion and a host CLI timeout `kill EPERM`; this failure is recorded separately from the successful capture.
+- Files: `specs/plan.md`, `specs/protocol-prototype.md`, `CHANGELOG.md`.
+
+## 2026-11-03 — Defer version-probe process-group cleanup
 
 - After the failed macOS job was rerun, it reproduced `kill EPERM` from the unconditional process-group signal on the version-probe child exit. Defer that signal for 10 ms and send it only while output streams remain open, consistent with the existing guarded cleanup path.
-- Typecheck and architecture/skills/quality lint pass locally. Publication is approved; the POSIX process test and hosted CI remain unverified.
+- Exact-source run [41558087675](https://github.com/vedprakash-m/tenet/actions/runs/41558087675) for `05d055f` passes Ubuntu/macOS full CI and built UAT plus Windows portability. The macOS version-probe timeout test passes; local typecheck and all lints also pass.
 - Files: `tools/host/copilot-cli.ts`, `specs/plan.md`, `CHANGELOG.md`.
+
+## 2026-11-02 — Add a one-shot POSIX legacy-record capture harness
+
+- Add a test-only CI path that captures actual schema-1 store records from real pipeline tests, hashes the captured files and requires all ten current journal effect kinds, cached response state, backup recovery and an interrupted effect. The dependency case is explicitly identified as using a simulated runner.
+- Exact-source run [41537883711](https://github.com/vedprakash-m/tenet/actions/runs/41537883711) passes full Ubuntu/macOS CI, built UAT on both supported Node versions, and Windows portability. Its capture step was skipped because the one-shot commit marker was missing. Marked run [41543195281](https://github.com/vedprakash-m/tenet/actions/runs/41543195281) passed all selected tests but packaging failed because `HEAD^` was absent from the shallow checkout. Commit `b22499e` resolves the source identity from the push base and fetches that single commit; the corrected run's verified result is recorded in the 2026-11-03 entry above.
+- Files: `.github/workflows/untrusted.yml`, `packages/kernel/test/helpers.ts`, related recovery/workflow tests, `tools/protocol-legacy-capture.mjs`, `specs/plan.md`, `specs/protocol-prototype.md`.
+
+## 2026-11-02 — Record protocol candidate capture blockers
+
+- The isolated frozen source and bundle pass baseline lint/build checks, but real schema-1 record capture is blocked because the kernel correctly refuses mutation on Windows and WSL has no installed distribution. Five controls confirm refusal only; no legacy producer records were generated.
+- Current source has ten journal effect kinds, including `hardening`, while `schema-migration.md` §18.1 listed nine and said eight SETTLE keys. The owner selected inclusion of the exact hardening op/result variant; the proposed strict decoder row is documented, with integrated independent review and real producer fixtures still required.
+- Files: `specs/plan.md`, `specs/protocol-prototype.md`, `specs/protocol-capacity.md`, `specs/fixed-budget-simplification.md`, `CHANGELOG.md`.
+
+## 2026-11-02 — Add proposed hardening effect to migration inventory
+
+- Add the owner-selected hardening journal variant to the inactive finite schema-2 decoder proposal, including its exact source op/result shape and external-file/no-store-edge classification.
+- The runtime remains unchanged; source-generated fixtures and integrated independent review remain prerequisites. Candidate record capture is still blocked on an authorized supported-POSIX execution route.
+- Files: `specs/schema-migration.md`, `specs/plan.md`, `specs/protocol-prototype.md`, `CHANGELOG.md`.
 
 ## 2026-11-02 — Validate process cleanup and SQLite retry test fixes
 
