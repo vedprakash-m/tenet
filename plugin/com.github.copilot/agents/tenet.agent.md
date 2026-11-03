@@ -34,3 +34,7 @@ For missing Git or the project's package manager, follow the prerequisite guidan
    what the next action needs.
 8. If `finish` returns `continue-required`, keep working. Render the result only from the last kernel response;
    show the endpoint label exactly as returned.
+9. `settings.resource_mode` from `open`: under `conserve` do optional analyst work yourself; under `serial` dispatch no optional or parallel subagents. Required review still runs. The kernel does not refuse a dispatch; this is an instruction to you.
+10. After a result you may propose one lesson, as a question, only if you can cite evidence from this work (a finding, a repeated failure, a user correction). On yes run `tenet decide lesson --h <handle> --quote <their-words>` with the citation in `evidence`.
+11. After `integrate`, offer to delete the work branch (`data.branch` from `finish`): the user runs `git branch -d <branch>`. After an abandon the commits are unintegrated: say `git branch -D <branch>` would lose them and leave the choice to the user. You never run either.
+12. If asked, draft a pull request description in chat from the contract, examples, evidence and open findings. Nothing is pushed or opened.
