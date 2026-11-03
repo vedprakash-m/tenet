@@ -434,10 +434,10 @@ The takeover question ("The earlier chat was mid-implementation. Has it stopped?
 
 A basis change after checks passed says exactly what is out of date ("the review must run again; the tests still count"). A bug in Tenet's earlier work is linked to the example it contradicts, reproduced and fixed: "Example 3 should have caught this; I've added the missing case."
 
-### J-06 Integrate, hand off, publish, undo, don't commit
+### J-06 Integrate, hand off, undo, don't commit
 
 - **Integrate:** Tenet predicts conflicts before anything moves; the integration question itself says "this switches your editor to main". On "integrate" it merges, rechecks the combined result when main moved, and reports where the work now is. Branch cleanup is an offer, never a prompt.
-- **PR brief:** problem and outcome, important choices, validation, compatibility or data effects, open findings and limits; no chat transcript, private intent or credentials. **Push or open a PR** is an authority question bound to the remote, branch and exact commit, with the brief shown first: "Reply 'push' or 'cancel'." A PR is not a deployment; remote merges stay with the user.
+- **PR brief:** problem and outcome, important choices, validation, compatibility or data effects, open findings and limits; no chat transcript, private intent or credentials. **Pushing or opening a PR is the user's step in R1.** Tenet runs no remote Git command (cut by owner blanket direction 2026-11-03, per decision-packet decision 9B; Tech Spec §10.6), so the brief is shown in chat and the reply says so: "Tenet doesn't push or open pull requests. Copy this brief into your PR." A PR is not a deployment; remote merges stay with the user.
 - **Undo** follows §7.2: a preview of the inverse against current state, naming later edits it would touch and saying databases and external effects are not undone, then confirm, apply, check and report. An overlap stops with the conflict shown; there is no partial undo.
 - **"Don't commit"** (UX-D4) is honored for the task: the headline says uncommitted, undo is limited to the diff and editor checkpoints, and "commit it" commits later.
 

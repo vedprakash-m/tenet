@@ -579,7 +579,7 @@ Exact schemas and paths belong to the Tech Spec (Section 11.4).
 - IDs are stable and never reused.
 - Every Tenet-managed acceptance test carries the requirement and example IDs it implements.
 - Every work contract lists the plan item, requirement, constraint and decision IDs it serves.
-- Checkpoint commits carry configurable `Tenet-Work` and `Tenet-Req` trailers (GIT-03).
+- Checkpoint commits carry `Tenet-Work` and `Tenet-Req` trailers; the names are fixed in R1 (GIT-03).
 - Traceability is computed from links; Tenet maintains no separate matrix file.
 - **Scope of coverage gaps.** A requirement with no linked acceptance test is a coverage gap. Existing tests without requirement links are preserved and reported as *unmapped*, not missing; Tenet never rewrites tests only to add IDs, and maps legacy behavior incrementally when a change touches it.
 
@@ -723,7 +723,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 | J-03 Change an existing project | Inspect conventions and working-tree state, reproduce, agree behavior, implement test-first, review | Behavior and regressions demonstrated under the verdict policy, or the result is explicitly incomplete |
 | J-04 Review only | Request critique; optionally fix selected findings | No files written during review; selected fixes need implementation authority |
 | J-05 Continue and correct | Reopen after interruption, reconcile human edits, report a bug, revise intent, ask what's next | Scope, plan and evidence recovered per Section 5.14; stale results and old approvals are not reused blindly |
-| J-06 Integrate and hand off | Integrate accepted work locally; ask for a PR brief; push or open the PR yourself or ask Tenet explicitly | Base branch contains the work; brief reflects contract, evidence and open findings |
+| J-06 Integrate and hand off | Integrate accepted work locally; ask for a PR brief; push or open the PR yourself (R1: Tenet runs no remote command) | Base branch contains the work; brief reflects contract, evidence and open findings |
 | J-07 Update or leave | Native update, disable or uninstall | Source and specs remain usable; no hidden service remains |
 
 ### 4.2 Functional requirements
@@ -776,7 +776,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 | WRK-05 | Tenet shall route feature, bug, review, investigation, refactor, prototype, plan and continuation requests through the main workflow without the user choosing a mode. | Must | A | AC-21 |
 | WRK-06 | When the user explicitly requests a prototype, Tenet shall label it unhardened, keep it within declared data limits, record its gaps in `docs/hardening.md` and never report it as checked. | Must | B | AC-05, AC-21 |
 | WRK-07 | When an unhardened prototype is promoted, Tenet shall inventory shortcuts, characterize working behavior, add distinguishing checks for missing safeguards and obtain independent review before a checked-local verdict. | Must | B | AC-05 |
-| WRK-08 | Tenet shall apply the per-contract limits of Section 4.4.2 at the boundaries their mechanism class allows, warn at 80%, and at the bound stop with a diagnosis and a specific extension proposal. | Must | M0 | AC-15c, AC-19 |
+| WRK-08 | Tenet shall apply the per-contract limits of Section 4.4.2 at the boundaries their mechanism class allows, warn at 80%, and at the bound stop with a diagnosis. For the active-time check-in the stop also carries a specific extension proposal; for attempts, review rounds and delegations it carries the next step instead (Section 4.4.2). | Must | M0 | AC-15c, AC-19 |
 | WRK-09 | If the same operational failure recurs twice in a row, or attempts oscillate, Tenet shall stop retrying and present a diagnosis; planned failing tests in TDD do not count as failures. | Must | A | AC-15c |
 | WRK-10 | Tenet shall checkpoint at declared boundaries and before known host limits where observable, so an iteration pause or interruption loses at most the work since the last checkpoint, and shall never auto-confirm a host pause. | Must | A | AC-08, AC-21 |
 | WRK-11 | Tenet shall support status, refine, pause, cancel, undo, integrate, decline and resume as defined in Section 3.4. | Must | B | AC-21 |
@@ -865,7 +865,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 |---|---|---|---|---|
 | GIT-01 | Checked implementation shall require a Git repository; in a non-Git folder Tenet shall offer to initialize one (only after the user chooses it), proceed read-only, or build a prototype backed by a snapshot. | Must | M0 | AC-17, AC-25 |
 | GIT-02 | Tenet shall create a work branch from the current HEAD per contract unless the user chooses the current branch, record the base, state when work is stacked on an unintegrated branch, and never rewrite published history. | Must | M0 | AC-25 |
-| GIT-03 | Tenet shall commit at green boundaries, staging only changes it authored in scope while preserving the user's index, following the project's commit convention, with configurable `Tenet-Work` and `Tenet-Req` trailers. | Must | M0 | AC-25 |
+| GIT-03 | Tenet shall commit at green boundaries, staging only changes it authored in scope while preserving the user's index, following the project's commit convention, with `Tenet-Work` and `Tenet-Req` trailers whose names are fixed in R1 (recovery and undo find commits by the exact name). | Must | M0 | AC-25 |
 | GIT-04 | Undo shall preview the inverse of the work's commits against current state, preserve later human changes, apply only after confirmation and run applicable checks afterwards. | Must | A | AC-17 |
 | GIT-05 | Tenet shall push, open or merge remote pull requests, or publish only on explicit request. | Must | M0 | AC-04, AC-25 |
 | GIT-06 | On request, Tenet shall draft a pull request description from the contract, examples, evidence and open findings. | Should | R1 | AC-25 |
@@ -1054,6 +1054,8 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 | Active work time between check-ins | 15 min | 60 min | 120 min | Boundary-checked | Provisional |
 
 Limits are checked by the coordinator through a helper counter before each new attempt, round, dispatch or phase; they cannot stop a step already in progress. Counters survive resume and delegation.
+
+**Only the active-time check-in is extendable.** At that bound Tenet stops, says why, proposes another stretch, and a user yes (`decide extend`, with the user's words) restarts the interval. At the attempt, review-round and delegation bounds Tenet stops with a diagnosis and the next step (for example, finish with the current evidence, or stop and diagnose); a user grant does not raise those counters in R1. Exhausting a bound is never approval (REV-05).
 
 #### 4.4.3 System budgets
 
@@ -1594,7 +1596,7 @@ On a dirty tree it asks the user (GIT-10) to:
 - **Touched set:** the coordinator declares the files it edited; the kernel cross-checks content changes since its last boundary, and changes that no declared edit explains are treated as possible human edits that need a decision.
 - If a file contains both human and Tenet hunks, Tenet stops and asks.
 - After committing, Tenet updates the user's real index only for committed paths whose index entry still matched the previous HEAD; any other overlap stops for a decision.
-- Commits follow the project's detected message convention; trailers are configurable.
+- Commits follow the project's detected message convention; the trailer names are fixed in R1.
 - Commit-time hooks that modify files trigger re-running affected checks before any claim.
 - If a commit cannot be made (hook failure, unavailable signing, missing author identity), Tenet keeps the candidate uncommitted and reports the recovery limitation (GIT-15). It never bypasses hooks or disables signing.
 

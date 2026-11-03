@@ -44,7 +44,7 @@ for (const file of all) {
     if (/\bimport\s*\(\s*[^"'\s]/.test(code)) add(rel, n, "computed dynamic import()");
     if (/\bimport\s*\(\s*["']/.test(code) && !rel.startsWith("adapters/")) add(rel, n, "dynamic import() outside adapters");
     if (/\beval\s*\(|new\s+Function\s*\(/.test(code)) add(rel, n, "code evaluation");
-    // Remote effects exist only on explicit request and arrive with `publish` after M0 (GIT-05): until then none is possible.
+    // R1 runs no remote Git command (GIT-05): `publish` is cut from R1 (decision-packet decision 9B), so none is possible.
     if (rel.startsWith("adapters/git-cli") && /["'](push|fetch|pull|clone|ls-remote|send-pack)["']/.test(code)) add(rel, n, "remote Git operations are not part of M0");
     if (/endpoint\s*[:=]\s*["'](blocked|findings-only|implemented-unverified|checked-local|prototype)["']/.test(code) && rel !== "core/verdict.ts") add(rel, n, "only core/verdict.ts produces an endpoint");
     if (COUNTERS.test(code) && rel !== "core/budget.ts") add(rel, n, "only core/budget.ts changes a counter");
