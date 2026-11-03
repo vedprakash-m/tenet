@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-03 — Defer version-probe process-group cleanup (CI pending)
+
+- After the failed macOS job was rerun, it reproduced `kill EPERM` from the unconditional process-group signal on the version-probe child exit. Defer that signal for 10 ms and send it only while output streams remain open, consistent with the existing guarded cleanup path.
+- Typecheck and architecture/skills/quality lint pass locally. Publication is approved; the POSIX process test and hosted CI remain unverified.
+- Files: `tools/host/copilot-cli.ts`, `specs/plan.md`, `CHANGELOG.md`.
+
 ## 2026-11-02 — Validate process cleanup and SQLite retry test fixes
 
 - Exact-source GitHub Actions run [41516188207](https://github.com/vedprakash-m/tenet/actions/runs/41516188207) at `5c965572576a88aea35042a68b5176b3bbc3fda7` passes Ubuntu full CI/built UAT, macOS full CI/built UAT, and Windows portability.

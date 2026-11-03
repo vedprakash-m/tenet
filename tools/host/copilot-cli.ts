@@ -70,10 +70,17 @@ async function versionOf(bin: string, args: string[], deadline: number): Promise
   };
   child.stdout.on("data", capture(stdout)); child.stderr.on("data", capture(stderr));
   const timer = setTimeout(() => { unavailable = "timeout"; killOwned(child); }, remaining);
-  child.once("exit", () => killOwned(child));
+  let exitCleanup: NodeJS.Timeout | undefined;
+  child.once("exit", () => {
+    if (!unavailable) return;
+    exitCleanup = setTimeout(() => {
+      if (!child.stdout?.destroyed || !child.stderr?.destroyed) killOwned(child);
+    }, 10);
+  });
   child.once("error", (error: NodeJS.ErrnoException) => { unavailable = error.code ?? "spawn error"; });
   return new Promise(resolve => child.once("close", exit => {
     clearTimeout(timer);
+    if (exitCleanup) clearTimeout(exitCleanup);
     resolve(unavailable ? `unavailable (${unavailable})` : exit === 0
       ? `${Buffer.concat(stdout).toString("utf8")}${Buffer.concat(stderr).toString("utf8")}`.trim().split("\n")[0]!.slice(0, 80)
       : "unavailable");

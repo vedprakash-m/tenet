@@ -1500,6 +1500,10 @@ An independent read-only review of the configuration/migration/capacity proposal
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
 
+### 2026-11-03 UTC (macOS version-probe cleanup fix; CI pending)
+
+The failed macOS job of [41547683311](https://github.com/vedprakash-m/tenet/actions/runs/41547683311) was rerun. The browser-focus assertion passed on retry; `kill EPERM` reproduced in the version-probe child exit handler. `tools/host/copilot-cli.ts` now defers the second signal for 10 ms and sends it only if stdout or stderr is still open, matching `runCopilot`'s existing descendant cleanup guard. Local typecheck, architecture/skills/quality lint and `git diff --check` pass. The POSIX process test cannot be run on this Windows host. The owner approved publication; the hosted retry has not run against this edit. No CI or release qualification is claimed.
+
 ### 2026-11-02 UTC (stream-aware process cleanup passes exact-source CI)
 
 After the owner approved publication, code/test commit `28aa47f` and progress/changelog commit `5c96557` were pushed to `main`. Exact-source run [41516188207](https://github.com/vedprakash-m/tenet/actions/runs/41516188207) at `5c965572576a88aea35042a68b5176b3bbc3fda7` passes all three jobs: Ubuntu full CI and built UAT, macOS full CI and built UAT, and Windows portability. The 10 ms deferred process-group re-signal now runs only if stdout/stderr remain open and is cancelled on child close; `EPERM` remains explicit. The previously failing macOS host timeout test and both SQLite contention journeys pass in this exact-source run. Local full gates also pass: typecheck, all lints, M0 coverage, build (766 KB under 800 KB), 94-file payload verification and independent same-toolchain reproducibility. This closes the current CI blocker only; no native-host qualification or full-plan completion is inferred.
