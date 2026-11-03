@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-03 — Integrate decision-packet build lanes
+
+- Apply the document amendments for decisions 3A, 4b-A, 7A, 8A, 9B and 10A and the binary byte unit (owner blanket direction; no Should signed). `publish` is cut from R1; trailer names are fixed; only active time is extendable.
+- Implement the 11 Should "implement" rows as text and evidence: README policy-recovery note, coordinator and build skill steps, `[INS-08]` and `[GIT-07]` tests.
+- Add the pure, unwired QLT-11 trait core (`core/traits.ts`, 43 tests), the reason-code tests and audit, the unmapped-Must classification, the decision packet and the external-request drafts.
+- Not merged: the ENG-09 journal record (245 characters over the central ceiling) and the RES-05 demo slice (608 over) stay on branches pending the capacity decision.
+- Files: `specs/` (PRD, tech-spec, ux-spec, plan and feature specs), `plugin/`, `README.md`, `packages/kernel/src/core/traits.ts`, `packages/kernel/test/` (traits, reason-codes, starter-ci, readme), `docs/`.
+
 ## 2026-11-03 — Pin line endings to LF
 
 - Add `.gitattributes` (`* text=auto eol=lf`, common binary types) so Windows checkouts no longer carry CRLF that breaks tests reading repository files. Both QLT-16 tests pass after conversion; the full suite needs supported POSIX CI because mutation is refused on `win32`.

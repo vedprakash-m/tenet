@@ -333,7 +333,7 @@ describe("facts projection of work trait state (decision 4a-A)", () => {
   it("an unassessed work projects as such, not as an empty set of no-trait results", () => {
     assert.deepEqual(workTraitFacts(TraitWorkState.parse(unassessedWork), CTX), { status: "unassessed" });
   });
-  it("a same-diff correction changes the facts, so proof bound to the old facts cannot survive [QLT-11]", () => {
+  it("a same-diff correction changes the facts, so proof bound to the old facts cannot survive", () => {
     const before = facts(work());
     const proofBoundTo = before; // dependent receipts and cached verdicts carry the facts they were made under
     const after = facts(work([changeCorrection("auth", "present")]));
@@ -363,7 +363,7 @@ describe("facts projection of work trait state (decision 4a-A)", () => {
   });
 });
 
-describe("change traits raise the lane; project traits do not (plan 12.3, Tech Spec 8.2) [QLT-11]", () => {
+describe("change traits raise the lane; project traits do not (plan 12.3, Tech Spec 8.2)", () => {
   // The pure inputs for risk.ts: a lane floor from change traits only. risk.ts itself is not changed.
   const floor = (dims: string[]): "quick" | "standard" | "deep" => laneFloor(Object.fromEntries(dims.map((d) => [d, "high"])) as Assessment);
   it("project auth alone raises nothing; the same trait in the candidate diff raises the floor", () => {

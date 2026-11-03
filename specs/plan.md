@@ -1524,7 +1524,15 @@ An independent read-only review of the configuration/migration/capacity proposal
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
 
-### 2026-11-03 UTC (document amendments from the decision packet) — ◐ worktree branch, not merged
+### 2026-11-03 UTC (parallel build lanes integrated; two candidates held over the size ceiling) — ◐ local main
+
+- Authority: the owner's blanket direction of 2026-11-03 to build the recommendations in [decision-packet.md](decision-packet.md). It is not a per-decision signature, and no Should is signed.
+- Merged into local `main` (no CI run yet): the document amendments below; 11 Should "implement" rows ([should-implement.md](../docs/audits/2026-11-03/should-implement.md): README/agent/skill text, `[INS-08]` and `[GIT-07]` tests); [external-requests.md](../docs/release/external-requests.md) (four drafts, nothing sent); and the pure QLT-11 trait core `core/traits.ts` with 43 tests. The two `[QLT-11]` tags were removed on purpose: the module is not wired into any verb or the stored state, and the spec says to map QLT-11 only when the behavior is proven. R1 mapping is unchanged at 139 / 16 / 26.
+- Held on their own branches because each exceeds the central size ceiling (candidates only; no ceiling or baseline edited): ENG-09 journal record, branch `worktree-agent-ad06a469deca08b3c`, 245 characters over (also amends tech-spec §16 and the PRD trace row; held with its code so the spec does not describe unbuilt behavior); RES-05 RD-1/RD-2 demo contract, branch `worktree-agent-a8cd096856626f1f0`, 608 characters over, no persisted schema change, RD-5 not built. Both need decision 1 (ceilings) first.
+- Local checks on the merged tree (Windows, Node 24.22.1): typecheck, `lint-arch` (113 files), `lint-skills`, `lint-quality`, build (766 KB), payload and reproducibility pass; 76 of 78 selected pure and read-only tests pass. The two failures (`host-limit`, `attribution-mixed-file`) run mutating verbs, which `win32` refuses. The full suite, the real-Git tests and hosted CI are unobserved on this tree.
+- Gaps recorded by the lanes: tech-spec §8.5 row 4 describes a `serial` refusal in `packet analyst` that is not built (RSC-05 is cooperative text); the Deep budget preview shows at kickoff only; CFG-07 provenance is layer revision only; LRN-04 evidence is optional in the kernel; QLT-11 core has seven spec-silent choices listed in its report (field ceilings, hash serialization, the `raises` map, whether `unknown` raises a lane).
+
+### 2026-11-03 UTC (document amendments from the decision packet) — ◐ local main
 
 - Authority: the owner's blanket direction of 2026-11-03 to build the recommendations in [decision-packet.md](decision-packet.md). Documents only; no source logic, no test and no budget changed.
 - 3A: tech-spec §8.8 lists `work.git.base` in the check identity (already true in `checkInputId`); `config-completion.md` §16.2 gained a clause; the receipt shape is unchanged. 4b-A: trait-detection E19 reworded to a static "not assessed in R1" notice. 7A: trailer names fixed in R1 (PRD GIT-03, §3.9.3, §5.12; tech-spec §10.3, §10.7). 8A: only the active-time check-in is extendable (PRD WRK-08, §4.4.2; tech-spec §8.6).
