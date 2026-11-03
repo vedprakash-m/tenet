@@ -29,3 +29,13 @@ describe("installation README [INS-02]", () => {
     assert.match(readme, /## Remove/);
   });
 });
+
+describe("policy-blocked install [INS-08]", () => {
+  it("explains the host's own recovery path before the install steps, without claiming Tenet detects policy", () => {
+    const beforeInstall = readme.split("## Install")[0]!;
+    assert.match(beforeInstall, /If policy blocks installation or a required feature/);
+    assert.match(beforeInstall, /ask whoever manages your Copilot organization settings/);
+    assert.match(beforeInstall, /Tenet cannot see the policy/);
+    assert.match(beforeInstall, /unobserved/);
+  });
+});

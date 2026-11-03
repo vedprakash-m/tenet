@@ -8,6 +8,7 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 - VS Code with GitHub Copilot Chat in agent mode, and the setting that enables agent plugins
 - Node.js 22.12 or newer and Git (Tenet reuses your Node; it installs nothing)
 - A TypeScript or JavaScript project with Vitest for full checking; other setups get a lower assistance level, stated up front
+- Policy that allows agent mode, agent plugins, custom agents and subagents. If a policy blocks installation or one of these, Tenet does not work around it: read the host's message and ask whoever manages your Copilot settings to allow it (unobserved; see the root README)
 
 ## What it does and does not do
 - Works on a branch of your repository and commits only the files it authored; your uncommitted work stays yours

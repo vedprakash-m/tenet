@@ -9,7 +9,8 @@ Use when `next` says `test` or `implement`. Edit natively; the kernel judges.
 ## The loop
 1. **Red.** Write the acceptance test(s) for the new examples exactly as recorded, in the test file named. Expected values come from the example, never from running the code. Run `tenet check --h <handle> --stage baseline`. If a new interface needs a minimal stub in an existing file so the test compiles, add `--scaffold <paths>` naming that file: it is allowed at baseline and the reviewer will see it. Stubs in new files need no declaration. It must fail on an assertion; a compile or import error, a skipped test or a passing test is not a red and the kernel says so. Fix the test, not the product code.
 2. **Green.** Make the smallest in-scope change. Format with the project's formatter first. Iterate with `tenet check --h <handle> --targeted --touched <paths>`; finish an attempt with a full `tenet check --h <handle> --stage candidate --touched <paths>`.
-3. **Then** follow `next`: review, or finish.
+3. **Refactor.** After green, if a change inside the scope removes complexity (a duplicate, a tangled branch, an unclear name), make it, then rerun the affected checks (`--targeted --touched <paths>`) and the full candidate check. If none removes complexity, skip it and say so. The kernel does not check that you looked for one.
+4. **Then** follow `next`: review, or finish.
 A behavior-preserving refactor uses preservation tests that already pass; there is no artificial red.
 For nonbehavioral work, do not invent a test; state the alternative check in the basis and report its result.
 
