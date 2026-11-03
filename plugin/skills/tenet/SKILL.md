@@ -46,7 +46,7 @@ Follow the kernel's `required` action or an allowed alternative.
 | `focused-review` | Reread the diff yourself against the basis, then `tenet findings`; it will count as reduced independence |
 | `commit`, `finish` | Run the verb |
 | `reconcile`, `revalidate` | Follow the reasons, then run the verb `next` names |
-| `integrate`, `publish` | Offer; run `tenet integrate` only when the user asks (or accepts under the `auto-on-accept` setting). Nothing remote is ever run |
+| `integrate`, `publish` | Offer; run `tenet integrate` only when the user asks (or accepts under the `auto-on-accept` setting). `publish` is cut; users push |
 | `stop` | Run the stop mode named |
 
 ## The four shapes

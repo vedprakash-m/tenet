@@ -354,7 +354,7 @@ Proposed schema 2 fields (names are the integration contract with the companion,
 | WorkContract | `configEvidence: {hash: string, serial: nonnegative safe integer}` required in schema 2; hash is full SHA-256 of the versioned projection below. |
 | Obligation | `baselineConfigEvidence?: {hash,serial}` alongside existing baseline fields; stamp only a newly admitted baseline result. |
 | Reservation, ReviewLink, AnalystLink | `configEvidence?: {hash,serial}`; includes focusedReview and native reviewer/Analyst reservations. Kernel copies the issued stamp into settled links, never accepts a caller-supplied current stamp. |
-| Receipt | No duplicate stamp: existing `checkInputId` includes the full work binding in a versioned identity; legacy IDs cannot satisfy that identity. |
+| Receipt | No duplicate stamp: existing `checkInputId` includes the full work binding in a versioned identity (the pinned contract base `work.git.base` is already part of it, Tech Spec §8.8); legacy IDs cannot satisfy that identity. |
 
 Optional evidence stamps admit legacy history only: missing = unproved, not current, even if candidate/basis/files match. New schema-2 producers must stamp; missing on a newly produced record is a producer defect and cannot discharge an obligation. Never populate historical stamps during upcast, reconcile, fallback, inspect or retry.
 

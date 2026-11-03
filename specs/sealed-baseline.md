@@ -1,6 +1,6 @@
 # Specification: Sealed Baseline Classification and the Committed-Tree Check (EVD-04 second half; TS §9.8)
 
-> Status: **v2**, 2026-10-24. Reviewed by a fresh-context subagent (21 findings, 1 blocker, 13 majors; dispositions in §14). **§15 (v2) supersedes §3 to §13 where they differ.** Awaiting owner decisions D1 to D8 (§16). No implementation before sign-off.
+> Status: **v2**, 2026-10-24. Reviewed by a fresh-context subagent (21 findings, 1 blocker, 13 majors; dispositions in §14). **§15 (v2) supersedes §3 to §13 where they differ.** Awaiting owner decisions D1 to D8 (§16). No implementation before sign-off. **Slice 2 (the committed-tree check, §15.2) is cut from R1 (2026-11-03, owner blanket direction, per `decision-packet.md` decision 10A; plan §11.2, cut-list item 1).** Slice 1 (sealed baseline, §15.1) is unchanged.
 > Date: 2026-10-24 | Decision owner: @vedprakash-m | Canonical sources: PRD EVD-04, §4.4.1, §4.5.2 (the committed-scope row), §5.13; tech-spec §8.1 (`Exception`), §8.3, §9.8, §9.9, §10.3, App. C, TD-15; plan §8.2, §11.2 (cut-list items 1 and 3), line 852; UX line 151, 377-379, 397.
 > Parent: [evidence-classification.md](evidence-classification.md) §14 and §15. Its rules bind here: **R-A** only failures of a broader check on a recorded starting tree enter the baseline record, never planned reds; **R-B** "pre-existing" requires a complete candidate failure list (`failures.length === counts.failed`); **R-C** the exclusion mechanism needs a verdict input, a `decide` kind and wording; **R-D** a failure at HEAD alone is never pre-existing when the start tree was dirty.
 
@@ -107,7 +107,9 @@ Reviewer: a fresh-context subagent with read-only access, which read the specs a
 | SB-12 | Readers by stage: one helper `candidateReceipts` (stages `candidate`, `integrated`) is used by `fresh()` and the stale-versus-missing test in `verdict.ts`, `latestByOb` in `finish.ts`, `handoff.ts`, `core/review.ts` (`slice(-12)`). Sealed receipts are kept for `inspect` only. |
 | SB-13 | Adapter advances to `node-ts@11` (new receipt content). Stored receipts go stale once. |
 
-### 15.2 Slice 2: committed-tree check (specified; build gated on D1)
+### 15.2 Slice 2: committed-tree check (specified; **cut from R1**, 2026-11-03)
+
+This slice is cut under TS §19.4 cut-list item 1, and the cut reverses owner decision 40 A for slice 2 only. Nothing in it is built: `check --stage committed` is refused (`verbs/check.ts`). The narrower claim that replaces it: the checked scope stays "working tree with your edits", and the result never says the committed tree was checked on its own. The rows below are kept as the specification a later release would start from; they authorize no build. Slice 2 has no PRD requirement ID, so no requirement is narrowed.
 
 | ID | Requirement |
 |---|---|
@@ -179,7 +181,7 @@ Reviewer: a fresh-context subagent with read-only access, which read the specs a
 
 ## 16. Decisions for the owner (one at a time)
 
-- **D1. Slicing and the EVD-04 claim. Resolved 2026-10-25 (owner decision 40 A):** include both slice 1 and slice 2 in the feature scope. The committed-tree slice still requires the specified short independent review before implementation; D2-D8 and final implementation sign-off also remain required. No cut-list narrowing or implementation authorization is implied by this scope decision. The committed-check tests need a coverage tag decision because the PRD has no requirement ID for them.
+- **D1. Slicing and the EVD-04 claim. Resolved 2026-10-25 (owner decision 40 A), slice 2 then cut 2026-11-03 (owner blanket direction, decision-packet decision 10A):** include both slice 1 and slice 2 in the feature scope; slice 2 is now cut from R1 (see §15.2). The committed-tree slice still requires the specified short independent review before implementation; D2-D8 and final implementation sign-off also remain required. No cut-list narrowing or implementation authorization is implied by this scope decision. The committed-check tests need a coverage tag decision because the PRD has no requirement ID for them.
 - **D2. What "the same failure" means. Resolved 2026-10-25 (owner decision 41 A):** require the same file, test and failure kind plus a normalized first-line message signature; a test red at both with different signatures is unknown, never pre-existing. This is the recommended boundary; weaker matching risks false pre-existing results, while full-message matching creates more unknowns.
 - **D3. When the sealed run happens. Resolved 2026-10-25 (owner decision 42 A):** run it in the failing `check` call, once per contract, bounded as in SB-3. The timing does not relax the specified timeout or retry limits.
 - **D4. Unknown and `continueRequired`.** Recommended: unknown asks the user and does not demand another attempt; the answer `fix` turns it into a failure that does. Alternative: keep demanding attempts while any remain.
