@@ -1773,15 +1773,26 @@ Timeouts outside checks: staging and commit each 120 seconds, including their fi
 ## 16. Observability and measurement
 
 ```ts
-type CallRecord = { t: "call"; ts: string; verb: string; frontEnd: "cli" | "mcp"; work?: string; generation?: number;
-  role?: "coordinator" | "reviewer" | "analyst"; assignment?: string; model?: ModelRecord; tenetTokens: number;
-  permission?: "approved" | "auto-approved" | "denied" | "unknown"; checkOutcome?: string;
-  termination?: "completed" | "cancelled" | "timeout" | "crashed";       // ENG-09
-  exit: number; reasons: string[]; durationMs: number; userWaitBeforeMs?: number;
-  outcomeId?: string;                                                     // pre-declared pilot outcome (PRD Section 6.6.1)
-  promptCaused?: boolean | "unknown"; visibilityGaps?: string[]; observedHooks?: number };
+type CallRecord = { t: "call";                                            // `t` is when the call ended
+  verb: string;                                                           // the action (ENG-09)
+  exit: number; revision: number;
+  work?: string;                                                          // the contract label; absent when the call has none
+  intentRevision: number;                                                 // the project intent revision the call published
+  startedAt: string; durationMs: number;
+  termination?: "completed" | "cancelled" | "timeout" | "crashed";       // absent on the provisional record of a started job
+  checkOutcome?: "pass" | "fail" | "inconclusive" | "skipped";            // `check` calls only; the worst receipt status
+  role: "unknown"; model: "unknown"; permission: "unknown";               // host-dependent: written as unknown, never guessed
+  visibilityGaps: ("role" | "model" | "permission")[];                    // the fields above that are gaps
+  // Not yet written by the kernel: frontEnd, generation, assignment, tenetTokens, reasons, userWaitBeforeMs, outcomeId, promptCaused, observedHooks.
+};
 type EffectRecord = { t: "effect"; ts: string; id: string; op: string; phase: "intent" | "result"; expected?: object; outcome?: string };
 ```
+
+**Traces are journal `call` records** (ENG-09; owner direction 2026-11-03, decision 6 alternative A). There is no separate `.tenet/traces` store. The kernel writes the fields it observes in the call itself and registers each closed vocabulary in `core/trace.ts` with its meaning, as reasons are registered in Appendix C. Mappings: `termination` is `crashed` for exit 5, `timeout` when the response carries the `timeout` reason, `cancelled` when it carries `run-superseded`, otherwise `completed` (a question or refusal is a completed call). Only mutating calls reach the journal today, so the exit-5 and `run-superseded` paths write no record yet. A job's provisional record, written when it starts, has no `termination` or `checkOutcome`; the finished record follows.
+
+Role, model and permission are held by the host. The kernel is told none of them in M0, so it writes the explicit value `unknown` and lists the field in `visibilityGaps`. A value a coordinator reports is a report, not an observation, and is not written until a host mechanism qualifies it (SP-03, SP-04). `permission` and `role` also admit `approved | auto-approved | denied` and `coordinator | reviewer | analyst` once such a mechanism exists. The journal parser keeps unknown fields and does not validate these values, so adding them later needs no schema change and an older kernel still reads newer records.
+
+**Retention.** Records older than 90 days reduce to the monthly summary, which counts calls by verb and by exit code (`core/journal-reduce.ts`). The new fields do not survive the reduction: a summary is a count, not a trace, and is not presented as one. A reader who needs trace fields for older work has only those counts.
 
 Records never contain file contents, prompts, secrets or command output. Field names are plain; the diagnostics export maps them to the pinned OpenTelemetry GenAI subset (ENG-06). `outcomeId`, wait times, cancellations and durations support the pilot (AC-12), whose active human minutes come from consented observation. Host-supplied usage figures, if any appear, are personal data kept out of shared files and exports without preview. `inspect doctor` reports payload hashes, capabilities with retirement rows, state health, ownership and recent reason codes; diagnostics exports are previewed in full and saved only to a chosen path.
 
