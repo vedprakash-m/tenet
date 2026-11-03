@@ -540,6 +540,7 @@ describe("injected failure 1: a human's edits on the files Tenet needs", () => {
     const ask = await finishFixture(p, { h, subject: "greet" });
     assert.equal(ask.exit, 3, "Tenet cannot explain docs/notes.md");
     assert.equal(ask.questions![0]!.id, "unexplained");
+    assert.ok(ask.reasons.some(r => r.code === "attribution-unexplained-change" && r.message.includes("docs/notes.md")), JSON.stringify(ask.reasons));
     const ans = await p.call("decide", { h, kind: "unexplained", answers: { unexplained: "not-mine" } });
     assert.equal(ans.exit, 0, JSON.stringify(ans));
     const f = await finishFixture(p, { h, subject: "greet" });

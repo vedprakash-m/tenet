@@ -155,7 +155,9 @@ describe("durable recovery accounting [WRK-08, CON-03]", () => {
     await focusFixture(p, h);
     p.write(".git/hooks/pre-commit", "#!/bin/sh\ngit add human.txt\n");
     chmodSync(join(p.root, ".git/hooks/pre-commit"), 0o755);
-    assert.equal((await p.call("finish", { h })).questions?.[0]?.id, "hook-consent");
+    const hookAsk = await p.call("finish", { h });
+    assert.equal(hookAsk.questions?.[0]?.id, "hook-consent");
+    assert.ok(hookAsk.reasons.some(r => r.code === "hook-consent-needed"), JSON.stringify(hookAsk.reasons));
     await p.call("decide", { h, kind: "hook-consent", answers: { "hook-consent": "commit-with-hooks" } });
     const workId = Object.values(p.ports().store.read()!.state.work)[0]!.id;
     const count = Number(p.git("rev-list", "--count", "HEAD"));
