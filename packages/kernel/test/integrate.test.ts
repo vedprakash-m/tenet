@@ -102,6 +102,8 @@ describe("integrate [GIT-11]", () => {
     const ask = await p.call("integrate", { h });
     assert.equal(ask.exit, 3);
     assert.equal(ask.questions![0]!.id, "branch-switch");
+    assert.equal(ask.reasons[0]!.code, "branch-switch-needed");
+    assert.match(ask.reasons[0]!.message, /docs\/mine\.md/);
     assert.equal(p.git("branch", "--show-current").startsWith("tenet/"), true);
     await p.call("decide", { h, kind: "branch-switch", answers: { "branch-switch": "continue" } });
     const r = await p.call("integrate", { h, again: true });
