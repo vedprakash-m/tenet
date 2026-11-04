@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-03 — Independent review of the NFR-07, QLT-05 and QLT-13 draft specs
+
+- Add `specs/reviews/diagnostics-export-review.md`, `specs/reviews/workload-receipt-review.md` and `specs/reviews/trait-threat-data-review.md`: numbered findings with severity, evidence and a suggested fix, and a verdict for each draft. All three need revision. 53 findings: 1 Blocker, 31 Major, 21 Minor.
+- The draft specs were not edited and no source or test changed. R1 mapping unchanged.
+- Files: `specs/reviews/` (3 new), `specs/plan.md`, `CHANGELOG.md`. Tests: none added.
 ## 2026-11-03 — Release-notes tool and release workflow candidates (LFC-02, ENG-07)
 
 - Add `tools/release-notes.ts`: drafts release notes from repository facts (changed paths per disclosure item, R1 mapping, open gates, known limits) and `--check` fails while a section lacks a written statement. Notes location assumed to be `docs/release/notes/v<version>.md`; the specs leave it open.

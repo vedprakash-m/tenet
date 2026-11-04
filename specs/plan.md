@@ -1531,6 +1531,15 @@ An independent read-only review of the configuration/migration/capacity proposal
 
 ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
 
+### 2026-11-03 UTC (independent review of the diagnostics-export, workload-receipt and trait-threat-data drafts; lifecycle step 2) — ◐ branch `worktree-agent-a68d523df695d53d6`, not merged
+
+- Authority: the owner's blanket direction of 2026-11-03 (isolated work, nothing pushed). A fresh-context review, not a sign-off. No spec and no `packages/kernel/src` file changed.
+- Added: [reviews/diagnostics-export-review.md](reviews/diagnostics-export-review.md), [reviews/workload-receipt-review.md](reviews/workload-receipt-review.md), [reviews/trait-threat-data-review.md](reviews/trait-threat-data-review.md). Findings: 53 (1 Blocker, 31 Major, 21 Minor). Verdicts: all three need revision; none rejected.
+- Main findings. Diagnostics: the preview is model-visible, so "before anything leaves Tenet's control" and "only on user request" overclaim for NFR-07 (a never-waivable requirement); the 256 KB preview exceeds the 20,000-token context budget; `export` is not classified Routine or Consequential; recovery can leave an unresolvable fence; the spec predates ENG-09 and now contradicts Tech Spec §16 on gaps. Workload: deleting `workload.json` removes the obligation silently; the series' environment tag comes from the project's own report; harness reasons the declaration does not cover would turn real failures into `inconclusive`; rerun and launched-check accounting (`check-rerun.ts:35`, `check-evidence.ts:162`) would treat a workload as a test. Threat note: an invariant has no test field in the code (`basis-build.ts:30`), so the link rule needs redefining; constraints pass with no verification; a late note conflicts with `trait-detection.md` §5 item 8.
+- Spec defects found (for §12.3, not yet logged there): Tech Spec §16 types `t: "call"` while the journal uses `kind: "call"` and `t` as a time; the spec numbers for central free space (37 characters) and `core/schemas.ts` free space (528) are stale after the ENG-09 and RES-05 merge (147 and 463 against the unapproved ceiling); PRD change log cites a "Section 4.3" row for `fitness-trend-degraded` that the PRD body does not have.
+- Unobserved: every host behavior the specs depend on; the OpenTelemetry attribute names (not checked against any pinned text); real workload run time.
+- Local checks (Windows, Node 24): `lint-arch`, `lint-skills`, `lint-quality` pass unchanged. No test was added or run; no code changed.
+
 ### 2026-11-03 UTC (release-notes tool and release workflow candidates; LFC-02 mapped, ENG-07 not) — ◐ branch `worktree-agent-a0eaea466a14c6df1`
 
 - Authority: the owner's blanket direction of 2026-11-03 to build the recommendations in [decision-packet.md](decision-packet.md), as isolated candidates. Not a per-decision signature. Nothing pushed; `packages/kernel/src` untouched.
