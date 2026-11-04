@@ -72,6 +72,8 @@ describe("workflows keep the untrusted tier untrusted [ENG-10]", () => {
   });
   for (const { f, text, doc } of workflows) {
     it(`${f}: pins every remote action to a commit [AC-28]`, () => assertPinnedActions(text));
+    // release.yml is a different tier (tag trigger, scoped tokens); release-workflow.test.ts checks it.
+    if (f !== "untrusted.yml") continue;
     it(`${f}: standard pull_request trigger, never a privileged one`, () => {
       const triggers = Object.keys(doc.on ?? {});
       assert.ok(triggers.includes("pull_request"));
