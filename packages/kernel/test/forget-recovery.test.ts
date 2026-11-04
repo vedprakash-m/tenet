@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { chmodSync, closeSync, existsSync, ftruncateSync, openSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { captureLegacy, cleanup, tmp } from "./helpers.ts";
+import { captureLegacy, cleanup, NO_POSIX_PROCESSES, tmp } from "./helpers.ts";
 import { project, type Project } from "./support/fixture.ts";
 import { workByHandle } from "../src/pipeline-render.ts";
 import { procStart } from "../src/adapters/proc.ts";
@@ -106,7 +106,7 @@ describe("crash-safe lesson forgetting [CON-10]", () => {
     const r = await p.call("decide", { ...input, answers: { "forget-confirm": "keep" } });
     assert.equal(r.exit, 3); assert.deepEqual(state(p).lessons, before); assert.deepEqual(effects(p), []);
   });
-  it("FG-6 preserves a live job's process record and report when their text matches the forgotten lesson", { timeout: 15_000 }, async () => {
+  it("FG-6 preserves a live job's process record and report when their text matches the forgotten lesson", { timeout: 15_000, skip: NO_POSIX_PROCESSES }, async () => {
     const child = spawn(process.execPath, ["-e", "console.log('ready');setInterval(()=>{},1000)"], { detached: true, stdio: ["ignore", "pipe", "inherit"] });
     const exited = once(child, "exit");
     try {

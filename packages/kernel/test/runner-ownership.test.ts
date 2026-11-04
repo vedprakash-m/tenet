@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { ProcessRunner } from "../src/adapters/runner.ts";
 import { procStart } from "../src/adapters/proc.ts";
 import { systemClock } from "../src/adapters/system.ts";
-import { cleanup, tmp } from "./helpers.ts";
+import { cleanup, NO_POSIX_PROCESSES, tmp } from "./helpers.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -29,7 +29,7 @@ describe("recovery process ownership", () => {
     assert.deepEqual(result, { value: "gone" }); assert.equal(readFileSync(path, "utf8"), '{"prepared":true}');
   });
   for (const mode of ["short", "overwrite-json", "invalid-utf8", "unicode"]) {
-    it(`admits process ownership only from stable valid bytes (${mode}) [CON-03, NFR-04]`, async () => {
+    it(`admits process ownership only from stable valid bytes (${mode}) [CON-03, NFR-04]`, { skip: NO_POSIX_PROCESSES }, async () => {
       const root = tmp(); roots.push(root);
       const child = spawn(process.execPath, ["-e", "console.log('ready'); setInterval(() => {}, 1000)"], { detached: true, stdio: ["ignore", "pipe", "ignore"] });
       const closed = new Promise(resolve => child.on("close", resolve));
@@ -51,7 +51,7 @@ describe("recovery process ownership", () => {
       } finally { try { process.kill(-pid, "SIGKILL"); } catch {} await closed; }
     });
   }
-  for (const kind of ["negative", "string", "missing-start", "linked", "null"]) it(`refuses a ${kind} process record without signalling the process [CON-03, NFR-04]`, async () => {
+  for (const kind of ["negative", "string", "missing-start", "linked", "null"]) it(`refuses a ${kind} process record without signalling the process [CON-03, NFR-04]`, { skip: NO_POSIX_PROCESSES }, async () => {
     const root = tmp(); roots.push(root);
     const child = spawn(process.execPath, ["-e", "console.log('ready'); setInterval(() => {}, 1000)"], { detached: true, stdio: ["ignore", "pipe", "ignore"] });
     const closed = new Promise(resolve => child.on("close", resolve));
