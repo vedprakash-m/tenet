@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-03 — Make the Windows test stage end
+
+- `npm test` on Windows ran about 18 minutes and never finished. Three test files never ended because a spawned child outlived a failed assertion that ran before the test's cleanup (`runner-ownership`, `forget-recovery`, `filter-jobs`): Windows has no `ps -o lstart=` process identity and `process.kill(-pid)` throws.
+- Add `NO_POSIX_PROCESSES` to the test helpers (a skip reason on `win32`, `false` elsewhere) and skip the 11 affected tests with it. No assertion changed, nothing is skipped on Linux or macOS, and no kernel source changed.
+- Windows full `npm test` now ends in 22.2 minutes: 1462 tests, 825 pass, 625 fail, 12 skipped (the 11 above and one test that needs a build). The failures are the known `win32` mutation refusal and other Windows differences; they are not hidden.
+- Files: `packages/kernel/test/helpers.ts`, `runner-ownership.test.ts`, `forget-recovery.test.ts`, `filter-jobs.test.ts`, `specs/plan.md` (§12.3, §13), `CHANGELOG.md`.
+
 ## 2026-11-03 — Integrate decision-packet build lanes
 
 - Apply the document amendments for decisions 3A, 4b-A, 7A, 8A, 9B and 10A and the binary byte unit (owner blanket direction; no Should signed). `publish` is cut from R1; trailer names are fixed; only active time is extendable.
