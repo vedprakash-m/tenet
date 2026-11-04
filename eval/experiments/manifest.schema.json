@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "hypothesis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "surface": {
+      "type": "string",
+      "description": "One skill directory or one file under plugin/skills/. tools/experiment.ts also checks this and that the splits do not overlap; the schema alone does not."
+    },
+    "baseline": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40,64}$"
+    },
+    "training": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      }
+    },
+    "holdout": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      }
+    },
+    "repeats": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 9007199254740991
+    },
+    "budget": {
+      "type": "object",
+      "properties": {
+        "maxTrials": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "maxCredits": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "maxTrials",
+        "maxCredits"
+      ],
+      "additionalProperties": false
+    },
+    "stopRule": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tieRule": {
+      "type": "string",
+      "const": "simpler wins"
+    },
+    "disposition": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "keep-candidate",
+        "keep-baseline",
+        "rejected"
+      ]
+    }
+  },
+  "required": [
+    "hypothesis",
+    "surface",
+    "baseline",
+    "training",
+    "holdout",
+    "repeats",
+    "budget",
+    "stopRule",
+    "tieRule",
+    "disposition"
+  ],
+  "additionalProperties": false
+}
