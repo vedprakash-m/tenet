@@ -3,6 +3,7 @@ import { accrueTime, attachUsage, budgetProgress, summarize } from "./core/budge
 import { formatHandle, hashOf, parseHandle } from "./core/ids.ts";
 import { KernelError } from "./core/errors.ts";
 import { redactDeep } from "./core/redact.ts";
+import { traceFields } from "./core/trace.ts";
 import type { KernelResponse, State, WorkContract } from "./core/schemas.ts";
 import type { Ports, Tx } from "./ports/types.ts";
 import type { Plan, Resp, Verb } from "./pipeline.ts";
@@ -104,6 +105,9 @@ export function stamp(
   if (final && w && verb.name !== "open")
     w.session = { ...w.session, last: { inputHash: inputHash(verb.name, input, world), response: res } };
   tx.publish(next);
-  tx.call({ verb: verb.name, exit: res.exit, revision });
+  tx.call({ verb: verb.name, exit: res.exit, revision, ...traceFields({
+    label: w?.label, intentRevision: next.project.intent.revision, startedAt, endedAt: ports.clock.now(), verb: verb.name,
+    exit: res.exit, reasons: res.reasons, receipts: (resp.data as { receipts?: { status: string }[] } | undefined)?.receipts, final,
+  }) });
   return res;
 }

@@ -549,7 +549,7 @@ Project-level IDs use prefixes distinct from this document's own requirement and
 | Lock manifest entry | — | `.tenet/locks` | Test identity, content hash, example IDs, verification record | Acceptance test |
 | Finding | `FND-n` (per work) | `.tenet/work/<id>/` | Severity, location, evidence, disposition, decider | Work, assignment |
 | Lesson | `LSN-` | `.tenet/lessons` | Statement, scope, evidence, provenance, expiry | Project |
-| Trace event | — | `.tenet/traces` | Time, work, role, model, action, decision, outcome | Work |
+| Trace event | — | `.tenet/log` (journal `call` records, Tech Spec Section 16) | Time, work, intent revision, action, check outcome, termination; role, model and permission as declared gaps until a host mechanism qualifies them | Work |
 | Config revision | — | `.tenet/config` | Values, sources, adoption state, revision | Work, evidence |
 | Experiment | — | Tenet repository | Hypothesis, surfaces, baseline, criteria, results | Releases |
 
