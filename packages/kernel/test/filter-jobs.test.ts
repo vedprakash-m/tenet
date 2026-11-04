@@ -8,7 +8,7 @@ import { ProcessRunner } from "../src/adapters/runner.ts";
 import { systemClock } from "../src/adapters/system.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
-import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
+import { cleanup, git, initRepo, NO_POSIX_PROCESSES, tmp, write } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, cli, focusFixture, isAlive, project, runningCheck, waitFor } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -150,7 +150,7 @@ describe("guarded Git filter preparation", () => {
     assert.deepEqual(readFileSync(join(p.root, ".git/index")), index);
   });
 
-  it("times out a TERM-resistant filter and its child as a process group [CON-12, SEC-04]", async () => {
+  it("times out a TERM-resistant filter and its child as a process group [CON-12, SEC-04]", { skip: NO_POSIX_PROCESSES }, async () => {
     const marker = join(scratch(), "pids");
     const source = `const child=require('child_process').spawn(process.execPath,['-e',"process.on('SIGTERM',()=>{});setInterval(()=>{},1000)"],{stdio:'ignore'});const fs=require('fs');fs.writeFileSync(${JSON.stringify(marker + '.tmp')},JSON.stringify([process.pid,child.pid]));fs.renameSync(${JSON.stringify(marker + '.tmp')},${JSON.stringify(marker)});process.on('SIGTERM',()=>{});setInterval(()=>{},1000);`;
     const { root, g, plan } = await repository(source);

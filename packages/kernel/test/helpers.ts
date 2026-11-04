@@ -31,6 +31,15 @@ export function captureLegacy(dir: string, label = "settled") {
   writeFileSync(join(target, "capture.json"), JSON.stringify({ test: source, label, effects }, null, 2) + "\n");
 }
 
+/**
+ * Skip reason for tests that spawn a long-lived child and need POSIX process identity or groups. On win32 there is no
+ * `ps -o lstart=` start time, process.kill(-pid) throws ESRCH, and a killed process reports no signal. Without a skip
+ * such a test fails before its cleanup runs and leaks the child, which keeps the whole test file from ending.
+ * False on other platforms, so nothing is skipped there.
+ */
+export const NO_POSIX_PROCESSES: string | false =
+  process.platform === "win32" ? "win32 has no POSIX process identity, process groups or signals (ps -o lstart=, kill(-pid))" : false;
+
 export const cleanup = (dir: string) => {
   captureLegacy(dir);
   rmSync(dir, { recursive: true, force: true });
