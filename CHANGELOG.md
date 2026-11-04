@@ -13,6 +13,13 @@
 - R1 mapping unchanged (139 / 16 / 26): neither requirement is proven yet, so no tag was added.
 - Files: `tools/bench.ts`, `tools/bench-fixtures.ts`, `tools/experiment.ts`, `eval/experiments/manifest.schema.json`, `package.json` (two scripts), `packages/kernel/test/bench.test.ts`, `packages/kernel/test/experiment.test.ts`, `specs/plan.md`, `CHANGELOG.md`.
 - Tests: 10 bench and 24 experiment tests pass locally on Windows (Node 24.22.1); the real kernel sequence is unobserved.
+## 2026-11-03 — Draft specs for NFR-07, QLT-05 and QLT-13
+
+- Add three feature specs, each marked "draft, unreviewed": diagnostics export (previewed, redacted, saved to a chosen path; OpenTelemetry mapping), workload obligation and fitness-trend attention, and the threat and data note. Each lists owner questions and the estimated central-code cost; none fits the current ceiling. They are not canonical specs and change no behavior.
+- Add the review resource `threat-note.md` named in Tech Spec §5.1 and list it in the payload inventory. Nothing references it yet.
+- Record five spec defects in `specs/plan.md` §12.3. R1 mapping is unchanged (139 mapped, 16 host-only, 26 unmapped).
+- Files: `specs/diagnostics-export.md`, `specs/workload-receipt.md`, `specs/trait-threat-data.md`, `specs/plan.md`, `plugin/skills/tenet-review/resources/threat-note.md`, `tools/payload-files.json`.
+- Tests: none added or changed. `typecheck`, `lint-arch`, `lint-skills`, `lint-quality` and `coverage` pass on Windows.
 
 ## 2026-11-03 — Integrate decision-packet build lanes
 
