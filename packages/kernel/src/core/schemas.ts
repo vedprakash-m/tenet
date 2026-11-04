@@ -2,6 +2,7 @@
 import { Lesson } from "./lessons.ts";
 import { z } from "zod";
 import { settingsSchema } from "./config.ts";
+import { DemoProposal } from "./demo.ts";
 import { ExecutionEnvelope, InFlightCall } from "./execution-envelope.ts";
 import { Policy } from "./policy.ts";
 
@@ -477,6 +478,7 @@ export type FindingsInput = z.infer<typeof FindingsInput>;
 
 export const FinishInput = z.object({
   h: Handle, noCommit: z.boolean().optional(), subject: z.string().max(200).optional(), again: z.boolean().optional(),
+  demo: DemoProposal.optional(),
 });
 export type FinishInput = z.infer<typeof FinishInput>;
 

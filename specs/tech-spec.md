@@ -623,7 +623,7 @@ Budgets are set by the owner in lines and checked by `tools/lint-quality` in non
 | `core/obligations`, `core/findings` | Obligations, applicability, trait composition; finding dispositions | QLT-06, REV-04 | 250 |
 | `core/config` | Resolution, restriction parsing, trust comparison | CFG, SEC-12 | 250 |
 | `core/attribution`, `core/ids`, `core/retention` | File attribution; IDs and reconciliation; admission and eviction | GIT-03, INT-10, CON-08 | 300 |
-| `pipeline`, `verbs/*`, `decisions/*` | The pipeline; one module per verb and per decision kind. No verb or decision file exceeds 265 lines (`tools/coverage` fails otherwise). Earlier owner-approved rebases and feature increments are recorded in the [implementation plan](plan.md#13-progress-log-append-only-newest-entry-at-top--this-is-the-handoff-record) and `tools/lint-quality.ts`. | — | 4,292: the earlier 4,188-line allowance plus 10 lines (0.24%) for the reviewed schema-1 forget repair (owner approved 2026-10-27), 92 lines for the owner-approved WRK-06 SF-21–24 prototype hardening slice, and 2 lines for RSC-04's fresh usage publication (owner-authorized 2026-10-31). Character limit: 247,219 (up from 247,104 by 115 characters); current source measures 247,213 characters, leaving 6. `recover-effects.ts` has a 265-line ceiling for the added recovery path. No unrelated growth is authorized. |
+| `pipeline`, `verbs/*`, `decisions/*` | The pipeline; one module per verb and per decision kind. No verb or decision file exceeds 265 lines (`tools/coverage` fails otherwise). Earlier owner-approved rebases and feature increments are recorded in the [implementation plan](plan.md#13-progress-log-append-only-newest-entry-at-top--this-is-the-handoff-record) and `tools/lint-quality.ts`. | — | 4,310 (**proposed, not owner-approved**: +18 lines, 0.42%, so the ENG-09 journal call record and the RES-05 demo slice fit together; they measure 248,109 characters against the old 247,219 limit; the exact figure awaits the owner under decision-packet decision 1): the earlier 4,292-line allowance, which was the 4,188-line allowance plus 10 lines (0.24%) for the reviewed schema-1 forget repair (owner approved 2026-10-27), 92 lines for the owner-approved WRK-06 SF-21–24 prototype hardening slice, and 2 lines for RSC-04's fresh usage publication (owner-authorized 2026-10-31). Character limit: 248,256 proposed (247,219 approved); source with both slices measures 248,109, leaving 147. `recover-effects.ts` has a 265-line ceiling for the added recovery path. No unrelated growth is authorized. |
 | `adapters/store-fs` | State document, lock, log, observations, blobs, marker | §7 | 450 |
 | `adapters/git-cli` | Git with argument arrays; the inspection profile; one temporary-index helper; the shadow repository | §10 | 650 |
 | `adapters/runner` | Envelopes, environment, process groups, run directories, ports | §9.3 | 350 |
@@ -1780,15 +1780,26 @@ Timeouts outside checks: staging and commit each 120 seconds, including their fi
 ## 16. Observability and measurement
 
 ```ts
-type CallRecord = { t: "call"; ts: string; verb: string; frontEnd: "cli" | "mcp"; work?: string; generation?: number;
-  role?: "coordinator" | "reviewer" | "analyst"; assignment?: string; model?: ModelRecord; tenetTokens: number;
-  permission?: "approved" | "auto-approved" | "denied" | "unknown"; checkOutcome?: string;
-  termination?: "completed" | "cancelled" | "timeout" | "crashed";       // ENG-09
-  exit: number; reasons: string[]; durationMs: number; userWaitBeforeMs?: number;
-  outcomeId?: string;                                                     // pre-declared pilot outcome (PRD Section 6.6.1)
-  promptCaused?: boolean | "unknown"; visibilityGaps?: string[]; observedHooks?: number };
+type CallRecord = { t: "call";                                            // `t` is when the call ended
+  verb: string;                                                           // the action (ENG-09)
+  exit: number; revision: number;
+  work?: string;                                                          // the contract label; absent when the call has none
+  intentRevision: number;                                                 // the project intent revision the call published
+  startedAt: string; durationMs: number;
+  termination?: "completed" | "cancelled" | "timeout" | "crashed";       // absent on the provisional record of a started job
+  checkOutcome?: "pass" | "fail" | "inconclusive" | "skipped";            // `check` calls only; the worst receipt status
+  role: "unknown"; model: "unknown"; permission: "unknown";               // host-dependent: written as unknown, never guessed
+  visibilityGaps: ("role" | "model" | "permission")[];                    // the fields above that are gaps
+  // Not yet written by the kernel: frontEnd, generation, assignment, tenetTokens, reasons, userWaitBeforeMs, outcomeId, promptCaused, observedHooks.
+};
 type EffectRecord = { t: "effect"; ts: string; id: string; op: string; phase: "intent" | "result"; expected?: object; outcome?: string };
 ```
+
+**Traces are journal `call` records** (ENG-09; owner direction 2026-11-03, decision 6 alternative A). There is no separate `.tenet/traces` store. The kernel writes the fields it observes in the call itself and registers each closed vocabulary in `core/trace.ts` with its meaning, as reasons are registered in Appendix C. Mappings: `termination` is `crashed` for exit 5, `timeout` when the response carries the `timeout` reason, `cancelled` when it carries `run-superseded`, otherwise `completed` (a question or refusal is a completed call). Only mutating calls reach the journal today, so the exit-5 and `run-superseded` paths write no record yet. A job's provisional record, written when it starts, has no `termination` or `checkOutcome`; the finished record follows.
+
+Role, model and permission are held by the host. The kernel is told none of them in M0, so it writes the explicit value `unknown` and lists the field in `visibilityGaps`. A value a coordinator reports is a report, not an observation, and is not written until a host mechanism qualifies it (SP-03, SP-04). `permission` and `role` also admit `approved | auto-approved | denied` and `coordinator | reviewer | analyst` once such a mechanism exists. The journal parser keeps unknown fields and does not validate these values, so adding them later needs no schema change and an older kernel still reads newer records.
+
+**Retention.** Records older than 90 days reduce to the monthly summary, which counts calls by verb and by exit code (`core/journal-reduce.ts`). The new fields do not survive the reduction: a summary is a count, not a trace, and is not presented as one. A reader who needs trace fields for older work has only those counts.
 
 Records never contain file contents, prompts, secrets or command output. Field names are plain; the diagnostics export maps them to the pinned OpenTelemetry GenAI subset (ENG-06). `outcomeId`, wait times, cancellations and durations support the pilot (AC-12), whose active human minutes come from consented observation. Host-supplied usage figures, if any appear, are personal data kept out of shared files and exports without preview. `inspect doctor` reports payload hashes, capabilities with retirement rows, state health, ownership and recent reason codes; diagnostics exports are previewed in full and saved only to a chosen path.
 

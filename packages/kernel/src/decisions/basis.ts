@@ -4,8 +4,7 @@
 import { outputPatternProblem } from "../core/outputs.ts";
 import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
-import { build } from "../core/basis-build.ts";
-import { hashOf } from "../core/ids.ts";
+import { basisHashOf, build } from "../core/basis-build.ts";
 import { deriveObligations, wantedStatic, wantsE2e, withE2e, withoutBoundary, withStatic } from "../core/obligations.ts";
 import { reason } from "../core/reasons.ts";
 import { BasisProposal } from "../core/schemas.ts";
@@ -81,11 +80,7 @@ function draftBasis(
   const own = new Set(work.basis?.elementIds ?? []);
   const old = state.project.intent;
   const intent = { ...old, revision: old.revision + 1, elements: [...old.elements.filter((e) => !own.has(e.id)), ...elements] };
-  const hash = hashOf({
-    outcome: proposal.outcome,
-    design: proposal.design ?? null,
-    elements: elements.map(({ verifiedBy: _v, ...rest }) => rest),
-  });
+  const hash = basisHashOf(proposal.outcome, proposal.design, elements);
   const required = settingsFor(ports, state, work).required_checks as Array<{ id: string; tool?: string }>;
   const checks = state.project.recipe?.checks ?? [];
   const obligations = withE2e(
