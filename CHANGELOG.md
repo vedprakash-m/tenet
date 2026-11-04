@@ -6,6 +6,13 @@
 - Add `.github/workflows/release.yml` (candidate, never run): version-tag trigger, protected-branch and signed-tag gate, build, `verify:payload`, `verify:reproducible`, build-provenance attestation, attestation check, draft release. Add `docs/release/release-verification.md` with the manual installed-payload steps. Signing, attestation and branch protection are unobserved; ENG-07 stays unmapped.
 - `ci-security.test.ts` scopes its untrusted-tier checks to `untrusted.yml`; action pinning still covers every workflow. R1 mapping 139/16/26 to 140/16/25 (`[LFC-02]`).
 - Files: `tools/release-notes.ts`, `.github/workflows/release.yml`, `docs/release/release-verification.md`, `packages/kernel/test/` (release-notes, release-workflow, ci-security), `specs/plan.md`, `CHANGELOG.md`. Tests: 4 + 7 new; no kernel source changed.
+## 2026-11-03 — Add the NFR-01 benchmark harness and the ENG-08 experiment tool (candidate branch)
+
+- Add generated reference fixtures (small, large, long-history) and `tools/bench.ts`, which gives every PRD §4.4.3 budget a status: measured (non-win32 only), delegated to lint, or not measurable with the reason. A win32 run reports `unobservable`. No kernel latency has been measured yet.
+- Add `tools/experiment.ts` with a manifest schema (`eval/experiments/manifest.schema.json`): allowlist per tech-spec §17.8, trial and cost records, a holdout rule and the PRD §6.10.1 disposition. The allowlist omits PRD §6.10.1's configuration surface; logged in plan §12.3 as an owner decision. No model is run.
+- R1 mapping unchanged (139 / 16 / 26): neither requirement is proven yet, so no tag was added.
+- Files: `tools/bench.ts`, `tools/bench-fixtures.ts`, `tools/experiment.ts`, `eval/experiments/manifest.schema.json`, `package.json` (two scripts), `packages/kernel/test/bench.test.ts`, `packages/kernel/test/experiment.test.ts`, `specs/plan.md`, `CHANGELOG.md`.
+- Tests: 10 bench and 24 experiment tests pass locally on Windows (Node 24.22.1); the real kernel sequence is unobserved.
 
 ## 2026-11-03 — Integrate decision-packet build lanes
 

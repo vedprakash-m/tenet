@@ -17,7 +17,9 @@
     "eval:report": "node --experimental-strip-types tools/eval.ts",
     "test": "node --test --test-concurrency=2 \"packages/**/test/**/*.test.ts\"",
     "ci": "npm run typecheck && npm run lint && npm run coverage && npm run build && npm run verify:payload && npm run verify:reproducible && npm test",
-    "privacy": "node tools/privacy-check.ts",
+    "bench": "node tools/bench.ts",
+    "experiment": "node tools/experiment.ts",
+    "privacy":"node tools/privacy-check.ts",
     "uat": "node tools/uat/uat.mjs > /dev/null"
   },
   "dependencies": {
