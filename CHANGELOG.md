@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-03 — Add the NFR-01 benchmark harness and the ENG-08 experiment tool (candidate branch)
+
+- Add generated reference fixtures (small, large, long-history) and `tools/bench.ts`, which gives every PRD §4.4.3 budget a status: measured (non-win32 only), delegated to lint, or not measurable with the reason. A win32 run reports `unobservable`. No kernel latency has been measured yet.
+- Add `tools/experiment.ts` with a manifest schema (`eval/experiments/manifest.schema.json`): allowlist per tech-spec §17.8, trial and cost records, a holdout rule and the PRD §6.10.1 disposition. The allowlist omits PRD §6.10.1's configuration surface; logged in plan §12.3 as an owner decision. No model is run.
+- R1 mapping unchanged (139 / 16 / 26): neither requirement is proven yet, so no tag was added.
+- Files: `tools/bench.ts`, `tools/bench-fixtures.ts`, `tools/experiment.ts`, `eval/experiments/manifest.schema.json`, `package.json` (two scripts), `packages/kernel/test/bench.test.ts`, `packages/kernel/test/experiment.test.ts`, `specs/plan.md`, `CHANGELOG.md`.
+- Tests: 10 bench and 24 experiment tests pass locally on Windows (Node 24.22.1); the real kernel sequence is unobserved.
+
 ## 2026-11-03 — Integrate decision-packet build lanes
 
 - Apply the document amendments for decisions 3A, 4b-A, 7A, 8A, 9B and 10A and the binary byte unit (owner blanket direction; no Should signed). `publish` is cut from R1; trailer names are fixed; only active time is extendable.
