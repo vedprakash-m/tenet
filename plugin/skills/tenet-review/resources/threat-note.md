@@ -13,8 +13,9 @@ The note is short. Its entries are of four kinds:
 - abuse: what a hostile or careless actor could try (read another user's record, repeat a request, send oversized or
   malformed input, replay an old session).
 
-Each asset, data and abuse entry is a basis element or links to one: a constraint, or an example or invariant that
-has a test. For each such element check four things.
+Each asset, data and abuse entry is a basis element: a constraint; an example with a test file; or an invariant that
+has at least one example with a test file. An invariant with no such example is open, even if a review covers it.
+For each such element check four things.
 1. The element states the protection itself ("a member cannot read another member's loans"), not only the
    topic ("authorization").
 2. The test acts as the hostile actor and asserts the refusal. It would fail if the check were removed. A test
