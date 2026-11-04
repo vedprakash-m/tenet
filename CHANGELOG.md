@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-04 — Revise the NFR-07, QLT-05 and QLT-13 draft specs to answer the independent review
+
+- Revise `specs/diagnostics-export.md`, `specs/workload-receipt.md` and `specs/trait-threat-data.md`; each stays "draft, revised, unreviewed" and needs a second independent review before sign-off. Append a dispositions table to each of the three review files: 53 findings, 38 Accepted, 15 Accepted-with-owner-question, 0 Rejected, 0 Deferred.
+- Diagnostics: claims narrowed to a table of what the kernel enforces and what is cooperative; preview cap 16 KiB (was 256 KB); `export` is Consequential; recovery never fences; four outside-the-project port methods costed; the OpenTelemetry attribute list withdrawn (deferred, Q1). Workload: obligation derived from the recipe record, not a file; measurements stated as project-produced; uncovered harness reasons become `fail`; strict trend rule with a declared floor; series append atomic with `finish`; migration, budget and consumer lists. Threat note: link rule in the code's terms; constraints disclosed as unchecked; late-trait conflict with `trait-detection.md` §5 item 8 stated; `INTENT.md` disclosure and trait-lowering authority raised as owner questions.
+- `plugin/skills/tenet-review/resources/threat-note.md`: one sentence of link wording corrected (an invariant is linked through a child example). The resource is still **unreferenced and unsigned**, and its payload line was added before sign-off (commit `46e7d16`); a release that ships it must disclose the changed content (LFC-02).
+- Three spec defects logged in `specs/plan.md` §12.3; capacity figures corrected (central 147 free against the proposed, not approved, ceiling; over the approved ceiling by 890; `core/schemas.ts` 463 free). Owner questions are consolidated in the plan §13 entry.
+- Files: `specs/diagnostics-export.md`, `specs/workload-receipt.md`, `specs/trait-threat-data.md`, `specs/reviews/` (3 files), `plugin/skills/tenet-review/resources/threat-note.md`, `specs/plan.md`, `CHANGELOG.md`. Tests: none added; no kernel source changed. R1 mapping unchanged.
 ## 2026-11-03 — Independent review of the NFR-07, QLT-05 and QLT-13 draft specs
 
 - Add `specs/reviews/diagnostics-export-review.md`, `specs/reviews/workload-receipt-review.md` and `specs/reviews/trait-threat-data-review.md`: numbered findings with severity, evidence and a suggested fix, and a verdict for each draft. All three need revision. 53 findings: 1 Blocker, 31 Major, 21 Minor.
