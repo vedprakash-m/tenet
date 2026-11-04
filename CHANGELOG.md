@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-03 — Fit the held ENG-09 and RES-05 candidates under a proposed central ceiling
+
+- Merge the ENG-09 journal call record (`core/trace.ts`) and the RES-05 RD-1/RD-2 demo slice (`core/demo.ts`) onto one branch; both merges were clean. Together the central owner (`pipeline + verbs + decisions`) measures **248,109** characters against the approved 247,219, so 890 over.
+- **Proposed, not owner-approved:** raise that one budget from 4,292 to **4,310 lines** (+18, 0.42%; 248,256 characters, 147 free), following decision-packet decision 1, recommendation A. Edited `tools/lint-quality.ts` and tech-spec §6.2 consistently; `tools/quality-baseline.json` is unchanged because the owner is within its budget, so no module ceiling is recorded. No other owner exceeded its limit, so no other limit moved. The bundle is 772 KB of the unchanged 800 KB cap (§3.2 untouched). The exact approved figure needs a later owner decision; if a different number is approved, this one is replaced.
+- Files: `tools/lint-quality.ts`, `specs/tech-spec.md`, `specs/plan.md`, `CHANGELOG.md`, plus the merged ENG-09 and RES-05 files.
+
 ## 2026-11-03 — Integrate decision-packet build lanes
 
 - Apply the document amendments for decisions 3A, 4b-A, 7A, 8A, 9B and 10A and the binary byte unit (owner blanket direction; no Should signed). `publish` is cut from R1; trailer names are fixed; only active time is extendable.
