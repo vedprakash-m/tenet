@@ -2,6 +2,8 @@
 // return the result. The verdict is computed here and in `inspect why` only (TS §8.3).
 import { summarize } from "../core/budget.ts";
 import { controlsFor } from "../core/controls.ts";
+import { buildDemo } from "../core/demo.ts";
+import type { Demo } from "../core/demo.ts";
 import { handoffText } from "../core/handoff.ts";
 import { KernelError } from "../core/errors.ts";
 import { executionDisclosures } from "../core/execution-envelope.ts";
@@ -22,10 +24,20 @@ import type { IntegrationSetting } from "./integrate.ts";
 
 const MAX_REASONS = 8;
 
+/** The demo block for the coordinator's proposal, checked against the contract and project files as they are now (RES-05). */
+function demoFor(ports: Ports, st: State, w: WorkContract, proposal: FinishInput["demo"]): Demo | undefined {
+  if (!proposal) return undefined;
+  const { packageManager, moduleRoot } = ports.stack.detect(ports.root);
+  const context = { basis: w.basis, outcome: w.outcome, elements: st.project.intent.elements, packageManager, moduleRoot };
+  return buildDemo(proposal, context, (path, max) => ports.project.readBounded(path, max));
+}
+
 /** The result the user reads: outcome first, then checks, limits and the next action (RES-01). */
 function result(
   ports: Ports, st: State, w: WorkContract, v: Verdict, facts: Facts, extra: Reason[], setting: IntegrationSetting, offer = false,
+  proposal?: FinishInput["demo"],
 ): Resp {
+  const demo = demoFor(ports, st, w, proposal);
   const humanFiles = facts.att.human.length + facts.att.concurrent.length + facts.att.unexplained.length;
   const label = headline(v, { profile: w.profile, branch: w.git.branch, humanFiles });
   const missingHardening = w.profile === "prototype" && !w.hardening;
@@ -71,12 +83,15 @@ function result(
       integration,
       handoff: w.handoff ?? null,
       omitted: Math.max(0, reasons.length - shown.length),
+      ...(demo ? { demo } : {}),
     },
   };
 }
 
 /** The contract closes with its handoff (RES-04); the first checked-local result adds the one offer to save shared files (CON-01). */
-function close(ports: Ports, st: State, nw: WorkContract, f: Facts, v: Verdict, extra: Reason[]): { state: State; resp: Resp } {
+function close(
+  ports: Ports, st: State, nw: WorkContract, f: Facts, v: Verdict, extra: Reason[], proposal?: FinishInput["demo"],
+): { state: State; resp: Resp } {
   const done: WorkContract = { ...nw, state: "finished" };
   const session = { generation: nw.session.generation, ...(nw.session.last ? { last: nw.session.last } : {}) };
   const closed: WorkContract = { ...done, handoff: handoffText(st, done), updatedAt: ports.clock.now(), session };
@@ -84,7 +99,7 @@ function close(ports: Ports, st: State, nw: WorkContract, f: Facts, v: Verdict, 
   const out: State = sourceOwner && sourceOwner.work !== nw.id ? { ...rest, sourceOwner } : rest;
   const offer =
     v.endpoint === "checked-local" && isEditing(nw) && st.project.adoption.intent === "undecided" && !st.project.adoption.offered;
-  const resp = result(ports, st, closed, v, f, extra, integrationSetting(ports, st, closed), offer);
+  const resp = result(ports, st, closed, v, f, extra, integrationSetting(ports, st, closed), offer, proposal);
   // The plan item this contract worked on is done when it reached checked-local, otherwise available again (INT-12).
   const plan = releaseItem(out.project.intent.plan, nw.id, v.endpoint === "checked-local");
   const settled: State = { ...out, project: { ...out.project, intent: { ...out.project.intent, plan } } };
@@ -112,7 +127,7 @@ const finishVerb: Verb<FinishInput> = {
     const v0 = verdict(vi);
     // Already closed: report the verdict as it stands now, change nothing, commit nothing.
     if (w.state === "finished")
-      return { resp: result(ports, cur, w, v0, facts, [], integrationSetting(ports, cur, w)) };
+      return { resp: result(ports, cur, w, v0, facts, [], integrationSetting(ports, cur, w), false, input.demo) };
     if (continueRequired(v0, { attemptsLeft: vi.attemptsLeft, stopReason: w.stopReason })) {
       const reasons = [
         reason("continue-required", "an introduced failure remains and attempts are left"),
@@ -134,11 +149,11 @@ const finishVerb: Verb<FinishInput> = {
       const plan = await startCommit(ports, tx!, cur, w, facts, subject, async (st, nw, _out, reasons) => {
         // Rebuild everything from the finalized result: the facts after the commit, not the ones drafted before it.
         const f2 = await gather(ports, nw, st.locks);
-        return close(ports, st, nw, f2, verdict(verdictInput(ports, st, nw, f2)), reasons);
+        return close(ports, st, nw, f2, verdict(verdictInput(ports, st, nw, f2)), reasons, input.demo);
       });
       if (plan) return plan;
     }
-    return close(ports, cur, w, facts, v0, []);
+    return close(ports, cur, w, facts, v0, [], input.demo);
   },
 };
 
