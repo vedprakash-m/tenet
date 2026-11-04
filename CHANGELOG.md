@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-03 — Release-notes tool and release workflow candidates (LFC-02, ENG-07)
+
+- Add `tools/release-notes.ts`: drafts release notes from repository facts (changed paths per disclosure item, R1 mapping, open gates, known limits) and `--check` fails while a section lacks a written statement. Notes location assumed to be `docs/release/notes/v<version>.md`; the specs leave it open.
+- Add `.github/workflows/release.yml` (candidate, never run): version-tag trigger, protected-branch and signed-tag gate, build, `verify:payload`, `verify:reproducible`, build-provenance attestation, attestation check, draft release. Add `docs/release/release-verification.md` with the manual installed-payload steps. Signing, attestation and branch protection are unobserved; ENG-07 stays unmapped.
+- `ci-security.test.ts` scopes its untrusted-tier checks to `untrusted.yml`; action pinning still covers every workflow. R1 mapping 139/16/26 to 140/16/25 (`[LFC-02]`).
+- Files: `tools/release-notes.ts`, `.github/workflows/release.yml`, `docs/release/release-verification.md`, `packages/kernel/test/` (release-notes, release-workflow, ci-security), `specs/plan.md`, `CHANGELOG.md`. Tests: 4 + 7 new; no kernel source changed.
+
 ## 2026-11-03 — Integrate decision-packet build lanes
 
 - Apply the document amendments for decisions 3A, 4b-A, 7A, 8A, 9B and 10A and the binary byte unit (owner blanket direction; no Should signed). `publish` is cut from R1; trailer names are fixed; only active time is extendable.
