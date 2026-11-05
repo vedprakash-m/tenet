@@ -6,6 +6,7 @@ import { browserEmail, browserPassword } from "../support/browser-identities.ts"
 async function openSignIn(page: Page) {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeFocused();
 }
 async function fillSignIn(page: Page) {
   await page.getByLabel("Email", { exact: true }).fill(browserEmail);
@@ -24,6 +25,14 @@ test("the signed-out browser shows a labeled accessible sign-in form [QLT-01, QL
 });
 
 test("keyboard validation and authentication failure preserve input and focus the error [QLT-14]", async ({ page }) => {
+  // Visible markup can precede the heading's focus effect.
+  await page.addInitScript(() => {
+    const focus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function (options) {
+      if (this.tagName === "H1") setTimeout(() => focus.call(this, options), 250);
+      else focus.call(this, options);
+    };
+  });
   await openSignIn(page);
   await page.keyboard.press("Tab"); await expect(page.getByLabel("Email", { exact: true })).toBeFocused();
   await page.keyboard.type("not-an-email"); await page.keyboard.press("Tab");
@@ -57,6 +66,7 @@ test("sign-in is confirmed by a fresh read, survives reload, and sign-out is con
   expect(await page.evaluate(() => localStorage.length)).toBe(0);
   await accessible(page);
   await page.reload(); await expect(page.getByRole("heading", { name: "You're signed in" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "You're signed in" })).toBeFocused();
   await page.keyboard.press("Tab"); await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Sign in", exact: true })).toBeFocused();
