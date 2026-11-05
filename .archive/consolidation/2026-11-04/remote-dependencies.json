@@ -1,0 +1,50 @@
+[
+  {
+    "branch": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/eslint-10.13.0",
+    "base": "2986067fb3ce848624f71a5192c5ec35759d36e9",
+    "head": "77059eaf9679c903b333a175980f0250a87e7eb8",
+    "patch": "dependabot__npm_and_yarn__plugin__skills__tenet-starter-ts-web-api__template__eslint-10.13.0.patch",
+    "disposition": "preserved-not-integrated",
+    "reason": "ESLint 10 requires Node ^22.13.0 or a different supported major; Tenet supports Node 22.12.0."
+  },
+  {
+    "branch": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/fastify/cookie-11.1.5",
+    "base": "2986067fb3ce848624f71a5192c5ec35759d36e9",
+    "head": "c54df1204237206ccc0686aafdf31806be2025bd",
+    "patch": "dependabot__npm_and_yarn__plugin__skills__tenet-starter-ts-web-api__template__fastify__cookie-11.1.5.patch",
+    "disposition": "integration-selected-validation-pending",
+    "reason": "Compatible declared peer/engine ranges; full integrated validation is still required."
+  },
+  {
+    "branch": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/typescript-7.0.2",
+    "base": "2986067fb3ce848624f71a5192c5ec35759d36e9",
+    "head": "ee71cea8e4ed8226a971c0369895aa6ea1663f5b",
+    "patch": "dependabot__npm_and_yarn__plugin__skills__tenet-starter-ts-web-api__template__typescript-7.0.2.patch",
+    "disposition": "preserved-not-integrated",
+    "reason": "TypeScript 7 lacks the compiler API used by the quality gate; typescript-eslint also requires TypeScript <6.1."
+  },
+  {
+    "branch": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/typescript-eslint-8.72.1",
+    "base": "2986067fb3ce848624f71a5192c5ec35759d36e9",
+    "head": "c7d2bfa39951c18e6358f6fb761ceffb3340ce5a",
+    "patch": "dependabot__npm_and_yarn__plugin__skills__tenet-starter-ts-web-api__template__typescript-eslint-8.72.1.patch",
+    "disposition": "integration-selected-validation-pending",
+    "reason": "Compatible declared peer/engine ranges; full integrated validation is still required."
+  },
+  {
+    "branch": "dependabot/npm_and_yarn/types/node-26.6.6",
+    "base": "2986067fb3ce848624f71a5192c5ec35759d36e9",
+    "head": "0316a33eefff592316d05b6995eed4d4e30cf5dc",
+    "patch": "dependabot__npm_and_yarn__types__node-26.6.6.patch",
+    "disposition": "preserved-not-integrated",
+    "reason": "Node 26 assertion overload changes produce ten typecheck errors in existing tests."
+  },
+  {
+    "branch": "dependabot/npm_and_yarn/typescript-7.0.2",
+    "base": "2986067fb3ce848624f71a5192c5ec35759d36e9",
+    "head": "c96395dd1a5aead6d42c06c7f14be5773b96f969",
+    "patch": "dependabot__npm_and_yarn__typescript-7.0.2.patch",
+    "disposition": "preserved-not-integrated",
+    "reason": "TypeScript 7 lacks the compiler API used by the quality gate; typescript-eslint also requires TypeScript <6.1."
+  }
+]
