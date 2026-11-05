@@ -8,6 +8,7 @@
 - Files: `packages/`, `plugin/`, `tools/privacy-check.ts`, `tools/payload-files.json`, `.github/workflows/untrusted.yml`, `.gitignore`, `README.md`, `specs/`, `docs/audits/2026-11-04/`, `.archive/consolidation/2026-11-04/`.
 - Validation so far: static/artifact gates and 276 supported Windows pure/privacy tests pass. Full supported-POSIX CI and built UAT remain pending at this checkpoint.
 - Merge compatible starter cookie and typescript-eslint updates; starter types/lint and 145 tests pass. Preserve both TypeScript 7 updates, ESLint 10 and Node 26 types after owner disposition of compatibility failures. Record full indexed/history privacy checks and reviewed false positives in `docs/audits/2026-11-04/consolidation-validation.json`.
+- First published CI exposed stale NOTICE/recipe-lock metadata and incomplete demo/trace fixtures. Refresh both notices, advance the pinned recipe to 0.4.7, supply npm provenance, compare independent fixture IDs by their example meaning, distinguish check questions from receipt outcomes, and trigger journal compaction. Add a direct stamp regression; no demo/trace/store product rule changes. Preserve two newer Dependabot revisions when the deletion lease detects their changed heads.
 
 ## 2026-11-04 — Revise the NFR-07, QLT-05 and QLT-13 draft specs to answer the independent review
 

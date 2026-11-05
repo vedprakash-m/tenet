@@ -7,6 +7,7 @@
     "dirtyWorktrees": 7,
     "uniqueLocalCandidateBranches": 3,
     "remoteDependencyPatches": 6,
+    "refreshedRemoteDependencyRevisions": 2,
     "runtimePromotionOfNonshippingCandidates": false,
     "syntheticFixtureAnnotations": 3
   },
@@ -60,6 +61,28 @@
     },
     "limitations": "Pattern and entropy scanning plus manual classification; absence of findings does not prove absence of secrets or PII"
   },
-  "supportedPosixCiAndDualRuntimeBuiltUat": "pending",
-  "cleanup": "pending exact preservation verification and remote publication"
+  "firstPublishedCi": {
+    "source": "9c69ada924814cfbee3d5b1e8c2290c2d7d7a3e2",
+    "run": "https://github.com/vedprakash-m/tenet/actions/runs/41964944700",
+    "conclusion": "failure",
+    "ubuntu": { "passed": 1685, "failed": 8 },
+    "windows": { "passed": 357, "failed": 1 },
+    "integrationRepairs": [
+      "Refresh both NOTICE copies and locked license inventory",
+      "Repin the changed starter lockfile and advance recipe 0.4.6 to 0.4.7",
+      "Provide the npm lock marker in the result-demo fixture",
+      "Compare independently allocated example IDs by semantic identity, retaining all check fields",
+      "Do not require a receipt outcome for a check question or refusal",
+      "Trigger actual compaction in the journal-summary fixture"
+    ],
+    "additionalMacosObservation": "One real competing-writer child refused a private record changed during its bounded read. Store implementation and safety checks are unchanged; retain this failure rather than silently masking it."
+  },
+  "supportedPosixCiAndDualRuntimeBuiltUat": "pending repaired-source CI",
+  "cleanup": {
+    "localWorktreesRemoved": 27,
+    "localBranchesRemoved": 31,
+    "remainingLocalBranch": "main",
+    "remainingLocalWorktree": "main checkout",
+    "remote": "Two merged branches were removed by GitHub; exact-head guard halted deletion when two other Dependabot heads changed. Refreshed patches are preserved separately before another deletion attempt."
+  }
 }
