@@ -14,17 +14,18 @@ Copilot already chats, edits and runs tools. Tenet adds a fixed loop around a re
 - **Checks that run through the kernel.** Test results are recorded as receipts tied to the exact files they ran against. A later edit makes a receipt stale.
 - **A reviewer subagent.** It reads the change and reports findings with a severity and a disposition. Dispatch has been observed on VS Code; host-enforced context isolation and tool restrictions have not.
 - **One stated outcome.** Each piece of work ends with a label chosen by fixed rules, such as `checked-local`, `implemented-unverified`, `prototype`, `findings-only` or `blocked`. The label names what was and was not shown. `checked-local` is not owner acceptance and is not production readiness.
-- **Your work stays yours.** Tenet works on a branch and commits only files it wrote. Preserving your uncommitted edits is a requirement, not a fully established preview guarantee: interrupted dependency recovery has a known defect that can overwrite later human edits. See the [implementation audit](docs/audits/2026-11-04/implementation-audit.md); do not rely on that recovery path to preserve your work.
+- **Your work stays yours.** Tenet works on a branch and commits only files it wrote. Preserving your uncommitted edits is a requirement, not a fully established preview guarantee. Recovery of an interrupted dependency resolution leaves unknown file content untouched and blocks dependent work. The separate live resolution-failure path still restores the original manifest and lockfile without checking for intervening edits. Do not rely on dependency operations to preserve concurrent edits; the installed-host preservation journey remains unqualified.
 
 What it does not do in this release line: deploy, push, or open pull requests on its own; run as a service; or send project content anywhere except through the host's model traffic.
 
 ## Status
 
-The [November 4 implementation audit](docs/audits/2026-11-04/implementation-audit.md) records the remaining defects and completion gates. The detailed progress record, `specs/plan.md`, is local-only and is not included in a fresh checkout. Baseline evidence below is for commit `34d6030`, not subsequent changes:
+The [November 4 implementation audit](docs/audits/2026-11-04/implementation-audit.md) is a historical assessment of earlier source; its findings need reconciliation against subsequent repairs. The detailed progress record, `specs/plan.md`, is local-only and is not included in a fresh checkout. Deterministic evidence below is for commit `14aa0f71a5970c708e62423b44d5a06b81a93c94`, not later changes:
 
 | Area | State |
 |---|---|
-| Kernel, plugin, starter recipe, deterministic tests | Exact-source [CI 41762334301](https://github.com/vedprakash-m/tenet/actions/runs/41762334301) passes Ubuntu and macOS full CI (1,462 tests / 228 suites each) and built-bundle UAT on Node 24 and 22.12.0. Windows portability passes. The audited bundle is 784,061 bytes against 819,200. Green deterministic CI does not close the audit findings or qualify a real host; this checkout is not a release artifact. |
+| Kernel, plugin, starter recipe, deterministic tests | Exact-source [CI 41977194444](https://github.com/vedprakash-m/tenet/actions/runs/41977194444) passes Ubuntu and macOS full CI and built-bundle UAT on Node 24 and 22.12.0. Windows portability passes, not Windows mutating workflows. A local build of the same source is 793,117 bytes against 819,200. Green deterministic CI does not close every audit finding or qualify an installed host; this checkout is not a release artifact. |
+| Production capacity approval | Still open. The central pipeline/verbs/decisions group uses 248,083 characters against the prior approved 247,219 ceiling. The enforced 248,256 ceiling is explicitly proposed, not owner-approved; green lint is not approval of that change. |
 | Qualified tuple (host, extension, model, OS) | **Unrecorded.** No tuple is qualified. |
 | Installing and running on VS Code Copilot | **Partly observed** on VS Code 1.142.0 and 1.143.0 (October 19 and 20, 2026): the plugin loaded from a local plugin location; the kernel ran from the host's snapshot copy of the plugin; real multi-step tasks ran through `finish`. The Copilot extension version was not recorded. |
 | Reviewer subagent | **Partly observed.** A reviewer was dispatched several times on VS Code, and a partial result was refused and retried. Not observed: the reviewer's real tool list or host enforcement of its restrictions, actual context isolation, parallel dispatch, a cancelled or dead reviewer, and `usages`. |
@@ -37,6 +38,8 @@ The [November 4 implementation audit](docs/audits/2026-11-04/implementation-audi
 | Publisher, signed release, checksums, provenance | **Not published.** The source build creates `plugin/SHA256SUMS` for local payload integrity; there is no signed release or provenance attestation. |
 
 Capabilities described in this repository are intended outcomes until their gates pass.
+
+The immediate release objective is a controlled developer preview for technical builders using the existing source-install route. Installed-host evaluation is intended to cover a small brownfield change, a starter journey, read-only review and interruption/resume with unrelated staged and dirty edits. These journeys are not yet qualified. Use disposable synthetic projects without sensitive data or production credentials; this is not a preservation guarantee for valuable work. The separate schema-2 protocol candidate is not included. No public release, new install route or native Windows mutation support is approved by this scope.
 
 ## Before you install
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-05 — Reconcile preview status with current source evidence
+
+- Record the approved immediate planning target as a controlled developer preview from existing main, not public R1 or activation of the separate schema-2 candidate. Installed-host, safety and distribution gates remain open; no public release is authorized.
+- Replace obsolete current-status CI references with exact-source run `41977194444` at `14aa0f71a5970c708e62423b44d5a06b81a93c94`: Linux/macOS full CI and built UAT on current/minimum Node, plus Windows portability only. Distinguish deterministic evidence from installed-host qualification and retain the earlier audits as historical records.
+- Correct the interrupted-dependency-recovery warning: unknown content is preserved and dependent work fenced. Keep the separate live resolution-failure restoration caveat explicit; no general preservation guarantee is claimed.
+- Retain the unresolved production-capacity decision: central usage is 248,083 against the prior approved 247,219 ceiling; the enforced 248,256 ceiling remains proposed, not approved. No threshold changed.
+- Files: `README.md`, `docs/user/qualified-tuple.md`, local `specs/plan.md`, `CHANGELOG.md`. No runtime or shipped plugin behavior changed. Validation: typecheck, lints, coverage, bundle/payload and reproducibility checks pass, as do 365 Windows-selected tests, 46 boundary controls (including seven interrupted-resolution preservation controls), seven receipt-privacy controls and four README/release-checklist checks. The R1 audit still refuses all 181 unqualified Musts.
+
 ## 2026-11-04 — Wait for browser focus before keyboard input
 
 - Source `7134b9c` passes Ubuntu full CI and both-runtime built UAT plus Windows portability; macOS's sole failure is the loan-desk keyboard focus scenario. Reproduce the initial Email focus failure on the real app with delayed heading focus.

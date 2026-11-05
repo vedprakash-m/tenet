@@ -1,4 +1,4 @@
-<!-- DRAFT. Every row is taken from specs/plan.md sections 1, 4 and 13 as of 2026-10-24. Update it when a spike or qualification run is recorded there. -->
+<!-- DRAFT. Host observations remain the dated observations below. Deterministic source evidence was reconciled on 2026-11-05; CI does not qualify an installed host. -->
 # The qualified tuple, as it stands
 
 A **tuple** is the exact combination Tenet's claims are tested against: host application and version, Copilot extension and version, model, operating system, Node.js and Git. A claim is qualified only for a tuple on which it was tested.
@@ -27,7 +27,9 @@ Observations by the development team, on VS Code with a managed model, in throwa
 
 ## What is tested without a host
 
-Deterministic tests on the development machine, against real Git and real processes: the kernel, the plugin text checks, the starter recipe and a golden task. As of 2026-10-24 the full suite is recorded in the plan as passing, with built-bundle scenarios on Node 22.12.0 and Node 26.3.0. This is local evidence about the kernel. It is not evidence about any host.
+Exact-source [CI 41977194444](https://github.com/vedprakash-m/tenet/actions/runs/41977194444), for commit `14aa0f71a5970c708e62423b44d5a06b81a93c94`, passes full CI on Ubuntu and macOS and built-bundle UAT on Node 24 and minimum Node 22.12.0. It covers the kernel, plugin text checks, starter and real repository/process scenarios. The Windows job checks portability and explicit platform refusals; it does not exercise a supported Windows mutating workflow.
+
+This is deterministic source and built-bundle evidence, not an installed VS Code/Copilot qualification. It does not establish reviewer isolation, approval behavior, model effectiveness, human comprehension or a public release chain. Later source changes require their own validation; the separate schema-2 candidate is not covered.
 
 ## Other hosts
 
@@ -37,7 +39,8 @@ Copilot CLI was run once, before the VS Code runs. The results are hypotheses, a
 
 | Environment | Status |
 |---|---|
-| VS Code with GitHub Copilot, macOS | Experimental in the sense that it has been tried; **not qualified**, no smoke list published |
-| VS Code on Windows or Linux | Untested |
+| VS Code with GitHub Copilot, macOS arm64 | Partly observed in the dated runs above; **not qualified** |
+| VS Code with GitHub Copilot, Linux | Installed-host behavior unobserved; POSIX source CI and built UAT pass, but do not qualify this host |
+| VS Code with GitHub Copilot, Windows | Installed-host behavior unqualified; read-only inspection and advisory review available, mutating kernel calls refused |
 | Copilot CLI | Untested for release; hypotheses only |
 | Other editors and agents | Not supported |
