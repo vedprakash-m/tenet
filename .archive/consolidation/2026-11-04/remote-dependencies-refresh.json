@@ -1,0 +1,18 @@
+[
+  {
+    "branch": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/eslint-10.13.0",
+    "base": "9c69ada924814cfbee3d5b1e8c2290c2d7d7a3e2",
+    "head": "7092387264842144fa14692ed01f05b62ba1c8e0",
+    "patch": "dependabot__npm_and_yarn__plugin__skills__tenet-starter-ts-web-api__template__eslint-10.13.0__709238726484.patch",
+    "disposition": "preserved-not-integrated",
+    "reason": "Dependabot now proposes ESLint 10.14.0; registry lookup returns E404. Previous ESLint 10.13.0 also excludes Node 22.12.0."
+  },
+  {
+    "branch": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/typescript-7.0.2",
+    "base": "9c69ada924814cfbee3d5b1e8c2290c2d7d7a3e2",
+    "head": "7ec64ea8ccbf34739f6465882b67b235548b1ab0",
+    "patch": "dependabot__npm_and_yarn__plugin__skills__tenet-starter-ts-web-api__template__typescript-7.0.2__7ec64ea8ccbf.patch",
+    "disposition": "preserved-not-integrated",
+    "reason": "TypeScript 7 lacks the compiler API used by the quality gate; typescript-eslint also requires TypeScript <6.1."
+  }
+]

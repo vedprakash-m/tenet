@@ -1,13 +1,13 @@
 {
   "id": "ts-web-api",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "sentinel": "tenet-starter-app",
   "checks": [
     "tsc",
     "eslint",
     "e2e"
   ],
-  "lockfileSha256": "1ef193bac3c115268d6b21f65014761f809783fa2fa4bee8a4838f9f309f9f77",
+  "lockfileSha256": "d0deaaa65eb92134bc8efcd9044cb425c0ea31854ca0f1ecf51ff80d8ea4a4bb",
   "protectedPaths": [
     "server/src/platform/auth/*",
     "server/src/platform/session/*",

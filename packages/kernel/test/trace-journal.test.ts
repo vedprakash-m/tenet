@@ -57,11 +57,20 @@ describe("journal call records are ENG-09 trace events", () => {
     const h = (await r.call("open", { profile: "feature", request: "add a greeting", scopePaths: ["src/greet.ts"], lane: "quick" })).handle!;
     await r.call("decide", { h, kind: "basis", propose: BASIS });
     r.p.write("src/greet.test.ts", GREET_TEST);
-    await r.call("check", { h, stage: "baseline" });
+    const checked = await r.call("check", { h, stage: "baseline" });
     const all = r.calls();
     const checks = all.filter((e) => e.verb === "check" && e.termination);
     assert.ok(checks.length >= 1, "the finished check call is journalled");
-    for (const c of checks) assert.ok(["pass", "fail", "inconclusive", "skipped"].includes(String(c.checkOutcome)));
+    for (const c of checks.filter(c => c.checkOutcome !== undefined)) {
+      assert.ok(["pass", "fail", "inconclusive", "skipped"].includes(String(c.checkOutcome)));
+    }
+    const receipts = (checked.data as { receipts?: { status: string }[] } | undefined)?.receipts;
+    if (receipts) {
+      const statuses = new Set(receipts.map(receipt => receipt.status));
+      const expected = statuses.has("fail") ? "fail" : statuses.has("inconclusive") ? "inconclusive"
+        : statuses.has("pass") ? "pass" : "skipped";
+      assert.equal(checks.at(-1)!.checkOutcome, expected);
+    } else assert.equal(checks.at(-1)!.checkOutcome, undefined, "a check refusal or question ran no receipts");
     assert.ok(all.filter((e) => e.verb !== "check").every((e) => !("checkOutcome" in e)));
   });
 
@@ -81,7 +90,7 @@ describe("journal call records are ENG-09 trace events", () => {
     const root = tmp("tenet-trace-");
     roots.push(root);
     let now = Date.parse("2026-05-01T12:00:00Z");
-    const store = new FsStore(root, { now: () => new Date(now).toISOString(), ms: () => now }, systemRandom);
+    const store = new FsStore(root, { now: () => new Date(now).toISOString(), ms: () => now }, systemRandom, { compactAtBytes: 1 });
     const trace = { work: "W-0001", intentRevision: 2, startedAt: "2026-05-01T11:59:59.000Z", durationMs: 5, termination: "completed",
       role: "unknown", model: "unknown", permission: "unknown", visibilityGaps: ["role", "model", "permission"] };
     await store.transaction("seed", async (tx) => {

@@ -83,7 +83,7 @@ describe("the ts-web-api recipe", () => {
     } });
     const s = await call("decide", { h, kind: "scaffold", propose: { name: "loan-desk" } });
     assert.equal(s.exit, 0, JSON.stringify(s));
-    assert.equal(d(s).version, "0.4.6");
+    assert.equal(d(s).version, "0.4.7");
 
     const c = await call("check", { h, stage: "candidate" });
     assert.equal(c.exit, 0, JSON.stringify(c));

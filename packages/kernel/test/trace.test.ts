@@ -100,6 +100,21 @@ describe("trace fields carry no content [SEC-11]", () => {
 });
 
 describe("the pipeline writes the trace fields into the call record [ENG-09]", () => {
+  it("stamp records receipt outcomes but does not invent them for a check question", () => {
+    const calls: Record<string, unknown>[] = [];
+    const tx = { state: null, publish: () => {}, call: (e: Record<string, unknown>) => calls.push(e) };
+    const ports = { clock: { now: () => "2026-11-03T09:00:03.000Z", ms: () => 0 }, version: "0.0.0" };
+    const state = emptyState("ws_x", "tag1");
+    const invoke = (resp: unknown) => stamp(
+      ports as never, { name: "check" } as never, {}, null, tx as never, state, resp as never, true,
+      "2026-11-03T09:00:00.000Z",
+    );
+    invoke({ exit: 0, data: { receipts: [{ status: "pass" }, { status: "inconclusive" }] } });
+    assert.equal(calls.at(-1)!.checkOutcome, "inconclusive");
+    invoke({ exit: 3 });
+    assert.equal("checkOutcome" in calls.at(-1)!, false);
+  });
+
   it("stamp passes the observed times, intent revision and gaps to the journal", () => {
     const calls: Record<string, unknown>[] = [];
     const tx = { state: null, publish: () => {}, call: (e: Record<string, unknown>) => calls.push(e) };

@@ -334,6 +334,7 @@ describe("finish returns the demo without changing the verdict (E1, E3, E5)", ()
   const fresh = async (): Promise<{ p: Project; h: string }> => {
     const p = project({
       "package.json": JSON.stringify({ name: "fx", type: "module", private: true, scripts: { dev: "node src/greet.ts", test: "vitest run" } }),
+      "package-lock.json": '{"name":"fx","lockfileVersion":3,"packages":{}}\n',
       "README.md": fence(["npm run dev"]),
     });
     roots.push(p.root);
@@ -344,7 +345,14 @@ describe("finish returns the demo without changing the verdict (E1, E3, E5)", ()
     return { p, h };
   };
   const stateOf = (p: Project) => { const st = p.ports().store.read()!.state; const w = Object.values(st.work)[0]!; return { w, elements: st.project.intent.elements.filter((e) => w.basis!.elementIds.includes(e.id)) }; };
-  const verdictOf = (r: { data?: unknown }) => { const { endpoint, label, level, checks, acceptance, scope, stopReason } = r.data as Record<string, unknown>; return { endpoint, label, level, checks, acceptance, scope, stopReason }; };
+  const verdictOf = (r: { data?: unknown }, p: Project) => {
+    const { endpoint, label, level, checks, acceptance, scope, stopReason } = r.data as Record<string, unknown>;
+    const elements = stateOf(p).elements;
+    const normalized = (checks as Array<{ obligation: string }>).map(check => ({
+      ...check, obligation: elements.find(e => `OB-${e.id}` === check.obligation)?.text ?? check.obligation,
+    }));
+    return { endpoint, label, level, checks: normalized, acceptance, scope, stopReason };
+  };
 
   it("E1: exposes the documented command and a step naming the confirmed example", POSIX, async () => {
     const { p, h } = await fresh();
@@ -367,7 +375,7 @@ describe("finish returns the demo without changing the verdict (E1, E3, E5)", ()
     const { w } = stateOf(withDemo.p);
     const a = await finishFixture(withDemo.p, { h: withDemo.h, noCommit: true, demo: { surface: "ui", basisHash: w.basis!.hash, commands: [scriptSource("dev")], steps: [], screenshots: [] } });
     const b = await finishFixture(without.p, { h: without.h, noCommit: true });
-    assert.deepEqual(verdictOf(a), verdictOf(b));
+    assert.deepEqual(verdictOf(a, withDemo.p), verdictOf(b, without.p));
     assert.equal((b.data as any).demo, undefined, "no proposal, no invented demo");
   });
 

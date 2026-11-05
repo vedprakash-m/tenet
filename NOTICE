@@ -92,11 +92,11 @@ downloaded by the user's package manager into the user's project, and their
 licenses bind the user's project. Using Tenet does not require the user to
 disclose application source and gives Tenet no ownership of it.
 
-Direct dependencies of the starter (refreshed 2026-10-28 from package.json
+Direct dependencies of the starter (refreshed 2026-11-04 from package.json
 and the pinned package-lock.json; full release license review remains pending):
 
   Runtime
-    @fastify/cookie             11.1.3    MIT
+    @fastify/cookie             11.1.5    MIT
     @fastify/helmet             13.2.0    MIT
     @fastify/rate-limit         11.2.1    MIT
     @fastify/swagger            9.9.2     MIT
@@ -116,17 +116,18 @@ and the pinned package-lock.json; full release license review remains pending):
     eslint                      9.39.1    MIT
     tsx                         4.23.15   MIT
     typescript                  5.9.3     Apache-2.0
-    typescript-eslint           8.55.0    MIT
+    typescript-eslint           8.72.1    MIT
     vite                        8.3.5     MIT
     vitest                      5.0.5     MIT
 
-The lockfile lists 306 packages across all supported platforms; 110 are
+The lockfile lists 308 packages across all supported platforms; 110 are
 classified as production dependencies. License-field counts (not a legal review):
-{"(BSD-2-Clause OR MIT OR Apache-2.0)": 1, "(MIT OR WTFPL)": 1, "Apache-2.0": 19, "BSD-2-Clause": 6, "BSD-3-Clause": 10, "ISC": 16, "MIT": 238, "MPL-2.0": 14, "Python-2.0": 1}
+{"(BSD-2-Clause OR MIT OR Apache-2.0)": 1, "(MIT OR WTFPL)": 1, "Apache-2.0": 20, "BSD-2-Clause": 6, "BSD-3-Clause": 10, "BlueOak-1.0.0": 1, "ISC": 15, "MIT": 239, "MPL-2.0": 14, "Python-2.0": 1}
 
 Swagger was already installed as the pinned Zod provider peer at 9.9.2; it is
-now an explicit runtime dependency. No resolved package version changed in
-this increment. Optional binaries for other platforms remain uninspected.
+an explicit runtime dependency. The 2026-11-04 consolidation updates cookie
+and typescript-eslint with their locked transitive dependencies. Optional
+binaries for other platforms remain uninspected.
 
 better-sqlite3 downloads a prebuilt SQLite binary at install time; SQLite is
 in the public domain. The Playwright browser, when installed on the user's
