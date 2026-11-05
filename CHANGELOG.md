@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-04 — Consolidate reviewed repairs and preserve nonshipping work
+
+- Integrate the implementation-audit repairs, including repeated detection, reviewer packet/admission follow-through, receipt privacy, candidate identity, starter migration/restore safety, and read-only interrupted dependency recovery. Normal dependency rollback safety and the unsigned finding-lifecycle routes remain open.
+- Preserve seven dirty-worktree snapshots and three unmerged candidate branches under `.archive/consolidation/2026-11-04`, outside runtime, payload and tests. The owner selected preservation rather than runtime promotion. Ignore local environment credential files while retaining `.env.example`.
+- Merge current mechanism documentation without replacing existing spec decisions. No new schema activation, size-limit approval, host qualification or release.
+- Files: `packages/`, `plugin/`, `tools/privacy-check.ts`, `tools/payload-files.json`, `.github/workflows/untrusted.yml`, `.gitignore`, `README.md`, `specs/`, `docs/audits/2026-11-04/`, `.archive/consolidation/2026-11-04/`.
+- Validation so far: static/artifact gates and 276 supported Windows pure/privacy tests pass. Full supported-POSIX CI and built UAT remain pending at this checkpoint.
+
 ## 2026-11-04 — Revise the NFR-07, QLT-05 and QLT-13 draft specs to answer the independent review
 
 - Revise `specs/diagnostics-export.md`, `specs/workload-receipt.md` and `specs/trait-threat-data.md`; each stays "draft, revised, unreviewed" and needs a second independent review before sign-off. Append a dispositions table to each of the three review files: 53 findings, 38 Accepted, 15 Accepted-with-owner-question, 0 Rejected, 0 Deferred.
