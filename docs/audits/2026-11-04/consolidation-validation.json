@@ -113,7 +113,23 @@
     "remainingFailure": "The runningCheck test observer reads the journal without the store lock while a check child appends. The production bounded-read refusal is retained.",
     "testOnlyRepair": "Observe through the existing store transaction, await asynchronous polling predicates, and resolve the two observer caller types. Two red-first regressions, typecheck and all lints pass locally."
   },
-  "supportedPosixCiAndDualRuntimeBuiltUat": "pending exact-source CI after locking the test observer",
+  "observerPublishedCi": {
+    "source": "7134b9c5e1b6a18c97a87179ac1781c6e4acdc7a",
+    "run": "https://github.com/vedprakash-m/tenet/actions/runs/41973300603",
+    "conclusion": "failure",
+    "ubuntuFullCiAndNode24AndMinimumNodeBuiltUat": "pass",
+    "windows": "pass",
+    "remainingMacosFailure": "The keyboard browser scenario can send Tab after the heading is visible but before its focus effect.",
+    "browserRepair": {
+      "controlledDelayedFocusBeforeRepair": "fails at initial Email focus",
+      "controlledDelayedFocusAfterRepair": "pass",
+      "twoFreshApplicationsEach": { "typecheck": "pass", "vitestPassed": 178, "browserPassed": 16 },
+      "sharedServerRepeatExperiment": "26 passed / six failed from reused state and rate limits; use fresh application/server instances, do not relax protections",
+      "recipeVersion": "0.4.8",
+      "productionUiRateLimitOrStoreChanges": false
+    }
+  },
+  "supportedPosixCiAndDualRuntimeBuiltUat": "pending exact-source CI after browser focus readiness repair",
   "cleanup": {
     "localWorktreesRemoved": 27,
     "localBranchesRemoved": 31,

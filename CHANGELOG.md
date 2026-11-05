@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-04 — Wait for browser focus before keyboard input
+
+- Source `7134b9c` passes Ubuntu full CI and both-runtime built UAT plus Windows portability; macOS's sole failure is the loan-desk keyboard focus scenario. Reproduce the initial Email focus failure on the real app with delayed heading focus.
+- Wait for the initial and reloaded heading's actual focus before sending Tab. Retain visibility, validation, authentication, error-focus and input-preservation assertions; keep the delayed-focus regression in the existing browser test. No production UI, rate-limit or store behavior changes.
+- Advance recipe 0.4.7 to 0.4.8 for the changed shipped test content; dependency lock pin is unchanged. Files: starter `server/test/e2e/auth-browser.e2e.spec.ts`, `recipe.json`, `packages/kernel/test/starter.test.ts`.
+- Local typecheck, all lints, build, payload, reproducibility and lock-pin regression pass. Two fresh application runs each pass typecheck, 178 Vitest cases and all 16 real browser scenarios. A separate shared-server repeat experiment failed through reused state/rate limits; those protections were not relaxed. Final exact-source CI remains pending.
+
 ## 2026-11-04 — Lock concurrent test observations
 
 - The `dde2bf2` CI run passes macOS full CI and built UAT on Node 24 and 22.12.0, plus Windows portability. Ubuntu passes 1,695/1,696 tests; the sole failure is an unlocked `runningCheck` test observation racing a journal append.
