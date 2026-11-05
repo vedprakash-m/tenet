@@ -12,16 +12,18 @@ Tenet records what is true about engineering work, so changes to it are held to 
 
 ## What the specs are
 
-Three specs say what Tenet is, and a plan sequences the work:
+Three tracked specs say what Tenet is, and a local-only plan sequences the work:
 
 | File | Owns |
 |---|---|
 | [specs/PRD.md](specs/PRD.md) | Meaning: what Tenet must do and why |
 | [specs/tech-spec.md](specs/tech-spec.md) | Mechanism: how |
 | [specs/ux-spec.md](specs/ux-spec.md) | Wording: what the user reads |
-| [specs/plan.md](specs/plan.md) | Sequence and the progress record |
+| `specs/plan.md` (local-only) | Sequence and the progress record |
 
 If code, plan and a spec disagree, the spec wins. Fix the plan or the code. A defect in a spec is logged in plan section 12.3 and not routed around.
+
+Only `specs/PRD.md`, `specs/tech-spec.md` and `specs/ux-spec.md` are tracked under `specs/`. All other specs, reviews and the plan, plus the entire `.archive/` directory, stay local and git-ignored. Do not force-add them. Create local planning records when needed in a fresh checkout; build, coverage and CI do not require these records. The candidate release-notes draft tool requires a local `specs/plan.md` to report open gates; it is not part of CI.
 
 ## The lifecycle for a feature
 
@@ -84,7 +86,7 @@ Skill and agent text is executable behavior. Keep it within the token budgets. N
 
 ## Claims about the host
 
-Behavior of VS Code, Copilot, subagents and approvals is unobserved until a spike records it, and each spike needs the owner's separate authorization. Write "unobserved", never "should work". A requirement is marked implemented only with a commit or CI run, and observed only with a dated observation on the real host. The status words are defined in [specs/plan.md](specs/plan.md) section 0.1.
+Behavior of VS Code, Copilot, subagents and approvals is unobserved until a spike records it, and each spike needs the owner's separate authorization. Write "unobserved", never "should work". A requirement is marked implemented only with a commit or CI run, and observed only with a dated observation on the real host. The local status words are defined in `specs/plan.md` section 0.1.
 
 ## Writing
 

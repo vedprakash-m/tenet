@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-04 — Keep archives and noncanonical specs local
+
+- Ignore the entire `.archive/` directory and every file under `specs/` except `PRD.md`, `tech-spec.md` and `ux-spec.md`. Remove previously tracked local-only files from current main without deleting their local copies.
+- The owner selected current-main removal, not a history rewrite: earlier GitHub commits retain the published files. Document the local-only boundary for contributors and agents, and the local plan requirement of the candidate release-notes draft tool.
+- Files: `.gitignore`, `.gitattributes`, `.github/copilot-instructions.md`, `README.md`, `CONTRIBUTING.md`, `packages/kernel/test/privacy.test.ts`; archived source and noncanonical specs removed from the Git index. Add a red-first regression for archive/spec ignore rules and the exact canonical allowlist.
+- Consolidation follow-through: repaired-source CI passes Windows and 1,693/1,694 tests on each POSIX runner; the sole failure is a stale golden loan-desk suite count (148 executed, 147 expected). Correct that exact-count assertion in `packages/kernel/test/golden-task-loan-desk.test.ts`; all receipt/status assertions remain unchanged.
+
 ## 2026-11-04 — Consolidate reviewed repairs and preserve nonshipping work
 
 - Integrate the implementation-audit repairs, including repeated detection, reviewer packet/admission follow-through, receipt privacy, candidate identity, starter migration/restore safety, and read-only interrupted dependency recovery. Normal dependency rollback safety and the unsigned finding-lifecycle routes remain open.
@@ -9,6 +16,7 @@
 - Validation so far: static/artifact gates and 276 supported Windows pure/privacy tests pass. Full supported-POSIX CI and built UAT remain pending at this checkpoint.
 - Merge compatible starter cookie and typescript-eslint updates; starter types/lint and 145 tests pass. Preserve both TypeScript 7 updates, ESLint 10 and Node 26 types after owner disposition of compatibility failures. Record full indexed/history privacy checks and reviewed false positives in `docs/audits/2026-11-04/consolidation-validation.json`.
 - First published CI exposed stale NOTICE/recipe-lock metadata and incomplete demo/trace fixtures. Refresh both notices, advance the pinned recipe to 0.4.7, supply npm provenance, compare independent fixture IDs by their example meaning, distinguish check questions from receipt outcomes, and trigger journal compaction. Add a direct stamp regression; no demo/trace/store product rule changes. Preserve two newer Dependabot revisions when the deletion lease detects their changed heads.
+- Complete verified cleanup of 27 additional worktrees, 31 local branches and all six remote dependency branches after publication and preservation. Repaired-source full-index privacy scans cover 925 files; 21 outgoing commits have no Gitleaks findings. Reviewed indexed matches remain evidence hashes and synthetic fixtures, not identified real secrets or PII.
 
 ## 2026-11-04 — Revise the NFR-07, QLT-05 and QLT-13 draft specs to answer the independent review
 

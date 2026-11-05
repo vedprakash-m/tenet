@@ -3,6 +3,7 @@
   "startingMain": "70f03da37d381f4aaf494e905e0af99242a97dad",
   "startingRemoteMain": "34d6030c61f3f02783fd9bd096ff1fd7cc39f8a8",
   "preservation": {
+    "publicationBoundary": "Owner subsequently selected current-main removal of all archives and noncanonical specs, retaining local copies and historical commits. These paths are now local-only and git-ignored.",
     "directory": ".archive/consolidation/2026-11-04",
     "dirtyWorktrees": 7,
     "uniqueLocalCandidateBranches": 3,
@@ -46,6 +47,9 @@
     "repositoryOutgoingAddedLines": "pass",
     "independentScanner": "Gitleaks 8.30.1, checksum-verified, local-only execution with redacted reports",
     "indexedFilesAtFirstCompleteScan": 914,
+    "indexedFilesAtRepairedSourceScan": 925,
+    "repairedOutgoingHistoryCommitsScanned": 21,
+    "repairedOutgoingHistoryGitleaksFindings": 0,
     "allBranchHistoryCommitsAtFirstCompleteScan": 364,
     "gitleaksIndexedAndHistoricalFindings": {
       "total": 7,
@@ -77,12 +81,26 @@
     ],
     "additionalMacosObservation": "One real competing-writer child refused a private record changed during its bounded read. Store implementation and safety checks are unchanged; retain this failure rather than silently masking it."
   },
-  "supportedPosixCiAndDualRuntimeBuiltUat": "pending repaired-source CI",
+  "repairedPublishedCi": {
+    "source": "cc357bbe3ed17fcc151f31390cf8a10cc9042c62",
+    "run": "https://github.com/vedprakash-m/tenet/actions/runs/41967019886",
+    "conclusion": "failure",
+    "ubuntuAndMacosEach": { "passed": 1693, "failed": 1 },
+    "windows": "pass",
+    "remainingFailure": "Golden loan-desk suite actually executed 148 passing cases; stale assertion expected 147. Correct the exact expected count without weakening the receipt/status assertions.",
+    "boundedReadObservation": "The earlier macOS competing-writer refusal did not recur in this run; production safety checks remain unchanged."
+  },
+  "supportedPosixCiAndDualRuntimeBuiltUat": "pending exact-source CI after current-main local-only removal and golden suite-count correction",
   "cleanup": {
     "localWorktreesRemoved": 27,
     "localBranchesRemoved": 31,
     "remainingLocalBranch": "main",
     "remainingLocalWorktree": "main checkout",
-    "remote": "Two merged branches were removed by GitHub; exact-head guard halted deletion when two other Dependabot heads changed. Refreshed patches are preserved separately before another deletion attempt."
+    "remoteBranchesRemoved": 6,
+    "remoteAutomaticDeletions": 2,
+    "remoteExactHeadLeasedDeletions": 4,
+    "remainingRemoteBranch": "main",
+    "publishedSourceAtCleanup": "cc357bbe3ed17fcc151f31390cf8a10cc9042c62",
+    "remote": "After preserving both refreshed Dependabot revisions, all four remaining branches were deleted with exact-head leases. Only main remains locally and remotely, with one worktree and a clean checkout."
   }
 }

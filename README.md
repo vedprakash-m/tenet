@@ -20,7 +20,7 @@ What it does not do in this release line: deploy, push, or open pull requests on
 
 ## Status
 
-Dated record: [specs/plan.md](specs/plan.md) (sections 1, 4 and 13). The [November 4 implementation audit](docs/audits/2026-11-04/implementation-audit.md) records the remaining defects and completion gates. Baseline evidence below is for commit `34d6030`, not subsequent uncommitted changes:
+The [November 4 implementation audit](docs/audits/2026-11-04/implementation-audit.md) records the remaining defects and completion gates. The detailed progress record, `specs/plan.md`, is local-only and is not included in a fresh checkout. Baseline evidence below is for commit `34d6030`, not subsequent changes:
 
 | Area | State |
 |---|---|
@@ -120,7 +120,7 @@ npm run eval:report -- --input <path> --format json|markdown|junit
 - [Install and remove](docs/user/install-and-remove.md)
 - [The Autopilot limit](docs/user/autopilot.md)
 - [Three starter requests](docs/user/starter-requests.md)
-- For maintainers: [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [NOTICE](NOTICE), and the specifications in [specs/](specs/) ([PRD](specs/PRD.md), [tech spec](specs/tech-spec.md), [UX spec](specs/ux-spec.md), [plan](specs/plan.md))
+- For maintainers: [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [NOTICE](NOTICE), and the three canonical specifications ([PRD](specs/PRD.md), [tech spec](specs/tech-spec.md), [UX spec](specs/ux-spec.md)). All other files under `specs/` and the entire `.archive/` directory are git-ignored local records, not published documentation.
 
 ## License
 

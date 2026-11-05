@@ -2,6 +2,8 @@
 
 Tenet is a governed engineering loop for Copilot: a small deterministic kernel (`packages/kernel`) that records what is true, a plugin (`plugin/`) of agents, commands and skills that does the work, and a starter recipe. Three specs say what it is: `specs/PRD.md` (meaning), `specs/tech-spec.md` (mechanism), `specs/ux-spec.md` (wording). `specs/plan.md` sequences the work and is the progress record. If code, plan and a spec disagree, the spec wins; fix the plan or the code, and log a spec defect in plan §12.3.
 
+Only the three canonical specs are tracked under `specs/`. All other specs, reviews and `specs/plan.md`, plus all of `.archive/`, are local-only and git-ignored. Preserve local records, but never force-add or publish them. A fresh checkout does not contain them; create local planning records when needed. Canonical specs, code, tests and public documentation remain tracked.
+
 ## How to work
 1. **Think before coding.** State assumptions. If a request has several readings, list them with a recommendation; do not pick silently. If a simpler approach exists, say so and push back. If something is unclear, stop and ask.
 2. **Simplicity first.** The least code that solves the problem. No speculative features, no abstraction for one use, no handling of cases that cannot happen. Every complexity must earn its keep.
