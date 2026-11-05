@@ -1,14 +1,23 @@
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { backup } from "../src/platform/backup.ts";
-import { openDb, writeTx } from "../src/platform/db.ts";
+import { openDb as openDatabase, writeTx } from "../src/platform/db.ts";
 import { migrate } from "../src/platform/migrate.ts";
 
 const dirs: string[] = [];
+const databases: ReturnType<typeof openDatabase>[] = [];
+const openDb: typeof openDatabase = (...args) => {
+  const db = openDatabase(...args);
+  databases.push(db);
+  return db;
+};
 const scratch = () => { const d = mkdtempSync(join(tmpdir(), "starter-")); dirs.push(d); return d; };
-afterEach(() => { for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
+afterEach(() => {
+  for (const db of databases.splice(0)) db.close();
+  for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
+});
 const sql = (dir: string, name: string, text: string) => writeFileSync(join(dir, name), text);
 
 describe("migrations", () => {
@@ -69,6 +78,32 @@ describe("migrations", () => {
     sql(dir, "0003_c.sql", "CREATE TABLE c (x INTEGER);");
     migrate(memory, { dir });
     expect(() => migrate(memory, { dir })).not.toThrow();
+  });
+
+  it.each(["default", "explicit"])("backs up existing data without recorded migrations using the %s destination [QLT-07]", destination => {
+    const dir = scratch(), file = join(dir, "app.db"), db = openDb(file);
+    const table = destination === "explicit" ? "sqliteNotes" : "notes";
+    db.exec(`CREATE TABLE ${table} (value TEXT); INSERT INTO ${table} VALUES ('original');`);
+    sql(dir, "0001_a.sql", `UPDATE ${table} SET value = 'migrated';`);
+    migrate(db, { dir, ...(destination === "explicit" ? { backupTo: join(dir, "chosen.bak") } : {}) });
+    const copies = readdirSync(dir).filter(name => name.endsWith(".bak"));
+    expect(copies).toHaveLength(1);
+    const copy = openDb(join(dir, copies[0]!));
+    expect(copy.prepare(`SELECT value FROM ${table}`).all()).toEqual([{ value: "original" }]);
+    expect(copy.prepare("SELECT version FROM schema_migrations").all()).toEqual([]);
+    expect(db.prepare(`SELECT value FROM ${table}`).all()).toEqual([{ value: "migrated" }]);
+    expect(db.prepare("SELECT version FROM schema_migrations").all()).toEqual([{ version: "0001_a.sql" }]);
+  });
+
+  it("does not migrate unrecorded data when its backup destination is occupied [QLT-07]", () => {
+    const dir = scratch(), db = openDb(join(dir, "app.db")), copy = join(dir, "chosen.bak");
+    db.exec("CREATE TABLE notes (value TEXT); INSERT INTO notes VALUES ('original');");
+    sql(dir, "0001_a.sql", "UPDATE notes SET value = 'migrated';");
+    writeFileSync(copy, "existing backup content");
+    expect(() => migrate(db, { dir, backupTo: copy })).toThrow();
+    expect(readFileSync(copy, "utf8")).toBe("existing backup content");
+    expect(db.prepare("SELECT value FROM notes").all()).toEqual([{ value: "original" }]);
+    expect(db.prepare("SELECT version FROM schema_migrations").all()).toEqual([]);
   });
 
   it("refuses a backup whose schema version differs", () => {

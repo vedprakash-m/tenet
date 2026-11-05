@@ -37,6 +37,17 @@ function writeFixture(root: string, onlyUnder?: string[]): string[] {
   return written;
 }
 
+it("loan-desk fixtures preserve the starter migration and restore safety tests", () => {
+  const template = join(import.meta.dirname, "../../../plugin/skills/tenet-starter-ts-web-api/template");
+  const migration = readFileSync(join(FIXTURES, "server/test/migrate.test.ts.txt"), "utf8")
+    .replace('["0001_init.sql", "0002_items_loans.sql"]', '["0001_init.sql"]')
+    .replace("{ n: 2 }", "{ n: 1 }");
+  const restore = readFileSync(join(FIXTURES, "server/test/restore.test.ts.txt"), "utf8")
+    .replaceAll("0002_items_loans", "0001_init");
+  assert.equal(migration, readFileSync(join(template, "server/test/migrate.test.ts"), "utf8"));
+  assert.equal(restore, readFileSync(join(template, "server/test/restore.test.ts"), "utf8"));
+});
+
 describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.env.TENET_OFFLINE === "1" && "offline" }, () => {
   it("scaffolds the starter, then the real open/basis/check/review/finish loop builds the reservation feature with a real baseline red and a real green", { timeout: 300_000 }, async () => {
     const root = tmp("tenet-golden-loan-desk-"); roots.push(root);
@@ -131,7 +142,7 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
     assert.equal(candidate.exit, 0, JSON.stringify(candidate));
     const suite = d(candidate).receipts.find((r: { obligation: string }) => r.obligation === "OB-suite");
     assert.equal(suite.status, "pass", JSON.stringify(suite));
-    assert.equal(suite.counts.executed, 148, "platform, feature, seed-recovery, process-race and generated-contract cases all ran");
+    assert.equal(suite.counts.executed, 178, "platform, feature, seed-recovery, process-race and generated-contract cases all ran");
     for (const id of ["OB-types", "OB-lint"]) {
       const receipt = d(candidate).receipts.find((r: { obligation: string }) => r.obligation === id);
       assert.equal(receipt?.status, "pass", `${id}: ${JSON.stringify(receipt)}`);
