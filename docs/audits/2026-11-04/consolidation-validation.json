@@ -1,0 +1,65 @@
+{
+  "scope": "Owner-requested main consolidation; not a release or host qualification",
+  "startingMain": "70f03da37d381f4aaf494e905e0af99242a97dad",
+  "startingRemoteMain": "34d6030c61f3f02783fd9bd096ff1fd7cc39f8a8",
+  "preservation": {
+    "directory": ".archive/consolidation/2026-11-04",
+    "dirtyWorktrees": 7,
+    "uniqueLocalCandidateBranches": 3,
+    "remoteDependencyPatches": 6,
+    "runtimePromotionOfNonshippingCandidates": false,
+    "syntheticFixtureAnnotations": 3
+  },
+  "dependencies": {
+    "integrated": ["@fastify/cookie 11.1.5", "typescript-eslint 8.72.1"],
+    "preservedNotIntegrated": {
+      "typescript 7.0.2, root and starter": "Compiler API removed; quality gate cannot compile; typescript-eslint requires TypeScript <6.1",
+      "eslint 10.13.0": "Requires Node ^22.13.0 or another supported major, excluding Tenet's Node 22.12.0 minimum",
+      "@types/node 26.6.6": "Ten typecheck failures from changed assertion overloads"
+    },
+    "ownerDisposition": "Keep compatible updates and preserve incompatible patches with failure evidence"
+  },
+  "localValidation": {
+    "node": "24.22.1",
+    "typescript": "5.9.3",
+    "typecheck": "pass",
+    "architectureSkillQualityLint": "pass",
+    "m0Coverage": "pass",
+    "bundle": "775 KB within unchanged 800 KB limit",
+    "payloadFiles": 97,
+    "payloadVerification": "pass",
+    "sameToolchainReproducibility": "pass",
+    "supportedPurePrivacyTests": { "passed": 276, "failed": 0, "skipped": 0 },
+    "starterTypecheck": "pass",
+    "starterLint": "pass",
+    "starterVitest": { "filesPassed": 15, "testsPassed": 145 },
+    "broaderWindowsSelection": {
+      "passed": 308,
+      "failed": 11,
+      "meaning": "Includes unsupported transaction-dependent tests; not full POSIX CI evidence"
+    },
+    "localPosix": "Existing WSL1 distribution cannot start under computer policy; policy unchanged"
+  },
+  "privacy": {
+    "repositoryStagedAddedLines": "pass",
+    "repositoryOutgoingAddedLines": "pass",
+    "independentScanner": "Gitleaks 8.30.1, checksum-verified, local-only execution with redacted reports",
+    "indexedFilesAtFirstCompleteScan": 914,
+    "allBranchHistoryCommitsAtFirstCompleteScan": 364,
+    "gitleaksIndexedAndHistoricalFindings": {
+      "total": 7,
+      "evidenceHashFalsePositives": 6,
+      "syntheticRedactionFixtureFalsePositives": 1,
+      "realSecretsIdentified": 0
+    },
+    "additionalIndexedPrivacyFindings": {
+      "credentialAssignmentSentinels": 2,
+      "syntheticPathFixtures": 2,
+      "syntheticCredentialUrlFixtures": 4,
+      "realPiiIdentified": 0
+    },
+    "limitations": "Pattern and entropy scanning plus manual classification; absence of findings does not prove absence of secrets or PII"
+  },
+  "supportedPosixCiAndDualRuntimeBuiltUat": "pending",
+  "cleanup": "pending exact preservation verification and remote publication"
+}

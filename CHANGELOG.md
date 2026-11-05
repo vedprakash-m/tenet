@@ -7,6 +7,7 @@
 - Merge current mechanism documentation without replacing existing spec decisions. No new schema activation, size-limit approval, host qualification or release.
 - Files: `packages/`, `plugin/`, `tools/privacy-check.ts`, `tools/payload-files.json`, `.github/workflows/untrusted.yml`, `.gitignore`, `README.md`, `specs/`, `docs/audits/2026-11-04/`, `.archive/consolidation/2026-11-04/`.
 - Validation so far: static/artifact gates and 276 supported Windows pure/privacy tests pass. Full supported-POSIX CI and built UAT remain pending at this checkpoint.
+- Merge compatible starter cookie and typescript-eslint updates; starter types/lint and 145 tests pass. Preserve both TypeScript 7 updates, ESLint 10 and Node 26 types after owner disposition of compatibility failures. Record full indexed/history privacy checks and reviewed false positives in `docs/audits/2026-11-04/consolidation-validation.json`.
 
 ## 2026-11-04 — Revise the NFR-07, QLT-05 and QLT-13 draft specs to answer the independent review
 
