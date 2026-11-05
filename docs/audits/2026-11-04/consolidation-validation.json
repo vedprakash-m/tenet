@@ -90,7 +90,20 @@
     "remainingFailure": "Golden loan-desk suite actually executed 148 passing cases; stale assertion expected 147. Correct the exact expected count without weakening the receipt/status assertions.",
     "boundedReadObservation": "The earlier macOS competing-writer refusal did not recur in this run; production safety checks remain unchanged."
   },
-  "supportedPosixCiAndDualRuntimeBuiltUat": "pending exact-source CI after current-main local-only removal and golden suite-count correction",
+  "localOnlyPublishedCi": {
+    "source": "95ea9e278a46eb6d4f7d6ca38a2a0da8f3926d7e",
+    "run": "https://github.com/vedprakash-m/tenet/actions/runs/41968663955",
+    "conclusion": "failure",
+    "windows": "pass",
+    "remainingFailure": "Golden loan-desk fixtures overwrite current starter migration/restore safety tests, producing unexpected reviewer attention. Synchronize fixtures rather than accepting weakened checks.",
+    "fixtureRepair": {
+      "redFirstPreservationRegression": "pass after synchronization; failed before",
+      "overlaidApplicationTypecheck": "pass",
+      "overlaidApplicationVitest": { "passed": 178, "failed": 0, "pending": 0 },
+      "productionSafetyChanges": false
+    }
+  },
+  "supportedPosixCiAndDualRuntimeBuiltUat": "pending exact-source CI after golden fixture preservation repair",
   "cleanup": {
     "localWorktreesRemoved": 27,
     "localBranchesRemoved": 31,

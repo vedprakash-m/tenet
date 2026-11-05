@@ -6,6 +6,7 @@
 - The owner selected current-main removal, not a history rewrite: earlier GitHub commits retain the published files. Document the local-only boundary for contributors and agents, and the local plan requirement of the candidate release-notes draft tool.
 - Files: `.gitignore`, `.gitattributes`, `.github/copilot-instructions.md`, `README.md`, `CONTRIBUTING.md`, `packages/kernel/test/privacy.test.ts`; archived source and noncanonical specs removed from the Git index. Add a red-first regression for archive/spec ignore rules and the exact canonical allowlist.
 - Consolidation follow-through: repaired-source CI passes Windows and 1,693/1,694 tests on each POSIX runner; the sole failure is a stale golden loan-desk suite count (148 executed, 147 expected). Correct that exact-count assertion in `packages/kernel/test/golden-task-loan-desk.test.ts`; all receipt/status assertions remain unchanged.
+- The next run exposed stale loan-desk migration/restore fixtures overwriting current starter safety tests. Synchronize both fixtures with the starter, retaining only their loan-schema expectations; add a red-first preservation regression so future drift fails directly. The actual overlaid application typecheck and all 178 Vitest cases pass locally. Expect the full 178-case population in the kernel golden journey; do not waive reviewer attention or weaken production checks.
 
 ## 2026-11-04 — Consolidate reviewed repairs and preserve nonshipping work
 
