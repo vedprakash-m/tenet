@@ -77,7 +77,7 @@ describe("installed Playwright evidence boundaries", () => {
     assert.equal(stack.e2eArgv(root, "/run/report.json"), null);
     playwright(root);
     assert.deepEqual(stack.e2eArgv(root, "/run/report.json"), [
-      process.execPath, join("node_modules", "@playwright/test/cli.js"), "test", "--reporter=json",
+      process.execPath, join("node_modules", "@playwright/test/cli.js"), "test", "--reporter=json", "--forbid-only",
     ]);
     playwright(root, "99.0.0");
     assert.equal(stack.e2eArgv(root, "/run/report.json"), null);

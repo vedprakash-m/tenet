@@ -46,6 +46,43 @@ describe("static report population and bounds", () => {
 });
 
 describe("static adapter execution profile", () => {
+  it("preserves reporter-option refusals and supported metadata detection [EVD-05, TQ-10]", () => {
+    const root = tmp("tenet-reporter-options-"), stack = createStack();
+    roots.push(root);
+    for (const options of [null, 1, "opaque", { colors: false }, { outputFile: "other.json" },
+      { outputFile: "other.json", colors: false }]) {
+      writeFileSync(join(root, "package.json"), JSON.stringify({ vitest: { test: { reporters: [["json", options]] } } }));
+      assert.throws(() => stack.assertSupportedConfiguration(root),
+        options && typeof options === "object" && "outputFile" in options ? /private report destination/ : /reporter options/);
+    }
+    for (const options of [{}, []]) {
+      writeFileSync(join(root, "package.json"), JSON.stringify({ vitest: { test: { reporters: [["json", options]] } } }));
+      assert.doesNotThrow(() => stack.assertSupportedConfiguration(root));
+    }
+    mkdirSync(join(root, "node_modules", "vitest"), { recursive: true });
+    for (const version of [undefined, null, "", "nonsense", "1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.5", "99.0.0"]) {
+      writeFileSync(join(root, "node_modules", "vitest", "package.json"), JSON.stringify({ version }));
+      const detected = stack.detect(root);
+      assert.equal(detected.language, "ts-js");
+      assert.equal(detected.runnerSupported, typeof version === "string" && /^[2-5]\./.test(version));
+    }
+  });
+
+  it("refuses explicit unhandled-error filters without evaluating project configuration [EVD-05, TQ-10]", () => {
+    const root = tmp("tenet-error-filter-"), stack = createStack();
+    roots.push(root);
+    for (const base of ["vitest.config", "vite.config"]) for (const extension of ["js", "mjs", "cjs", "ts", "mts", "cts"]) {
+      const path = join(root, `${base}.${extension}`);
+      for (const field of ["onUnhandledError: () => false", '"onUnhandledError": filter', "onUnhandledError"]) {
+        writeFileSync(path, `throw new Error("must not execute config");\nexport default { test: { ${field} } };\n`);
+        assert.throws(() => stack.assertSupportedConfiguration(root), /unhandled.*filter/i, path);
+      }
+      writeFileSync(path, "export default { test: { dangerouslyIgnoreUnhandledErrors: false } };\n");
+      assert.doesNotThrow(() => stack.assertSupportedConfiguration(root));
+      rmSync(path);
+    }
+  });
+
   it("refuses a project JSON reporter output destination before checks run [TQ-10]", async () => {
     const p = project({
       "vitest.config.ts": `import { defineConfig } from "vitest/config";

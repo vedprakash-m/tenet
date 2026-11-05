@@ -4,9 +4,46 @@ import assert from "node:assert/strict";
 import fc from "fast-check";
 import { CATALOG, effectiveSettings, resolveSetting, validateSetting } from "../src/core/config.ts";
 import type { Layers } from "../src/core/config.ts";
+import { config } from "../src/decisions/simple.ts";
+import { KernelError } from "../src/core/errors.ts";
+import { emptyState, newContract } from "../src/core/state.ts";
+import type { Ports, Tx } from "../src/ports/types.ts";
 
 const layers = (over: Partial<Layers> = {}): Layers => ({ shared: {}, local: {}, task: {}, adoption: { intent: "undecided", policy: "undecided" }, ...over });
 const KEYS = ["style", "checkpoints", "lane", "resource_mode", "shared_memory", "branching", "integration", "commands", "required_checks", "protected_paths", "exclusions", "dependency_policy"];
+
+describe("unknown setting diagnostics [CFG-11]", () => {
+  for (const [target, nearest] of [
+    ["protected_path", "protected_paths"], ["exclusion", "exclusions"],
+    ["required_check", "required_checks"], ["dependency_polcy", "dependency_policy"],
+    ["resorce_mode", "resource_mode"],
+  ] as const) {
+    it(`rejects ${target} and suggests ${nearest} without I/O or state changes`, () => {
+      const state = emptyState("workspace", "tag");
+      const work = newContract({
+        id: "W1", label: "work", profile: "feature", request: "test config", lane: "quick", floor: "quick", level: "L1",
+        generation: 1, now: "2026-11-04T00:00:00Z", version: "test", assessment: {},
+        scopePaths: [], protectedPaths: [], gitMode: "none", base: null, branch: null,
+        start: { head: null, branch: null, staged: [], dirty: [] },
+      });
+      const original = JSON.stringify({ state, work });
+      assert.throws(() => config.run({
+        get ports(): Ports { throw new Error("must not access ports"); },
+        get tx(): Tx { throw new Error("must not access transaction"); },
+        state, work,
+        input: { kind: "config", target },
+      }), error => {
+        assert.ok(error instanceof KernelError);
+        assert.equal(error.reasons[0]?.code, "restriction-key-unknown");
+        assert.equal(error.exit, 2);
+        assert.match(error.message, new RegExp(`did you mean "${nearest}"`));
+        assert.ok(error.message.includes(target));
+        return true;
+      });
+      assert.equal(JSON.stringify({ state, work }), original);
+    });
+  }
+});
 
 describe("the catalog [CFG-02]", () => {
   it("has the twelve settings, each with a default, a kind and the scopes it may be set in", () => {

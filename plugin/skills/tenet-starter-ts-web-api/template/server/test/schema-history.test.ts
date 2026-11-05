@@ -41,6 +41,24 @@ it.each(["checksum", "history", "foreign-key"])("rejects a %s-incompatible backu
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
+it("refuses an unrecorded user schema whose name starts with sqlite but not sqlite_ [QLT-07]", () => {
+  const { dir, path } = fixture(), unrecorded = join(dir, "unrecorded.db");
+  try {
+    const db = new Database(unrecorded);
+    try {
+      db.exec("CREATE TABLE schema_migrations (version TEXT PRIMARY KEY, checksum TEXT NOT NULL, applied_at INTEGER NOT NULL); CREATE TABLE sqliteNotes (value TEXT); INSERT INTO sqliteNotes VALUES ('original');");
+    } finally { db.close(); }
+    const before = readFileSync(path), saved = readFileSync(unrecorded);
+    expect(() => restore(unrecorded, path, { after(step) {
+      if (step === "validated") throw new Error("safety sentinel: unrecorded schema passed admission");
+    } })).toThrow(/unrecorded schema history/);
+    expect(readFileSync(path)).toEqual(before);
+    expect(readFileSync(unrecorded)).toEqual(saved);
+    expect(pendingRestore(path)).toBeNull();
+    expect(readdirSync(dir).filter(name => /before-restore|restoring|owner|in-progress/.test(name))).toEqual([]);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 it("refuses a retroactive migration before backup or data changes [QLT-07]", () => {
   const dir = mkdtempSync(join(tmpdir(), "starter-migration-order-")), path = join(dir, "app.db");
   const db = openDb(path);
@@ -61,7 +79,10 @@ it("revalidates a changed backup after intent, keeps recovery fenced and rolls b
   const { dir, path, copy } = fixture();
   try {
     const child = spawnSync(process.execPath, ["--experimental-strip-types", join(import.meta.dirname, "support/restore-child.ts"), copy, path, "marked"], { encoding: "utf8", timeout: 10_000, killSignal: "SIGKILL" });
-    expect(child.signal, child.stderr).toBe("SIGKILL");
+    expect(child.error, child.stderr).toBeUndefined();
+    expect(child.stdout).toContain("restore-step:marked");
+    expect(child.status === 0 && child.signal === null).toBe(false);
+    if (process.platform !== "win32") expect(child.signal, child.stderr).toBe("SIGKILL");
     corrupt(copy, "checksum");
     expect(() => recoverRestore(path, "finish")).toThrow(/checksum|changed/i);
     expect(pendingRestore(path)).not.toBeNull();

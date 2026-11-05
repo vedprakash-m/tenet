@@ -1,0 +1,423 @@
+diff --git a/.gitignore b/.gitignore
+index 86d2a0b..94e2829 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -8,4 +8,7 @@ node_modules/
+ plugin/kernel/
+ plugin/SHA256SUMS
+ .tenet/
++.env
++.env.*
++!.env.example
+ .host-runs/
+diff --git a/packages/kernel/test/privacy.test.ts b/packages/kernel/test/privacy.test.ts
+index e25eb24..20dd269 100644
+--- a/packages/kernel/test/privacy.test.ts
++++ b/packages/kernel/test/privacy.test.ts
+@@ -1,5 +1,9 @@
+ import { describe, it } from "node:test";
+ import assert from "node:assert/strict";
++import { execFileSync, spawnSync } from "node:child_process";
++import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join } from "node:path";
+ import { scanDiff } from "../../../tools/privacy-check.ts";
+ 
+ const diff = (file: string, ...added: string[]) => `+++ b/${file}\n@@ -0,0 +1,${added.length} @@\n${added.map((l) => `+${l}`).join("\n")}\n`;
+@@ -17,4 +21,44 @@ describe("privacy check", () => {
+     assert.equal(scanDiff(diff("keys/id_rsa", "x")).length, 1);
+     assert.deepEqual(scanDiff(diff(".env.example", "A=")), []);
+   });
++  it("finds quoted credential keys and escaped values in JSON and object literals", () => {
++    const added = [
++      '{"apiKey":"synthetic-placeholder"}', // privacy-ok
++      '{ "password" : "synthetic-\\"placeholder" }', // privacy-ok
++      '{"api_key":"synthetic-\\\\placeholder"}', // privacy-ok
++      "{ 'TOKEN': 'synthetic-placeholder' }", // privacy-ok
++      '{"secret":"synthetic-\\u0022placeholder"}', // privacy-ok
++      "api-key = 'synthetic-placeholder'", // privacy-ok
++    ];
++    assert.deepEqual(scanDiff(diff("config.json", ...added)).map((f) => [f.line, f.what]),
++      added.map((_, i) => [i + 1, "a credential assignment"]));
++  });
++  it("keeps heuristic controls: names, empty/short values, removed lines and explicit exemptions", () => {
++    assert.deepEqual(scanDiff(diff("config.json",
++      '{"apiKeyName":"synthetic-placeholder"}',
++      '{"apiKey":""}', // privacy-ok
++      '{"password":"short"}', // privacy-ok
++      '{"token":null}',
++      '{"apiKey":"synthetic-placeholder"} // privacy-ok',
++    )), []);
++    assert.deepEqual(scanDiff('+++ b/config.json\n@@ -1 +1 @@\n-{"apiKey":"synthetic-placeholder"}\n+{}\n'), []); // privacy-ok
++  });
++  it("ignores real env stores at every depth but keeps .env.example available", () => {
++    const dir = mkdtempSync(join(tmpdir(), "tenet-ignore-"));
++    try {
++      execFileSync("git", ["-c", "init.defaultBranch=main", "-c", "init.templateDir=", "init", "--quiet", dir]);
++      copyFileSync(new URL("../../../.gitignore", import.meta.url), join(dir, ".gitignore"));
++      for (const file of [".env", ".env.local", ".env.production", "nested/.env", "nested/.env.local", "nested/.env.production"]) {
++        const result = spawnSync("git", ["-c", "core.excludesFile=", "check-ignore", "--no-index", file], { cwd: dir, encoding: "utf8" });
++        assert.equal(result.status, 0, `${file}: ${result.stderr}`);
++        assert.equal(result.stdout.trim(), file);
++        assert.equal(scanDiff(diff(file, "A=")).length, 1);
++      }
++      for (const file of [".env.example", "nested/.env.example"]) {
++        const result = spawnSync("git", ["-c", "core.excludesFile=", "check-ignore", "--no-index", file], { cwd: dir, encoding: "utf8" });
++        assert.equal(result.status, 1, file);
++        assert.deepEqual(scanDiff(diff(file, "A=")), []);
++      }
++    } finally { rmSync(dir, { recursive: true, force: true }); }
++  });
+ });
+diff --git a/packages/kernel/test/starter.test.ts b/packages/kernel/test/starter.test.ts
+index c374c27..05bf057 100644
+--- a/packages/kernel/test/starter.test.ts
++++ b/packages/kernel/test/starter.test.ts
+@@ -44,6 +44,16 @@ describe("the ts-web-api recipe", () => {
+     assert.equal(template.engines.node, ">=22.12.0");
+   });
+ 
++  it("names every recipe-protected path in the starter kickoff instructions", () => {
++    const recipe = JSON.parse(readFileSync(join(PLUGIN, "recipe.json"), "utf8"));
++    const skill = readFileSync(join(PLUGIN, "SKILL.md"), "utf8");
++    const protectedPaths = skill.split("## Protected paths\n")[1]?.split("\n## ")[0];
++    assert.ok(protectedPaths, "the starter skill has a protected-path section");
++    for (const path of recipe.protectedPaths) {
++      assert.ok(protectedPaths.includes(`\`${path}\``), `kickoff instructions omit protected path ${path}`);
++    }
++  });
++
+   it("scaffolds and receipts the starter's migration, restore, test, type, lint and browser checks through the kernel [EVD-13, QLT-03, QLT-04, QLT-07, QLT-14]", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
+     const root = tmp("tenet-starter-"); roots.push(root);
+     initRepo(root);
+diff --git a/plugin/skills/tenet-starter-ts-web-api/SKILL.md b/plugin/skills/tenet-starter-ts-web-api/SKILL.md
+index a550ef1..04fcbaf 100644
+--- a/plugin/skills/tenet-starter-ts-web-api/SKILL.md
++++ b/plugin/skills/tenet-starter-ts-web-api/SKILL.md
+@@ -17,12 +17,12 @@ Use for a new project in an empty folder, and when extending a project that came
+ 6. The first plan item is a new contract in the Standard lane. `features/<f>/` starts empty; that item's own build creates the first feature.
+ 
+ ## What the platform gives you
+-Config, database (WAL, foreign keys, immediate write transactions), forward-only checksummed migrations with a verified backup, scrypt password hashing, sessions (256-bit IDs, signed HttpOnly SameSite=Lax cookie, rotation on sign-in, all sessions revoked on password change, idle and absolute expiry), CSRF bound to the session, problem-style errors without stacks, redacted logs with correlation IDs, helmet, rate limits, `/api/health`. Development identities are written to `.env.local` on the first run. A React/Vite account shell provides sign-in, a fresh account read/reload, sign-out, retained-input errors, loading/retry and keyboard focus. `npm run dev:web` serves it on loopback port 5173 and proxies `/api`; start the API separately with `npm run dev`. Browser tests use a dedicated database and synthetic test account, with axe and keyboard checks. `journeys.json` lists scope; record manual screen-reader observations in `docs/a11y-checks.md` before making a broader accessibility claim.
++Config, database (WAL, foreign keys, immediate write transactions), forward-only checksummed migrations with a verified backup, scrypt password hashing, sessions (256-bit IDs, signed HttpOnly SameSite=Lax cookie, rotation on sign-in, all sessions revoked on password change, idle and absolute expiry), CSRF bound to the session, problem-style errors without stacks, redacted logs with correlation IDs, helmet, rate limits, `/api/health`. Development identities are written to `.env.local` on the first run. An empty database alongside existing development credential assignments stops startup for manual reconciliation; the assignments are never replaced automatically. A React/Vite account shell provides sign-in, a fresh account read/reload, sign-out, retained-input errors, loading/retry and keyboard focus. `npm run dev:web` serves it on loopback port 5173 and proxies `/api`; start the API separately with `npm run dev`. Browser tests use a dedicated database and synthetic test account, with axe and keyboard checks. `journeys.json` lists scope; record manual screen-reader observations in `docs/a11y-checks.md` before making a broader accessibility claim.
+ 
+ `npm run --silent openapi` exports the shared-schema API contract without listening or touching the development database. Add route request/response schemas and cookie/CSRF metadata with each feature; metadata is documentation; authorization stays in actor/policy checks. Review the export diff; automatic compatibility and trait-based findings remain pending.
+ 
+ ## Protected paths
+-`server/src/platform/auth/*`, `server/src/platform/session/*` and `server/migrations/*` are proposed as protected in the kickoff. Changing them needs the user's say-so for that work.
++`server/src/platform/auth/*`, `server/src/platform/session/*`, `server/migrations/*`, `server/src/platform/admission.ts` and `server/src/platform/rate-metadata.ts` are proposed as protected in the kickoff. Changing them needs the user's say-so for that work.
+ 
+ ## Adding a feature
+ - A feature is a folder under `server/src/features/<name>/` with its routes, service, repository, tests and an `index.ts` that is its only public face. Another feature imports only that `index.ts`.
+diff --git a/plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/dev-identities.ts b/plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/dev-identities.ts
+index dabb112..76d89a2 100644
+--- a/plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/dev-identities.ts
++++ b/plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/dev-identities.ts
+@@ -2,20 +2,42 @@
+ // .env.local (git-ignored, excluded from Tenet's reads by default). They are printed to stderr at startup only when no
+ // run token is set, so they never reach Tenet's run directories, responses or traces.
+ import { randomBytes, randomUUID } from "node:crypto";
+-import { appendFileSync } from "node:fs";
++import { readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+ import { hashPassword } from "./auth/passwords.ts";
++import { writeTx } from "./db.ts";
+ import type { Db } from "./db.ts";
+ import { countUsers, insertUser } from "./users.repository.ts";
+ 
+ const password = (): string => randomBytes(18).toString("base64url").slice(0, 24);
+ 
++function publishCredentials(envFile: string, text: string): void {
++  let prior: string;
++  try { prior = readFileSync(envFile, "utf8"); } catch (e) {
++    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
++    prior = "";
++  }
++  if (/^\s*(?:export\s+)?DEV_(?:ADMIN|MEMBER)_(?:EMAIL|PASSWORD)\s*=/m.test(prior)) {
++    throw new Error("The empty database has existing development credentials in its env file; reconcile the database and credentials before starting.");
++  }
++  const temp = `${envFile}.${randomUUID()}.tmp`;
++  try {
++    writeFileSync(temp, `${prior}${prior && !prior.endsWith("\n") ? "\n" : ""}${text}`, { flag: "wx", mode: 0o600, flush: true });
++    renameSync(temp, envFile);
++  } finally { rmSync(temp, { force: true }); }
++}
++
+ export async function seedDevIdentities(db: Db, envFile: string, now: number): Promise<Array<{ email: string; role: string; password: string }> | undefined> {
+   if (countUsers(db) > 0) return undefined;
+   const made = [
+     { email: "admin@example.test", role: "admin", password: password() },
+     { email: "member@example.test", role: "member", password: password() },
+   ];
+-  for (const u of made) insertUser(db, { id: randomUUID(), email: u.email, role: u.role as "admin" | "member", password_hash: await hashPassword(u.password), created_at: now });
+-  appendFileSync(envFile, made.map((u) => `DEV_${u.role.toUpperCase()}_EMAIL=${u.email}\nDEV_${u.role.toUpperCase()}_PASSWORD=${u.password}\n`).join(""), { mode: 0o600 });
+-  return made;
++  const users = await Promise.all(made.map(async (u) => ({ id: randomUUID(), email: u.email, role: u.role as "admin" | "member", password_hash: await hashPassword(u.password), created_at: now })));
++  return writeTx(db, () => {
++    if (countUsers(db) > 0) return undefined;
++    for (const u of users) insertUser(db, u);
++    // Publish before commit: failures roll back both users; a pre-commit crash leaves credentials that require reconciliation.
++    publishCredentials(envFile, made.map((u) => `DEV_${u.role.toUpperCase()}_EMAIL=${u.email}\nDEV_${u.role.toUpperCase()}_PASSWORD=${u.password}\n`).join(""));
++    return made;
++  });
+ }
+diff --git a/plugin/skills/tenet-starter-ts-web-api/template/server/test/dev-identities.test.ts b/plugin/skills/tenet-starter-ts-web-api/template/server/test/dev-identities.test.ts
+new file mode 100644
+index 0000000..6ccb4e0
+--- /dev/null
++++ b/plugin/skills/tenet-starter-ts-web-api/template/server/test/dev-identities.test.ts
+@@ -0,0 +1,154 @@
++import { fork } from "node:child_process";
++import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join } from "node:path";
++import { parseEnv } from "node:util";
++import { afterEach, describe, expect, it } from "vitest";
++import { verifyPassword } from "../src/platform/auth/passwords.ts";
++import { openDb } from "../src/platform/db.ts";
++import type { Db } from "../src/platform/db.ts";
++import { seedDevIdentities } from "../src/platform/dev-identities.ts";
++import { migrate } from "../src/platform/migrate.ts";
++import { countUsers, findUserByEmail, insertUser } from "../src/platform/users.repository.ts";
++
++const dirs: string[] = [];
++const databases: Db[] = [];
++const scratch = () => { const dir = mkdtempSync(join(tmpdir(), "starter-seed-")); dirs.push(dir); return dir; };
++const database = (file: string) => { const db = openDb(file); databases.push(db); migrate(db); return db; };
++afterEach(() => {
++  for (const db of databases.splice(0)) if (db.open) db.close();
++  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
++});
++
++async function matchingCredentials(db: Db, envFile: string) {
++  const text = readFileSync(envFile, "utf8"), env = parseEnv(text);
++  for (const role of ["ADMIN", "MEMBER"]) {
++    const email = env[`DEV_${role}_EMAIL`]!, password = env[`DEV_${role}_PASSWORD`]!;
++    expect(text.match(new RegExp(`^DEV_${role}_EMAIL=`, "gm"))).toHaveLength(1);
++    expect(text.match(new RegExp(`^DEV_${role}_PASSWORD=`, "gm"))).toHaveLength(1);
++    expect(password).toHaveLength(24);
++    const user = findUserByEmail(db, email)!;
++    expect(user.role).toBe(role.toLowerCase());
++    expect(await verifyPassword(password, user.password_hash)).toBe(true);
++  }
++}
++
++async function killAt(file: string, envFile: string, boundary: string) {
++  const child = fork(new URL("support/seed-crash.mjs", import.meta.url), [file, envFile, boundary], {
++    execArgv: ["--experimental-strip-types"], silent: true,
++  });
++  let reached = false, output = "";
++  child.stderr!.on("data", (chunk: Buffer) => { output += chunk.toString(); });
++  const timer = setTimeout(() => child.kill("SIGKILL"), 15_000);
++  try {
++    await new Promise<void>((resolve, reject) => {
++      child.once("error", reject);
++      child.once("message", (message) => {
++        reached = message === boundary;
++        child.kill("SIGKILL");
++      });
++      child.once("exit", (_code, signal) => {
++        if (reached && signal === "SIGKILL") resolve();
++        else reject(new Error(`seed child did not reach ${boundary}: ${output}`));
++      });
++    });
++  } finally { clearTimeout(timer); }
++}
++
++describe("development identities", () => {
++  it("publishes exactly two matching accounts and preserves credentials on later starts", async () => {
++    const dir = scratch(), envFile = join(dir, ".env.local"), db = database(join(dir, "app.db"));
++    writeFileSync(envFile, "CUSTOM_SETTING=keep\n");
++    const made = await seedDevIdentities(db, envFile, 123);
++    expect(made?.map((u) => u.role)).toEqual(["admin", "member"]);
++    expect(countUsers(db)).toBe(2);
++    await matchingCredentials(db, envFile);
++    const saved = readFileSync(envFile, "utf8");
++    expect(saved).toContain("CUSTOM_SETTING=keep\n");
++    expect(await seedDevIdentities(db, envFile, 456)).toBeUndefined();
++    expect(readFileSync(envFile, "utf8")).toBe(saved);
++    if (process.platform !== "win32") expect(statSync(envFile).mode & 0o777).toBe(0o600);
++  });
++
++  it("rolls back both users when the second real SQLite insert fails and can retry", async () => {
++    const dir = scratch(), envFile = join(dir, ".env.local"), file = join(dir, "app.db"), db = database(file);
++    db.exec("CREATE TRIGGER fail_member BEFORE INSERT ON users WHEN NEW.role = 'member' BEGIN SELECT RAISE(ABORT, 'controlled second insert'); END;");
++    await expect(seedDevIdentities(db, envFile, 123)).rejects.toThrow("controlled second insert");
++    expect(countUsers(db)).toBe(0);
++    expect(existsSync(envFile)).toBe(false);
++    db.close();
++    const restarted = database(file);
++    restarted.exec("DROP TRIGGER fail_member");
++    await seedDevIdentities(restarted, envFile, 456);
++    await matchingCredentials(restarted, envFile);
++  });
++
++  it("rolls back both users when credential publication fails, cleans its temp and can retry", async () => {
++    const dir = scratch(), envFile = join(dir, ".env.local"), db = database(join(dir, "app.db"));
++    mkdirSync(envFile);
++    await expect(seedDevIdentities(db, envFile, 123)).rejects.toThrow();
++    expect(countUsers(db)).toBe(0);
++    expect(readdirSync(dir).filter((name) => name.startsWith(".env.local."))).toEqual([]);
++    rmSync(envFile, { recursive: true });
++    await seedDevIdentities(db, envFile, 456);
++    await matchingCredentials(db, envFile);
++  });
++
++  it("does not seed over unrelated existing users or modify their env file", async () => {
++    const dir = scratch(), envFile = join(dir, ".env.local"), db = database(join(dir, "app.db"));
++    insertUser(db, { id: "existing", email: "existing@example.test", role: "member", password_hash: "untouched", created_at: 1 });
++    const text = "CUSTOM_SETTING=keep\n";
++    writeFileSync(envFile, text);
++    expect(await seedDevIdentities(db, envFile, 123)).toBeUndefined();
++    expect(countUsers(db)).toBe(1);
++    expect(findUserByEmail(db, "existing@example.test")?.password_hash).toBe("untouched");
++    expect(readFileSync(envFile, "utf8")).toBe(text);
++  });
++
++  it("rolls back both users on a real credential-file write error", async () => {
++    const dir = scratch(), parent = join(dir, "missing"), envFile = join(parent, ".env.local"), db = database(join(dir, "app.db"));
++    await expect(seedDevIdentities(db, envFile, 123)).rejects.toMatchObject({ code: "ENOENT" });
++    expect(countUsers(db)).toBe(0);
++    expect(existsSync(envFile)).toBe(false);
++    mkdirSync(parent);
++    await seedDevIdentities(db, envFile, 456);
++    await matchingCredentials(db, envFile);
++  });
++
++  it("rechecks the empty database after hashing when two seed calls overlap", async () => {
++    const dir = scratch(), envFile = join(dir, ".env.local"), db = database(join(dir, "app.db"));
++    const results = await Promise.all([seedDevIdentities(db, envFile, 123), seedDevIdentities(db, envFile, 456)]);
++    expect(results.filter(Boolean)).toHaveLength(1);
++    expect(countUsers(db)).toBe(2);
++    await matchingCredentials(db, envFile);
++  });
++
++  it("refuses uncertain existing development credentials without changing them or adding users", async () => {
++    const dir = scratch(), envFile = join(dir, ".env.local"), db = database(join(dir, "app.db"));
++    const text = "CUSTOM_SETTING=keep\nexport DEV_ADMIN_PASSWORD=human-value\n"; // privacy-ok
++    writeFileSync(envFile, text);
++    await expect(seedDevIdentities(db, envFile, 123)).rejects.toThrow("existing development credentials");
++    expect(countUsers(db)).toBe(0);
++    expect(readFileSync(envFile, "utf8")).toBe(text);
++  });
++
++  for (const boundary of ["before-commit", "after-commit"]) {
++    it(`preserves the published pair after a real child is killed ${boundary}`, async () => {
++      const dir = scratch(), file = join(dir, "app.db"), envFile = join(dir, ".env.local");
++      database(file).close();
++      writeFileSync(envFile, "CUSTOM_SETTING=keep\n");
++      await killAt(file, envFile, boundary);
++      const published = readFileSync(envFile, "utf8"), db = database(file);
++      expect(countUsers(db)).toBe(boundary === "before-commit" ? 0 : 2);
++      if (boundary === "before-commit") {
++        await expect(seedDevIdentities(db, envFile, 456)).rejects.toThrow("existing development credentials");
++        expect(countUsers(db)).toBe(0);
++      } else {
++        expect(await seedDevIdentities(db, envFile, 456)).toBeUndefined();
++        await matchingCredentials(db, envFile);
++      }
++      expect(readFileSync(envFile, "utf8")).toContain("CUSTOM_SETTING=keep\n");
++      expect(readFileSync(envFile, "utf8")).toBe(published);
++    }, 20_000);
++  }
++});
+diff --git a/plugin/skills/tenet-starter-ts-web-api/template/server/test/support/seed-crash.mjs b/plugin/skills/tenet-starter-ts-web-api/template/server/test/support/seed-crash.mjs
+new file mode 100644
+index 0000000..de1453b
+--- /dev/null
++++ b/plugin/skills/tenet-starter-ts-web-api/template/server/test/support/seed-crash.mjs
+@@ -0,0 +1,26 @@
++import { openDb } from "../../src/platform/db.ts";
++import { seedDevIdentities } from "../../src/platform/dev-identities.ts";
++
++const [file, envFile, boundary] = process.argv.slice(2);
++const db = openDb(file);
++const transaction = db.transaction.bind(db);
++const pause = () => {
++  process.send(boundary);
++  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0);
++};
++db.transaction = (fn) => {
++  const tx = transaction(() => {
++    const result = fn();
++    if (boundary === "before-commit") pause();
++    return result;
++  });
++  return {
++    immediate() {
++      const result = tx.immediate();
++      if (boundary === "after-commit") pause();
++      return result;
++    },
++  };
++};
++await seedDevIdentities(db, envFile, 123);
++throw new Error("seed finished without reaching the requested transaction boundary");
+diff --git a/specs/plan.md b/specs/plan.md
+index 32eca12..b6a67eb 100644
+--- a/specs/plan.md
++++ b/specs/plan.md
+@@ -44,6 +44,8 @@ PRD owns meaning. Tech Spec owns mechanism. UX Spec owns wording. This plan owns
+ 
+ ## 1. Dashboard (update this first on every session)
+ 
++**Starter/privacy audit repair (2026-11-04 UTC) — ◐ local worktree:** bounded F5/F6/F7 changes at baseline `34d6030` add quoted JSON credential detection, preventive env ignores with `.env.example` retained, transactional development seeding and the existing protected-path wording. No credential replacement/recovery policy is approved: empty database plus existing development assignments refuses startup for manual reconciliation. Independent seed review finds no significant issues. Targeted Node24 Windows privacy/SQLite tests and static/build/payload checks pass; supported-POSIX full CI and actual kernel scaffold UAT remain unobserved. Parent session owns the integrated plan/changelog; this local note is excluded from the exported source patch.
++
+ **Current state in brief (2026-11-03 UTC) — ◐ local main:** R1 structural mapping is **139 mapped / 16 host-only / 26 unmapped of 181 Musts, 0 qualified**; the evidence ledger is empty and none of the 19 Shoulds has a disposition. Local typecheck, three lints, M0 coverage, build (766 KB of 800 KB), payload and reproducibility pass. The kernel refuses mutation on `win32` by design, so the full test suite runs only on supported POSIX (GitHub CI). Open gates, all outside a coding session: complete-target capacity decision (central has 37 characters free, the Node adapter 0, the store 214, schemas 528), schema-2 and coupled-contract sign-offs, the §12.3 spec defects awaiting a decision (ENG-09, the QLT-11 work-correction binding, RES-05; the GIT-03, WRK-08, check-identity, E19-notice and `publish` documents were amended on 2026-11-03, see §13), host spikes, native/protected/human campaigns, Should dispositions and release approvals. The `publish` verb is cut from R1 (§11.2); the GIT-05 claim is the narrower one recorded there. The dated entries below are history, newest first.
+ 
+ **Published; exact-source CI green (2026-11-02 UTC) — ◐ main:** process cleanup commits `28aa47f` and `5c96557` are on `origin/main`. Exact-source run [41516188207](https://github.com/vedprakash-m/tenet/actions/runs/41516188207) at `5c965572576a88aea35042a68b5176b3bbc3fda7` passes all jobs: Ubuntu full CI/built UAT, macOS full CI/built UAT, and Windows portability. This validates the stream-aware process-group re-signal guard on the hosted POSIX runners. Local typecheck, architecture/skills/quality lint, M0 coverage, build, complete payload verification and same-toolchain reproducibility also pass. The earlier macOS failures in runs `41384392664`, `41387472377` and `41390356159` remain accurately recorded as failures; the test-only SQLite changes and this process fix address their different observed points without changing product retry deadlines or evidence assertions. Full plan, sizing, host/campaign/human evidence and release gates remain open.
+@@ -875,6 +877,7 @@ Item 5 is tied to no requirement and is not taken: no MCP code exists in the rep
+ 
+ | Date | What happened | Root cause | Fixture/golden task added | Spec section affected (if any) |
+ |---|---|---|---|---|
++| 2026-11-04 | Audit F5/F6/F7 reproduced missed quoted JSON credential keys, absent preventive env ignores and partially initialized development users after real SQLite/filesystem failures. | The privacy regex omitted closing key quotes; root ignores omitted env files; seed inserts committed separately before credential publication. | Red-first privacy/ignore tests and real SQLite second-insert, file-write and process-kill tests. Safe repair preserves unknown env content and refuses uncertain existing development assignments. | Existing privacy and starter contracts; automatic pre-commit-crash reconciliation is unspecified and not selected. No credential replacement or historical partial-database repair is claimed. |
+ | 2026-11-03 | Document amendments for decisions 3A, 4b-A (wording), 7A, 8A, 9B and 10A, plus the byte unit, applied under the owner's blanket direction of 2026-11-03 to build the recommendations in `decision-packet.md`. The `publish` verb in tech-spec §6.5 had no implementation and no plan row; it is now cut from R1. | The specs described mechanisms that were never built or that were built differently (configurable trailers, extension at every bound, `publish`, a check identity without the contract base). | None. No source logic changed. `invariants.test.ts` is unchanged and still asserts no `publish` verb and no remote Git command. | PRD GIT-03, §3.9.3, WRK-08, §4.4.2, J-06; tech-spec §0.4, §4.6, §6.3, §6.5, §8.6, §8.8, §10.3, §10.6, §10.7, §17; trait-detection E19; sealed-baseline §15.2; config-completion §16.2; result-demo-path §13.3; ux-spec J-06. |
+ | 2026-11-03 | The decision-packet review found five document defects: §11.2 says no cut-list item is a Must, but EVD-04 is a Must and depends on cut 3; §11.1 and §13 cite a 250-line file cap while tech-spec §6.2 and `tools/coverage.ts` use 265; the PRD places trace events in `.tenet/traces` while tech-spec §16 places them in the journal (with no intent-revision field); the dashboard budget margins were misstated; "KB" is undefined (code reads it as binary, the result-demo spec proposes a decimal screenshot limit). | Documents were edited in separate passes without a cross-check. | None yet; each needs an owner disposition ([decision-packet.md](decision-packet.md)). | PRD ENG-09, EVD-04; tech-spec §6.2, §16, §19.4. **Partly closed 2026-11-03:** the §11.2 sentence is corrected (decision 10A) and KB and MB are defined as binary in tech-spec §0.4, with the result-demo screenshot ceiling set at 409,600 bytes (decision 5 note). The 250/265 file cap, the PRD trace row with tech-spec §16, and the dashboard budget margins are not addressed here. |
+ | 2026-11-03 | Reason-code audit: 11 codes are now tested; 14 belong to unbuilt features; `disk-full` needs a central change that does not fit the ceiling (37 characters free, about 120 needed); `basis-gap-open` is defined but never emitted. Also `git-locked` has no retry or backoff, `inventory-too-large` ignores the 500 MB limit, and `run-dir-unavailable` carries exit 0. | Registry entries were added ahead of their producers; some producers diverge from the spec. | `reason-codes.test.ts` (8 tests, each shown to fail when its producer is changed); `host-limit`, `attribution-mixed-file` and three flow assertions are unverified on win32. | tech-spec Appendix C; [reason-codes.md](../docs/audits/2026-11-03/reason-codes.md). |
+@@ -1524,6 +1527,14 @@ An independent read-only review of the configuration/migration/capacity proposal
+ 
+ ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
+ 
++### 2026-11-04 UTC (bounded starter/privacy audit repairs) — ◐ local worktree
++
++- Protected-path acceptance follow-up: `starter.test.ts` now checks every actual recipe default appears verbatim in the skill's Protected paths section. The old skill fails on `admission.ts`; the corrected skill passes the isolated read-only test. Parent receives a separate test-only patch; no source or payload delta.
++- Baseline `34d6030c61f3f02783fd9bd096ff1fd7cc39f8a8`; no commit, push, PR or host spike. Parent integrates source patch and owns final plan/changelog.
++- F5/F6: quoted credential keys/escaped values, short/empty/removed/exempt controls and real `git check-ignore` at root/nested paths. Original privacy suite passed 3/3; new controls failed 2/6 before repair, then passed 6/6. The scanner remains a heuristic, not a general JSON/secret decoder.
++- F7: hash outside the existing immediate transaction, recheck emptiness inside it, insert both accounts and flush/atomically publish their credentials before commit. Unknown env text and nonempty databases are preserved. A real second-insert trigger left one user before repair; file-publication failure left two. Both now roll back. Real child-process `SIGKILL` at the transaction callback/commit boundary proves empty DB plus complete credentials before commit and two matching users after commit. Uncertain pre-commit credentials cause explicit reconciliation refusal, not replacement or success.
++- Independent fresh-context review finds no significant issue. Root/starter typecheck and lint, bundle (784,061 of 819,200 bytes), 96-file payload and same-toolchain reproducibility pass on Node24.22.1 Windows. The adjacent pre-existing migration suite has four Windows cleanup `EPERM` failures from open DB handles; not repaired here. Full supported-POSIX CI and kernel-mutating scaffold UAT remain unobserved; no guard bypass or release/qualification claim.
++
+ ### 2026-11-03 UTC (parallel build lanes integrated; two candidates held over the size ceiling) — ◐ local main
+ 
+ - Authority: the owner's blanket direction of 2026-11-03 to build the recommendations in [decision-packet.md](decision-packet.md). It is not a per-decision signature, and no Should is signed.
+diff --git a/tools/payload-files.json b/tools/payload-files.json
+index 7eb0b74..ef1e6c0 100644
+--- a/tools/payload-files.json
++++ b/tools/payload-files.json
+@@ -65,6 +65,7 @@
+   "skills/tenet-starter-ts-web-api/template/server/test/auth-freshness.test.ts",
+   "skills/tenet-starter-ts-web-api/template/server/test/boundaries.test.ts",
+   "skills/tenet-starter-ts-web-api/template/server/test/busy-session.test.ts",
++  "skills/tenet-starter-ts-web-api/template/server/test/dev-identities.test.ts",
+   "skills/tenet-starter-ts-web-api/template/server/test/e2e/auth-admission.e2e.spec.ts",
+   "skills/tenet-starter-ts-web-api/template/server/test/e2e/auth-browser.e2e.spec.ts",
+   "skills/tenet-starter-ts-web-api/template/server/test/e2e/server-identity.e2e.spec.ts",
+@@ -81,6 +82,7 @@
+   "skills/tenet-starter-ts-web-api/template/server/test/support/browser-identities.ts",
+   "skills/tenet-starter-ts-web-api/template/server/test/support/browser-server.ts",
+   "skills/tenet-starter-ts-web-api/template/server/test/support/restore-child.ts",
++  "skills/tenet-starter-ts-web-api/template/server/test/support/seed-crash.mjs",
+   "skills/tenet-starter-ts-web-api/template/shared/schemas.ts",
+   "skills/tenet-starter-ts-web-api/template/tsconfig.json",
+   "skills/tenet-starter-ts-web-api/template/vite.config.ts",
+diff --git a/tools/privacy-check.ts b/tools/privacy-check.ts
+index 405d342..60b1ff8 100644
+--- a/tools/privacy-check.ts
++++ b/tools/privacy-check.ts
+@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
+ const RULES: Array<[string, RegExp]> = [
+   ["a private key", /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
+   ["a token", /\b(?:ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|xox[abprs]-[A-Za-z0-9-]{10,})/],
+-  ["a credential assignment", /\b(?:password|passwd|secret|api[_-]?key|token)\s*[:=]\s*["'][^"'\s]{8,}["']/i],
++  ["a credential assignment", /\b(?:password|passwd|secret|api[_-]?key|token)["']?\s*[:=]\s*(?:"(?:\\.|[^"\\\s]){8,}"|'(?:\\.|[^'\\\s]){8,}')/i],
+   ["a personal path", /(?:\/Users\/[A-Za-z0-9._-]+\/|\/home\/[A-Za-z0-9._-]+\/|[A-Za-z]:\\Users\\[A-Za-z0-9._-]+\\)/],
+   ["an email address", /\b[A-Za-z0-9._%+-]+@(?!example\.(?:com|test|org)\b|users\.noreply\.github\.com|noreply\.)[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/],
+ ];

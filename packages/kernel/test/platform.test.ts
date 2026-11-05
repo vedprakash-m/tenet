@@ -16,6 +16,44 @@ after(() => roots.forEach(cleanup));
 const scratch = () => { const root = tmp("tenet-platform-"); roots.push(root); return root; };
 
 describe("platform admission before mutation [INS-06, INS-12]", () => {
+  it("shared readiness observes writability without creating local records [INS-04]", async () => {
+    const root = scratch();
+    const ports = createPorts(root);
+    const probe = await ports.git.probe();
+    for (const writable of [false, true]) {
+      ports.store.canWrite = () => writable;
+      assert.equal(readinessOf(ports, probe).stateWritable, writable);
+    }
+    assert.equal(existsSync(join(root, ".tenet")), false);
+  });
+
+  it("doctor reports unwritable state in readiness without creating local records [INS-04]", async () => {
+    const root = scratch();
+    const base = createPorts(root);
+    const probe = await base.git.probe();
+    const detected = base.stack.detect(root);
+    base.git.probe = async () => ({
+      ...probe, isRepo: true, state: "ok", identity: true, version: "git synthetic",
+    });
+    base.stack.detect = () => ({
+      ...detected, language: "ts-js", typescript: true, depsInstalled: true,
+      runner: "vitest", runnerVersion: "3.0.0", runnerSupported: true,
+    });
+    let writabilityProbes = 0;
+    base.store.canWrite = () => { writabilityProbes++; return false; };
+    const response = await runVerb({ ...base, platform: "linux" }, VERBS, "inspect", { view: "doctor" });
+    const data = response.data as {
+      ok: boolean; level: string; readiness: { plugin: { ready: boolean; blockedBy?: string[] } };
+    };
+    assert.equal(response.exit, 2, JSON.stringify(response));
+    assert.equal(data.ok, false);
+    assert.equal(data.level, "L0");
+    assert.equal(data.readiness.plugin.ready, false);
+    assert.ok(data.readiness.plugin.blockedBy?.includes("state writable"));
+    assert.equal(writabilityProbes, 1, "doctor uses one writability observation for its checks and readiness");
+    assert.equal(existsSync(join(root, ".tenet")), false);
+  });
+
   it("doctor cannot report success while the same platform fact blocks plugin readiness [INS-04]", async () => {
     for (const platform of ["win32", "freebsd", "darwin", "linux"] as const) {
       const root = scratch();

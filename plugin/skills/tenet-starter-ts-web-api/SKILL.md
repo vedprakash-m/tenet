@@ -17,12 +17,12 @@ Use for a new project in an empty folder, and when extending a project that came
 6. The first plan item is a new contract in the Standard lane. `features/<f>/` starts empty; that item's own build creates the first feature.
 
 ## What the platform gives you
-Config, database (WAL, foreign keys, immediate write transactions), forward-only checksummed migrations with a verified backup, scrypt password hashing, sessions (256-bit IDs, signed HttpOnly SameSite=Lax cookie, rotation on sign-in, all sessions revoked on password change, idle and absolute expiry), CSRF bound to the session, problem-style errors without stacks, redacted logs with correlation IDs, helmet, rate limits, `/api/health`. Development identities are written to `.env.local` on the first run. A React/Vite account shell provides sign-in, a fresh account read/reload, sign-out, retained-input errors, loading/retry and keyboard focus. `npm run dev:web` serves it on loopback port 5173 and proxies `/api`; start the API separately with `npm run dev`. Browser tests use a dedicated database and synthetic test account, with axe and keyboard checks. `journeys.json` lists scope; record manual screen-reader observations in `docs/a11y-checks.md` before making a broader accessibility claim.
+Config, database (WAL, foreign keys, immediate write transactions), forward-only checksummed migrations with a verified backup, scrypt password hashing, sessions (256-bit IDs, signed HttpOnly SameSite=Lax cookie, rotation on sign-in, all sessions revoked on password change, idle and absolute expiry), CSRF bound to the session, problem-style errors without stacks, redacted logs with correlation IDs, helmet, rate limits, `/api/health`. Development identities are written to `.env.local` on the first run. An empty database alongside existing development credential assignments stops startup for manual reconciliation; the assignments are never replaced automatically. A React/Vite account shell provides sign-in, a fresh account read/reload, sign-out, retained-input errors, loading/retry and keyboard focus. `npm run dev:web` serves it on loopback port 5173 and proxies `/api`; start the API separately with `npm run dev`. Browser tests use a dedicated database and synthetic test account, with axe and keyboard checks. `journeys.json` lists scope; record manual screen-reader observations in `docs/a11y-checks.md` before making a broader accessibility claim.
 
 `npm run --silent openapi` exports the shared-schema API contract without listening or touching the development database. Add route request/response schemas and cookie/CSRF metadata with each feature; metadata is documentation; authorization stays in actor/policy checks. Review the export diff; automatic compatibility and trait-based findings remain pending.
 
 ## Protected paths
-`server/src/platform/auth/*`, `server/src/platform/session/*` and `server/migrations/*` are proposed as protected in the kickoff. Changing them needs the user's say-so for that work.
+`server/src/platform/auth/*`, `server/src/platform/session/*`, `server/migrations/*`, `server/src/platform/admission.ts` and `server/src/platform/rate-metadata.ts` are proposed as protected in the kickoff. Changing them needs the user's say-so for that work.
 
 ## Adding a feature
 - A feature is a folder under `server/src/features/<name>/` with its routes, service, repository, tests and an `index.ts` that is its only public face. Another feature imports only that `index.ts`.
@@ -31,6 +31,15 @@ Config, database (WAL, foreign keys, immediate write transactions), forward-only
 - Schema changes are new numbered migrations, never edits to applied ones; test the migration against data written by the previous schema.
 - Anything that is a shortcut, prototype or known gap goes into `docs/hardening.md` in the same change.
 - Checks: `npm test`, `npm run typecheck`, `npm run lint`; the kernel runs the tests through `tenet check`.
+
+## Updating an existing starter project
+Automatic recipe upgrades are unavailable. Use manual migration guidance only:
+
+1. Establish the installed and target recipe versions from the application's recorded provenance and the corresponding release templates. If you cannot establish either template revision, stop and report what is missing; do not infer a version from a filename.
+2. Show the template diff as a preview, with conflicts and application customizations identified. Agree on the changes in an ordinary `feature` contract; the template diff is proposed work, not permission to replace files. Never run scaffold over an existing application. Preserve unrelated application behavior and human edits.
+3. Implement the accepted changes through the normal basis/test/check loop. Use a new numbered migration with prior-version data, a consistent backup and tested restore for data changes. Obtain native consent before dependency installs; keep manifests and lockfiles consistent. Run full applicable checks and obtain fresh independent review before a checked result.
+
+Do not edit recorded recipe version metadata by hand or claim the entire recipe was upgraded after applying only selected changes. Record the actual changes and remaining gaps in the application's changelog and hardening notes.
 
 ## Not in this starter yet
 Domain feature UI/journeys, per-changed-journey kernel obligations, manual accessibility evidence, a load workload, and API compatibility enforcement. Say so when the user asks for them; do not improvise a substitute.

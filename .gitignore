@@ -1,4 +1,5 @@
 .archive/*
+!.archive/consolidation/
 !.archive/specs/
 .archive/specs/*
 !.archive/specs/store-lock-admission.md
@@ -8,4 +9,7 @@ node_modules/
 plugin/kernel/
 plugin/SHA256SUMS
 .tenet/
+.env
+.env.*
+!.env.example
 .host-runs/

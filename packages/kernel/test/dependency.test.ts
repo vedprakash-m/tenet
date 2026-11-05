@@ -4,12 +4,15 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { cleanup } from "./helpers.ts";
+import { cleanup, tmp, write } from "./helpers.ts";
 import { fakeRecipes, portsWith, project } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
-import type { Runner, RunResult, RunSpec } from "../src/ports/types.ts";
+import type { Runner, RunResult, RunSpec, Tx } from "../src/ports/types.ts";
+import { sha256 } from "../src/core/ids.ts";
+import { emptyState } from "../src/core/state.ts";
+import { SETTLE, type Recovery } from "../src/verbs/recover-effects.ts";
 
 const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
@@ -71,6 +74,83 @@ const open = async (t: ReturnType<typeof setup>) => (await t.call("open", { prof
 const ask = (specs: string[], extra: Record<string, unknown> = {}) => ({ kind: "dependency", propose: { specs }, quote: "please add left-pad", ...extra });
 const confirm = { "dependency-confirm": "confirm" };
 const ran = (t: ReturnType<typeof setup>, ...prefix: string[]) => t.calls.some((c) => prefix.every((x, i) => c[i + 1] === x));
+
+describe("interrupted resolution preserves unknown content [CON-03, SEC-05]", () => {
+  const before = { manifest: sha256("original manifest"), lock: null };
+  const intent = (manager: "npm" | "pnpm" = "npm", prior = before) =>
+    ({ effect: "dependency", id: "interrupted", op: { work: "W1", phase: "resolve", manager, before: prior } });
+  const fixture = (files: Record<string, string>, unreadable = false) => {
+    const root = tmp("tenet-dependency-recovery-");
+    roots.push(root);
+    for (const [file, text] of Object.entries(files)) write(root, file, text);
+    const base = portsWith(root, fakeRecipes()), outcomes: unknown[] = [], mutations: string[] = [];
+    const forbidden = (): never => { throw new Error("recovery must not mutate project files or unrelated state"); };
+    const state = emptyState("workspace", "tag");
+    const tx: Tx = {
+      state, recovered: false, ensure: forbidden, publish: forbidden, call: forbidden, intent: forbidden,
+      result: (_effect, _id, outcome) => { outcomes.push(outcome); },
+      unresolved: () => [], evict: forbidden, recent: () => [],
+    };
+    const r: Recovery = {
+      ports: { ...base, project: {
+        ...base.project,
+        write: path => { mutations.push(path); forbidden(); },
+        remove: paths => { mutations.push(...paths); forbidden(); },
+        hashes: paths => { if (unreadable) throw new Error("unreadable postcondition"); return base.project.hashes(paths); },
+      } },
+      tx, state, completed: [], uncertain: [],
+    };
+    return { r, outcomes, mutations, text: (file: string) => existsSync(join(root, file)) ? readFileSync(join(root, file), "utf8") : null };
+  };
+  for (const manager of ["npm", "pnpm"] as const) {
+    const lock = manager === "npm" ? "package-lock.json" : "pnpm-lock.yaml";
+    it(`${manager}: preserves changed manifest and a new human lockfile on repeated recovery`, async () => {
+      const f = fixture({ "package.json": "human manifest", [lock]: "human lockfile" });
+      for (let retry = 0; retry < 2; retry++) await SETTLE.dependency!(f.r, intent(manager));
+      assert.deepEqual(f.outcomes, [], "unknown output must not receive a settled result");
+      assert.deepEqual(f.mutations, []);
+      assert.equal(f.r.uncertain.length, 2);
+      assert.deepEqual(f.r.completed, []);
+      assert.equal(f.text("package.json"), "human manifest");
+      assert.equal(f.text(lock), "human lockfile");
+    });
+    it(`${manager}: settles unchanged originals without project writes or a restoration claim`, async () => {
+      const f = fixture({ "package.json": "original manifest" });
+      await SETTLE.dependency!(f.r, intent(manager));
+      assert.deepEqual(f.outcomes, [{ completed: false }]);
+      assert.deepEqual(f.mutations, []);
+      assert.deepEqual(f.r.uncertain, []);
+      assert.match(f.r.completed[0]!, /unchanged/);
+      assert.doesNotMatch(f.r.completed[0]!, /rolled back|restored/);
+      assert.equal(f.text("package.json"), "original manifest");
+      assert.equal(f.text(lock), null);
+    });
+  }
+  it("preserves a partial restoration rather than changing the remaining lockfile", async () => {
+    const f = fixture({ "package.json": "original manifest", "package-lock.json": "human lock" });
+    await SETTLE.dependency!(f.r, intent());
+    assert.deepEqual(f.outcomes, []);
+    assert.deepEqual(f.mutations, []);
+    assert.equal(f.r.uncertain.length, 1);
+    assert.equal(f.text("package-lock.json"), "human lock");
+  });
+  it("leaves unreadable postconditions unresolved without aborting the recovery pass", async () => {
+    const f = fixture({ "package.json": "original manifest" }, true);
+    await SETTLE.dependency!(f.r, intent());
+    assert.deepEqual(f.outcomes, []);
+    assert.deepEqual(f.mutations, []);
+    assert.equal(f.r.uncertain.length, 1);
+    assert.deepEqual(f.r.completed, []);
+  });
+  it("reports a resolve intent without before-images as uncertain resolution, not an install", async () => {
+    const f = fixture({ "package.json": "human manifest" });
+    await SETTLE.dependency!(f.r, { effect: "dependency", id: "missing-before", op: { work: "W1", phase: "resolve", manager: "npm" } });
+    assert.deepEqual(f.outcomes, []);
+    assert.equal(f.r.uncertain.length, 1);
+    assert.match(f.r.uncertain[0]!, /resolution/);
+    assert.doesNotMatch(f.r.uncertain[0]!, /install scripts/);
+  });
+});
 
 describe("verifying before installing [SEC-05]", () => {
   it("resolves without installing, previews what changes, and installs only after the answer", async () => {
@@ -190,7 +270,7 @@ describe("verifying before installing [SEC-05]", () => {
     assert.equal(f.read("package-lock.json"), null);
   });
 
-  it("rolls back an interrupted dependency resolution on recovery [CON-03, SEC-05]", async () => {
+  it("fences an interrupted resolution with unknown content and never overwrites it [CON-03, SEC-05]", async () => {
     const t = setup({ packages: { a: { ageDays: 90 } } });
     const h = await open(t);
     const before = t.read("package.json")!;
@@ -198,15 +278,21 @@ describe("verifying before installing [SEC-05]", () => {
     const w = Object.values(t.state().work)[0]!;
     const blob = ports.store.putBlob(before);
     await ports.store.transaction("dependency", async (tx) => {
-      tx.intent("dependency", "d-crash", { work: w.id, phase: "resolve", before: { manifest: blob, lock: null } });
+      tx.intent("dependency", "d-crash", { work: w.id, phase: "resolve", manager: "npm", before: { manifest: blob, lock: null } });
     });
     writeFileSync(join(t.p.root, "package.json"), '{"name":"corrupted"}\n');
     writeFileSync(join(t.p.root, "package-lock.json"), '{"lockfileVersion":3}\n');
-    const r = await t.call("decide", { h, kind: "config", target: "style", propose: { value: "concise" } });
-    assert.equal(r.exit, 0, JSON.stringify(r));
-    assert.ok(r.effects?.completed.some((e) => /interrupted dependency resolution was rolled back/.test(e)));
-    assert.equal(t.read("package.json"), before);
-    assert.equal(t.read("package-lock.json"), null);
+    for (let retry = 0; retry < 2; retry++) {
+      const r = await t.call("decide", { h, kind: "config", target: "style", propose: { value: "concise" } });
+      assert.equal(r.exit, 2, JSON.stringify(r));
+      assert.ok(r.reasons.some(reason => reason.code === "effect-uncertain"), JSON.stringify(r));
+      assert.ok(r.effects?.uncertain.some(e => /dependency resolution/.test(e)));
+      assert.equal(t.read("package.json"), '{"name":"corrupted"}\n');
+      assert.equal(t.read("package-lock.json"), '{"lockfileVersion":3}\n');
+      assert.equal(t.state().config.local.style, undefined, "dependent mutation remains fenced");
+      assert.ok(ports.store.readLog().some(e => e.kind === "intent" && e.id === "d-crash"));
+      assert.equal(ports.store.readLog().some(e => e.kind === "result" && e.id === "d-crash"), false);
+    }
   });
 
   it("needs the user's words, like any grant", async () => {

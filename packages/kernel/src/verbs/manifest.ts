@@ -1,5 +1,4 @@
-// One builder for review manifests (TS §8.7). Native reviews reserve delegation capacity; a Quick pass has a
-// same-session binding instead. `packet reviewer` rebuilds either kind after a retry or expired artifact.
+// Review manifests (TS §8.7): native reviewers reserve capacity; Quick reviewers bind a same-session slot.
 import { addTokens, canReserve, LIMITS, recordDelegation, releaseStale, reserve } from "../core/budget.ts";
 import { reason } from "../core/reasons.ts";
 import type { FileChange, Manifest } from "../core/review.ts";
@@ -12,8 +11,9 @@ import type { BasisElement, BudgetState, Reason, Reservation, State, WorkContrac
 import type { Ports } from "../ports/types.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import { activeLessons, lessonExcerpt } from "../core/lessons.ts";
+import { judgeReview } from "../core/verdict.ts";
 import { nx } from "./common.ts";
-import type { Facts } from "./facts.ts";
+import { verdictInput, type Facts } from "./facts.ts";
 import { settingsFor } from "./reconcile.ts";
 
 /** The reviewer's rubric is the body of the tenet-review skill: one source, carried in the manifest. */
@@ -68,8 +68,7 @@ function reserveIssued(
   nw: WorkContract, budget: BudgetState, m: Manifest, path: string, live: Reservation | undefined, retry: boolean, focused: boolean, files: Record<string, string>,
 ): Issued {
   const rv = { ...m.reservation, manifest: path, retries: live ? (live.retries ?? 0) + (retry ? 1 : 0) : 0 };
-  // A retry replaces the live reservation with a new attempt and counts as a delegation, so a late result from the
-  // earlier child matches nothing and cannot settle the later one.
+  // Retries replace the reservation, so a late result cannot settle the new attempt.
   let nb = !focused && live && retry ? recordDelegation({ ...budget, reservations: budget.reservations.filter((x) => x.id !== live.id) }) : budget;
   nb = addTokens(focused ? nb : reserve(nb, rv), m.tokens);
   return {
@@ -81,10 +80,12 @@ function reserveIssued(
 /** The native passes a Deep contract still owes on this candidate, as required next actions (TS §5.3). */
 export function deepPasses(w: WorkContract, candidate: string): Array<ReturnType<typeof nx>> {
   if (w.lane !== "deep") return [];
-  const done = (role: string) =>
-    w.analyses.some((a) => a.role === role && a.status === "completed" && a.revision === candidate && a.independence === "subagent-fresh");
-  return (["architect", "security"] as const).filter((role) => !done(role)).map((role) =>
-    nx("analyst", `Deep needs a native ${role} pass: packet analyst --analyst-role ${role} --question <text>, then dispatch.`, true));
+  return (["architect", "security"] as const).flatMap(role => {
+    const pass = w.analyses.findLast(a => a.role === role);
+    return pass?.status === "completed" && pass.revision === candidate
+      && pass.independence === "subagent-fresh" && !pass.openDependencies.length
+      ? [] : [nx("analyst", `Dispatch natively: packet analyst --analyst-role ${role} --question <text>.`, true)];
+  });
 }
 
 /** The project's charter from the first instruction file the host binding names that has one, else the default (QLT-09). */
@@ -95,17 +96,21 @@ function charterOf(ports: Ports): string {
 }
 
 export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Facts, changes: readonly FileChange[], retry = false): Issued {
+  if (w.lane === "quick" && w.focusedReview?.role === "analyst") {
+    return { work: w, next: [nx("stop", "The focused slot is occupied by an analyst reservation.", true)], reasons: [] };
+  }
   const basis = w.basis!;
   const focused = w.lane === "quick";
   let budget = releaseStale(w.budget, facts.candidate, basis.hash);
   let nw: WorkContract = { ...w, budget, ...(w.focusedReview && (w.focusedReview.candidate !== facts.candidate || w.focusedReview.basisHash !== basis.hash) ? { focusedReview: undefined } : {}) };
   const files = Object.fromEntries(facts.reviewPaths.map((p) => [p, facts.inv.entries.get(p)?.blob ?? ""]));
-  const done = nw.reviews.find(
-    (l) => l.candidate === facts.candidate && l.basisHash === basis.hash && l.status === "completed" && Object.entries(files).every(([p, h]) => l.files[p] === h),
-  );
-  if (done && !retry) return { work: nw, next: [nx("finish", "Checks pass and the review reached this candidate.")], reasons: [] };
+  if (!retry && !judgeReview(verdictInput(ports, st, nw, facts)).some(r => !r.note)) {
+    return { work: nw, next: [nx("finish", "The review reached this candidate.")], reasons: [] };
+  }
 
-  const live = focused ? nw.focusedReview : budget.reservations.find((x) => x.candidate === facts.candidate && x.basisHash === basis.hash);
+  const live = focused ? nw.focusedReview : budget.reservations.find(
+    (x) => x.role === "reviewer" && x.candidate === facts.candidate && x.basisHash === basis.hash,
+  );
   const gated = admissionGate(nw, live, focused, retry, budget);
   if (gated) return gated;
 

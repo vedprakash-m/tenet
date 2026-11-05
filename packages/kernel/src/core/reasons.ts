@@ -41,7 +41,7 @@ export const REASONS = {
   "review-result-invalid": [2, "Malformed review result"],
   "narrow-increment": [2, "The basis alone exceeds the manifest budget"],
   // check runs and receipts
-  "run-dir-unavailable": [0, "No writable run directory; checks cannot run"],
+  "run-dir-unavailable": [2, "No writable run directory; checks cannot run"],
   "port-in-use": [0, "A brownfield fixed port is already in use"],
   "server-identity-weak": [0, "Server identified by port and ancestry only"],
   "build-not-fresh": [0, "A served check ran on artifacts not built in the same run"],

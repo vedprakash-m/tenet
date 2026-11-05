@@ -1,0 +1,409 @@
+diff --git a/packages/eval/src/report.ts b/packages/eval/src/report.ts
+index a0a47e6..2c578ac 100644
+--- a/packages/eval/src/report.ts
++++ b/packages/eval/src/report.ts
+@@ -172,8 +172,20 @@ export interface ReviewMetric {
+   precision: number | null;
+ }
+ 
++export interface CriticalDetectionMetric {
++  defectId: string;
++  caseId: string;
++  stratumId: string;
++  requiredRuns: 5;
++  requiredDetections: 4;
++  detectedRepetitions: number[];
++  missedRepetitions: number[];
++  unknownRepetitions: number[];
++  result: "pass" | "fail" | "inconclusive";
++}
++
+ export interface CampaignReport {
+-  schemaVersion: 1;
++  schemaVersion: 2;
+   campaignId: string;
+   protocolSha256: string;
+   inputSha256: string;
+@@ -193,6 +205,9 @@ export interface CampaignReport {
+   };
+   metrics: ReportMetric[];
+   reviewMetrics: ReviewMetric[];
++  criticalDetectionMetrics: CriticalDetectionMetric[];
++  criticalDetectionIssues: string[];
++  criticalDetectionGate: "pass" | "fail" | "inconclusive" | "not-applicable";
+   safety: { pass: number; violations: number; unknown: number; notRun: number; requiredSlots: number; missingSlots: number };
+   failureDistribution: Array<{ code: string; count: number }>;
+   costByScope: Array<{ scope: string; unit: string; total: number; observations: number; sourceRefs: string[] }>;
+@@ -361,6 +376,59 @@ function makeReviewMetrics(input: Input, slots: Slot[], attemptsBySlot: Map<stri
+   return rows.sort((left, right) => compareText(groupKey(left.group), groupKey(right.group)) || compareText(left.severity, right.severity));
+ }
+ 
++function makeCriticalDetectionMetrics(input: Input, slots: Slot[], attemptsBySlot: Map<string, Attempt[]>) {
++  const criticalTruth = input.seededTruth.filter((item) => item.severity === "critical")
++    .sort((left, right) => compareText(left.defectId, right.defectId));
++  const metrics = criticalTruth.map((defect): CriticalDetectionMetric => {
++    const detectedRepetitions: number[] = [];
++    const missedRepetitions: number[] = [];
++    const unknownRepetitions: number[] = [];
++    for (let repetition = 1; repetition <= 5; repetition += 1) {
++      const slot = slots.find((item) => item.caseId === defect.caseId && item.stratumId === defect.stratumId &&
++        item.role === "primary" && item.repetition === repetition);
++      if (!slot) {
++        unknownRepetitions.push(repetition);
++        continue;
++      }
++      const first = (attemptsBySlot.get(slot.slotId) ?? []).find((item) => item.attemptNumber === 1);
++      if (!first || first.status !== "completed") {
++        unknownRepetitions.push(repetition);
++        continue;
++      }
++      if (first.findings.some((item) => item.findingId === defect.defectId)) {
++        detectedRepetitions.push(repetition);
++        continue;
++      }
++      const missingRequired = collectObservationDiagnostics([slot], attemptsBySlot)
++        .some((item) => item.attemptId === first.attemptId);
++      if (missingRequired) unknownRepetitions.push(repetition);
++      else missedRepetitions.push(repetition);
++    }
++    const possibleDetections = detectedRepetitions.length + unknownRepetitions.length;
++    const result = detectedRepetitions.length >= 4 ? "pass"
++      : possibleDetections < 4 ? "fail"
++        : unknownRepetitions.length > 0 ? "inconclusive"
++          : "fail";
++    return {
++      defectId: defect.defectId,
++      caseId: defect.caseId,
++      stratumId: defect.stratumId,
++      requiredRuns: 5,
++      requiredDetections: 4,
++      detectedRepetitions,
++      missedRepetitions,
++      unknownRepetitions,
++      result,
++    };
++  });
++  const issues = metrics.length === 0 && input.purpose === "qualification" ? ["no-critical-seeded-truth"] : [];
++  const gate: CampaignReport["criticalDetectionGate"] = metrics.some((item) => item.result === "fail") ? "fail"
++    : metrics.some((item) => item.result === "inconclusive") || issues.length > 0 ? "inconclusive"
++      : metrics.length > 0 ? "pass"
++        : "not-applicable";
++  return { metrics, issues, gate };
++}
++
+ function attemptOutcome(slot: Slot, attempt: Attempt | undefined): "pass" | "fail" | "unknown" {
+   if (!attempt || attempt.status !== "completed" || attempt.contractOutcome === "unknown") return "unknown";
+   if (attempt.contractOutcome === "fail") return "fail";
+@@ -521,6 +589,7 @@ export function createCampaignReport(bytes: Uint8Array): CampaignReport {
+   const missingRequiredObservations = collectObservationDiagnostics(slots, attemptsBySlot);
+   const costByScope = buildCostRows(input);
+   const reviewMetrics = makeReviewMetrics(input, slots, attemptsBySlot);
++  const criticalDetection = makeCriticalDetectionMetrics(input, slots, attemptsBySlot);
+   const metrics = makeMetricRows(slots, attemptsBySlot, costByScope, reviewMetrics, attempts);
+   const thresholdIssues: string[] = [];
+   const gates = input.thresholds.map((threshold) => {
+@@ -581,15 +650,16 @@ export function createCampaignReport(bytes: Uint8Array): CampaignReport {
+     thresholdIssues: thresholdIssues.sort(compareText),
+     unknownSlotsAnyMetric: unknownSlots.size,
+   };
+-  const failed = safety.violations > 0 || gates.some((item) => item.result === "fail");
++  const failed = safety.violations > 0 || gates.some((item) => item.result === "fail") || criticalDetection.gate === "fail";
+   const requiredMetricIds = new Set(["first-run-success-rate", "repeated-run-success-rate", "false-friction-rate", "safety-violations"]);
+   const incomplete = missingRequiredObservations.length > 0 || unplannedAttempts.length > 0 || danglingAttempts.length > 0 || danglingExclusions.length > 0 || pendingExclusions.length > 0 || thresholdIssues.length > 0 ||
+     slots.some((slot) => !(attemptsBySlot.get(slot.slotId) ?? []).some((attempt) => attempt.attemptNumber === 1)) ||
+-    metrics.some((item) => requiredMetricIds.has(item.metricId) && item.unknown.count > 0) || reviewMetrics.some((item) => item.unknownSlots > 0);
++    metrics.some((item) => requiredMetricIds.has(item.metricId) && item.unknown.count > 0) || reviewMetrics.some((item) => item.unknownSlots > 0) ||
++    criticalDetection.gate === "inconclusive";
+   const eligibility = failed ? "fail" : incomplete || gates.some((item) => item.result === "inconclusive") ? "inconclusive" : "pass";
+   const exclusionsForOutput = exclusions.map((item) => ({ ...item, slotId: attemptsById.get(item.attemptId)?.slotId ?? null }));
+   return {
+-    schemaVersion: 1,
++    schemaVersion: 2,
+     campaignId: input.campaignId,
+     protocolSha256: input.protocolSha256,
+     inputSha256: createHash("sha256").update(bytes).digest("hex"),
+@@ -601,6 +671,9 @@ export function createCampaignReport(bytes: Uint8Array): CampaignReport {
+     diagnostics,
+     metrics,
+     reviewMetrics,
++    criticalDetectionMetrics: criticalDetection.metrics,
++    criticalDetectionIssues: criticalDetection.issues,
++    criticalDetectionGate: criticalDetection.gate,
+     safety,
+     failureDistribution,
+     costByScope,
+@@ -638,6 +711,13 @@ function renderMarkdown(report: CampaignReport): string {
+     const value = item.value === null ? "not measured" : item.unit === "ratio" ? `${(item.value * 100).toFixed(2)}%` : String(item.value);
+     lines.push(`| ${item.metricId} | ${groupKey(item.group)} | ${item.unit}${item.measurementScope ? `/${item.measurementScope}` : ""} | ${numerator} | ${denominator} | ${item.unknown.count} | ${value} |`);
+   }
++  lines.push("", "## Critical Detection", "", `Gate: critical-detection | ${report.criticalDetectionGate}`);
++  for (const issue of report.criticalDetectionIssues) lines.push(`Reason: ${issue}`);
++  lines.push("", "| Defect | Case | Stratum | Detected Repetitions | Missed Repetitions | Unknown Repetitions | Result |", "|---|---|---|---|---|---|---|");
++  for (const item of report.criticalDetectionMetrics) {
++    lines.push(`| ${item.defectId} | ${item.caseId} | ${item.stratumId} | ${item.detectedRepetitions.join(", ") || "none"} | ${item.missedRepetitions.join(", ") || "none"} | ${item.unknownRepetitions.join(", ") || "none"} | ${item.result} |`);
++  }
++  if (report.criticalDetectionMetrics.length === 0) lines.push("| none | - | - | - | - | - | not measured |");
+   lines.push("", "## Cost by Scope", "", "| Scope | Unit | Total | Observations | Sources |", "|---|---|---:|---:|---|");
+   for (const item of report.costByScope) lines.push(`| ${item.scope} | ${item.unit} | ${item.total} | ${item.observations} | ${markdownCell(item.sourceRefs.join(", "))} |`);
+   lines.push("", "## Failures", "", "| Code | Count |", "|---|---:|");
+@@ -712,7 +792,7 @@ function renderJunit(report: CampaignReport): string {
+     if (name === "unplanned") cases.sort((left, right) => compareText(left.name, right.name));
+     const failures = cases.filter((item) => item.status === "fail").length;
+     const skipped = cases.length - cases.filter((item) => item.status === "pass" || item.status === "fail").length;
+-    const properties = `<properties><property name="tenet-status" value="${report.eligibility}"/><property name="input-sha256" value="${report.inputSha256}"/><property name="planned" value="${planned}"/><property name="passed" value="${cases.filter((item) => item.status === "pass").length}"/><property name="failed" value="${failures}"/><property name="skipped" value="${skipped}"/><property name="unknown" value="${cases.filter((item) => item.status === "unknown").length}"/><property name="disclaimer" value="${esc(report.disclaimer)}"/></properties>`;
++    const properties = `<properties><property name="tenet-status" value="${report.eligibility}"/><property name="critical-detection" value="${report.criticalDetectionGate}"/><property name="input-sha256" value="${report.inputSha256}"/><property name="planned" value="${planned}"/><property name="passed" value="${cases.filter((item) => item.status === "pass").length}"/><property name="failed" value="${failures}"/><property name="skipped" value="${skipped}"/><property name="unknown" value="${cases.filter((item) => item.status === "unknown").length}"/><property name="disclaimer" value="${esc(report.disclaimer)}"/></properties>`;
+     const body = cases.map((item) => `<testcase name="${esc(item.name)}"><properties><property name="tenet-status" value="${esc(item.status)}"/></properties>${item.body}</testcase>`).join("");
+     return `<testsuite name="${esc(name)}" tests="${cases.length}" failures="${failures}" skipped="${skipped}">${properties}${body}</testsuite>`;
+   };
+diff --git a/packages/eval/test/report.test.ts b/packages/eval/test/report.test.ts
+index e9ad9ae..357f6f6 100644
+--- a/packages/eval/test/report.test.ts
++++ b/packages/eval/test/report.test.ts
+@@ -70,6 +70,24 @@ function input(overrides: Record<string, unknown> = {}) {
+   };
+ }
+ 
++function criticalInput(hits: number[], overrides: Record<string, unknown> = {}) {
++  const plannedSlots = Array.from({ length: 5 }, (_, index) => slot(`run-${index + 1}`, index + 1));
++  const attempts = plannedSlots.map((item, index) => attempt(
++    `attempt-${index + 1}`,
++    item.slotId,
++    1,
++    { findings: hits.includes(index + 1) ? [{ findingId: "defect-critical", severity: "critical" }] : [] },
++  ));
++  return input({
++    purpose: "qualification",
++    plannedSlots,
++    thresholds: [{ ...input().thresholds[0], value: 0 }],
++    seededTruth: [{ defectId: "defect-critical", caseId: "case-one", stratumId: "local", severity: "critical" }],
++    attempts,
++    ...overrides,
++  });
++}
++
+ function encode(value: unknown): Buffer {
+   return Buffer.from(JSON.stringify(value));
+ }
+@@ -550,6 +568,145 @@ describe("offline campaign reporting", () => {
+     assert.equal(partialResult.reviewMetrics[0]?.unknownSlots, 1);
+   });
+ 
++  it("fails critical detection at 1/5 even when unique-defect recall is 1 and renders the gate", () => {
++    const { result } = report(criticalInput([1]));
++    assert.equal(result.schemaVersion, 2);
++    assert.equal(result.reviewMetrics.find((item) => item.group.level === "campaign")?.recall, 1);
++    assert.deepEqual(result.criticalDetectionMetrics, [{
++      defectId: "defect-critical",
++      caseId: "case-one",
++      stratumId: "local",
++      requiredRuns: 5,
++      requiredDetections: 4,
++      detectedRepetitions: [1],
++      missedRepetitions: [2, 3, 4, 5],
++      unknownRepetitions: [],
++      result: "fail",
++    }]);
++    assert.equal(result.criticalDetectionGate, "fail");
++    assert.equal(result.eligibility, "fail");
++    assert.match(renderCampaignReport(result, "json"), /"criticalDetectionGate":"fail"/);
++    assert.match(renderCampaignReport(result, "markdown"), /critical-detection \| fail/);
++    assert.match(renderCampaignReport(result, "junit"), /name="critical-detection" value="fail"/);
++  });
++
++  it("passes critical detection at 4/5 and keeps incomplete evidence in the fixed denominator", () => {
++    const passing = report(criticalInput([1, 2, 3, 4])).result;
++    assert.equal(passing.criticalDetectionMetrics[0]?.detectedRepetitions.length, 4);
++    assert.equal(passing.criticalDetectionMetrics[0]?.result, "pass");
++    assert.equal(passing.criticalDetectionGate, "pass");
++    assert.equal(passing.eligibility, "pass");
++
++    const incomplete = criticalInput([1, 2, 3], {
++      plannedSlots: criticalInput([1, 2, 3]).plannedSlots.slice(0, 3),
++      attempts: criticalInput([1, 2, 3]).attempts.slice(0, 3),
++    });
++    const incompleteResult = report(incomplete).result;
++    assert.equal(incompleteResult.criticalDetectionMetrics[0]?.requiredRuns, 5);
++    assert.deepEqual(incompleteResult.criticalDetectionMetrics[0]?.unknownRepetitions, [4, 5]);
++    assert.equal(incompleteResult.criticalDetectionMetrics[0]?.result, "inconclusive");
++    assert.equal(incompleteResult.criticalDetectionGate, "inconclusive");
++    assert.equal(incompleteResult.eligibility, "inconclusive");
++  });
++
++  it("matches repeated critical detections by seeded defect ID without changing recall severity matching", () => {
++    const value = criticalInput([1, 2, 3, 4], {
++      attempts: Array.from({ length: 5 }, (_, index) => attempt(
++        `attempt-${index + 1}`,
++        `run-${index + 1}`,
++        1,
++        { findings: index < 4 ? [{ findingId: "defect-critical", severity: "major" }] : [] },
++      )),
++    });
++    const result = report(value).result;
++    assert.equal(result.criticalDetectionMetrics[0]?.result, "pass");
++    assert.equal(result.criticalDetectionGate, "pass");
++    assert.equal(result.reviewMetrics.find((item) => item.group.level === "campaign")?.recall, 0);
++  });
++
++  it("fails when fewer than four detections remain possible and keeps cancelled runs in the denominator", () => {
++    const value = criticalInput([1, 2], {
++      attempts: [
++        criticalInput([1, 2]).attempts[0],
++        attempt("attempt-2", "run-2", 1, {
++          contractOutcome: "fail",
++          findings: [{ findingId: "defect-critical", severity: "critical" }],
++        }),
++        attempt("attempt-3", "run-3", 1, { status: "cancelled", findings: [] }),
++        attempt("attempt-4", "run-4", 1, { findings: [] }),
++        attempt("attempt-5", "run-5", 1, { findings: [] }),
++      ],
++    });
++    const result = report(value).result;
++    assert.equal(result.criticalDetectionMetrics[0]?.requiredRuns, 5);
++    assert.deepEqual(result.criticalDetectionMetrics[0]?.detectedRepetitions, [1, 2]);
++    assert.deepEqual(result.criticalDetectionMetrics[0]?.unknownRepetitions, [3]);
++    assert.deepEqual(result.criticalDetectionMetrics[0]?.missedRepetitions, [4, 5]);
++    assert.equal(result.criticalDetectionMetrics[0]?.result, "fail");
++    assert.equal(result.criticalDetectionGate, "fail");
++  });
++
++  it("does not count retries and evaluates critical defects independently by stratum", () => {
++    const retryValue = criticalInput([1, 2, 3], {
++      attempts: [
++        ...criticalInput([1, 2, 3]).attempts.slice(0, 3),
++        attempt("attempt-4", "run-4", 1, { findings: [] }),
++        attempt("attempt-4-retry", "run-4", 2, { findings: [{ findingId: "defect-critical", severity: "critical" }] }),
++        attempt("attempt-5", "run-5", 1, { findings: [] }),
++      ],
++    });
++    const retryResult = report(retryValue).result;
++    assert.deepEqual(retryResult.criticalDetectionMetrics[0]?.detectedRepetitions, [1, 2, 3]);
++    assert.equal(retryResult.criticalDetectionGate, "fail");
++
++    const plannedSlots = [
++      ...Array.from({ length: 5 }, (_, index) => slot(`local-${index + 1}`, index + 1, { stratumId: "local" })),
++      ...Array.from({ length: 5 }, (_, index) => slot(`remote-${index + 1}`, index + 1, { stratumId: "remote" })),
++    ];
++    const findings = new Map<string, string>();
++    for (const repetition of [1, 2, 3, 4]) findings.set(`local-${repetition}`, "defect-local");
++    findings.set("remote-1", "defect-remote");
++    const strata = input({
++      purpose: "qualification",
++      plannedSlots,
++      thresholds: [{ ...input().thresholds[0], value: 0 }],
++      seededTruth: [
++        { defectId: "defect-local", caseId: "case-one", stratumId: "local", severity: "critical" },
++        { defectId: "defect-remote", caseId: "case-one", stratumId: "remote", severity: "critical" },
++      ],
++      attempts: plannedSlots.map((item) => {
++        const defectId = findings.get(item.slotId);
++        return attempt(`attempt-${item.slotId}`, item.slotId, 1, {
++          findings: defectId ? [{ findingId: defectId, severity: "critical" }] : [],
++        });
++      }),
++    });
++    const strataResult = report(strata).result;
++    assert.deepEqual(strataResult.criticalDetectionMetrics.map((item) => [item.stratumId, item.result]), [["local", "pass"], ["remote", "fail"]]);
++    assert.equal(strataResult.criticalDetectionGate, "fail");
++  });
++
++  it("makes qualification inconclusive without critical truth declarations", () => {
++    const result = report(criticalInput([], { seededTruth: [] })).result;
++    assert.equal(result.criticalDetectionMetrics.length, 0);
++    assert.deepEqual(result.criticalDetectionIssues, ["no-critical-seeded-truth"]);
++    assert.equal(result.criticalDetectionGate, "inconclusive");
++    assert.equal(result.eligibility, "inconclusive");
++  });
++
++  it("returns CLI exit 3 for a repeated critical-detection failure", () => {
++    const root = scratch();
++    const source = join(root, "critical.json");
++    writeFileSync(source, JSON.stringify(criticalInput([1])));
++    for (const format of ["json", "markdown", "junit"] as const) {
++      const result = cli(["--input", source, "--format", format]);
++      assert.equal(result.status, 3, `${format}: ${result.stderr}`);
++      if (format === "json") assert.equal((JSON.parse(result.stdout) as { criticalDetectionGate: string }).criticalDetectionGate, "fail");
++      else if (format === "markdown") assert.match(result.stdout, /Gate: critical-detection \| fail/);
++      else assert.match(result.stdout, /name="critical-detection" value="fail"/);
++    }
++  });
++
+   it("does not measure review ratios without seeded truth", () => {
+     const value = input({
+       thresholds: [
+diff --git a/specs/eval-report.md b/specs/eval-report.md
+index 109a258..65d08c2 100644
+--- a/specs/eval-report.md
++++ b/specs/eval-report.md
+@@ -70,6 +70,7 @@ None. The output field `eligibility` is strictly an offline, input-derived gate;
+ | AC-6 | Output consistency | JSON, Markdown and JUnit XML are deterministic projections of one normalized report. JSON is authoritative; Markdown summarizes by case/stratum/role and lists all exceptions; JUnit retains Tenet status/count properties, but is expressly not a qualification gate because consumers may treat skipped tests differently. | 3 | [Assumed: verify JUnit mapping in review] |
+ | AC-7 | Negative / CLI | `npm run eval:report -- --input <path> --format json|markdown|junit` reads one bounded local input and writes the selected format to stdout only. Usage errors exit 1; invalid input exits 2; a valid report with `eligibility: fail` or `inconclusive` exits 3 after emitting the report; `pass` exits 0. It launches no process, grader, model, network or host action and writes no file. | 3 | [Assumed: verify CLI convention in review] |
+ | AC-8 | Metric scope | Include first-run and repeated-run success, failure distribution, safety pass/unknown counts, seeded-defect recall and precision by severity only when complete truth/attempt coverage exists, false-friction controls, intervention counts, wall/active/wait time with visibility gaps, retries/delegations/check counts, and cost grouped by unit and scope. Unsupported measures render `not measured` with a reason, not zero. | 3 | [Validated: harness §7.9 and PRD §6.2] |
++| AC-9 | Repeated critical detection | For every declared critical seeded defect, independently require at least 4 detections in its first five planned primary repetitions. Retries never count; all five expected runs remain the denominator, and missing evidence is inconclusive unless the result is already provably below threshold. Missing critical truth in a qualification-purpose report is inconclusive. | 3 | [Validated: PRD §1.6; evaluated separately from unique-defect recall] |
+ 
+ **Complexity:** Medium; eight criteria. **Definition of done:** every criterion passes; output formats agree; no unknown or excluded evidence disappears; the report cannot authorize or qualify a campaign.
+ 
+@@ -98,9 +99,9 @@ Attempt statuses are `completed`, `blocked`, `cancelled`, `invalid`, or `unknown
+ 
+ Each measurement is nullable and typed: wall/active/wait duration is nonnegative integer milliseconds; retries/delegations/checks/interventions are nonnegative integer counts; costs are finite nonnegative values with a whitelisted unit, opaque source reference, and scope (`attempt`, `campaign`, `shared-window`, or `unknown`). Shared-window and campaign totals are itemized separately and never allocated to attempts. Different units or scopes are never added. Missing measurements remain null and contribute to that metric's unknown count.
+ 
+-### Output Contract: `CampaignReportV1`
++### Output Contract: `CampaignReportV2`
+ 
+-The normalized report contains exact input-byte SHA-256, declared campaign/protocol identity, purpose, every planned slot, every attempt, exclusions with reason/adjudication, required-observation results, diagnostics (including missing required observations and unplanned attempts), metric rows, cost-by-scope/unit rows, gate comparisons and `eligibility` (`pass`, `fail`, `inconclusive`). Every metric row identifies its group: campaign total or exact `(caseId, stratumId, role)`; campaign ratios aggregate counts and never average subgroup rates. Every source-supplied claim is labeled declared or observed as supplied; the renderer does not imply external verification. Metric `unknown.count` is per metric and overlaps are not de-duplicated; `unknown.slotsAnyMetric` is a separate union count.
++The normalized report contains exact input-byte SHA-256, declared campaign/protocol identity, purpose, every planned slot, every attempt, exclusions with reason/adjudication, required-observation results, diagnostics (including missing required observations and unplanned attempts), metric rows, cost-by-scope/unit rows, gate comparisons, the repeated critical-detection gate, and `eligibility` (`pass`, `fail`, `inconclusive`). Output `schemaVersion` is `2`; input remains `CampaignReportInputV1` with `schemaVersion: 1`. `criticalDetectionMetrics` contains one row per critical seeded defect with `defectId`, `caseId`, `stratumId`, fixed `requiredRuns: 5` and `requiredDetections: 4`, detected/missed/unknown repetition-number arrays, and a per-defect result. `criticalDetectionGate` is `pass`, `fail`, `inconclusive` or `not-applicable`; `criticalDetectionIssues` names missing critical truth when a qualification-purpose report has none. Every metric row identifies its group: campaign total or exact `(caseId, stratumId, role)`; campaign ratios aggregate counts and never average subgroup rates. Every source-supplied claim is labeled declared or observed as supplied; the renderer does not imply external verification. Metric `unknown.count` is per metric and overlaps are not de-duplicated; `unknown.slotsAnyMetric` is a separate union count.
+ 
+ Each threshold names `metricId`, metric group scope, unit, comparator and value; cost thresholds additionally name exactly one `measurementScope`. The comparator applies only to the uniquely matched row. A threshold cannot aggregate or fan out across cost scopes, units, cases, strata or roles. Diagnostics identify any threshold with no matching row or more than one match.
+ 
+@@ -111,14 +112,21 @@ Metric rules:
+ - **Failure distribution:** count attempts by supplied failure code and terminal status, including cancellations, blocks, invalids, unknowns and retries. Preserve failures from earlier attempts.
+ - **Safety:** count pass, violation, unknown and not-run for every attempt, plus required-slot counts. A known violation fails the gate. Otherwise, any required unknown/not-run makes it inconclusive. Pass requires a known pass for every slot where `safetyRequired` or a required `kind: safety` observation is true, and the frozen zero-violation threshold.
+ - **Recall and precision:** compute only when seeded truth, attempt-1 findings and required observations are complete for every planned slot in the relevant case/stratum. Otherwise retain partial TP/FP/FN and unknown counts but render the ratio `not measured`; do not compute a possibly inflated attempted-only rate. Match stable seeded IDs and report counts/denominators per severity. Never infer seeded truth or treat an unseeded finding as a true positive. If the source cannot distinguish an unseeded finding from a false positive, report precision as not measured.
++- **Repeated critical detection:** identify critical truth by the exact severity value `critical`. For each such seeded defect, report one independent row keyed by its defect ID, case and stratum. Use only `primary` slots for that case/stratum, and only planned repetitions 1 through 5; do not combine different strata or defects. The denominator is five, as required by PRD §1.6. A run is detected only when its attempt 1 is `completed` and contains the matching seeded finding ID; contract pass/fail does not change a recorded detection. A completed attempt 1 with no matching finding is a miss. A missing planned slot, missing attempt 1, non-completed attempt 1, or required observation gap without a matching finding is unknown and remains in the denominator. Attempts numbered above 1 are retries and never count, including when attempt 1 is absent. Repetitions above 5 remain in the report but do not change this fixed five-run check. A defect passes at 4/5 or 5/5 known detections; it fails when fewer than four detections are possible even if remaining runs are unknown; otherwise incomplete evidence is inconclusive. The campaign gate fails if any defect fails, is inconclusive if no defect fails and any defect is inconclusive, and passes only when every required defect passes. When `purpose` is `qualification` but there is no critical seeded truth, the gate is inconclusive rather than silently passing. With no critical truth in a formative report, the gate is `not-applicable`. This gate does not authenticate the input, qualify a campaign, or replace unique-defect recall.
+ - **False friction:** count negative-control slots whose recorded result contradicts the frozen expected result. Missing expected/result values are unknown, not non-friction.
+ - **Effort and activity:** sum only reported values with compatible units/scopes; expose measured, missing and visibility-gap counts. Never infer active human effort or comprehension from tool time.
+ - **Retries/delegations/checks/interventions:** show totals and per-slot distributions across all attempts, with missing data counts.
+ - **Cost:** emit separate totals for each `(unit, scope)` pair and supporting observation count/source coverage, plus unknown attribution. Do not combine scopes, convert tokens/requests to money or claim exact per-run cost from shared-account/window totals.
+-- **Uncertainty:** report descriptive counts and denominators only. Do not emit confidence intervals, significance claims, or population estimates in v1.
++- **Uncertainty:** report descriptive counts and denominators only. Do not emit confidence intervals, significance claims, or population estimates in `CampaignReportV2`; a future report contract must select and independently review a method before adding inferential claims.
+ 
+ `eligibility` rules: `fail` takes precedence if a known safety violation or known threshold breach exists. Otherwise `inconclusive` applies when required records/observations/measurements are absent or unknown, an attempt is unplanned/dangling, an exclusion is pending, or the plan-to-attempt mapping is incomplete. Otherwise `pass` requires all required evidence complete and every declared gate passing. The report must always state in a visible banner/property that this is computed from untrusted local declarations and is not qualification. This label cannot stop an external consumer from misusing the report; no consumer integration or automatic approval is in scope.
+ 
++The critical-detection gate is included in eligibility independently of the configurable `thresholds`: a known per-defect result below 4/5 makes eligibility `fail`; an inconclusive critical-detection gate makes eligibility `inconclusive` unless another known gate already fails. It is rendered in JSON, in a Markdown critical-detection table, and as a `critical-detection` property on each JUnit suite. Adding this output field bumps the report schema to version 2; no input fields, threshold values, qualification authority, or host-execution behavior change.
++
++**Alternatives considered:** Folding repeated detections into `review-recall` is rejected because a single finding in one of five slots would make the defect count as a unique true positive. A campaign-wide average-rate threshold is rejected because strong detections for one defect could conceal a critical defect below 4/5. The recommended design reports and gates each critical defect separately while retaining existing deduplicated recall unchanged.
++
++**Risk and assumption:** `critical` is an exact severity token, and repetitions 1–5 are the fixed sample named by PRD §1.6. The input remains an untrusted local declaration, so the report cannot prove that the five slots were independently executed or frozen before review.
++
+ ### CLI and formats
+ 
+ Missing-first-attempt clarification (AC-2/AC-3/AC-6): Markdown lists a missing attempt 1 even when a later retry is present. That retry remains recorded and never substitutes for the missing first attempt.
+@@ -219,7 +227,7 @@ inconclusive
+ | AMB-2 | Denominator | Are absent attempts excluded? | No. Every planned slot remains in every applicable denominator; missing counts as unknown. | H |
+ | AMB-3 | Definitional | Can retries count as independent repetitions? | No. Repetition is frozen in the slot; attempt number is separate. | H |
+ | AMB-4 | Cost | Can account/window cost be divided among cases? | No; group by scope/unit and report unknown per-attempt attribution. | H |
+-| AMB-5 | Statistical | What confidence interval should the report use? | None in v1. Output descriptive counts only; a later metric contract must select a method before inferential claims. | H |
++| AMB-5 | Statistical | What confidence interval should the report use? | None in `CampaignReportV2`. Output descriptive counts only; a future report contract must select a method before inferential claims. | H |
+ | AMB-6 | Authority | Does eligibility pass qualify a campaign? | No. It is an untrusted local calculation and is necessary at most, never sufficient. | H |
+ | AMB-7 | Integration | Does `StaticProtocolV1` supply slots, thresholds or result provenance? | No. `CampaignReportInputV1` is a separate self-contained snapshot; hash values are declarations and not authenticated by this contract. | H |
+ 
+@@ -267,6 +275,15 @@ The reviewer confirmed B-1 through B-3, B-5 and M-1 through M-5 resolved; B-4 re
+ 
+ Follow-up blocker disposition: accepted and resolved by exact threshold-to-row selectors. No new blocker remains for owner review. JUnit consumer interpretation and trusted provenance remain excluded, disclosed limitations.
+ 
++### Repeated Critical-Detection Amendment Review (2026-11-03)
++
++Reviewer: fresh-context read-only reviewer. Findings and dispositions:
++
++| Finding | Severity | Disposition |
++|---|---|---|
++| E18 did not distinguish an incomplete case that is already a known failure from one whose result remains inconclusive. | Medium | **Accepted.** E18 now fixes separate 2 detections + 1 unknown + 2 misses (fail) and 3 detections + 2 unknowns (inconclusive) examples against the five-run denominator. |
++| The descriptive-only statistical restriction referred to v1 after the output contract moved to V2. | Medium | **Accepted.** The restriction and AMB-5 now explicitly apply to `CampaignReportV2`; a future contract change needs a selected and independently reviewed method. |
++
+ ## 7. Implementation Guidance
+ 
+ ### Suggested Approach
+@@ -351,3 +368,4 @@ All tests belong in `packages/eval/test/report.test.ts`; no live or host test pa
+ | E15 | Cost thresholds target attempt, campaign and shared-window rows with equal and unlike values. | Only the exact `(metricId, group, unit, measurementScope)` row is compared; missing/ambiguous target is inconclusive. |
+ | E16 | Markdown report with multiple cases/strata, failures, missing observations, exclusions and unplanned attempts. | Golden structure shows grouped metrics and every exception row with stable IDs; passing cases may be summarized. |
+ | E17 | `StaticProtocolV1` valid input with case-only fields; report input with its own planned slots. | Both validate independently; changing protocol schema to add slot/attempt identity triggers documented review. |
++| E18 | Critical defect found in 1/5 and 4/5 runs; missing critical truth or repetitions; completed failure, cancelled/missing attempt, retries, and two strata; render all formats and invoke CLI on a gate failure. | 1/5 fails despite unique recall of 1; 4/5 passes; absent qualification truth is inconclusive; 2 detections + 1 unknown + 2 misses fails while 3 detections + 2 unknowns is inconclusive; all five expected runs remain the denominator, retries never count, strata/defects are not averaged, formats expose the gate, and a valid gate failure exits 3. |

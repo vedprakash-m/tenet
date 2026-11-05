@@ -1,10 +1,10 @@
 // What a finished check run turns into: the reasons, the next action, the review manifest, and the published contract.
-import { attemptsLeft, nearLimit } from "../core/budget.ts";
+import { attemptsLeft } from "../core/budget.ts";
 import { KernelError } from "../core/errors.ts";
 import { executionDisclosures } from "../core/execution-envelope.ts";
-import { handoffText } from "../core/handoff.ts";
 import { reason } from "../core/reasons.ts";
 import { receiptReasons } from "../core/receipts.ts";
+import { fullChecksPassed } from "../core/verdict.ts";
 import type { FileChange } from "../core/review.ts";
 import type { Obligation, Reason, Receipt, State, StopReason, WorkContract } from "../core/schemas.ts";
 import type { Resp } from "../pipeline.ts";
@@ -60,13 +60,7 @@ function nextStep(
   const failing = receipts.filter((r) => r.status === "fail");
   const configFailed = receipts.some((r) => r.status === "inconclusive");
   const flaky = receipts.some((r) => r.qualifiers.includes("flaky"));
-  const passedAll =
-    !baseline &&
-    !flaky &&
-    scope === "full" &&
-    receipts.length > 0 &&
-    receipts.every((r) => r.status === "pass") &&
-    nw.obligations.every((ob) => receipts.some((r) => r.obligation === ob.id));
+  const passedAll = fullChecksPassed(nw.obligations, receipts);
   const reasons = evidenceReasons(receipts, baseline);
   let data: Record<string, unknown> = { stage, scope, receipts: receiptSummary(receipts) };
   const next: Next = [];
@@ -181,10 +175,6 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
   const step = nextStep(run, st, nw, receipts, obligations, stop, changes);
   nw = step.work;
   await snapshot(run, nw, step.reasons);
-  const nearBudgetLimit = nearLimit(nw.budget, nw.lane, ports.clock.now());
-  if (nearBudgetLimit) step.reasons.push(reason("budget-warning", "80% of a limit is used", { note: true }));
-  // At a stop, and at 80% of any limit, the handoff is written while there is still budget to write it (WRK-12).
-  if (stop || nearBudgetLimit) nw = { ...nw, handoff: handoffText(withWork(st, nw), nw) };
   if (stage === "integrated" && step.passedAll && nw.git.integrated)
     nw = { ...nw, git: { ...nw.git, integrated: { ...nw.git.integrated, validated: true } } };
   return {

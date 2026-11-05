@@ -39,6 +39,12 @@ it("requires a named alternative check for nonbehavioral work [TDD-06]", () => {
   assert.match(build, /for nonbehavioral work, do not invent a test; state the alternative check.*report its result/i);
 });
 
+it("keeps project handover documentation current without inventing evidence or rewriting decisions [QLT-08]", () => {
+  const build = readFileSync(join(plugin, "skills/tenet-build/SKILL.md"), "utf8");
+  assert.match(build, /Keep README run instructions, decision records, the architecture doc and CHANGELOG current for the change before handover/);
+  assert.match(build, /Record only verified commands and outcomes; preserve decision history and disclose missing or unverified documentation/);
+});
+
 it("limits intake questions to action-changing decisions and gives useful options [INT-03]", () => {
   const intake = readFileSync(join(plugin, "skills/tenet-intake/SKILL.md"), "utf8");
   assert.match(intake, /ask only questions whose answers change the next dependent action/i);
@@ -82,7 +88,22 @@ it("keeps reviewer and analyst child work within assigned authority and budget [
 
 it("instructs reports to include verified demo steps and available UI screenshots", () => {
   const coordinator = readFileSync(join(plugin, "skills/tenet/SKILL.md"), "utf8");
-  assert.match(coordinator, /For user-facing changes, add a verified demo path with run instructions and steps showing confirmed examples/i);
-  assert.match(coordinator, /for `ui`, attach captured screenshots of those examples when available/i);
+  assert.match(coordinator, /For user-facing changes: verified run instructions and confirmed-example steps/i);
+  assert.match(coordinator, /Guided: read `tenet-build` handover only/);
+  assert.match(coordinator, /for `ui`, attach available captured screenshots of those examples/i);
   assert.match(coordinator, /Never invent commands, outcomes or screenshot paths/i);
+});
+
+it("offers a consented, responding Guided demo without treating it as verification [RES-08]", () => {
+  const build = readFileSync(join(plugin, "skills/tenet-build/SKILL.md"), "utf8");
+  assert.match(build, /In Guided style, offer to start the local app.*host terminal under native consent/);
+  assert.match(build, /never through the kernel runner/);
+  assert.match(build, /Confirm the local URL responds before calling it running/);
+  assert.match(build, /report a failed launch or response without claiming success/);
+  assert.match(build, /where local-only development credentials are kept \(never their values\)/);
+  assert.match(build, /how to stop the app, and one domain task showing a confirmed example/);
+  assert.match(build, /Keep verification databases separate from development data/);
+  assert.match(build, /A running demo is not test evidence/);
+  assert.match(build, /For a library, CLI or back-end change with nothing to open, give a verified command or call as "Use it:" instead/);
+  assert.match(build, /omit this section of the result when nothing is user-facing/);
 });

@@ -42,12 +42,35 @@ describe("the ts-web-api recipe", () => {
     assert.equal(template.dependencies["better-sqlite3"], "12.11.1");
     assert.equal(template.dependencies["@fastify/swagger"], "9.9.2");
     assert.equal(template.engines.node, ">=22.12.0");
+    const vitest = readFileSync(join(PLUGIN, "template/vitest.config.ts"), "utf8");
+    assert.match(vitest, /maxWorkers:\s*2\b/, "bound the starter's default test concurrency without increasing deadlines");
+    const playwright = readFileSync(join(PLUGIN, "template/playwright.config.ts"), "utf8");
+    assert.ok(playwright.includes('"${process.execPath}" --experimental-strip-types'), "quote the source-server executable when its installed path contains spaces");
+  });
+
+  it("names every recipe-protected path in the starter kickoff instructions", () => {
+    const recipe = JSON.parse(readFileSync(join(PLUGIN, "recipe.json"), "utf8"));
+    const skill = readFileSync(join(PLUGIN, "SKILL.md"), "utf8");
+    const protectedPaths = skill.split("## Protected paths\n")[1]?.split("\n## ")[0];
+    assert.ok(protectedPaths, "the starter skill has a protected-path section");
+    for (const path of recipe.protectedPaths) {
+      assert.ok(protectedPaths.includes(`\`${path}\``), `kickoff instructions omit protected path ${path}`);
+    }
   });
 
   it("scaffolds and receipts the starter's migration, restore, test, type, lint and browser checks through the kernel [EVD-13, QLT-03, QLT-04, QLT-07, QLT-14]", { skip: process.env.TENET_OFFLINE === "1" && "offline", timeout: 300_000 }, async () => {
     const root = tmp("tenet-starter-"); roots.push(root);
     initRepo(root);
-    const rawCall = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    let browserStarted = false;
+    const rawCall = (v: string, i: Record<string, unknown>) => {
+      const ports = createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
+      const run = ports.runner.run.bind(ports.runner);
+      ports.runner.run = spec => {
+        if (spec.report === join(spec.runDir, "playwright.json")) browserStarted = true;
+        return run(spec);
+      };
+      return runVerb(ports, VERBS, v, i);
+    };
     const call = (v: string, i: Record<string, unknown>) => callWithEnvelopeConsent(rawCall, v, i);
     const o = await call("open", { profile: "feature", request: "a loan desk", scopePaths: [], lane: "quick", initGit: true });
     const h = o.handle!;
@@ -60,13 +83,13 @@ describe("the ts-web-api recipe", () => {
     } });
     const s = await call("decide", { h, kind: "scaffold", propose: { name: "loan-desk" } });
     assert.equal(s.exit, 0, JSON.stringify(s));
-    assert.equal(d(s).version, "0.4.5");
+    assert.equal(d(s).version, "0.4.6");
 
     const c = await call("check", { h, stage: "candidate" });
     assert.equal(c.exit, 0, JSON.stringify(c));
     const suite = d(c).receipts.find((r: { obligation: string }) => r.obligation === "OB-suite");
     assert.equal(suite.status, "pass", JSON.stringify(suite));
-    assert.equal(suite.counts.executed, 105, "all platform, client and generated-contract cases ran");
+    assert.equal(suite.counts.executed, 145, "all platform, client, seed-recovery, restore-crash, marker/owner-admission, dangling-marker, live-WAL-reader, hard-link-alias, kept-aside/staging-collision, unrecorded-data backup/admission, cold-start ownership and generated-contract cases ran");
 
     for (const id of ["OB-types", "OB-lint"]) {
       const receipt = d(c).receipts.find((r: { obligation: string }) => r.obligation === id);
@@ -112,9 +135,12 @@ describe("the ts-web-api recipe", () => {
       elements: [{ ref: "r", kind: "requirement", origin: "request", text: "stop the browser" },
         { ref: "e", kind: "example", origin: "request", of: "r", text: "the platform remains valid", testFile: "server/test/platform.test.ts", test: "preservation", expect: "pass" }],
     } })).exit, 0);
+    browserStarted = false;
     const pending = call("check", { h: next, stage: "candidate" });
     let runDir: string | undefined;
     try {
+      // Start the browser-readiness deadline after the suite and static checks finish.
+      await waitFor(() => browserStarted, 60_000, "the held-browser check phase");
       const marker = await waitFor(() => {
         const state = createPorts(root, {}).store.read()!.state;
         runDir = Object.values(state.work).find(w => w.session.inCall)?.session.inCall?.runDir;

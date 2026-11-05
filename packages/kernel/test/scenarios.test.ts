@@ -389,7 +389,7 @@ describe("review binding", () => {
     assert.equal(d(f).endpoint, "implemented-unverified");
   });
 
-  it("a blocker blocks until fixed and verified by a focused recheck, which is allowed once [REV-04]", async () => {
+  it("a changed file alone cannot bypass the fixed-finding transition through recheck [REV-04]", async () => {
     const p = fresh();
     const { h } = await toRed(p);
     const g = await toGreen(p, h);
@@ -402,10 +402,16 @@ describe("review binding", () => {
     const rv = d(c2).review;
     assert.equal(rv.mode, "recheck");
     const r2 = await p.call("findings", { h, result: reviewResult({ review: rv }, { mode: "recheck", rechecked: [{ finding: "FND-1", outcome: "verified", evidence: "src/greet.ts:1 trims" }] }) });
-    assert.equal(r2.exit, 0, JSON.stringify(r2));
+    assert.equal(r2.exit, 2, JSON.stringify(r2));
+    assert.ok(r2.reasons.some(reason => reason.code === "review-result-invalid"));
     assert.equal(r2.budget.rounds, "1/2");
-    const f = await finishFixture(p, { h, subject: "s" });
-    assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f.reasons));
+    const work = Object.values(p.ports().store.read()!.state.work)[0]!;
+    assert.equal(work.findings[0]!.state, "valid");
+    assert.equal(work.budget.rechecks, 0);
+    assert.ok(work.budget.reservations.some(reservation => reservation.id === rv.reservation));
+    const f = await finishFixture(p, { h, noCommit: true });
+    assert.equal(d(f).endpoint, "implemented-unverified", JSON.stringify(f.reasons));
+    assert.ok(f.reasons.some(reason => reason.code === "blocker-open"));
   });
 });
 

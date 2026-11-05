@@ -103,17 +103,16 @@ function stopped(
   rec: { state: State },
   w: WorkContract
 ): { st: State; next: WorkContract; handoff: string } {
-  const handoff = handoffText(rec.state, w);
   const stopReason =
     input.reason === "host-limit" ? ("host-limit" as const) : input.mode === "pause" ? w.stopReason : ("user-stop" as const);
   const next: WorkContract = {
     ...w,
-    handoff,
     updatedAt: ports.clock.now(),
     ...(stopReason ? { stopReason } : {}),
     ...(input.mode === "pause" ? { lastValidPhase: w.state === "parked" ? w.lastValidPhase : w.state } : {}),
     state: input.mode === "pause" ? "parked" : input.mode === "abandon" ? "cancelled" : w.state,
   };
+  const handoff = next.handoff = handoffText(rec.state, next);
   // Cancel keeps the contract open at its last valid phase; pause and abandon release source ownership.
   const parked = input.mode === "cancel" ? withWork(rec.state, next) : release(withWork(rec.state, next), next);
   if (input.mode !== "abandon") return { st: parked, next, handoff };

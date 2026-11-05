@@ -10,6 +10,10 @@ async function lint(filePath: string, code: string) {
 
 describe("architecture boundaries", () => {
   it("shared/ imports nothing from server/ or web/", async () => {
+    const eslint = new ESLint({ cwd: process.cwd() });
+    expect(await eslint.isPathIgnored("test-results/browser-web-generated/dist/assets/index.js")).toBe(true);
+    for (const path of ["server/src/app.ts", "shared/x.ts", "web/src/App.tsx"])
+      expect(await eslint.isPathIgnored(path), path).toBe(false);
     expect(await lint("shared/x.ts", 'import { a } from "../server/src/app.ts"; export const b = a;')).toHaveLength(1);
     expect(await lint("shared/x.ts", 'import { z } from "zod"; export const b = z;')).toHaveLength(0);
   });

@@ -42,7 +42,8 @@ export function migrate(db: Db, opts: MigrateOptions = {}): { applied: string[] 
   if (!todo.length) return { applied: [] };
 
   const copy = opts.backupTo ?? beside(db, todo[0]!.version);
-  if (done.size > 0 && copy) backup(db, copy);
+  const existing = done.size > 0 || db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT GLOB 'sqlite_*' AND name <> 'schema_migrations' LIMIT 1").get();
+  if (existing && copy) backup(db, copy);
   for (const m of todo) {
     db.transaction(() => {
       db.exec(m.sql);

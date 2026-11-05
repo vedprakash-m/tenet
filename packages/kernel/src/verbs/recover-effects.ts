@@ -2,7 +2,7 @@
 // completed, not performed, or uncertain. `publish` applies a result that was logged but never reached the state document.
 import { adopted, type AdoptOp } from "../decisions/adopt.ts";
 import { completeForget } from "../decisions/forget.ts";
-import { restoreFiles, type DependencyOp } from "../decisions/dependency.ts";
+import { MANIFEST, lockFileOf, type DependencyOp } from "../decisions/dependency-job.ts";
 import { scaffolded, type ScaffoldOp } from "../decisions/scaffold.ts";
 import { recordedHardening, type HardeningOp } from "../decisions/hardening.ts";
 import type { UndoOp } from "../decisions/undo.ts";
@@ -161,14 +161,16 @@ async function adopt(r: Recovery, u: Unresolved) {
 
 async function dependency(r: Recovery, u: Unresolved) {
   const op = u.op as DependencyOp;
-  if (op.phase === "resolve" && op.before) {
+  if (op.phase === "resolve") {
+    let same = false;
     try {
-      restoreFiles(r.ports, op.before, op.manager);
+      const lock = lockFileOf(op.manager), now = r.ports.project.hashes([MANIFEST, lock]);
+      same = !!op.before && now[MANIFEST] === op.before.manifest && now[lock] === op.before.lock;
+    } catch { same = false; }
+    if (same) {
       r.tx.result("dependency", u.id, { completed: false });
-      r.completed.push("an interrupted dependency resolution was rolled back");
-    } catch {
-      r.uncertain.push("the interrupted dependency resolution could not be rolled back safely");
-    }
+      r.completed.push("dependency resolution: originals unchanged");
+    } else r.uncertain.push("dependency resolution uncertain; files untouched");
   } else if (op.phase === "install" && !op.scripts?.length) {
     r.tx.result("dependency", u.id, { completed: false });
     r.completed.push("an interrupted dependency install did not finish; answer again to retry");
@@ -176,7 +178,6 @@ async function dependency(r: Recovery, u: Unresolved) {
     r.uncertain.push("an interrupted dependency install was running install scripts; inspect node_modules before continuing");
   }
 }
-
 async function hardening(r: Recovery, u: Unresolved) {
   const op = u.op as HardeningOp;
   let now: string | null;

@@ -393,11 +393,10 @@ export class GitCli implements Git {
       const path = rec.slice(2);
       if (skip(path) || !index.has(path)) continue;
       const content = this.workBlob(path);
-      if (content) {
-        entries.set(path, { path, ...content });
-        if (content.blob !== index.get(path)!.blob && !status.some((s) => s.path === path))
-          status.push({ path, xy: ".M", staged: false, untracked: false, ...content, indexBlob: index.get(path)!.blob });
-      }
+      if (!content) throw new KernelError("stale", path, { exit: 2 });
+      entries.set(path, { path, ...content });
+      if (content.blob !== index.get(path)!.blob && !status.some((s) => s.path === path))
+        status.push({ path, xy: ".M", staged: false, untracked: false, ...content, indexBlob: index.get(path)!.blob });
     }
   }
 

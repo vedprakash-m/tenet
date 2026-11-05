@@ -1,0 +1,100 @@
+{
+  "main": "70f03da37d381f4aaf494e905e0af99242a97dad",
+  "worktrees": [
+    {
+      "id": "vedprakash-m-improved-enigma",
+      "base": "34d6030c61f3f02783fd9bd096ff1fd7cc39f8a8",
+      "branch": "refs/heads/vedprakash-m-recovery-and-git-integrity",
+      "patch": true,
+      "untracked": []
+    },
+    {
+      "id": "vedprakash-m-laughing-adventure",
+      "base": "34d6030c61f3f02783fd9bd096ff1fd7cc39f8a8",
+      "branch": "refs/heads/vedprakash-m-tenet-implementation-audit",
+      "patch": true,
+      "untracked": []
+    },
+    {
+      "id": "vedprakash-m-turbo-garbanzo",
+      "base": "34d6030c61f3f02783fd9bd096ff1fd7cc39f8a8",
+      "branch": "refs/heads/vedprakash-m-starter-and-privacy-safety",
+      "patch": true,
+      "untracked": []
+    },
+    {
+      "id": "vedprakash-m-urban-invention",
+      "base": "34d6030c61f3f02783fd9bd096ff1fd7cc39f8a8",
+      "branch": "refs/heads/vedprakash-m-repeated-critical-detection-gate",
+      "patch": true,
+      "untracked": []
+    },
+    {
+      "id": "vedprakash-m-verbose-enigma",
+      "base": "34d6030c61f3f02783fd9bd096ff1fd7cc39f8a8",
+      "branch": "refs/heads/vedprakash-m-complete-protocol-sizing",
+      "patch": true,
+      "untracked": [
+        "packages/kernel/src/adapters/migration-fs.ts",
+        "packages/kernel/src/core/budget-launch.ts",
+        "packages/kernel/src/core/config-binding.ts",
+        "packages/kernel/src/core/config-proposal.ts",
+        "packages/kernel/src/core/schemas-legacy.ts",
+        "packages/kernel/src/core/schemas-migrate.ts",
+        "packages/kernel/src/core/schemas-upcast.ts",
+        "packages/kernel/test/check-binding.test.ts",
+        "packages/kernel/test/config-binding.test.ts",
+        "packages/kernel/test/config-candidate.test.ts",
+        "packages/kernel/test/fixtures/crash-migration.ts",
+        "packages/kernel/test/launch-ledger.test.ts",
+        "packages/kernel/test/migration-fs.test.ts",
+        "packages/kernel/test/schema-migration.test.ts",
+        "packages/kernel/test/support/migration-ctx.ts",
+        "packages/kernel/test/support/schema1-fixtures.ts",
+        "packages/kernel/test/traits-wiring.test.ts"
+      ]
+    },
+    {
+      "id": "vedprakash-m-vigilant-tribble",
+      "base": "34d6030c61f3f02783fd9bd096ff1fd7cc39f8a8",
+      "branch": "refs/heads/vedprakash-m-reviewer-reservation-integrity",
+      "patch": true,
+      "untracked": []
+    },
+    {
+      "id": "agent-adcbbf1db9d1a4ea1",
+      "base": "06bcbb0b26cb6d22ef0b4e65f9b4ec7e8bd56512",
+      "branch": "refs/heads/worktree-agent-adcbbf1db9d1a4ea1",
+      "patch": true,
+      "untracked": [
+        "packages/kernel/src/adapters/git-remote.ts",
+        "packages/kernel/src/core/remote.ts",
+        "packages/kernel/src/decisions/remote.ts",
+        "packages/kernel/src/verbs/publish.ts",
+        "packages/kernel/test/fixtures/crash-publish.ts",
+        "packages/kernel/test/git-remote.test.ts",
+        "packages/kernel/test/publish.test.ts",
+        "packages/kernel/test/remote-rules.test.ts",
+        "packages/kernel/test/zz-local-publish.test.ts",
+        "plugin/skills/tenet/resources/publish.md"
+      ]
+    }
+  ],
+  "branches": [
+    {
+      "branch": "worktree-agent-a4d3cdb453da50229",
+      "base": "34d6030c61f3f02783fd9bd096ff1fd7cc39f8a8",
+      "head": "f2886cdd765d7d538dac4115813216ff87738316"
+    },
+    {
+      "branch": "worktree-agent-acb8e3fbab5e27a4f",
+      "base": "06bcbb0b26cb6d22ef0b4e65f9b4ec7e8bd56512",
+      "head": "8f1a94535ce139996cec888f688f6d79fa780033"
+    },
+    {
+      "branch": "worktree-agent-ad236b05b85b7133b",
+      "base": "9f11cfdb7e2c2350959dd1bd421371c4abe4f8cf",
+      "head": "e9c1d790ce583c27f087c212cb780564da470e69"
+    }
+  ]
+}

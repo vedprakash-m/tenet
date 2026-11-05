@@ -172,8 +172,20 @@ export interface ReviewMetric {
   precision: number | null;
 }
 
+export interface CriticalDetectionMetric {
+  defectId: string;
+  caseId: string;
+  stratumId: string;
+  requiredRuns: 5;
+  requiredDetections: 4;
+  detectedRepetitions: number[];
+  missedRepetitions: number[];
+  unknownRepetitions: number[];
+  result: "pass" | "fail" | "inconclusive";
+}
+
 export interface CampaignReport {
-  schemaVersion: 1;
+  schemaVersion: 2;
   campaignId: string;
   protocolSha256: string;
   inputSha256: string;
@@ -193,6 +205,9 @@ export interface CampaignReport {
   };
   metrics: ReportMetric[];
   reviewMetrics: ReviewMetric[];
+  criticalDetectionMetrics: CriticalDetectionMetric[];
+  criticalDetectionIssues: string[];
+  criticalDetectionGate: "pass" | "fail" | "inconclusive" | "not-applicable";
   safety: { pass: number; violations: number; unknown: number; notRun: number; requiredSlots: number; missingSlots: number };
   failureDistribution: Array<{ code: string; count: number }>;
   costByScope: Array<{ scope: string; unit: string; total: number; observations: number; sourceRefs: string[] }>;
@@ -361,6 +376,59 @@ function makeReviewMetrics(input: Input, slots: Slot[], attemptsBySlot: Map<stri
   return rows.sort((left, right) => compareText(groupKey(left.group), groupKey(right.group)) || compareText(left.severity, right.severity));
 }
 
+function makeCriticalDetectionMetrics(input: Input, slots: Slot[], attemptsBySlot: Map<string, Attempt[]>) {
+  const criticalTruth = input.seededTruth.filter((item) => item.severity === "critical")
+    .sort((left, right) => compareText(left.defectId, right.defectId));
+  const metrics = criticalTruth.map((defect): CriticalDetectionMetric => {
+    const detectedRepetitions: number[] = [];
+    const missedRepetitions: number[] = [];
+    const unknownRepetitions: number[] = [];
+    for (let repetition = 1; repetition <= 5; repetition += 1) {
+      const slot = slots.find((item) => item.caseId === defect.caseId && item.stratumId === defect.stratumId &&
+        item.role === "primary" && item.repetition === repetition);
+      if (!slot) {
+        unknownRepetitions.push(repetition);
+        continue;
+      }
+      const first = (attemptsBySlot.get(slot.slotId) ?? []).find((item) => item.attemptNumber === 1);
+      if (!first || first.status !== "completed") {
+        unknownRepetitions.push(repetition);
+        continue;
+      }
+      if (first.findings.some((item) => item.findingId === defect.defectId)) {
+        detectedRepetitions.push(repetition);
+        continue;
+      }
+      const missingRequired = collectObservationDiagnostics([slot], attemptsBySlot)
+        .some((item) => item.attemptId === first.attemptId);
+      if (missingRequired) unknownRepetitions.push(repetition);
+      else missedRepetitions.push(repetition);
+    }
+    const possibleDetections = detectedRepetitions.length + unknownRepetitions.length;
+    const result = detectedRepetitions.length >= 4 ? "pass"
+      : possibleDetections < 4 ? "fail"
+        : unknownRepetitions.length > 0 ? "inconclusive"
+          : "fail";
+    return {
+      defectId: defect.defectId,
+      caseId: defect.caseId,
+      stratumId: defect.stratumId,
+      requiredRuns: 5,
+      requiredDetections: 4,
+      detectedRepetitions,
+      missedRepetitions,
+      unknownRepetitions,
+      result,
+    };
+  });
+  const issues = metrics.length === 0 && input.purpose === "qualification" ? ["no-critical-seeded-truth"] : [];
+  const gate: CampaignReport["criticalDetectionGate"] = metrics.some((item) => item.result === "fail") ? "fail"
+    : metrics.some((item) => item.result === "inconclusive") || issues.length > 0 ? "inconclusive"
+      : metrics.length > 0 ? "pass"
+        : "not-applicable";
+  return { metrics, issues, gate };
+}
+
 function attemptOutcome(slot: Slot, attempt: Attempt | undefined): "pass" | "fail" | "unknown" {
   if (!attempt || attempt.status !== "completed" || attempt.contractOutcome === "unknown") return "unknown";
   if (attempt.contractOutcome === "fail") return "fail";
@@ -521,6 +589,7 @@ export function createCampaignReport(bytes: Uint8Array): CampaignReport {
   const missingRequiredObservations = collectObservationDiagnostics(slots, attemptsBySlot);
   const costByScope = buildCostRows(input);
   const reviewMetrics = makeReviewMetrics(input, slots, attemptsBySlot);
+  const criticalDetection = makeCriticalDetectionMetrics(input, slots, attemptsBySlot);
   const metrics = makeMetricRows(slots, attemptsBySlot, costByScope, reviewMetrics, attempts);
   const thresholdIssues: string[] = [];
   const gates = input.thresholds.map((threshold) => {
@@ -581,15 +650,16 @@ export function createCampaignReport(bytes: Uint8Array): CampaignReport {
     thresholdIssues: thresholdIssues.sort(compareText),
     unknownSlotsAnyMetric: unknownSlots.size,
   };
-  const failed = safety.violations > 0 || gates.some((item) => item.result === "fail");
+  const failed = safety.violations > 0 || gates.some((item) => item.result === "fail") || criticalDetection.gate === "fail";
   const requiredMetricIds = new Set(["first-run-success-rate", "repeated-run-success-rate", "false-friction-rate", "safety-violations"]);
   const incomplete = missingRequiredObservations.length > 0 || unplannedAttempts.length > 0 || danglingAttempts.length > 0 || danglingExclusions.length > 0 || pendingExclusions.length > 0 || thresholdIssues.length > 0 ||
     slots.some((slot) => !(attemptsBySlot.get(slot.slotId) ?? []).some((attempt) => attempt.attemptNumber === 1)) ||
-    metrics.some((item) => requiredMetricIds.has(item.metricId) && item.unknown.count > 0) || reviewMetrics.some((item) => item.unknownSlots > 0);
+    metrics.some((item) => requiredMetricIds.has(item.metricId) && item.unknown.count > 0) || reviewMetrics.some((item) => item.unknownSlots > 0) ||
+    criticalDetection.gate === "inconclusive";
   const eligibility = failed ? "fail" : incomplete || gates.some((item) => item.result === "inconclusive") ? "inconclusive" : "pass";
   const exclusionsForOutput = exclusions.map((item) => ({ ...item, slotId: attemptsById.get(item.attemptId)?.slotId ?? null }));
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     campaignId: input.campaignId,
     protocolSha256: input.protocolSha256,
     inputSha256: createHash("sha256").update(bytes).digest("hex"),
@@ -601,6 +671,9 @@ export function createCampaignReport(bytes: Uint8Array): CampaignReport {
     diagnostics,
     metrics,
     reviewMetrics,
+    criticalDetectionMetrics: criticalDetection.metrics,
+    criticalDetectionIssues: criticalDetection.issues,
+    criticalDetectionGate: criticalDetection.gate,
     safety,
     failureDistribution,
     costByScope,
@@ -638,6 +711,13 @@ function renderMarkdown(report: CampaignReport): string {
     const value = item.value === null ? "not measured" : item.unit === "ratio" ? `${(item.value * 100).toFixed(2)}%` : String(item.value);
     lines.push(`| ${item.metricId} | ${groupKey(item.group)} | ${item.unit}${item.measurementScope ? `/${item.measurementScope}` : ""} | ${numerator} | ${denominator} | ${item.unknown.count} | ${value} |`);
   }
+  lines.push("", "## Critical Detection", "", `Gate: critical-detection | ${report.criticalDetectionGate}`);
+  for (const issue of report.criticalDetectionIssues) lines.push(`Reason: ${issue}`);
+  lines.push("", "| Defect | Case | Stratum | Detected Repetitions | Missed Repetitions | Unknown Repetitions | Result |", "|---|---|---|---|---|---|---|");
+  for (const item of report.criticalDetectionMetrics) {
+    lines.push(`| ${item.defectId} | ${item.caseId} | ${item.stratumId} | ${item.detectedRepetitions.join(", ") || "none"} | ${item.missedRepetitions.join(", ") || "none"} | ${item.unknownRepetitions.join(", ") || "none"} | ${item.result} |`);
+  }
+  if (report.criticalDetectionMetrics.length === 0) lines.push("| none | - | - | - | - | - | not measured |");
   lines.push("", "## Cost by Scope", "", "| Scope | Unit | Total | Observations | Sources |", "|---|---|---:|---:|---|");
   for (const item of report.costByScope) lines.push(`| ${item.scope} | ${item.unit} | ${item.total} | ${item.observations} | ${markdownCell(item.sourceRefs.join(", "))} |`);
   lines.push("", "## Failures", "", "| Code | Count |", "|---|---:|");
@@ -712,7 +792,7 @@ function renderJunit(report: CampaignReport): string {
     if (name === "unplanned") cases.sort((left, right) => compareText(left.name, right.name));
     const failures = cases.filter((item) => item.status === "fail").length;
     const skipped = cases.length - cases.filter((item) => item.status === "pass" || item.status === "fail").length;
-    const properties = `<properties><property name="tenet-status" value="${report.eligibility}"/><property name="input-sha256" value="${report.inputSha256}"/><property name="planned" value="${planned}"/><property name="passed" value="${cases.filter((item) => item.status === "pass").length}"/><property name="failed" value="${failures}"/><property name="skipped" value="${skipped}"/><property name="unknown" value="${cases.filter((item) => item.status === "unknown").length}"/><property name="disclaimer" value="${esc(report.disclaimer)}"/></properties>`;
+    const properties = `<properties><property name="tenet-status" value="${report.eligibility}"/><property name="critical-detection" value="${report.criticalDetectionGate}"/><property name="input-sha256" value="${report.inputSha256}"/><property name="planned" value="${planned}"/><property name="passed" value="${cases.filter((item) => item.status === "pass").length}"/><property name="failed" value="${failures}"/><property name="skipped" value="${skipped}"/><property name="unknown" value="${cases.filter((item) => item.status === "unknown").length}"/><property name="disclaimer" value="${esc(report.disclaimer)}"/></properties>`;
     const body = cases.map((item) => `<testcase name="${esc(item.name)}"><properties><property name="tenet-status" value="${esc(item.status)}"/></properties>${item.body}</testcase>`).join("");
     return `<testsuite name="${esc(name)}" tests="${cases.length}" failures="${failures}" skipped="${skipped}">${properties}${body}</testsuite>`;
   };

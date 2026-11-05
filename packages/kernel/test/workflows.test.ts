@@ -273,9 +273,16 @@ describe("a checkpoint commit does not hide work from the review", () => {
     await p.call("decide", { h, kind: "basis", propose: BASIS });
     p.write("src/greet.test.ts", GREET_TEST);
     await p.call("check", { h, stage: "baseline" });
-    const cp = await p.call("commit", { h, subject: "Add the failing test" });
+    const head = p.git("rev-parse", "HEAD");
+    const red = await p.call("commit", { h, subject: "Add the failing test" });
+    assert.equal(red.exit, 2, JSON.stringify(red));
+    assert.ok(red.reasons.some(r => r.code === "stale"), JSON.stringify(red));
+    assert.equal(p.git("rev-parse", "HEAD"), head);
+    p.write("src/greet.ts", `${GREET_IMPL}// checkpoint candidate\n`);
+    await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    const cp = await p.call("commit", { h, subject: "Add the checked greeting" });
     assert.equal(cp.exit, 0, JSON.stringify(cp));
-    assert.equal(p.git("show", "--name-only", "--format=", "HEAD"), "src/greet.test.ts");
+    assert.equal(p.git("show", "--name-only", "--format=", "HEAD"), "src/greet.test.ts\nsrc/greet.ts");
     p.write("src/greet.ts", GREET_IMPL);
     const g = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     const manifest = JSON.parse(readFileSync(d(g).review.manifest, "utf8"));

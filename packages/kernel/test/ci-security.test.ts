@@ -61,7 +61,23 @@ describe("workflows keep the untrusted tier untrusted [ENG-10]", () => {
     }
     assert.ok(commands.some(command => command.includes("--test-name-pattern=\"static report population and bounds|")
       && command.includes("packages\\kernel\\test\\static-checks.test.ts")));
+    assert.ok(commands.some(command => command.includes('--test-name-pattern="interrupted resolution preserves unknown content|repeated lesson retirement"')
+      && command.includes("packages\\kernel\\test\\dependency.test.ts")
+      && command.includes("packages\\kernel\\test\\lessons.test.ts")), "run only the platform-safe recovery and lesson controls, not the POSIX pipeline cases");
     assert.ok(!commands.includes("npm run ci"), "Windows focused checks do not replace full supported-POSIX CI");
+    const restoreSteps = job.steps.flatMap((step: { run?: string }, index: number) =>
+      step.run?.includes("node_modules\\vitest\\vitest.mjs run server\\test\\restore.test.ts") ? [index] : []);
+    assert.equal(restoreSteps.length, 2, "run real starter restore/crash controls on both Windows runtimes");
+    const minimumSetup = job.steps.findIndex((step: { with?: { "node-version"?: string } }) => step.with?.["node-version"] === "22.12.0");
+    assert.ok(restoreSteps[0]! < minimumSetup && restoreSteps[1]! > minimumSetup);
+    for (const index of restoreSteps) {
+      assert.equal(job.steps[index].shell, "pwsh");
+      assert.ok(job.steps[index].run.includes("npm rebuild better-sqlite3"));
+      assert.ok(job.steps[index].run.includes("$env:RUNNER_TEMP"));
+      assert.ok(job.steps[index].run.includes("server\\test\\migrate.test.ts"));
+      assert.ok(job.steps[index].run.includes("server\\test\\schema-history.test.ts"));
+    }
+    assert.ok(job.steps[restoreSteps[0]!].run.includes("npm ci --ignore-scripts --no-audit"));
     assert.deepEqual(workflow.jobs.t1.strategy.matrix.os, ["ubuntu-latest", "macos-latest"]);
   });
   it("rejects mutable action branches, tags and abbreviated commits", () => {

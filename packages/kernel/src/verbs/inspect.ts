@@ -33,7 +33,8 @@ const VERBS = {
 };
 
 function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>) {
-  const writable = ports.store.canWrite();
+  const r = readinessOf(ports, probe);
+  const writable = r.stateWritable;
   const d = ports.stack.detect(ports.root);
   const checks = [
     { name: "node", ok: nodeOk(), detail: process.version },
@@ -44,7 +45,6 @@ function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>)
     { name: "test runner", ok: d.runnerSupported, detail: d.runner ? `${d.runner} ${d.runnerVersion}${d.runnerSupported ? "" : " (unsupported version)"}` : d.depsInstalled ? "none found" : "dependencies are not installed" },
     { name: "commit hooks", ok: true, detail: probe.hooks ? "present; commits need your consent once" : "none" },
   ];
-  const r = readinessOf(ports, probe);
   const { level, why } = assistanceLevel(r, "feature");
   const detected = { language: d.language, typescript: d.typescript, packageManager: d.packageManager, runner: d.runner ?? null, depsInstalled: d.depsInstalled, hooks: !!probe.hooks, git: probe.isRepo };
   const readiness = readinessReport(r);

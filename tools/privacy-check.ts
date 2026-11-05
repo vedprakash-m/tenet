@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 const RULES: Array<[string, RegExp]> = [
   ["a private key", /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
   ["a token", /\b(?:ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|xox[abprs]-[A-Za-z0-9-]{10,})/],
-  ["a credential assignment", /\b(?:password|passwd|secret|api[_-]?key|token)\s*[:=]\s*["'][^"'\s]{8,}["']/i],
+  ["a credential assignment", /\b(?:password|passwd|secret|api[_-]?key|token)["']?\s*[:=]\s*(?:"(?:\\.|[^"\\\s]){8,}"|'(?:\\.|[^'\\\s]){8,}')/i],
   ["a personal path", /(?:\/Users\/[A-Za-z0-9._-]+\/|\/home\/[A-Za-z0-9._-]+\/|[A-Za-z]:\\Users\\[A-Za-z0-9._-]+\\)/],
   ["an email address", /\b[A-Za-z0-9._%+-]+@(?!example\.(?:com|test|org)\b|users\.noreply\.github\.com|noreply\.)[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/],
 ];

@@ -7,6 +7,40 @@ const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 
 describe("configuration attention requires a genuine vetted entry", () => {
+  it("keeps an undispositioned external snapshot update from checked-local [REV-03]", async () => {
+    const path = "src/__snapshots__/greet.test.ts.snap";
+    const snapshot = '// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html\n\nexports[`greets by name 1`] = `"Hello, Ada!"`;\n';
+    const p = project({
+      [path]: snapshot,
+      "src/greet.ts": GREET_IMPL,
+      "src/greet.test.ts": GREET_TEST.replace('.toBe("Hello, Ada!")', ".toMatchSnapshot()"),
+    });
+    roots.push(p.root);
+    const paths = [path, "src/greet.ts"];
+    const h = (await p.call("open", { profile: "refactor", request: "refresh the greeting snapshot", scopePaths: paths, lane: "quick" })).handle!;
+    await p.call("decide", { h, kind: "basis", propose: {
+      outcome: "the greeting stays unchanged", scopePaths: paths, elements: [
+        { ref: "r", kind: "requirement", origin: "request", text: "preserve the greeting" },
+        { ref: "e", kind: "example", origin: "request", of: "r", text: "Ada receives the greeting", test: "preservation", expect: "pass", testFile: "src/greet.test.ts" },
+      ],
+    } });
+    await p.call("check", { h, stage: "baseline" });
+    p.write("src/greet.ts", GREET_IMPL.replace("Hello,", "Welcome,"));
+    p.write(path, snapshot.replace("Hello, Ada!", "Welcome, Ada!"));
+    const candidate = await p.call("check", { h, touched: paths });
+    assert.equal(candidate.exit, 0, JSON.stringify(candidate));
+    assert.ok(candidate.data && typeof candidate.data === "object" && "review" in candidate.data, JSON.stringify(candidate));
+    const work = Object.values(p.ports().store.read()!.state.work)[0]!;
+    const attention = work.attention.filter(item => item.path === path && item.pattern === "snapshot");
+    assert.equal(attention.length, 1, JSON.stringify(work.attention));
+    assert.equal(attention[0]!.disposition, undefined);
+    const reviewed = await p.call("findings", { h, result: reviewResult(candidate.data as Record<string, unknown>, { attention: [] }) });
+    assert.equal(reviewed.exit, 0, JSON.stringify(reviewed));
+    const finished = await p.call("finish", { h, noCommit: true });
+    assert.notEqual((finished.data as { endpoint?: string })?.endpoint, "checked-local");
+    assert.ok(finished.reasons.some(reason => reason.code === "major-undisposed" && reason.message.includes("snapshot")), JSON.stringify(finished));
+  });
+
   for (const mode of ["unvetted", "vetted-unchanged", "vetted-edited"]) {
     it(`reports ${mode} configuration honestly and requires disposition when changed [REV-03]`, async () => {
       const path = "vitest.config.ts", original = "export default {};\n";

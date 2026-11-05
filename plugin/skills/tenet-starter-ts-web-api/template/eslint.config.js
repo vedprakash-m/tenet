@@ -5,7 +5,7 @@ const restrict = (patterns) => ({ "no-restricted-imports": ["error", { patterns 
 const DRIVER = { name: "better-sqlite3", message: "only platform/db and repositories import the database driver" };
 
 export default tseslint.config(
-  { ignores: ["node_modules", "data", "dist"] },
+  { ignores: ["node_modules", "data", "dist", "test-results", "playwright-report"] },
   ...tseslint.configs.recommended,
   { rules: { complexity: ["error", 12] } },
   // shared/ is runtime schemas only: it imports nothing from the server or the web app.

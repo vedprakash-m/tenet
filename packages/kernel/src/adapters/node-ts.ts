@@ -2,6 +2,7 @@
 // and the attention-pattern table. Mostly data. The adapter normalizes; it never decides acceptance.
 import { closeSync, constants, existsSync, fstatSync, openSync, readSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { stripVTControlCharacters } from "node:util";
 import type { AttentionPattern, FileChange } from "../core/review.ts";
 import type { Detection, Normalized, StaticNorm, StaticTool, Stack, ToolVersions } from "../ports/types.ts";
 import { allowed } from "../core/exclusions.ts";
@@ -12,7 +13,7 @@ import { FsProject } from "./project-fs.ts";
 import { nestsTooDeep } from "./report-bounds.ts";
 import { normalizePlaywright, playwrightArgv } from "./playwright.ts";
 
-const ADAPTER = "node-ts@20"; // 20: report paths/CRLF.
+const ADAPTER = "node-ts@27"; // 27: reject skipped Playwright errors.
 function installedMetadata(path: string, kind: "tool" | "dependency"): { record: Record<string, any>; digest: string } | null {
   let descriptor = -1;
   try {
@@ -118,13 +119,11 @@ function reporterConfigProblem(reporters: unknown, path: string): string | undef
   if (reporters === undefined) return undefined;
   const entries = Array.isArray(reporters) ? reporters : [reporters];
   for (const entry of entries) {
-    if (typeof entry === "string") continue;
     if (!Array.isArray(entry) || entry[0] !== "json") continue;
-    if (!entry[1] || typeof entry[1] !== "object")
-      return `${path} has JSON reporter options the adapter cannot verify`;
-    if ("outputFile" in entry[1])
+    const options = entry[1];
+    if (options && typeof options === "object" && "outputFile" in options)
       return `${path} sets a JSON reporter outputFile that overrides the adapter's private report destination`;
-    if (Object.keys(entry[1]).length)
+    if (!options || typeof options !== "object" || Object.keys(options).length)
       return `${path} has JSON reporter options the adapter cannot verify`;
   }
   return undefined;
@@ -138,6 +137,7 @@ function configProblem(meta: ReturnType<typeof metadata>): string | undefined {
     const path = `${base}.${extension}`;
     const source = meta.text(path);
     if (!source) continue;
+    if (/\bonUnhandledError\b/.test(source)) return `${path} has an unsupported unhandled-error filter`;
     const matches = [...source.matchAll(/(?:\breporters\b|["']reporters["'])\s*:\s*/g)];
     if ([...source.matchAll(/\breporters\b/g)].length > matches.length)
       return `${path} has reporter settings the adapter cannot verify`;
@@ -157,9 +157,7 @@ function detect(root: string, exclusions: readonly Exclusion[]): Detection {
   const pkg = meta.json("package.json");
   const deps = { ...(pkg?.dependencies ?? {}), ...(pkg?.devDependencies ?? {}) };
   const typescript = meta.present("tsconfig.json") || "typescript" in deps;
-  const language = pkg || typescript ? "ts-js" : "other";
   const vitest = meta.json("node_modules/vitest/package.json");
-  const major = Number(String(vitest?.version ?? "").split(".")[0]);
   const pm = meta.present("pnpm-lock.yaml")
     ? "pnpm"
     : meta.present("yarn.lock")
@@ -168,10 +166,10 @@ function detect(root: string, exclusions: readonly Exclusion[]): Detection {
         ? "npm"
         : "unknown";
   const d: Detection = {
-    language,
+    language: pkg || typescript ? "ts-js" : "other",
     typescript,
     depsInstalled: existsSync(join(root, "node_modules")),
-    runnerSupported: !!vitest && SUPPORTED.includes(major),
+    runnerSupported: !!vitest && SUPPORTED.includes(Number(String(vitest.version).split(".")[0])),
     packageManager: pm,
     moduleRoot: ".",
     experimental: false,
@@ -219,7 +217,7 @@ function admitAssertion(a: any, seen: Set<string>): string | undefined {
     (!Array.isArray(a.failureMessages) || a.failureMessages.some((m: unknown) => typeof m !== "string" || m.length > 2000))
   )
     return "invalid assertion failure messages";
-  if (a.status === "passed" && a.failureMessages?.length) return "the assertion status and its failure messages disagree";
+  if (a.status !== "failed" && a.failureMessages?.length) return "the assertion status and its failure messages disagree";
   if (seen.has(a.fullName)) return "duplicate test identity";
   seen.add(a.fullName);
   return undefined;
@@ -230,7 +228,8 @@ function count(f: Counts, a: any): void {
   f.tests.push(a.fullName);
   const status = a.status === "passed" || a.status === "failed" ? a.status : "skipped";
   const kinds: string[] = status === "failed"
-    ? [...new Set<string>((a.failureMessages?.length ? a.failureMessages : [""]).map((m: string) => failureKind(message([m]))))] : [];
+    ? [...new Set<string>((a.failureMessages?.length ? a.failureMessages : [""]).map((m: string) =>
+      failureKind(stripVTControlCharacters(message([m])))))] : [];
   const kind = kinds[0];
   f.outcomes!.push({ test: a.fullName, status, ...(kind ? { kind, kinds } : {}) });
   if (a.status === "passed") {
@@ -262,16 +261,14 @@ function countFile(t: any, path: string): Counts | string {
     count(f, a);
   }
   if (f.executed && ["pending", "skipped"].includes(t.status)) return "a skipped file contains executed tests";
-  // A file that failed before any test ran (import or compile error) is a failure, never a pass or a skip.
-  if (t.status === "failed" && f.failed === 0) {
+  // File-level errors remain failures beside assertion failures.
+  if (t.status === "failed" && (!f.failed || t.message)) {
     f.failed++;
     f.failureKinds.push("compile-or-import");
-    f.failures.push({
+    if (f.failures.length < 5) f.failures.push({
       test: path,
       kind: "compile-or-import",
-      message: String(t.message ?? "the file failed to load")
-        .split("\n")[0]!
-        .slice(0, 500),
+      message: message([String(t.message ?? "the file failed to load")]),
     });
   }
   return f;
@@ -438,29 +435,28 @@ export function createStack(): Stack {
       const problem = configProblem(metadata(root, exclusions));
       if (problem) throw new KernelError("adapter-unsupported-config", `${problem}; no check was launched`, { exit: 2 });
     },
-    argv: (files, report) => {
-      const vitest = "node_modules/vitest/vitest.mjs"; // a direct binary, never npx (TS §9.3)
-      return [
-        process.execPath,
-        vitest,
-        "run",
-        "--reporter=json",
-        `--outputFile=${report}`,
-        "--no-color",
-        ...(files === "all" ? [] : files),
-      ];
-    },
+    argv: (files, report) => [
+      process.execPath,
+      "node_modules/vitest/vitest.mjs",
+      "run",
+      "--reporter=json",
+      `--outputFile=${report}`,
+      "--no-color",
+      "--allowOnly=false",
+      "--dangerouslyIgnoreUnhandledErrors=false",
+      ...(files === "all" ? [] : files),
+    ],
     normalize,
     staticArgv: (root, tool, report) => {
       const meta = metadata(root, exclusions);
       if (meta.json(`node_modules/${tool === "tsc" ? "typescript" : "eslint"}/package.json`)?.version !== STATIC_VERSION[tool]) return null;
-      if (!existsSync(join(root, "node_modules", STATIC_SCRIPT[tool]))) return null;
+      const script = join("node_modules", STATIC_SCRIPT[tool]);
+      if (!existsSync(join(root, script))) return null;
       if (tool === "tsc") {
         const config = meta.json("tsconfig.json");
         if (!config || config.extends !== undefined || config.references?.length || config.compilerOptions?.composite
           || config.compilerOptions?.tsBuildInfoFile !== undefined) return null;
       }
-      const script = join("node_modules", STATIC_SCRIPT[tool]); // a direct binary, never npx (TS §9.3)
       return tool === "tsc"
         ? [process.execPath, script, "--noEmit", "--pretty", "false", "--project", "tsconfig.json", "--incremental", "false", "--listFiles"]
         : [process.execPath, script, "--format", "json", "--output-file", report, "--no-color", "."];
@@ -471,19 +467,20 @@ export function createStack(): Stack {
       String(metadata(root, exclusions).json("node_modules/@playwright/test/package.json")?.version ?? "none")),
     normalizeE2e: (out, root) => normalizePlaywright(out.raw, root),
     adapterVersion: () => ADAPTER,
-    fingerprint: (root): ToolVersions => ({
-      node: process.version,
-      tool: String(metadata(root, exclusions).json("node_modules/vitest/package.json")?.version ?? "none"),
-      reporter: "vitest-json",
-      adapter: ADAPTER,
-      dependencies: metadata(root, exclusions).installed(),
-      static: Object.fromEntries(
-        ([["tsc", "typescript"], ["eslint", "eslint"], ["playwright", "@playwright/test"]] as const).map(([t, name]) => {
-          const pkg = metadata(root, exclusions).json(`node_modules/${name}/package.json`);
-          return [t, String(pkg?.version ?? "none")];
-        }),
-      ),
-    }),
+    fingerprint: (root): ToolVersions => {
+      const meta = metadata(root, exclusions);
+      return {
+        node: process.version,
+        tool: String(meta.json("node_modules/vitest/package.json")?.version ?? "none"),
+        reporter: "vitest-json",
+        adapter: ADAPTER,
+        dependencies: meta.installed(),
+        static: Object.fromEntries(
+          ([["tsc", "typescript"], ["eslint", "eslint"], ["playwright", "@playwright/test"]] as const).map(([t, name]) =>
+            [t, String(meta.json(`node_modules/${name}/package.json`)?.version ?? "none")]),
+        ),
+      };
+    },
     patterns: PATTERNS,
     classify,
     isTestPath: (p) => classify(p) === "test",

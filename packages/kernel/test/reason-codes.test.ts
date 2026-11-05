@@ -4,15 +4,18 @@ import assert from "node:assert/strict";
 import { chmodSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
+import { z } from "zod";
 import { GitCli } from "../src/adapters/git-cli.ts";
 import { newBudget } from "../src/core/budget.ts";
 import { KernelError } from "../src/core/errors.ts";
 import { envelopeConsentPlan, makeExecutionEnvelope } from "../src/core/execution-envelope.ts";
-import { checkResult } from "../src/core/review.ts";
-import type { Reservation, ReviewResult, WorkContract } from "../src/core/schemas.ts";
+import { checkAnalystResult, checkResult } from "../src/core/review.ts";
+import { AnalystResult, ReviewResult, type Finding, type Reservation, type WorkContract } from "../src/core/schemas.ts";
 import { emptyState } from "../src/core/state.ts";
+import { runVerb } from "../src/pipeline.ts";
+import type { Verb } from "../src/pipeline.ts";
 import { cleanup, git, initRepo, newStore, tmp, write } from "./helpers.ts";
-import { BASIS, project } from "./support/fixture.ts";
+import { BASIS, contractFixture, project } from "./support/fixture.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -29,11 +32,19 @@ function repo() {
 }
 
 describe("review: one focused recheck per contract", () => {
-  const reservation = { id: "R1", attempt: 1, manifestHash: "m1", mode: "recheck" } as unknown as Reservation;
-  const result = { reservation: "R1", attempt: 1, manifest: "m1", mode: "recheck", coverage: { sampled: [] }, attention: [] } as unknown as ReviewResult;
-  const workWith = (rechecks: number) => ({
-    budget: { ...newBudget(), rechecks, reservations: [reservation] }, attention: [],
-  }) as unknown as WorkContract;
+  const reservation: Reservation = {
+    id: "R1", role: "reviewer", manifest: "reviewer.json", manifestHash: "m1",
+    candidate: "candidate", basisHash: "basis", attempt: 1, mode: "recheck", files: {},
+  };
+  const result = ReviewResult.parse({
+    kind: "review", manifest: "m1", reservation: "R1", attempt: 1, mode: "recheck",
+    status: "completed", dispatchMode: "subagent-fresh", axes: { behavior: "pass", structure: "pass" },
+    coverage: { inspected: [], uncovered: [], crossCutting: "checked", sampled: [] },
+    attention: [], findings: [], basisGaps: [],
+  });
+  const workWith = (rechecks: number): WorkContract => contractFixture({
+    budget: { ...newBudget(), rechecks, reservations: [reservation] },
+  });
 
   it("refuses a second recheck result with recheck-exhausted and accepts the first [REV-05]", () => {
     const refused = checkResult(workWith(1), result, "standard");
@@ -42,6 +53,137 @@ describe("review: one focused recheck per contract", () => {
     const accepted = checkResult(workWith(0), result, "standard");
     assert.deepEqual(accepted.reasons, []);
     assert.equal(accepted.reservation?.id, "R1");
+  });
+
+  it("admits only unique fixed findings with nonblank evidence for a recheck [REV-04]", () => {
+    const finding: Finding = {
+      id: "FND-1", n: 1, severity: "major", axis: "behavior", state: "fixed",
+      claim: "A boundary was missing", evidence: "src/example.ts:1", location: { path: "src/example.ts", line: 1 },
+      history: [{ to: "fixed", by: "coordinator", reason: "src/example.ts:2 changed", at: "2026-01-01T00:00:00.000Z" }],
+    };
+    const base = { finding: finding.id, outcome: "verified" as const, evidence: "src/example.ts:2 checked" };
+    for (const outcome of ["verified", "still-open"] as const) {
+      const work = { ...workWith(0), findings: [finding] }, before = structuredClone(work);
+      assert.equal(checkResult(work, { ...result, rechecked: [{ ...base, outcome }] }, "standard").reservation?.id, "R1");
+      assert.deepEqual(work, before);
+    }
+    for (const state of ["open", "valid", "disputed", "withdrawn", "verified", "deferred", "risk-accepted", "wont-fix"] as const) {
+      for (const outcome of ["verified", "still-open"] as const) {
+        const work = { ...workWith(0), findings: [{ ...finding, state }] }, before = structuredClone(work);
+        const checked = checkResult(work, { ...result, rechecked: [{ ...base, outcome }] }, "standard");
+        assert.deepEqual(checked.reasons.map(reason => reason.code), ["review-result-invalid"], `${state}/${outcome}`);
+        assert.equal(checked.reservation, undefined);
+        assert.deepEqual(work, before);
+      }
+    }
+    for (const rechecked of [
+      [{ ...base, finding: "unknown" }],
+      [{ ...base, evidence: " \n\t" }],
+      [base, base],
+      [base, { ...base, outcome: "still-open" as const }],
+    ]) {
+      const work = { ...workWith(0), findings: [finding] }, before = structuredClone(work);
+      const checked = checkResult(work, { ...result, rechecked }, "standard");
+      assert.deepEqual(checked.reasons.map(reason => reason.code), ["review-result-invalid"]);
+      assert.equal(checked.reservation, undefined);
+      assert.deepEqual(work, before);
+    }
+  });
+});
+
+describe("review and analyst reservation roles", () => {
+  const reviewer: Reservation = {
+    id: "reviewer-1", role: "reviewer", manifest: "reviewer.json", manifestHash: "reviewer-hash",
+    candidate: "candidate", basisHash: "basis", attempt: 1, mode: "full", files: {},
+  };
+  const analyst: Reservation = {
+    id: "analyst-1", role: "analyst", manifest: "analyst.json", manifestHash: "analyst-hash",
+    candidate: "candidate", basisHash: "basis", attempt: 1, mode: "full", files: {},
+    analystRole: "researcher", question: "Inspect the code",
+  };
+  const reviewResultFor = (reservation: Reservation) => ReviewResult.parse({
+    kind: "review", manifest: reservation.manifestHash, reservation: reservation.id, attempt: reservation.attempt, mode: reservation.mode,
+    status: "completed", dispatchMode: "subagent-fresh", axes: { behavior: "pass", structure: "pass" },
+    coverage: { inspected: [], uncovered: [], crossCutting: "checked", sampled: [] },
+    attention: [], findings: [], basisGaps: [],
+  });
+  const analystResultFor = (reservation: Reservation) => AnalystResult.parse({
+    kind: "analyst", manifest: reservation.manifestHash, reservation: reservation.id, attempt: reservation.attempt,
+    role: "researcher", status: "completed", dispatchMode: "subagent-fresh", revision: reservation.candidate,
+    artifacts: [], findings: [],
+  });
+  const workWithReservations = (reservations: Reservation[], focusedReview?: Reservation): WorkContract =>
+    contractFixture({
+      budget: { ...newBudget(), reservations },
+      ...(focusedReview ? { focusedReview } : {}),
+    });
+
+  it("refuses recheck claims in a full review without settling its reservation [REV-04]", () => {
+    const work = workWithReservations([reviewer]);
+    const before = structuredClone(work);
+    for (const outcome of ["verified", "still-open"] as const) {
+      const result = ReviewResult.parse({
+        ...reviewResultFor(reviewer),
+        rechecked: [{ finding: "FND-1", outcome, evidence: "src/example.ts:1" }],
+      });
+      const checked = checkResult(work, result, "standard");
+      assert.deepEqual(checked.reasons.map(reason => reason.code), ["review-result-invalid"]);
+      assert.equal(checked.reservation, undefined);
+      assert.deepEqual(work, before);
+    }
+    for (const rechecked of [undefined, []]) {
+      const result = ReviewResult.parse({ ...reviewResultFor(reviewer), rechecked });
+      assert.deepEqual(checkResult(work, result, "standard").reasons, []);
+    }
+  });
+
+  it("refuses duplicate or unexplained attention dispositions before review application [REV-03]", () => {
+    const work = {
+      ...workWithReservations([reviewer]),
+      attention: [{ id: "AT-1", path: "src/example.ts", line: 1, pattern: "skip", marker: true }],
+    };
+    const before = structuredClone(work);
+    const accepted = { id: "AT-1", disposition: "accepted" as const, reason: "src/example.ts:1 is an intentional skip" };
+    for (const attention of [
+      [{ ...accepted, id: "unknown" }],
+      [accepted, accepted],
+      [accepted, { ...accepted, disposition: "finding" as const }],
+      [{ ...accepted, disposition: "finding" as const }, accepted],
+      [{ ...accepted, reason: " \n\t" }],
+      [{ ...accepted, disposition: "finding" as const, reason: "" }],
+    ]) {
+      const checked = checkResult(work, ReviewResult.parse({ ...reviewResultFor(reviewer), attention }), "standard");
+      assert.deepEqual(checked.reasons.map(reason => reason.code), ["review-result-invalid"]);
+      assert.equal(checked.reservation, undefined);
+      assert.deepEqual(work, before);
+    }
+    for (const attention of [[], [accepted], [{ ...accepted, disposition: "finding" as const }]]) {
+      const checked = checkResult(work, ReviewResult.parse({ ...reviewResultFor(reviewer), attention }), "standard");
+      assert.equal(checked.reservation?.id, reviewer.id);
+      assert.deepEqual(checked.reasons, []);
+      assert.deepEqual(work, before);
+    }
+  });
+
+  it("does not accept an analyst reservation for a reviewer-shaped result", () => {
+    const work = workWithReservations([analyst]);
+    const checked = checkResult(work, reviewResultFor(analyst), "standard");
+    assert.deepEqual(checked.reasons.map(reason => reason.code), ["review-stale"]);
+    assert.equal(checked.reservation, undefined);
+  });
+
+  it("does not accept an analyst focused slot for a reviewer-shaped result", () => {
+    const work = workWithReservations([], analyst);
+    const checked = checkResult(work, reviewResultFor(analyst), "standard");
+    assert.deepEqual(checked.reasons.map(reason => reason.code), ["review-stale"]);
+    assert.equal(checked.reservation, undefined);
+  });
+
+  it("does not accept a reviewer reservation for an analyst-shaped result", () => {
+    const work = workWithReservations([reviewer]);
+    const checked = checkAnalystResult(work, analystResultFor(reviewer));
+    assert.deepEqual(checked.reasons.map(reason => reason.code), ["review-stale"]);
+    assert.equal(checked.reservation, undefined);
   });
 });
 
@@ -84,6 +226,23 @@ describe("store: run directory", () => {
     } finally {
       for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v;
     }
+  });
+  it("returns a nonzero pipeline refusal when a required run directory cannot be created [NFR-03]", async () => {
+    const p = project();
+    roots.push(p.root);
+    const probe: Verb = {
+      name: "run-dir-probe",
+      schema: z.strictObject({}),
+      class: () => "stateless",
+      run(ports) {
+        ports.store.tempDir("a//b");
+        return { resp: {} };
+      },
+    };
+    const response = await runVerb(p.ports(), { [probe.name]: probe }, probe.name, {});
+    assert.equal(response.exit, 2, JSON.stringify(response));
+    assert.ok(response.reasons.some((r) => r.code === "run-dir-unavailable"));
+    assert.deepEqual(response.next, []);
   });
 });
 

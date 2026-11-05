@@ -1,0 +1,930 @@
+diff --git a/packages/kernel/test/dependency-ownership.test.ts b/packages/kernel/test/dependency-ownership.test.ts
+new file mode 100644
+index 0000000..ab0e5e5
+--- /dev/null
++++ b/packages/kernel/test/dependency-ownership.test.ts
+@@ -0,0 +1,78 @@
++import { after, describe, it } from "node:test";
++import assert from "node:assert/strict";
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { cleanup } from "./helpers.ts";
++import { project } from "./support/fixture.ts";
++import { restore } from "../src/decisions/dependency-job.ts";
++import { sha256 } from "../src/core/ids.ts";
++
++const roots: string[] = [];
++after(() => roots.forEach(cleanup));
++const read = (root: string, path: string): string => readFileSync(join(root, path), "utf8");
++
++describe("dependency restore ownership [SEC-05]", () => {
++  it("does not treat a post-resolution hash containing a human edit as resolver ownership", () => {
++    const p = project({ "package-lock.json": '{"lockfileVersion":3,"packages":{}}\n' });
++    roots.push(p.root);
++    const ports = p.ports();
++    const before = {
++      manifest: ports.store.putBlob(read(p.root, "package.json")),
++      lock: ports.store.putBlob(read(p.root, "package-lock.json")),
++    };
++    const humanManifest = '{"name":"fx","type":"module","private":true,"dependencies":{"a":"^1.0.0"},"human":"keep"}\n';
++    const humanLock = '{"lockfileVersion":3,"packages":{"node_modules/a":{"version":"1.0.0"}},"human":"keep"}\n';
++    p.write("package.json", humanManifest);
++    p.write("package-lock.json", humanLock);
++    const dep = {
++      specs: ["a@1.0.0"], urgent: false, quote: "add a", scripts: [], manager: "npm" as const,
++      before, after: { manifest: sha256(humanManifest), lock: sha256(humanLock) },
++    };
++    const writes: string[] = [];
++    ports.project.write = (path, content) => { writes.push(`${path}:${content}`); };
++    ports.project.remove = (paths) => { writes.push(...paths.map((path) => `remove:${path}`)); };
++
++    assert.equal(ports.project.hashes(["package.json", "package-lock.json"])["package.json"], dep.after.manifest);
++    restore(ports, dep);
++    assert.deepEqual(writes, [], "a post-resolution hash is not proof that the resolver owns these bytes");
++    assert.equal(read(p.root, "package.json"), humanManifest);
++    assert.equal(read(p.root, "package-lock.json"), humanLock);
++  });
++
++  it("does not overwrite a human edit made after the ownership hashes are checked", () => {
++    const p = project({ "package-lock.json": '{"lockfileVersion":3,"packages":{}}\n' });
++    roots.push(p.root);
++    const ports = p.ports();
++    const before = {
++      manifest: ports.store.putBlob(read(p.root, "package.json")),
++      lock: ports.store.putBlob(read(p.root, "package-lock.json")),
++    };
++    const resolvedManifest = '{"name":"fx","type":"module","private":true,"dependencies":{"a":"^1.0.0"}}\n';
++    const resolvedLock = '{"lockfileVersion":3,"packages":{"node_modules/a":{"version":"1.0.0"}}}\n';
++    p.write("package.json", resolvedManifest);
++    p.write("package-lock.json", resolvedLock);
++    const dep = {
++      specs: ["a@1.0.0"], urgent: false, quote: "add a", scripts: [], manager: "npm" as const,
++      before, after: { manifest: sha256(resolvedManifest), lock: sha256(resolvedLock) },
++    };
++    const originalHashes = ports.project.hashes.bind(ports.project);
++    let injected = false;
++    const writes: string[] = [];
++    ports.project.write = (path, content) => { writes.push(`${path}:${content}`); };
++    ports.project.remove = (paths) => { writes.push(...paths.map((path) => `remove:${path}`)); };
++    ports.project.hashes = (paths) => {
++      const observed = originalHashes(paths);
++      if (!injected && paths.includes("package.json") && paths.includes("package-lock.json")) {
++        injected = true;
++        p.write("package.json", '{"name":"fx","human":"arrived after comparison"}\n');
++        p.write("package-lock.json", '{"lockfileVersion":3,"human":"arrived after comparison"}\n');
++      }
++      return observed;
++    };
++
++    restore(ports, dep);
++    assert.deepEqual(writes, [], "hash-check followed by a separate write is not compare-and-swap");
++    assert.equal(read(p.root, "package.json"), '{"name":"fx","human":"arrived after comparison"}\n');
++    assert.equal(read(p.root, "package-lock.json"), '{"lockfileVersion":3,"human":"arrived after comparison"}\n');
++  });
++});
+diff --git a/packages/kernel/test/dependency-preimages.test.ts b/packages/kernel/test/dependency-preimages.test.ts
+new file mode 100644
+index 0000000..8606daf
+--- /dev/null
++++ b/packages/kernel/test/dependency-preimages.test.ts
+@@ -0,0 +1,32 @@
++import assert from "node:assert/strict";
++import { after, it } from "node:test";
++import { restoreFiles } from "../src/decisions/dependency-job.ts";
++import { cleanup } from "./helpers.ts";
++import { project } from "./support/fixture.ts";
++
++const roots: string[] = [];
++after(() => roots.forEach(cleanup));
++
++for (const missing of ["manifest", "lock"] as const) {
++  it(`validates the complete restore read set when ${missing} is missing [CON-03, SEC-05]`, () => {
++    const p = project(); roots.push(p.root);
++    const ports = p.ports(), mutations: string[] = [], reads: string[] = [];
++    ports.store.readBlob = (hash) => { reads.push(hash); return hash === missing ? null : "saved bytes"; };
++    ports.project.write = (path) => { mutations.push(path); };
++    ports.project.remove = (paths) => { mutations.push(...paths); };
++    assert.throws(() => restoreFiles(ports, { manifest: "manifest", lock: "lock" }), /pre-image/i);
++    assert.deepEqual(reads, ["manifest", "lock"]);
++    assert.deepEqual(mutations, []);
++  });
++}
++
++it("restores a valid empty blob and distinguishes prior absence [CON-03, SEC-05]", () => {
++  const p = project(); roots.push(p.root);
++  const ports = p.ports(), writes: Array<[string, string]> = [], removed: string[] = [];
++  ports.store.readBlob = (hash) => hash === "empty" ? "" : assert.fail("unexpected blob read");
++  ports.project.write = (path, content) => { writes.push([path, content]); };
++  ports.project.remove = (paths) => { removed.push(...paths); };
++  restoreFiles(ports, { manifest: "empty", lock: null });
++  assert.deepEqual(writes, [["package.json", ""]]);
++  assert.deepEqual(removed, ["package-lock.json"]);
++});
+diff --git a/packages/kernel/test/dependency-recovery-safety.test.ts b/packages/kernel/test/dependency-recovery-safety.test.ts
+new file mode 100644
+index 0000000..196d088
+--- /dev/null
++++ b/packages/kernel/test/dependency-recovery-safety.test.ts
+@@ -0,0 +1,56 @@
++import assert from "node:assert/strict";
++import { after, it } from "node:test";
++import { readFileSync } from "node:fs";
++import { join } from "node:path";
++import { emptyState } from "../src/core/state.ts";
++import type { Tx } from "../src/ports/types.ts";
++import { SETTLE, type Recovery } from "../src/verbs/recover-effects.ts";
++import { cleanup } from "./helpers.ts";
++import { project } from "./support/fixture.ts";
++
++const roots: string[] = [];
++after(() => roots.forEach(cleanup));
++
++for (const scenario of ["unchanged", "changed", "missing-blob"] as const) {
++  it(`dependency crash recovery preserves files: ${scenario} [CON-03, SEC-05]`, async () => {
++    const manifest = scenario === "changed" ? "human manifest\n" : "original manifest\n";
++    const lock = scenario === "changed" ? "human lock\n" : "original lock\n";
++    const p = project({ "package.json": manifest, "package-lock.json": lock });
++    roots.push(p.root);
++    const ports = p.ports();
++    const mutations: string[] = [];
++    const write = ports.project.write.bind(ports.project);
++    const remove = ports.project.remove.bind(ports.project);
++    ports.project.write = (path, content) => { mutations.push(path); write(path, content); };
++    ports.project.remove = (paths) => { mutations.push(...paths); remove(paths); };
++    ports.store.readBlob = (hash) => hash === "manifest"
++      ? "original manifest\n"
++      : scenario === "missing-blob" ? null : "original lock\n";
++    const state = emptyState("fixture", "tag");
++    const results: unknown[] = [];
++    const unexpected = () => assert.fail("unexpected journal mutation");
++    const tx: Tx = {
++      state, recovered: false, ensure: () => ({ workspaceId: "fixture", tag: "tag" }),
++      publish: unexpected, call: unexpected, intent: unexpected,
++      result: (_effect, _id, outcome) => { results.push(outcome); },
++      unresolved: () => [], evict: () => ({ overCeiling: false, largest: [] }), recent: () => [],
++    };
++    const recovery: Recovery = { ports, tx, state, completed: [], uncertain: [] };
++    await SETTLE.dependency!(recovery, {
++      effect: "dependency", id: "interrupted",
++      op: { work: "absent", phase: "resolve", manager: "npm", before: { manifest: "manifest", lock: "lock" } },
++    });
++    assert.equal(readFileSync(join(p.root, "package.json"), "utf8"), manifest);
++    assert.equal(readFileSync(join(p.root, "package-lock.json"), "utf8"), lock);
++    assert.deepEqual(mutations, []);
++    if (scenario === "unchanged") {
++      assert.deepEqual(results, [{ completed: false }]);
++      assert.equal(recovery.uncertain.length, 0);
++      assert.match(recovery.completed[0]!, /match.*pre-image/);
++    } else {
++      assert.deepEqual(results, []);
++      assert.equal(recovery.completed.length, 0);
++      assert.equal(recovery.uncertain.length, 1);
++    }
++  });
++}
+diff --git a/packages/kernel/test/dependency.test.ts b/packages/kernel/test/dependency.test.ts
+index 735b19d..6896b78 100644
+--- a/packages/kernel/test/dependency.test.ts
++++ b/packages/kernel/test/dependency.test.ts
+@@ -10,6 +10,7 @@ import type { Project } from "./support/fixture.ts";
+ import { runVerb } from "../src/pipeline.ts";
+ import { VERBS } from "../src/verbs/index.ts";
+ import type { Runner, RunResult, RunSpec } from "../src/ports/types.ts";
++import { restoreFiles } from "../src/decisions/dependency-job.ts";
+ 
+ const roots: string[] = [];
+ after(() => { for (const r of roots) cleanup(r); });
+@@ -190,7 +191,7 @@ describe("verifying before installing [SEC-05]", () => {
+     assert.equal(f.read("package-lock.json"), null);
+   });
+ 
+-  it("rolls back an interrupted dependency resolution on recovery [CON-03, SEC-05]", async () => {
++  it("recognizes an interrupted dependency resolution that left the pre-image untouched [CON-03, SEC-05]", async () => {
+     const t = setup({ packages: { a: { ageDays: 90 } } });
+     const h = await open(t);
+     const before = t.read("package.json")!;
+@@ -200,15 +201,45 @@ describe("verifying before installing [SEC-05]", () => {
+     await ports.store.transaction("dependency", async (tx) => {
+       tx.intent("dependency", "d-crash", { work: w.id, phase: "resolve", before: { manifest: blob, lock: null } });
+     });
+-    writeFileSync(join(t.p.root, "package.json"), '{"name":"corrupted"}\n');
+-    writeFileSync(join(t.p.root, "package-lock.json"), '{"lockfileVersion":3}\n');
+     const r = await t.call("decide", { h, kind: "config", target: "style", propose: { value: "concise" } });
+     assert.equal(r.exit, 0, JSON.stringify(r));
+-    assert.ok(r.effects?.completed.some((e) => /interrupted dependency resolution was rolled back/.test(e)));
++    assert.ok(r.effects?.completed.some((e) => /match.*pre-image/.test(e)));
+     assert.equal(t.read("package.json"), before);
+     assert.equal(t.read("package-lock.json"), null);
+   });
+ 
++  it("leaves changed files untouched when recovery has no dependency post-image [CON-03, SEC-05]", async () => {
++    const t = setup({ packages: { a: { ageDays: 90 } } });
++    const h = await open(t);
++    const ports = t.p.ports();
++    const w = Object.values(t.state().work)[0]!;
++    const blob = ports.store.putBlob(t.read("package.json")!);
++    await ports.store.transaction("dependency", async (tx) => {
++      tx.intent("dependency", "d-crash", { work: w.id, phase: "resolve", before: { manifest: blob, lock: null } });
++    });
++    writeFileSync(join(t.p.root, "package.json"), '{"name":"human edit"}\n');
++    writeFileSync(join(t.p.root, "package-lock.json"), '{"lockfileVersion":3}\n');
++    const r = await t.call("decide", { h, kind: "config", target: "style", propose: { value: "concise" } });
++    assert.equal(r.exit, 2, JSON.stringify(r));
++    assert.ok(r.reasons.some((reason) => reason.code === "effect-uncertain"));
++    assert.ok(r.effects?.uncertain.some((e) => /dependency.*left untouched/.test(e)));
++    assert.equal(r.effects?.completed.some((e) => /dependency resolution/.test(e)), false);
++    assert.equal(t.read("package.json"), '{"name":"human edit"}\n');
++    assert.equal(t.read("package-lock.json"), '{"lockfileVersion":3}\n');
++  });
++
++  it("validates all dependency pre-images before restoring any file [CON-03, SEC-05]", () => {
++    const t = setup({ packages: { a: { ageDays: 90 } } });
++    const ports = t.p.ports();
++    const manifest = t.read("package.json")!;
++    assert.throws(() => restoreFiles(ports, {
++      manifest: ports.store.putBlob("original manifest"),
++      lock: "missing-preimage",
++    }));
++    assert.equal(t.read("package.json"), manifest);
++    assert.equal(t.read("package-lock.json"), null);
++  });
++
+   it("needs the user's words, like any grant", async () => {
+     const t = setup({ packages: { a: { ageDays: 90 } } });
+     const h = await open(t);
+diff --git a/packages/kernel/test/git-hidden-freshness.test.ts b/packages/kernel/test/git-hidden-freshness.test.ts
+new file mode 100644
+index 0000000..7db96a0
+--- /dev/null
++++ b/packages/kernel/test/git-hidden-freshness.test.ts
+@@ -0,0 +1,43 @@
++import assert from "node:assert/strict";
++import { after, it } from "node:test";
++import { readFileSync, rmSync, symlinkSync } from "node:fs";
++import { join } from "node:path";
++import { newContract } from "../src/core/state.ts";
++import { checkInputId, gather } from "../src/verbs/facts.ts";
++import { cleanup } from "./helpers.ts";
++import { project } from "./support/fixture.ts";
++
++const roots: string[] = [];
++after(() => roots.forEach(cleanup));
++
++it("invalidates gathered candidate and check identity after a hidden tracked deletion [EVD-03]", async () => {
++  const p = project(); roots.push(p.root);
++  const ports = p.ports(), probe = await ports.git.probe();
++  const start = { head: probe.head, branch: probe.branch, staged: [], dirty: [] };
++  const work = newContract({
++    id: "fixture", label: "W-0001", profile: "feature", request: "identity", lane: "quick", floor: "quick", level: "L0",
++    generation: 1, now: "2026-11-04T00:00:00Z", version: "fixture", assessment: {},
++    scopePaths: ["src/greet.ts"], protectedPaths: [], gitMode: "git", base: probe.head, branch: probe.branch, start,
++  });
++  const before = await gather(ports, work);
++  const identity = checkInputId(ports, work, before.candidate);
++  p.git("update-index", "--assume-unchanged", "src/greet.ts");
++  const index = readFileSync(join(p.root, ".git", "index"));
++  rmSync(join(p.root, "src", "greet.ts"));
++  const changed = await gather(ports, work);
++  assert.notEqual(changed.candidate, before.candidate);
++  assert.notEqual(checkInputId(ports, work, changed.candidate), identity);
++  assert.deepEqual(readFileSync(join(p.root, ".git", "index")), index);
++});
++
++it("refuses a hidden tracked path through a replaced parent symlink [SEC-06, EVD-03]", async () => {
++  const p = project(), outside = project(); roots.push(p.root, outside.root);
++  const ports = p.ports();
++  p.git("update-index", "--assume-unchanged", "src/greet.ts");
++  const index = readFileSync(join(p.root, ".git", "index"));
++  rmSync(join(p.root, "src"), { recursive: true });
++  symlinkSync(join(outside.root, "src"), join(p.root, "src"), process.platform === "win32" ? "junction" : "dir");
++  await assert.rejects(ports.git.inventory([]), /hidden tracked path/);
++  assert.deepEqual(readFileSync(join(p.root, ".git", "index")), index);
++  assert.ok(readFileSync(join(outside.root, "src", "greet.ts"), "utf8").length);
++});
+diff --git a/packages/kernel/test/git.test.ts b/packages/kernel/test/git.test.ts
+index c3c182f..8ba7032 100644
+--- a/packages/kernel/test/git.test.ts
++++ b/packages/kernel/test/git.test.ts
+@@ -50,6 +50,34 @@ describe("git: probe and inventory", () => {
+     assert.notEqual(after.digest, before.digest);
+     assert.equal(after.entries.get("src/a.ts")?.blob, gitBlob(Buffer.from("export const a = 9;\n")));
+   });
++  it("includes assume-unchanged tracked deletions in the candidate identity [EVD-03]", async () => {
++    const { g, root } = repo();
++    const before = await g.inventory([]);
++    git(root, "update-index", "--assume-unchanged", "src/a.ts");
++    const index = readFileSync(join(root, ".git", "index"));
++    rmFile(root, "src/a.ts");
++    const after = await g.inventory([]);
++    assert.notEqual(after.digest, before.digest);
++    assert.equal(after.entries.has("src/a.ts"), false);
++    assert.deepEqual(after.status.map(({ path, xy, indexBlob }) => ({ path, xy, indexBlob })), [
++      { path: "src/a.ts", xy: ".D", indexBlob: before.entries.get("src/a.ts")!.blob },
++    ]);
++    assert.deepEqual(readFileSync(join(root, ".git", "index")), index);
++  });
++  it("includes a deleted parent of hidden tracked files in the candidate identity [EVD-03]", async () => {
++    const { g, root } = repo();
++    const before = await g.inventory([]);
++    git(root, "update-index", "--assume-unchanged", "src/a.ts", "src/b.ts");
++    const index = readFileSync(join(root, ".git", "index"));
++    rmSync(join(root, "src"), { recursive: true });
++    const after = await g.inventory([]);
++    assert.notEqual(after.digest, before.digest);
++    for (const path of ["src/a.ts", "src/b.ts"]) {
++      assert.equal(after.entries.has(path), false);
++      assert.equal(after.status.filter((row) => row.path === path && row.xy === ".D").length, 1);
++    }
++    assert.deepEqual(readFileSync(join(root, ".git", "index")), index);
++  });
+   it("reports repository state, and a non-repository", async () => {
+     const { g, root } = repo();
+     const p = await g.probe();
+diff --git a/specs/dependency-recovery-safety.md b/specs/dependency-recovery-safety.md
+new file mode 100644
+index 0000000..5b06320
+--- /dev/null
++++ b/specs/dependency-recovery-safety.md
+@@ -0,0 +1,534 @@
++# Dependency recovery safety and hidden tracked deletions
++
++Status: draft for independent review and owner decision. No production activation.
++Baseline: `34d6030c61f3f02783fd9bd096ff1fd7cc39f8a8`.
++
++## 1. Scope and authority
++
++CON-03, SEC-05, EVD-03 and FC-09 already require preserving human work,
++reconciling uncertain effects and invalidating stale evidence. Tech Spec
++sections 7.4 and 9.11 describe the existing journal and dependency workflow.
++The C1-C3 candidates do not change budgets, schema versions, commands or consent.
++Section 7 proposes new versioned records and a decision route; it activates none.
++The owner's direction authorizes drafting, review and isolated characterization,
++not the new policy decision below or an implementation exceeding fixed limits.
++
++The old source candidate `f1-recovery-source-candidate.patch` is rejected as a
++safe-rollback implementation. A post-resolver read can contain human edits.
++Matching it cannot prove resolver ownership; checking hashes before separate
++writes also permits a human write between the check and replacement.
++
++## 2. Existing-contract repairs
++
++### C1. Crash recovery never restores dependency files
++
++The baseline `dependency()` handler in `recover-effects.ts` unconditionally
++calls `restoreFiles` today, without checking current contents or complete
++snapshot availability. C1 replaces this destructive branch; it is not merely
++an additional guard on an otherwise safe rollback.
++
++After the existing process-ownership reconciler establishes that the job is no
++longer running, dependency resolution recovery validates both saved pre-images
++and compares both current files before recording a result. A null pre-image means prior absence,
++not an empty file. Missing blobs and unreadable/excluded/linked/nonregular
++current paths are unresolved, not absence.
++
++If both current contents equal both validated pre-images, record
++`completed: false` and explain that the files currently match their pre-images.
++This does not assert that a resolver never ran or that external effects never
++happened. Otherwise append no result, perform no project write or removal, and
++report uncertainty. Preserve the unresolved journal and fence dependent work
++through existing recovery mechanisms. `stop` remains process-only.
++
++No expected resolver post-image exists in the schema-1 intent; recovery must
++not reconstruct one from current files. Equality observations are not a
++cross-file snapshot and never authorize a later project write.
++
++### C2. Snapshot restoration must validate the complete read set first
++
++For any remaining restore caller, resolve every non-null saved blob before
++the first project mutation. An unavailable blob must produce an explicit
++failure with no writes/removals. A valid empty blob remains valid empty content.
++This repairs partial restoration and empty-string substitution only; it does
++not establish ownership or solve the check/write race. Until D1 is settled,
++normal resolver rollback remains unsafe even with this repair.
++
++### C3. Hidden tracked deletions must change candidate identity
++
++For each indexed path Git hides with assume-unchanged or skip-worktree, read
++its actual admissible content. For a proven missing path, remove the entry
++from inventory and emit one unstaged `.D` row with empty work blob and the
++original index mode/blob. Never change the real index or index flags.
++Use no-follow parent admission; a linked or unreadable parent is not proof of
++deletion. Inability to establish a safe path must explicitly refuse inventory,
++not return a clean candidate or silently label deletion.
++
++Reuse `hiddenChanges`, the existing entry/status shapes, digest and downstream
++freshness binding. No new inventory or deletion representation is needed.
++Excluded paths retain their existing policy behavior. Ordinary tracked
++deletions and hidden modifications remain unchanged. Candidate freshness is
++an observation, not a filesystem-wide atomic snapshot guarantee.
++
++## 3. D1: replacement normal-resolution contract (owner decision)
++
++The current section 9.11 step 5 promises conditional automatic restoration.
++Its ownership premise is not established by the current adapters. Neither a
++kernel lock (which humans do not honor), a package-manager exit status, nor
++inode/hash comparison followed by rename supplies a compare-and-swap over
++the two human-editable files.
++
++| Alternative | Behavior | Consequence |
++|---|---|---|
++| A. Preserve and fence (recommended) | Remove automatic restoration on resolver failure, policy rejection, decline and install failure. Keep snapshots and changed files; do not install or grant authority on a rejected/failed operation. Report unresolved dependency edits until separately reconciled. | Smallest honest safety policy; changes step 5 and decline UX. Requires an explicit reconciliation contract, not an invented answer flag. |
++| B. Resolve privately, propose changes | Run the manager against an isolated copy with admitted inputs, no live manifest/lock writes. Show the proposed diff; publication still needs a qualified concurrent-writer protocol or user-managed application. | Better future UX, but registry configuration, workspaces, relative paths and publication require a separate spec and capacity review. A scratch directory alone does not solve live publication. |
++| C. Prove exclusive writer control | Provide a qualified mechanism excluding arbitrary human writers across both paths during publication/restoration. | Current ports and ordinary filesystem rename do not provide this. Advisory locks, post-read hashes and last-moment checks do not qualify. |
++
++Recommendation: choose A as the safety floor, with no promise of automatic
++rollback. The exact unresolved-to-resolved transition is a second decision:
++retain the operation's saved references and attribution until the user has
++manually repaired/reviewed the files; re-read actual contents, re-run policy
++and verification, and reacquire any needed authority before a fresh install.
++Do not silently clear the pending operation and call the files restored.
++No new command, question option, stored record or reason code is approved by
++this text. The concrete decoder/retention/fence-release protocol needs review
++and owner sign-off before A's normal-flow implementation.
++
++C1-C3 follow existing safety requirements; D1 changes an explicit spec promise.
++Authorizing requirement closure is not approval of A's unspecified transition.
++The implementation decision is therefore irreducibly: approve preservation
++instead of automatic rollback, then sign off its concrete reconciliation
++transition. Existing preview/accept/install behavior must not be bypassed.
++
++## 4. Distinguishing examples and tests
++
++| Example | Required observation | Test file |
++|---|---|---|
++| Crash before resolver writes, both pre-images intact | No file writes; not-performed result describes current equality, not external history | `packages/kernel/test/dependency-recovery-safety.test.ts` (direct handler); `dependency.test.ts` (pipeline) |
++| Crash with one or both files changed by resolver or human | Exact bytes preserved; unresolved intent and dependent-write fence retained | `packages/kernel/test/dependency-recovery-safety.test.ts` (direct handler); `dependency.test.ts` (pipeline) |
++| Missing manifest blob, missing lock blob, valid empty blob | Missing blob never substitutes empty content; no mutation before full validation | `packages/kernel/test/dependency.test.ts` |
++| Human process writes after resolver completion but before after-image read | Its bytes may enter `after`; that must not authorize rollback | `packages/kernel/test/dependency-ownership.test.ts` (new characterization fixture) |
++| Human process writes after hash comparison and before restore publication | Human bytes survive under the chosen replacement policy; old/candidate restore demonstrably violates this | `packages/kernel/test/dependency-ownership.test.ts` (new characterization fixture) |
++| Linked/excluded/unreadable dependency input | Explicit uncertainty, no mutation and no not-performed result | `packages/kernel/test/dependency.test.ts` |
++| Unknown or live process ownership | No file reconciliation; existing process fence remains | `packages/kernel/test/dependency.test.ts` |
++| Delete hidden tracked file or its regular parent directory | Digest changes; path absent; exactly one `.D` row; real index bytes unchanged | `packages/kernel/test/git.test.ts` |
++| Hidden path replaced by symlink, permission denied, or unsafe parent | No outside content read and no false clean candidate; explicit refusal where identity cannot be established | `packages/kernel/test/git.test.ts` |
++| Delete a hidden tracked input after a passing check | `gather` candidate and `checkInputId` change; old receipt cannot qualify finish | `packages/kernel/test/audit-regressions.test.ts` |
++
++Concurrency characterization uses real child processes and explicit barriers:
++pause after manager exit before the after-image read, or after the ownership
++hash check before project publication; let a second process write both known
++human markers, acknowledge the write, then release the paused operation.
++Never use timing sleeps as the only ordering proof. Kill the real resolver at
++the journal/act/result/publication boundaries and inspect durable state on
++resume. A direct SETTLE unit test is useful but cannot qualify process races.
++Windows mutation admission stays intact; run pipeline/process controls on
++supported POSIX. Tests and observations not actually executed remain pending.
++
++## 5. Capacity, risks and acceptance
++
++At this baseline central source measures 247,182/247,219 non-whitespace
++characters (37 free); Git adapter 37,801/37,843 (42 free). Parent integration
++has reported still less central room; remeasure against its exact source.
++No production ceiling or quality baseline may increase in this lane.
++Capacity is not a reason to weaken ownership checks or move budgeted logic to
++an unbudgeted module. Measured nonshipping patches are decision evidence only.
++
++Two separate candidates were exercised locally, then removed from production
++source. The C1 crash-only candidate measured central at **247,504/247,219**
++(285 over; net +322). Three direct handler controls pass: unchanged files,
++human changes and unavailable lock blob. It makes no project writes and does
++not modify normal dependency rollback. These are adapter-level Windows
++controls, not pipeline/process or POSIX qualification.
++
++The C3 strict-absence candidate measured Git at **38,508/37,843** (665 over;
++net +707). Four real-Git checks pass: hidden modification, hidden leaf deletion,
++hidden parent deletion and ordinary dirty/untracked inventory. Both deletion
++controls prove real index bytes unchanged. The two deletion controls are red
++on baseline. The candidate refuses unreadable/linked missing-content paths
++rather than conflating them with absence. Symlink-swap/permission/process
++races and downstream receipt qualification remain unexecuted. The earlier
++263-over candidate used weaker absence checking; it is not the final safety
++or fit recommendation. No clear reuse of the existing status branch fits
++42 characters because Git omits hidden deletions from that branch.
++
++Acceptance requires independent review findings dispositioned, D1 approval
++before changing normal rollback policy, red-first tests for C1-C3, supported
++POSIX concurrency/crash controls, unchanged real Git index, downstream stale
++evidence checks, fixed-cap lint and full CI/build/UAT on the actual integrated
++source. Preserve schema-1 journal compatibility and unresolved records.
++Partial C1/C2 evidence is not complete F1 closure; C3 inventory evidence alone
++is not end-to-end freshness qualification. No host behavior is observed here.
++
++## 6. Independent review dispositions
++
++Follow-up isolated C2 characterization measured central **247,412/247,219**
++(193 over; net +230). Both missing-manifest and missing-lock controls are red
++on baseline and green on the candidate, with both blobs read before any
++mutation. Valid empty content is written as empty and null prior absence
++removes the lock path. These tests substitute store/project boundary methods;
++they prove complete-read-set ordering, not concurrent filesystem ownership.
++No normal rollback policy changed.
++
++C3 now also has baseline-red/candidate-green real-Git controls for a replaced
++parent symlink/junction (explicit refusal, unchanged index/outside file) and
++`gather` candidate plus `checkInputId` invalidation after hidden deletion.
++These run on Windows without mutating kernel verbs. They do not prove an
++arbitrary parent replacement race or end-to-end finish receipt refusal.
++Supported-POSIX targeted validation is requested separately; no full CI or
++requirement closure is claimed.
++The later Linux report in section 8 supersedes this pending status for the
++named bounded controls only.
++
++Independent fresh-context review on 2026-11-04 found no blocking contract
++defect. Its decision-relevant clarity finding is accepted: C1 now explicitly
++identifies the unconditional baseline overwrite being replaced. The suggestion
++to avoid a disputed port count is accepted; alternative C now says "current
++ports." Confirmations of C2/C3 and the separation from D1 are retained as
++review observations, not implementation evidence or owner approval.
++
++Author follow-up checked `pipeline-mutate.ts`: recovery uncertainty produces
++exit 2 with `effect-uncertain` before ordinary dispatch. Changed-file recovery
++tests must assert that actual fence, not exit 0. No result or success-shaped
++continuation is permitted for the unresolved case.
++
++### Remaining decision and implementation handoff
++
++The reviewed contract is ready for owner consideration, not signed off. C1
++and C3 have tested nonshipping source patches with exact fixed-cap failures;
++C2's existing missing-preimage regression remains red on baseline. This lane
++has not added a concurrency-qualified restore primitive. Normal resolver
++rollback ownership remains open; neither the rejected full F1 candidate nor
++these bounded controls close F1. A measured capacity plan must fund the
++existing-contract corrections before shipping them. D1 still requires a
++specific normal-flow preservation/reconciliation decision.
++
++The section 7 revision received a separate bounded independent review on
++2026-11-04 because the original synchronous reviewer could not accept a
++follow-up message. All findings are dispositioned: name `planInLock`'s actual
++pre-dispatch uncertainty seam; add structured unresolved correlation and
++uncorrelated blockers rather than matching strings; explicitly exclude a
++source-editing lease; name the new SETTLE entry and normal restore callers.
++All are accepted below. The proposed arbitrary multi-intent bound is removed:
++one target is admitted and conflicting/multiple intents refuse. No source
++implementation, author approval or host qualification follows from review.
++The protocol sibling independently confirmed strict legacy decoder boundaries;
++schema-3 is proposed explicitly, not a silent schema-1/2 extension.
++
++## 7. D1A concrete proposed reconciliation protocol
++
++This section is a proposal for a single owner sign-off, not an available
++command. It replaces the unspecified second decision in section 3 with the
++complete transition below. D1 and protocol-version/capacity approval remain
++required; no normal-flow implementation is included in this lane.
++
++### 7.1 Records and compatibility
++
++Current schema-1 `work.dependency` has specs, urgent, quote, scripts, manager,
++before blob references and after hashes. The unresolved dependency journal
++intent has work, phase, manager, before and optional scripts; no resolver-owned
++post-image or source writer identity is established. Preserve legacy decoding
++and C1 behavior; do not reinterpret existing `completed: false` as preserved
++abandonment.
++
++Propose the following strict records under schema 3 for both state and journal,
++coordinated with migration. Do not silently add an effect/outcome
++to the frozen schema-1 or schema-2 effect inventories. Its exact activation
++version is 3 in this proposal, not an instruction to activate schema 2 or 3.
++Older writers must fail admission before mutation. The coupled migration work
++must preserve schema-1 decoding/upcast unchanged; format conversion never
++invents this decision, authority, counters, receipts or timestamps.
++
++- New decision kind: `dependency-reconcile`.
++- New journal effect: `dependency-reconcile`; ID from the kernel random port.
++- New `SETTLE["dependency-reconcile"]` registry entry implementing section 7.3.
++- Intent `op`: `{work, generation, targets, manager, before, observed,
++  request, policyHash, binding, action: "abandon-preserve", quote}`.
++- `request`: `{specs, urgent, scripts, quote}` copied from the original durable
++  preview when present; otherwise null, explicitly meaning that legacy
++  resolution intent did not retain it. New schema-3 resolution intents retain
++  this request too (scripts initially empty, never fabricated from live files).
++- `targets`: an array containing the same work's single unresolved dependency
++  resolution intent ID; multiple/conflicting intents are refused, not merged.
++  The manager and before references must match that exact intent. An intact
++  pending preview uses an empty targets list and identifies its revision
++  through the binding. Install-phase uncertainty is ineligible.
++- `before`: existing `{manifest: blob|null, lock: blob|null}` references.
++  References stay even when unavailable. No fabricated replacement blob.
++- `observed`: `{manifest: digest|null, lock: digest|null}`; digest is SHA-256
++  of safely read current bytes, null is proven absence. Unsafe reads refuse
++  this decision, because the card cannot accurately identify reviewed files.
++- `binding`: hash of workspace ID, work ID/generation, exact target intent
++  payloads, manager, before, observed, policyHash, and current pending
++  dependency preview identity (or null). Policy hash covers the effective
++  dependency policy, exclusions, protected paths and relevant command inputs.
++- Result of each original target dependency intent: `{status:
++  "abandoned-preserved", reconciliation: id}`. This is a new discriminated
++  terminal outcome, never `completed: false` or a claim rollback succeeded.
++- Reconciliation result: `{completed: true, binding}`. Completion means only
++  this record-only settlement occurred, not file recovery or installation.
++- New optional per-work `dependencyReconciliation`: `{id, binding, manager,
++  before, observed, targets, quote, settledAt, status: "abandoned-preserved"}`.
++  One current record is sufficient; earlier settlements remain in the journal.
++  No new grants, receipts, budgets, accepted answers or vetted paths arise.
++
++When failure/rejection/decline occurs normally under D1A, use this same
++record-only settlement preparation, rather than restore files or silently
++drop the pending preview. Preserve the existing before refs and original
++specs/quote in the journal intent. The UI offers reconciliation; it must
++not say the files are restored. An install error remains separate uncertain
++external execution and is not closable by this manifest-only route.
++Specifically replace the restore calls in `dependency.ts`'s `decline` and
++`dependency-start.ts`'s `afterResolve` resolver-error/policy-block branches.
++Failure or policy rejection leaves the resolution intent unresolved and
++returns its real failure plus a reconciliation next action; it must not append
++`refused()`'s present `completed: false` result. A normal preview decline
++keeps that exact preview until explicit settlement. C1 may still safely
++settle an unchanged-beforeimage resolution as not performed on the next
++recovery; that case needs no fence release and offers no reconciliation card.
++The new route accepts no-target only with an intact pending preview, never
++as a free-standing ability to discard arbitrary uncertainty.
++
++### 7.2 Narrow dispatch and preparation
++
++`decide {kind: "dependency-reconcile", h}` previews only the named work.
++It is the sole new exception to the global recovery fence. It may inspect
++only target resolution intents and prepare/settle this record-only action.
++All other uncertainty (unknown effects, accounting, orphan/liveness ambiguity,
++installation/scripts, incompatible state, another work's effects) still
++refuses before question or result. No generic "ignore recovery" flag exists.
++
++Compatibility and adopted policy admission, verified accounting, the current
++work handle/generation, ownership and current revision checks still apply.
++The existing process reconciler must establish termination for every target
++job; unknown or live PID/start-time ownership refuses. No counter is reset,
++refund issued, evidence reused or process terminated by answering this card.
++The `stop` route remains available independently.
++
++The kernel safely observes both paths and presents exact refs/hashes,
++operation IDs, missing snapshots and uncertainty, without exposing file bodies.
++In `pipeline-mutate.ts`, `planInLock` must make this narrowly typed exception
++at its pre-dispatch `recovered.uncertain` gate, not in the unreachable decision
++handler. Extend internal recovery evidence with structured unresolved entries
++`{effect, id, work, message}` and an explicit uncorrelated-blocker list; keep
++the public reason/effect rendering compatible. Only exact resolution target
++entries or verified replay of their reconciliation may pass. Missing
++correlation fails closed; arbitrary message text is never an admission key.
++`dependency-reconcile` is not an `EFFECT_DECISIONS` entry and acquires no
++source editing lease: "ownership" here means work/process identity, not
++permission to overwrite project files.
++The question ID is `dependency-reconcile`; its single affirmative answer is
++`abandon-preserve`, with `cancel` as the non-settling answer. The card states:
++"Leave package.json and the lockfile exactly as they are and abandon this
++dependency operation. This does not verify their contents, restore files,
++approve installation, or undo external side effects."
++The question binding must be supplied with the answer, not reconstructed from
++the latest state merely because the same answer text was repeated.
++
++### 7.3 Answer, publication and crash behavior
++
++On `decide {kind: "dependency-reconcile", h, answers:
++{"dependency-reconcile": "abandon-preserve"}, propose: {binding}, quote}`,
++recompute every binding input after ordinary admission under the kernel lock.
++A stale handle, replaced target, different current bytes/policy or expired
++preview refuses with existing revision/freshness error semantics and requires
++a newly displayed card. The user's own nonempty quote records their decision;
++source contents are not inferred as consent. No generic grant action is added.
++
++No project write/removal occurs before, during or after settlement. A human
++edit after observation therefore survives; the stored observed hashes are
++historical, not current facts in the response. The response recomputes live
++candidate identity or explicitly reports it moved and requires fresh checks.
++It must not claim equality with the approved snapshot after concurrent edits.
++
++Publication order under the transaction lock:
++1. Fsync reconciliation intent with its exact frozen binding and authority.
++2. Fsync each target's `abandoned-preserved` result referencing that intent.
++3. Publish state clearing only the exact pending dependency preview/answers,
++   retaining `dependencyReconciliation` and existing touched/includeDirty/
++   keepOut records unchanged. Do not add resolver ownership or grants.
++4. Fsync reconciliation result. Ordinary accounting/cached response publication
++   follows existing revision rules; cache reuse requires live fact identity.
++
++The typed recovery handler replays a durable reconciliation intent idempotently
++without touching project files. It finishes missing target results only while
++they reference the same exact intents; contradictory terminal records remain
++unresolved. Its successor state compares predecessor preview/generation/binding:
++already applied means no-op; an absent superseded preview cannot be recreated;
++an unrelated newer preview is never cleared. On backup fallback, verified
++accounting and no-conflict checks still gate replay; missing work is retained
++as unresolved rather than recreated with authority.
++`settledAt` is the frozen reconciliation intent envelope time, never the
++replay clock; repeating recovery cannot change the approved disposition.
++
++A crash at each boundary may leave a partially settled target list. Remaining
++unresolved reconciliation intent keeps the fence until replay completes; an
++original target already closed does not authorize ordinary dispatch before
++replay. Any write/journal/read failure keeps uncertainty, with snapshots and
++state intact to the last durable revision. A late human edit cannot invalidate
++the already authorized record-only abandonment: no source rollback occurs.
++
++The old operation-specific fence is released only after all exact target
++results and successor state are durable with the matching reconciliation
++result; other uncertainty remains fenced. This action does not release a
++generic ownership/accounting or incompatible-format fence.
++
++### 7.4 After settlement; cancellation and retention
++
++Both manifest/lock paths remain unexplained/unverified unless existing
++attribution and independent evidence already justify them. No new Tenet
++`touched` claim is created from the resolution's observed hashes. Existing
++scope/dirty-overlap, protected-path and dependency-unverified rules still
++apply. A later source digest change invalidates prior receipts normally.
++
++No direct continuation to `npm ci` follows reconciliation. A new dependency
++request requires a fresh quote/authority, safe current snapshot, normal
++policy verification, new preview and new install consent; it cannot reuse
++the abandoned preview, answer or failed resolver evidence. Approval of this
++card is not a permanent allowance for the package or its scripts.
++
++`cancel` or a dismissed card appends no terminal effect result, keeps the
++operation/preview and snapshot references, and leaves dependent work fenced.
++It does not delete files, abandon work, stop an active process, or clear
++grants. An explicit `stop` remains the process action. Deleting a work record
++must not remove the journal fence or the retained snapshot references.
++
++Keep all before blobs referenced by unresolved dependency/reconciliation
++intents, the pending preview or the current reconciliation record. Existing
++retention may prune superseded terminal records only with a durable reduction
++preserving their disposition and without dropping still referenced blobs.
++No automatic private backup is exposed or copied into a project path. User
++forgetting/retention rights and bounded blob retention must be reviewed with
++the storage protocol; missing content stays honestly missing rather than
++blocking record-only acknowledgement or synthesizing content.
++
++### 7.5 Additional acceptance controls
++
++New `dependency-reconciliation.test.ts` must cover exact same-work resolution
++admission, conflicting/missing targets, unavailable preimages with safe live
++reads, unsafe live reads, orphan/live process and incomplete accounting
++refusal, explicit quote and stale answer/work/policy/candidate bindings,
++cancel preserving the fence, no filesystem mutation, no grants or ownership
++created, fresh policy/preview/install consent, and dirty/foreign attribution.
++Real-process barrier controls interleave human writes before observation,
++after observation and through every publication step. Kill after each
++target result and state/result publication; resume/retry/fallback twice and
++assert one disposition, preserved human bytes and no authority resurrection.
++Old readers/writers must refuse the proposed format and decoder tests must
++reject malformed disposition/target/binding shapes. These are proposed
++tests, not an implemented interface or a qualification result.
++
++## 8. Supported-POSIX characterization report (2026-11-04)
++
++The coordinated Linux validation session `13f55396-29f7-4686-93c0-e9740010cdc6`
++verified frozen bundle SHA-256
++`e381196c97e40858a3c025b6d4457a4a8a119814aaf6e3767e661ced0dc9d0d8`
++and all four inner patch hashes in a separate nonshipping scratch lane:
++
++| Controls | Baseline | Isolated candidate |
++|---|---:|---:|
++| Combined direct C1/C2/C3 freshness controls | 1/8 | C1 3/3, C2 3/3, C3 2/2 |
++| C3 adjacent real-Git selectors | deletion regressions red | 4/4 |
++| C1 real journal, SIGKILL and pipeline | 1/3 | 3/3 |
++| C2 real-store missing-lock partial restoration | 0/1 | 1/1 |
++| C3 passing-evidence pipeline hidden-deletion freshness | 0/1 | 1/1 |
++
++Baseline changed-content recovery overwrote the human manifest; the candidate
++left files/index/HEAD intact. Candidate unchanged recovery settles without
++writes; changed/missing cases stay uncertain across two recoveries. C2's
++missing-lock case leaves the manifest unmodified. C3's pipeline rejects stale
++evidence with canonical `stale`, preserving receipts/index/HEAD.
++
++The sibling confirmed unchanged-ceiling measurements: C1 central 247504/247219
++(285 over); isolated C2 central 247412/247219 (193 over); C3 Git 38508/37843
++(665 over). No full CI/build/UAT or accepted-source integration occurred.
++Structured results and test/log hashes are preserved in that sibling's
++`files/frozen-c123-linux-result.json`; parent has the same report. This is
++bounded real-POSIX crash/freshness evidence, not arbitrary concurrent
++writer/path-replacement qualification, normal rollback safety or F1 closure.
++Result JSON SHA-256:
++`4151ccd3be3666f58128cc59ea91f364a53af494f0d6c43df49aba448eeb1c0c`.
++The sibling's additive three-test/result bundle `c123-extra-linux-controls.json.gz`
++has gzip SHA-256
++`dc9ca4fc327748553411e9f780e13c24e89f4d402e77ed9cb10c1161c0100b8e`
++and decoded JSON SHA-256
++`f155d1161dc2a28ce0ba3fa290749c2d1ff6b73a243f49c9ff6254669e94a15b`.
++
++## 9. Bounded capacity and remaining normal restore ownership
++
++The additional assignment authorized searching for legitimate existing
++duplication/dead code, not funding by compressed wording, weakened checks,
++ownership relocation or a ceiling increase. No production source changed.
++Examined dependency-job/dependency-start/dependency, recovery handlers and the
++Git inventory/content/status/commit/index-sync paths. No safe local reduction
++funding the candidates was established; this is not a claim that no larger
++reviewed refactor could ever do so.
++
++### Combined C1+C2 source and capacity requirement
++
++Both frozen patches apply without conflict to a separate copy of baseline
++source. Exact combined central measurement is **247734/247219**, net **+552**
++and **515 over** the unchanged cap. `measure`/`check` from `tools/lint-quality.ts`
++reports only this owner-cap failure for that scratch source; no new
++function/width ratchet finding. This is not a full build/CI claim.
++The combined patch `c12-combined-source-nonshipping.patch` SHA-256 is
++`9ced22cbffee6be7fab9f418ef7a1981b1d770ef5c45484d66a7b68647a3cf19`.
++It changes only `verbs/recover-effects.ts` and `decisions/dependency-job.ts`;
++it does not implement D1, acquire rollback ownership or activate any format.
++
++Funding this exact baseline candidate requires at least 515 central characters
++of separately reviewed legitimate reduction, or an explicit owner capacity
++decision (not granted). Parent integration must remeasure against its actual
++source because other repairs consume headroom. C3 separately requires 665
++Git characters. Earlier isolated test results remain the bounded evidence for
++the two independent changes; the combined source was measured, not requalified
++as an integrated shipping build.
++
++### Remaining normal restore ownership proof
++
++Added `packages/kernel/test/dependency-ownership.test.ts` as a deliberately
++baseline-red characterization, not a shipping regression test yet. The first
++control sets live manifest/lock bytes to a state that includes a human marker,
++binds `dep.after` to those exact bytes (the current post-resolver read can do
++this), then invokes the real `restore` helper. It records project write/remove
++calls without publishing them and proves the helper still tries to replace
++both files with the old snapshots. The second injects human bytes synchronously
++after `restore` reads matching hashes but before its separate writes; it
++likewise proves both replacements are issued. The supported Windows mutation
++gate is not bypassed: test writes/removes are intercepted. The test run
++therefore proves attempted destructive operations and deterministic
++check/write ordering, not real filesystem clobber or a separate-process race.
++The existing Linux SIGKILL suite is not repeated and did not cover these new
++normal-decline timing points.
++
++No safe source candidate is authorized by the current record. Removing these
++restore calls changes the specified normal decline/rejection behavior. Clearing
++the dependency preview after preserving files loses the unresolved disposition;
++leaving it active has no distinct durable "declined but preserved" state and
++does not provide an explicit fence-release protocol. Keeping the resolve
++intent unresolved on policy rejection is possible only with a specified
++terminal outcome/replay contract. Section 7 supplies that proposal, but D1
++owner sign-off and schema-3/capacity decisions remain required. Do not repair
++this by treating `dep.after` as resolver ownership, by ignoring the journal,
++or by adding an unapproved schema/decision route.
++
++| Examined opportunity | Concrete reason not used to fund the repair |
++|---|---|
++| Recovery's local `put` versus existing `withWork` | Exact replacement plus new import grows central by 9 non-whitespace characters, rather than saving. |
++| Shared C1/C2 pre-image reader | These are newly added repair operations, not removable existing dead code. C1 reads/compares without writes and converts failures to uncertainty; C2 validates the entire saved set before restoration and propagates failure. A new helper must preserve those different boundaries and does not remove either operation or its checks. No fit-producing simplification was found. |
++| Adopt/hardening/scaffold recovery branches | Their repeated tri-state structure carries different durable-result, work-missing, attribution and partial-effect rules. Merging them is a broader shared recovery refactor requiring dedicated equivalence controls, not removal of duplicate semantics. No equivalent local extraction covering the deficit was identified. |
++| Git `hiddenAbsent` versus existing `contentPath` | `contentPath` checks ancestors from leaf upward and returns null for missing parents, links and other failures. Reusing its null as absence reintroduces the audited hole: a missing descendant can hide a linked ancestor. The new top-down absence proof cannot be dropped. |
++| Hidden overlay versus porcelain/declarations overlay | Git omits the hidden deletion row; declared-input absence removes an entry without a tracked `.D` row. Neither path establishes the required absence proof or emits the missing row, so reuse alone cannot replace the correction. |
++| Git's identical porcelain index-column conditional | Replacing `f[kind === "2" ? 7 : 7]!` with `f[7]!` saves exactly 13 characters, leaving C3 652 over. This unrelated micro-simplification was measured but not implemented as a purported capacity solution. |
++| Git runner/temp-index/lock cleanup repetition | Commit supports shadow arguments and consented filters; patch/integration intentionally use different execution and uncertainty boundaries. Index cleanup tests different inode/ownership identities and durability stages. Collapsing them without dedicated behavioral work would change controls, not remove proven dead code. |
++
++The parent-supplied frozen readiness patch was SHA-256 verified as
++`9905567ac07ce7f70a5efde53d3d5def567143960e78b5dd2efed27034cf7218`.
++Applying it plus frozen C1/C2/C3 to a separate baseline source copy measures
++central **247745/247219** (526 over) and Git **38508/37843** (665 over).
++The readiness source delta is therefore **+11 central characters**; quality
++check reports just those two owner ceilings in this scratch composition.
++Parent's earlier review/manifest repairs are not in that transferred patch,
++so this is explicitly not its complete current integration count. Parent must
++add their measured delta or remeasure its actual composition. No completed
++Linux controls were rerun, no broad CI was launched, and no new policy or
++shipping fit is claimed.
+diff --git a/specs/plan.md b/specs/plan.md
+index 32eca12..cd5f70f 100644
+--- a/specs/plan.md
++++ b/specs/plan.md
+@@ -44,6 +44,8 @@ PRD owns meaning. Tech Spec owns mechanism. UX Spec owns wording. This plan owns
+ 
+ ## 1. Dashboard (update this first on every session)
+ 
++**Recovery safety proposal (2026-11-04 UTC) — ◐ isolated audit lane:** [dependency-recovery-safety.md](dependency-recovery-safety.md) separates existing-contract C1 crash preservation, C2 complete pre-image validation and C3 hidden tracked deletion identity from the normal resolver rollback-policy decision. Independent design review findings are dispositioned, including concrete D1A reconciliation/fence release and a proposed schema-3 boundary; neither is signed off. Linux sibling reports bounded real-journal/SIGKILL, missing-lock partial-write and downstream stale-evidence controls red on baseline and green on isolated candidates. Fixed ceilings still fail: C1 central +285 over, isolated C2 central +193 over, C3 Git +665 over. No source integration, full CI/build/UAT, arbitrary concurrent-writer qualification or requirement closure follows; parent owns the acceptance ledger.
++
+ **Current state in brief (2026-11-03 UTC) — ◐ local main:** R1 structural mapping is **139 mapped / 16 host-only / 26 unmapped of 181 Musts, 0 qualified**; the evidence ledger is empty and none of the 19 Shoulds has a disposition. Local typecheck, three lints, M0 coverage, build (766 KB of 800 KB), payload and reproducibility pass. The kernel refuses mutation on `win32` by design, so the full test suite runs only on supported POSIX (GitHub CI). Open gates, all outside a coding session: complete-target capacity decision (central has 37 characters free, the Node adapter 0, the store 214, schemas 528), schema-2 and coupled-contract sign-offs, the §12.3 spec defects awaiting a decision (ENG-09, the QLT-11 work-correction binding, RES-05; the GIT-03, WRK-08, check-identity, E19-notice and `publish` documents were amended on 2026-11-03, see §13), host spikes, native/protected/human campaigns, Should dispositions and release approvals. The `publish` verb is cut from R1 (§11.2); the GIT-05 claim is the narrower one recorded there. The dated entries below are history, newest first.
+ 
+ **Published; exact-source CI green (2026-11-02 UTC) — ◐ main:** process cleanup commits `28aa47f` and `5c96557` are on `origin/main`. Exact-source run [41516188207](https://github.com/vedprakash-m/tenet/actions/runs/41516188207) at `5c965572576a88aea35042a68b5176b3bbc3fda7` passes all jobs: Ubuntu full CI/built UAT, macOS full CI/built UAT, and Windows portability. This validates the stream-aware process-group re-signal guard on the hosted POSIX runners. Local typecheck, architecture/skills/quality lint, M0 coverage, build, complete payload verification and same-toolchain reproducibility also pass. The earlier macOS failures in runs `41384392664`, `41387472377` and `41390356159` remain accurately recorded as failures; the test-only SQLite changes and this process fix address their different observed points without changing product retry deadlines or evidence assertions. Full plan, sizing, host/campaign/human evidence and release gates remain open.
+@@ -875,6 +877,7 @@ Item 5 is tied to no requirement and is not taken: no MCP code exists in the rep
+ 
+ | Date | What happened | Root cause | Fixture/golden task added | Spec section affected (if any) |
+ |---|---|---|---|---|
++| 2026-11-04 | Dependency recovery restores both files without proving ownership; normal rollback's post-resolver read can include human edits, and hash-check/write is not atomic. Hidden tracked deletions do not change inventory identity. | Unconditional recovery restoration, sequential missing-blob empty substitution, and a hidden-file overlay with no absent-file branch. | Existing red regressions and new direct recovery/real-Git parent-deletion controls; reviewed draft [dependency-recovery-safety.md](dependency-recovery-safety.md). Both source candidates retained outside shipping source because fixed caps fail; normal rollback policy needs owner decision. | CON-03, SEC-05, EVD-03; tech-spec sections 7.4 and 9.11 step 5. |
+ | 2026-11-03 | Document amendments for decisions 3A, 4b-A (wording), 7A, 8A, 9B and 10A, plus the byte unit, applied under the owner's blanket direction of 2026-11-03 to build the recommendations in `decision-packet.md`. The `publish` verb in tech-spec §6.5 had no implementation and no plan row; it is now cut from R1. | The specs described mechanisms that were never built or that were built differently (configurable trailers, extension at every bound, `publish`, a check identity without the contract base). | None. No source logic changed. `invariants.test.ts` is unchanged and still asserts no `publish` verb and no remote Git command. | PRD GIT-03, §3.9.3, WRK-08, §4.4.2, J-06; tech-spec §0.4, §4.6, §6.3, §6.5, §8.6, §8.8, §10.3, §10.6, §10.7, §17; trait-detection E19; sealed-baseline §15.2; config-completion §16.2; result-demo-path §13.3; ux-spec J-06. |
+ | 2026-11-03 | The decision-packet review found five document defects: §11.2 says no cut-list item is a Must, but EVD-04 is a Must and depends on cut 3; §11.1 and §13 cite a 250-line file cap while tech-spec §6.2 and `tools/coverage.ts` use 265; the PRD places trace events in `.tenet/traces` while tech-spec §16 places them in the journal (with no intent-revision field); the dashboard budget margins were misstated; "KB" is undefined (code reads it as binary, the result-demo spec proposes a decimal screenshot limit). | Documents were edited in separate passes without a cross-check. | None yet; each needs an owner disposition ([decision-packet.md](decision-packet.md)). | PRD ENG-09, EVD-04; tech-spec §6.2, §16, §19.4. **Partly closed 2026-11-03:** the §11.2 sentence is corrected (decision 10A) and KB and MB are defined as binary in tech-spec §0.4, with the result-demo screenshot ceiling set at 409,600 bytes (decision 5 note). The 250/265 file cap, the PRD trace row with tech-spec §16, and the dashboard budget margins are not addressed here. |
+ | 2026-11-03 | Reason-code audit: 11 codes are now tested; 14 belong to unbuilt features; `disk-full` needs a central change that does not fit the ceiling (37 characters free, about 120 needed); `basis-gap-open` is defined but never emitted. Also `git-locked` has no retry or backoff, `inventory-too-large` ignores the 500 MB limit, and `run-dir-unavailable` carries exit 0. | Registry entries were added ahead of their producers; some producers diverge from the spec. | `reason-codes.test.ts` (8 tests, each shown to fail when its producer is changed); `host-limit`, `attribution-mixed-file` and three flow assertions are unverified on win32. | tech-spec Appendix C; [reason-codes.md](../docs/audits/2026-11-03/reason-codes.md). |
+@@ -1524,6 +1527,26 @@ An independent read-only review of the configuration/migration/capacity proposal
+ 
+ ## 13. Progress log (append-only, newest entry at top — this is the handoff record)
+ 
++### 2026-11-04 UTC (isolated bounded capacity search; no fit-producing refactor found) — ◐
++
++- Examined recovery state helpers/pre-image readers/tri-state handlers and Git inventory/absence/overlay/runner/index cleanup duplication; exact reasons are in `dependency-recovery-safety.md` §9. Existing `withWork` reuse grows source by 9; the obvious identical porcelain conditional saves only 13, insufficient for Git's 665 deficit. No unsafe missing-path conflation, shared-effect semantics reduction, wording compression or ownership relocation was used.
++- Verified parent's frozen readiness patch hash and measured it with frozen C1/C2/C3 in separate baseline scratch: central 247745/247219 (526 over), Git 38508/37843 (665 over). Readiness contributes +11 central; parent's earlier review/manifest delta remains to be composed by parent, not guessed. Only owner ceilings fail that scratch quality measurement. No production source changes or repeated Linux/full-CI work; no claim that a larger independently reviewed refactor is impossible.
++- Added two baseline-red, adapter-level normal-restore ownership characterizations: a human marker included in `dep.after` still triggers snapshot writes, and a deterministic edit between hash read and project writes is overwritten. Windows mutation admission stayed intact by intercepting attempted writes/removes; these prove call ordering and attempted destructive writes, not real filesystem clobber or a subprocess race. `npm run typecheck` passes; targeted tests fail on the intended assertions. No D1-authorized normal-flow source candidate can safely clear/publish this operation without the proposed terminal record and fence-release semantics.
++
++### 2026-11-04 UTC (isolated recovery/Git follow-up; Linux characterization and D1A design) — ◐
++
++- Linux sibling verified bundle `e381196c97e40858a3c025b6d4457a4a8a119814aaf6e3767e661ced0dc9d0d8` and all inner hashes. Direct baseline 1/8; candidates C1 3/3, C2 3/3, C3 freshness 2/2 plus Git 4/4. Added real-journal/SIGKILL/pipeline C1 baseline 1/3 to candidate 3/3; real-store missing-lock C2 0/1 to 1/1; passing-evidence hidden-deletion C3 0/1 to 1/1. Human files/index/HEAD and receipts remain preserved; repeated changed/missing recovery remains uncertain. Sibling retains hashed tests/logs and has reported to parent.
++- Exact isolated cap measurements confirmed: central C1 247504/247219; central C2 247412/247219; Git C3 38508/37843. Source candidates stay outside production; no fixed ceilings or accepted source altered. No full CI/build/UAT or normal rollback safety claim.
++- Combined C1+C2 patches apply in a separate baseline source copy; measured central 247734/247219 (net +552, 515 over), sole quality-ratchet failure there. Exported exact combined nonshipping source patch `9ced22cbffee6be7fab9f418ef7a1981b1d770ef5c45484d66a7b68647a3cf19`; parent must remeasure integration headroom. Earlier isolated test results are not a combined-build qualification.
++- D1A section 7 now defines a record-only abandonment decision, exact journal/state shapes, narrow pre-dispatch fence exception with structured uncertainty, process/accounting and stale-answer preconditions, crash replay, retention/attribution, rejection/cancel behavior and fresh-install authority separation. Protocol sibling confirms strict schema-1/2 boundaries; schema 3 is proposed only. Independent review findings are dispositioned. D1 owner sign-off, schema activation and capacity funding remain unresolved. Parent owns integrated plan; this diff exports separately.
++
++### 2026-11-04 UTC (isolated recovery/Git audit lane; reviewed contract and measured nonshipping candidates) — ◐
++
++- Drafted and independently reviewed `dependency-recovery-safety.md`; accepted the review's explicit baseline-overwrite clarification and removed the disputed port count. Owner implementation sign-off for the replacement normal-flow policy is not inferred.
++- Direct crash handler candidate: 3 controls pass, central 247,504/247,219 (285 over). Strict hidden-deletion candidate: 4 adjacent real-Git controls pass, Git 38,508/37,843 (665 over); both deletion controls are red on baseline and verify the index is unchanged. Candidates are exported separately and removed from source; no ceiling/quality baseline changed.
++- Corrected the pipeline regression to require actual exit-2 `effect-uncertain` fencing, not exit 0. Pipeline/process/POSIX races and downstream receipt qualification remain pending. The rejected full F1 candidate remains unsafe for concurrent human edits and must not be activated. Parent owns integrated plan/acceptance ledger; this local plan diff is exported separately.
++- Follow-up characterization: C2 missing-manifest/missing-lock tests are red on baseline, all three complete-read-set/valid-empty controls pass on the isolated candidate (central 247,412/247,219, 193 over). C3 parent junction/symlink refusal and gathered candidate/check-input freshness tests are baseline red and candidate green locally. No normal rollback policy changed; compact isolated C1/C2/C3 bundle sent for supported-POSIX targeted validation, not shipping integration.
++
+ ### 2026-11-03 UTC (parallel build lanes integrated; two candidates held over the size ceiling) — ◐ local main
+ 
+ - Authority: the owner's blanket direction of 2026-11-03 to build the recommendations in [decision-packet.md](decision-packet.md). It is not a per-decision signature, and no Should is signed.

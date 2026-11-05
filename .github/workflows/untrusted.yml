@@ -112,6 +112,30 @@ jobs:
         run: >-
           node --test --test-name-pattern="automatic temp cleanup boundaries"
           packages\kernel\test\store-boundary.test.ts
+      - name: Read-only recovery and pure lesson retirement without POSIX transactions
+        run: >-
+          node --test --test-name-pattern="interrupted resolution preserves unknown content|repeated lesson retirement"
+          packages\kernel\test\dependency.test.ts
+          packages\kernel\test\lessons.test.ts
+      - name: Review result admission without POSIX transactions
+        run: >-
+          node --test
+          --test-name-pattern="review: one focused recheck|review and analyst reservation roles|carries recorded findings|reuses review completion|requires review follow-up for reported open dependencies|keeps required Deep passes visible|keeps unresolved finding states|requests Deep passes from the latest|keeps an unresolved latest Deep pass|includes each named finding|counts the complete recheck result template|refuses ambiguous attention claims|refuses invalid recheck claims|refuses full-review verification"
+          packages\kernel\test\reason-codes.test.ts
+          packages\kernel\test\review-admission.test.ts
+      - name: Real starter restore and rollback crash prefixes on Node 24
+        shell: pwsh
+        run: |
+          $starter = Join-Path $env:RUNNER_TEMP "tenet-starter-restore"
+          New-Item -ItemType Directory -Path $starter -Force | Out-Null
+          Get-ChildItem plugin\skills\tenet-starter-ts-web-api\template -Force | Copy-Item -Destination $starter -Recurse -Force
+          Set-Location $starter
+          npm ci --ignore-scripts --no-audit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm rebuild better-sqlite3
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --experimental-strip-types node_modules\vitest\vitest.mjs run server\test\restore.test.ts server\test\migrate.test.ts server\test\schema-history.test.ts
+          exit $LASTEXITCODE
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22.12.0
@@ -126,3 +150,18 @@ jobs:
           packages\kernel\test\report-paths.test.ts
           packages\kernel\test\playwright-adapter.test.ts
           packages\kernel\test\receipts.test.ts
+      - name: Review result admission on minimum Node without POSIX transactions
+        run: >-
+          node --experimental-strip-types --test
+          --test-name-pattern="review: one focused recheck|review and analyst reservation roles|carries recorded findings|reuses review completion|requires review follow-up for reported open dependencies|keeps required Deep passes visible|keeps unresolved finding states|requests Deep passes from the latest|keeps an unresolved latest Deep pass|includes each named finding|counts the complete recheck result template|refuses ambiguous attention claims|refuses invalid recheck claims|refuses full-review verification"
+          packages\kernel\test\reason-codes.test.ts
+          packages\kernel\test\review-admission.test.ts
+      - name: Real starter restore and rollback crash prefixes on minimum Node
+        shell: pwsh
+        run: |
+          $starter = Join-Path $env:RUNNER_TEMP "tenet-starter-restore"
+          Set-Location $starter
+          npm rebuild better-sqlite3
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node --experimental-strip-types node_modules\vitest\vitest.mjs run server\test\restore.test.ts server\test\migrate.test.ts server\test\schema-history.test.ts
+          exit $LASTEXITCODE

@@ -42,6 +42,59 @@ describe("building a plan from a proposal [INT-12]", () => {
   });
 });
 
+describe("ambiguous plan references [INT-10, INT-12]", () => {
+  const existing = item("PLN-001-old", "accepted");
+  const proposed = (ref?: string) => ({ ref, outcome: "deliver one increment", check: "journey" });
+  const cases: Array<{
+    name: string; have: PlanItem[]; proposal: Parameters<typeof buildPlan>[1];
+  }> = [
+    { name: "duplicate new refs", have: [], proposal: [proposed("same"), proposed("same")] },
+    { name: "new ref then existing ID alias", have: [existing], proposal: [proposed(existing.id), existing] },
+    { name: "existing ID then new ref alias", have: [existing], proposal: [existing, proposed(existing.id)] },
+    { name: "explicit then automatic key", have: [], proposal: [proposed("#1"), proposed()] },
+    { name: "automatic then explicit key", have: [], proposal: [proposed(), proposed("#0")] },
+    { name: "duplicate existing-item aliases", have: [existing], proposal: [{ ...existing, ref: "same" }, proposed("same")] },
+  ];
+  for (const { name, have, proposal } of cases) {
+    it(`rejects ${name} without mutating input`, () => {
+      const before = JSON.stringify({ have, proposal });
+      const result = buildPlan(have, proposal, 1, () => "new");
+      assert.equal(result.ok, false, JSON.stringify(result));
+      if (result.ok) return;
+      assert.match(result.message, /appears twice/);
+      assert.equal(JSON.stringify({ have, proposal }), before);
+    });
+  }
+  it("preserves unique automatic and explicit refs and their dependencies", () => {
+    const result = buildPlan([], [proposed(), { ...proposed("next"), dependsOn: ["#0"] }], 3, () => "new");
+    assert.ok(result.ok);
+    if (!result.ok) return;
+    assert.deepEqual(result.items.map(i => i.id), ["PLN-004-new", "PLN-005-new"]);
+    assert.deepEqual(result.items[1]!.dependsOn, ["PLN-004-new"]);
+  });
+  it("still rejects repeated existing IDs with different refs", () => {
+    const result = buildPlan([existing], [{ ...existing, ref: "one" }, { ...existing, ref: "two" }], 1, () => "new");
+    assert.ok(!result.ok && /appears twice/.test(result.message));
+  });
+});
+
+describe("frozen plan commitments [INT-12]", () => {
+  for (const state of ["in-progress", "done"] as const) {
+    for (const field of ["dependsOn", "elementIds"] as const) {
+      it(`refuses changing ${field} on an ${state} item`, () => {
+        const frozen = { ...item("PLN-001-old", state), elementIds: ["REQ-1"], dependsOn: [] };
+        const dependency = item("PLN-002-old", "done");
+        const before = structuredClone([frozen, dependency]);
+        const result = buildPlan([frozen, dependency], [{
+          ...frozen, [field]: field === "dependsOn" ? [dependency.id] : ["REQ-2"],
+        }], 2, () => "new");
+        assert.ok(!result.ok && /cannot be edited/.test(result.message), JSON.stringify(result));
+        assert.deepEqual([frozen, dependency], before);
+      });
+    }
+  }
+});
+
 describe("what is next [INT-12]", () => {
   it("is the first accepted item whose dependencies are done", () => {
     assert.equal(nextItem([item("a", "done"), item("b", "accepted", ["a"]), item("c", "accepted")])?.id, "b");

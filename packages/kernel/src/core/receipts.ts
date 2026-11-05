@@ -107,6 +107,8 @@ const sumOf = (per: readonly FileCounts[]): Sum =>
     { executed: 0, passed: 0, failed: 0, skipped: 0, focused: 0 },
   );
 
+const sensitiveNames = (names: readonly string[]): boolean => names.some(name => redact(name) !== name);
+
 /** Exit status and report disagree. The exit status belongs to the whole run: a file that passed beside a failing one is no contradiction (found with TDD-04). */
 function contradicts(o: RunFacts, norm: Normalized): boolean {
   const failed = [...norm.files.values()].some((p) => p.failed > 0);
@@ -128,6 +130,10 @@ function receiptFor(o: RunFacts, norm: Normalized | null, ob: Obligation, i: num
   if (early) return stop(early);
   if (!norm) return stop(o.raw === null ? "report-missing" : "report-invalid");
   if (norm.invalid) return stop("report-invalid");
+  if ([...norm.files].some(([path, file]) => sensitiveNames([path, ...file.tests, ...file.failures.map(f => f.test)]))) {
+    rec.limitations.push("report identifiers contain likely secret material; use placeholders");
+    return stop("report-invalid");
+  }
   // An acceptance test is one file; the suite is every file the report names.
   const files = ob.testFile ? [ob.testFile] : [...norm.files.keys()];
   const whole = files.flatMap((f) => norm.files.get(f) ?? []);
@@ -142,7 +148,7 @@ function receiptFor(o: RunFacts, norm: Normalized | null, ob: Obligation, i: num
     .slice(0, 5)
     .map((f) => ({ ...f, message: redact(f.message) })); // the record keeps no likely secret (SEC-11)
   rec.failureKinds = [...new Set(per.flatMap((p) => p.failureKinds))];
-  if (sum.focused) return stop("focused-tests");
+  if ([...norm.files.values()].some(file => file.focused)) return stop("focused-tests");
   if (sum.executed === 0 && sum.failed === 0) return stop("zero-tests"); // runners exit non-zero when they find nothing to run; that is no contradiction
   if (sum.skipped > 0 && ob.testFile) {
     rec.limitations.push(`${sum.skipped} skipped`);
@@ -160,13 +166,15 @@ export function staticReceipt(o: RunFacts, norm: StaticNorm, ob: Obligation, i: 
   rec.versions = { tool: `${tool}@${c.versions.static[tool] ?? "none"}`, reporter: tool, adapter: c.versions.adapter };
   const stop = (code: string, limit?: string) => {
     rec.reasons.push(code);
-    if (limit) rec.limitations.push(limit);
+    if (limit) rec.limitations.push(redact(limit));
     return rec;
   };
   if (!o.ran) return stop("not-executed", `${tool} requires a supported installed version and configuration`);
   const early = runProblem(o, c);
   if (early) return stop(early);
   if (norm.status === "invalid") return stop("report-invalid", norm.problem);
+  if (sensitiveNames([...(norm.files ?? []), ...norm.failures.map(f => f.test)]))
+    return stop("report-invalid", "report identifiers contain likely secret material; use placeholders");
   rec.analyzedFiles = norm.files ?? [];
   const unknown = rec.analyzedFiles.some(path => {
     const entry = c.population?.get(path);

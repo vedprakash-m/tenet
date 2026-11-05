@@ -1,9 +1,9 @@
-import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, readdirSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { spawnSync } from "node:child_process";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { backup } from "../src/platform/backup.ts";
 import { openDb } from "../src/platform/db.ts";
 import { migrate } from "../src/platform/migrate.ts";
@@ -40,6 +40,54 @@ describe("restore", () => {
     expect(readdirSync(dir).filter((f) => f === "app.db-wal" || f === "app.db-shm"), "no log of the replaced database is left beside the restored one").toEqual([]);
   });
 
+  for (const suffix of ["", "-wal", "-shm"]) {
+    it(`refuses an occupied kept-aside ${suffix || "database"} path before writing the restore marker [QLT-07]`, () => {
+      const { dir, path, copy } = twoSided();
+      const timestamp = 123456789, aside = `${path}.before-restore-${timestamp}`;
+      const collision = `${aside}${suffix}`, reached: string[] = [];
+      writeFileSync(collision, "previously-retained-content");
+      const contents = () => readdirSync(dir).sort().map(name => [name, readFileSync(join(dir, name)).toString("base64")]);
+      const before = contents(), clock = vi.spyOn(Date, "now").mockReturnValue(timestamp);
+      try {
+        expect(() => restore(copy, path, { after: step => {
+          reached.push(step);
+          if (step === "marked") throw new Error("occupied destination passed admission; stop before moves");
+        } })).toThrow(/kept-aside.*already exists/i);
+        expect(reached).toEqual(["owned", "validated"]);
+        expect(contents()).toEqual(before);
+        expect(pendingRestore(path)).toBeNull();
+        expect(existsSync(`${path}.owner`)).toBe(false);
+        rmSync(collision);
+        const restored = restore(copy, path);
+        expect(restored.keptAside).toBe(aside);
+        expect(users(path)).toEqual([{ id: "u1" }]);
+        expect(users(aside)).toEqual([{ id: "u2" }]);
+      } finally { clock.mockRestore(); }
+    });
+  }
+
+  for (const suffix of [".restoring", ".restoring-wal", ".restoring-shm", ".restore-in-progress.tmp"]) {
+    it(`preserves an existing ${suffix} staging file before a new restore [QLT-07]`, () => {
+      const { dir, path, copy } = twoSided();
+      const collision = `${path}${suffix}`, reached: string[] = [];
+      writeFileSync(collision, "unowned-staging-content");
+      const contents = () => readdirSync(dir).sort().map(name => [name, readFileSync(join(dir, name)).toString("base64")]);
+      const before = contents();
+      expect(() => restore(copy, path, { after: step => {
+        reached.push(step);
+        if (step === "marked") throw new Error("staging collision passed admission; stop before moves");
+      } })).toThrow(/restore staging.*already exists/i);
+      expect(reached).toEqual(["owned", "validated"]);
+      expect(contents()).toEqual(before);
+      expect(pendingRestore(path)).toBeNull();
+      expect(existsSync(`${path}.owner`)).toBe(false);
+      rmSync(collision);
+      const restored = restore(copy, path);
+      expect(users(path)).toEqual([{ id: "u1" }]);
+      expect(users(restored.keptAside!)).toEqual([{ id: "u2" }]);
+    });
+  }
+
   it("refuses a backup that fails its integrity check, and changes nothing", () => {
     const { path, copy } = damaged();
     writeFileSync(copy, "this is not a database");
@@ -68,11 +116,51 @@ describe("restore", () => {
     }
     expect(users(path)).toEqual([]);
   });
+
+  it("refuses a busy WAL checkpoint before marking or moving a database with a live reader [QLT-07]", () => {
+    const { dir, path, copy } = twoSided();
+    const writer = new Database(path, { timeout: 0 }), reader = new Database(path, { readonly: true });
+    const saved = readFileSync(copy), reached: string[] = [];
+    try {
+      writer.pragma("wal_autocheckpoint = 0");
+      writer.prepare("INSERT INTO users (id, email, password_hash, role, created_at) VALUES ('u3', 'c@example.com', 'x', 'member', 1)").run();
+      reader.exec("BEGIN");
+      expect(reader.prepare("SELECT id FROM users ORDER BY id").all()).toEqual([{ id: "u2" }, { id: "u3" }]);
+      writer.prepare("INSERT INTO users (id, email, password_hash, role, created_at) VALUES ('u4', 'd@example.com', 'x', 'member', 1)").run();
+      const checkpoint = writer.pragma("wal_checkpoint(TRUNCATE)") as Array<{ busy: number; log: number; checkpointed: number }>;
+      expect(checkpoint[0]!.busy).toBe(1);
+      expect(checkpoint[0]!.log).toBeGreaterThan(checkpoint[0]!.checkpointed);
+      const before = readdirSync(dir).sort(), wal = readFileSync(`${path}-wal`);
+      expect(() => restore(copy, path, { after: step => {
+        reached.push(step);
+        if (step === "validated") throw new Error("busy checkpoint passed validation; stop before effects");
+      } })).toThrow(/in use/);
+      expect(reached).toEqual(["owned"]);
+      expect(readdirSync(dir).sort()).toEqual(before);
+      expect(readFileSync(`${path}-wal`)).toEqual(wal);
+      expect(readFileSync(copy)).toEqual(saved);
+      expect(pendingRestore(path)).toBeNull();
+      expect(existsSync(`${path}.owner`)).toBe(false);
+      expect(reader.prepare("SELECT id FROM users ORDER BY id").all()).toEqual([{ id: "u2" }, { id: "u3" }]);
+      expect(writer.prepare("SELECT id FROM users ORDER BY id").all()).toEqual([{ id: "u2" }, { id: "u3" }, { id: "u4" }]);
+    } finally {
+      if (reader.inTransaction) reader.exec("ROLLBACK");
+      reader.close();
+      writer.close();
+    }
+    restore(copy, path);
+    expect(users(path)).toEqual([{ id: "u1" }]);
+  });
 });
 
 const CHILD = join(import.meta.dirname, "support", "restore-child.ts");
-const killedAfter = (backupFile: string, path: string, step: string) =>
-  spawnSync(process.execPath, ["--import", "tsx", CHILD, backupFile, path, step], { encoding: "utf8" });
+const killedAfter = (backupFile: string, path: string, step: string) => {
+  const killed = spawnSync(process.execPath, ["--experimental-strip-types", CHILD, backupFile, path, step], { encoding: "utf8", timeout: 15_000, killSignal: "SIGKILL" });
+  expect(killed.error).toBeUndefined();
+  expect(killed.stdout).toBe(`restore-step:${step}\n`);
+  expect(killed.status === 0 && killed.signal === null).toBe(false);
+  return killed;
+};
 
 /** A live database holding only 'u2', and a verified backup holding only 'u1'. */
 function twoSided() {
@@ -88,6 +176,68 @@ function twoSided() {
 }
 
 describe("restore ownership", () => {
+  it("preserves malformed owner records rather than treating them as dead [QLT-07]", () => {
+    const { dir, path, copy } = twoSided();
+    const contents = () => readdirSync(dir).sort().map(name => [name, readFileSync(join(dir, name)).toString("base64")]);
+    const invalid = [
+      "{", ...[
+        null, false, 0, "", [], {}, { pid: 0, start: "" }, { pid: -1, start: "" },
+        { pid: 1.5, start: "" }, { pid: "999999", start: "" },
+        { pid: Number.MAX_SAFE_INTEGER + 1, start: "" },
+        { pid: 2 ** 22 + 12345 }, { pid: 2 ** 22 + 12345, start: null },
+        { pid: 2 ** 22 + 12345, start: "", extra: true },
+      ].map(value => JSON.stringify(value)),
+    ];
+    for (const text of invalid) {
+      writeFileSync(`${path}.owner`, text);
+      const before = contents();
+      expect(() => takeOwner(path), text).toThrow(/owner.*unreadable|owner.*invalid/i);
+      expect(() => restore(copy, path), text).toThrow(/owner.*unreadable|owner.*invalid/i);
+      expect(readFileSync(`${path}.owner`, "utf8"), text).toBe(text);
+      expect(contents(), text).toEqual(before);
+      expect(users(path)).toEqual([{ id: "u2" }]);
+      expect(pendingRestore(path)).toBeNull();
+    }
+    const unsupportedPid = JSON.stringify({ pid: Number.MAX_SAFE_INTEGER, start: "" });
+    writeFileSync(`${path}.owner`, unsupportedPid);
+    const before = contents();
+    expect(() => takeOwner(path)).toThrow(/pid/i);
+    expect(() => restore(copy, path)).toThrow(/pid/i);
+    expect(readFileSync(`${path}.owner`, "utf8")).toBe(unsupportedPid);
+    expect(contents()).toEqual(before);
+    expect(users(path)).toEqual([{ id: "u2" }]);
+  });
+
+  it("preserves an unreadable owner entry rather than removing it [QLT-07]", () => {
+    const { dir, path, copy } = twoSided();
+    const original = readFileSync(path), saved = readFileSync(copy);
+    mkdirSync(`${path}.owner`);
+    writeFileSync(join(`${path}.owner`, "keep"), "unknown owner");
+    const before = readdirSync(dir).sort();
+    expect(() => takeOwner(path)).toThrow(/owner.*unreadable/i);
+    expect(() => restore(copy, path)).toThrow(/owner.*unreadable/i);
+    expect(readFileSync(join(`${path}.owner`, "keep"), "utf8")).toBe("unknown owner");
+    expect(readFileSync(path)).toEqual(original);
+    expect(readFileSync(copy)).toEqual(saved);
+    expect(readdirSync(dir).sort()).toEqual(before);
+    expect(users(path)).toEqual([{ id: "u2" }]);
+    expect(pendingRestore(path)).toBeNull();
+  });
+
+  it("takes exclusive ownership before opening a database in a new directory [QLT-07]", () => {
+    const path = join(scratch(), "new", "nested", "app.db");
+    const release = takeOwner(path);
+    try {
+      expect(existsSync(path)).toBe(false);
+      expect(existsSync(`${path}.owner`)).toBe(true);
+      expect(() => takeOwner(path)).toThrow(/in use/);
+    } finally { release(); }
+    expect(existsSync(`${path}.owner`)).toBe(false);
+    const again = takeOwner(path);
+    again();
+    expect(existsSync(path)).toBe(false);
+  });
+
   it("refuses while a live process holds the database owner file, even when it holds no lock", () => {
     const { path, copy } = twoSided();
     const release = takeOwner(path);
@@ -96,6 +246,11 @@ describe("restore ownership", () => {
     } finally {
       release();
     }
+    expect(users(path)).toEqual([{ id: "u2" }]);
+    const unknownStart = JSON.stringify({ pid: process.pid, start: "" });
+    writeFileSync(`${path}.owner`, unknownStart);
+    expect(() => restore(copy, path)).toThrow(/in use/);
+    expect(readFileSync(`${path}.owner`, "utf8")).toBe(unknownStart);
     expect(users(path)).toEqual([{ id: "u2" }]);
   });
 
@@ -114,6 +269,29 @@ describe("restore ownership", () => {
     expect(() => restore(`${path}-wal`, path)).toThrow(/live database/);
   });
 
+  it("refuses hard-linked database and sidecar aliases before reading or moving them [QLT-07]", () => {
+    for (const suffix of ["", "-wal", "-shm"]) {
+      const { dir, path, copy } = twoSided();
+      const target = `${path}${suffix}`, alias = join(dir, "linked-backup.db"), reached: string[] = [];
+      if (suffix) writeFileSync(target, "sidecar-preservation-control");
+      linkSync(target, alias);
+      const contents = () => readdirSync(dir).sort().map(name => [name, readFileSync(join(dir, name)).toString("base64")]);
+      const before = contents();
+      expect(() => restore(alias, path, { after: step => {
+        reached.push(step);
+        if (step === "validated") throw new Error("alias passed validation; stop before effects");
+      } }), suffix || "database").toThrow(/live database/);
+      expect(reached).toEqual(["owned"]);
+      expect(contents()).toEqual(before);
+      expect(pendingRestore(path)).toBeNull();
+      expect(existsSync(`${path}.owner`)).toBe(false);
+      rmSync(alias);
+      if (suffix) rmSync(target);
+      restore(copy, path);
+      expect(users(path)).toEqual([{ id: "u1" }]);
+    }
+  });
+
   it("the server cannot open the database while a restore is unfinished", () => {
     const { path, copy } = twoSided();
     killedAfter(copy, path, "marked");
@@ -128,7 +306,7 @@ describe("a restore killed at every step keeps the data", () => {
     it(`after "${step}": finish completes it and rollback returns the original`, () => {
       const finishing = twoSided();
       const killed = killedAfter(finishing.copy, finishing.path, step);
-      expect(killed.signal, killed.stderr).toBe("SIGKILL");
+      if (process.platform !== "win32") expect(killed.signal, killed.stderr).toBe("SIGKILL");
       if (step === "owned" || step === "validated") {
         // nothing has moved yet: the original is untouched, and a fresh restore takes over the dead process's owner file
         expect(pendingRestore(finishing.path)).toBeNull();
@@ -142,14 +320,184 @@ describe("a restore killed at every step keeps the data", () => {
       expect(pendingRestore(finishing.path)).toBeNull();
       expect(readdirSync(finishing.dir).filter((f) => /owner|in-progress|restoring|-wal|-shm/.test(f))).toEqual([]);
       expect(users(finishing.path)).toEqual([{ id: "u1" }]);
+      if (step === "unmarked") return; // the restore had already finished; there is nothing to roll back
 
       const rolling = twoSided();
       killedAfter(rolling.copy, rolling.path, step);
-      if (step === "unmarked") return; // the restore had already finished; there is nothing to roll back
       recoverRestore(rolling.path, "rollback");
       expect(pendingRestore(rolling.path)).toBeNull();
       expect(readdirSync(rolling.dir).filter((f) => /owner|in-progress|restoring|-shm/.test(f))).toEqual([]);
       expect(users(rolling.path)).toEqual([{ id: "u2" }]);
+    });
+
+  }
+});
+
+describe("restore rollback to an initially absent database [QLT-07]", () => {
+  it("keeps a dangling restore-marker link fenced without changing files or ownership", () => {
+    const { dir, path, copy } = twoSided();
+    const marker = `${path}.restore-in-progress`, missing = join(dir, "missing-marker");
+    symlinkSync(missing, marker, "junction");
+    const link = readlinkSync(marker), names = readdirSync(dir).sort();
+    const liveBytes = readFileSync(path), backupBytes = readFileSync(copy);
+    expect(existsSync(marker)).toBe(false);
+    expect(pendingRestore(path)).toEqual({ backup: "", aside: "", at: 0 });
+    expect(() => openDb(path)).toThrow(/restore.*unfinished/i);
+    expect(() => restore(copy, path)).toThrow(/unfinished/i);
+    for (const mode of ["finish", "rollback"] as const)
+      expect(() => recoverRestore(path, mode)).toThrow(/unreadable/i);
+    expect(readdirSync(dir).sort()).toEqual(names);
+    expect(readlinkSync(marker)).toBe(link);
+    expect(readFileSync(path)).toEqual(liveBytes);
+    expect(readFileSync(copy)).toEqual(backupBytes);
+    expect(existsSync(`${path}.owner`)).toBe(false);
+    rmSync(marker);
+    expect(pendingRestore(path)).toBeNull();
+    const restored = restore(copy, path);
+    expect(users(path)).toEqual([{ id: "u1" }]);
+    expect(users(restored.keptAside!)).toEqual([{ id: "u2" }]);
+  });
+
+  it("keeps malformed JSON marker values fenced without changing files or ownership", () => {
+    const f = twoSided();
+    const invalid = [
+      null, false, 0, "", [], {},
+      { backup: 1, aside: "somewhere", at: 1 },
+      { backup: f.copy, aside: {}, at: 1 },
+      { backup: f.copy, aside: `${f.path}.before-restore-1`, at: "yesterday" },
+      { backup: f.copy, aside: `${f.path}.before-restore-1`, at: 1, hadOriginal: "false" },
+    ];
+    for (const value of invalid) {
+      const text = JSON.stringify(value);
+      writeFileSync(`${f.path}.restore-in-progress`, text);
+      expect(pendingRestore(f.path), text).toBeTruthy();
+      expect(() => openDb(f.path), text).toThrow(/unfinished/i);
+      expect(() => restore(f.copy, f.path), text).toThrow(/unfinished/i);
+      for (const mode of ["finish", "rollback"] as const)
+        expect(() => recoverRestore(f.path, mode), text).toThrow(/unreadable/i);
+      expect(readFileSync(`${f.path}.restore-in-progress`, "utf8")).toBe(text);
+      expect(existsSync(`${f.path}.owner`)).toBe(false);
+      expect(users(f.path)).toEqual([{ id: "u2" }]);
+      expect(users(f.copy)).toEqual([{ id: "u1" }]);
+    }
+  });
+  it("still rolls a legacy marker back when the original database is kept aside", () => {
+    const f = twoSided();
+    killedAfter(f.copy, f.path, "copied");
+    const legacy = { ...pendingRestore(f.path)! };
+    delete legacy.hadOriginal;
+    writeFileSync(`${f.path}.restore-in-progress`, JSON.stringify(legacy));
+    recoverRestore(f.path, "rollback");
+    expect(users(f.path)).toEqual([{ id: "u2" }]);
+    expect(pendingRestore(f.path)).toBeNull();
+  });
+      const absent = () => {
+        const f = twoSided();
+        rmSync(f.path);
+        expect(existsSync(f.path)).toBe(false);
+        return f;
+      };
+      const interrupted = () => {
+        const f = absent();
+        killedAfter(f.copy, f.path, "copied");
+        const marker = pendingRestore(f.path)!;
+        expect(marker).toBeTruthy();
+        return { ...f, marker };
+      };
+      for (const moved of [1, 2, 3]) {
+        it(`resumes rollback killed after ${moved} actual database/sidecar renames`, () => {
+          const f = interrupted();
+          writeFileSync(`${f.path}-wal`, "retained sidecar fixture bytes");
+          writeFileSync(`${f.path}-shm`, "retained shared-memory fixture bytes");
+          const originals = ["", "-wal", "-shm"].map(suffix => ({ suffix, bytes: readFileSync(`${f.path}${suffix}`) }));
+          const killed = spawnSync(process.execPath, ["--experimental-strip-types", CHILD, f.copy, f.path, String(moved), "rollback"], {
+            encoding: "utf8", timeout: 15_000, killSignal: "SIGKILL",
+          });
+          expect(killed.error).toBeUndefined();
+          expect(killed.stdout).toBe(`rollback-moved:${moved}\n`);
+          expect(killed.status === 0 && killed.signal === null).toBe(false);
+          if (process.platform !== "win32") expect(killed.signal).toBe("SIGKILL");
+          expect(pendingRestore(f.path)).toBeTruthy();
+          recoverRestore(f.path, "rollback");
+          for (const { suffix, bytes } of originals) {
+            expect(existsSync(`${f.path}${suffix}`)).toBe(false);
+            expect(readFileSync(`${f.marker.aside}${suffix}`)).toEqual(bytes);
+          }
+          expect(pendingRestore(f.path)).toBeNull();
+          expect(users(f.copy)).toEqual([{ id: "u1" }]);
+          expect(recoverRestore(f.path, "rollback")).toBe("there is no unfinished restore");
+        });
+      }
+      it("preserves externally changed installed bytes rather than deleting them", () => {
+        const f = interrupted();
+        writeFileSync(f.path, "human database bytes");
+        const message = recoverRestore(f.path, "rollback");
+        expect(existsSync(f.path)).toBe(false);
+        expect(readFileSync(f.marker.aside, "utf8")).toBe("human database bytes");
+        expect(message).toContain(f.marker.aside);
+        expect(users(f.copy)).toEqual([{ id: "u1" }]);
+      });
+      it("refuses a sidecar collision before moving any live file", () => {
+        const f = interrupted();
+        writeFileSync(`${f.path}-wal`, "live log");
+        writeFileSync(`${f.marker.aside}-wal`, "kept log");
+        expect(() => recoverRestore(f.path, "rollback")).toThrow(/kept-aside/);
+        expect(readFileSync(`${f.path}-wal`, "utf8")).toBe("live log");
+        expect(readFileSync(`${f.marker.aside}-wal`, "utf8")).toBe("kept log");
+        expect(existsSync(f.marker.aside)).toBe(false);
+        expect(pendingRestore(f.path)).toBeTruthy();
+        expect(users(f.path)).toEqual([{ id: "u1" }]);
+      });
+      it("resumes a rollback interrupted after moving the database but before its sidecar", () => {
+        const f = interrupted();
+        renameSync(f.path, f.marker.aside);
+        writeFileSync(`${f.path}-wal`, "remaining log");
+        recoverRestore(f.path, "rollback");
+        expect(existsSync(f.path)).toBe(false);
+        expect(existsSync(`${f.path}-wal`)).toBe(false);
+        expect(readFileSync(`${f.marker.aside}-wal`, "utf8")).toBe("remaining log");
+        expect(users(f.marker.aside)).toEqual([{ id: "u1" }]);
+        expect(pendingRestore(f.path)).toBeNull();
+      });
+      it("refuses ambiguous legacy rollback without erasing its marker or installed database", () => {
+        const f = interrupted();
+        const legacy = { ...f.marker };
+        delete legacy.hadOriginal;
+        writeFileSync(`${f.path}.restore-in-progress`, JSON.stringify(legacy));
+        expect(() => recoverRestore(f.path, "rollback")).toThrow(/did not record/);
+        expect(users(f.path)).toEqual([{ id: "u1" }]);
+        expect(pendingRestore(f.path)).toEqual(legacy);
+        recoverRestore(f.path, "finish");
+        expect(users(f.path)).toEqual([{ id: "u1" }]);
+      });
+      it("refuses an unreadable marker without clearing it or changing ownership", () => {
+        const f = interrupted();
+        const owner = readFileSync(`${f.path}.owner`, "utf8");
+        writeFileSync(`${f.path}.restore-in-progress`, "{");
+        for (const mode of ["finish", "rollback"] as const) {
+          expect(() => recoverRestore(f.path, mode)).toThrow(/unreadable/);
+          expect(readFileSync(`${f.path}.restore-in-progress`, "utf8")).toBe("{");
+          expect(users(f.path)).toEqual([{ id: "u1" }]);
+          expect(readFileSync(`${f.path}.owner`, "utf8")).toBe(owner);
+        }
+      });
+      for (const step of ["marked", "moved", "copied", "verified"] as const) {
+        it(`after "${step}": finish installs the backup and rollback restores absence`, () => {
+          for (const mode of ["finish", "rollback"] as const) {
+            const f = absent();
+            killedAfter(f.copy, f.path, step);
+            expect(pendingRestore(f.path)).toBeTruthy();
+            recoverRestore(f.path, mode);
+            expect(pendingRestore(f.path)).toBeNull();
+            if (mode === "finish") expect(users(f.path)).toEqual([{ id: "u1" }]);
+            else {
+              expect(existsSync(f.path), "rollback restores the original absence, not the installed backup").toBe(false);
+              for (const suffix of ["-wal", "-shm", ".restoring"])
+                expect(existsSync(`${f.path}${suffix}`)).toBe(false);
+            }
+            expect(users(f.copy), "the recovery source remains intact").toEqual([{ id: "u1" }]);
+            expect(recoverRestore(f.path, mode)).toBe("there is no unfinished restore");
+          }
     });
   }
 });

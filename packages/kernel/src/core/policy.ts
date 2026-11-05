@@ -37,17 +37,31 @@ function distance(a: string, b: string): number {
   return row[b.length]!;
 }
 
+export const nearestKey = (key: string, keys: readonly string[]): string =>
+  [...keys].sort((a, b) => distance(key, a) - distance(key, b))[0]!;
+
 /** Restriction-bearing: an unknown or malformed key blocks dependent work and the message names the nearest valid key (CFG-11). */
 export function parsePolicy(json: unknown): PolicyParse {
   const r = Policy.safeParse(json);
   if (r.success) return { ok: true, policy: r.data };
   const issue = r.error.issues[0]!;
-  if (issue.code === "unrecognized_keys" && issue.path.length === 0) {
-    const key = issue.keys[0]!;
-    const nearest = [...KEYS].sort((a, b) => distance(key, a) - distance(key, b))[0]!;
-    return { ok: false, key, nearest, message: `"${key}" is not a policy key; did you mean "${nearest}"?` };
+  if (issue.code === "unrecognized_keys") {
+    let schema: unknown = Policy;
+    for (const part of issue.path) {
+      if (schema instanceof z.ZodOptional) schema = schema.unwrap();
+      if (schema instanceof z.ZodObject) schema = schema.shape[String(part)];
+      else if (schema instanceof z.ZodArray) schema = schema.element;
+      else if (schema instanceof z.ZodRecord) schema = schema.valueType;
+    }
+    if (schema instanceof z.ZodOptional) schema = schema.unwrap();
+    const keys = schema instanceof z.ZodObject ? Object.keys(schema.shape) : [...KEYS];
+    const name = issue.keys[0]!;
+    const where = [...issue.path, name].join(".");
+    const key = String(issue.path[0] ?? name);
+    const nearest = nearestKey(name, keys);
+    return { ok: false, key, nearest, message: `"${where}" is not a policy key; did you mean "${nearest}"?` };
   }
-  const where = [...issue.path, ...(issue.code === "unrecognized_keys" ? [issue.keys[0]!] : [])].join(".");
+  const where = issue.path.join(".");
   return { ok: false, key: String(issue.path[0] ?? where), message: `${where}: ${issue.message}` };
 }
 

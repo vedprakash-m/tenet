@@ -67,6 +67,21 @@ describe("decide plan [INT-12]", () => {
     assert.equal(r.exit, 2);
     assert.equal(r.reasons[0]!.code, "plan-invalid");
   });
+  it("refuses ambiguous refs before asking or changing accepted intent [INT-10]", async () => {
+    const p = fresh();
+    const h = await planned(p);
+    const before = structuredClone(state(p));
+    for (const answers of [undefined, confirm]) {
+      const r = await p.call("decide", {
+        h, kind: "plan", propose: { items: ITEMS.map(({ outcome, check }) => ({ outcome, check, ref: "same" })) }, answers,
+      });
+      assert.equal(r.exit, 2, JSON.stringify(r));
+      assert.equal(r.reasons[0]!.code, "plan-invalid");
+      assert.equal(r.questions?.length ?? 0, 0);
+      assert.deepEqual(state(p).project.intent, before.project.intent);
+      assert.deepEqual(state(p).pending, before.pending);
+    }
+  });
   it("an edited plan asks again and keeps IDs; an identical one changes nothing", async () => {
     const p = fresh();
     const h = await planned(p);

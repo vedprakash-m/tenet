@@ -15,10 +15,11 @@ function assignIds(byId: Map<string, PlanItem>, proposal: readonly ProposedItem[
   const used = new Set<string>();
   let n = seq;
   for (const p of proposal) {
-    if (!p.id) { ids.set(p.ref ?? `#${ids.size}`, elementId("PLN", ++n, suffix())); continue; }
+    const key = p.ref ?? p.id ?? `#${ids.size}`;
+    if (ids.has(key)) return { ids, used, error: `${key} appears twice` };
+    if (!p.id) { ids.set(key, elementId("PLN", ++n, suffix())); continue; }
     const had = byId.get(p.id);
     if (!had) return { ids, used, error: `there is no plan item ${p.id}` };
-    if (FROZEN.has(had.state) && (had.outcome !== p.outcome || had.check !== p.check)) return { ids, used, error: `${p.id} is ${had.state} and cannot be edited` };
     if (used.has(p.id)) return { ids, used, error: `${p.id} appears twice` };
     used.add(p.id);
     ids.set(p.ref ?? p.id, p.id);
@@ -41,6 +42,7 @@ function buildItem(byId: Map<string, PlanItem>, ids: Map<string, string>, p: Pro
   }
   const item: PlanItem = { id, outcome: p.outcome, elementIds: p.elementIds ?? had?.elementIds ?? [], dependsOn: deps, check: p.check, state: had && FROZEN.has(had.state) ? had.state : "proposed", ...(had?.work ? { work: had.work } : {}) };
   const same = !!had && had.outcome === item.outcome && had.check === item.check && JSON.stringify(had.dependsOn) === JSON.stringify(item.dependsOn) && JSON.stringify(had.elementIds) === JSON.stringify(item.elementIds);
+  if (had && FROZEN.has(had.state) && !same) return { same, error: `${id} is ${had.state} and cannot be edited` };
   return { item: same ? had : item, same };
 }
 

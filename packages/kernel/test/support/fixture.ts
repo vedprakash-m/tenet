@@ -7,6 +7,8 @@ import { handleOf, runVerb } from "../../src/pipeline.ts";
 import { configurePolicy } from "../../src/verbs/reconcile.ts";
 import { VERBS } from "../../src/verbs/index.ts";
 import { createPorts } from "../../src/wire.ts";
+import { newContract } from "../../src/core/state.ts";
+import type { WorkContract } from "../../src/core/schemas.ts";
 import { git, initRepo, tmp, write } from "../helpers.ts";
 
 const REPO_NODE_MODULES = join(import.meta.dirname, "../../../../node_modules");
@@ -75,6 +77,16 @@ export const BASIS = {
     { ref: "e1", kind: "example", origin: "request", of: "r1", text: "greet('Ada') is 'Hello, Ada!'", testFile: "src/greet.test.ts", test: "distinguishing", expect: "fail" },
   ],
 };
+
+export const contractFixture = (over: Partial<WorkContract> = {}): WorkContract => ({
+  ...newContract({
+    id: "W1", label: "W1-test", profile: "feature", request: "test contract", lane: "standard", floor: "standard",
+    level: "L1", generation: 0, now: "2026-01-01T00:00:00.000Z", version: "test",
+    assessment: {}, scopePaths: [], protectedPaths: [], gitMode: "none", base: null, branch: null,
+    start: { head: null, branch: null, staged: [], dirty: [] },
+  }),
+  ...over,
+});
 
 export const reviewResult = (data: Record<string, any>, over: Record<string, unknown> = {}) => ({
   kind: "review", manifest: data.review.hash, reservation: data.review.reservation, attempt: data.review.attempt, mode: data.review.mode,

@@ -3,7 +3,7 @@
 import { ceiling } from "./risk.ts";
 import { reason } from "./reasons.ts";
 import { baselineDefinitionMatches, wantsRed } from "./obligations.ts";
-import type { AnalystLink, AttentionItem, BasisElement, Endpoint, Finding, Lane, Level, Obligation, Profile, Reason, Receipt, ReviewLink, Scope, StopReason } from "./schemas.ts";
+import type { AnalystLink, AttentionItem, BasisElement, Endpoint, Finding, Lane, Level, Obligation, Profile, Reason, Receipt, ReviewLink, Scope, StopReason, WorkContract } from "./schemas.ts";
 
 export interface VerdictInput {
   profile: Profile | "review";
@@ -49,6 +49,20 @@ const ENDPOINT_BY_RANK = ["blocked", "findings-only", "implemented-unverified", 
 /** A receipt is valid while its check-input identity equals the current one, so the newest valid one is the evidence (TS §8.8). */
 const fresh = (receipts: readonly Receipt[], id: string, checkInputId: string): Receipt | undefined =>
   receipts.filter((r) => r.obligation === id && r.checkInputId === checkInputId && r.stage !== "baseline").at(-1); // a planned red is not evidence of the candidate
+
+/** A green boundary needs a full, nonflaky pass covering every required obligation. */
+export function fullChecksPassed(obligations: readonly Obligation[], receipts: readonly Receipt[]): boolean {
+  return receipts.length > 0 &&
+    receipts.every(r => r.stage !== "baseline" && r.scope === "full" && r.status === "pass" && !r.qualifiers.includes("flaky")) &&
+    obligations.every(ob => receipts.some(r => r.obligation === ob.id));
+}
+
+/** A checkpoint needs the latest current-input results, not an earlier green run or final review. */
+export function checkpointEvidence(work: WorkContract, candidate: string, checkInputId: string): boolean {
+  const receipts = work.obligations.flatMap(ob => fresh(work.receipts, ob.id, checkInputId) ?? []);
+  return work.lastCheck?.candidate === candidate && work.lastCheck.stage !== "baseline" &&
+    receipts.every(r => r.candidate === candidate) && fullChecksPassed(work.obligations, receipts);
+}
 
 function judgeObligation(ob: Obligation, i: VerdictInput): Reason[] {
   const rc = fresh(i.receipts, ob.id, i.checkInputId);

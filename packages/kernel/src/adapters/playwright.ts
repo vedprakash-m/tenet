@@ -19,7 +19,7 @@ export function playwrightArgv(root: string, report: string, version = "none"): 
   if (!SUPPORTED.includes(major)) return null;
   const script = join("node_modules", PLAYWRIGHT_SCRIPT); // a direct binary, never npx (TS §9.3)
   void report; // the JSON reporter writes to PLAYWRIGHT_JSON_OUTPUT_NAME in the run's env, not an argv flag
-  return [process.execPath, script, "test", "--reporter=json"];
+  return [process.execPath, script, "test", "--reporter=json", "--forbid-only"];
 }
 
 const invalid = (message: string): Normalized => ({ files: new Map(), discovered: 0, invalid: message });
@@ -72,7 +72,7 @@ function countSpec(counts: Counts, spec: PwSpec, title: string): string | undefi
     if (test.results.length !== 1 || test.status === "flaky" || test.expectedStatus === "failed")
       return "retries and expected failures cannot establish passing behavior";
     const observed = test.results[0]!;
-    if (observed.status === "passed" && observed.errors?.length)
+    if (["passed", "skipped"].includes(observed.status) && observed.errors?.length)
       return "the test summary and its execution disagree";
     if (observed.status === "passed" && test.expectedStatus === "skipped")
       return "the test summary and its execution disagree";

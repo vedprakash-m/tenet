@@ -21,7 +21,7 @@ export default defineConfig({
     // Tenet's run directory (a real failure found live, not a style preference). `--experimental-strip-types` is
     // the explicit flag on this recipe's minimum Node (22.12); 22.18+ strips by default, and the flag is accepted
     // either way. tsconfig's `erasableSyntaxOnly` keeps every file within what stripping (no transform) can run.
-    command: `${process.execPath} --experimental-strip-types server/test/support/browser-server.ts`,
+    command: `"${process.execPath}" --experimental-strip-types server/test/support/browser-server.ts`,
     env: { PORT: port, DATABASE_URL: process.env.DATABASE_URL ?? resolve(outputDir, "e2e.db") },
     url: `http://127.0.0.1:${port}/api/health`,
     reuseExistingServer: false,

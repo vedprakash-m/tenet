@@ -1,5 +1,5 @@
 // The small decision kinds: each is a few lines over one record. Kept together; split a kind out when it grows.
-import { CATALOG, isSettingKey, validateSetting } from "../core/config.ts";
+import { CATALOG, isSettingKey, unknownSetting, validateSetting } from "../core/config.ts";
 import type { Scope } from "../core/config.ts";
 import { KernelError } from "../core/errors.ts";
 import { reason } from "../core/reasons.ts";
@@ -175,7 +175,7 @@ export const config: Decision = {
   kind: "config",
   run({ state, work, input }) {
     const key = input.target ?? "";
-    if (!isSettingKey(key)) throw new KernelError("restriction-key-unknown", `"${key}" is not a setting; known: ${Object.keys(CATALOG).join(", ")}`, { exit: 2 });
+    if (!isSettingKey(key)) throw new KernelError("restriction-key-unknown", unknownSetting(key), { exit: 2 });
     const body = (input.propose ?? {}) as { value?: unknown; scope?: Scope; reset?: boolean };
     const scope: Scope = body.scope ?? CATALOG[key].scopes[0] ?? "project";
     const v = validateSetting(key, body.reset === true ? CATALOG[key].default : body.value, scope);

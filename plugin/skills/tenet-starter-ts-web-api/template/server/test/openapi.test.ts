@@ -1,8 +1,9 @@
 // Contract generation is source-bound, not a hand-maintained inventory (TS §12.1).
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
@@ -67,16 +68,15 @@ describe("generated OpenAPI [QLT-01, QLT-06]", () => {
     }
   });
 
-  it("exports repeatable JSON in a separate process without opening the ambient database or configuration", () => {
+  it("exports repeatable JSON in a separate process without opening the ambient database or configuration", async () => {
     const root = mkdtempSync(join(tmpdir(), "starter-contract-"));
     const database = join(root, "guard.db");
     writeFileSync(database, "must remain untouched");
     try {
-      const run = () => spawnSync(process.execPath, ["--experimental-strip-types", "server/src/openapi.ts"], {
+      const run = () => promisify(execFile)(process.execPath, ["--experimental-strip-types", "server/src/openapi.ts"], {
         env: { ...process.env, NODE_ENV: "production", PORT: "invalid", DATABASE_URL: database, COOKIE_SECRET: "short" }, encoding: "utf8", timeout: 15_000,
       });
-      const first = run(), second = run();
-      expect(first.status, first.stderr).toBe(0); expect(second.status, second.stderr).toBe(0);
+      const [first, second] = await Promise.all([run(), run()]);
       expect(first.stdout).toBe(second.stdout);
       expect(JSON.parse(first.stdout)).toMatchObject({ openapi: "3.1.0", paths: { "/api/auth/me": expect.any(Object) } });
       expect(readFileSync(database, "utf8")).toBe("must remain untouched");

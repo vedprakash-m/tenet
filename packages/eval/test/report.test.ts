@@ -70,6 +70,24 @@ function input(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function criticalInput(hits: number[], overrides: Record<string, unknown> = {}) {
+  const plannedSlots = Array.from({ length: 5 }, (_, index) => slot(`run-${index + 1}`, index + 1));
+  const attempts = plannedSlots.map((item, index) => attempt(
+    `attempt-${index + 1}`,
+    item.slotId,
+    1,
+    { findings: hits.includes(index + 1) ? [{ findingId: "defect-critical", severity: "critical" }] : [] },
+  ));
+  return input({
+    purpose: "qualification",
+    plannedSlots,
+    thresholds: [{ ...input().thresholds[0], value: 0 }],
+    seededTruth: [{ defectId: "defect-critical", caseId: "case-one", stratumId: "local", severity: "critical" }],
+    attempts,
+    ...overrides,
+  });
+}
+
 function encode(value: unknown): Buffer {
   return Buffer.from(JSON.stringify(value));
 }
@@ -548,6 +566,145 @@ describe("offline campaign reporting", () => {
     assert.equal(partialResult.reviewMetrics[0]?.recall, null);
     assert.equal(partialResult.reviewMetrics[0]?.truePositives, 1);
     assert.equal(partialResult.reviewMetrics[0]?.unknownSlots, 1);
+  });
+
+  it("fails critical detection at 1/5 even when unique-defect recall is 1 and renders the gate", () => {
+    const { result } = report(criticalInput([1]));
+    assert.equal(result.schemaVersion, 2);
+    assert.equal(result.reviewMetrics.find((item) => item.group.level === "campaign")?.recall, 1);
+    assert.deepEqual(result.criticalDetectionMetrics, [{
+      defectId: "defect-critical",
+      caseId: "case-one",
+      stratumId: "local",
+      requiredRuns: 5,
+      requiredDetections: 4,
+      detectedRepetitions: [1],
+      missedRepetitions: [2, 3, 4, 5],
+      unknownRepetitions: [],
+      result: "fail",
+    }]);
+    assert.equal(result.criticalDetectionGate, "fail");
+    assert.equal(result.eligibility, "fail");
+    assert.match(renderCampaignReport(result, "json"), /"criticalDetectionGate":"fail"/);
+    assert.match(renderCampaignReport(result, "markdown"), /critical-detection \| fail/);
+    assert.match(renderCampaignReport(result, "junit"), /name="critical-detection" value="fail"/);
+  });
+
+  it("passes critical detection at 4/5 and keeps incomplete evidence in the fixed denominator", () => {
+    const passing = report(criticalInput([1, 2, 3, 4])).result;
+    assert.equal(passing.criticalDetectionMetrics[0]?.detectedRepetitions.length, 4);
+    assert.equal(passing.criticalDetectionMetrics[0]?.result, "pass");
+    assert.equal(passing.criticalDetectionGate, "pass");
+    assert.equal(passing.eligibility, "pass");
+
+    const incomplete = criticalInput([1, 2, 3], {
+      plannedSlots: criticalInput([1, 2, 3]).plannedSlots.slice(0, 3),
+      attempts: criticalInput([1, 2, 3]).attempts.slice(0, 3),
+    });
+    const incompleteResult = report(incomplete).result;
+    assert.equal(incompleteResult.criticalDetectionMetrics[0]?.requiredRuns, 5);
+    assert.deepEqual(incompleteResult.criticalDetectionMetrics[0]?.unknownRepetitions, [4, 5]);
+    assert.equal(incompleteResult.criticalDetectionMetrics[0]?.result, "inconclusive");
+    assert.equal(incompleteResult.criticalDetectionGate, "inconclusive");
+    assert.equal(incompleteResult.eligibility, "inconclusive");
+  });
+
+  it("matches repeated critical detections by seeded defect ID without changing recall severity matching", () => {
+    const value = criticalInput([1, 2, 3, 4], {
+      attempts: Array.from({ length: 5 }, (_, index) => attempt(
+        `attempt-${index + 1}`,
+        `run-${index + 1}`,
+        1,
+        { findings: index < 4 ? [{ findingId: "defect-critical", severity: "major" }] : [] },
+      )),
+    });
+    const result = report(value).result;
+    assert.equal(result.criticalDetectionMetrics[0]?.result, "pass");
+    assert.equal(result.criticalDetectionGate, "pass");
+    assert.equal(result.reviewMetrics.find((item) => item.group.level === "campaign")?.recall, 0);
+  });
+
+  it("fails when fewer than four detections remain possible and keeps cancelled runs in the denominator", () => {
+    const value = criticalInput([1, 2], {
+      attempts: [
+        criticalInput([1, 2]).attempts[0],
+        attempt("attempt-2", "run-2", 1, {
+          contractOutcome: "fail",
+          findings: [{ findingId: "defect-critical", severity: "critical" }],
+        }),
+        attempt("attempt-3", "run-3", 1, { status: "cancelled", findings: [] }),
+        attempt("attempt-4", "run-4", 1, { findings: [] }),
+        attempt("attempt-5", "run-5", 1, { findings: [] }),
+      ],
+    });
+    const result = report(value).result;
+    assert.equal(result.criticalDetectionMetrics[0]?.requiredRuns, 5);
+    assert.deepEqual(result.criticalDetectionMetrics[0]?.detectedRepetitions, [1, 2]);
+    assert.deepEqual(result.criticalDetectionMetrics[0]?.unknownRepetitions, [3]);
+    assert.deepEqual(result.criticalDetectionMetrics[0]?.missedRepetitions, [4, 5]);
+    assert.equal(result.criticalDetectionMetrics[0]?.result, "fail");
+    assert.equal(result.criticalDetectionGate, "fail");
+  });
+
+  it("does not count retries and evaluates critical defects independently by stratum", () => {
+    const retryValue = criticalInput([1, 2, 3], {
+      attempts: [
+        ...criticalInput([1, 2, 3]).attempts.slice(0, 3),
+        attempt("attempt-4", "run-4", 1, { findings: [] }),
+        attempt("attempt-4-retry", "run-4", 2, { findings: [{ findingId: "defect-critical", severity: "critical" }] }),
+        attempt("attempt-5", "run-5", 1, { findings: [] }),
+      ],
+    });
+    const retryResult = report(retryValue).result;
+    assert.deepEqual(retryResult.criticalDetectionMetrics[0]?.detectedRepetitions, [1, 2, 3]);
+    assert.equal(retryResult.criticalDetectionGate, "fail");
+
+    const plannedSlots = [
+      ...Array.from({ length: 5 }, (_, index) => slot(`local-${index + 1}`, index + 1, { stratumId: "local" })),
+      ...Array.from({ length: 5 }, (_, index) => slot(`remote-${index + 1}`, index + 1, { stratumId: "remote" })),
+    ];
+    const findings = new Map<string, string>();
+    for (const repetition of [1, 2, 3, 4]) findings.set(`local-${repetition}`, "defect-local");
+    findings.set("remote-1", "defect-remote");
+    const strata = input({
+      purpose: "qualification",
+      plannedSlots,
+      thresholds: [{ ...input().thresholds[0], value: 0 }],
+      seededTruth: [
+        { defectId: "defect-local", caseId: "case-one", stratumId: "local", severity: "critical" },
+        { defectId: "defect-remote", caseId: "case-one", stratumId: "remote", severity: "critical" },
+      ],
+      attempts: plannedSlots.map((item) => {
+        const defectId = findings.get(item.slotId);
+        return attempt(`attempt-${item.slotId}`, item.slotId, 1, {
+          findings: defectId ? [{ findingId: defectId, severity: "critical" }] : [],
+        });
+      }),
+    });
+    const strataResult = report(strata).result;
+    assert.deepEqual(strataResult.criticalDetectionMetrics.map((item) => [item.stratumId, item.result]), [["local", "pass"], ["remote", "fail"]]);
+    assert.equal(strataResult.criticalDetectionGate, "fail");
+  });
+
+  it("makes qualification inconclusive without critical truth declarations", () => {
+    const result = report(criticalInput([], { seededTruth: [] })).result;
+    assert.equal(result.criticalDetectionMetrics.length, 0);
+    assert.deepEqual(result.criticalDetectionIssues, ["no-critical-seeded-truth"]);
+    assert.equal(result.criticalDetectionGate, "inconclusive");
+    assert.equal(result.eligibility, "inconclusive");
+  });
+
+  it("returns CLI exit 3 for a repeated critical-detection failure", () => {
+    const root = scratch();
+    const source = join(root, "critical.json");
+    writeFileSync(source, JSON.stringify(criticalInput([1])));
+    for (const format of ["json", "markdown", "junit"] as const) {
+      const result = cli(["--input", source, "--format", format]);
+      assert.equal(result.status, 3, `${format}: ${result.stderr}`);
+      if (format === "json") assert.equal((JSON.parse(result.stdout) as { criticalDetectionGate: string }).criticalDetectionGate, "fail");
+      else if (format === "markdown") assert.match(result.stdout, /Gate: critical-detection \| fail/);
+      else assert.match(result.stdout, /name="critical-detection" value="fail"/);
+    }
   });
 
   it("does not measure review ratios without seeded truth", () => {

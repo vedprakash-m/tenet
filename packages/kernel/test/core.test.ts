@@ -146,6 +146,36 @@ const change = (path: string, added: string[], removed: string[] = []): FileChan
 const names = (cs: FileChange[], ps: readonly AttentionPattern[] = PATTERNS) => netAttention(cs, ps).map((a) => a.pattern);
 
 describe("attention (net per hunk, whitespace and case folded)", () => {
+  it("reports external snapshot additions, replacements and removals for disposition [REV-03]", () => {
+    const path = "src/__snapshots__/greet.test.ts.snap";
+    for (const [added, removed] of [
+      ['exports[`greeting 1`] = `"Hello, Ada!"`;', ""],
+      ['exports[`greeting 1`] = `"Hello, Mallory!"`;', 'exports[`greeting 1`] = `"Hello, Ada!"`;'],
+      ["", 'exports[`greeting 1`] = `"Hello, Ada!"`;'],
+    ]) {
+      const items = netAttention([change(path, added ? [added] : [], removed ? [removed] : [])], PATTERNS);
+      assert.equal(items.length, 1, JSON.stringify({ added, removed, items }));
+      assert.equal(items[0]!.pattern, "snapshot");
+      assert.equal(items[0]!.path, path);
+      assert.equal(items[0]!.marker, false);
+      assert.equal(items[0]!.disposition, undefined);
+    }
+    assert.deepEqual(names([change(path, [])]), [], "an empty hunk is not a snapshot change");
+    assert.deepEqual(names([change("src/snapshots.ts", ["export const a = 1;"])]), []);
+  });
+
+  it("binds external snapshot dispositions to the expected-content change [REV-03]", () => {
+    const path = "src/__snapshots__/greet.test.ts.snap";
+    const before = change(path, ['exports[`greeting 1`] = `"Hello, Ada!"`;']);
+    const [item] = netAttention([before], PATTERNS);
+    assert.ok(item, "a snapshot update must need disposition");
+    const disposed = { ...item, disposition: { by: "reviewer" as const, outcome: "accepted" as const, reason: "matches the example" } };
+    assert.equal(carryDispositions([disposed], netAttention([before], PATTERNS))[0]!.disposition?.by, "reviewer");
+    const changed = change(path, ['exports[`greeting 1`] = `"Hello, Mallory!"`;']);
+    assert.equal(carryDispositions([disposed], netAttention([changed], PATTERNS))[0]!.disposition, undefined);
+    assert.equal(netAttention([before, before], PATTERNS).length, 1, "identical snapshot attention is not duplicated");
+  });
+
   it("flags added markers, suppressions, escapes, mocks, empty catches and snapshots [REV-03]", () => {
     assert.deepEqual(names([change("a.ts", ["// @ts-ignore", "const x = y as any;", "try { f() } catch {}", "vi.mock('./x')", "it.skip('a', () => {})"])]).sort(), ["@ts-ignore", ".skip", "as any", "empty catch", "mock"].sort());
   });

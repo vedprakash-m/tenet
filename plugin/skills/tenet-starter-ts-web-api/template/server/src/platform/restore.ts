@@ -2,14 +2,19 @@
 // where the originals move, moves the database with its -wal and -shm aside, copies the backup in and verifies it, then removes
 // the marker. A restore killed at any step leaves the marker; the server will not start until it is finished or rolled back.
 import Database from "better-sqlite3";
-import { closeSync, copyFileSync, existsSync, fsyncSync, openSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { z } from "zod";
+import { closeSync, copyFileSync, existsSync, fsyncSync, lstatSync, openSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { MIGRATIONS_DIR, loadMigrations, pendingMigrations } from "./migrate.ts";
 import { takeOwner } from "./owner.ts";
 
 export interface Restored { schemaVersion: string; compatibleWith: string; keptAside?: string }
 export const STEPS = ["owned", "validated", "marked", "moved", "copied", "verified", "unmarked"] as const;
 export type Step = (typeof STEPS)[number];
-interface Marker { backup: string; aside: string; at: number }
+const RestoreMarker = z.object({
+  backup: z.string().min(1), aside: z.string().min(1),
+  at: z.number().finite().nonnegative(), hadOriginal: z.boolean().optional(),
+});
+type Marker = z.infer<typeof RestoreMarker>;
 
 const SUFFIXES = ["", "-wal", "-shm"] as const;
 const markerPath = (to: string) => `${to}.restore-in-progress`;
@@ -23,7 +28,7 @@ function verified(file: string): string {
     if (check !== "ok") throw new Error(`failed its integrity check: ${String(check)}`);
     const rows = copy.prepare("SELECT version, checksum FROM schema_migrations ORDER BY version").all() as Array<{ version: string; checksum: string }>;
     pendingMigrations(loadMigrations(MIGRATIONS_DIR), new Map(rows.map(row => [row.version, row.checksum])), MIGRATIONS_DIR);
-    if (!rows.length && copy.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> 'schema_migrations' LIMIT 1").get()) throw new Error("the backup has an unrecorded schema history");
+    if (!rows.length && copy.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT GLOB 'sqlite_*' AND name <> 'schema_migrations' LIMIT 1").get()) throw new Error("the backup has an unrecorded schema history");
     if (copy.prepare("PRAGMA foreign_key_check").get()) throw new Error("the backup has foreign key violations");
     return rows.at(-1)?.version ?? "";
   } catch (e) {
@@ -40,7 +45,8 @@ function assertIdle(path: string): void {
   try {
     db.exec("BEGIN EXCLUSIVE");
     db.exec("ROLLBACK");
-    db.pragma("wal_checkpoint(TRUNCATE)");
+    // The first result column reports a busy checkpoint without throwing.
+    if (db.pragma("wal_checkpoint(TRUNCATE)", { simple: true }) !== 0) throw new Error("the WAL checkpoint is busy");
   } catch {
     throw new Error("the database is in use; stop the app before restoring");
   } finally {
@@ -57,12 +63,27 @@ function writeDurable(path: string, text: string): void {
 
 /** The unfinished restore beside this database, or null. */
 export function pendingRestore(to: string): Marker | null {
-  try { return JSON.parse(readFileSync(markerPath(to), "utf8")) as Marker; } catch { return existsSync(markerPath(to)) ? { backup: "", aside: "", at: 0 } : null; }
+  const unreadable: Marker = { backup: "", aside: "", at: 0 };
+  try {
+    const marker = RestoreMarker.safeParse(JSON.parse(readFileSync(markerPath(to), "utf8")));
+    return marker.success ? marker.data : unreadable;
+  } catch {
+    try {
+      return lstatSync(markerPath(to), { throwIfNoEntry: false }) ? unreadable : null;
+    } catch {
+      return unreadable;
+    }
+  }
 }
 
 const isAlias = (backup: string, to: string): boolean => {
   const real = (p: string) => { try { return realpathSync(p); } catch { return p; } };
-  return SUFFIXES.some((s) => real(backup) === real(`${to}${s}`));
+  const source = statSync(backup, { bigint: true, throwIfNoEntry: false });
+  return SUFFIXES.some(s => {
+    if (real(backup) === real(`${to}${s}`)) return true;
+    const target = statSync(`${to}${s}`, { bigint: true, throwIfNoEntry: false });
+    return !!source && !!target && source.dev === target.dev && source.ino === target.ino;
+  });
 };
 
 /** Moves each live file (database, -wal, -shm) that has no twin aside yet; once the restored database is in place, nothing moves. */
@@ -92,7 +113,12 @@ export function restore(backup: string, to: string, opts: { after?: (step: Step)
     at("validated");
     const had = existsSync(to);
     const aside = `${to}.before-restore-${Date.now()}`;
-    writeDurable(markerPath(to), JSON.stringify({ backup, aside, at: Date.now() } satisfies Marker));
+    if (SUFFIXES.some(s => lstatSync(`${aside}${s}`, { throwIfNoEntry: false })))
+      throw new Error("a kept-aside restore path already exists; preserve the files and retry later");
+    if ([`${markerPath(to)}.tmp`, ...SUFFIXES.map(s => `${to}.restoring${s}`)]
+      .some(path => lstatSync(path, { throwIfNoEntry: false })))
+      throw new Error("a restore staging path already exists; preserve the files for manual inspection");
+    writeDurable(markerPath(to), JSON.stringify({ backup, aside, at: Date.now(), hadOriginal: had } satisfies Marker));
     at("marked");
     moveAside(to, aside);
     at("moved");
@@ -113,27 +139,45 @@ export function restore(backup: string, to: string, opts: { after?: (step: Step)
   }
 }
 
+function rollback(to: string, marker: Marker): string {
+  if (marker.hadOriginal === false) {
+    for (const s of SUFFIXES)
+      if (existsSync(`${to}${s}`) && existsSync(`${marker.aside}${s}`))
+        throw new Error("rollback would replace kept-aside data; preserve the files for manual recovery");
+    for (const s of SUFFIXES)
+      if (existsSync(`${to}${s}`)) renameSync(`${to}${s}`, `${marker.aside}${s}`);
+    return `the original database absence is restored; any replaced files are kept at ${marker.aside}`;
+  }
+  if (marker.hadOriginal === undefined && !SUFFIXES.some(s => existsSync(`${marker.aside}${s}`)))
+    throw new Error("the earlier restore did not record whether an original existed; preserve the files for manual recovery or finish the restore");
+  for (const s of SUFFIXES) {
+    if (!existsSync(`${marker.aside}${s}`)) continue;
+    rmSync(`${to}${s}`, { force: true });
+    renameSync(`${marker.aside}${s}`, `${to}${s}`);
+  }
+  return "the original database is back";
+}
+
 /** Finishes an interrupted restore from the marker, or puts the originals back. Either way the marker goes last. */
 export function recoverRestore(to: string, mode: "finish" | "rollback"): string {
   const marker = pendingRestore(to);
   if (!marker) return "there is no unfinished restore";
+  if (!marker.backup || !marker.aside)
+    throw new Error("the restore marker is unreadable; preserve the files for manual recovery");
   const release = takeOwner(to);
   try {
+    let result: string;
     if (mode === "finish") {
-      if (!marker.backup) throw new Error("the restore marker is unreadable; roll back instead");
       moveAside(to, marker.aside);
       install(marker.backup, to);
       verified(to);
+      result = "the restore is finished";
     } else {
-      for (const s of SUFFIXES) {
-        if (!existsSync(`${marker.aside}${s}`)) continue;
-        rmSync(`${to}${s}`, { force: true });
-        renameSync(`${marker.aside}${s}`, `${to}${s}`);
-      }
+      result = rollback(to, marker);
       rmSync(`${to}.restoring`, { force: true });
     }
     rmSync(markerPath(to), { force: true });
-    return mode === "finish" ? "the restore is finished" : "the original database is back";
+    return result;
   } finally {
     release();
   }

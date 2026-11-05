@@ -1,10 +1,15 @@
 // A receipt proves only what the observed run and its report together show (TS §9.6, EVD-02).
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { cleanup, tmp, write } from "./helpers.ts";
 import { receiptsFrom, settleReruns } from "../src/core/receipts.ts";
 import type { ReceiptContext, RunFacts } from "../src/core/receipts.ts";
 import type { Obligation, Receipt, WorkContract } from "../src/core/schemas.ts";
 import { createStack, normalize } from "../src/adapters/node-ts.ts";
+import { normalizePlaywright } from "../src/adapters/playwright.ts";
 import { matchBaseline } from "../src/verbs/check-evidence.ts";
 import type { Run } from "../src/verbs/check-evidence.ts";
 
@@ -27,6 +32,252 @@ const baselineRed = (receipt: Receipt) => matchBaseline(
 )[0]!.baselineMatched;
 
 describe("receipts", () => {
+  it("refuses Playwright errors on skipped results before tagged or suite baseline proof [EVD-02, EVD-05, TDD-02]", () => {
+    const data = (selectedStatus: string, status: string, errors: Array<{ message?: string }> | undefined) => ({
+      suites: [{ title: "a.test.ts", file: "a.test.ts", specs: [
+        { title: "[EX-1] selected behavior", ok: selectedStatus === "passed", tests: [{
+          status: selectedStatus === "passed" ? "expected" : "unexpected", expectedStatus: "passed",
+          results: [{ status: selectedStatus, errors: selectedStatus === "failed" ? [{ message: "AssertionError: expected true" }] : [] }],
+        }] },
+        { title: "sibling", ok: true, tests: [{
+          status: status === "passed" ? "expected" : "skipped", expectedStatus: status,
+          results: [{ status, errors }],
+        }] },
+      ] }],
+      stats: { expected: Number(selectedStatus === "passed") + Number(status === "passed"),
+        unexpected: Number(selectedStatus === "failed"), skipped: Number(status === "skipped"), flaky: 0 },
+    });
+    for (const status of ["passed", "skipped"]) {
+      for (const errors of [[{ message: "TypeError: cleanup failed" }], [{ message: "" }], [{}]]) {
+        for (const selectedStatus of ["passed", "failed"]) {
+          const normalized = normalizePlaywright(JSON.stringify(data(selectedStatus, status, errors)), "/p");
+          assert.equal(normalized.invalid, "the test summary and its execution disagree");
+          assert.equal(normalized.files.size, 0);
+          assert.equal(normalized.discovered, 0);
+          for (const obligation of [ob, { ...ob, example: "EX-1" }, suite]) {
+            const receipt = one(obligation, run({ exit: selectedStatus === "failed" ? 1 : 0 }), normalized);
+            assert.equal(receipt.status, "inconclusive");
+            assert.deepEqual(receipt.reasons, ["report-invalid"]);
+            if (obligation.id === ob.id) assert.equal(baselineRed(receipt), false);
+          }
+        }
+      }
+      for (const errors of [undefined, []]) {
+        const normalized = normalizePlaywright(JSON.stringify(data("passed", status, errors)), "/p");
+        assert.equal(normalized.invalid, undefined);
+        assert.equal(one({ ...ob, example: "EX-1" }, run(), normalized).status, "pass");
+        assert.equal(one(ob, run(), normalized).status, status === "skipped" ? "inconclusive" : "pass");
+      }
+    }
+    assert.notEqual(createStack().adapterVersion(), "node-ts@26");
+  });
+
+  it("never discards failure diagnostics attached to nonfailed assertions [EVD-02, EVD-05, TDD-02]", () => {
+    for (const status of ["passed", "pending", "skipped", "todo", "disabled"]) {
+      for (const failureMessages of [["TypeError: cleanup failed"], [""]]) {
+        for (const selectedStatus of ["passed", "failed"]) {
+          const data = JSON.parse(report([{
+            status: selectedStatus, failure: selectedStatus === "failed" ? "AssertionError: expected true" : undefined,
+          }], "/p/a.test.ts", false));
+          data.testResults[0].assertionResults[0].fullName = "[EX-1] selected behavior";
+          data.testResults[0].assertionResults.push({ fullName: "contradictory sibling", status, failureMessages });
+          const normalized = norm(JSON.stringify(data));
+          assert.equal(normalized.invalid, "the assertion status and its failure messages disagree",
+            JSON.stringify({ status, failureMessages, selectedStatus }));
+          assert.equal(normalized.files.size, 0);
+          assert.equal(normalized.discovered, 0);
+          for (const obligation of [ob, { ...ob, example: "EX-1" }, suite]) {
+            const receipt = one(obligation, run({ exit: selectedStatus === "failed" ? 1 : 0 }), normalized);
+            assert.equal(receipt.status, "inconclusive");
+            assert.deepEqual(receipt.reasons, ["report-invalid"]);
+            if (obligation.id === ob.id) assert.equal(baselineRed(receipt), false);
+          }
+        }
+      }
+      for (const failureMessages of [undefined, []]) {
+        const data = JSON.parse(report([{ status: "passed" }], "/p/a.test.ts", false));
+        data.testResults[0].assertionResults[0].fullName = "[EX-1] selected behavior";
+        data.testResults[0].assertionResults.push({ fullName: "clean sibling", status, failureMessages });
+        const normalized = norm(JSON.stringify(data));
+        assert.equal(normalized.invalid, undefined);
+        assert.equal(one({ ...ob, example: "EX-1" }, run(), normalized).status, "pass");
+        assert.equal(one(ob, run(), normalized).status, status === "passed" ? "pass" : "inconclusive");
+      }
+    }
+    assert.notEqual(createStack().adapterVersion(), "node-ts@25");
+  });
+
+  it("refuses focus anywhere in the run before file or tagged evidence can establish a verdict [EVD-02, EVD-05, TDD-02]", () => {
+    for (const status of ["passed", "failed"]) {
+      const data = JSON.parse(report([{ status, failure: status === "failed" ? "AssertionError: expected true" : undefined }]));
+      data.testResults[0].assertionResults[0].fullName = "[EX-1] selected behavior";
+      data.testResults[1].status = "failed";
+      data.testResults[1].assertionResults[0] = {
+        fullName: "focused sibling", status: "failed", failureMessages: ["Error: [Vitest] Unexpected .only modifier."],
+      };
+      for (const obligation of [ob, { ...ob, example: "EX-1" }, suite]) {
+        const receipt = one(obligation, run({ exit: 1 }), norm(JSON.stringify(data)));
+        assert.equal(receipt.status, "inconclusive");
+        assert.deepEqual(receipt.reasons, ["focused-tests"]);
+        if (obligation.id === ob.id) assert.equal(baselineRed(receipt), false);
+      }
+    }
+  });
+
+  it("rejects real cross-file focus without confusing ordinary sibling assertion failures [EVD-02, EVD-05, TDD-02]", () => {
+    const root = tmp("tenet-cross-file-focus-"), stack = createStack();
+    try {
+      write(root, "vitest.config.mjs",
+        'export default { test: { globals: true, allowOnly: true, include: ["*.test.js"], maxWorkers: 1 } };\n');
+      for (const mode of ["focused-pass", "focused-red", "ordinary"] as const) {
+        write(root, "a.test.js", `test("[EX-1] selected behavior", () => expect(true).toBe(${mode !== "focused-red"}));\n`);
+        write(root, "b.test.js", `test${mode === "ordinary" ? "" : ".only"}("sibling", () => expect(true).toBe(false));\n`);
+        const report = join(root, "report.json"), argv = stack.argv("all", report);
+        const child = spawnSync(argv[0]!, [join(import.meta.dirname, "..", "..", "..", argv[1]!), ...argv.slice(2)], {
+          cwd: root, env: { ...process.env, CI: "1" }, encoding: "utf8", timeout: 30_000,
+        });
+        assert.equal(child.error, undefined, child.stderr);
+        assert.equal(child.status, 1, child.stderr);
+        const normalized = normalize(readFileSync(report, "utf8"), root);
+        assert.equal(normalized.invalid, undefined);
+        for (const example of [undefined, "EX-1"]) {
+          const obligation = { ...ob, testFile: "a.test.js", ...(example ? { example } : {}) };
+          const receipt = one(obligation, run({ exit: 1 }), normalized);
+          assert.equal(receipt.status, mode === "ordinary" ? "pass" : "inconclusive", JSON.stringify({ mode, receipt }));
+          assert.deepEqual(receipt.reasons, mode === "ordinary" ? [] : ["focused-tests"]);
+          assert.equal(baselineRed(receipt), false);
+        }
+      }
+      assert.notEqual(stack.adapterVersion(), "node-ts@24");
+    } finally { cleanup(root); }
+  });
+
+  it("does not pass real unhandled rejections despite permissive Vitest settings [EVD-02, EVD-05]", () => {
+    const root = tmp("tenet-vitest-unhandled-"), stack = createStack();
+    try {
+      write(root, "vitest.config.mjs",
+        'export default { test: { globals: true, dangerouslyIgnoreUnhandledErrors: true, ' +
+        'include: ["probe.test.js"], maxWorkers: 1 } };\n');
+      for (const mode of ["unhandled", "passing"] as const) {
+        write(root, "probe.test.js", 'test("behavior", async () => {\n' +
+          (mode === "unhandled" ? '  Promise.reject(new TypeError("background cleanup failed"));\n' : "") +
+          '  await new Promise(resolve => setTimeout(resolve, 25));\n  expect(true).toBe(true);\n});\n');
+        const report = join(root, "report.json"), argv = stack.argv("all", report);
+        const child = spawnSync(argv[0]!, [join(import.meta.dirname, "..", "..", "..", argv[1]!), ...argv.slice(2)], {
+          cwd: root, env: { ...process.env, CI: "1" }, encoding: "utf8", timeout: 30_000,
+        });
+        assert.equal(child.error, undefined, child.stderr);
+        const normalized = normalize(readFileSync(report, "utf8"), root);
+        assert.equal(normalized.invalid, undefined);
+        const receipt = one(suite, run({ exit: child.status ?? undefined }), normalized);
+        assert.equal(receipt.status, mode === "passing" ? "pass" : "inconclusive", JSON.stringify({ mode, receipt }));
+        assert.deepEqual(receipt.reasons, mode === "passing" ? [] : ["report-contradiction"]);
+        assert.equal(child.status, mode === "passing" ? 0 : 1);
+      }
+      assert.notEqual(stack.adapterVersion(), "node-ts@23");
+    } finally { cleanup(root); }
+  });
+
+  it("keeps suite failures after diagnostic caps and tagged-example selection [EVD-05, TDD-02]", () => {
+    const raw = JSON.parse(report(Array.from({ length: 6 }, () => ({
+      status: "failed", failure: "AssertionError: expected true",
+    })), "/p/a.test.ts", false));
+    raw.testResults[0].message = "suite cleanup failed";
+    raw.testResults[0].assertionResults[0].fullName = "[EX-1] behavior";
+    const normalized = norm(JSON.stringify(raw)), file = normalized.files.get("a.test.ts")!;
+    assert.equal(file.failures.length, 5);
+    assert.deepEqual(file.failureKinds, ["assertion", "compile-or-import"]);
+    for (const obligation of [ob, { ...ob, example: "EX-1" }]) {
+      const receipt = one(obligation, run({ exit: 1 }), normalized);
+      assert.equal(receipt.status, "fail");
+      assert.deepEqual(receipt.failureKinds, ["assertion", "compile-or-import"]);
+      assert.equal(baselineRed(receipt), false);
+      assert.equal(receipt.limitations.some(note => note.includes("matched by")), false);
+    }
+  });
+
+  it("retains real Vitest suite-hook errors beside failing assertions [EVD-05, TDD-02]", () => {
+    const root = tmp("tenet-vitest-hook-"), stack = createStack();
+    try {
+      write(root, "vitest.config.mjs",
+        'export default { test: { globals: true, include: ["probe.test.js"], maxWorkers: 1 } };\n');
+      for (const mode of ["mixed", "hook", "assertion"] as const) {
+        write(root, "probe.test.js",
+          `test("behavior", () => expect(true).toBe(${mode === "hook"}));\n` +
+          (mode === "assertion" ? "" : 'afterAll(() => { throw new TypeError("suite cleanup failed"); });\n'));
+        const report = join(root, "report.json"), argv = stack.argv("all", report);
+        const child = spawnSync(argv[0]!, [join(import.meta.dirname, "..", "..", "..", argv[1]!), ...argv.slice(2)], {
+          cwd: root, env: { ...process.env, CI: "1" }, encoding: "utf8", timeout: 30_000,
+        });
+        assert.equal(child.error, undefined, child.stderr);
+        assert.equal(child.status, 1);
+        const raw = readFileSync(report, "utf8"), normalized = normalize(raw, root);
+        assert.equal(normalized.invalid, undefined);
+        const receipt = one({ ...ob, testFile: "probe.test.js" }, run({ exit: 1 }), normalized);
+        assert.equal(receipt.status, "fail");
+        assert.deepEqual(new Set(receipt.failureKinds),
+          new Set(mode === "assertion" ? ["assertion"] : mode === "hook" ? ["compile-or-import"] : ["assertion", "compile-or-import"]));
+        const matched = matchBaseline(
+          { baseline: true, facts: { inv: { entries: new Map() } } } as Run,
+          { obligations: [{ ...ob, testFile: "probe.test.js", expectation: "fail" }] } as WorkContract, [receipt],
+        )[0]!.baselineMatched;
+        assert.equal(matched, mode === "assertion", raw);
+      }
+      assert.notEqual(stack.adapterVersion(), "node-ts@22");
+    } finally { cleanup(root); }
+  });
+
+  it("refuses real focused Vitest execution even when project configuration allows it [EVD-02, EVD-05]", () => {
+    const root = tmp("tenet-vitest-focus-"), stack = createStack();
+    try {
+      write(root, "vitest.config.mjs",
+        'export default { test: { globals: true, allowOnly: true, include: ["probe.test.js"], maxWorkers: 1 } };\n');
+      for (const mode of ["focused", "passing", "assertion"] as const) for (const files of ["all", ["probe.test.js"]] as const) {
+        write(root, "probe.test.js",
+          `test${mode === "focused" ? ".only" : ""}("selected", () => expect(true).toBe(true));\n` +
+          `test("sibling", () => expect(true).toBe(${mode === "passing"}));\n`);
+        const report = join(root, "report.json");
+        const argv = stack.argv(files === "all" ? files : [...files], report);
+        const child = spawnSync(argv[0]!, [join(import.meta.dirname, "..", "..", "..", argv[1]!), ...argv.slice(2)], {
+          cwd: root, env: { ...process.env, CI: "1" }, encoding: "utf8", timeout: 30_000,
+        });
+        assert.equal(child.error, undefined, child.stderr);
+        const normalized = normalize(readFileSync(report, "utf8"), root);
+        assert.equal(normalized.invalid, undefined);
+        const receipt = one(suite, run({ exit: child.status ?? undefined }), normalized);
+        assert.equal(receipt.status, mode === "focused" ? "inconclusive" : mode === "passing" ? "pass" : "fail",
+          JSON.stringify({ mode, argv, receipt }));
+        assert.deepEqual(receipt.reasons, mode === "focused" ? ["focused-tests"] : []);
+        assert.equal(child.status, mode === "passing" ? 0 : 1);
+        if (mode === "focused") assert.ok(receipt.counts!.focused > 0);
+        else {
+          assert.equal(receipt.counts!.executed, 2);
+          assert.equal(receipt.counts!.skipped, 0);
+          assert.deepEqual(receipt.failureKinds, mode === "passing" ? [] : ["assertion"]);
+        }
+      }
+      assert.notEqual(stack.adapterVersion(), "node-ts@21");
+    } finally { cleanup(root); }
+  });
+
+  it("classifies formatted Vitest assertions without rewriting recorded diagnostics [EVD-05, TDD-02, EVD-03]", () => {
+    const assertion = "Error: \u001b[2mexpect(\u001b[22mreceived).toBe(expected)\n at a.test.ts:1:1";
+    for (const [failure, expected] of [
+      [assertion, "assertion"],
+      ["\u001b[31mAssertionError: expected true\u001b[39m", "assertion"],
+      ["\u001b[31mTypeError: cannot call expect(received)\u001b[39m", "runtime-error"],
+      ["\u001b[31mTypeError: setup failed\u001b[39m\n at AssertionError.expect(a.test.ts:1:1)", "runtime-error"],
+    ] as const) {
+      const normalized = norm(report([{ status: "failed", failure }], "/p/a.test.ts", false));
+      const receipt = one(ob, run({ exit: 1 }), normalized);
+      assert.deepEqual(normalized.files.get("a.test.ts")!.failureKinds, [expected], failure);
+      assert.deepEqual(receipt.failureKinds, [expected], failure);
+      assert.equal(normalized.files.get("a.test.ts")!.failures[0]!.message, failure.split("\n")[0]);
+      assert.equal(baselineRed(receipt), expected === "assertion", failure);
+    }
+    assert.notEqual(createStack().adapterVersion(), "node-ts@20");
+  });
+
   it("invalidates normalization evidence that admitted oversized failure diagnostics [EVD-03]", () => {
     assert.notEqual(createStack().adapterVersion(), "node-ts@17");
   });

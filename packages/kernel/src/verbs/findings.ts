@@ -29,8 +29,8 @@ async function recordAnalyst(ports: Ports, state: State, w: WorkContract, r: Ana
   const nw = { ...w, analyses: [...w.analyses, { ...applied.link, model: modelRecord(model) }], budget, updatedAt: now };
   // Partial output never counts as a completed answer (AGT-05): dispatch again, never proceed as if settled.
   const next = r.status !== "completed"
-    ? [nx("analyst", `The analyst's result is ${r.status}, not complete; request a retry with packet analyst.`, true)]
-    : [];
+    ? [nx("analyst", `Analyst result: ${r.status}; retry with packet analyst.`, true)]
+    : deepPasses(nw, currentCandidate);
   const stale = applied.link.stale;
   const staleNote = "the source changed since this analyst observed it; its findings may be outdated";
   return {
@@ -76,14 +76,13 @@ function recordReview(ports: Ports, state: State, w: WorkContract, r: ReviewResu
     ...w, findings: all, attention: applied.attention, reviews: [...w.reviews, { ...applied.link, model: modelRecord(model) }], budget,
     focusedReview: undefined, updatedAt: now,
   };
-  const isBlocking = (f: Finding) =>
-    (f.severity === "blocker" || f.severity === "major") && ["valid", "open", "disputed"].includes(f.state);
-  const blocking = all.filter(isBlocking);
+  const blocking = all.filter(f => f.severity === "blocker" ? !["verified", "withdrawn"].includes(f.state)
+    : f.severity === "major" && ["valid", "open", "disputed", "fixed"].includes(f.state));
   const action = w.lane === "quick" ? "focused-review" : "review";
   const next = r.status === "partial" || applied.link.uncovered.length
     ? [nx(action, "The review left parts uncovered; request a follow-up manifest for the uncovered list.", true)]
     : r.status !== "completed" ? [nx(action, `The review ${r.status}; request a retry with packet reviewer --retry.`, true)]
-    : blocking.length ? [nx("implement", "Fix the blockers and majors, then check; one focused recheck follows.", true)]
+    : blocking.length ? [nx("implement", "Resolve blockers and majors; check, then one focused recheck.", true)]
     : [...deepPasses(nw, applied.link.candidate), nx("finish", "The review reached this candidate with nothing blocking.")];
   const failedAxis = r.axes.behavior === "fail" ? "behavior" : "structure";
   return {

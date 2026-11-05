@@ -50,8 +50,8 @@ export function build(
   const own = new Set(w.basis?.elementIds ?? []);
   const all = state.project.intent.elements;
   let seq = highestSeq(all);
-  const ids: Record<string, string> = {};
-  const idOf = (ref: string | undefined) => (ref ? (ids[ref] ?? (all.some((e) => e.id === ref) ? ref : undefined)) : undefined);
+  const ids = new Map<string, string>();
+  const idOf = (ref: string | undefined) => (ref ? (ids.get(ref) ?? (all.some((e) => e.id === ref) ? ref : undefined)) : undefined);
   const exampleCount = exampleCounts(all, own);
 
   const assign = (e: Proposed): string => {
@@ -80,14 +80,14 @@ export function build(
     if (e.testFile && !safePath(e.testFile))
       throw new KernelError("restriction-key-unknown", `test file "${e.testFile}" is outside the project or not editable`);
     const id = assign(e);
-    if (e.ref) ids[e.ref] = id;
+    if (e.ref) ids.set(e.ref, id);
     built.push(shaped(e, id, idOf(e.of)));
   }
   built.sort(
     (a, b) =>
-      proposal.elements.findIndex((x) => ids[x.ref ?? ""] === a.id) -
-      proposal.elements.findIndex((x) => ids[x.ref ?? ""] === b.id)
+      proposal.elements.findIndex((x) => ids.get(x.ref ?? "") === a.id) -
+      proposal.elements.findIndex((x) => ids.get(x.ref ?? "") === b.id)
   );
   for (const el of built) el.verifiedBy = linkElement(el, built);
-  return { elements: built, ids };
+  return { elements: built, ids: Object.fromEntries(ids) };
 }

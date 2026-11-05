@@ -3,7 +3,7 @@
 // none removes. A value is validated here and nowhere else; an unknown key is refused, never stored.
 import { z } from "zod";
 import { isStaticCheck } from "./obligations.ts";
-import { Policy } from "./policy.ts";
+import { nearestKey, Policy } from "./policy.ts";
 import type { Policy as PolicyFile } from "./policy.ts";
 
 export type Scope = "task" | "project";
@@ -31,6 +31,8 @@ export const CATALOG = {
 } as const satisfies Record<string, Entry>;
 export type SettingKey = keyof typeof CATALOG;
 export const isSettingKey = (k: string): k is SettingKey => Object.hasOwn(CATALOG, k);
+export const unknownSetting = (key: string): string =>
+  `"${key}" is not a setting; did you mean "${nearestKey(key, Object.keys(CATALOG))}"?`;
 
 /** Stored preferences/restrictions obey the same catalog and scope rules as incoming decisions. */
 export const settingsSchema = (scope: Scope) => z.strictObject(Object.fromEntries(

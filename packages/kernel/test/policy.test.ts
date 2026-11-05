@@ -84,6 +84,51 @@ describe("applying a pulled policy", () => {
     assert.deepEqual(r.pending, []);
     assert.equal(r.applied.length, 1);
   });
+
+  it("names the nearest nested policy key dependency_policy.min_release_age_day [CFG-11]", () => {
+    const result = parsePolicy({ dependency_policy: { min_release_age_day: 7 } });
+    assert.equal(result.ok, false);
+    if (result.ok) throw new Error("invalid policy accepted");
+    assert.equal(result.key, "dependency_policy");
+    assert.equal(result.nearest, "min_release_age_days");
+    assert.ok(result.message.includes("dependency_policy.min_release_age_day"));
+  });
+
+  it("names the nearest nested policy key dependency_policy.urgent_exeption [CFG-11]", () => {
+    const result = parsePolicy({ dependency_policy: { urgent_exeption: "deny" } });
+    assert.equal(result.ok, false);
+    if (result.ok) throw new Error("invalid policy accepted");
+    assert.equal(result.key, "dependency_policy");
+    assert.equal(result.nearest, "urgent_exception");
+    assert.ok(result.message.includes("dependency_policy.urgent_exeption"));
+  });
+
+  it("names the nearest nested policy key required_checks.0.populaton [CFG-11]", () => {
+    const result = parsePolicy({ required_checks: [{ id: "unit", property: "behavior", populaton: "all" }] });
+    assert.equal(result.ok, false);
+    if (result.ok) throw new Error("invalid policy accepted");
+    assert.equal(result.key, "required_checks");
+    assert.equal(result.nearest, "population");
+    assert.ok(result.message.includes("required_checks.0.populaton"));
+  });
+
+  it("names the nearest nested policy key exclusions.0.kind [CFG-11]", () => {
+    const result = parsePolicy({ exclusions: [{ pattern: "private/**", kinds: ["no-read"], kind: ["no-read"] }] });
+    assert.equal(result.ok, false);
+    if (result.ok) throw new Error("invalid policy accepted");
+    assert.equal(result.key, "exclusions");
+    assert.equal(result.nearest, "kinds");
+    assert.ok(result.message.includes("exclusions.0.kind"));
+  });
+
+  it("names the nearest nested policy key commands.test.cwdd [CFG-11]", () => {
+    const result = parsePolicy({ commands: { test: { argv: ["node", "--test"], cwdd: "." } } });
+    assert.equal(result.ok, false);
+    if (result.ok) throw new Error("invalid policy accepted");
+    assert.equal(result.key, "commands");
+    assert.equal(result.nearest, "cwd");
+    assert.ok(result.message.includes("commands.test.cwdd"));
+  });
   it("keeps the previous rules for what loosens or changes, applies the rest, and lists what waits for the user", () => {
     const next = with_({
       protected_paths: [".github/**", "infra/**"], // drops one, adds one

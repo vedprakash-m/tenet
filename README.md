@@ -14,17 +14,17 @@ Copilot already chats, edits and runs tools. Tenet adds a fixed loop around a re
 - **Checks that run through the kernel.** Test results are recorded as receipts tied to the exact files they ran against. A later edit makes a receipt stale.
 - **A reviewer subagent.** It reads the change and reports findings with a severity and a disposition. Dispatch has been observed on VS Code; host-enforced context isolation and tool restrictions have not.
 - **One stated outcome.** Each piece of work ends with a label chosen by fixed rules, such as `checked-local`, `implemented-unverified`, `prototype`, `findings-only` or `blocked`. The label names what was and was not shown. `checked-local` is not owner acceptance and is not production readiness.
-- **Your work stays yours.** Tenet works on a branch and commits only files it wrote. Your uncommitted edits are left alone.
+- **Your work stays yours.** Tenet works on a branch and commits only files it wrote. Preserving your uncommitted edits is a requirement, not a fully established preview guarantee: interrupted dependency recovery has a known defect that can overwrite later human edits. See the [implementation audit](docs/audits/2026-11-04/implementation-audit.md); do not rely on that recovery path to preserve your work.
 
 What it does not do in this release line: deploy, push, or open pull requests on its own; run as a service; or send project content anywhere except through the host's model traffic.
 
 ## Status
 
-Dated record: [specs/plan.md](specs/plan.md) (sections 1, 4 and 13). Current source-checkout evidence, as of October 31, 2026:
+Dated record: [specs/plan.md](specs/plan.md) (sections 1, 4 and 13). The [November 4 implementation audit](docs/audits/2026-11-04/implementation-audit.md) records the remaining defects and completion gates. Baseline evidence below is for commit `34d6030`, not subsequent uncommitted changes:
 
 | Area | State |
 |---|---|
-| Kernel, plugin, starter recipe, deterministic tests | Local `npm run ci` passes typecheck, lints, M0 coverage, the 763 KB bundle build, payload verification, reproducibility and 1,296 tests / 206 suites. Built-bundle UAT, privacy and whitespace checks pass. This is local source evidence, not hosted CI or host qualification; the working tree is not a release artifact. |
+| Kernel, plugin, starter recipe, deterministic tests | Exact-source [CI 41762334301](https://github.com/vedprakash-m/tenet/actions/runs/41762334301) passes Ubuntu and macOS full CI (1,462 tests / 228 suites each) and built-bundle UAT on Node 24 and 22.12.0. Windows portability passes. The audited bundle is 784,061 bytes against 819,200. Green deterministic CI does not close the audit findings or qualify a real host; this checkout is not a release artifact. |
 | Qualified tuple (host, extension, model, OS) | **Unrecorded.** No tuple is qualified. |
 | Installing and running on VS Code Copilot | **Partly observed** on VS Code 1.142.0 and 1.143.0 (October 19 and 20, 2026): the plugin loaded from a local plugin location; the kernel ran from the host's snapshot copy of the plugin; real multi-step tasks ran through `finish`. The Copilot extension version was not recorded. |
 | Reviewer subagent | **Partly observed.** A reviewer was dispatched several times on VS Code, and a partial result was refused and retried. Not observed: the reviewer's real tool list or host enforcement of its restrictions, actual context isolation, parallel dispatch, a cancelled or dead reviewer, and `usages`. |
@@ -111,7 +111,7 @@ npm run eval:replay -- --capture <path>
 npm run eval:report -- --input <path> --format json|markdown|junit
 ```
 
-`eval:report` reads a `CampaignReportInputV1` JSON file and writes the selected report to stdout. Exit codes are 0 for report eligibility `pass`, 3 for `fail` or `inconclusive`, 2 for invalid input, and 1 for usage errors. Eligibility is computed from untrusted local declarations; it does not authorize a run, qualify a requirement, or establish support. Validation and replay are local-only and do not execute graders, capture host sessions, or contact a model.
+`eval:report` reads a `CampaignReportInputV1` JSON file and writes `CampaignReportV2` in the selected format to stdout. Unique-defect recall and repeated critical detection are separate: each declared critical defect needs detections in at least four of the first five primary repetitions; retries do not count. Exit codes are 0 for report eligibility `pass`, 3 for `fail` or `inconclusive`, 2 for invalid input, and 1 for usage errors. Eligibility is computed from untrusted local declarations; it does not authorize a run, qualify a requirement, or establish support. Validation and replay are local-only and do not execute graders, capture host sessions, or contact a model.
 
 ## Documentation
 

@@ -34,17 +34,18 @@ export function addLesson(
   }
   const b = r.data;
   const mine = (l: Lesson) => b.scope === "project" || l.work === w.id;
-  const same = state.lessons.find((l) => l.state === "active" && l.statement === b.statement && l.scope === b.scope && mine(l));
-  if (same) return { lessons: state.lessons, id: same.id, changed: false };
   const unknown = b.retires.find((id) => !state.lessons.some((l) => l.id === id));
   if (unknown) throw new KernelError("restriction-key-unknown", `there is no lesson ${unknown} to retire`, { exit: 2 });
+  const kept = state.lessons.map((l) => l.state === "active" && b.retires.includes(l.id) ? { ...l, state: "retired" as const } : l);
+  const changed = kept.some((l, i) => l !== state.lessons[i]);
+  const same = kept.find((l) => l.state === "active" && l.statement === b.statement && l.scope === b.scope && mine(l));
+  if (same) return { lessons: changed ? kept : state.lessons, id: same.id, changed };
   const id = elementId("LSN", highestSeq(state.lessons) + 1, at.suffix);
   const added: Lesson = {
     id, statement: b.statement, scope: b.scope, ...(b.scope === "task" ? { work: w.id } : {}), state: "active",
     evidence: b.evidence, anchors: b.anchors, provenance: { quote: quote.slice(0, 200), at: at.now },
     ...(b.expiresAt ? { expiresAt: b.expiresAt } : {}),
   };
-  const kept = state.lessons.map((l) => (b.retires.includes(l.id) ? { ...l, state: "retired" as const } : l));
   return { lessons: [...kept, added], id, changed: true };
 }
 

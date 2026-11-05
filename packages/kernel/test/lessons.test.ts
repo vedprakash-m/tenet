@@ -6,6 +6,9 @@ import { join } from "node:path";
 import { cleanup } from "./helpers.ts";
 import { project } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
+import { activeLessons, addLesson } from "../src/core/lessons.ts";
+import { emptyState } from "../src/core/state.ts";
+import { KernelError } from "../src/core/errors.ts";
 
 const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
@@ -20,6 +23,54 @@ const filesUnder = (dir: string): string[] =>
   !existsSync(dir) ? [] : readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? filesUnder(join(dir, e.name)) : [join(dir, e.name)]));
 const holders = (p: Project, needle: string) =>
   filesUnder(join(p.root, ".tenet")).filter((f) => { try { return readFileSync(f, "utf8").includes(needle); } catch { return false; } });
+
+describe("repeated lesson retirement [LRN-02, LRN-05]", () => {
+  const at = { now: "2026-11-04T00:00:00Z", suffix: "abc" };
+  const work = { id: "W1" };
+  const seed = () => {
+    const state = emptyState("workspace", "tag");
+    const first = addLesson(state, work, at, "always use plain names", { statement: "Use plain names" });
+    state.lessons = first.lessons;
+    const other = addLesson(state, work, at, "always use coded names", { statement: "Use coded names" });
+    state.lessons = other.lessons;
+    return { state, first: first.id, other: other.id };
+  };
+  it("retires the named contradiction without duplicating an existing active lesson", () => {
+    const { state, first, other } = seed();
+    const before = JSON.stringify(state);
+    const result = addLesson(state, work, at, "always use plain names", { statement: "Use plain names", retires: [other] });
+    assert.equal(result.changed, true);
+    assert.equal(result.id, first);
+    assert.equal(result.lessons.length, 2);
+    assert.equal(result.lessons.find(l => l.id === other)?.state, "retired");
+    assert.deepEqual(activeLessons({ lessons: result.lessons }, work, at.now).map(l => l.id), [first]);
+    assert.equal(JSON.stringify(state), before, "the pure rule must not mutate its input");
+  });
+  it("validates unknown retirement ids even when the statement is already active", () => {
+    const { state } = seed();
+    const before = JSON.stringify(state);
+    assert.throws(() => addLesson(state, work, at, "always use plain names", {
+      statement: "Use plain names", retires: ["LSN-999-zzz"],
+    }), error => error instanceof KernelError && error.exit === 2 && error.reasons[0]?.code === "restriction-key-unknown");
+    assert.equal(JSON.stringify(state), before);
+  });
+  it("keeps a repeated already-applied retirement idempotent", () => {
+    const { state, first, other } = seed();
+    state.lessons = state.lessons.map(l => l.id === other ? { ...l, state: "retired" } : l);
+    const result = addLesson(state, work, at, "always use plain names", { statement: "Use plain names", retires: [other] });
+    assert.equal(result.changed, false);
+    assert.equal(result.id, first);
+    assert.equal(result.lessons, state.lessons);
+  });
+  it("replaces an explicitly retired matching lesson with a new active identity", () => {
+    const { state, first } = seed();
+    const result = addLesson(state, work, at, "always use plain names", { statement: "Use plain names", retires: [first] });
+    assert.equal(result.changed, true);
+    assert.notEqual(result.id, first);
+    assert.equal(result.lessons.find(l => l.id === first)?.state, "retired");
+    assert.equal(result.lessons.find(l => l.id === result.id)?.state, "active");
+  });
+});
 
 describe("recording a lesson [LRN-01, LRN-02]", () => {
   it("needs the user's own words, then keeps the lesson with scope, provenance and an LSN id", async () => {

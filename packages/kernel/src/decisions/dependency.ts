@@ -13,9 +13,6 @@ import type { Manager } from "./dependency-job.ts";
 import { start } from "./dependency-start.ts";
 import type { Decision, DecisionCtx } from "./types.ts";
 
-export { restoreFiles } from "./dependency-job.ts";
-export type { DependencyOp } from "./dependency-job.ts";
-
 const nameOf = (id: string) => id.slice(0, id.lastIndexOf("@"));
 
 type Waiting = NonNullable<DecisionCtx["work"]["dependency"]>;

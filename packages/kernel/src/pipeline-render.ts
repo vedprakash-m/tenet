@@ -1,5 +1,7 @@
 // How a response is built and recorded: handles, the rendered envelope, the call identity and the publish step.
-import { accrueTime, attachUsage, budgetProgress, summarize } from "./core/budget.ts";
+import { accrueTime, attachUsage, budgetProgress, nearLimit, summarize } from "./core/budget.ts";
+import { handoffText } from "./core/handoff.ts";
+import { reason } from "./core/reasons.ts";
 import { formatHandle, hashOf, parseHandle } from "./core/ids.ts";
 import { KernelError } from "./core/errors.ts";
 import { redactDeep } from "./core/redact.ts";
@@ -29,8 +31,6 @@ export function workByHandle(state: State, h: string): WorkContract {
 export const handleOf = (state: State, w: WorkContract): string =>
   formatHandle(Number(w.label.slice(2)), w.session.generation, state.tag);
 
-const DEFAULT_BUDGET = { attempts: "0/0", rounds: "0/0", delegations: "0/0" };
-
 export function render(
   ports: Ports,
   verb: string,
@@ -54,7 +54,7 @@ export function render(
     revision: state?.revision ?? 0,
     reasons,
     next: resp.next ?? [],
-    budget: usage ? budgetProgress(usage) : DEFAULT_BUDGET,
+    budget: usage ? budgetProgress(usage) : { attempts: "0/0", rounds: "0/0", delegations: "0/0" },
     ...extra,
   };
   if (w && state) out.handle = handleOf(state, w);
@@ -71,15 +71,21 @@ export const inputHash = (verb: string, input: unknown, world: unknown): string 
   return hashOf({ verb, rest, world });
 };
 
-/** A check-in is a call that asks the user something, ends or pauses the work, or reaches a boundary the cadence setting speaks at. */
+/** Accrue time before applying warning and handoff rules at every final publication boundary. */
 function withActiveTime(ports: Ports, verb: string, next: State, resp: Resp, startedAt: string): State {
   const w = next.work[resp.work!]!;
   const cadence = settingsFor(ports, next, w).checkpoints;
   const boundary = resp.progress?.boundary;
   const checkIn = !!resp.checkIn || !!resp.questions?.length || ["finish", "stop"].includes(verb) ||
     (cadence === "each-phase" && !!boundary) || (cadence === "milestones" && boundary === "milestone");
-  const budget = accrueTime(w.budget, { startedAt, endedAt: ports.clock.now(), exit: resp.exit ?? 0, checkIn });
-  return { ...next, work: { ...next.work, [w.id]: { ...w, budget } } };
+  const call = { startedAt, endedAt: ports.clock.now(), exit: resp.exit ?? 0 };
+  const near = nearLimit(accrueTime(w.budget, { ...call, checkIn: false }), w.lane);
+  const budget = accrueTime(w.budget, { ...call, checkIn });
+  if (near && !resp.reasons?.some(r => r.code === "budget-warning"))
+    resp.reasons = [...(resp.reasons ?? []), reason("budget-warning", "80% of a limit is used", { note: true })];
+  const updated = { ...w, budget };
+  if (near || w.stopReason) updated.handoff = handoffText(next, updated);
+  return { ...next, work: { ...next.work, [w.id]: updated } };
 }
 
 /**

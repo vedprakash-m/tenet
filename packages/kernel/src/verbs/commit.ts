@@ -3,13 +3,14 @@
 import { changedSinceCheck, recordCommit } from "../core/attribution.ts";
 import { KernelError } from "../core/errors.ts";
 import { reason } from "../core/reasons.ts";
+import { checkpointEvidence } from "../core/verdict.ts";
 import { CommitInput } from "../core/schemas.ts";
 import type { Reason, State, WorkContract } from "../core/schemas.ts";
 import type { Job, Plan, Resp, Verb } from "../pipeline.ts";
 import type { CommitOutcome, IndexJournal, Ports, Tx } from "../ports/types.ts";
 import { nx, withWork, workOf } from "./common.ts";
 import { filterQuestion, hookQuestion, unexplainedQuestion } from "./commit-questions.ts";
-import { gather, worldDigest } from "./facts.ts";
+import { checkInputId, gather, worldDigest } from "./facts.ts";
 import type { Facts } from "./facts.ts";
 
 export type Done = (
@@ -48,8 +49,9 @@ async function blockers(ports: Ports, st: State, w: WorkContract, facts: Facts):
   }
   if (!facts.tenetPaths.length) return null;
   // Last-check rule: a Tenet file edited after the last successful check cannot be committed as checked.
-  if (w.lastCheck?.candidate !== facts.candidate || changedSinceCheck(w, facts.inv, facts.tenetPaths).length) {
-    throw new KernelError("stale", "files changed since the last check; run check first", { exit: 2 });
+  if (!checkpointEvidence(w, facts.candidate, checkInputId(ports, w, facts.candidate)) ||
+      changedSinceCheck(w, facts.inv, facts.tenetPaths).length) {
+    throw new KernelError("stale", "run a full successful check before committing", { exit: 2 });
   }
   if (probe.hooks && !st.consents.some((c) => c.kind === "hooks" && c.configHash === probe.hooks) && !w.git.noCommit) {
     const q = hookQuestion(probe.hooks);

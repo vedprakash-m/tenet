@@ -14,6 +14,8 @@ Use when `next` says `test` or `implement`. Edit natively; the kernel judges.
 A behavior-preserving refactor uses preservation tests that already pass; there is no artificial red.
 For nonbehavioral work, do not invent a test; state the alternative check in the basis and report its result.
 
+Keep README run instructions, decision records, the architecture doc and CHANGELOG current for the change before handover. Record only verified commands and outcomes; preserve decision history and disclose missing or unverified documentation.
+
 ## Practice
 - **Tests earn their place.** A test fails when the behavior breaks and keeps passing when only internals change. Where an absence check could pass vacuously, add a control that proves it detects presence.
 - **Debug the shared premise.** After a failed attempt, before the next edit, write down the premise your attempts shared and test it with one observation that would differ if it were false. Suspect the test, fixture or environment before the system.
@@ -23,6 +25,9 @@ For nonbehavioral work, do not invent a test; state the alternative check in the
 - A shortcut (`@ts-ignore`, `as any`, a skipped or focused test, an empty catch, a mock) is avoided; if one is truly needed, say why and the kernel asks the user.
 - A locked acceptance test never changes to make a failure pass; a changed example is a change of direction.
 - Never edit `.tenet/`. Never run the project's tests outside `tenet check`.
+
+## User-facing handover
+In Guided style, offer to start the local app through the host terminal under native consent, never through the kernel runner. Confirm the local URL responds before calling it running; report a failed launch or response without claiming success. Give the URL, where local-only development credentials are kept (never their values), how to stop the app, and one domain task showing a confirmed example. Keep verification databases separate from development data. A running demo is not test evidence. For a library, CLI or back-end change with nothing to open, give a verified command or call as "Use it:" instead; omit this section of the result when nothing is user-facing.
 
 ## Dirty working trees
 Your edits and the user's coexist. Never overwrite, format or revert a file you did not declare. If the kernel asks about the user's edits, relay its question; do not decide for them. Commit only through the kernel.

@@ -440,7 +440,10 @@ export const BasisElementInput = z.object({
 
 export const BasisProposal = z.object({
   outcome: z.string().min(1).max(2000),
-  elements: z.array(BasisElementInput).min(1).max(60),
+  elements: z.array(BasisElementInput).min(1).max(60).refine((elements) => {
+    const refs = elements.flatMap((e) => e.ref === undefined ? [] : [e.ref]);
+    return new Set(refs).size === refs.length;
+  }, "basis element refs must be unique"),
   design: z.string().max(4000).optional(),
   designCommitment: z.boolean().default(false),
   scopePaths: z.array(z.string()).optional(),
