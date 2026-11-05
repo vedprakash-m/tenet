@@ -131,7 +131,7 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
     assert.equal(candidate.exit, 0, JSON.stringify(candidate));
     const suite = d(candidate).receipts.find((r: { obligation: string }) => r.obligation === "OB-suite");
     assert.equal(suite.status, "pass", JSON.stringify(suite));
-    assert.equal(suite.counts.executed, 147, "platform, feature, seed-recovery, process-race and generated-contract cases all ran");
+    assert.equal(suite.counts.executed, 148, "platform, feature, seed-recovery, process-race and generated-contract cases all ran");
     for (const id of ["OB-types", "OB-lint"]) {
       const receipt = d(candidate).receipts.find((r: { obligation: string }) => r.obligation === id);
       assert.equal(receipt?.status, "pass", `${id}: ${JSON.stringify(receipt)}`);

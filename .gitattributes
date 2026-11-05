@@ -4,4 +4,3 @@
 *.gif binary
 *.ico binary
 *.woff2 binary
-.archive/consolidation/**/*.patch whitespace=-blank-at-eol

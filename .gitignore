@@ -1,8 +1,8 @@
-.archive/*
-!.archive/consolidation/
-!.archive/specs/
-.archive/specs/*
-!.archive/specs/store-lock-admission.md
+/.archive/
+/specs/*
+!/specs/PRD.md
+!/specs/tech-spec.md
+!/specs/ux-spec.md
 .DS_Store
 node_modules/
 *.log
