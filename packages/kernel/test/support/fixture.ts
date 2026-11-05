@@ -131,10 +131,10 @@ export function cli(root: string, args: string[], stdin?: string): { child: Retu
 
 export const runCli = (root: string, args: string[], stdin?: string) => cli(root, args, stdin).done;
 
-export async function waitFor<T>(fn: () => T | undefined | false, ms = 20000, what = "condition"): Promise<T> {
+export async function waitFor<T>(fn: () => T | undefined | false | Promise<T | undefined | false>, ms = 20000, what = "condition"): Promise<T> {
   const end = Date.now() + ms;
   for (;;) {
-    const v = fn();
+    const v = await fn();
     if (v) return v;
     if (Date.now() > end) throw new Error(`timed out waiting for ${what}`);
     await new Promise((r) => setTimeout(r, 50));
@@ -144,12 +144,13 @@ export async function waitFor<T>(fn: () => T | undefined | false, ms = 20000, wh
 export const isAlive = (pid: number): boolean => { try { process.kill(pid, 0); return true; } catch { return false; } };
 
 /** The run directory of the check currently recorded in the state document, once its process has started. */
-export function runningCheck(p: Project): { runDir: string; pid: number } | undefined {
-  const st = p.ports().store.read()?.state;
-  const c = Object.values(st?.work ?? {}).map((w) => w.session.inCall).find(Boolean);
-  if (!c?.runDir || !existsSync(join(c.runDir, "run.json"))) return undefined;
-  const record = JSON.parse(readFileSync(join(c.runDir, "run.json"), "utf8"));
-  return typeof record.pid === "number" && record.procStart ? { runDir: c.runDir, pid: record.pid } : undefined;
+export async function runningCheck(p: Project): Promise<{ runDir: string; pid: number } | undefined> {
+  return p.ports().store.transaction("observe", async (tx) => {
+    const c = Object.values(tx.state?.work ?? {}).map((w) => w.session.inCall).find(Boolean);
+    if (!c?.runDir || !existsSync(join(c.runDir, "run.json"))) return undefined;
+    const record = JSON.parse(readFileSync(join(c.runDir, "run.json"), "utf8"));
+    return typeof record.pid === "number" && record.procStart ? { runDir: c.runDir, pid: record.pid } : undefined;
+  });
 }
 
 export const listFiles = (root: string): string[] => readdirSync(root).sort();

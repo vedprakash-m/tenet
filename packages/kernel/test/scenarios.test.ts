@@ -14,6 +14,28 @@ after(() => roots.forEach(cleanup));
 const fresh = (files?: Record<string, string>): Project => { const p = project(files); roots.push(p.root); return p; };
 const d = (r: { data?: unknown }) => r.data as Record<string, any>;
 
+describe("check observation helpers", () => {
+  it("awaits an asynchronous observation instead of treating its promise as a ready condition", async () => {
+    let polls = 0;
+    const result = await waitFor(async () => ++polls === 2 ? "ready" : false);
+    assert.equal(result, "ready");
+    assert.equal(polls, 2);
+  });
+
+  it("uses the store transaction and propagates lock failure without an unlocked observation", async () => {
+    const p = fresh(), ports = p.ports();
+    let observations = 0;
+    ports.store.read = () => { throw new Error("unlocked observation"); };
+    ports.store.transaction = async () => {
+      observations++;
+      throw new Error("locked observation");
+    };
+    p.ports = () => ports;
+    await assert.rejects(async () => runningCheck(p), /locked observation/);
+    assert.equal(observations, 1);
+  });
+});
+
 describe("pipeline compatibility admission", () => {
   it("refuses repair-lock on owned future state before dead-lock removal, chmod or torn-journal repair [CON-04, CON-05]", async () => {
     const p = fresh();

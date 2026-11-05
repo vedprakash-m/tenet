@@ -221,7 +221,7 @@ for (const cancellation of [false, true]) it(`requires fresh consent after an un
   p.write("src/greet.test.ts", SLOW_TEST);
   await preconsentEnvelope(p, h, { stage: "baseline" });
   const running = cli(p.root, ["check", "--h", h, "--stage", "baseline"]);
-  let orphan: ReturnType<typeof runningCheck>;
+  let orphan: Awaited<ReturnType<typeof runningCheck>>;
   try {
     orphan = await waitFor(() => runningCheck(p), 30000, "unknown-envelope runner");
     const launched = p.ports().store.read()!.state;

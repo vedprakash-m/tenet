@@ -168,7 +168,7 @@ describe("guarded Git filter preparation", () => {
     const marker = join(scratch(), "marker");
     const { p, h, parent, index } = await ready(`require('fs').appendFileSync(${JSON.stringify(marker)}, 'run\\n');process.on('SIGTERM',()=>{});setInterval(()=>{},1000);`);
     const running = cli(p.root, ["finish", "--h", h]);
-    let group: ReturnType<typeof runningCheck>;
+    let group: Awaited<ReturnType<typeof runningCheck>>;
     try {
       await waitFor(() => existsSync(marker), 15000, "filter launch");
       group = await waitFor(() => runningCheck(p));
