@@ -103,7 +103,17 @@
       "productionSafetyChanges": false
     }
   },
-  "supportedPosixCiAndDualRuntimeBuiltUat": "pending exact-source CI after golden fixture preservation repair",
+  "preservedFixturePublishedCi": {
+    "source": "dde2bf2eb1337cb7684840d8c21e4d580e454a25",
+    "run": "https://github.com/vedprakash-m/tenet/actions/runs/41970445046",
+    "conclusion": "failure",
+    "macosFullCiAndNode24AndMinimumNodeBuiltUat": "pass",
+    "windows": "pass",
+    "ubuntu": { "passed": 1695, "failed": 1 },
+    "remainingFailure": "The runningCheck test observer reads the journal without the store lock while a check child appends. The production bounded-read refusal is retained.",
+    "testOnlyRepair": "Observe through the existing store transaction, await asynchronous polling predicates, and resolve the two observer caller types. Two red-first regressions, typecheck and all lints pass locally."
+  },
+  "supportedPosixCiAndDualRuntimeBuiltUat": "pending exact-source CI after locking the test observer",
   "cleanup": {
     "localWorktreesRemoved": 27,
     "localBranchesRemoved": 31,

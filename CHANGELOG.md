@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-04 — Lock concurrent test observations
+
+- The `dde2bf2` CI run passes macOS full CI and built UAT on Node 24 and 22.12.0, plus Windows portability. Ubuntu passes 1,695/1,696 tests; the sole failure is an unlocked `runningCheck` test observation racing a journal append.
+- Read the check observation through the existing store transaction and await asynchronous polling predicates. Update the two caller type annotations to the resolved observation type. Keep production bounded-read refusals, locking and all process/signal assertions unchanged.
+- Files: `packages/kernel/test/support/fixture.ts`, `scenarios.test.ts`, `execution-envelope.test.ts`, `filter-jobs.test.ts`. Two red-first observer regressions, typecheck and all lints pass locally; final supported-POSIX validation remains pending.
+
 ## 2026-11-04 — Keep archives and noncanonical specs local
 
 - Ignore the entire `.archive/` directory and every file under `specs/` except `PRD.md`, `tech-spec.md` and `ux-spec.md`. Remove previously tracked local-only files from current main without deleting their local copies.
