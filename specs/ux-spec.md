@@ -464,7 +464,7 @@ Deep kickoff (§5.1) → an architecture pass drafts the sketch, decision record
 
 > Adding date-fns 4.1.0 (no other packages) · published 5 months ago · MIT · no install scripts. Within your dependency policy. Install? 1. Install (recommended) · 2. Choose another · 3. Skip
 
-A failed rule names the rule and the value ("published 2 days ago; your policy needs 14"). A package the agent installed outside Tenet is verified afterwards, and the result says its install scripts may already have run.
+A failed rule names the rule and the value ("published 2 days ago; your policy needs 14"). A package the agent installed outside Tenet is verified afterwards, and the result says its install scripts may already have run. For supported single-package npm/pnpm projects, resolution uses one captured manifest/lock snapshot in a private temporary directory; outputs reach the project only after policy permits the preview. Workspaces, competing lockfiles, local/link/workspace sources, patched dependencies, pnpm hooks and a root `.npmrc` are refused before resolution. `.npmrc` is stat-only and is never read or copied. On decline, if the files differ from both the captured originals and the preview, Tenet preserves them and keeps the decision pending; confirmation remains blocked until the previewed files, lockfile layout and supported project configuration are unchanged.
 
 ### J-12 Repeated failure and limits
 

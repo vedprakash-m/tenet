@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-05 — Isolate dependency resolution and refuse unsupported layouts
+
+- `decide dependency` resolves in a private run directory from one validated manifest/lock snapshot and publishes the output to `package.json` and the lockfile only when both still equal that snapshot; a concurrent change returns `revision-conflict` with nothing published. Decline restores only from complete, hash-verified before-images over the verified resolver output.
+- Refused before any process runs (`capability-missing`, exit 2): Yarn or competing lockfiles, a root `.npmrc` (checked by presence only, never read or copied), `pnpm-workspace.yaml`, pnpm resolver hooks, npm workspaces, local/link/workspace sources in the manifest or lockfile, pnpm patched dependencies and invalid manifest/lock text. Confirmation rechecks the manager layout and configuration and holds the preview (exit 3) if either changed.
+- Move the pure admission, preview-text and file-comparison logic into `core/dependency-admission.ts`; no message, exit code or behavior changed by the move. Central production usage is 248,116 characters (enforced ceiling 248,256; approved 247,219 unchanged and still exceeded, as before). No budget changed.
+- Known limitation, not claimed fixed: a race with an external writer between final validation and the two project writes.
+- Files: `packages/kernel/src/core/dependency-admission.ts` (new), `decisions/dependency.ts`, `dependency-start.ts`, `dependency-job.ts`, `verbs/recover-effects.ts`, `adapters/project-fs.ts` (stat-only `exists`), `adapters/store-fs.ts` (`readArtifact`), `ports/types.ts`, `specs/tech-spec.md` §9.11, `specs/ux-spec.md` J-11. Tests: `dependency.test.ts`, `project-boundary.test.ts`, `store-boundary.test.ts` (113 focused pass).
+- Local validation: typecheck, all lints, coverage, build, payload and reproducibility pass; 1,702/1,707 tests passed in the full run on a heavily loaded machine, and the four timed-out golden/hidden-refusal/integrate files then passed 84/84 alone. Built UAT on a scratch repository: `.npmrc`, Yarn, `file:` spec and missing-quote refusals; a real npm resolve of `is-number@7.0.0`, decline restore, a held confirm after `.npmrc` appeared, and install. An identical retry after the hold returns the recorded `historical` response until `--again` is passed (existing pipeline behavior). pnpm was not driven on the real CLI.
+
 ## 2026-11-05 — Reconcile preview status with current source evidence
 
 - Record the approved immediate planning target as a controlled developer preview from existing main, not public R1 or activation of the separate schema-2 candidate. Installed-host, safety and distribution gates remain open; no public release is authorized.
