@@ -20,7 +20,7 @@
     "bench": "node tools/bench.ts",
     "experiment": "node tools/experiment.ts",
     "privacy":"node tools/privacy-check.ts",
-    "uat": "node tools/uat/uat.mjs > /dev/null"
+    "uat": "node tools/uat/uat.mjs"
   },
   "dependencies": {
     "zod": "^4.0.0"

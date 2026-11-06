@@ -13,7 +13,7 @@ describe("checkpoint green-boundary admission [GIT-03]", () => {
   let p: ReturnType<typeof project>, ports: Ports, work: WorkContract, facts: Facts, receipt: Receipt, head: string;
   let intentCount = 0;
   before(async () => {
-    p = project();
+    p = project({ "src/greet.test.ts": "export {};\n" });
     ports = p.ports();
     // Planning only: no prepared job executes or needs a native process identity.
     ports.store.self = () => ({ pid: process.pid, procStart: "synthetic-planning-only" });
@@ -23,7 +23,7 @@ describe("checkpoint green-boundary admission [GIT-03]", () => {
       label: "W-0001", level: "L4",
       basis: { intentRevision: 0, elementIds: [], hash: "basis", traits: [] },
       git: { mode: "git", base: initial.head, branch: initial.branch, start: snapshotOf(initial), commits: [], committed: [] },
-      obligations: [{ id: "required-test", kind: "test", category: "acceptance", tool: "vitest" }],
+      obligations: [{ id: "required-test", kind: "test", category: "acceptance", tool: "vitest", testFile: "src/greet.test.ts" }],
       touched: [{ path: "src/greet.ts" }],
     });
     p.write("src/greet.ts", "export const greet = (_name: string): string => 'changed';\n");
@@ -43,7 +43,7 @@ describe("checkpoint green-boundary admission [GIT-03]", () => {
   });
   after(() => { if (p) cleanup(p.root); });
 
-  async function prepare(receipts: Receipt[], change?: (w: WorkContract) => void) {
+  async function prepare(receipts: Receipt[], change?: (w: WorkContract) => void, currentFacts = facts) {
     const w = WorkContract.parse({ ...work, receipts });
     change?.(w);
     const state = { ...emptyState("fixture", "fixture"), work: { [w.id]: w } };
@@ -55,7 +55,7 @@ describe("checkpoint green-boundary admission [GIT-03]", () => {
       intent: (...args) => { intentCount++; intents.push(args); return "intent"; },
       result: unused, unresolved: () => [], evict: unused, recent: unused,
     };
-    const plan = await startCommit(ports, tx, state, w, facts, "Checkpoint", async () => {
+    const plan = await startCommit(ports, tx, state, w, currentFacts, "Checkpoint", async () => {
       throw new Error("this test never executes the prepared commit job");
     });
     return { plan, intents };
@@ -98,5 +98,33 @@ describe("checkpoint green-boundary admission [GIT-03]", () => {
     const out = await prepare([{ ...receipt, id: "old", status: "fail" }, receipt]);
     assert.ok(out.plan?.job);
     assert.equal(out.intents.length, 1);
+  });
+
+  it("requires a fresh full acceptance result after targeted feedback despite a full suite pass", async () => {
+    const obligations: WorkContract["obligations"] = [
+      ...work.obligations, { id: "OB-suite", kind: "test", category: "affected", tool: "vitest" },
+    ];
+    const candidateWork = { ...work, obligations };
+    const candidateFacts = await gather(ports, candidateWork);
+    const inputId = checkInputId(ports, candidateWork, candidateFacts.candidate);
+    const fullAcceptance = { ...receipt, candidate: candidateFacts.candidate, checkInputId: inputId };
+    const fullSuite = { ...fullAcceptance, id: "RC-suite", obligation: "OB-suite" };
+    const targeted = { ...fullAcceptance, id: "RC-targeted", scope: "targeted" as const };
+    const change = (w: WorkContract) => {
+      w.obligations = obligations;
+      w.lastCheck = { candidate: candidateFacts.candidate, at: work.updatedAt, stage: "candidate" };
+      w.touched[0]!.hashAtLastCheck = candidateFacts.inv.entries.get("src/greet.ts")!.blob;
+    };
+
+    const green = await prepare([fullAcceptance, fullSuite], change, candidateFacts);
+    assert.ok(green.plan?.job);
+    await assert.rejects(prepare([fullAcceptance, fullSuite, targeted], change, candidateFacts),
+      (error: unknown) => error instanceof Error && "exit" in error && error.exit === 2);
+    assert.equal(intentCount, 0);
+    assert.equal(p.git("rev-parse", "HEAD"), head);
+    const refreshed = await prepare([fullAcceptance, fullSuite, targeted, { ...fullAcceptance, id: "RC-refreshed" }], change, candidateFacts);
+    assert.ok(refreshed.plan?.job);
+    assert.equal(refreshed.intents.length, 1);
+    assert.equal(p.git("rev-parse", "HEAD"), head);
   });
 });

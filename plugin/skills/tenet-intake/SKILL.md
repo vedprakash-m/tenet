@@ -31,10 +31,10 @@ Every element has an `origin`: `request` only when it is literally in the user's
 State your assumptions. If the request has several readings, list them with a recommendation instead of choosing silently. If a simpler approach than the one asked for exists, say so. For a change to existing code, name what else it touches (callers, stored data, rendered text, tests) in the kickoff.
 
 ## Starting a project
-For a new project or the first Standard-or-deeper change in code you have not worked in, follow `resources/onboarding.md`: run `tenet inspect doctor`, then the greenfield or brownfield flow. The instruction-file draft in `resources/conventions-draft.md` is offered once, as a preview, only when the loaded file has no content of its own.
+For a new project or the first Standard-or-deeper change in code you have not worked in, follow `resources/onboarding.md`: run `tenet inspect doctor`, then the greenfield or brownfield flow. The instruction-file draft in `resources/conventions-draft.md` is offered once, as a preview, only when the loaded file has no content outside Tenet's own charter markers. For a new project, show the draft in the kickoff after purpose, scope and constraints are settled. Write it only on a yes; never repeat after a no or once real content exists.
 
 ## Rules
-- A thin answer on purpose, users or a non-goal gets one concrete follow-up before a plan is drafted, never a second round.
+- For a new project or the first Standard-or-deeper change in code you have not worked in, a one-clause answer on purpose, users or a non-goal gets one concrete follow-up per thin dimension before the plan is drafted; never a second round on the same dimension, and never follow up on a dimension the user already answered substantively.
 - For each question, state a recommendation, its consequences, and a reversible default where one is justified.
 - Plan steps are vertical slices: each runnable, independently checkable, and says how it is checked. Resolve the biggest uncertainty first.
 

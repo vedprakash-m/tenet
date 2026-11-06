@@ -1,6 +1,6 @@
 # Draft for the project's instruction file
 
-Offer this once, on a new project, after purpose, scope and constraints are settled and only when the loaded instruction file has no content of its own. Fill every section from what the user said or the repository shows; delete a section you cannot fill rather than inventing it. Preview it as one file; write it only on a yes. Never offer it again after a no.
+For a new project, preview this alongside the kickoff after purpose, scope and constraints are settled; for existing code, follow the brownfield onboarding flow. Offer it once and only when the loaded instruction file has no content outside Tenet's own charter markers. Fill every section from what the user said or the repository shows; delete a section you cannot fill rather than inventing it. Preview it as one file; write it only on a yes. Never offer it again after a no or once real content exists.
 
 ```markdown
 # Instructions for this project

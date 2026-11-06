@@ -75,7 +75,10 @@ function judgeObligation(ob: Obligation, i: VerdictInput): Reason[] {
     const names = (rc.failures ?? []).map((f) => f.test);
     const preexisting = names.length > 0 && names.every((n) => i.baselineFailures.includes(n));
     if (!preexisting) out.push(reason("evidence-failed", ob.id, { refs: [ob.id] }));
-    else if (names.every((n) => i.excludedScope.includes(n))) out.push(reason("baseline-failure-excluded", ob.id, { note: true }));
+    else if (names.every((n) => i.excludedScope.includes(n))) {
+      const listed = `${ob.id}: ${names.join(", ")}`;
+      out.push(reason("baseline-failure-excluded", listed, { note: true }));
+    }
     else out.push(reason("baseline-failure-not-excluded", ob.id, { refs: [ob.id] }));
   }
   if (rc.qualifiers.includes("flaky")) out.push(reason("evidence-flaky", ob.id, { refs: [ob.id] }));

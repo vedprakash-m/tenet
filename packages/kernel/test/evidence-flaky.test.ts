@@ -66,6 +66,13 @@ describe("flaky required checks [EVD-08]", () => {
     assert.ok(f.reasons.some((x) => x.code === "evidence-flaky"));
   });
 
+  it("a manual reviewer packet cannot bypass the flaky-check review gate", async () => {
+    const { p, h } = await toCandidate(1);
+    await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    const packet = await p.call("packet", { h, role: "reviewer" });
+    assert.notEqual(packet.next[0]!.action, "review", JSON.stringify(packet));
+  });
+
   it("fails on every attempt: a failure with three launched checks and no flaky qualifier", async () => {
     const { p, h, afterBaseline } = await toCandidate(9);
     const r = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });

@@ -2,9 +2,16 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fc from "fast-check";
-import { continueRequired, headline, verdict } from "../src/core/verdict.ts";
+import { KernelError } from "../src/core/errors.ts";
+import { DecideInput, State, WorkContract } from "../src/core/schemas.ts";
+import { emptyState } from "../src/core/state.ts";
+import { checkpointEvidence, continueRequired, fullChecksPassed, headline, verdict } from "../src/core/verdict.ts";
 import type { VerdictInput } from "../src/core/verdict.ts";
 import type { AnalystLink, BasisElement, Finding, Obligation, Receipt, ReviewLink } from "../src/core/schemas.ts";
+import { handleOf } from "../src/verbs/common.ts";
+import { decide } from "../src/verbs/decide.ts";
+import { createPorts } from "../src/wire.ts";
+import { contractFixture } from "./support/fixture.ts";
 
 const CHECK = "chk1";
 const ob: Obligation = { id: "OB-EX-1", kind: "test", category: "acceptance", testFile: "a.test.ts", test: "distinguishing", expectation: "fail", baselineMatched: true, baselineTestHash: "h1", baselineInputs: {} };
@@ -131,6 +138,24 @@ describe("verdict table [RES-02, EVD-01]", () => {
     assert.equal(differentBaselineTest.endpoint, "implemented-unverified");
     assert.ok(differentBaselineTest.reasons.some((r) => r.code === "evidence-failed" && !r.note));
   });
+  it("lists every excluded pre-existing failure in the checked result [AC-27]", () => {
+    const failures = [
+      { test: "legacy.test.ts#first", kind: "assertion" as const, message: "first still fails" },
+      { test: "legacy.test.ts#second", kind: "timeout" as const, message: "second still fails" },
+    ];
+    const names = failures.map((failure) => failure.test);
+    const v = verdict({
+      ...base(),
+      receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "fail", failures })],
+      baselineFailures: names,
+      excludedScope: names,
+    });
+
+    assert.equal(v.endpoint, "checked-local");
+    const excluded = v.reasons.filter((r) => r.code === "baseline-failure-excluded");
+    assert.equal(excluded.length, 1);
+    for (const name of names) assert.ok(excluded[0]!.message.includes(name), name);
+  });
   it("does not silently narrow the acceptance basis when only part of the outcome is verified", () => {
     const secondRequirement: BasisElement = {
       ...req, id: "REQ-2", text: "second part",
@@ -150,12 +175,39 @@ describe("verdict table [RES-02, EVD-01]", () => {
     assert.ok(v.reasons.some((r) => r.code === "evidence-missing" && r.message.includes("OB-second")));
     assert.ok(v.reasons.some((r) => r.code === "basis-element-unverified" && r.message.includes("REQ-2")));
   });
+  it("keeps the full-suite obligation separate from targeted acceptance feedback [AC-27]", () => {
+    const acceptance = rc("OB-EX-1", { id: "targeted", scope: "targeted" });
+    const full = [rc("OB-EX-1"), rc("OB-suite")];
+    const onlyTargeted = verdict({ ...base(), receipts: [acceptance] });
+    assert.equal(onlyTargeted.endpoint, "implemented-unverified");
+    assert.ok(onlyTargeted.reasons.some((r) => r.code === "evidence-missing" && r.refs?.includes("OB-suite")));
+
+    const receipts = [...full, acceptance];
+    assert.equal(verdict({ ...base(), receipts }).endpoint, "checked-local");
+    assert.equal(fullChecksPassed([ob, suite], full), true);
+    assert.equal(fullChecksPassed([ob, suite], [acceptance, full[1]!]), false);
+
+    const work = contractFixture({
+      obligations: [ob, suite], receipts, lastCheck: { candidate: "cand", at: "t", stage: "candidate" },
+    });
+    assert.equal(checkpointEvidence(work, "cand", CHECK), false);
+    assert.equal(checkpointEvidence({ ...work, receipts: [...receipts, ...full] }, "cand", CHECK), true);
+  });
+  it("does not admit a current flaky receipt as checkpoint evidence [EVD-08]", () => {
+    const work = contractFixture({
+      obligations: [ob, suite],
+      receipts: [rc("OB-EX-1", { qualifiers: ["flaky"] }), rc("OB-suite")],
+      lastCheck: { candidate: "cand", at: "t", stage: "candidate" },
+    });
+    assert.equal(checkpointEvidence(work, "cand", CHECK), false);
+  });
   const rows: Array<[string, (i: VerdictInput) => VerdictInput, string, string]> = [
     ["evidence-missing", (i) => ({ ...i, receipts: [rc("OB-EX-1")] }), "evidence-missing", "implemented-unverified"],
     ["a planned red is not evidence of the candidate", (i) => ({ ...i, receipts: [rc("OB-EX-1", { stage: "baseline", status: "pass" }), rc("OB-suite")] }), "evidence-missing", "implemented-unverified"],
     ["stale (any input changed) [EVD-03]", (i) => ({ ...i, receipts: i.receipts.map((r) => ({ ...r, checkInputId: "old" })) }), "stale", "implemented-unverified"],
     ["evidence-failed", (i) => ({ ...i, receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "fail", failures: [{ test: "t", kind: "assertion", message: "m" }] })] }), "evidence-failed", "implemented-unverified"],
     ["evidence-inconclusive", (i) => ({ ...i, receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "inconclusive", reasons: ["timeout"] })] }), "evidence-inconclusive", "implemented-unverified"],
+    ["a skipped required check is not passing evidence", (i) => ({ ...i, receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "skipped" })] }), "evidence-inconclusive", "implemented-unverified"],
     ["evidence-flaky", (i) => ({ ...i, receipts: [rc("OB-EX-1", { qualifiers: ["flaky"] }), rc("OB-suite")] }), "evidence-flaky", "implemented-unverified"],
     ["basis-element-unverified", (i) => ({ ...i, elements: [{ ...req, verifiedBy: [] }, ex] }), "basis-element-unverified", "implemented-unverified"],
     ["assumption-unresolved", (i) => ({ ...i, elements: [...i.elements, { id: "ASM-1", origin: "tenet", kind: "assumption", text: "a", verifiedBy: [] }] }), "assumption-unresolved", "implemented-unverified"],
@@ -184,6 +236,116 @@ describe("verdict table [RES-02, EVD-01]", () => {
       assert.equal(v.endpoint, endpoint);
     });
   }
+  it("blocks on a fresh flaky result for the same check despite a stale pass [AC-27]", () => {
+    const flaky = rc("OB-suite", { id: "flaky", qualifiers: ["flaky"] });
+    const passing = rc("OB-suite", { id: "passing", provenance: { runId: "other", runDir: "other", startedAt: "t" } });
+    const input = (receipts: Receipt[]) => verdict({ ...base(), receipts: [rc("OB-EX-1"), ...receipts] });
+
+    assert.equal(input([flaky]).endpoint, "implemented-unverified");
+    assert.ok(input([flaky]).reasons.some((r) => r.code === "evidence-flaky" && r.refs?.includes("OB-suite")));
+    assert.equal(input([flaky, { ...passing, checkInputId: "old" }]).endpoint, "implemented-unverified");
+    assert.equal(input([passing, flaky]).endpoint, "implemented-unverified");
+  });
+  it("requires confirmation of the particular assumption used by the basis [AC-27]", () => {
+    const assumption: BasisElement = {
+      id: "ASM-1", origin: "tenet", kind: "assumption", text: "a",
+      verifiedBy: [{ method: "manual", ref: "confirmed by the user at kickoff" }],
+    };
+    const input = { ...base(), elements: [...base().elements, assumption] };
+    const unconfirmed = verdict(input);
+    assert.equal(unconfirmed.endpoint, "implemented-unverified");
+    assert.ok(unconfirmed.reasons.some((r) => r.code === "assumption-unresolved" && r.refs?.includes("ASM-1")));
+    assert.equal(verdict({ ...input, confirmedAssumptions: ["other"] }).endpoint, "implemented-unverified");
+    assert.equal(verdict({ ...input, confirmedAssumptions: ["ASM-1"] }).endpoint, "checked-local");
+  });
+  it("does not accept an incomplete required review as a completed review [AC-27]", () => {
+    const states: ReviewLink["status"][] = ["partial", "blocked", "failed", "cancelled"];
+    for (const status of states) {
+      const v = verdict({ ...base(), reviews: [{ ...link, status }] });
+      assert.equal(v.endpoint, "implemented-unverified", status);
+      assert.ok(v.reasons.some((r) => r.code === "review-partial-coverage" && !r.note), status);
+    }
+    assert.equal(verdict({ ...base(), reviews: [{ ...link, status: "completed" }] }).endpoint, "checked-local");
+  });
+  it("reports unavailable mandatory capabilities without a checked-local verdict [AC-27]", () => {
+    const cases = [
+      { input: { unsupportedChecks: ["required browser check"] }, code: "evidence-missing", detail: "required browser check" },
+      { input: { authorityAvailable: false }, code: "authority-needed", detail: "suspended or expired" },
+    ];
+    for (const { input, code, detail } of cases) {
+      for (const [overrides, endpoint] of [
+        [{}, "implemented-unverified"],
+        [{ level: "L0" }, "blocked"],
+        [{ implementationExists: false }, "blocked"],
+      ] as const) {
+        const v = verdict({ ...base(), ...input, ...overrides });
+        assert.equal(v.endpoint, endpoint, detail);
+        assert.ok(v.reasons.some((r) => r.code === code && !r.note && r.message.includes(detail)), detail);
+      }
+    }
+    assert.equal(verdict(base()).endpoint, "checked-local");
+  });
+  it("only verified or withdrawn blockers stop blocking the verdict [AC-27]", () => {
+    const states: Finding["state"][] = ["open", "valid", "disputed", "withdrawn", "fixed", "verified", "deferred", "risk-accepted", "wont-fix"];
+    for (const state of states) {
+      const v = verdict({ ...base(), findings: [finding({ severity: "blocker", state })] });
+      const closed = state === "verified" || state === "withdrawn";
+      assert.equal(v.endpoint, closed ? "checked-local" : "implemented-unverified", state);
+      assert.deepEqual(v.reasons.filter((r) => !r.note).map((r) => r.code), closed ? [] : ["blocker-open"], state);
+      if (!closed) assert.deepEqual(v.reasons[0]?.refs, ["F1"], state);
+    }
+  });
+  it("user-disposed major findings do not block the verdict [AC-27]", () => {
+    const states: Finding["state"][] = ["open", "valid", "disputed", "withdrawn", "fixed", "verified", "deferred", "risk-accepted", "wont-fix"];
+    for (const state of states) {
+      const disposedByUser = state === "deferred" || state === "risk-accepted" || state === "wont-fix";
+      const history = disposedByUser ? [{ to: state, by: "user" as const, reason: "accepted with the finding open", at: "2026-01-01T00:00:00Z" }] : [];
+      const v = verdict({ ...base(), findings: [finding({ state, history })] });
+      const nonblocking = disposedByUser || state === "verified" || state === "withdrawn";
+      assert.equal(v.endpoint, nonblocking ? "checked-local" : "implemented-unverified", state);
+      assert.deepEqual(v.reasons.filter((r) => !r.note).map((r) => r.code), nonblocking ? [] : ["major-undisposed"], state);
+      if (!nonblocking) assert.deepEqual(v.reasons[0]?.refs, ["F1"], state);
+    }
+  });
+  it("records the reason on a major disposition through the decision handler [AC-27]", async () => {
+    const now = "2026-01-02T00:00:00.000Z";
+    const ports = { ...createPorts(process.cwd(), {}), clock: { now: () => now, ms: () => Date.parse(now) } };
+    const work = WorkContract.parse(contractFixture({ label: "W-0001", findings: [finding({})] }));
+    const state = State.parse({ ...emptyState("workspace", "test"), work: { [work.id]: work } });
+    const before = structuredClone(state);
+    for (const outcome of ["deferred", "risk-accepted", "wont-fix"] as const) {
+      const input = DecideInput.parse({
+        h: handleOf(state, work), kind: "disposition", target: "F1", propose: { outcome, reason: "  user reason  " },
+      });
+      const plan = await decide.run(ports, state, input);
+      const saved = State.parse(plan.state).work[work.id]!.findings[0]!;
+      assert.equal(saved.state, outcome);
+      assert.deepEqual(saved.history, [{ to: outcome, by: "user", reason: "user reason", at: now }]);
+      assert.equal(verdict({ ...base(), findings: [saved] }).endpoint, "checked-local");
+      assert.deepEqual(state, before);
+    }
+  });
+  it("refuses direct blocker dispositions and major dispositions without a valid outcome and reason [AC-27]", async () => {
+    const ports = createPorts(process.cwd(), {});
+    for (const [severity, outcome, why, code] of [
+      ["blocker", "deferred", "reason", "blocker-open"],
+      ["blocker", "risk-accepted", "reason", "blocker-open"],
+      ["blocker", "wont-fix", "reason", "blocker-open"],
+      ["major", "verified", "reason", "revision-conflict"],
+      ["major", "deferred", "   ", "revision-conflict"],
+    ] as const) {
+      const work = WorkContract.parse(contractFixture({ label: "W-0001", findings: [finding({ severity })] }));
+      const state = State.parse({ ...emptyState("workspace", "test"), work: { [work.id]: work } });
+      const before = structuredClone(state);
+      const input = DecideInput.parse({
+        h: handleOf(state, work), kind: "disposition", target: "F1", propose: { outcome, reason: why },
+      });
+      await assert.rejects(async () => decide.run(ports, state, input), (error: unknown) =>
+        error instanceof KernelError && error.reasons.some((r) => r.code === code));
+      assert.deepEqual(state, before);
+      assert.equal(verdict({ ...base(), findings: work.findings }).endpoint, "implemented-unverified");
+    }
+  });
   it("lets a reviewer or the user accept a marker, and a user accept a major", () => {
     const accepted = { id: "A", path: "a.ts", line: 1, pattern: ".skip", marker: true, disposition: { by: "reviewer" as const, outcome: "accepted" as const, reason: "intentional" } };
     assert.deepEqual(codes({ ...base(), attention: [accepted] }), []);
@@ -209,6 +371,26 @@ describe("verdict table [RES-02, EVD-01]", () => {
   });
   it("prototype keeps its endpoint but never reaches checked-local", () => {
     assert.equal(verdict({ ...base(), prototypeRequested: true }).endpoint, "prototype");
+  });
+  it("retains every blocking reason under review, prototype and assistance ceilings [RES-02]", () => {
+    const input = {
+      ...base(),
+      receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "fail", failures: [{ test: "broken", kind: "assertion", message: "failed" }] })],
+      findings: [finding({ severity: "blocker" })],
+      declined: ["review"],
+      integratedStale: true,
+    };
+    const expected = ["evidence-failed", "blocker-open", "declined-step", "integration-unvalidated"];
+    for (const [overrides, endpoint] of [
+      [{}, "implemented-unverified"],
+      [{ profile: "review" }, "findings-only"],
+      [{ prototypeRequested: true }, "prototype"],
+      [{ level: "L0" }, "blocked"],
+    ] as const) {
+      const v = verdict({ ...input, ...overrides });
+      assert.equal(v.endpoint, endpoint);
+      assert.deepEqual(v.reasons.filter((r) => !r.note).map((r) => r.code), expected, endpoint);
+    }
   });
   it("carries the stop reason through", () => {
     assert.equal(verdict({ ...base(), stopReason: "budget-exhausted", receipts: [] }).stopReason, "budget-exhausted");

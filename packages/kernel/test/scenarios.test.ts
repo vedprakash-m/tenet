@@ -516,7 +516,7 @@ describe("idempotency and the envelope", () => {
 });
 
 describe("review-only and read-only calls write nothing to the project", () => {
-  it("`review` and `inspect` leave the folder and Git byte-for-byte as they were [CON-09]", async () => {
+  it("`review` and `inspect` leave root entries, Git status and object counts unchanged [CON-09]", async () => {
     const p = fresh();
     p.write("src/greet.ts", `${GREET_IMPL}// @ts-ignore\n`);
     const before = { ls: listFiles(p.root), status: p.git("status", "--porcelain"), objects: p.git("count-objects", "-v") };

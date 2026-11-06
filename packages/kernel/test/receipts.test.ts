@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import fc from "fast-check";
 import { cleanup, tmp, write } from "./helpers.ts";
 import { receiptsFrom, settleReruns } from "../src/core/receipts.ts";
 import type { ReceiptContext, RunFacts } from "../src/core/receipts.ts";
@@ -328,6 +329,93 @@ describe("receipts", () => {
       let result: ReturnType<typeof norm> | undefined;
       assert.doesNotThrow(() => { result = norm(JSON.stringify(raw)); });
       assert.ok(result?.invalid, variant);
+    }
+  });
+  it("keeps malformed reporter structures from producing passing receipts [EVD-02, EVD-05]", () => {
+    const notString = fc.oneof(
+      fc.constant(null), fc.boolean(), fc.integer(), fc.array(fc.integer(), { maxLength: 3 }),
+      fc.dictionary(fc.string(), fc.integer(), { maxKeys: 3 }),
+    );
+    const notArray = fc.oneof(
+      fc.constant(null), fc.boolean(), fc.integer(), fc.string(),
+      fc.dictionary(fc.string(), fc.integer(), { maxKeys: 3 }),
+    );
+    const notRecord = fc.oneof(
+      fc.constant(null), fc.boolean(), fc.integer(), fc.string(), fc.array(fc.integer(), { maxLength: 3 }),
+    );
+    const notBoolean = fc.oneof(
+      fc.constant(null), fc.integer(), fc.string(), fc.array(fc.integer(), { maxLength: 3 }),
+      fc.dictionary(fc.string(), fc.integer(), { maxKeys: 3 }),
+    );
+    const badStatus = (valid: string[]) => fc.oneof(notString, fc.string().filter((value) => !valid.includes(value)));
+    const badMessages = fc.oneof(
+      notArray, fc.array(notString, { minLength: 1, maxLength: 3 }), fc.array(fc.string(), { minLength: 1, maxLength: 3 }),
+    );
+    const badErrors = fc.oneof(
+      notArray, fc.array(notRecord, { minLength: 1, maxLength: 3 }),
+      fc.array(fc.record({ message: fc.string() }), { minLength: 1, maxLength: 3 }),
+    );
+    const badTotal = fc.nat({ max: 30000 }).filter((value) => value !== 2);
+    const vitestAssertion = { fullName: "[EX-1] behavior", status: "passed", failureMessages: [] };
+    const vitestControl = { name: "/p/a.test.ts", status: "passed", assertionResults: [vitestAssertion] };
+    const vitestFile = { ...vitestControl, name: "/p/b.test.ts" };
+    const playwrightResult = { status: "passed", errors: [] };
+    const playwrightTest = { status: "expected", results: [playwrightResult] };
+    const playwrightSpec = { title: "[EX-1] behavior", ok: true, tests: [playwrightTest] };
+    const playwrightControl = { file: "a.test.ts", title: "a.test.ts", specs: [playwrightSpec] };
+    const playwrightSuite = { ...playwrightControl, file: "b.test.ts", title: "b.test.ts" };
+    const playwrightStats = { expected: 2, unexpected: 0, skipped: 0, flaky: 0 };
+    const vitest = (file: unknown) => ({ testResults: [vitestControl, file], numTotalTests: 2 });
+    const playwright = (suite: unknown) => ({ suites: [playwrightControl, suite], stats: playwrightStats });
+    const examples: Array<{
+      name: string;
+      values: fc.Arbitrary<unknown>;
+      build: (value: unknown) => unknown;
+      parse: (raw: string) => ReturnType<typeof norm>;
+    }> = [
+      { name: "Vitest file", values: notRecord, build: (value) => vitest(value), parse: norm },
+      { name: "Vitest file name", values: notString, build: (value) => vitest({ ...vitestFile, name: value }), parse: norm },
+      { name: "Vitest file status", values: badStatus(["passed", "failed", "pending", "skipped"]), build: (value) => vitest({ ...vitestFile, status: value }), parse: norm },
+      { name: "Vitest assertions", values: notArray, build: (value) => vitest({ ...vitestFile, assertionResults: value }), parse: norm },
+      { name: "Vitest assertion", values: notRecord, build: (value) => vitest({ ...vitestFile, assertionResults: [value] }), parse: norm },
+      { name: "Vitest assertion name", values: notString, build: (value) => vitest({ ...vitestFile, assertionResults: [{ ...vitestAssertion, fullName: value }] }), parse: norm },
+      { name: "Vitest assertion status", values: badStatus(["passed", "failed", "pending", "skipped", "todo", "disabled"]), build: (value) => vitest({ ...vitestFile, assertionResults: [{ ...vitestAssertion, status: value }] }), parse: norm },
+      { name: "Vitest failure messages", values: badMessages, build: (value) => vitest({ ...vitestFile, assertionResults: [{ ...vitestAssertion, failureMessages: value }] }), parse: norm },
+      { name: "Vitest population", values: badTotal, build: (value) => ({ ...vitest(vitestFile), numTotalTests: value }), parse: norm },
+      { name: "Playwright suite", values: notRecord, build: (value) => playwright(value), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright specs", values: notArray, build: (value) => playwright({ ...playwrightSuite, specs: value }), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright spec", values: notRecord, build: (value) => playwright({ ...playwrightSuite, specs: [value] }), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright spec title", values: notString, build: (value) => playwright({ ...playwrightSuite, specs: [{ ...playwrightSpec, title: value }] }), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright spec summary", values: notBoolean, build: (value) => playwright({ ...playwrightSuite, specs: [{ ...playwrightSpec, ok: value }] }), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright tests", values: notArray, build: (value) => playwright({ ...playwrightSuite, specs: [{ ...playwrightSpec, tests: value }] }), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright test", values: notRecord, build: (value) => playwright({ ...playwrightSuite, specs: [{ ...playwrightSpec, tests: [value] }] }), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright test status", values: badStatus(["expected", "unexpected", "flaky", "skipped"]), build: (value) => playwright({ ...playwrightSuite, specs: [{ ...playwrightSpec, tests: [{ ...playwrightTest, status: value }] }] }), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright results", values: notArray, build: (value) => playwright({ ...playwrightSuite, specs: [{ ...playwrightSpec, tests: [{ ...playwrightTest, results: value }] }] }), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright result", values: notRecord, build: (value) => playwright({ ...playwrightSuite, specs: [{ ...playwrightSpec, tests: [{ ...playwrightTest, results: [value] }] }] }), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright result status", values: badStatus(["passed", "failed", "skipped", "timedOut", "interrupted"]), build: (value) => playwright({ ...playwrightSuite, specs: [{ ...playwrightSpec, tests: [{ ...playwrightTest, results: [{ ...playwrightResult, status: value }] }] }] }), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright result errors", values: badErrors, build: (value) => playwright({ ...playwrightSuite, specs: [{ ...playwrightSpec, tests: [{ ...playwrightTest, results: [{ ...playwrightResult, errors: value }] }] }] }), parse: (raw) => normalizePlaywright(raw, "/p") },
+      { name: "Playwright population", values: badTotal, build: (value) => ({ ...playwright(playwrightSuite), stats: { ...playwrightStats, expected: value } }), parse: (raw) => normalizePlaywright(raw, "/p") },
+    ];
+    for (const { name, values, build, parse } of examples) {
+      fc.assert(fc.property(values, (value) => {
+        const normalized = parse(JSON.stringify(build(value)));
+        assert.ok(normalized.invalid, `${name}: ${JSON.stringify(value)}`);
+        assert.equal(normalized.files.size, 0, name);
+        assert.equal(normalized.discovered, 0, name);
+        for (const obligation of [ob, { ...ob, example: "EX-1" }, suite]) {
+          const receipt = one(obligation, run(), normalized);
+          assert.equal(receipt.status, "inconclusive", name);
+          assert.deepEqual(receipt.reasons, ["report-invalid"], name);
+        }
+      }), { numRuns: 100, seed: 20261106 });
+    }
+    for (const normalized of [
+      norm(JSON.stringify(vitest(vitestFile))),
+      normalizePlaywright(JSON.stringify(playwright(playwrightSuite)), "/p"),
+    ]) {
+      assert.equal(normalized.invalid, undefined);
+      for (const obligation of [ob, { ...ob, example: "EX-1" }, suite])
+        assert.equal(one(obligation, run(), normalized).status, "pass");
     }
   });
   it("invalidates normalization evidence from before total-population admission [EVD-03]", () => {

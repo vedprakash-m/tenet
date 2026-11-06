@@ -5,7 +5,7 @@ import { BASIS, contractFixture, project, reviewResult } from "./support/fixture
 import { gather, verdictInput } from "../src/verbs/facts.ts";
 import { deepPasses, issueReview } from "../src/verbs/manifest.ts";
 import { findings } from "../src/verbs/findings.ts";
-import { FindingsInput, ReviewResult, type AnalystLink, type Finding, type Reservation, type ReviewLink } from "../src/core/schemas.ts";
+import { FindingsInput, ReviewResult, type AnalystLink, type Finding, type Receipt, type Reservation, type ReviewLink } from "../src/core/schemas.ts";
 import { buildManifest, checkResult, estimateTokens, reviewOnlyManifest, TOKEN_BUDGET } from "../src/core/review.ts";
 import { KernelError } from "../src/core/errors.ts";
 import { emptyState } from "../src/core/state.ts";
@@ -115,16 +115,41 @@ describe("review admission [WRK-08, REV-05]", () => {
     };
     const typed = { ...seed, reviews: [sampled], obligations: [{ id: "types", kind: "static" as const, category: "affected" as const, tool: "tsc" }] };
     const checkInputId = verdictInput(ports, state, typed, facts).checkInputId;
-    for (const receipt of ["missing", "stale", "partial", "fresh"] as const) {
-      const work = { ...typed, receipts: receipt === "missing" ? [] : [{
-        id: "RC-types", obligation: "types", kind: "static" as const, stage: "candidate" as const, source: "kernel-run" as const,
-        checkInputId, scope: receipt === "partial" ? "targeted" as const : "full" as const, argv: [], cwd: ".",
-        durationMs: 1, versions: { tool: "1", reporter: "r", adapter: "a" },
-        provenance: { runId: "run", runDir: "dir", startedAt: "test" }, status: "pass" as const,
-        qualifiers: [], reasons: [], limitations: [], candidate: receipt === "stale" ? "older" : facts.candidate,
-      }] };
-      assert.equal(issueReview(ports, state, work, facts, []).data === undefined, receipt === "fresh", receipt);
+    const passing: Receipt = {
+      id: "RC-types", obligation: "types", kind: "static", stage: "candidate", source: "kernel-run",
+      checkInputId, scope: "full", argv: [], cwd: ".", durationMs: 1,
+      versions: { tool: "1", reporter: "r", adapter: "a" },
+      provenance: { runId: "run", runDir: "dir", startedAt: "test" }, status: "pass",
+      qualifiers: [], reasons: [], limitations: [], candidate: facts.candidate,
+    };
+    const receiptCases: Array<{ name: string; receipts: Receipt[]; reused: boolean }> = [
+      { name: "no receipt", receipts: [], reused: false },
+      { name: "older check inputs", receipts: [{ ...passing, checkInputId: "older" }], reused: false },
+      { name: "older candidate", receipts: [{ ...passing, candidate: "older" }], reused: false },
+      { name: "targeted types", receipts: [{ ...passing, scope: "targeted" }], reused: false },
+      { name: "baseline types", receipts: [{ ...passing, stage: "baseline" }], reused: false },
+      ...(["fail", "inconclusive", "skipped"] as const).map(status => ({
+        name: `${status} types`, receipts: [{ ...passing, status }], reused: false,
+      })),
+      { name: "current full pass", receipts: [passing], reused: true },
+      { name: "newer failure", receipts: [passing, { ...passing, status: "fail" }], reused: false },
+      { name: "newer pass", receipts: [{ ...passing, status: "fail" }, passing], reused: true },
+      { name: "later stale result", receipts: [passing, { ...passing, checkInputId: "older", status: "fail" }], reused: true },
+      { name: "later baseline result", receipts: [passing, { ...passing, stage: "baseline", status: "fail" }], reused: true },
+    ];
+    for (const { name, receipts, reused } of receiptCases) {
+      const work = { ...typed, receipts };
+      const issued = issueReview(ports, state, work, facts, []);
+      assert.equal(issued.data === undefined, reused, name);
+      assert.equal(issued.next.some(action => action.action === "finish"), reused, name);
+      assert.equal(issued.work.budget.reservations.length, reused ? 0 : 1, name);
     }
+    const linted = { ...typed, obligations: typed.obligations.map(ob => ({ ...ob, tool: "eslint" })) };
+    const lintInputId = verdictInput(ports, state, linted, facts).checkInputId;
+    const lintReview = issueReview(ports, state, { ...linted, receipts: [{ ...passing, checkInputId: lintInputId }] }, facts, []);
+    assert.ok(lintReview.data, "a passing non-type static check does not cover sampled callers");
+    assert.equal(lintReview.next.some(action => action.action === "finish"), false);
+    assert.equal(lintReview.work.budget.reservations.length, 1);
   });
 
   it("requires review follow-up for reported open dependencies [REV-08, AGT-05]", async () => {

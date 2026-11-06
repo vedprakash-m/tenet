@@ -2,41 +2,73 @@
 // which exercises the transaction and index (concurrent HTTP calls into one synchronous connection would pass
 // without them)." This is that test: a real file-backed database, 5 real OS processes, no mocked concurrency.
 import { execFile } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { promisify } from "node:util";
 import { afterEach, describe, expect, it } from "vitest";
 import { insertItem } from "../src/features/loans/items.repository.ts";
 import { openDb } from "../src/platform/db.ts";
 import { migrate } from "../src/platform/migrate.ts";
 import { insertUser } from "../src/platform/users.repository.ts";
 
-const run = promisify(execFile);
 const dirs: string[] = [];
 afterEach(() => { for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
 
+function worker(script: string, dbPath: string, dir: string, userId: string) {
+  let resolve!: (r: { stdout: string; stderr: string; error: Error | null }) => void;
+  const finished = new Promise<{ stdout: string; stderr: string; error: Error | null }>((r) => { resolve = r; });
+  const child = execFile(
+    process.execPath, ["--import", "tsx/esm", script, dbPath, "race-item", userId, dir],
+    { timeout: 20_000, killSignal: "SIGKILL" },
+    (error, stdout, stderr) => resolve({ stdout, stderr, error }),
+  );
+  return { child, finished };
+}
+
 describe("the one-active-loan-per-item invariant under real concurrency", () => {
-  it("lets exactly one of 5 simultaneously-started reservations from separate processes win; the rest see the conflict, not a torn write", async () => {
+  it("runs 5 ready reservation processes in transactions and lets exactly one win", async () => {
     const dir = mkdtempSync(join(tmpdir(), "starter-race-")); dirs.push(dir);
     const dbPath = join(dir, "app.db");
     const db = openDb(dbPath);
-    migrate(db);
-    insertItem(db, { id: "race-item", name: "Contested Microscope", created_at: 0 });
-    for (let n = 1; n <= 5; n++) insertUser(db, { id: `user${n}`, email: `user${n}@example.test`, role: "member", password_hash: "x", created_at: 0 });
-    db.close();
+    const workers: ReturnType<typeof worker>[] = [];
+    try {
+      migrate(db);
+      insertItem(db, { id: "race-item", name: "Contested Microscope", created_at: 0 });
+      const users = [1, 2, 3, 4, 5].map((n) => `user${n}`);
+      for (const user of users) insertUser(db, { id: user, email: `${user}@example.test`, role: "member", password_hash: "x", created_at: 0 });
 
-    const worker = join(import.meta.dirname, "fixtures/concurrent-reserve-worker.ts");
-    // All 5 processes are launched before any of them is awaited, so they genuinely overlap, not run in turn.
-    const started = [1, 2, 3, 4, 5].map((n) => run(process.execPath, ["--import", "tsx/esm", worker, dbPath, "race-item", `user${n}`]));
-    const results = await Promise.all(started.map((p) => p.then((r) => r.stdout)));
+      const script = join(import.meta.dirname, "fixtures/concurrent-reserve-worker.ts");
+      for (const user of users) workers.push(worker(script, dbPath, dir, user));
+      const deadline = Date.now() + 15_000;
+      while (!users.every((user) => existsSync(join(dir, `ready-${user}`)))) {
+        const stopped = workers.find(({ child }) => child.exitCode !== null || child.signalCode !== null);
+        if (stopped) {
+          const result = await stopped.finished;
+          throw new Error(`worker exited before the start barrier: ${result.stderr || result.stdout || result.error?.message}`);
+        }
+        if (Date.now() >= deadline) throw new Error("workers did not reach the start barrier");
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
 
-    expect(results.filter((r) => r === "ok")).toHaveLength(1);
-    expect(results.filter((r) => r === "conflict")).toHaveLength(4);
+      const before = db.prepare("SELECT COUNT(*) AS n FROM loans").get() as { n: number };
+      expect(before.n).toBe(0);
+      writeFileSync(join(dir, "start"), "");
+      const results = await Promise.all(workers.map(({ finished }) => finished));
+      expect(results.map(({ error }) => error?.message ?? null)).toEqual([null, null, null, null, null]);
+      expect(results.every(({ stdout }) => stdout === "ok" || stdout === "conflict"), JSON.stringify(results)).toBe(true);
+      expect(results.filter(({ stdout }) => stdout === "ok")).toHaveLength(1);
+      expect(results.filter(({ stdout }) => stdout === "conflict")).toHaveLength(4);
 
-    const check = openDb(dbPath);
-    const active = check.prepare("SELECT COUNT(*) AS n FROM loans WHERE item_id = 'race-item' AND status = 'active'").get() as { n: number };
-    expect(active.n).toBe(1);
-    check.close();
-  });
+      const active = db.prepare("SELECT COUNT(*) AS n FROM loans WHERE item_id = 'race-item' AND status = 'active'").get() as { n: number };
+      expect(active.n).toBe(1);
+      expect(db.prepare("SELECT COUNT(*) AS n FROM loans").get()).toEqual({ n: 1 });
+      expect(db.pragma("foreign_key_check")).toEqual([]);
+    } finally {
+      for (const { child } of workers) {
+        if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+      }
+      await Promise.all(workers.map(({ finished }) => finished));
+      db.close();
+    }
+  }, 25_000);
 });

@@ -1,5 +1,66 @@
 # Changelog
 
+## 2026-11-06 — Clarify observer-hook qualification gate
+
+- State that the source preview ships no observer hooks and any future hooks are gated on qualification, matching the UX requirements without implying a host observation or release commitment.
+- File: `README.md`. Documentation-only change; checked against the README requirements in `specs/ux-spec.md` §6.1.
+
+## 2026-11-06 — List excluded baseline failures in verdicts
+
+- Include every failing test name in the `baseline-failure-excluded` reason so a `checked-local` result lists the pre-existing failures whose scope was excluded.
+- Files: `packages/kernel/src/core/verdict.ts`, `packages/kernel/test/verdict.test.ts`. The new regression failed before the change and passes afterward; the verdict suite passes 64/64, typecheck and lints pass locally. Supported-POSIX CI, full UAT and qualification remain open.
+
+## 2026-11-06 — Make the UAT command shell-portable
+
+- Remove the POSIX-only `/dev/null` redirection from the UAT script so `npm run uat` invokes the harness on Windows as well as POSIX shells.
+- File: `package.json`. On Windows/Node 24.22.1, the command now reaches the built-CLI harness; it remains unpassed because the first mutating scenario is refused by the documented unsupported-platform guard. This change does not qualify UAT or supported-POSIX behavior.
+
+## 2026-11-06 — Add flaky checkpoint predicate control
+
+- Add a pure `[EVD-08]` regression confirming that checkpoint evidence refuses a current flaky required receipt even when the candidate and last-check identity match. This supplements, but does not validate the public packet mutation path; its real-process regression remains blocked on supported-POSIX execution.
+- File: `packages/kernel/test/verdict.test.ts`. Focused verdict suite passes 63/63 on Windows/Node 24.22.1.
+
+## 2026-11-06 — Require passing evidence for manual review packets
+
+- Require `packet reviewer` to pass the same current full-checkpoint evidence predicate used by commit admission, rather than accepting a matching candidate digest alone. Add a real-process regression for requesting a reviewer packet after a flaky candidate check.
+- Files: `packages/kernel/src/verbs/packet.ts`, `packages/kernel/test/evidence-flaky.test.ts`. The focused real-process flaky suite is unverified on Windows because the kernel correctly refuses state-changing work there. Typecheck, lints, M0 structural coverage, verdict tests, build, payload and same-toolchain reproducibility pass locally. A complete local `npm run ci` reaches all pre-test gates and finishes the 1,717-test suite on Windows/Node 24.22.1 with 1,079 passed, 621 failed and 17 skipped. The flaky real-process regression and other mutating-workflow cases encounter the documented `win32` capability refusal; this does not establish that every failure has that cause and is not supported-POSIX CI. Built-CLI UAT remains open.
+
+## 2026-11-06 — Expand sampled-caller review controls
+
+- Check that sampled-caller review is reused for a current full passing type receipt, but not for missing, stale-input, stale-candidate, targeted, baseline, failed, inconclusive, skipped or non-type static evidence. Check that the newest current non-baseline result controls reuse, while a later stale or baseline result does not.
+- File: `packages/kernel/test/review-admission.test.ts`. Receipts and their ordering are synthetic; the control does not establish their real producer paths or installed-host behavior. No runtime behavior changed.
+- The sampled-caller review and verdict selections pass on Windows/Node 24.22.1, as do typecheck, lints and M0 structural coverage. Supported-POSIX CI, full built-CLI UAT and qualification remain open.
+
+## 2026-11-06 — Align intake guidance with the kickoff
+
+- Preview the new-project instruction-file draft with the kickoff rather than after scaffolding, and state the consent, decline and existing-content limits. Bound thin-answer follow-ups to the specified first intake and to one per thin dimension; do not revisit substantive answers.
+- Files: `plugin/skills/tenet-intake/SKILL.md`, `resources/onboarding.md`, `resources/conventions-draft.md` under that skill, and `packages/kernel/test/prerequisite-guidance.test.ts`. These are instruction changes and text controls, not new kernel state or authority.
+- The guidance suite passes 14 tests on Windows; lint, typecheck, M0 structural coverage, build, payload and same-toolchain reproducibility pass locally. The built doctor reports the expected unsupported-platform `L0` result in a scratch Git repository without creating project files. Supported-POSIX CI, a full built-CLI UAT and installed-host behavior remain unobserved.
+
+## 2026-11-06 — Add malformed-report receipt controls
+
+- Add seeded property-based controls for 22 malformed Vitest and Playwright report fields and inconsistent population totals, with 100 generated inputs per class. Each report retains an earlier valid selected file; malformed input must discard partial normalized facts and produce inconclusive file, tagged-example and suite receipts. Valid two-file reports remain passing controls.
+- File: `packages/kernel/test/receipts.test.ts`. These are in-memory synthetic reports, not a complete hostile corpus or a change to runtime behavior.
+- The receipt and Playwright adapter suites pass 73 tests on Windows/Node 24.22.1; typecheck, lints and M0 structural coverage pass. Supported-POSIX CI, full built-CLI UAT, real-host observation and qualification remain open.
+
+## 2026-11-06 — Observe stateless review without project writes
+
+- Add a real-port review control that watches a scratch project, compares entry names, file hashes, modes and symlink targets, and checks traced Git commands and attempted runner calls. Negative controls detect a transient nested file on a separate same-filesystem watcher and, after review, on the same project watcher; they also detect changed file bytes and a traced Git configuration write. Correct the existing review-and-inspect scenario's title to match its root-entry, Git-status and object-count checks.
+- Files: `packages/kernel/test/read-only-review.test.ts` and `packages/kernel/test/scenarios.test.ts`. Review artifacts use a private temporary directory; no runtime behavior changed.
+- On Windows/Node 24.22.1, the final control passes five repetitions and alongside the verdict and checkpoint suites. A separate built-CLI scratch review reports no project watcher events or final snapshot changes, and its project watcher sees the post-review canary; all 23 traced Git starts match the read-only allowlist and Git reports no child commands. The canary does not prove delivery of every event during review, and direct process launches outside the instrumented runner remain unobserved. Supported-POSIX CI, full built-CLI UAT, installed-host observation and qualification remain open.
+
+## 2026-11-06 — Add verdict evidence controls
+
+- Add verdict controls for missing and skipped evidence, basis and review coverage, major and blocker dispositions, authority, and preservation of blocking reasons. Check that targeted acceptance feedback does not supply a missing full-suite result and that checkpoint planning refuses a later targeted result until full evidence is refreshed.
+- Files: `packages/kernel/test/verdict.test.ts` and `packages/kernel/test/commit-green.test.ts`. These controls do not change runtime behavior or establish actual user authority or a public producer path for the synthetic receipts.
+- The focused verdict and checkpoint suites pass 78 tests on Windows; typecheck and architecture, skill and quality lints pass. Supported-POSIX CI and built-CLI UAT for those workflows remain open.
+
+## 2026-11-06 — Coordinate the reservation-race fixture
+
+- Require all five reservation workers to open their own SQLite connections and signal readiness before the parent releases them. Each worker checks that its insert runs in a transaction. Check that no loan exists before release, then require one success, four unique-index conflicts, one stored loan and intact foreign keys. Bound worker waits and clean up child processes on failure.
+- Files: `packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/concurrent-reservation.test.ts.txt` and `server/test/fixtures/concurrent-reserve-worker.ts.txt` under the same fixture.
+- On Windows with Node 24.22.1, the baseline-only reservation test passes without the feature service, five repeated races pass, and the copied candidate passes 178 application tests, typecheck, lint and build. The prior worker fails the readiness check; removing the scratch unique index yields five winners and fails the invariant. In a separate scratch mutation, the previous test passes when the write transaction is removed; the transaction assertion makes all five workers report an error. The barrier does not prove simultaneous SQLite lock acquisition. Full supported-POSIX CI, built-CLI UAT and installed-host qualification remain open.
+
 ## 2026-11-05 — Reconcile preview status with current source evidence
 
 - Record the approved immediate planning target as a controlled developer preview from existing main, not public R1 or activation of the separate schema-2 candidate. Installed-host, safety and distribution gates remain open; no public release is authorized.

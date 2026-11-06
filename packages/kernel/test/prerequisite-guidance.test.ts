@@ -51,6 +51,38 @@ it("limits intake questions to action-changing decisions and gives useful option
   assert.match(intake, /state a recommendation, its consequences, and a reversible default where one is justified/i);
 });
 
+it("bounds thin-answer follow-up to the first intake and unanswered dimensions", () => {
+  const intake = readFileSync(join(plugin, "skills/tenet-intake/SKILL.md"), "utf8");
+  const rules = intake.split("## Rules")[1]!.split("## Record")[0]!;
+  assert.match(rules, /a new project or the first Standard-or-deeper change in code you have not worked in/i);
+  assert.match(rules, /one-clause answer on purpose, users or a non-goal/i);
+  assert.match(rules, /one concrete follow-up per thin dimension before the plan is drafted/i);
+  assert.match(rules, /never a second round on the same dimension/i);
+  assert.match(rules, /never follow up on a dimension the user already answered substantively/i);
+});
+
+it("previews the new-project conventions draft at kickoff without silently writing it", () => {
+  const intake = readFileSync(join(plugin, "skills/tenet-intake/SKILL.md"), "utf8");
+  const onboarding = readFileSync(join(plugin, "skills/tenet-intake/resources/onboarding.md"), "utf8");
+  const draft = readFileSync(join(plugin, "skills/tenet-intake/resources/conventions-draft.md"), "utf8");
+  const greenfield = onboarding.split("## Greenfield")[1]!.split("## Brownfield")[0]!;
+  const brownfield = onboarding.split("## Brownfield")[1]!;
+  assert.match(intake, /no content outside Tenet's own charter markers/i);
+  assert.match(intake, /for a new project, show the draft in the kickoff after purpose, scope and constraints/i);
+  assert.match(intake, /write it only on a yes/i);
+  assert.match(intake, /never repeat after a no or once real content exists/i);
+  assert.match(greenfield, /kickoff card[\s\S]*preview the instruction-file draft[\s\S]*\*\*Scaffold, check, commit\*\*/i);
+  assert.match(greenfield, /no content outside Tenet's own charter markers/i);
+  assert.match(greenfield, /user has not declined/i);
+  assert.match(greenfield, /write it only on a yes/i);
+  assert.doesNotMatch(greenfield, /scaffold, check, commit[^\n]*then offer the instruction-file draft/i);
+  assert.match(brownfield, /no content outside Tenet's own charter markers and the user has not declined/i);
+  assert.match(draft, /for a new project, preview this alongside the kickoff/i);
+  assert.match(draft, /no content outside Tenet's own charter markers/i);
+  assert.match(draft, /preview it as one file; write it only on a yes/i);
+  assert.match(draft, /never offer it again after a no or once real content exists/i);
+});
+
 it("asks review to challenge acceptance-basis and test fidelity without expanding scope [REV-09]", () => {
   const review = readFileSync(join(plugin, "skills/tenet-review/SKILL.md"), "utf8");
   assert.match(review, /Stage A \(behavior and intent\)/);
