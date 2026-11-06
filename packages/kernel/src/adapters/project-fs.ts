@@ -102,6 +102,24 @@ export class FsProject implements Project {
     }
   }
 
+  exists(rel: string): boolean {
+    const path = resolve(this.root, rel);
+    if (!path.startsWith(this.root + sep)) throw new ProjectRefusal("outside", `path escapes the project: ${rel}`);
+    const normalized = relative(this.root, path).split(sep).join("/");
+    let part = this.root;
+    for (const name of normalized.split("/")) {
+      part = join(part, name);
+      let info: ReturnType<typeof lstatSync>;
+      try { info = lstatSync(part); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+        throw error;
+      }
+      if (info.isSymbolicLink() || !info.isDirectory() && part !== path) return true;
+    }
+    return true;
+  }
+
   write(rel: string, content: string): void { this.publish(rel, content); }
 
   private publish(rel: string, content: string, mode?: number, exclusive = false): void {
@@ -145,4 +163,3 @@ export class FsProject implements Project {
     }
   }
 }
-

@@ -1,6 +1,6 @@
 // `decide dependency`: resolve without installing, verify, preview, then install (SEC-05, TS §9.11). npm is a fake that
 // writes the lockfile the way a resolution would; the policy, the lockfile diff and the file restoration are the real ones.
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -17,7 +17,7 @@ import { SETTLE, type Recovery } from "../src/verbs/recover-effects.ts";
 const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
 
-interface Scenario { packages: Record<string, { version?: string; ageDays?: number; script?: boolean; resolved?: string; license?: string }>; failResolve?: boolean }
+interface Scenario { packages: Record<string, { version?: string; ageDays?: number; script?: boolean; resolved?: string; license?: string }>; failResolve?: boolean; editDuringResolve?: { path: string; content: string } }
 const pkg = (name: string, s: Scenario["packages"][string]) => ({ version: s.version ?? "1.0.0", resolved: s.resolved ?? `https://registry.npmjs.org/${name}/-/${name}-1.0.0.tgz`, integrity: "sha512-x", license: s.license ?? "MIT", ...(s.script ? { hasInstallScript: true } : {}) });
 const pnpmLock = (sc: Scenario): string => {
   const names = Object.keys(sc.packages);
@@ -29,22 +29,24 @@ const pnpmLock = (sc: Scenario): string => {
 function setup(sc: Scenario, files: Record<string, string> = {}) {
   const p: Project = project(files);
   roots.push(p.root);
-  const calls: string[][] = [];
+  const calls: string[][] = [], runDirs: string[] = [];
   const base = portsWith(p.root, fakeRecipes());
   const done = (over: Partial<RunResult> = {}): RunResult => ({ exit: 0, timedOut: false, durationMs: 1, stdout: "", stderr: "", startedAt: "t", report: null, ...over });
   const simulated = {
     async run(spec: RunSpec): Promise<RunResult> {
       calls.push(spec.argv);
+      runDirs.push(spec.cwd);
       const [tool, sub, flag] = spec.argv;
       if (tool === "npm" && sub === "install" && flag === "--package-lock-only") {
-        writeFileSync(join(p.root, "package.json"), JSON.stringify({ name: "fx", type: "module", private: true, dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }));
-        writeFileSync(join(p.root, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: { "": { dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }, ...Object.fromEntries(Object.entries(sc.packages).map(([n, s]) => [`node_modules/${n}`, pkg(n, s)])) } }));
+        writeFileSync(join(spec.cwd, "package.json"), JSON.stringify({ name: "fx", type: "module", private: true, dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }));
+        writeFileSync(join(spec.cwd, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: { "": { dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }, ...Object.fromEntries(Object.entries(sc.packages).map(([n, s]) => [`node_modules/${n}`, pkg(n, s)])) } }));
+        if (sc.editDuringResolve) writeFileSync(join(p.root, sc.editDuringResolve.path), sc.editDuringResolve.content);
         if (sc.failResolve) return done({ exit: 1, stderr: "E404 not found" });
         return done();
       }
       if (tool === "pnpm" && sub === "add" && flag === "--lockfile-only") {
-        writeFileSync(join(p.root, "package.json"), JSON.stringify({ name: "fx", type: "module", private: true, dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }));
-        writeFileSync(join(p.root, "pnpm-lock.yaml"), pnpmLock(sc));
+        writeFileSync(join(spec.cwd, "package.json"), JSON.stringify({ name: "fx", type: "module", private: true, dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }));
+        writeFileSync(join(spec.cwd, "pnpm-lock.yaml"), pnpmLock(sc));
         if (sc.failResolve) return done({ exit: 1, stderr: "ERR_PNPM_FETCH_404" });
         return done();
       }
@@ -68,7 +70,7 @@ function setup(sc: Scenario, files: Record<string, string> = {}) {
   };
   const ports = { ...base, runner };
   const call = (verb: string, input: Record<string, unknown> = {}) => runVerb(ports, VERBS, verb, input);
-  return { p, call, calls, read: (f: string) => (existsSync(join(p.root, f)) ? readFileSync(join(p.root, f), "utf8") : null), state: () => p.ports().store.read()!.state };
+  return { p, call, calls, runDirs, read: (f: string) => (existsSync(join(p.root, f)) ? readFileSync(join(p.root, f), "utf8") : null), state: () => p.ports().store.read()!.state };
 }
 const open = async (t: ReturnType<typeof setup>) => (await t.call("open", { profile: "feature", request: "add a library", scopePaths: ["src/greet.ts"] })).handle!;
 const ask = (specs: string[], extra: Record<string, unknown> = {}) => ({ kind: "dependency", propose: { specs }, quote: "please add left-pad", ...extra });
@@ -153,6 +155,73 @@ describe("interrupted resolution preserves unknown content [CON-03, SEC-05]", ()
 });
 
 describe("verifying before installing [SEC-05]", () => {
+  it("refuses a root npmrc without reading or exposing its contents", async () => {
+    const npmrc = "//registry.example/:_authToken=synthetic-secret\n";
+    const t = setup({ packages: { "left-pad": { ageDays: 90 } } }, { ".npmrc": npmrc });
+    const h = await open(t);
+    const pre = await t.call("decide", { h, ...ask(["left-pad@1.0.0"]) });
+    assert.equal(pre.exit, 2, JSON.stringify(pre));
+    assert.equal(pre.reasons[0]!.code, "capability-missing");
+    assert.equal(t.read(".npmrc"), npmrc);
+    assert.equal(t.calls.length, 0);
+    assert.ok(!JSON.stringify(pre).includes("synthetic-secret"));
+  });
+
+  it("refuses unsupported workspaces, hooks and local dependency sources before launch", async () => {
+    const pnpmLock = "lockfileVersion: '9.0'\n\nimporters:\n\n  .:\n    dependencies: {}\npackages:\n\n  placeholder@1.0.0:\n    resolution: {integrity: sha512-x}\n";
+    const cases: Array<[string, Record<string, string>]> = [
+      ["npm workspaces", { "package.json": JSON.stringify({ name: "fx", workspaces: ["packages/*"] }) }],
+      ["pnpm workspace file", { "package.json": '{"name":"fx"}', "pnpm-lock.yaml": pnpmLock, "pnpm-workspace.yaml": "packages: []\n" }],
+      ["competing package-manager lockfiles", { "package.json": '{"name":"fx"}', "package-lock.json": '{"lockfileVersion":3,"packages":{}}', "pnpm-lock.yaml": pnpmLock }],
+      ["pnpm hook", { "package.json": '{"name":"fx"}', "pnpm-lock.yaml": pnpmLock, ".pnpmfile.cjs": "module.exports = {}\n" }],
+      ["root npmrc", { ".npmrc": "//registry.example/:_authToken=synthetic-secret\n" }],
+      ["local dependency", { "package.json": JSON.stringify({ name: "fx", dependencies: { local: "file:../local" } }) }],
+      ["linked dependency", { "package.json": JSON.stringify({ name: "fx", dependencies: { local: "link:../local" } }) }],
+      ["workspace dependency", { "package.json": JSON.stringify({ name: "fx", dependencies: { local: "workspace:*" } }) }],
+      ["npm lock local source", { "package.json": '{"name":"fx"}', "package-lock.json": JSON.stringify({ lockfileVersion: 3, packages: { "": {}, "node_modules/local": { resolved: "file:../local", link: true } } }) }],
+      ["pnpm patched dependency", { "package.json": JSON.stringify({ name: "fx", pnpm: { patchedDependencies: { local: "patches/local.patch" } } }), "pnpm-lock.yaml": pnpmLock }],
+      ["pnpm lock local source", { "package.json": '{"name":"fx"}', "pnpm-lock.yaml": pnpmLock.replace("resolution: {integrity: sha512-x}", "resolution: {directory: ../local}") }],
+      ["pnpm lock patch", { "package.json": '{"name":"fx"}', "pnpm-lock.yaml": `${pnpmLock}\npatchedDependencies:\n  local@1.0.0: patches/local.patch\n` }],
+    ];
+    for (const [label, files] of cases) {
+      const t = setup({ packages: { "left-pad": { ageDays: 90 } } }, files);
+      const h = await open(t);
+      const r = await t.call("decide", { h, ...ask(["left-pad@1.0.0"]) });
+      assert.equal(r.exit, 2, `${label}: ${JSON.stringify(r)}`);
+      assert.equal(t.calls.length, 0, `${label}: resolver must not launch`);
+      for (const lock of ["package-lock.json", "pnpm-lock.yaml"])
+        assert.equal(t.read(lock), files[lock] ?? null, `${label}: ${lock}`);
+    }
+  });
+
+  it("keeps resolver writes isolated and refuses to publish over a project edit made during resolution", async () => {
+    const t = setup({
+      packages: { "left-pad": { ageDays: 90 } },
+      editDuringResolve: { path: "package.json", content: '{"name":"human edit"}\n' },
+    });
+    const h = await open(t);
+    const r = await t.call("decide", { h, ...ask(["left-pad@1.0.0"]) });
+    assert.equal(r.exit, 3, JSON.stringify(r));
+    assert.ok(r.reasons.some(reason => reason.code === "revision-conflict"), JSON.stringify(r));
+    assert.equal(t.read("package.json"), '{"name":"human edit"}\n');
+    assert.equal(t.read("package-lock.json"), null);
+    assert.equal(t.state().work[Object.keys(t.state().work)[0]!]!.dependency, undefined);
+  });
+
+  it("does not publish when a root npmrc appears during resolution", async () => {
+    const npmrc = "//registry.example/:_authToken=synthetic-secret\n";
+    const t = setup({
+      packages: { "left-pad": { ageDays: 90 } },
+      editDuringResolve: { path: ".npmrc", content: npmrc },
+    });
+    const h = await open(t);
+    const r = await t.call("decide", { h, ...ask(["left-pad@1.0.0"]) });
+    assert.equal(r.exit, 3, JSON.stringify(r));
+    assert.ok(r.reasons.some(reason => reason.code === "revision-conflict"), JSON.stringify(r));
+    assert.equal(t.read("package-lock.json"), null);
+    assert.ok(!JSON.stringify(r).includes("synthetic-secret"));
+  });
+
   it("resolves without installing, previews what changes, and installs only after the answer", async () => {
     const t = setup({ packages: { "left-pad": { ageDays: 90 } } });
     const h = await open(t);
@@ -238,6 +307,29 @@ describe("verifying before installing [SEC-05]", () => {
     assert.equal(ran(t, "ci"), false);
   });
 
+  it("keeps a declined preview pending when a human edit prevents safe restoration", async () => {
+    const t = setup({ packages: { a: { ageDays: 90 } } });
+    const h = await open(t);
+    const before = t.read("package.json")!;
+    await t.call("decide", { h, ...ask(["a@1.0.0"]) });
+    const human = '{"name":"fx","edited":true}\n';
+    writeFileSync(join(t.p.root, "package.json"), human);
+    const declined = await t.call("decide", { h, kind: "dependency", answers: { "dependency-confirm": "decline" } });
+    assert.equal(declined.exit, 3, JSON.stringify(declined));
+    assert.equal(t.read("package.json"), human);
+    assert.ok(t.state().work[Object.keys(t.state().work)[0]!]!.dependency);
+    const confirm = await t.call("decide", { h, kind: "dependency", answers: { "dependency-confirm": "confirm" } });
+    assert.equal(confirm.exit, 3, JSON.stringify(confirm));
+    assert.equal(ran(t, "ci"), false);
+    writeFileSync(join(t.p.root, "package.json"), before);
+    rmSync(join(t.p.root, "package-lock.json"));
+    const settled = await t.call("decide", { h, kind: "dependency", answers: { "dependency-confirm": "decline" } });
+    assert.equal(settled.exit, 0, JSON.stringify(settled));
+    assert.equal(t.read("package.json"), before);
+    assert.equal(t.read("package-lock.json"), null);
+    assert.equal(t.state().work[Object.keys(t.state().work)[0]!]!.dependency, undefined);
+  });
+
   it("asks again, and installs nothing, when the files changed after the preview", async () => {
     const t = setup({ packages: { a: { ageDays: 90 } } });
     const h = await open(t);
@@ -248,12 +340,36 @@ describe("verifying before installing [SEC-05]", () => {
     assert.equal(ran(t, "ci"), false);
   });
 
+  it("refuses confirmation when a root npmrc appears after the preview", async () => {
+    const t = setup({ packages: { a: { ageDays: 90 } } });
+    const h = await open(t);
+    await t.call("decide", { h, ...ask(["a@1.0.0"]) });
+    writeFileSync(join(t.p.root, ".npmrc"), "//registry.example/:_authToken=synthetic-secret\n");
+    const r = await t.call("decide", { h, kind: "dependency", answers: confirm });
+    assert.equal(r.exit, 3, JSON.stringify(r));
+    assert.ok(r.reasons.some(reason => reason.code === "revision-conflict"), JSON.stringify(r));
+    assert.equal(ran(t, "ci"), false);
+  });
+
+  it("refuses confirmation when another package-manager lockfile appears after the preview", async () => {
+    for (const [file, contents] of [["pnpm-lock.yaml", "lockfileVersion: '9.0'\n"], ["yarn.lock", "# yarn lockfile v1\n"]] as const) {
+      const t = setup({ packages: { a: { ageDays: 90 } } });
+      const h = await open(t);
+      await t.call("decide", { h, ...ask(["a@1.0.0"]) });
+      writeFileSync(join(t.p.root, file), contents);
+      const r = await t.call("decide", { h, kind: "dependency", answers: confirm });
+      assert.equal(r.exit, 3, `${file}: ${JSON.stringify(r)}`);
+      assert.ok(r.reasons.some(reason => reason.code === "revision-conflict"), `${file}: ${JSON.stringify(r)}`);
+      assert.equal(ran(t, "ci"), false, file);
+    }
+  });
+
   it("refuses what it cannot check: a yarn project, a flag as a spec, and a failed resolution that leaves the files alone", async () => {
     const yn = setup({ packages: { a: {} } }, { "yarn.lock": "# yarn lockfile v1\n" });
     const h = await open(yn);
     const r = await yn.call("decide", { h, ...ask(["a@1.0.0"]) });
     assert.equal(r.reasons[0]!.code, "capability-missing");
-    assert.match(r.reasons[0]!.message, /yarn/);
+    assert.match(r.reasons[0]!.message, /yarn/i);
     assert.equal(yn.calls.length, 0);
 
     const t = setup({ packages: { a: {} } });

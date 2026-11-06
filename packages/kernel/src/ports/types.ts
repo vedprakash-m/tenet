@@ -57,6 +57,8 @@ export interface Store {
   self(): { pid: number; procStart: string };
   /** Writes a file under a directory returned by `tempDir` and returns its path. */
   writeArtifact(dir: string, name: string, content: string): string;
+  /** Reads a bounded regular artifact under this workspace's private temp directory without following links. */
+  readArtifact(dir: string, name: string): string | null;
   /** Removes this workspace's run directories and manifests older than `maxAgeMs`, except those under `keep` (TS §7.6). */
   sweepTemp(maxAgeMs: number, keep: readonly string[]): number;
   /** Deletes only this workspace's lesson-bearing manifest files that contain any of these texts (CON-10); returns how many. */
@@ -245,6 +247,8 @@ export interface Project {
   read(path: string): string | null;
   /** Strict UTF-8 source admission under a trusted byte limit; legacy read semantics stay unchanged. */
   readBounded(path: string, maxBytes: number): ProjectReadResult;
+  /** Stat-only presence check; true includes links and non-regular leaves without following or opening them. */
+  exists(path: string): boolean;
   /** Replaces one file atomically (a temporary file renamed over it), making directories as needed. */
   write(path: string, content: string): void;
   remove(paths: readonly string[]): void;

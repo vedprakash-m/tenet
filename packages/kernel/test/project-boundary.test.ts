@@ -28,6 +28,15 @@ describe("project filesystem boundaries [SEC-06, SEC-14, CON-03]", () => {
     assert.throws(() => p.read("INTENT.md"), /link/i);
     assert.throws(() => p.hashes(["INTENT.md"]), /link/i);
   });
+  it("checks secret-path presence using stat only and does not follow links", () => {
+    const { root, p } = fresh();
+    write(root, ".npmrc", "UNTRUSTED_SECRET_CANARY");
+    symlinkSync(".npmrc", join(root, "npmrc-link"));
+    assert.equal(p.exists(".npmrc"), true);
+    assert.equal(p.exists("missing"), false);
+    assert.equal(p.exists("npmrc-link"), true);
+    assert.deepEqual(p.readBounded(".npmrc", 64), { status: "unavailable", cause: "excluded" });
+  });
   it("does not publish or remove a temporary file replaced by another process", () => {
     const { root } = fresh(); write(root, "README.md", "prior accepted text");
     const result = execFileSync(process.execPath, [join(import.meta.dirname, "fixtures/race-project-write.ts"), root], { encoding: "utf8" });
