@@ -2,6 +2,8 @@
 // Pure. The population is the lockfile diff (new or changed direct packages and the transitive ones they add). Missing
 // metadata is `unknown`, never verified, and a source that is not a registry is reported, never trusted by its name.
 
+import { z } from "zod";
+
 export type Source = "registry" | "git" | "file" | "link" | "unknown";
 export interface Observation {
   key: string; name: string; version: string; previous?: string; direct: boolean; source: Source; resolved: string;
@@ -11,16 +13,31 @@ export interface LockDiff { added: Observation[]; changed: Observation[]; remove
 
 interface Entry { version?: string; resolved?: string; integrity?: string; license?: string; hasInstallScript?: boolean; link?: boolean }
 
+const PackageEntry = z.object({
+  version: z.string().min(1).optional(), resolved: z.string().optional(), integrity: z.string().min(1).optional(),
+  license: z.string().optional(), hasInstallScript: z.boolean().optional(), link: z.boolean().optional(),
+  dependencies: z.record(z.string(), z.string()).optional(), devDependencies: z.record(z.string(), z.string()).optional(),
+  optionalDependencies: z.record(z.string(), z.string()).optional(),
+});
+const NpmLock = z.object({ lockfileVersion: z.union([z.literal(2), z.literal(3)]), packages: z.record(z.string(), PackageEntry) });
+
 function entries(text: string): Map<string, Entry> & { roots: Set<string> } {
-  let j: { lockfileVersion?: number; packages?: Record<string, Entry & { dependencies?: object; devDependencies?: object; optionalDependencies?: object }> };
-  try { j = JSON.parse(text); } catch { throw new Error("the lockfile is not valid JSON"); }
-  if (!j.lockfileVersion || j.lockfileVersion < 2 || !j.packages) throw new Error(`lockfileVersion ${j.lockfileVersion ?? "(none)"} is not supported; npm's v2 and v3 lockfiles are`);
+  let raw: unknown;
+  try { raw = JSON.parse(text); } catch { throw new Error("the lockfile is not valid JSON"); }
+  const parsed = NpmLock.safeParse(raw);
+  if (!parsed.success) throw new Error("the lockfile has invalid package metadata or an unsupported lockfileVersion; npm v2 and v3 are supported");
+  const j = parsed.data;
   const out = new Map<string, Entry>() as Map<string, Entry> & { roots: Set<string> };
   const root = j.packages[""] ?? {};
   out.roots = new Set([...Object.keys(root.dependencies ?? {}), ...Object.keys(root.devDependencies ?? {}), ...Object.keys(root.optionalDependencies ?? {})]);
   for (const [k, v] of Object.entries(j.packages)) if (k) out.set(k, v);
   return out;
 }
+
+/** Policy-relevant metadata can change without a version or URL change. */
+const sameEntry = (a: Entry, b: Entry): boolean =>
+  a.version === b.version && a.resolved === b.resolved && a.integrity === b.integrity &&
+  a.license === b.license && !!a.hasInstallScript === !!b.hasInstallScript && !!a.link === !!b.link;
 
 const nameOf = (key: string): string => key.slice(key.lastIndexOf("node_modules/") + "node_modules/".length);
 
@@ -43,11 +60,12 @@ export function diffLockfile(before: string | null, after: string): LockDiff {
   for (const [k, e] of a) {
     const had = b.get(k);
     if (!had) added.push(obs(k, e));
-    else if (had.version !== e.version || had.resolved !== e.resolved) changed.push(obs(k, e, had.version));
+    else if (!sameEntry(had, e)) changed.push(obs(k, e, had.version));
   }
   const gone = new Set<string>();
   for (const k of b.keys()) if (!a.has(k)) gone.add(nameOf(k));
-  return { added, changed, removed: [...gone].filter((n) => ![...a.keys()].some((k) => nameOf(k) === n)).sort() };
+  const remainingNames = new Set([...a.keys()].map(nameOf));
+  return { added, changed, removed: [...gone].filter((n) => !remainingNames.has(n)).sort() };
 }
 
 // ---------------------------------------------------------------- pnpm (pnpm-lock.yaml): a narrow line scan, never a
@@ -67,7 +85,10 @@ function splitPnpmKey(key: string): { name: string; version: string } | null {
 }
 
 function parsePnpmLock(text: string): { byKey: Map<string, PnpmEntry>; roots: Set<string> } {
-  const lines = text.split("\n");
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const versions = lines.filter(line => /^(?:lockfileVersion|['"]lockfileVersion['"])\s*:/.test(line));
+  if (versions.length !== 1 || !/^lockfileVersion: (?:'9\.0'|"9\.0"|9\.0)\s*$/.test(versions[0]!))
+    throw new Error("the pnpm lockfileVersion is unsupported; only pnpm v9 lockfiles are supported");
   if (!lines.includes("packages:")) throw new Error("the pnpm lockfile has no packages: section");
   const roots = new Set<string>();
   const keyLine = /^\s+(?:'([^']+)'|([^\s:'].*)):\s*$/;
@@ -85,7 +106,9 @@ function parsePnpmLock(text: string): { byKey: Map<string, PnpmEntry>; roots: Se
     if (pkg) {
       const key = (pkg[1] ?? pkg[2])!;
       const split = splitPnpmKey(key);
-      current = split && byKey.set(key, { ...split, resolution: {} }) ? key : null;
+      if (!split || byKey.has(key)) throw new Error("the pnpm lockfile contains an invalid or duplicate package identity");
+      byKey.set(key, { ...split, resolution: {} });
+      current = key;
       continue;
     }
     const res = current && /^ {4}resolution: \{(.*)\}\s*$/.exec(line);
@@ -114,7 +137,7 @@ function pnpmSource(r: Record<string, string>): Source {
 
 /** Same shape as `diffLockfile`, for pnpm-lock.yaml. A key embeds its own version (unlike npm's path-keyed lockfile),
  * so an upgrade is two different keys, not one changed entry; a same-name match in the prior lockfile is counted as
- * `changed` only when it is the single candidate, never guessed when several versions of one name coexist (pnpm
+ * `changed` only for one absent prior and one new version, never guessed when several versions of one name coexist (pnpm
  * allows that). pnpm's lockfile does not record whether a package has an install script at all (unlike npm's), so
  * that fact is always `"unknown"` here — disclosed, never claimed as false. */
 export function diffPnpmLock(before: string | null, after: string): LockDiff {
@@ -126,18 +149,30 @@ export function diffPnpmLock(before: string | null, after: string): LockDiff {
     ...(e.resolution.integrity ? { integrity: e.resolution.integrity } : {}), hasInstallScript: "unknown",
   });
   const beforeByName = new Map<string, PnpmEntry[]>();
-  for (const e of b.byKey.values()) beforeByName.set(e.name, [...(beforeByName.get(e.name) ?? []), e]);
-  const consumed = new Set<string>();
+  for (const [key, e] of b.byKey) {
+    if (a.byKey.has(key)) continue;
+    const versions = beforeByName.get(e.name) ?? [];
+    versions.push(e);
+    beforeByName.set(e.name, versions);
+  }
+  const newCounts = new Map<string, number>();
+  for (const [key, e] of a.byKey) if (!b.byKey.has(key)) newCounts.set(e.name, (newCounts.get(e.name) ?? 0) + 1);
   const added: Observation[] = [], changed: Observation[] = [];
   for (const [k, e] of a.byKey) {
-    if (b.byKey.has(k)) { consumed.add(k); continue; } // the identical key exists on both sides: unchanged
-    const priors = (beforeByName.get(e.name) ?? []).filter((p) => !consumed.has(`${p.name}@${p.version}`));
-    if (priors.length === 1) { changed.push(obs(e, priors[0]!.version)); consumed.add(`${priors[0]!.name}@${priors[0]!.version}`); }
+    const prior = b.byKey.get(k);
+    if (prior) {
+      const keys = new Set([...Object.keys(prior.resolution), ...Object.keys(e.resolution)]);
+      if ([...keys].some(key => prior.resolution[key] !== e.resolution[key])) changed.push(obs(e, prior.version));
+      continue;
+    }
+    const priors = beforeByName.get(e.name) ?? [];
+    if (priors.length === 1 && newCounts.get(e.name) === 1) changed.push(obs(e, priors[0]!.version));
     else added.push(obs(e));
   }
   const gone = new Set<string>();
-  for (const [k, e] of b.byKey) if (!consumed.has(k) && !a.byKey.has(k)) gone.add(e.name);
-  return { added, changed, removed: [...gone].sort() };
+  for (const [k, e] of b.byKey) if (!a.byKey.has(k)) gone.add(e.name);
+  const remainingNames = new Set([...a.byKey.values()].map(e => e.name));
+  return { added, changed, removed: [...gone].filter(name => !remainingNames.has(name)).sort() };
 }
 
 export type Strictness = "allow" | "require-approval" | "deny";
@@ -159,7 +194,7 @@ export function judgeDependencies(obs: readonly Observation[], ages: Readonly<Re
     if (p.source !== "registry") add("source", "decision", `${id} comes from a ${p.source} source that cannot be verified`);
     else {
       const age = ages[id];
-      if (age === undefined) add("unknown-age", sev(o.policy.unknown_age), `${id} has no publish date I can verify`);
+      if (age === undefined || !Number.isFinite(age)) add("unknown-age", sev(o.policy.unknown_age), `${id} has no publish date I can verify`);
       else if (age < o.policy.min_release_age_days) {
         if (o.urgent) add("age", sev(o.policy.urgent_exception), `${id} was published ${age} days ago; your policy needs ${o.policy.min_release_age_days} (urgent exception: ${o.policy.urgent_exception})`);
         else add("age", "blocked", `${id} was published ${age} days ago; your policy needs ${o.policy.min_release_age_days}`);

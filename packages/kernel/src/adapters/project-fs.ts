@@ -82,7 +82,12 @@ export class FsProject implements Project {
     finally { if (fd >= 0) closeSync(fd); }
   }
 
-  read(rel: string): string | null { return this.content(rel)?.toString("utf8") ?? null; }
+  read(rel: string): string | null {
+    const bytes = this.content(rel);
+    if (bytes === null) return null;
+    if (!isUtf8(bytes)) throw new ProjectRefusal("invalid-utf8", `${rel} is not valid UTF-8; no replacement text was accepted`);
+    return bytes.toString("utf8");
+  }
 
   readBounded(rel: string, maxBytes: number): ProjectReadResult {
     if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || maxBytes > MAX_READ_BYTES) throw new RangeError("invalid project read byte limit");

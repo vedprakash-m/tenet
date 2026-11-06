@@ -1,8 +1,8 @@
 // `decide dependency`, first phase: resolve in a private run directory, judge the diff, then publish only approved outputs.
 // npm and pnpm are built for single-package projects; unsupported layouts and Yarn are refused (core/dependency-admission.ts).
 import { judgeDependencies, type Issue, type Observation, type Policy } from "../core/dependencies.ts";
-import { DIFF_OF, MANIFEST, RESOLVE_ARGV, ageInDays, configRefusal, contentRefusal, lastLines } from "../core/dependency-admission.ts";
-import { lockFileOf, parseRequest, projectRefusal, selectManager } from "../core/dependency-admission.ts";
+import { DIFF_OF, MANIFEST, RESOLVE_ARGV, configRefusal, contentRefusal, lastLines } from "../core/dependency-admission.ts";
+import { lockFileOf, parseRequest, projectRefusal, releaseAge, releaseLookups, selectManager } from "../core/dependency-admission.ts";
 import type { Files, Manager, Resolution } from "../core/dependency-admission.ts";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
@@ -14,8 +14,6 @@ import { nx, withWork } from "../verbs/common.ts";
 import { settingsFor } from "../verbs/reconcile.ts";
 import { TIMEOUT_MS, jobFor, previewQuestion, publishResolved } from "./dependency-job.ts";
 import type { DecisionCtx } from "./types.ts";
-
-const MAX_LOOKUPS = 50;
 
 interface Request {
   specs: string[];
@@ -47,14 +45,14 @@ function admitStart(c: DecisionCtx) {
 /** Days since each added or changed registry version was published; an age that cannot be read stays unknown. */
 async function releaseAges(ports: Ports, runDir: string, observed: Observation[]): Promise<Record<string, number | undefined>> {
   const ages: Record<string, number | undefined> = {};
-  for (const o of observed.filter((x) => x.source === "registry").slice(0, MAX_LOOKUPS)) {
+  for (const o of releaseLookups(observed)) {
     const v = await ports.runner.run({
       argv: ["npm", "view", `${o.name}@${o.version}`, "time", "--json"],
       cwd: runDir,
       runDir,
       timeoutMs: 60_000,
     });
-    ages[`${o.name}@${o.version}`] = ageInDays(v.stdout, o.version, Date.now());
+    ages[`${o.name}@${o.version}`] = releaseAge(v, o.version, Date.now());
   }
   return ages;
 }

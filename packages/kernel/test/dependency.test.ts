@@ -17,7 +17,7 @@ import { SETTLE, type Recovery } from "../src/verbs/recover-effects.ts";
 const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
 
-interface Scenario { packages: Record<string, { version?: string; ageDays?: number; script?: boolean; resolved?: string; license?: string }>; failResolve?: boolean; editDuringResolve?: { path: string; content: string } }
+interface Scenario { packages: Record<string, { version?: string; ageDays?: number; script?: boolean; resolved?: string; license?: string }>; extraPackages?: Record<string, unknown>; lookupResult?: Partial<RunResult>; registryOutput?: string; failResolve?: boolean; editDuringResolve?: { path: string; content: string } }
 const pkg = (name: string, s: Scenario["packages"][string]) => ({ version: s.version ?? "1.0.0", resolved: s.resolved ?? `https://registry.npmjs.org/${name}/-/${name}-1.0.0.tgz`, integrity: "sha512-x", license: s.license ?? "MIT", ...(s.script ? { hasInstallScript: true } : {}) });
 const pnpmLock = (sc: Scenario): string => {
   const names = Object.keys(sc.packages);
@@ -39,7 +39,7 @@ function setup(sc: Scenario, files: Record<string, string> = {}) {
       const [tool, sub, flag] = spec.argv;
       if (tool === "npm" && sub === "install" && flag === "--package-lock-only") {
         writeFileSync(join(spec.cwd, "package.json"), JSON.stringify({ name: "fx", type: "module", private: true, dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }));
-        writeFileSync(join(spec.cwd, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: { "": { dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }, ...Object.fromEntries(Object.entries(sc.packages).map(([n, s]) => [`node_modules/${n}`, pkg(n, s)])) } }));
+        writeFileSync(join(spec.cwd, "package-lock.json"), JSON.stringify({ lockfileVersion: 3, packages: { "": { dependencies: Object.fromEntries(Object.keys(sc.packages).map((n) => [n, "^1.0.0"])) }, ...Object.fromEntries(Object.entries(sc.packages).map(([n, s]) => [`node_modules/${n}`, pkg(n, s)])), ...sc.extraPackages } }));
         if (sc.editDuringResolve) writeFileSync(join(p.root, sc.editDuringResolve.path), sc.editDuringResolve.content);
         if (sc.failResolve) return done({ exit: 1, stderr: "E404 not found" });
         return done();
@@ -53,7 +53,7 @@ function setup(sc: Scenario, files: Record<string, string> = {}) {
       if (sub === "view") {
         const [name] = spec.argv[2]!.split(/@(?=\d)/);
         const s = sc.packages[name!];
-        return done({ stdout: s?.ageDays === undefined ? "{}" : JSON.stringify({ [s.version ?? "1.0.0"]: new Date(Date.now() - s.ageDays * 864e5).toISOString() }) });
+        return done({ ...sc.lookupResult, stdout: sc.registryOutput ?? (s?.ageDays === undefined ? "{}" : JSON.stringify({ [s.version ?? "1.0.0"]: new Date(Date.now() - s.ageDays * 864e5).toISOString() })) });
       }
       if (sub === "ci" || (tool === "pnpm" && sub === "install" && flag === "--frozen-lockfile")) writeFileSync(join(p.root, "node_modules-installed"), "1");
       return done();
@@ -273,6 +273,45 @@ describe("verifying before installing [SEC-05]", () => {
     assert.equal(t.read("package.json"), before);
     assert.equal(t.read("package-lock.json"), null, "the lockfile that did not exist is removed again");
     assert.equal(ran(t, "ci"), false);
+  });
+
+  it("blocks an invalid registry date under unknown-age deny without publishing resolver output", async () => {
+    const t = setup({ packages: { fresh: { ageDays: 90 } }, registryOutput: '{"1.0.0":"invalid"}' });
+    const h = await open(t);
+    await t.call("decide", { h, kind: "config", target: "dependency_policy", propose: { value: { unknown_age: "deny" } } });
+    const before = t.read("package.json");
+    const r = await t.call("decide", { h, ...ask(["fresh@1.0.0"]) });
+    assert.equal(r.exit, 2, JSON.stringify(r));
+    assert.equal(r.reasons[0]!.code, "dependency-rejected");
+    assert.match(r.reasons[0]!.message, /no publish date/);
+    assert.equal(t.read("package.json"), before);
+    assert.equal(t.read("package-lock.json"), null);
+    assert.equal(ran(t, "ci"), false);
+  });
+
+  it("keeps valid-looking stdout from failed or timed-out lookups unknown before publication", async () => {
+    for (const lookupResult of [{ exit: 1 }, { timedOut: true }]) {
+      const t = setup({ packages: { fresh: { ageDays: 90 } }, lookupResult });
+      const h = await open(t);
+      await t.call("decide", { h, kind: "config", target: "dependency_policy", propose: { value: { unknown_age: "deny" } } });
+      const before = t.read("package.json");
+      const result = await t.call("decide", { h, ...ask(["fresh@1.0.0"]) });
+      assert.equal(result.exit, 2, JSON.stringify(result));
+      assert.equal(result.reasons[0]!.code, "dependency-rejected");
+      assert.equal(t.read("package.json"), before);
+      assert.equal(t.read("package-lock.json"), null);
+      assert.equal(ran(t, "ci"), false);
+    }
+  });
+
+  it("uses one registry lookup for repeated installations of the same version", async () => {
+    const t = setup({ packages: { a: { ageDays: 90 } }, extraPackages: {
+      "node_modules/parent/node_modules/a": pkg("a", { ageDays: 90 }),
+    } });
+    const h = await open(t);
+    const result = await t.call("decide", { h, ...ask(["a@1.0.0"]) });
+    assert.equal(result.exit, 3, JSON.stringify(result));
+    assert.equal(t.calls.filter(argv => argv[1] === "view" && argv[2] === "a@1.0.0").length, 1);
   });
 
   it("a package with an install script is previewed by name, and its script runs only when named in the answer", async () => {

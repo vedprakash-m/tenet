@@ -46,10 +46,30 @@ export const lastLines = (r: { stderr: string; stdout: string }, n: number) =>
 export function ageInDays(stdout: string, version: string, now: number): number | undefined {
   try {
     const t = (JSON.parse(stdout) as Record<string, string>)[version];
-    return t ? Math.floor((now - Date.parse(t)) / 864e5) : undefined;
+    const age = typeof t === "string" ? Math.floor((now - Date.parse(t)) / 864e5) : NaN;
+    return Number.isFinite(age) ? age : undefined;
   } catch {
     return undefined;
   }
+}
+
+/** One observation per registry version; duplicate install paths do not consume the finite lookup population. */
+export function releaseLookups(observed: readonly Observation[]): Observation[] {
+  const versions = new Map<string, Observation>();
+  for (const o of observed) {
+    if (o.source !== "registry") continue;
+    const id = `${o.name}@${o.version}`;
+    if (!versions.has(id)) versions.set(id, o);
+    if (versions.size === 50) break;
+  }
+  return [...versions.values()];
+}
+
+/** A failed/interrupted command's partial stdout is not publish-date evidence. */
+export function releaseAge(
+  r: { exit?: number | null; timedOut: boolean; stdout: string; signal?: string; outputTruncated?: boolean }, version: string, now: number,
+): number | undefined {
+  return r.exit === 0 && !r.timedOut && !r.signal && !r.outputTruncated ? ageInDays(r.stdout, version, now) : undefined;
 }
 
 /** What the resolver job returns to its finalizer. */

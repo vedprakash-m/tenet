@@ -1,7 +1,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, symlinkSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, writeFileSync, readFileSync, readdirSync, symlinkSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { FsProject } from "../src/adapters/project-fs.ts";
@@ -27,6 +27,18 @@ describe("project filesystem boundaries [SEC-06, SEC-14, CON-03]", () => {
     symlinkSync(".env", join(root, "INTENT.md"));
     assert.throws(() => p.read("INTENT.md"), /link/i);
     assert.throws(() => p.hashes(["INTENT.md"]), /link/i);
+  });
+  it("refuses invalid UTF-8 text without changing its bytes or raw identity", () => {
+    const { root, p } = fresh();
+    const bytes = Buffer.concat([Buffer.from("# Intent\n"), Buffer.from([0xc3, 0x28])]);
+    writeFileSync(join(root, "INTENT.md"), bytes);
+    assert.throws(() => p.read("INTENT.md"), /UTF-8/i);
+    assert.deepEqual(p.readBounded("INTENT.md", 64), { status: "unavailable", cause: "invalid-utf8" });
+    assert.deepEqual(p.hashes(["INTENT.md"]), { "INTENT.md": createHash("sha256").update(bytes).digest("hex") });
+    assert.deepEqual(readFileSync(join(root, "INTENT.md")), bytes);
+    p.write("unicode.md", "Résumé — 東京\n");
+    assert.equal(p.read("unicode.md"), "Résumé — 東京\n");
+    assert.equal(p.read("absent.md"), null);
   });
   it("checks secret-path presence using stat only and does not follow links", () => {
     const { root, p } = fresh();
