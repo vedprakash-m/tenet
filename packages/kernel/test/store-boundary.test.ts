@@ -84,6 +84,22 @@ describe("automatic temp cleanup boundaries", () => {
 });
 
 describe("private store boundaries", () => {
+  it("reads only regular artifacts owned by a private run directory [SEC-12, CON-04]", async () => {
+    const root = fresh(), store = await initState(root);
+    const dir = store.tempDir("run-artifact-read");
+    const path = store.writeArtifact(dir, "snapshot.json", "private snapshot");
+    assert.equal(store.readArtifact(dir, "snapshot.json"), "private snapshot");
+    assert.throws(() => store.readArtifact(dir, "../state"), error =>
+      error instanceof KernelError && error.reasons[0]?.code === "run-dir-unavailable");
+
+    const outside = join(fresh(), "outside.txt");
+    writeFileSync(outside, "do not follow");
+    rmSync(path);
+    symlinkSync(outside, path);
+    assert.throws(() => store.readArtifact(dir, "snapshot.json"), error =>
+      error instanceof KernelError && error.reasons[0]?.code === "unsupported-record");
+  });
+
   it("refuses unsafe compatibility reads before fallback or direct writes [CON-04, CON-05, SEC-12]", async () => {
     const root = fresh(), store = await initState(root);
     await store.transaction("test", async tx => tx.publish(tx.state!));

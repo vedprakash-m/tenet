@@ -1,0 +1,5241 @@
+{
+  "date": "2026-11-05",
+  "baseCommit": "c07e13a088334dc5c2d7e07d647a42ac8cb5eb6a",
+  "sourceSnapshotSha256": "77a94bf05aed627e9e2e26a2cfecefec67fff985ebe0cf755a71c68c857ddf76",
+  "scope": "Local structural mapping and source review; no qualification or semantic-completeness inference.",
+  "gates": {
+    "M0": {
+      "musts": 34,
+      "mapped": 30,
+      "hostOnly": 4,
+      "unmapped": [],
+      "qualified": 0,
+      "integrityErrors": []
+    },
+    "A": {
+      "musts": 100,
+      "mapped": 91,
+      "hostOnly": 9,
+      "unmapped": [],
+      "qualified": 0,
+      "integrityErrors": []
+    },
+    "B": {
+      "musts": 158,
+      "mapped": 130,
+      "hostOnly": 13,
+      "unmapped": [
+        "INS-05",
+        "AGT-10",
+        "AGT-12",
+        "EVD-04",
+        "RES-05",
+        "GIT-09",
+        "CON-07",
+        "CFG-01",
+        "CFG-03",
+        "CFG-04",
+        "CFG-08",
+        "QLT-11",
+        "QLT-13",
+        "NFR-05",
+        "NFR-07"
+      ],
+      "qualified": 0,
+      "integrityErrors": []
+    },
+    "R1": {
+      "musts": 181,
+      "mapped": 141,
+      "hostOnly": 16,
+      "unmapped": [
+        "INS-05",
+        "AGT-10",
+        "AGT-12",
+        "EVD-04",
+        "RES-05",
+        "GIT-09",
+        "CON-07",
+        "CFG-01",
+        "CFG-03",
+        "CFG-04",
+        "CFG-08",
+        "RSC-08",
+        "LFC-01",
+        "QLT-05",
+        "QLT-11",
+        "QLT-13",
+        "ENG-05",
+        "ENG-07",
+        "ENG-08",
+        "ENG-11",
+        "OSS-01",
+        "NFR-01",
+        "NFR-05",
+        "NFR-07"
+      ],
+      "qualified": 0,
+      "integrityErrors": []
+    }
+  },
+  "modules": {
+    "adapters/git-cli": {
+      "used": 37843,
+      "enforced": 37843,
+      "free": 0
+    },
+    "adapters/node-ts": {
+      "used": 20147,
+      "enforced": 20160,
+      "free": 13
+    },
+    "adapters/runner": {
+      "used": 9928,
+      "enforced": 20160,
+      "free": 10232
+    },
+    "adapters/store-fs": {
+      "used": 25875,
+      "enforced": 25920,
+      "free": 45
+    },
+    "core/budget": {
+      "used": 8806,
+      "enforced": 8870,
+      "free": 64
+    },
+    "core/review": {
+      "used": 18276,
+      "enforced": 20160,
+      "free": 1884
+    },
+    "core/risk": {
+      "used": 4779,
+      "enforced": 8640,
+      "free": 3861
+    },
+    "core/schemas": {
+      "used": 26590,
+      "enforced": 26899,
+      "free": 309
+    },
+    "core/verdict": {
+      "used": 13374,
+      "enforced": 17280,
+      "free": 3906
+    },
+    "pipeline + verbs + decisions": {
+      "used": 248116,
+      "enforced": 248256,
+      "free": 140
+    }
+  },
+  "capacityCaveat": "Central approved ceiling is 247219; enforced 248256 remains proposed. Green lint is not owner approval.",
+  "requirements": [
+    {
+      "id": "INS-01",
+      "text": "Tenet shall install as one plugin through the qualified native install path without cloning, building, editing JSON or installing a runtime.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-01"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INS-02",
+      "text": "The README shall state, before installation, prerequisites, publisher and verification steps, the support matrix and assistance levels, permissions and executable content, a first task, and update and removal steps.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-01",
+        "AC-11"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INS-03",
+      "text": "When invoked with a task, Tenet shall accept the task before any setup and run only the readiness checks that task depends on.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-02",
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INS-04",
+      "text": "Tenet shall distinguish plugin-ready, project-ready and action-ready states and report only those relevant to the current task.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-03",
+        "AC-21"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INS-05",
+      "text": "When the host version, plugin version, policy or relevant project inputs change, Tenet shall re-probe only the affected capabilities; otherwise it shall reuse cached observations with provenance.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-19",
+        "AC-21"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INS-06",
+      "text": "If a required capability is missing, Tenet shall block only dependent operations, name the missing prerequisite, and offer the safe next action and unaffected alternatives.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-03"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INS-07",
+      "text": "The installed product shall require no runtime, service, database, MCP server, API key or CI beyond the documented host account and the project's own tools; Tenet helpers reuse the project's Node.js.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-01"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INS-08",
+      "text": "If policy blocks plugin installation or required features, the README shall explain the native recovery path.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-01"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "INS-09",
+      "text": "Tenet shall answer questions, help and status requests conversationally without creating a work contract or files.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INS-10",
+      "text": "Tenet shall announce its engagement and next step once when a task starts, not on every reply.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INS-11",
+      "text": "When a project needs Node.js, a package manager or Git that is missing, Tenet shall explain the prerequisite, link the official installer and re-check, without installing software itself.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-03",
+        "AC-21"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INS-12",
+      "text": "Before implementation, Tenet shall state the assistance level (Section 2.3) for the current project and task.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-03",
+        "AC-21"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-01",
+      "text": "Before asking questions, Tenet shall inspect existing source, docs and conventions and reuse established facts.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-04",
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-02",
+      "text": "Tenet shall record intent with separate sections for purpose and value, users, accepted requirements with examples and invariants, constraints, preferences, non-goals, assumptions, deferred choices and plan items.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-13a"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-03",
+      "text": "Tenet shall ask only questions whose answers change the next dependent action, each with a recommendation, its consequences, and a reversible default where one is justified.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-04",
+        "AC-21"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-04",
+      "text": "For behavioral work in Standard and Deep lanes, Tenet shall express the agreed outcome as concrete examples in the user's domain language; when the request already states unambiguous cases, Tenet shall record them as confirmed and show them in the contract summary, and otherwise shall obtain the user's confirmation before implementation.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-24"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-05",
+      "text": "Tenet shall implement the acceptance basis as executable acceptance tests before the production behavior they cover, tag them with their IDs, and lock each test once its verification result is recorded (Section 3.7.2).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-05",
+        "AC-24"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-06",
+      "text": "When a locked acceptance test must change, Tenet shall record the reason and obtain user confirmation for a behavior change, or an independent review disposition for a test defect; related mechanical corrections may share one disposition.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-07",
+        "AC-24"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-07",
+      "text": "Tenet shall keep inferred requirements as assumptions until the user confirms them.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-13a"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-08",
+      "text": "When intent changes, Tenet shall identify affected requirements, examples, plan items, tests, decisions and in-flight work and present the impact before proceeding.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-13a"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-09",
+      "text": "Tenet shall record consequential decisions in MADR format with context, options, choice and consequences, linked to the IDs they affect.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-13a"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-10",
+      "text": "Tenet shall assign stable, branch-safe IDs to durable plan items, requirements, examples, constraints, assumptions and decisions (Section 3.7.3).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-13a",
+        "AC-25"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-11",
+      "text": "While style is Guided, Tenet shall present examples and choices without technical jargon and explain consequences in domain terms.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-12",
+      "text": "When a request spans several increments, Tenet shall propose an ordered, editable plan of independently checkable increments with dependencies, track progress against it, and propose the next item on request.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-04",
+        "AC-12"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "INT-13",
+      "text": "Tenet shall let the user designate existing planning documents as intent, plan and status sources instead of creating `INTENT.md`.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-04"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "INT-14",
+      "text": "Tenet shall keep `docs/architecture.md` describing current components, data model and integration points.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "INT-15",
+      "text": "Tenet shall define each work's acceptance basis (Section 4.5.1) and propose at least one boundary or negative example for each new requirement.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-24",
+        "AC-27"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-01",
+      "text": "Tenet shall record a work contract for each implementation task containing outcome, acceptance basis, scope, protected paths, checks, execution envelopes, endpoint, budget, branch and base, pinned versions and recovery point.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-04",
+        "AC-13a"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-02",
+      "text": "A clear user request shall authorize routine in-scope local steps (edits, inspected checks, review, bookkeeping, recovery preparation) without further approval prompts.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-03",
+      "text": "Tenet shall request new authority only when behavior, data or access, compatibility, protected paths, irreversible or remote effects, or resource limits change beyond the contract.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-08",
+        "AC-13a"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-04",
+      "text": "Tenet shall recommend a lane from the Section 5.2 assessment of the change, re-assess it after inspection, state the reason in one line, and let the user raise it, or lower it no further than the floor.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-05",
+      "text": "Tenet shall route feature, bug, review, investigation, refactor, prototype, plan and continuation requests through the main workflow without the user choosing a mode.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-06",
+      "text": "When the user explicitly requests a prototype, Tenet shall label it unhardened, keep it within declared data limits, record its gaps in `docs/hardening.md` and never report it as checked.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-05",
+        "AC-21"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-07",
+      "text": "When an unhardened prototype is promoted, Tenet shall inventory shortcuts, characterize working behavior, add distinguishing checks for missing safeguards and obtain independent review before a checked-local verdict.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-05"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-08",
+      "text": "Tenet shall apply the per-contract limits of Section 4.4.2 at the boundaries their mechanism class allows, warn at 80%, and at the bound stop with a diagnosis. For the active-time check-in the stop also carries a specific extension proposal; for attempts, review rounds and delegations it carries the next step instead (Section 4.4.2).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-15c",
+        "AC-19"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-09",
+      "text": "If the same operational failure recurs twice in a row, or attempts oscillate, Tenet shall stop retrying and present a diagnosis; planned failing tests in TDD do not count as failures.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-15c"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-10",
+      "text": "Tenet shall checkpoint at declared boundaries and before known host limits where observable, so an iteration pause or interruption loses at most the work since the last checkpoint, and shall never auto-confirm a host pause.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-08",
+        "AC-21"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-11",
+      "text": "Tenet shall support status, refine, pause, cancel, undo, integrate, decline and resume as defined in Section 3.4.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-12",
+      "text": "Tenet shall reserve enough budget to write a handoff and diagnosis before exhaustion.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-08"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "WRK-13",
+      "text": "If the user declines a mandatory step, Tenet shall proceed only to an endpoint whose label reflects the missing evidence (Section 4.5.2), state it once, and never lower the floor silently.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21",
+        "AC-27"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "AGT-01",
+      "text": "Tenet shall define roles as responsibility contracts (Section 3.9) independent of model names.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-22"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "AGT-02",
+      "text": "On the R1 tuple, Tenet shall dispatch the Reviewer as a native subagent with fresh context for consequential work and record observed dispatch metadata.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-06",
+        "AC-22"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "AGT-03",
+      "text": "Tenet shall dispatch independent read-only Researcher assignments in parallel when they observe one declared source revision.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-22"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "AGT-04",
+      "text": "Each assignment shall carry goal, contract and config revision, source baseline, minimal context, permitted actions, budget and expected output.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-22"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "AGT-05",
+      "text": "Each result shall report completed, partial, blocked, failed or cancelled, plus artifacts inspected or changed, findings and open dependencies; partial output shall not count as completion.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-22"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "AGT-06",
+      "text": "Child work shall not expand authority, reset budgets or delegate further; violations found in traces are findings (mechanism: cooperative plus detected, Section 5.4).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-22"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "AGT-07",
+      "text": "The coordinator shall resolve factual disagreements by evidence and present normative product or risk choices to the user as options with a recommendation.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-22"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "AGT-08",
+      "text": "Tenet shall hold an atomic write-ownership claim (Section 5.11) before writing and run at most one write workflow per workspace.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-17"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "AGT-09",
+      "text": "For small tasks, Tenet shall use a focused same-session pass instead of dispatch and shall not describe it as a separate agent.",
+      "level": "Should",
+      "milestone": "B",
+      "acs": [
+        "AC-22"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "AGT-10",
+      "text": "Users shall obtain results without managing specialist lifecycles or reading subagent transcripts.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21",
+        "AC-22"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "AGT-11",
+      "text": "When parallel readers return findings against a revision that has since changed, the coordinator shall reconcile them before acting.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-22"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "AGT-12",
+      "text": "When an assignment changes a non-private interface or symbol, selected context shall prioritize direct importers and callers and linked acceptance tests (Section 3.8.7).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-19",
+        "AC-22"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "TDD-01",
+      "text": "For changed behavior, Tenet shall run at least one distinguishing reproduction test that fails on the baseline and passes on the candidate, and shall record the expected results of preservation, boundary and negative cases, which may pass on both.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-05"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "TDD-02",
+      "text": "For new interfaces, Tenet shall add minimal compilable scaffolding so the failing test is behavioral; a compile or import error alone shall not count as a failing test.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-05"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "TDD-03",
+      "text": "If a behavioral failing test is infeasible, Tenet shall use a test-alongside approach with a negative control and disclose it in the result.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-05"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "TDD-04",
+      "text": "In existing code, Tenet shall characterize affected behavior before changing it and preserve unrelated behavior.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-05",
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "TDD-05",
+      "text": "After green, Tenet shall refactor when it reduces complexity within scope, then rerun affected checks.",
+      "level": "Should",
+      "milestone": "B",
+      "acs": [
+        "AC-05"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "TDD-06",
+      "text": "For nonbehavioral work, Tenet shall state the alternative check instead of writing artificial tests.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-05"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-01",
+      "text": "Tenet shall bind every check result to the candidate (base commit, digest of relevant uncommitted and untracked files, lockfile, configuration, toolchain, execution envelope) without hashing or storing secret values.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-18"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-02",
+      "text": "Tenet shall record each check's verdict, qualifiers, freshness and source as defined in Section 3.7.2; zero tests executed shall be inconclusive.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-07"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-03",
+      "text": "When an input changes, Tenet shall mark dependent evidence stale; an input of unknown relevance shall invalidate conservatively or make the result inconclusive.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-18"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-04",
+      "text": "Tenet shall run the distinguishing reproduction and targeted checks on the baseline before changing code; when a broader check fails on the candidate and is not already recorded as a baseline failure, Tenet shall rerun it on the baseline in a sealed checkout outside the workspace (Section 5.13) to classify it as pre-existing or introduced.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-18",
+        "AC-19"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-05",
+      "text": "Tenet shall normalize evidence through ecosystem adapters under the contract of Section 3.8.3.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-18",
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-06",
+      "text": "Owner acceptance shall never convert a failed or missing check into pass.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-07",
+        "AC-27"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-07",
+      "text": "Tenet shall state each consequential control's mechanism class (Section 5.4) and assurance level (Section 5.3.4).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-07",
+        "AC-13a"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-08",
+      "text": "Tenet shall distinguish flaky, simulated, partial and unavailable-history results from pass and fail; a result is classified flaky only under the Section 4.4.1 rerun policy.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-07",
+        "AC-18"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-09",
+      "text": "Declared fixture mutations, caches and outputs shall not invalidate evidence; unexpected changes to relevant inputs shall.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-18"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-10",
+      "text": "Tenet shall detect any change to a locked acceptance test by comparing it with the lock manifest at every check and review, and report undisposed changes as blocker findings.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-07",
+        "AC-24"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-11",
+      "text": "If a relevant input changes while a check runs, Tenet shall treat that result as inconclusive.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-18"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-12",
+      "text": "Each check result shall keep an execution receipt (Section 3.8.3); a model-written summary is not a receipt.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-18"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-13",
+      "text": "Integration and end-to-end checks shall use a dedicated test database and a server instance verified as Tenet-started for this candidate, never the user's development data or an unverified process on the port (Section 5.13).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-18",
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "EVD-14",
+      "text": "Tenet shall classify imported CI results as externally produced, and as protected acceptance evidence only after the verification in Section 5.3.5.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-25"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "REV-01",
+      "text": "Consequential work shall receive a fresh-context native review of intent, the acceptance basis, the full diff including tests and configuration, and evidence receipts.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-06"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "REV-02",
+      "text": "Review shall give separate verdicts for behavior and intent, and for structure, security and charter; neither compensates for the other.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-06"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "REV-03",
+      "text": "Review shall list changes to assertions, test discovery, skips or focus markers, snapshots, mocks, suppressions, CI and dependencies for explicit disposition.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-07"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "REV-04",
+      "text": "Findings shall carry severity, evidence and a disposition under Sections 3.7.2 and 4.5.3.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-06",
+        "AC-27"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "REV-05",
+      "text": "Review shall stay within the lane's review-round budget (Section 4.4.2) plus one focused recheck; exhausting it is not approval and leaves unresolved items under the verdict policy.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-06"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "REV-06",
+      "text": "Tenet shall disclose reduced independence whenever it actually occurred, including same-session review or tests written and reviewed by the same session.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-06"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "REV-08",
+      "text": "When the change exceeds the Reviewer's context budget, Tenet shall split review coverage, narrow the increment, or report the uncovered parts, and shall not issue a whole-change verdict from partial coverage.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-06",
+        "AC-27"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "REV-09",
+      "text": "Review shall challenge the sufficiency of the acceptance basis and the fidelity of each acceptance test to its example, and propose missing behavior as assumptions or requirements without expanding scope.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-24"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RES-01",
+      "text": "The result shall lead with the outcome and how to use it, then checks, limits and next actions, with details on demand (Section 3.3).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RES-02",
+      "text": "The result shall state the endpoint chosen by the verdict policy (Section 4.5.2) and every condition that prevented a stronger one.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-07",
+        "AC-27"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RES-03",
+      "text": "Tenet shall not ask a routine final approval question; owner acceptance stays pending until the user accepts or rejects, or integrates the work.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RES-04",
+      "text": "At contract end, pause or budget stop, Tenet shall write a handoff sufficient to resume in a new session without re-explanation.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-08"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RES-05",
+      "text": "For user-facing changes, the result shall include a demo path: run instructions, the steps that show the confirmed examples and, for the `ui` trait, screenshots.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RES-06",
+      "text": "A review-only request shall end at findings; \"fix findings N and M\" shall implement only those findings and reuse the review context.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-04"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RES-07",
+      "text": "Tenet shall disclose stable host and assurance limits once and when they change, and repeat a limit only when it materially affects the current task.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RES-08",
+      "text": "While style is Guided, Tenet shall offer to start the local app under native consent and confirm the local URL responds.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-21"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "RES-09",
+      "text": "Before Deep work, Tenet shall show the expected budget envelope and its main cost drivers.",
+      "level": "Should",
+      "milestone": "B",
+      "acs": [
+        "AC-15c"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "GIT-01",
+      "text": "Checked implementation shall require a Git repository; in a non-Git folder Tenet shall offer to initialize one (only after the user chooses it), proceed read-only, or build a prototype backed by a snapshot.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-17",
+        "AC-25"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "GIT-02",
+      "text": "Tenet shall create a work branch from the current HEAD per contract unless the user chooses the current branch, record the base, state when work is stacked on an unintegrated branch, and never rewrite published history.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-25"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "GIT-03",
+      "text": "Tenet shall commit at green boundaries, staging only changes it authored in scope while preserving the user's index, following the project's commit convention, with `Tenet-Work` and `Tenet-Req` trailers whose names are fixed in R1 (recovery and undo find commits by the exact name).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-25"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "GIT-04",
+      "text": "Undo shall preview the inverse of the work's commits against current state, preserve later human changes, apply only after confirmation and run applicable checks afterwards.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-17"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "GIT-05",
+      "text": "Tenet shall push, open or merge remote pull requests, or publish only on explicit request.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-04",
+        "AC-25"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "GIT-06",
+      "text": "On request, Tenet shall draft a pull request description from the contract, examples, evidence and open findings.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-25"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "GIT-07",
+      "text": "The starter recipe shall include a CI workflow running the same check obligations.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-20",
+        "AC-25"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "GIT-08",
+      "text": "Tenet shall include uncommitted human edits in the candidate it checks, and shall never stage, commit, stash, reset or discard them without explicit consent.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-17",
+        "AC-25"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "GIT-09",
+      "text": "When Tenet's shared files conflict on integration, Tenet shall reconcile by ID, detect same-ID different-content collisions, and propose the merged content for user confirmation.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-17"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "GIT-10",
+      "text": "When work starts on a dirty working tree, Tenet shall record the starting HEAD, index and dirty paths and ask whether to commit the user's changes separately, include named files in scope, or leave them untouched.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-17",
+        "AC-25"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "GIT-11",
+      "text": "When the user accepts a result, Tenet shall offer to integrate the work branch into its base branch locally, following the `integration` setting, as a reversible step distinct from push or publication.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-25"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "GIT-12",
+      "text": "Tenet shall treat Git hooks, signing and configured Git programs as executable effects: inspect them before the first commit, run them under native consent, never bypass them, and rerun affected checks when hooks modify files.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16",
+        "AC-25"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "GIT-13",
+      "text": "Tenet shall report a specific readiness outcome for detached HEAD, rebase or merge in progress, unresolved conflicts, shallow clones, submodules, LFS and linked worktrees before implementing.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-25"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "GIT-14",
+      "text": "Tenet shall offer to delete a work branch after integration or abandonment, and never delete unintegrated work without consent.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-25"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "GIT-15",
+      "text": "If a checkpoint commit cannot be made under existing authority, Tenet shall keep the candidate uncommitted, report the recovery limitation and not claim the work is committed.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-17",
+        "AC-25"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-01",
+      "text": "At the end of the first successful increment, or on request, Tenet shall offer once, with a preview, to add the shared files of Section 3.2 to the repository, warn when the remote is public, and remember the answer.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-08",
+        "AC-15a"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-02",
+      "text": "Tenet shall keep operational state in `.tenet/` with its own `.gitignore`, user-only permissions where the OS supports them, an ownership marker, and no files with source, test or build-configuration extensions (snapshots stored as content-addressed blobs).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-17"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-03",
+      "text": "On resume, Tenet shall reconcile current source, branch and human edits with recorded state and reuse only valid evidence and corroborated authority (Section 5.14).",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-08"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-04",
+      "text": "Records shall carry schema version, project and work identity, revision and provenance, and be updated inside an atomic ownership boundary (Section 5.11).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-17"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-05",
+      "text": "If records are malformed, of unknown version or conflicting, Tenet shall diagnose and reconcile, never silently reset or infer authority.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-17"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-06",
+      "text": "Copied, imported, relocated or pre-populated records shall confer no authority and no behavior until reviewed (Section 5.6).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-08",
+        "AC-16"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-07",
+      "text": "If `.tenet/` is lost, Tenet shall reconstruct from repository memory and Git history, ask only consequential unknowns and never fabricate evidence.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-08"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-08",
+      "text": "Tenet shall keep `.tenet/` within the storage budget using the eviction order of Section 5.15.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-19"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-09",
+      "text": "Review-only and readiness requests shall create no files in the project, including `.tenet/`; by default they run as a single stateless kernel call, may use host plugin storage outside the workspace where available, and export durable results only on request.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-04"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-10",
+      "text": "Reset a preference, forget a lesson, delete records, abandon work, undo and uninstall shall be separate actions, each previewing its consequences.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-09",
+        "AC-10"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-11",
+      "text": "When the project moves, is cloned, or changes branch or machine, Tenet shall reconcile scope instead of transferring authority by path.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-17"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CON-12",
+      "text": "Tenet shall record intended, dispatched and observed effects so a crash between an effect and its record is detected and reconciled before any retry.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-17"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-01",
+      "text": "Tenet shall use native permissions, explain why each is needed, its scope and what declining prevents; a denied action stays denied and is not retried through another tool.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-03"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-02",
+      "text": "Tenet shall treat repository, retrieved, tool-output and lesson content as untrusted data that cannot grant authority, change acceptance or trigger egress; adopted shared files follow Section 5.6.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-16"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-03",
+      "text": "Tenet shall collect no credentials, unrelated projects, private chat histories or telemetry by default.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-11"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-04",
+      "text": "Before first execution, Tenet shall classify each command by its declared execution envelope (Section 5.8), not by its name.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-04",
+        "AC-16"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-05",
+      "text": "For new dependencies, Tenet shall verify identity and existence, license, install scripts including transitive lifecycle scripts, and lock resolution, and seek native consent for executable changes.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-06",
+      "text": "Bundled helpers shall accept only validated structured input, resolve workspace boundaries including symlinks, and expose no generic execution endpoint.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-07",
+      "text": "R1 shall bundle no MCP server or MCP configuration, except the Tenet kernel front-end of Section 5.7.1 when SP-12 selects it.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-11"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-08",
+      "text": "Tenet shall honor declared exclusions (no-model-send, no-read, no-edit, no-export, no-routine-scan) before affected reads where controllable, disclose host limits and block incompatible work.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-16",
+        "AC-23"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-09",
+      "text": "Review shall flag new network destinations, telemetry calls, credential handling and permission changes introduced in generated code.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-16",
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-10",
+      "text": "Tenet shall never weaken tests or CI, bypass hooks, or alter permissions to make a task pass.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-07"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-11",
+      "text": "Tenet shall redact likely secrets from displayed output, traces and exports, and never write credential values into records or fixtures.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-11",
+        "AC-16"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-12",
+      "text": "Shared project files and imported or pre-populated `.tenet/` content may add restrictions and obligations but shall never grant authority, add egress, relax floors or authorize commands; changes made outside Tenet need user acceptance before they relax anything (Section 5.6).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-13",
+      "text": "If host tool auto-approval is enabled or unknown, Tenet shall ask in chat before remote mutation, project-content egress and destructive actions, and label that gate advisory.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-03",
+        "AC-16"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-14",
+      "text": "Tenet shall apply the default exclusions of Section 5.10.2 for common secret files.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16",
+        "AC-23"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-15",
+      "text": "If a check's execution envelope has unknown network, data or credential exposure, Tenet shall obtain the user's authorization to run with the stated unknowns and disclose them in the result.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-16"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "SEC-16",
+      "text": "When work concerns regulated, safety-critical, clinical or financial-transaction functions, Tenet shall state that its verdicts cover software checks only and that qualified human expertise is required.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CFG-01",
+      "text": "Users shall change settings in ordinary language and receive the interpreted value and scope; persistence, read-back and confirmation follow Section 7.5.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CFG-02",
+      "text": "R1 shall expose the catalog in Section 7.3 and no others.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CFG-03",
+      "text": "Tenet shall resolve settings as defined in Section 7.4; project commitments and external restrictions shall apply regardless of preference order.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CFG-04",
+      "text": "`/tenet why` shall explain the effective value, its source and adoption state, overridden values and capability limits.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CFG-05",
+      "text": "Configuration shall never grant authority or create a capability.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-23"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CFG-06",
+      "text": "Style and checkpoints shall change presentation and pacing only, never depth, authority or evidence floors.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-15a",
+        "AC-21"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CFG-07",
+      "text": "Explicit \"always in this project\" corrections shall persist locally with provenance without re-asking; inferred preferences shall need confirmation.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-09"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "CFG-08",
+      "text": "Personal preferences shall never be written into shared files.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-15a"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CFG-09",
+      "text": "Tenet shall coexist with other plugins, instruction files and host memory features without rewriting or disabling them (Section 7.9).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CFG-10",
+      "text": "Reapplying unchanged settings shall be idempotent.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "CFG-11",
+      "text": "Unknown or malformed configuration whose intended effect may be a restriction shall block dependent actions until resolved (Section 7.7).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-23"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RSC-01",
+      "text": "Tenet shall use the active model without asking the user to switch models per phase. A disclosed economy-tier model preference for the read-only researcher role is permitted once release qualification shows it meets that role's thresholds, and the user can decline it in words; the Reviewer and authority-bearing roles always inherit the active model.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-15b"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RSC-02",
+      "text": "Tenet shall record the requested and observed model per assignment where observable; unknown stays unknown.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-15b"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RSC-03",
+      "text": "Tenet shall respect native limits and never fund, purchase, enable overage or switch to a paid route without explicit authority.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-15c"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RSC-04",
+      "text": "Tenet shall report per-contract counts of attempts, review rounds, delegations, Tenet-launched checks and active work time; comparative overhead is an evaluation metric (Section 6.6).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-15c",
+        "AC-19"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "RSC-05",
+      "text": "While resource mode is Conserve, Tenet shall prefer focused passes for optional roles; while it is Serial, Tenet shall dispatch no optional or parallel subagents; the review required by the Section 5.2 floors still runs.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-15c",
+        "AC-23"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "RSC-08",
+      "text": "Tenet shall label the active model qualified, unqualified or unknown from golden-suite results (Section 6.4.4) and warn before Deep work on an unqualified or unknown model.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-15b",
+        "AC-26"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "LRN-01",
+      "text": "Tenet shall apply an explicit correction to the current task immediately.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-09"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "LRN-02",
+      "text": "Project lessons shall be scoped, inspectable and resettable, carry provenance, and never transfer to another project without explicit scope.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-09"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "LRN-03",
+      "text": "Tenet shall turn a reported defect into a reproduction test before fixing it.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-05",
+        "AC-09"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "LRN-04",
+      "text": "At contract end, Tenet shall propose lessons only when supported by evidence from that work, for user confirmation.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-09"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "LRN-05",
+      "text": "Learning shall never weaken acceptance, add permissions or change evaluators.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-09",
+        "AC-14"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "LFC-01",
+      "text": "Tenet shall version releases with SemVer against the public compatibility contract of Section 6.5.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-10"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "LFC-02",
+      "text": "Release notes shall disclose changed permissions, destinations, executable content, evaluators, schemas and evaluated behavior changes.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-10",
+        "AC-11"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "LFC-03",
+      "text": "Each contract shall record the Tenet package, recipe, adapter and schema versions it uses; when an update is observed mid-contract, Tenet shall pause at the next boundary and reconcile or migrate the contract explicitly, never mixing versions silently.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-10"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "LFC-04",
+      "text": "Schema migrations shall be previewed, preserve overrides and unknown fields where safe, and have a tested path back to the previous known-good release.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-10"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "LFC-05",
+      "text": "Disable and uninstall shall preserve code, specs and evidence, list residual files and offer optional cleanup of `.tenet/`.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-10"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-01",
+      "text": "The starter shall demonstrate persistence, validation, server-side object and role authorization, and a real local journey.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-02",
+      "text": "The starter shall meet its published list of applicable OWASP ASVS 5.0 Level 1 requirements, each with a verification method (automated, behavioral test or manual review), non-applicability reasons and results; scans alone shall not be presented as ASVS conformance.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-03",
+      "text": "The starter UI shall meet WCAG 2.2 AA on its declared critical journeys and their states, verified by automated, keyboard and screen-reader checks; claims shall name the journeys covered.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-04",
+      "text": "The starter shall include structured logging with redaction, a health endpoint and consistent non-leaking error responses.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-05",
+      "text": "Each application recipe shall declare a reference workload and fitness functions (Section 5.16); checks shall report trends across changes without claiming whole-application conformance from changed flows, and a trend crossing its declared degradation threshold across consecutive checks shall raise an attention item rather than only appear in a report.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-19",
+        "AC-20"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-06",
+      "text": "Tenet shall apply the obligations contributed by the project's and the change's traits (Section 3.8.4).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-07",
+      "text": "Schema changes shall include a migration tested against prior-version fixture data and, where user data exists, a consistent backup through a supported mechanism with a tested restore; Tenet shall never reset data to make tests pass.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-08",
+      "text": "As part of handover, Tenet shall keep README run instructions, decision records, the architecture doc and CHANGELOG current.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "QLT-09",
+      "text": "Tenet shall apply the project charter, or the default charter (Section 1.8) when none exists.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-15a"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-10",
+      "text": "Tenet shall flag a suspected out-of-scope improvement instead of expanding the task.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-13a"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-11",
+      "text": "Tenet shall detect, record and let the user correct project and change traits (Section 3.8.5).",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-12",
+      "text": "The starter shall follow the identity, exposure and data model of Section 5.16.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-16",
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-13",
+      "text": "For changes with `auth`, `persistence`, `personal-data` or `external-effects` traits, Tenet shall record a short threat and data note whose security items become tests or constraints.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-14",
+      "text": "For the `ui` trait, Tenet shall cover the states listed in Section 3.8.4 for each changed flow.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-15",
+      "text": "Tenet shall record each project's recipe version and offer recipe upgrades as ordinary work items with a diff preview.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-10",
+        "AC-20"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "QLT-16",
+      "text": "Maintainers shall refresh starter dependencies monthly and respond to critical vulnerabilities in starter dependencies within the release-stewardship window (Q-09).",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "QLT-17",
+      "text": "The starter and every prototype shall keep `docs/hardening.md` listing what must change before shared, networked or production use.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-20"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "ENG-01",
+      "text": "Tenet's core shall ship in Agent Skills format with thin host bindings (Section 3.8.1).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-01",
+        "AC-26"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "ENG-02",
+      "text": "Each host binding shall ship a capability descriptor, and core logic shall branch on capabilities only (Section 3.8.2).",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-03",
+        "AC-26"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "ENG-03",
+      "text": "Tenet's CI shall lint skills and agents for validity and enforce the context budgets of Section 4.4.3.",
+      "level": "Must",
+      "milestone": "M0",
+      "acs": [
+        "AC-19",
+        "AC-26"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "ENG-04",
+      "text": "Tenet shall run its evaluation tiers as defined in Section 6.4.3, blocking merges on deterministic-tier regressions and releases on full-suite regressions.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-26",
+        "AC-28"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "ENG-05",
+      "text": "Maintainers shall rerun the native-host suite monthly and when a host model change is observed; until then the support matrix shall label the combination \"not yet evaluated with the current model\".",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-26"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "ENG-06",
+      "text": "Trace fields shall follow the pinned OpenTelemetry GenAI subset (Section 3.8.8).",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-13a"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "ENG-07",
+      "text": "Releases shall satisfy the verification chain of Section 5.9.2.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "ENG-08",
+      "text": "Before R1, maintainers shall complete one bounded improvement experiment under Section 6.10.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-14"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "ENG-09",
+      "text": "Trace events shall link intent revision, work, role, observed model, action, permission outcome, check outcome, timestamps and termination state, and shall declare visibility gaps.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-13a"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "ENG-10",
+      "text": "Tenet's own CI shall follow the security tiers of Section 5.9.3.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-28"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "ENG-11",
+      "text": "Until two maintainers exist, changes to executable content, hooks, helpers or permissions shall follow the solo-maintainer review rule of Section 5.9.2, disclosed in release notes.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "OSS-01",
+      "text": "The repository shall publish a license, attribution, CONTRIBUTING, code of conduct, SECURITY.md and the supported-version policy.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "OSS-02",
+      "text": "Documentation shall include a quickstart, an examples gallery (new app, brownfield bug, review) and troubleshooting.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-02"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "OSS-03",
+      "text": "Recipe, role and host-binding contributions shall follow an RFC process and carry a certification level (experimental, community, official).",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-20"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "OSS-04",
+      "text": "Using Tenet shall not require disclosure of application source or give Tenet any ownership of the application; obligations from incorporated templates, snippets, assets and dependencies remain and are listed for the starter.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "OSS-05",
+      "text": "Before publication, maintainers shall review the source tree and reachable history for private material separately from package inclusion.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-11"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "OSS-06",
+      "text": "`/tenet feedback` shall produce a redacted, previewable report the user can attach to an issue.",
+      "level": "Should",
+      "milestone": "R1",
+      "acs": [
+        "AC-11",
+        "AC-21"
+      ],
+      "disposition": "unreviewed",
+      "qualification": "not-qualified",
+      "note": "Should disposition remains open; no omission inferred."
+    },
+    {
+      "id": "NFR-01",
+      "text": "Tenet shall meet the system budgets of Section 4.4.3 on the frozen reference fixtures.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-19"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "NFR-02",
+      "text": "Tenet's own messages shall be usable by keyboard and screen reader, use text rather than color-only status, and state what failed, what remains safe and the next action.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "NFR-03",
+      "text": "A required control shall never fail open silently.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-03",
+        "AC-13b"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "NFR-04",
+      "text": "If network, model or tools fail, Tenet shall preserve known state and budgets, avoid spawning fallback work, and clean up only Tenet-owned processes and temporary paths.",
+      "level": "Must",
+      "milestone": "A",
+      "acs": [
+        "AC-17",
+        "AC-19"
+      ],
+      "mapping": "mapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "NFR-05",
+      "text": "Tenet shall report its active work time separately from provider, tool, network and user waiting time.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-19"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "NFR-06",
+      "text": "R1 interaction language shall be English; generated application locale, time zone and code conventions are independent project decisions.",
+      "level": "Must",
+      "milestone": "R1",
+      "acs": [
+        "AC-21"
+      ],
+      "mapping": "host-only",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    },
+    {
+      "id": "NFR-07",
+      "text": "Diagnostics shall be redacted and exported only on user request, with the included content previewed.",
+      "level": "Must",
+      "milestone": "B",
+      "acs": [
+        "AC-11"
+      ],
+      "mapping": "unmapped",
+      "disposition": "unreviewed",
+      "uncoveredAcIds": [],
+      "evidenceTiers": [],
+      "evidenceRefs": [],
+      "campaignRef": null,
+      "qualificationBinding": null,
+      "qualification": "not-qualified"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "path": "packages/eval/src/protocol.ts",
+      "sha256": "553c095cf00d15aa6dcfaf8aa1134957cf491afc2bdef22e6761e231073d4fa7"
+    },
+    {
+      "path": "packages/eval/src/replay.ts",
+      "sha256": "33e2d0f3d934c0bdbd630a363f9be339fbdb989900e8c170d1f779cdcc1a8f55"
+    },
+    {
+      "path": "packages/eval/src/report.ts",
+      "sha256": "e293926a0018daa51ef9e8e8b25096677d44c2010e1c7bcfdfe4e3f10850f6f3"
+    },
+    {
+      "path": "packages/eval/src/tuple.ts",
+      "sha256": "8e6231f8f2e11a2cbbd1ec9a07b855d405588722d932d4c3892a2bffaddc5db9"
+    },
+    {
+      "path": "packages/eval/test/protocol.test.ts",
+      "sha256": "db68f85345b9d777b78eadefbbf92b51059cf2c5ece1c45270d76b8bf543c31e"
+    },
+    {
+      "path": "packages/eval/test/replay.test.ts",
+      "sha256": "84e0e2128e1ccfdd1d49b81876a0bd1d36c0cc29eb4584ab9dc9ce08d800c7e7"
+    },
+    {
+      "path": "packages/eval/test/report.test.ts",
+      "sha256": "89d6b6392226faf483081a1e02011f8d8aae2800f9f885c9fc327cc870954289"
+    },
+    {
+      "path": "packages/kernel/src/adapters/git-cli.ts",
+      "sha256": "a6a25a8515e48bf728b3a31e819ac06f4c6e293f7fb7bfe5323c7e6d30a00c86"
+    },
+    {
+      "path": "packages/kernel/src/adapters/git-layout.ts",
+      "sha256": "ca922e3bcf2fd15e7f014d41a84c28a13a8514e0d55b8d3b99e0c907ad7e753d"
+    },
+    {
+      "path": "packages/kernel/src/adapters/host-plugin.ts",
+      "sha256": "820c55dd3c447e90b057ba7d2b0ce519caee85679f436c2010a2163fc1ca9e53"
+    },
+    {
+      "path": "packages/kernel/src/adapters/node-ts.ts",
+      "sha256": "93f041883a8e81afc3c10512555bc544f8e9e252a15f8b8b53717c3d4dcc23cd"
+    },
+    {
+      "path": "packages/kernel/src/adapters/playwright.ts",
+      "sha256": "bc9b5204da4f0c29c47b0c1e368bd442ea99b69b85cecf84b9917b796ddd2e8a"
+    },
+    {
+      "path": "packages/kernel/src/adapters/proc.ts",
+      "sha256": "5c2356b70e5fed1bf05e182950bb745582e41a438413965f6a9f380158be7298"
+    },
+    {
+      "path": "packages/kernel/src/adapters/project-fs.ts",
+      "sha256": "9683aad2d652562c72a578cf79c3c150e4b9297105482b9ec24119894f51456e"
+    },
+    {
+      "path": "packages/kernel/src/adapters/quarantine-fs.ts",
+      "sha256": "fea18b87674224ca796f1b24209bb62102660295eeea0f09bedcade2f3f4966a"
+    },
+    {
+      "path": "packages/kernel/src/adapters/recipes-fs.ts",
+      "sha256": "fc76ab5583d46b51cb393768368dfc198cdf73e2a9bc685b9a7caefc31bdea2c"
+    },
+    {
+      "path": "packages/kernel/src/adapters/report-bounds.ts",
+      "sha256": "f511bfe83471bb22ce47d16e1520f27e82b6571dd86cb44fda4b6c8e31105144"
+    },
+    {
+      "path": "packages/kernel/src/adapters/runner.ts",
+      "sha256": "9ab74261f5d92997924f227d602aff1baad3fd0b08bdc7838b4e22ae77bae8b5"
+    },
+    {
+      "path": "packages/kernel/src/adapters/store-fs.ts",
+      "sha256": "0060b5822c7171b420805f4659e037f4cb0854f76f9d4a0725756a788479f480"
+    },
+    {
+      "path": "packages/kernel/src/adapters/system.ts",
+      "sha256": "c9ed5fd274631c9b54c9f14e94aa1a08e1ef0d361ecd89a9abb1aed4ad2202d9"
+    },
+    {
+      "path": "packages/kernel/src/core/attribution.ts",
+      "sha256": "423202c382018b231e6208f69de638ae0c59767098e871cacf828f9bf222f3c4"
+    },
+    {
+      "path": "packages/kernel/src/core/authority.ts",
+      "sha256": "41834d09e91dc12bba698e0c5759f7a8fb2988dbb2516b40ef4993d19bccd09f"
+    },
+    {
+      "path": "packages/kernel/src/core/basis-build.ts",
+      "sha256": "9f4bf2e8daa3b18eb0358727af19c26958b67c1fed8b38233bd2f862cc6b558b"
+    },
+    {
+      "path": "packages/kernel/src/core/budget.ts",
+      "sha256": "33b7ddaac0df20f9a1774289d1adca887da2ab42f6b84374d09d7c37f194255a"
+    },
+    {
+      "path": "packages/kernel/src/core/capabilities.ts",
+      "sha256": "b9bc756d4c549ddaa380ddc16a607d8de4b7f58034fc82eed1516c8aa67b98e9"
+    },
+    {
+      "path": "packages/kernel/src/core/charter.ts",
+      "sha256": "dc76a063c8090f4eebb89043100195af9c637898b7e9875ec966bcf588ae7cee"
+    },
+    {
+      "path": "packages/kernel/src/core/config.ts",
+      "sha256": "491e32a4a09e580dd1985a422f7f96f4aac03521812468f1c4cd87eb14265c8d"
+    },
+    {
+      "path": "packages/kernel/src/core/controls.ts",
+      "sha256": "38fa14f97155abfd4826c872152b0b7ee6cfd986c1aa831bcd9519dc69b76bd3"
+    },
+    {
+      "path": "packages/kernel/src/core/demo.ts",
+      "sha256": "3a26394d6fc32e51cf4c895dade784acc38888d3c268aeff0c05e45abb3e5155"
+    },
+    {
+      "path": "packages/kernel/src/core/dependencies.ts",
+      "sha256": "e196d2948fe86c24032633c8868b30c583b3b8834d0fa299af59486032dde25e"
+    },
+    {
+      "path": "packages/kernel/src/core/dependency-admission.ts",
+      "sha256": "f23782af42f6f97327967afaa542a92e4420f1bc530b459b790bfec46625ab42"
+    },
+    {
+      "path": "packages/kernel/src/core/errors.ts",
+      "sha256": "a248bf619a4113ab651d1f84ce1bcf5006bda35daaa8e752af611acb9f173c97"
+    },
+    {
+      "path": "packages/kernel/src/core/exclusions.ts",
+      "sha256": "d41a3d721513e6bbd8a1fe86c5a903576b05db61f912af8409feeaf49fe20ce3"
+    },
+    {
+      "path": "packages/kernel/src/core/execution-envelope.ts",
+      "sha256": "b2d92af1181746d74790978a4642d95fe528d19a91ee1dc2de13af15675e33bc"
+    },
+    {
+      "path": "packages/kernel/src/core/git-filters.ts",
+      "sha256": "29d52bebc1b87fd32f9bb8ea61016d772e026f9a3d7b8feae7ea26d8f75d5fd9"
+    },
+    {
+      "path": "packages/kernel/src/core/handoff.ts",
+      "sha256": "d15a9d97975c8b1002455cd80adc28a8d5612b48df43a82a99e81d37e8644512"
+    },
+    {
+      "path": "packages/kernel/src/core/ids.ts",
+      "sha256": "2d6ba74ef74b70bdca2bbe10810715f2bfdfcee57100094b302fb4d817393ff1"
+    },
+    {
+      "path": "packages/kernel/src/core/impact.ts",
+      "sha256": "661434dafa670abe6c6e05c3deeb47413578e0e8a554b2b3e21cdc5881847af6"
+    },
+    {
+      "path": "packages/kernel/src/core/input.ts",
+      "sha256": "a2dd35edfac80b2e368a6197f8da58df8e38aa3325339db5d31ad341a870d8c9"
+    },
+    {
+      "path": "packages/kernel/src/core/intent-md.ts",
+      "sha256": "b008132688012022184ddb39316eac06516a6e09e2d5e234860942b70a2a7037"
+    },
+    {
+      "path": "packages/kernel/src/core/journal-reduce.ts",
+      "sha256": "328ece4cdda8425719bbe4f38efb58db72664490b611fceda8ba204841f4996a"
+    },
+    {
+      "path": "packages/kernel/src/core/lessons.ts",
+      "sha256": "f94069019d43d4c99a5422b4ccd2befa1258fd95d92730a7a425084831ad267d"
+    },
+    {
+      "path": "packages/kernel/src/core/obligations.ts",
+      "sha256": "d4da9cf02c9aa34a4265e1a7b2a5e21c0afa1c30ab019d7562ab2b012b13bb9c"
+    },
+    {
+      "path": "packages/kernel/src/core/outputs.ts",
+      "sha256": "94288575b3bf45d44180119565a93af7a411e48b8e435745ee76875f275adcc2"
+    },
+    {
+      "path": "packages/kernel/src/core/plan.ts",
+      "sha256": "090b1bb767710bdc5339906ff4cec4b560b84b74a810df0a4e0d9f249f44c86b"
+    },
+    {
+      "path": "packages/kernel/src/core/policy.ts",
+      "sha256": "4395ee60b9122ce5bf7670221bc9513a1351f7c39527519d7a6e3710db77e035"
+    },
+    {
+      "path": "packages/kernel/src/core/reasons.ts",
+      "sha256": "173de4fd1a6ff390290b70e747c3aa6b759e8b5773015464f853298e7bfc23e0"
+    },
+    {
+      "path": "packages/kernel/src/core/receipts.ts",
+      "sha256": "72ae6b5e047912b55655284165cf24fec6938fe90dbf04024ebc0de1df46f70a"
+    },
+    {
+      "path": "packages/kernel/src/core/redact.ts",
+      "sha256": "302a738c9696b000cd6922383abf1bd5a07ff8b3af3612021075ccd3c09b2ab2"
+    },
+    {
+      "path": "packages/kernel/src/core/residue.ts",
+      "sha256": "021f11796368af3ac796b5f7ef14b205773954e74ea0c2e0211988ee188a467f"
+    },
+    {
+      "path": "packages/kernel/src/core/review.ts",
+      "sha256": "0b4ba005bfb63d6237fb960dcf661084f5149394aea1ba74599672c54a1a1a0c"
+    },
+    {
+      "path": "packages/kernel/src/core/risk.ts",
+      "sha256": "2c2eeff2370b97f52962c1da646bcdc0ce4b94dba5d4c7a25b603e0673e0409a"
+    },
+    {
+      "path": "packages/kernel/src/core/schemas.ts",
+      "sha256": "bc7d99387ae7d97d4b21606e0579a3a360158f281b829f5667239a30afbe1efc"
+    },
+    {
+      "path": "packages/kernel/src/core/state.ts",
+      "sha256": "4e484a8ebb8111be646e2835876d30e981807609354285ee7afdc258bc4ac3aa"
+    },
+    {
+      "path": "packages/kernel/src/core/trace.ts",
+      "sha256": "bc9b3f2c2502961cc639fe1ed7f717d9418277896a37a6e0b2b693c6679412af"
+    },
+    {
+      "path": "packages/kernel/src/core/traits.ts",
+      "sha256": "0d7cf75d4654741d4feff37aa72353c3f0d95106f71b7b66ca5e87ccef045199"
+    },
+    {
+      "path": "packages/kernel/src/core/trust.ts",
+      "sha256": "280abacf3f4dc2bdf49c047fbf79ebbb8c1b04e63d0933cf3954a40e03f4de4c"
+    },
+    {
+      "path": "packages/kernel/src/core/verdict.ts",
+      "sha256": "8775f971c64c9f975cccaa4b14874787177da719774b6e36e557824a6d55f2d3"
+    },
+    {
+      "path": "packages/kernel/src/core/versions.ts",
+      "sha256": "315a146365c526f2000a8dceb4c338608cb9f717bde2cf99462627d4c69786eb"
+    },
+    {
+      "path": "packages/kernel/src/decisions/abandon.ts",
+      "sha256": "7f72e2bff8e9ccb5919b0306c554fe785a17872669d5dfd8253f48f62be9f7c8"
+    },
+    {
+      "path": "packages/kernel/src/decisions/adopt.ts",
+      "sha256": "222f0268eaad0e5b3dbcfd9e554246dae8631c213d6267b05fc90bdee4a72b7a"
+    },
+    {
+      "path": "packages/kernel/src/decisions/basis.ts",
+      "sha256": "57d7cc011f3a3e209c2311a3dce724192989fe7528397848caf9f4d0028eb83a"
+    },
+    {
+      "path": "packages/kernel/src/decisions/cleanup.ts",
+      "sha256": "ce56e9485689e8a41a1b63a77a7666a14d87292415ebb1a7a2cf29da22068510"
+    },
+    {
+      "path": "packages/kernel/src/decisions/consent.ts",
+      "sha256": "5206e5a41abe6db1450e5b638e790f57ffb57a458052bb916ff6983aa0648c68"
+    },
+    {
+      "path": "packages/kernel/src/decisions/decision-record.ts",
+      "sha256": "f6f536c1edb3b5abf3277c842170cd406362fff1c4e9451ea39abfa2412ea70d"
+    },
+    {
+      "path": "packages/kernel/src/decisions/decline.ts",
+      "sha256": "adc0e988eb4a0ac5ae2839784430dd28426d7405300b7d06850bf1651512d3f4"
+    },
+    {
+      "path": "packages/kernel/src/decisions/dependency-job.ts",
+      "sha256": "c19cf2ebf68e57d750856325ee4292286d5a54814cdfe096f06fda02e8425243"
+    },
+    {
+      "path": "packages/kernel/src/decisions/dependency-start.ts",
+      "sha256": "be8f61396cc96f1f9cfd860087791cf1a14be0ee0d126f72aaeabc400fd42b12"
+    },
+    {
+      "path": "packages/kernel/src/decisions/dependency.ts",
+      "sha256": "125082f78f5d9be85ebcc5f1ac4766d66362631850cf3d2b5eaf7a05f9d2a57f"
+    },
+    {
+      "path": "packages/kernel/src/decisions/extend.ts",
+      "sha256": "435d19a5c99cfb2367c312c9e5a2651274984615c0024d3c506573eea0841a74"
+    },
+    {
+      "path": "packages/kernel/src/decisions/forget.ts",
+      "sha256": "c2c52c3ef2f2246f06b70e009b63fed48525a4c95e9e7b9431ee1a3a02479ebd"
+    },
+    {
+      "path": "packages/kernel/src/decisions/grant.ts",
+      "sha256": "fd3ffe0764afb022469e245d82380b4c8f116cd03372383dfefb283aec89b952"
+    },
+    {
+      "path": "packages/kernel/src/decisions/hardening.ts",
+      "sha256": "0f8389ebcd457f3584829e22d0269960b51d3623758dacaf41409bbf7a680144"
+    },
+    {
+      "path": "packages/kernel/src/decisions/index.ts",
+      "sha256": "a9a31f7e4a43b70dc53c6a90abc5c214915f4e75d11492593d1c4b7cbf01ec10"
+    },
+    {
+      "path": "packages/kernel/src/decisions/lesson.ts",
+      "sha256": "f29fab0273a1a3740e25a9dc41448d93592041cade8bb345a09ed12b79fd5d80"
+    },
+    {
+      "path": "packages/kernel/src/decisions/overview.ts",
+      "sha256": "ce5ca7c34d5b392484f9f3fcc80d66bf8190c88001fa0923d17771885e605ceb"
+    },
+    {
+      "path": "packages/kernel/src/decisions/plan.ts",
+      "sha256": "0033160cff6260669b9c3c40fa31932e4c95d02b822360673bcf2c64a3a12158"
+    },
+    {
+      "path": "packages/kernel/src/decisions/quarantine.ts",
+      "sha256": "80933b972c2e4be50ffd6a465eef9a5c9e9396560e18711da77bf646e55507cb"
+    },
+    {
+      "path": "packages/kernel/src/decisions/scaffold.ts",
+      "sha256": "83aa9954cf5f56b3d8d9f40674459fc5814aa3bf2aabb400d2d671b6518723b0"
+    },
+    {
+      "path": "packages/kernel/src/decisions/simple.ts",
+      "sha256": "1061d8073f3e7886c568b9c72e8f015ca732799dde86baa1ec6837568b7c8cf8"
+    },
+    {
+      "path": "packages/kernel/src/decisions/takeover.ts",
+      "sha256": "2ef3d71942acceb5f7fe040475c1d86f56d3785140924b0fc4ed1ebf1ccbb3ff"
+    },
+    {
+      "path": "packages/kernel/src/decisions/types.ts",
+      "sha256": "1a3c937f52c29ac41e4e76792a35ab4fec32a0ad62fabf52e2d44848d5cddd55"
+    },
+    {
+      "path": "packages/kernel/src/decisions/undo.ts",
+      "sha256": "2e38db5d26044e598f5fa70dfcede3ab8f0259e30a6662ee323c7a95449278a8"
+    },
+    {
+      "path": "packages/kernel/src/decisions/version-reconcile.ts",
+      "sha256": "6f653388c0d27782eddee6212b448040765b75f2b01733bc52c08be50024b609"
+    },
+    {
+      "path": "packages/kernel/src/frontends/cli.ts",
+      "sha256": "52bd14c35742dbd13098feeca856111e335e86fa028907e523153fb863fc299b"
+    },
+    {
+      "path": "packages/kernel/src/main.ts",
+      "sha256": "bae16752378926f051bc44bb3e5ea9ce27d7dde428654b7eed6d3005350eca3f"
+    },
+    {
+      "path": "packages/kernel/src/pipeline-mutate.ts",
+      "sha256": "865840a9683b5bf88722e874bafd71d076eef0dfb38cf8e3dcbaa11cdc2930bc"
+    },
+    {
+      "path": "packages/kernel/src/pipeline-render.ts",
+      "sha256": "c5216cf54349c0fee1a4a09cdc1d8903ca84d17e8f86c5cbd24a64704781100a"
+    },
+    {
+      "path": "packages/kernel/src/pipeline-version.ts",
+      "sha256": "1f19292adc7dd18af049271ed45efb065301718915fe4cc56ea88d9dc1e878b7"
+    },
+    {
+      "path": "packages/kernel/src/pipeline.ts",
+      "sha256": "fa4bf4587ede76db0fc6b9b287a0bbd3d33fe26a0d242d4be3b8ca4afadbc7b7"
+    },
+    {
+      "path": "packages/kernel/src/ports/types.ts",
+      "sha256": "73372616b91689929f1f8c590590c04aca50e7cf294bb4680deb646883ec4ca3"
+    },
+    {
+      "path": "packages/kernel/src/verbs/authority.ts",
+      "sha256": "f06a769827a421af07247bb87bc0140252661a4883d0576080ff5e6c26a207d9"
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-envelope.ts",
+      "sha256": "7f2e8455f1f5de502b459ec6a20f26b7e83abfaffca0faf7895cce00f9ce56e8"
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-evidence.ts",
+      "sha256": "4077330ea77e2b70181af8daf02547aee80e50047a82d8dcaec6fd25a3d5d355"
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-execute.ts",
+      "sha256": "67ed5dc5141e758d254ad5bf1a9cf585a9e718c851716eca26fca372b5975289"
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-finalize.ts",
+      "sha256": "72520daed0f78ac2d438c67ac2bf6a150b5c4b182fe2e69e731b02499a293c29"
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-outputs.ts",
+      "sha256": "3ecffb599da08143b45b563ce4c36743fdc348cbf893e263a2cd90e5b2d10315"
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-rerun.ts",
+      "sha256": "3e293e8253c32601ec68f179b56f4f3c65d888d4f6c784b44eb418b092c3c160"
+    },
+    {
+      "path": "packages/kernel/src/verbs/check.ts",
+      "sha256": "1b1c6ea54c54f150832adf083b867b1eb4d8237a87ef6964785e20fc34ae3733"
+    },
+    {
+      "path": "packages/kernel/src/verbs/commit-questions.ts",
+      "sha256": "24adad78eb9f41386871affc8706881637ede5ddcdfc0116f17c96da621c91b4"
+    },
+    {
+      "path": "packages/kernel/src/verbs/commit.ts",
+      "sha256": "19cabe030bf8c3ce1334c7c44d123834c0154df358599c24903bab7e96db9448"
+    },
+    {
+      "path": "packages/kernel/src/verbs/common.ts",
+      "sha256": "56e78c5b37526f149294d441fbe9b68d9027d5c6e1ef5f5a2d57b6d61e72a71d"
+    },
+    {
+      "path": "packages/kernel/src/verbs/decide.ts",
+      "sha256": "73c2b28a231e373ea90e3de06839aaddd53614196bfb4b1269cc43cc26f9ac5e"
+    },
+    {
+      "path": "packages/kernel/src/verbs/dirty.ts",
+      "sha256": "b50414e1403d60a336c166abc1322ef4b0908122931ccedb6b2408dd3a2f7b9e"
+    },
+    {
+      "path": "packages/kernel/src/verbs/facts.ts",
+      "sha256": "8d2a8298d4cec5fee6de7a380e3174fab1b4436c1de8a58d7084efd5f36139a9"
+    },
+    {
+      "path": "packages/kernel/src/verbs/findings.ts",
+      "sha256": "1672f5054d939b4963899caa61186524075d602fe83baad4059727b225237b51"
+    },
+    {
+      "path": "packages/kernel/src/verbs/finish.ts",
+      "sha256": "b07805bbc130604e03ac570b0253a556f1af27648bce8ab0ccdfc78134156bcb"
+    },
+    {
+      "path": "packages/kernel/src/verbs/index.ts",
+      "sha256": "73ef36a134c1788e5ed074cd3db5a380aafb51c7e46f4788b07c41a92af10f9a"
+    },
+    {
+      "path": "packages/kernel/src/verbs/inspect.ts",
+      "sha256": "a6c634ce95744dd236c029ffe60f9aad0c9a550c75e48e1d6213ccc83ca30484"
+    },
+    {
+      "path": "packages/kernel/src/verbs/integrate.ts",
+      "sha256": "8f82b073c5ff3594b574c940ad5f0cd750fd80c60f1fad8ca54bd105abd2b1b4"
+    },
+    {
+      "path": "packages/kernel/src/verbs/manifest.ts",
+      "sha256": "3ff1c298f6ed773498b4aa0e83a152edff85bd11c37796c30120bb935b5904a0"
+    },
+    {
+      "path": "packages/kernel/src/verbs/open-context.ts",
+      "sha256": "6ef5f982b574c4e486807b1bce03336ac7ba530f245a6100c2c32e2ca5121f93"
+    },
+    {
+      "path": "packages/kernel/src/verbs/open-new.ts",
+      "sha256": "16a9db8ed3eb4ac62ccfa91c7aa619ef5b1d68baaf3e2f1ea896259351433d51"
+    },
+    {
+      "path": "packages/kernel/src/verbs/open.ts",
+      "sha256": "0d177474cae45032168fba52eba66291791e38ccc1b61478e7c8447e41b7c9c5"
+    },
+    {
+      "path": "packages/kernel/src/verbs/packet.ts",
+      "sha256": "76211d5b704966f57b836ad9ad51e50806fcd1d9b58935c310208e036e249d48"
+    },
+    {
+      "path": "packages/kernel/src/verbs/reconcile.ts",
+      "sha256": "9e72a743a63d08f1b629f354e1e8d5ad0ae9a15edb4ef110dd8eeda83caea287"
+    },
+    {
+      "path": "packages/kernel/src/verbs/recover-effects.ts",
+      "sha256": "7b6355955ddfe37a6012455394e2e2bb52f9417df1f256806bf01023621eb891"
+    },
+    {
+      "path": "packages/kernel/src/verbs/recover.ts",
+      "sha256": "e4ca94a157ebf448b65c3e581ef28a0e756a958705dba52a580f76e566df2c40"
+    },
+    {
+      "path": "packages/kernel/src/verbs/review.ts",
+      "sha256": "c1b4cc467b0b8a8d3911e73b92c850755977b9859a281a30c9c3b9482f95d72b"
+    },
+    {
+      "path": "packages/kernel/src/verbs/stop.ts",
+      "sha256": "f8a93d862719c5657002ead41d036e2672ac41e9989fe54539d3250480cb228d"
+    },
+    {
+      "path": "packages/kernel/src/verbs/undo.ts",
+      "sha256": "771e1feef3e0e4d78acbada8214bd2a46acab7bec7b9bdb89ba50dbe3812521a"
+    },
+    {
+      "path": "packages/kernel/src/version.ts",
+      "sha256": "c5ddbfd55a2e2942a6ac117c97fb2577e02a9172f555e37122505182c11b0da9"
+    },
+    {
+      "path": "packages/kernel/src/wire.ts",
+      "sha256": "69fd677091049860456d0cad10404085dcc140dee0bba97c822a8069457f0004"
+    },
+    {
+      "path": "packages/kernel/test/active-time.test.ts",
+      "sha256": "25912c67019949772c745c30eed8f4375abf9fa82075f08934f8201d61451370"
+    },
+    {
+      "path": "packages/kernel/test/adopt.test.ts",
+      "sha256": "c02924806c2643e7b723fe76ce57fa2c1f6a78b7803dc90ebe6191bcd0036a55"
+    },
+    {
+      "path": "packages/kernel/test/analyst.test.ts",
+      "sha256": "030c0c4b5cc188243e62720f5c284290c495cb5eddee9008fd28618604ed48a5"
+    },
+    {
+      "path": "packages/kernel/test/audit-boundaries.test.ts",
+      "sha256": "3994c32e76cf9422ea1aa2541c5ac6939083539b29edb6d45d7fe734a41df52a"
+    },
+    {
+      "path": "packages/kernel/test/audit-regressions.test.ts",
+      "sha256": "8f85425ced3e22b84f93f4c051b1a3ae59ce55b90c6284ff305afce06c204467"
+    },
+    {
+      "path": "packages/kernel/test/authority.test.ts",
+      "sha256": "5fcc47b6659d6766772083f346c70ee91a6f65c5cc4229094bddea1cf81fe59d"
+    },
+    {
+      "path": "packages/kernel/test/backup-accounting.test.ts",
+      "sha256": "9de052962d1b7b5c52542d0b48347918382643875250a5cabdf0bbd06196f158"
+    },
+    {
+      "path": "packages/kernel/test/basis-identity.test.ts",
+      "sha256": "5e160b49f4b772440c454336efd2ea4112d7441848aeb712e9a2fc87b869bce1"
+    },
+    {
+      "path": "packages/kernel/test/bench.test.ts",
+      "sha256": "2d548d0d6bcbc8647bc5f9d74fd35bec0a25a6f8470640a212c826a454632bb7"
+    },
+    {
+      "path": "packages/kernel/test/boundary-example.test.ts",
+      "sha256": "708b225283c9749b404b32fadead7e813b012e856e2dd804f9fd54cdce96c1c8"
+    },
+    {
+      "path": "packages/kernel/test/branch-admission.test.ts",
+      "sha256": "4aadd573e3cd8bbcd6e76595bc70888a93ae76e81f59017823e6124c39194aa0"
+    },
+    {
+      "path": "packages/kernel/test/budget-publication.test.ts",
+      "sha256": "65eb58a2e06a2d2dc11cf1155064bfdf627a3b4a1e64b3acd5537986d33b46b9"
+    },
+    {
+      "path": "packages/kernel/test/charter.test.ts",
+      "sha256": "550d4efd06e3aa3f73b570da6484edb97f6bae933111d0e516f4278569d92f0f"
+    },
+    {
+      "path": "packages/kernel/test/ci-security.test.ts",
+      "sha256": "534e4a6540f451dbd6bce44da6b0ec0b7cf69ae4a5f6645ec4aead768cfb2e23"
+    },
+    {
+      "path": "packages/kernel/test/cli-input.test.ts",
+      "sha256": "f2117b9b5a71a212810a0c43a4a086525b1f7e33fb2712e79825e42e7c42971b"
+    },
+    {
+      "path": "packages/kernel/test/commit-green.test.ts",
+      "sha256": "27c8cce8aa4045cfd5326d2c6045960e00c03edb786db70141276b1c411ac733"
+    },
+    {
+      "path": "packages/kernel/test/config.test.ts",
+      "sha256": "f0e833aa4476341c283dfa93652cac880bebb198ac1c9ce322af5c9fffd4ba2f"
+    },
+    {
+      "path": "packages/kernel/test/configuration-attention.test.ts",
+      "sha256": "ee1fd5ca146eee94ee56ca290f1bc1925eda7825d995e3ca5a8bb24dfb65447f"
+    },
+    {
+      "path": "packages/kernel/test/contract.test.ts",
+      "sha256": "35697e6206ff280b86fdbfadfdb3561e792550c6ca25d5ae9d0dce5f0b9f32cd"
+    },
+    {
+      "path": "packages/kernel/test/core.test.ts",
+      "sha256": "5ae45b107d325e21bf1cace1a18e1898380c26e995860244e1ecc7a332cce96b"
+    },
+    {
+      "path": "packages/kernel/test/coverage.test.ts",
+      "sha256": "b545682a4d57137f5e9396aeebaac78be4062b3dbf7d648cea199db1032daa3d"
+    },
+    {
+      "path": "packages/kernel/test/decision-record.test.ts",
+      "sha256": "8ccb6dfae6dd0d22bd69074d4880e030f68164fd064e264160fe60878274c943"
+    },
+    {
+      "path": "packages/kernel/test/declared-inputs.test.ts",
+      "sha256": "1e2bb19a3bf698833670c2fc45c5e1a68211ae2cf8021b2852b856089a445f98"
+    },
+    {
+      "path": "packages/kernel/test/decline.test.ts",
+      "sha256": "2868fdffa3c4baac5bfb9a06ad59f3e1c1521dce64d3465e3ee24828697d63f8"
+    },
+    {
+      "path": "packages/kernel/test/deep-budget-preview.test.ts",
+      "sha256": "aa4c9b612e16368c29d7cf9b8ed28564ae1cbd4a14f7b828d2a63ffeb9357332"
+    },
+    {
+      "path": "packages/kernel/test/deep.test.ts",
+      "sha256": "0a643f0abdba68938088201a5827134e2195d48bbc00fe8626a84fc45ce1b88c"
+    },
+    {
+      "path": "packages/kernel/test/dependencies.test.ts",
+      "sha256": "47ec957aee14e61aab1011c9452f30a2781217db8bf2342a6f02b6099ca7883f"
+    },
+    {
+      "path": "packages/kernel/test/dependency-maintenance.test.ts",
+      "sha256": "999bf370a4751fc6c1cddb76a1b31a42413bb31b3aa4158ead565762415a0899"
+    },
+    {
+      "path": "packages/kernel/test/dependency.test.ts",
+      "sha256": "b60e0b16502b3925b0fdd898adcc25a02561202c2ebcda0ca1fb284804f7dc03"
+    },
+    {
+      "path": "packages/kernel/test/eval-catalog.test.ts",
+      "sha256": "8b53a461c14a29bdc6532ca3ca15760103c49314e1f1cf4d9733f34f5bdb49ca"
+    },
+    {
+      "path": "packages/kernel/test/eval-golden.test.ts",
+      "sha256": "295f0d68575f97fda4f62c3127ce46bb1f8cc92f46287e4a209533e013573afc"
+    },
+    {
+      "path": "packages/kernel/test/eval-probe-diagnostics.test.ts",
+      "sha256": "0c84caf92a0eea3040243542bcccf6d6ab048d18504d5d247027f2f73a5c38b2"
+    },
+    {
+      "path": "packages/kernel/test/evidence-flaky.test.ts",
+      "sha256": "36e8ca2d1fa7349b2fefab5cf248851ad4aa2faaf9fa57560edbcbe55f2a76a9"
+    },
+    {
+      "path": "packages/kernel/test/evidence-outputs.test.ts",
+      "sha256": "59734fa7be856d4b4f634110af440d31d020d0aaf499a89e8ee5df58b8ff0405"
+    },
+    {
+      "path": "packages/kernel/test/execution-envelope.test.ts",
+      "sha256": "53d19aa055efde0d59a39da219d1800100d2274abf5b08a76ee0c591afdd825f"
+    },
+    {
+      "path": "packages/kernel/test/experiment.test.ts",
+      "sha256": "4acec9083be383e19b396417330c58bf762fec30a9d25e67bf5cd19ffa726a85"
+    },
+    {
+      "path": "packages/kernel/test/filter-jobs.test.ts",
+      "sha256": "fb215e8d9cca41e8703a748e968e8323932519e1b9fc69a66dca9047a9d7385c"
+    },
+    {
+      "path": "packages/kernel/test/filters.test.ts",
+      "sha256": "bae751a31bf2059bd4d31d8353de61fbca055579b2def25df1aed2e4c64ae62a"
+    },
+    {
+      "path": "packages/kernel/test/fix.test.ts",
+      "sha256": "39bdb81871a342ea87faf6dc7a2c681ac3f93f5de700b5c1a7e33202000b5401"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/bump.ts",
+      "sha256": "fdb7d07e132a56ca91acfd58793ecce847e78fc4029457d3844e7a27d068bbbb"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-adopt.ts",
+      "sha256": "30bc073f931c1f38281cbfb98e66353ebf41afe886e58058109cbd682467a732"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-budget-checkpoint.ts",
+      "sha256": "5338e96c6e8ee83d1e22b69e731f776e58b94aba16bfc11fdffc433f24408faa"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-commit.ts",
+      "sha256": "0df3b7e2a795a7e663f2374d70a1ab2a41f089a2d152d09d7f736960345b6ad7"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-evict.ts",
+      "sha256": "00327724bf46e96dc284dcf74ec800e9af99f5144ae0c5861d50ac4fd573d0f4"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-forget.ts",
+      "sha256": "d88f1be2dc13358184e9dc7d89fdbb192f80f0c934932733654936f9d59463e2"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-hardening.ts",
+      "sha256": "6893e60c69d86c43f21d00847369c93e1d7283cf99ff4f88e2f963afa0f3376e"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-index-sync.ts",
+      "sha256": "59d308baaba382fffa63ce910c763e93e2bbf0663b37cbc7d418991ebe7c229e"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-integrate.ts",
+      "sha256": "d5fccc82f200d6d4ace8795ad86609b017db5dc8c1ea38197ae933fdd0211251"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-quarantine.ts",
+      "sha256": "4c82a7749e1d03ce6bfe3b4c051e2caa71a98a1bda758b2d963c1ff03bb3f998"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-scaffold.ts",
+      "sha256": "cb4899b599123091c207bb95ccc5cafa4430b3c6a4644310320427a695148e1e"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-undo.ts",
+      "sha256": "3715ef680208733628e98bf17fead2572bd146f66968def799b8acfe113b146f"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/docs/a11y-checks.md.txt",
+      "sha256": "31767398f698ed37ccfcf2caafc8aeea033c5324112221a93f2e7f57f0ca716f"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/docs/workload.md.txt",
+      "sha256": "b79e1e1f539bf6cda56808178726b7c82f2993b3c9be6080e3684da8f397f8c4"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/journeys.json.txt",
+      "sha256": "f675642186952bfa8d65050bc4ade8472bb9e347bb5e2517970506da7585a1fb"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/package.json.txt",
+      "sha256": "3e8cf30cd09ff3bc5ca712c02884d95498e6f04b5b041f7916e15d61581d42a6"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/migrations/0002_items_loans.sql.txt",
+      "sha256": "84e45b701a258865ad6e69adaf08030cd02a04a2e3c80f0767cf06f9286a112f"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/src/app.ts.txt",
+      "sha256": "9d1d675fd7fc21cc834ed3c5b8ef52be7a4a36ce9bd9c3e57bd3d6607d6c98fa"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/src/features/loans/index.ts.txt",
+      "sha256": "dd4a9ae67499b4ac2e098406f00b09d20e6491d90ac050d81eb592bc29c60b8f"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/src/features/loans/items.repository.ts.txt",
+      "sha256": "5ba937e334e5202aa7658010593507ee216f87de2582f0dfcc6f43fc859c0dea"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/src/features/loans/loans.repository.ts.txt",
+      "sha256": "f276929f9e5be5a784586910e5396a7bbee5f02d8cf558979612d0a196740f5a"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/src/features/loans/loans.test.ts.txt",
+      "sha256": "a485c993f7fd4d3205673d174c2596bf3e5b9301e9856481ebedb3fd781ea596"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/src/features/loans/policy.ts.txt",
+      "sha256": "6dc063a71d29207072302c1608694bd9d595bebc5b9c16526b0e9b678d8828fd"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/src/features/loans/routes.ts.txt",
+      "sha256": "2caa63157ac74027c34df0680d7b4fa94eec17575aed56c6c0db1ceafd21e770"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/src/features/loans/service.ts.txt",
+      "sha256": "34013e2fa908896b1c3efcd614d7d2c6db3d969c5c160472fd867f90c415bacc"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/src/server.ts.txt",
+      "sha256": "ad0e707486d2464de3bdd25d776135fdd12bb2d1793ba20c15915f759b1ee64f"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/bounded-browse.test.ts.txt",
+      "sha256": "a35d8ca6a6ce68b29ade357f47d2a575258381e36b2439b1342a6494c04ec5ef"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/concurrent-reservation.test.ts.txt",
+      "sha256": "59caf2d4b08f092613bd002a9085b4819cacd2cc8d621979e089a14b3dae3bd9"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/concurrent-return.test.ts.txt",
+      "sha256": "fcf2dd7a653874fe425405e3dd1e4e6cbdbcd587a2980c4ed9a8721ad92e4d9c"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/e2e/loans-browser.e2e.spec.ts.txt",
+      "sha256": "8c217999accce408d97223fa178105a2db9cc91d265acde370a3f624b07aaf0c"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/fixtures/concurrent-reserve-worker.ts.txt",
+      "sha256": "6ae1c60bfeca33719b8cb8c29bb57dbd5efa8a731030103e192a107bd1a64a32"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/fixtures/concurrent-return-worker.ts.txt",
+      "sha256": "7b63f3ea45b7368db486b08ffc9124fb891a07e08787c172f1f425f2f0bdf896"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/fixtures/schema-v1.sql.txt",
+      "sha256": "bab12a741fea06b20c48f2d751932a3108a95aa752a67ae7af8d7a13b899e57c"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/fixtures/schema-v1.ts.txt",
+      "sha256": "2898f0559edd5bbb0420886f62d899d3bf78145d4aaed57c2e47fe7f71a9264b"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/helpers.ts.txt",
+      "sha256": "e4cba87b949d208ce2328a58df6ec00d48064e6fee26d068d1ab055674022a6b"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/loan-authority.test.ts.txt",
+      "sha256": "bda6136b7b6d9efddfffbe765ee2f56f6e452845c7d7e32cb5545c8ab35cbd01"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/migrate.test.ts.txt",
+      "sha256": "78cb05aeb370daf00e9f2fcb77828b52af8cd512ebf0c5226eae35cf0ceaf4e4"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/openapi-loans.test.ts.txt",
+      "sha256": "6f8f60883687b4937b534a210c7429435d82e6631f7db00c340a63d50f7b0745"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/prior-version.test.ts.txt",
+      "sha256": "3eabaee597c6d5ee3003c5d1ffaa13c068d5a48794120cfefe3cdbd72389d4dc"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/restore.test.ts.txt",
+      "sha256": "e237d90b6fdf0ef0946e57c77b110993eb3c675208370033911ed99c1ba9eee8"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/support/browser-server.ts.txt",
+      "sha256": "6f66a5ef58bf9185aa04abf201d8716621271914359ce9b8ae46088deeb556c1"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/workload.test.ts.txt",
+      "sha256": "ef15bfa82801124c812d7e5bb7b896835a40391ea2b2684fd7fbe43af13a346c"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/shared/schemas.ts.txt",
+      "sha256": "28fdd92373c0ac3d1707dfbc7c5133012e7e6a4db17f1e1ab2671e8d235a2ba7"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/tsconfig.json.txt",
+      "sha256": "ed63c99f65c1bfb11c9f000ea2ca034a2b427bfdfb0a395194b069dba53881f3"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/web/src/App.tsx.txt",
+      "sha256": "db8ea31f0f2b940ffd0a22d8d0b3b7ee7126001ae1d98185ec43e25b1b227c0f"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/web/src/features/loans/LoanDesk.tsx.txt",
+      "sha256": "dfb11367aa60a629dc075a263e65af61c9be46c770332a8f84173ac2c2863b55"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/web/src/lib/api.ts.txt",
+      "sha256": "e103a1c5c27cfca133719e3ce344839450fd0d7aa11fcbb5129e1cbf367a2265"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/workload/client.ts.txt",
+      "sha256": "a4e8b11bb38f0035040052285b460d5770b408c56e50da31fa2dd277182442c4"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/workload/harness.ts.txt",
+      "sha256": "794bb120ea381426efbf548202b6173cc17923034bc69c76600fd067351e14db"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/workload/operations.ts.txt",
+      "sha256": "5ece6424471b258db8858dab6601d1565b66a1407a65b566e2b9a0de61f7385a"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/workload/process.ts.txt",
+      "sha256": "1fb190ff0f775108d7fa55f1348f49d0188adef4c78b7b63572f5d4d2e827918"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/workload/report.ts.txt",
+      "sha256": "2cd1c19ad42c063a3c536f272b8ecc802e7ca82454f18c0e154356c4c21b4833"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/workload/run.ts.txt",
+      "sha256": "0d17f7fb582de8f461d0b62f2d1de0757438ca2ab2ace4b23ebb6c510e09fb59"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/workload/seed.ts.txt",
+      "sha256": "5d39c5074334e2533e0f118093034d362666e8a20027e0e6ffa2b433ea69774a"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/workload/server.ts.txt",
+      "sha256": "dab4341d66fd55944e329c9f533e274c363df5f290dd971692cb6a03e1fd6441"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/workload/writer.ts.txt",
+      "sha256": "f4c3a341f03a96dbfbfb528078858374dbc4852474a6336785a1aafa55fec90c"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/hold-lock.ts",
+      "sha256": "d0975a6fee61b0d574f4194b9fbc1f74861efd27c63ab3b16bbd39feea842a51"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/race-index-sync.ts",
+      "sha256": "dd21dc07e439279f4867fdc62834756f526d5aee699eb87f44625917037a6e9e"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/race-project-read.ts",
+      "sha256": "431c46bbd7ec7d563b44726a88e2bd7353d94fb9ca0344c698a10dddda0f511c"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/race-project-write.ts",
+      "sha256": "eed19fe16d05615cbc8f6a7c6444dff65efb1d5399a1f311a5459f773eed7561"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/store-admission-barrier.ts",
+      "sha256": "28229c779be03b3c2996b3bbae4aab6f0fb8583ce437749ec249f8686cb9ab0c"
+    },
+    {
+      "path": "packages/kernel/test/fixtures/store-no-ps.ts",
+      "sha256": "b0420943671c73530c93ed124eb607c0c883897f528e561b0e5d5908787ca94c"
+    },
+    {
+      "path": "packages/kernel/test/focused-review.test.ts",
+      "sha256": "df94ad1efd08de898b3afca85133993306b04d22b137bf1a2eba3e76fbe7f9c0"
+    },
+    {
+      "path": "packages/kernel/test/forget-recovery.test.ts",
+      "sha256": "8d791a171a41af2879ddceb9cb66ffafffbc7a23959c737bf1ba9f8b04ce0f47"
+    },
+    {
+      "path": "packages/kernel/test/git.test.ts",
+      "sha256": "d630bb29ea0f7da350e0430c865c7a32606830a36d109e9e73e431d820ee7efb"
+    },
+    {
+      "path": "packages/kernel/test/golden-task-cli-library.test.ts",
+      "sha256": "ab99c401798f103ebad0f6c2e9eacd77dfb01260566358969edc94cb63fef201"
+    },
+    {
+      "path": "packages/kernel/test/golden-task-loan-desk.test.ts",
+      "sha256": "abbe9f831ae44527941d84c654846535415bc10d4c394d3a53733fd7d08948ee"
+    },
+    {
+      "path": "packages/kernel/test/grant.test.ts",
+      "sha256": "6707c8b325fb1fe3b1f8e1ec043e2f12012b33656c25fa2e8ed4f6251c21c669"
+    },
+    {
+      "path": "packages/kernel/test/helpers.ts",
+      "sha256": "c434c47adfc4a761fc40666fdf38a60691283436a8e8f44777ebec61c2afb676"
+    },
+    {
+      "path": "packages/kernel/test/hidden-refusal.test.ts",
+      "sha256": "55eba44f674a678a84f8ec614b504d26029b4479b79edeb11884a57046a614ce"
+    },
+    {
+      "path": "packages/kernel/test/hooks.test.ts",
+      "sha256": "91f5a8b4ef0c3f241f4787cd4dc51d0ae58bd116e6e9a4fa09153cbfb95281cc"
+    },
+    {
+      "path": "packages/kernel/test/host-cli.test.ts",
+      "sha256": "9c2194ce895c3e01b244e0a3c32087ae5c12f69c20a3c58abc8cc73c8a60e694"
+    },
+    {
+      "path": "packages/kernel/test/host-descriptor.test.ts",
+      "sha256": "ec3f01af772123d4e7d9f5b3b5a8c0014df28fdec1161b585673e33286b26bbb"
+    },
+    {
+      "path": "packages/kernel/test/host-launch.test.ts",
+      "sha256": "1177bfe765aa0f2e864fd33765242b546a7ef65e30045650924bf29aa5fa28a5"
+    },
+    {
+      "path": "packages/kernel/test/host-sp08.test.ts",
+      "sha256": "bbc75dc4f1c136bc0854172cb1cb17c040dd05a7858083fc259da5a50ba6b132"
+    },
+    {
+      "path": "packages/kernel/test/impact.test.ts",
+      "sha256": "f6724fa032f5c8289384377ea1e84648d02cf10540ef5ed3d9074a402e989220"
+    },
+    {
+      "path": "packages/kernel/test/index-recovery.test.ts",
+      "sha256": "2e271a809cbb9de267e4004e88712937c9205541beb860111d27aa51a4bdbc64"
+    },
+    {
+      "path": "packages/kernel/test/integrate.test.ts",
+      "sha256": "3804b3198dff879a9d4e2a1fbe3dd24362d41c08ae694dd79c35bddaeac83158"
+    },
+    {
+      "path": "packages/kernel/test/intent-md.test.ts",
+      "sha256": "9bcb20d6972424ae25af69e04a5c0a8f1fd6136a8142214fd2f77d510a90fdee"
+    },
+    {
+      "path": "packages/kernel/test/invariants.test.ts",
+      "sha256": "b77b36c231d0f8d6f0cd9d710a68bf9a8ace6eaf944613f85ce547bf131152f5"
+    },
+    {
+      "path": "packages/kernel/test/lessons.test.ts",
+      "sha256": "9e012a32cff2d49205c540cb663a6a54d5a123c9d7626c3cd4ec3867c4dd5a67"
+    },
+    {
+      "path": "packages/kernel/test/model-record.test.ts",
+      "sha256": "9c2f2df6f0b651180ffebae7f6508d023c7145b79e808a6ad7ea1b184d6c4445"
+    },
+    {
+      "path": "packages/kernel/test/payload.test.ts",
+      "sha256": "5a2c005f075c661d27a08577cca1fad1a5feca0bfa13dbeb28ab023113ee61e6"
+    },
+    {
+      "path": "packages/kernel/test/plan.test.ts",
+      "sha256": "54a83a45f5880751914a449dedc6d76099653241f14b3c1ca95af33b616ab8b3"
+    },
+    {
+      "path": "packages/kernel/test/planning.test.ts",
+      "sha256": "b894d37cdd7a72c96047ba5b800e9e826af4a0abb4881eb65e7931943b31981f"
+    },
+    {
+      "path": "packages/kernel/test/platform.test.ts",
+      "sha256": "338eecb7bf3730f4c871743aa6ad2ce4d4265bae7298d8c928ee33db3bb8073a"
+    },
+    {
+      "path": "packages/kernel/test/playwright-adapter.test.ts",
+      "sha256": "6e2f5c8b8b1a6e7e2f2a428f35f02f3664180a04c7300ebfa96b614c1704d70b"
+    },
+    {
+      "path": "packages/kernel/test/policy.test.ts",
+      "sha256": "79c79d45a188218197e58814567ec289561eb7efe238e24032374474d0fde52c"
+    },
+    {
+      "path": "packages/kernel/test/prerequisite-guidance.test.ts",
+      "sha256": "0c9ce0432de19a0fc6eacdf93b1ab538faf8b1d3a98c3540a17a4e9a2f246aa3"
+    },
+    {
+      "path": "packages/kernel/test/privacy.test.ts",
+      "sha256": "8d88006bb68734fd386f12b8ec10dab37da0b20979c846f56f37f3677ca13245"
+    },
+    {
+      "path": "packages/kernel/test/project-boundary.test.ts",
+      "sha256": "06a74654c845ce8fa1ccaaead11dea3adc068e99dd121d289b4ba5a71ef17885"
+    },
+    {
+      "path": "packages/kernel/test/project-bounded-read.test.ts",
+      "sha256": "8c176bb1674f17092c77931096967bae80ac99fb7e0ebbcc0f50bb60d5f815a9"
+    },
+    {
+      "path": "packages/kernel/test/project-recovery.test.ts",
+      "sha256": "3fe1da36d0f23e806c104a2ff3463d9cf8cbdd110c7fe1844dd986b3580bed41"
+    },
+    {
+      "path": "packages/kernel/test/promote.test.ts",
+      "sha256": "b5cc7b1dd94806d04d23ee4a42d29586c9761beb471186afcfc130e794457308"
+    },
+    {
+      "path": "packages/kernel/test/prototype-paths.test.ts",
+      "sha256": "18fcbd673da5ef5349e6959a1184f0977fc257b6644980665a60f48a0446bac8"
+    },
+    {
+      "path": "packages/kernel/test/prototype.test.ts",
+      "sha256": "14a8f1a44e3c9c830690eb1fe456c191ec79f6b8f545d4f60498b0f1c77b20d9"
+    },
+    {
+      "path": "packages/kernel/test/quality-gate.test.ts",
+      "sha256": "cf75b23c06574ca6e4c51427c88e0a55d6608a83b90c913b58e08d5a1d0b1ad1"
+    },
+    {
+      "path": "packages/kernel/test/quarantine.test.ts",
+      "sha256": "9b6706c95eec7cdc6f48c96e4fe2c860d0932bb9e1aee49b41e60d8b77449ace"
+    },
+    {
+      "path": "packages/kernel/test/readiness-boundary.test.ts",
+      "sha256": "e1d51e907551af7a0dd255c7f07e0bdabe4beefa15260438c4598cd0cd6fcb49"
+    },
+    {
+      "path": "packages/kernel/test/readiness-report.test.ts",
+      "sha256": "d9e8695298190075caa873dcc6ceb751d36d5cbb2230e2bc5f13fdda2ced8d02"
+    },
+    {
+      "path": "packages/kernel/test/readme.test.ts",
+      "sha256": "7091cefc3ccf23cba0830c6e50c267dd0ea7e51181ca77b4c806f92e674ba090"
+    },
+    {
+      "path": "packages/kernel/test/reason-codes.test.ts",
+      "sha256": "f875b61a49773a4d6b3a6d0efbb96a694b796b81beaa7c04167b410fc1732ed9"
+    },
+    {
+      "path": "packages/kernel/test/receipt-privacy.test.ts",
+      "sha256": "7b38535c077b4d430d721d390e4a07c35823152b5602a0775d7592e6f97b8d79"
+    },
+    {
+      "path": "packages/kernel/test/receipts.test.ts",
+      "sha256": "bc5029ff2ab7a9f10eb5420b3db4995c22791ff10ecb5e97b1a91d73107c50ca"
+    },
+    {
+      "path": "packages/kernel/test/recipe-guidance.test.ts",
+      "sha256": "f7c35b368715ab2b29a022a28eeb904b61ec46dc4e3ddc0dc785217c0c42262c"
+    },
+    {
+      "path": "packages/kernel/test/redact.test.ts",
+      "sha256": "68cd288c330ce8cdbc09f1ecaf9119f0346073465337d2b742d9975786c99ab2"
+    },
+    {
+      "path": "packages/kernel/test/refusals.test.ts",
+      "sha256": "8d30b2094a4a40e21f5100a3ab20ecaa92cb2235a18023c76915cd586845b547"
+    },
+    {
+      "path": "packages/kernel/test/release-checklist.test.ts",
+      "sha256": "342ce7cb601e6da534ac34adfc91bd1b3ca7d129931a5d36e6561cedf6c41b8b"
+    },
+    {
+      "path": "packages/kernel/test/release-notes.test.ts",
+      "sha256": "5443e86c106543829e011bf69e2d1ebeed52c9ff341086a71b8e2a6b3bb97ccf"
+    },
+    {
+      "path": "packages/kernel/test/release-workflow.test.ts",
+      "sha256": "b19bbf7085153e4a1fd9c1a3a5550640935e98b371e36f7b20e44fd62c0ed4ff"
+    },
+    {
+      "path": "packages/kernel/test/repo-layout.test.ts",
+      "sha256": "da0f387aeaa644f2cdcabd3e3d7c56bf1b61cc238a8734fdca59cb7a1dcd706a"
+    },
+    {
+      "path": "packages/kernel/test/report-paths.test.ts",
+      "sha256": "19b4eeb4e1e72a7a3203870b3af5b5d48f39bcaf841d945d2f2a009cfcf150fe"
+    },
+    {
+      "path": "packages/kernel/test/reproducible-build.test.ts",
+      "sha256": "1fdfdb8fbe73ed0e928ce8c55804618538c7433c19cfbeb0d7ba17276b779259"
+    },
+    {
+      "path": "packages/kernel/test/required-composition.test.ts",
+      "sha256": "b0648562c3ef6526d7cf314c534d1091eb7a9303bb813f210dc8584c125ba95f"
+    },
+    {
+      "path": "packages/kernel/test/requirements.test.ts",
+      "sha256": "a91b8d442ff1f32d120968d4bd889bda132f6591ea6a038a1638e8fa96e390bd"
+    },
+    {
+      "path": "packages/kernel/test/residue.test.ts",
+      "sha256": "89bb1e23007f63156fe4c0512a37853c1ad109c1358a0fc3dd46b48ebf9019e2"
+    },
+    {
+      "path": "packages/kernel/test/result-demo.test.ts",
+      "sha256": "06f6ca0b674a31cff1ee40e4bdf246351b7d8b0d848412bcc013e23771f7ad21"
+    },
+    {
+      "path": "packages/kernel/test/review-admission.test.ts",
+      "sha256": "63558cb20a8633fe0390e833d55a49ed7137add4e0a8ca81fa938222f754ae1b"
+    },
+    {
+      "path": "packages/kernel/test/runner-artifact.test.ts",
+      "sha256": "384ab93a7cef1385d8721ea4a17a7bf633dfaf394db2ddcf8c5b716b087d76da"
+    },
+    {
+      "path": "packages/kernel/test/runner-ownership.test.ts",
+      "sha256": "b9d38ba42e973f4db4a7999ea521316fa613ccb1042811544dca7c4afa7f2666"
+    },
+    {
+      "path": "packages/kernel/test/scaffold.test.ts",
+      "sha256": "883ead3ee07bfc937146e5dae68cb95c14ee4746e54bbd4590f10645cd2215cd"
+    },
+    {
+      "path": "packages/kernel/test/scenarios.test.ts",
+      "sha256": "f2c4bf1948ff2f960f94a6d9fed921ca4fcdb3a7f77424421a7e014290a7556c"
+    },
+    {
+      "path": "packages/kernel/test/settings.test.ts",
+      "sha256": "f222a5715d63000746f28e4eb031ac231901416f390b2511f6f0ad6e4aa41350"
+    },
+    {
+      "path": "packages/kernel/test/starter-assurance.test.ts",
+      "sha256": "1c950d9658c6717b853e1d26033babbe6c76deffa57df59f77678cb7501c6ee8"
+    },
+    {
+      "path": "packages/kernel/test/starter-ci.test.ts",
+      "sha256": "231d5ae649c4ed3cde65dc19109e64d28ea6430c447d1320efe41095f421f8f4"
+    },
+    {
+      "path": "packages/kernel/test/starter.test.ts",
+      "sha256": "30d438816dce4cbb4290ba4248b917acdf3c2d3b3cd4c518d1ed8476addb7b01"
+    },
+    {
+      "path": "packages/kernel/test/static-checks.test.ts",
+      "sha256": "6d45532e6e8b5a2ee8988a48e41e64ad17b299e7b07c6dec03664edeebdad0d6"
+    },
+    {
+      "path": "packages/kernel/test/static-conformance.test.ts",
+      "sha256": "ee6d5d1868395088c5f96aa6c3907f681da4dc7ab88039fda2267b53ed21e2fc"
+    },
+    {
+      "path": "packages/kernel/test/stop-approval.test.ts",
+      "sha256": "044343948a458ba9219305e3f5765a4ea2bf7a0ba538109eb5094c3bbf2be1f1"
+    },
+    {
+      "path": "packages/kernel/test/storage-eviction.test.ts",
+      "sha256": "27635dc173548827cac3db30995b1b1173d8b3cd051c52dd9789cb873fc5f559"
+    },
+    {
+      "path": "packages/kernel/test/store-boundary.test.ts",
+      "sha256": "b1d645f403553c41f5d85c73cbc434122b2ff73da039c0da4589bb89bcbed292"
+    },
+    {
+      "path": "packages/kernel/test/store-lock-admission.test.ts",
+      "sha256": "b1c8fe1ee6caa58d656744717c2a06746f0599586d0e7392f55fe9bd9d53fdea"
+    },
+    {
+      "path": "packages/kernel/test/store.test.ts",
+      "sha256": "1238228e33ca810af96ffee13380f02d7ca7267cd0b3a0e45a056979886b87d2"
+    },
+    {
+      "path": "packages/kernel/test/support/fixture.ts",
+      "sha256": "21d61f864e23ed8a1bf53cce77efd88edbcfcd4803886f7ff47ee1ad8448fc4a"
+    },
+    {
+      "path": "packages/kernel/test/takeover.test.ts",
+      "sha256": "6c15bdae7a61d4ee077617277c6cb556e744fefbddb3e595c32c1d5cedbc18d5"
+    },
+    {
+      "path": "packages/kernel/test/tooling-portability.test.ts",
+      "sha256": "959593376f327568e52a835e2f556674461b3e110d4b45dabf8818490f411b08"
+    },
+    {
+      "path": "packages/kernel/test/tools.test.ts",
+      "sha256": "4ee137cd65645003ee86f3502ae746f42e01762a0c1fa43dfbb9b6fb89d77f6d"
+    },
+    {
+      "path": "packages/kernel/test/trace-journal.test.ts",
+      "sha256": "4a8a53850db92478fa02784eac57d15fe455bbd4c2669b3db7115db739962d1e"
+    },
+    {
+      "path": "packages/kernel/test/trace.test.ts",
+      "sha256": "e9e9cc243e9a2a55c3d593300002b0a57c8f7466eceda8da276a83878e25596e"
+    },
+    {
+      "path": "packages/kernel/test/traits.test.ts",
+      "sha256": "5773af39813bea4f4a221680c9a6221b71beef3d710f1574a871bf7420554c15"
+    },
+    {
+      "path": "packages/kernel/test/trust.test.ts",
+      "sha256": "3fa94d9545ca415eaebff70b4002c10942fa1f7aefdcc1df29984539071b4541"
+    },
+    {
+      "path": "packages/kernel/test/undo.test.ts",
+      "sha256": "19e117341371c7af80d13fe091f8ff701f6bd81b5fb847c3ea9722ffd28aa72f"
+    },
+    {
+      "path": "packages/kernel/test/usage-reporting.test.ts",
+      "sha256": "d5a86c02076cc91961c0256b70681609fa694feefb975d2233eaf1082c2e5131"
+    },
+    {
+      "path": "packages/kernel/test/verdict.test.ts",
+      "sha256": "b28dc31049447affcc63793a93544c6054de8e56baf98bbcad1a5540f0460d8e"
+    },
+    {
+      "path": "packages/kernel/test/version-pin.test.ts",
+      "sha256": "75ff86a8296bd952f0c05050e3dc9b74a2cddde08259ec559f2df8bc995fd08d"
+    },
+    {
+      "path": "packages/kernel/test/walking-skeleton.test.ts",
+      "sha256": "5a79ac4b90168a0fe422e568315e684f2135b7ecb36987850f9ad910b7c0d5c5"
+    },
+    {
+      "path": "packages/kernel/test/why-assurance-guidance.test.ts",
+      "sha256": "8ec4b67e1d385a2e4134e8d0d1591c81bde9d4101800c6e5d1bc1d870cc93d67"
+    },
+    {
+      "path": "packages/kernel/test/workflows.test.ts",
+      "sha256": "ccabb178c0eea1598f12e20c07c3def02de9c2a70bb9609bf03305319b3d9b7c"
+    },
+    {
+      "path": "plugin/LICENSE",
+      "sha256": "7c250c7d588375db4921d8415b06c2f29e2a2c25a5c2067cf8b2d02487c28bc6"
+    },
+    {
+      "path": "plugin/NOTICE",
+      "sha256": "65f03758d450f144b25a741cd66e864d27d8f2ec30bb456f56c19d0a3b63dd21"
+    },
+    {
+      "path": "plugin/README.md",
+      "sha256": "1ac598b5c9103bd799b16fd0b494a640f3280fc91fbd64cff1951cef7079d0ab"
+    },
+    {
+      "path": "plugin/com.github.copilot/agents/tenet-analyst.agent.md",
+      "sha256": "4a10b42c7c85018f902e6fedd900bd3cba3c5904068ba6c033c08ede948e7d07"
+    },
+    {
+      "path": "plugin/com.github.copilot/agents/tenet-reviewer.agent.md",
+      "sha256": "b72b40b20fd7b6d0c9c2f2c36b2e43abf60fa7c94c7f24329945ebf7d193b1d7"
+    },
+    {
+      "path": "plugin/com.github.copilot/agents/tenet.agent.md",
+      "sha256": "0cd6df76e453ce47147f866357f61e17da1ebf6e5a08b0dd05cf48780f643911"
+    },
+    {
+      "path": "plugin/com.github.copilot/commands/tenet-review.md",
+      "sha256": "84d0e1c6cf020f85eb842ca3819e1603698a75e2b0fb4e65339e2e099c1f6dcd"
+    },
+    {
+      "path": "plugin/com.github.copilot/commands/tenet.md",
+      "sha256": "f1df7fbaa6bde214fd71209c849cbd2e05f92b9cca78c2d43f263fe5c3fcb929"
+    },
+    {
+      "path": "plugin/com.github.copilot/descriptor.json",
+      "sha256": "c4bef1f0c9f0275b909ca2c8ed3d985e9eae15d0d36a5127cecff61ed316199c"
+    },
+    {
+      "path": "plugin/plugin.json",
+      "sha256": "6135273c6f9ca05d684f2a3a4725c81e7c5bf250be9ee3942b77e728e28ddb04"
+    },
+    {
+      "path": "plugin/skills/tenet-build/SKILL.md",
+      "sha256": "784538c3b6ff5b4db6c8619d0da4e575721db7de87d4232f8d03a5f95141166d"
+    },
+    {
+      "path": "plugin/skills/tenet-intake/SKILL.md",
+      "sha256": "3ed99dd8767452682bae5275924f8d9c898c9981c8e56f3c4af4527e027bb6e2"
+    },
+    {
+      "path": "plugin/skills/tenet-intake/resources/conventions-draft.md",
+      "sha256": "1c36fc645ab180c92fd31a6d9e3e82e0599fbf3a7cfacd170c51c6a2c40c86b5"
+    },
+    {
+      "path": "plugin/skills/tenet-intake/resources/onboarding.md",
+      "sha256": "4d4a49d7a8b962a9afdab189ac08899fecc6ffe0e9ab983e8c4712f1e0e102d0"
+    },
+    {
+      "path": "plugin/skills/tenet-review/SKILL.md",
+      "sha256": "edd7d315c559fa46c329f31f460d3893be8275af920f487da044ced2cf48755e"
+    },
+    {
+      "path": "plugin/skills/tenet-review/resources/architect.md",
+      "sha256": "82d3c4056fe71d3329f359eb48189f88378d2c8e2fd6e6b8f62ec0132ae775ba"
+    },
+    {
+      "path": "plugin/skills/tenet-review/resources/security.md",
+      "sha256": "c0b343fc7d69e38f1f2cbbe74ee4a09d980770438438f5bfef1f7e8400ea1968"
+    },
+    {
+      "path": "plugin/skills/tenet-review/resources/threat-note.md",
+      "sha256": "3982bb2b2e9eb400fe0cf40f024dd2aa98643d497422d452b446858ecf7c20ec"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/SKILL.md",
+      "sha256": "7422b4f62361aca964b67d1013fb29e9d5b05c048f4682a249f32d90d8a8788e"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/recipe.json",
+      "sha256": "087815e2730c8b40260a5a937429e44ba27a86ac0ecde26ecdacb99b8b8a6d57"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/.github/workflows/ci.yml",
+      "sha256": "9d3de8f968b48aadbdc969bb8082eeee5d29f9065bcd691d64472d0b65bac2de"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/.gitignore",
+      "sha256": "606b80caec52820a25f34b3199f05d836ee574e7b45fc01d22c57ef81bc0c2a6"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/LICENSE",
+      "sha256": "7c250c7d588375db4921d8415b06c2f29e2a2c25a5c2067cf8b2d02487c28bc6"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/README.md",
+      "sha256": "f9c800432b5c8a6543ad585749cb91172ebe8a88be8e9c8cff543a162e5e13aa"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/docs/a11y-checks.md",
+      "sha256": "2c5593317dd1f618a02e9f5e73abe1b2c18e45c953599c09a0cc794c99a258b7"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/docs/architecture.md",
+      "sha256": "4a1d83177e5906c667a80fc7b9e3623609b8d713d3f9b80ca39c915dc6ebebb5"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/docs/asvs.md",
+      "sha256": "f9d1ab7b4dda8e90c60ea5ba57f822541f908585850caa6ee6e471fd02521c52"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/docs/hardening.md",
+      "sha256": "50a7b862c5ed15f38ee2e69409c773e9a20c258e429b2381dd7b710a1ec6ce5f"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/eslint.config.js",
+      "sha256": "05294174c5648127f215daa9cb830b50f021c24d0bae6f0da0fd9e33afac9341"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/journeys.json",
+      "sha256": "d1e0517b7b02da04b722a2b41cb5b77d9042e36039491c8abd065bd5d0d36e4d"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/package-lock.json",
+      "sha256": "d0deaaa65eb92134bc8efcd9044cb425c0ea31854ca0f1ecf51ff80d8ea4a4bb"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/package.json",
+      "sha256": "778b4452441ebc94de9a1a7f5538ec43b167b490ee23fff22d1e8e2124d1bb27"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/playwright.config.ts",
+      "sha256": "f94a1498ce2ed0a670dba85ac23c9e68817ee75f7e65286fba5d34c9a3bd90d8"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/migrations/0001_init.sql",
+      "sha256": "bab12a741fea06b20c48f2d751932a3108a95aa752a67ae7af8d7a13b899e57c"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/app.ts",
+      "sha256": "40b7cab76357ccddd32b849bbb84ce739319c3db85e240221efb58268ce56c7c"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/openapi.ts",
+      "sha256": "fd1d6bbeedd3c8ce227048d85f7a82ae3c0774ec7a6c38067e7deb42f6ab32dc"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/actor.ts",
+      "sha256": "1779922d12315cbde81f70bdcd47546a72ad253acf89696272ec7ab62cbae88d"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/admission.ts",
+      "sha256": "1f7bd6df9ba02ca00826a6fdcec25eb7f40e4f782f5644aa6d031c4940c96d8a"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/auth/csrf.ts",
+      "sha256": "2d15653ae4d4d251f01f115504d85b0ee400b33ad9d427957af9d3a1396153b6"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/auth/passwords.ts",
+      "sha256": "abee98c78f6a816183b495ad46e93a49e7673cf9531802f638dc0c284655626c"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/auth/routes.ts",
+      "sha256": "25023a6cd34e531fa314ba23900942bcfe16ec1a9bf0c13789a8b5ecfa5ffceb"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/backup.ts",
+      "sha256": "7f792a5c315d07a11152d23e5e066bfa8784d84f729a5051d2f3b82a8caf8d7a"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/config.ts",
+      "sha256": "b552317b1d2374e7914d3d208415aaecf8e1d4fce15a748758488d2af23eb07f"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/db.ts",
+      "sha256": "312d6f3d15441b1f5d133144f1a031f65bfc173863cc9d5a912da9651c83b02f"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/dev-identities.ts",
+      "sha256": "d9ee5c4da18d176977aac9bbbd49a66f729ad49470ad18ccb478eafd0454b9eb"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/errors.ts",
+      "sha256": "9fa02fb6ab92ad9fc44445e510dcfdc409f0082f4e6bcbb9b81a7abef2fe9f73"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/health.ts",
+      "sha256": "5478958ca197e4a0454481df59bcd082d48f0e08db3e927304b88fa28006d008"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/logging.ts",
+      "sha256": "d65f7f0fcdaace1cd4da56f603fbe90d96e6690aaa30bc5b9d83909dce5fdca4"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/migrate.ts",
+      "sha256": "6a96c851be6cc61c5868e9579980b8668bc0649293dfc67846d90f405bbc89ec"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/openapi.ts",
+      "sha256": "97ddbc0e6246567fce1e6f0132bc654df25fcf9831e0d8396aecb1d8e379db52"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/owner.ts",
+      "sha256": "ea3b5bcc3e8b67b47bf696cb1217523c418496e78b75de35e381fb895c815dd3"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/rate-metadata.ts",
+      "sha256": "ee08fff56ad1c4c0757201d638fa5323fb4fcaf34c60e9b468a9ccf4c683e067"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/restore.ts",
+      "sha256": "af2de274c56c29129b5f47e99fdd803f3c7ac348864e7bc1983de990ad8157ab"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/safe-equal.ts",
+      "sha256": "a44d7434a49a0d993df8feb31274ae25e1f72a27d6e31a369616314d4dbbc44d"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/session/session.ts",
+      "sha256": "0ba38eddcfc313c8c761033427e286d569379c258147694750e156deda613f66"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/session/sessions.repository.ts",
+      "sha256": "b88427c2691b51c6e54246ec71b242d052846c66fb2492c4f022d83d481f202e"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/users.repository.ts",
+      "sha256": "77692c3c3036f26d10bdf4517eef13ac986328b28fe243e8faaaee1b3ed3f840"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/restore-cli.ts",
+      "sha256": "248aa974a6a2acc038b8e1edeee25d658d630ac6b96b5fecf5d840af567cb9b4"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/server.ts",
+      "sha256": "27cae044bce292eac69a33bcb74e0a98f49f815ecea8995954b0c468c663295a"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/abuse-limits.test.ts",
+      "sha256": "5fee5247326a0a78ef3d1604dbdf66a618c2511a296c7d004ab7b69d16e44058"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/admission.test.ts",
+      "sha256": "6458f6f52de2cd0cee9e39f703d402a94f9746fc2403bbc4defc9175629b7223"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/auth-freshness.test.ts",
+      "sha256": "82241ed0f2ae74801e1e03423987b924d2a91e3682176f771cd7b52774af5425"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/boundaries.test.ts",
+      "sha256": "c86ff804ae6abdb7a40619c6020a9e4308ee58a981f9f056c1c1ed8575eeefa4"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/busy-session.test.ts",
+      "sha256": "f5fc056be3804406dd0c495c6ea87207adaa95bdb8e14192bbdd2ddb5b702125"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/dev-identities.test.ts",
+      "sha256": "ee167d20bbab50e89ce470ac41f17ebef4725bfb988283deacc7c71592f2a38d"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/e2e/auth-admission.e2e.spec.ts",
+      "sha256": "b57df846cc87f6ba73ab4e68e2132628327056e158c600f0b8260cdb3b356ea7"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/e2e/auth-browser.e2e.spec.ts",
+      "sha256": "2c635656948d0ad78a335d2a3e544e30b2a1ddd8d43b25cdeeefa909aefa0360"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/e2e/server-identity.e2e.spec.ts",
+      "sha256": "6b1293fa5158456b91717c875a89e9833be1443945cd3678a768cf1abfefdf1c"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/helpers.ts",
+      "sha256": "4a54ec35e4af5f97bf1503fb648baf56fbf484faae6e0712bf98fc424f1de33b"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/logging.test.ts",
+      "sha256": "177b0a4aae1a451041b69707936e3aece1da0efafb46c93fb559f57888badbe6"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/migrate.test.ts",
+      "sha256": "41c7c8443e89584eff220e64e8009454892bcfee430055d825dadc393c69c169"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/openapi.test.ts",
+      "sha256": "89e59e67bd63b2c21f34d952858b1c930de957169a8e08fb5d7f45875b190666"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/platform.test.ts",
+      "sha256": "e4020845bba077551b63f455327385a6e334f4b99d610f53886330ce58c0605c"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/rate-metadata.test.ts",
+      "sha256": "919371651143a8a7a71c74c742ee7d236f38aa9d38de3ee172384606d5b72c1c"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/restore.test.ts",
+      "sha256": "7e658072be2951669ff28bd4cbca03fcb26be668b0243d82321a501ed531da53"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/schema-history.test.ts",
+      "sha256": "f1fd2712cbbae26a4ada440bf9b868ac24612132df47771b883e862d4e746fb4"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/session-admission.test.ts",
+      "sha256": "6deb9af7dcda38ed3131e022136316ba80ca45c0b1824211436d5b0a94cc01cb"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/support/admission.ts",
+      "sha256": "e9ac9647074881b1030ecdbce613a54b9e0672d2bc8f3105d54c47f5e197e8d3"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/support/browser-identities.ts",
+      "sha256": "858cc4ae781c3871018d11d018262f23aae5bb3cc6021bc9add07681154601d6"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/support/browser-server.ts",
+      "sha256": "8d6ce62c27f32703dad1efd1c80c6ef187a6d7794dad0385be3db8fb8fe25c1d"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/support/restore-child.ts",
+      "sha256": "00af9d1d3541872009b59d8ae73b448507fda8f152ed12143ba8e7c046d8e83b"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/support/seed-crash.mjs",
+      "sha256": "cd27203572d426244c2eff5863bbc9cd03bbfaa36e60eb5d9c8a6d214d86c964"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/shared/schemas.ts",
+      "sha256": "551e3bb037b6ba291a5bc04663dd0a94ce066adc08f72a6c3abcc1360c7e6030"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/tsconfig.json",
+      "sha256": "eee52f6d288dddd84aac8a22728750fd47161a078c313e8fb2848759428f23be"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/vite.config.ts",
+      "sha256": "f105794bd5ae5957bdcf2d9479cf27d34e44f35316510ce06594832a0afdcfa7"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/vitest.config.ts",
+      "sha256": "569e3cd6cd57e76e67807b1ff67e07398a19fecad8918cda28309ce32795e277"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/web/index.html",
+      "sha256": "91d9dacde93a693b4951a484900ec1e4028802d1287e4b5f749dd401a3da362d"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/web/src/App.tsx",
+      "sha256": "665d5314cbef116406bee57bc0573fd6fde1a2be1b13723c07c0d023cd519708"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/web/src/lib/api.test.ts",
+      "sha256": "86a3bbb2a50a7e66da07e573586640d1fd432dfa088bfc7982961a4a48fed0be"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/web/src/lib/api.ts",
+      "sha256": "3f3b253a7f86dcc4dbab03fa7e8359fedfbcff74ffd7d0e8b930f6364c3f421a"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/web/src/main.tsx",
+      "sha256": "f6f2ef48af86aee8a38c041bef7a646018ca5a1e756b5b45034a29cd94c744b1"
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/web/src/style.css",
+      "sha256": "52ae11d29e7153edec5a199b72984df05e1b300a3fe0bed8a3e7a8217542de57"
+    },
+    {
+      "path": "plugin/skills/tenet/SKILL.md",
+      "sha256": "a8a1c0a5e8b13826b9946ea2cdc16279ce2db88d3566900ffc22d37fc3bae6b0"
+    },
+    {
+      "path": "plugin/skills/tenet/resources/focused-review.md",
+      "sha256": "c912ab73f65134ce6cde026dbaf39d70785845113e8a548543dfda8c3e2167c0"
+    },
+    {
+      "path": "specs/PRD.md",
+      "sha256": "8e8ff2ab449520df2119b460cea70b15a4e19965cb149b581354ebca911254e6"
+    },
+    {
+      "path": "specs/tech-spec.md",
+      "sha256": "cccd167448c85647a4878b54fa371675c4a202e9e368298fdb5487ff87ae5dc0"
+    },
+    {
+      "path": "specs/ux-spec.md",
+      "sha256": "c7b28d30330a5780ee585b0d77b9f89bbb44dbdbfb434a46db2d06317dbc8eba"
+    },
+    {
+      "path": "tools/bench-fixtures.ts",
+      "sha256": "81350681b4a248a63ed2c929c6a63ab377dcda48f01753f9551c77fb26934136"
+    },
+    {
+      "path": "tools/bench-inventory.ts",
+      "sha256": "aa430eb90ca1c6c5a0b267b73e57802ea392ea85d6120a3d12af3adc84374b5f"
+    },
+    {
+      "path": "tools/bench.ts",
+      "sha256": "bef889058e88cb6f15c9c0d233fa134fab57af90bd629a8f215bd27c5351f0c2"
+    },
+    {
+      "path": "tools/build.ts",
+      "sha256": "9a7f3a821780a5d77247319e23c08fe669d42ef53934a03f1f608a8b70b6ce5e"
+    },
+    {
+      "path": "tools/coverage.ts",
+      "sha256": "40b75bceca4275053c35eeb349217d0774880ceeb0b22927e5705d2734b1ab8f"
+    },
+    {
+      "path": "tools/eval-validate.ts",
+      "sha256": "2dab43d0a32f2a37375fa8b922e8e3f8e08335aec5e7c4f358baee2b3be8422d"
+    },
+    {
+      "path": "tools/eval.ts",
+      "sha256": "9ed5c410afaf8f254ee4553467ec99ec378027f8b626de02b2474c3992c76944"
+    },
+    {
+      "path": "tools/experiment.ts",
+      "sha256": "4352387c61ef28c7ebc156ae364740304110f90d7e15e046ae996d53e7594cbc"
+    },
+    {
+      "path": "tools/host/copilot-cli.ts",
+      "sha256": "9dc02e01257f2609d72e325c133186776ec58103f516393677b3a4f8cd75f5af"
+    },
+    {
+      "path": "tools/host/evaluate.ts",
+      "sha256": "c8ca63c3543bf9d231fb1d73e8e42e84bac186d0f9a9d402a90adc6686fd2173"
+    },
+    {
+      "path": "tools/lint-arch.ts",
+      "sha256": "1f5730a5914e0c41489a476c6c2ec9ed214e98402b70c7bff2c4b40275e7ce09"
+    },
+    {
+      "path": "tools/lint-quality.ts",
+      "sha256": "359e0168660b8902f974f03d436af56f0b9203f169a5cf0c6cd8742f88a2cd65"
+    },
+    {
+      "path": "tools/lint-skills.ts",
+      "sha256": "f8b714d89355f3b86ce93142c57268ec253b9612452f608bf10187bf7b24397f"
+    },
+    {
+      "path": "tools/payload-files.json",
+      "sha256": "a934acb190640bbbaf3934124e3d6dc4c91dcf3f061db75cf375ec67216ddca2"
+    },
+    {
+      "path": "tools/payload.ts",
+      "sha256": "6d392106f6ad49ee635d4a5ef093e7121dcc272fc4d11febb726e97c8e3fee60"
+    },
+    {
+      "path": "tools/privacy-check.ts",
+      "sha256": "f6af1df64551569f850ddcfa39e9475b4c3872dd4e7b3d188d30a99e990eb3fe"
+    },
+    {
+      "path": "tools/protocol-legacy-capture.mjs",
+      "sha256": "173a523b00f49d248d4889b5249f5247166bda1c054e1ef1a0af0953a04f62a8"
+    },
+    {
+      "path": "tools/quality-baseline.json",
+      "sha256": "e8709d44e4bd83a10b07038990a1cf24b8ff83f085b90dc6dfc6570ee31fb8c6"
+    },
+    {
+      "path": "tools/release-audit.ts",
+      "sha256": "940ea4df3992e64e30b26d193e16bea06734483892f8ee1b8119fc7e95f04352"
+    },
+    {
+      "path": "tools/release-notes.ts",
+      "sha256": "86744eca521b10a13043e36281f589c3554be16aa52f3cb0b4f23a60cfef2c71"
+    },
+    {
+      "path": "tools/reproducible-build.ts",
+      "sha256": "ca35554f609286c656ed2fcc41e763ec77da5363da7179cbd76d087621471e01"
+    },
+    {
+      "path": "tools/test-scratch.ts",
+      "sha256": "d172bceda78ac2e96305ac4b293d525f70fc99607b5066ecca661c6a8170647e"
+    },
+    {
+      "path": "tools/uat/crash-bundle-forget.mjs",
+      "sha256": "aab10be90856d89dbfad069abb2abdaf478e5423ef10323fe8f6573a671be9d6"
+    },
+    {
+      "path": "tools/uat/crash-bundle-index.mjs",
+      "sha256": "93b6dbf26b5b3aee33ba499b3859b713c286753a1f3f6dbfd024c73183a98b7a"
+    },
+    {
+      "path": "tools/uat/crash-bundle-project.mjs",
+      "sha256": "cfda63f12e376ba84e0f8155224db52c8a171c9592cfc22d6bfbb543d98461a2"
+    },
+    {
+      "path": "tools/uat/uat.mjs",
+      "sha256": "3be36af0d8c0f4d311846449098a523f2ca3b74ecf25ebc99b9e68fa57e8cd0d"
+    }
+  ]
+}

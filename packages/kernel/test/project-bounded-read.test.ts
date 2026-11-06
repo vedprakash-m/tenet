@@ -36,12 +36,13 @@ describe("bounded presentation-source read foundation", () => {
     }
     assert.throws(() => project.read("private/file"), /policy|forbid/i, "legacy refusals still throw");
   });
-  it("refuses invalid encoding while preserving literal replacement characters and legacy decoding", () => {
+  it("refuses invalid encoding on both text paths while preserving literal replacement characters", () => {
     const { root, project } = fresh();
     writeFileSync(join(root, "invalid"), Buffer.from([0xc3, 0x28]));
     assert.deepEqual(project.readBounded("invalid", 64), { status: "unavailable", cause: "invalid-utf8" });
-    assert.equal(project.read("invalid"), "�(");
+    assert.throws(() => project.read("invalid"), /UTF-8/i);
     write(root, "replacement", "�");
+    assert.equal(project.read("replacement"), "�");
     assert.deepEqual(project.readBounded("replacement", 3), { status: "available", text: "�", sha256: sha256("�") });
   });
   it("keeps invalid trusted bounds as programming errors", () => {

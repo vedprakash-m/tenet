@@ -2,7 +2,7 @@
 // completed, not performed, or uncertain. `publish` applies a result that was logged but never reached the state document.
 import { adopted, type AdoptOp } from "../decisions/adopt.ts";
 import { completeForget } from "../decisions/forget.ts";
-import { MANIFEST, lockFileOf, type DependencyOp } from "../decisions/dependency-job.ts";
+import { MANIFEST, lockFileOf, type DependencyOp } from "../core/dependency-admission.ts";
 import { scaffolded, type ScaffoldOp } from "../decisions/scaffold.ts";
 import { recordedHardening, type HardeningOp } from "../decisions/hardening.ts";
 import type { UndoOp } from "../decisions/undo.ts";

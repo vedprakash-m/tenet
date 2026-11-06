@@ -1,6 +1,7 @@
 // Dependency verification before anything installs (SEC-05, TS §9.11): the lockfile diff and the policy check. Pure.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { ageInDays } from "../src/core/dependency-admission.ts";
 import { diffLockfile, diffPnpmLock, judgeDependencies } from "../src/core/dependencies.ts";
 import type { Observation } from "../src/core/dependencies.ts";
 
@@ -16,6 +17,25 @@ describe("the lockfile diff [SEC-05]", () => {
     assert.deepEqual(d.added.map((o) => [o.name, o.version, o.direct]), [["b", "2.0.0", true], ["c", "3.0.0", false]]);
     assert.deepEqual(d.changed.map((o) => [o.name, o.previous, o.version]), [["a", "1.0.0", "1.1.0"]]);
     assert.deepEqual(d.removed, ["old"]);
+  });
+  it("retains same-version changes to verification metadata", () => {
+    const before = lock({ "node_modules/a": pkg("1.0.0") });
+    for (const metadata of [{ integrity: "sha512-new" }, { hasInstallScript: true }, { license: "GPL-3.0" }, { link: true }]) {
+      const d = diffLockfile(before, lock({ "node_modules/a": pkg("1.0.0", metadata) }));
+      assert.equal(d.changed.length, 1, JSON.stringify(metadata));
+      assert.equal(d.changed[0]!.previous, "1.0.0");
+    }
+    assert.equal(diffLockfile(before, before).changed.length, 0);
+  });
+  it("refuses malformed npm metadata and unsupported lockfile versions", () => {
+    for (const version of [4, "3", true]) {
+      assert.throws(() => diffLockfile(null, JSON.stringify({ lockfileVersion: version, packages: {} })), /lockfile/i);
+    }
+    for (const entry of [null, [], "package", { version: 1 }, { resolved: false }, { hasInstallScript: "false" }, { license: [] }]) {
+      assert.throws(() => diffLockfile(null, lock({ "node_modules/a": entry })), /lockfile/i, JSON.stringify(entry));
+    }
+    assert.throws(() => diffLockfile(null, JSON.stringify({ lockfileVersion: 3, packages: [] })), /lockfile/i);
+    assert.equal(diffLockfile(null, lock({ "node_modules/a": pkg("1.0.0") })).added.length, 1);
   });
   it("treats everything as added when there was no lockfile", () => {
     assert.equal(diffLockfile(null, lock({ "node_modules/a": pkg("1.0.0") })).added.length, 1);
@@ -52,6 +72,53 @@ describe("the pnpm lockfile diff [SEC-05]", () => {
     const by = Object.fromEntries(d.added.map((o) => [o.name, o]));
     assert.deepEqual([by["left-pad"]!.source, by.lodash!.source], ["git", "registry"]);
   });
+  it("retains changed resolutions under an identical pnpm package key", () => {
+    const d = diffPnpmLock(PNPM_BEFORE, PNPM_BEFORE.replace("sha512-aaa==", "sha512-new=="));
+    assert.equal(d.changed.length, 1);
+    assert.equal(d.changed[0]!.integrity, "sha512-new==");
+    assert.equal(d.changed[0]!.previous, "4.18.0");
+    assert.equal(diffPnpmLock(PNPM_BEFORE, PNPM_BEFORE).changed.length, 0);
+  });
+  it("refuses unsupported pnpm versions and duplicate package identities", () => {
+    assert.throws(() => diffPnpmLock(null, PNPM_BEFORE.replace("'9.0'", "'99.0'")), /pnpm/i);
+    for (const header of ["lockfileVersion: '99.0'", "lockfileVersion: '9.0'", "'lockfileVersion': '9.0'"]) {
+      assert.throws(() => diffPnpmLock(null, header + "\n" + PNPM_BEFORE), /pnpm/i);
+    }
+    assert.throws(() => diffPnpmLock(null, PNPM_BEFORE + "  lodash@4.18.0:\n    resolution: {integrity: sha512-other}\n"), /pnpm/i);
+  });
+  it("does not report a package removed while another version remains", () => {
+    const before = PNPM_BEFORE + "  lodash@4.17.0:\n    resolution: {integrity: sha512-old}\n";
+    assert.deepEqual(diffPnpmLock(before, PNPM_BEFORE).removed, []);
+    const onlyOther = PNPM_BEFORE.replaceAll("lodash", "other");
+    assert.deepEqual(diffPnpmLock(before, onlyOther).removed, ["lodash"]);
+  });
+  it("matches upgrades only against versions absent from the output, independent of package order", () => {
+    const old = "  lodash@4.18.0:\n    resolution: {integrity: sha512-aaa==}\n";
+    const added = "  lodash@4.19.0:\n    resolution: {integrity: sha512-new==}\n";
+    const prefix = PNPM_BEFORE.slice(0, PNPM_BEFORE.indexOf(old));
+    for (const entries of [added + old, old + added]) {
+      const d = diffPnpmLock(PNPM_BEFORE, prefix + entries);
+      assert.deepEqual(d.changed, [], "a retained version cannot be the predecessor of an added version");
+      assert.deepEqual(d.added.map(o => o.version), ["4.19.0"]);
+      assert.deepEqual(d.removed, []);
+    }
+    const other = "  lodash@4.17.0:\n    resolution: {integrity: sha512-other}\n";
+    const upgraded = diffPnpmLock(PNPM_BEFORE + other, prefix + added + old);
+    assert.deepEqual(upgraded.added, []);
+    assert.deepEqual(upgraded.changed.map(o => [o.previous, o.version]), [["4.17.0", "4.19.0"]]);
+  });
+  it("does not guess which new version replaced a prior when several new versions coexist", () => {
+    const old = "  lodash@4.18.0:\n    resolution: {integrity: sha512-aaa==}\n";
+    const first = "  lodash@4.19.0:\n    resolution: {integrity: sha512-first}\n";
+    const second = "  lodash@4.20.0:\n    resolution: {integrity: sha512-second}\n";
+    const prefix = PNPM_BEFORE.slice(0, PNPM_BEFORE.indexOf(old));
+    for (const entries of [first + second, second + first]) {
+      const d = diffPnpmLock(PNPM_BEFORE, prefix + entries);
+      assert.deepEqual(d.changed, []);
+      assert.deepEqual(d.added.map(o => o.version).sort(), ["4.19.0", "4.20.0"]);
+      assert.deepEqual(d.removed, []);
+    }
+  });
   it("never claims a package has no install script: pnpm's lockfile does not record this, so it is always unknown", () => {
     const d = diffPnpmLock(null, PNPM_AFTER);
     assert.ok(d.added.every((o) => o.hasInstallScript === "unknown"));
@@ -85,6 +152,20 @@ describe("judging the diff against the policy [SEC-05, dependency_policy]", () =
     assert.equal(j([obs("a")], {}).verdict, "needs-decision");
     assert.equal(j([obs("a")], {}, { policy: { ...POLICY, unknown_age: "deny" } }).verdict, "blocked");
     assert.equal(j([obs("a")], {}, { policy: { ...POLICY, unknown_age: "allow" } }).verdict, "ok");
+  });
+  it("treats non-finite publish ages as unknown under every unknown-age policy", () => {
+    for (const age of [NaN, Infinity, -Infinity]) {
+      assert.equal(j([obs("a")], { "a@1.0.0": age }).verdict, "needs-decision");
+      assert.equal(j([obs("a")], { "a@1.0.0": age }, { policy: { ...POLICY, unknown_age: "deny" } }).verdict, "blocked");
+    }
+  });
+  it("keeps invalid or absent registry dates unknown and valid dates measured in whole days", () => {
+    const now = Date.parse("2026-11-05T12:00:00Z");
+    for (const text of ['{"1.0.0":"invalid"}', '{"1.0.0":null}', 'null', '[]', '{}']) {
+      assert.equal(ageInDays(text, "1.0.0", now), undefined, text);
+    }
+    assert.equal(ageInDays('{"1.0.0":"2026-11-01T00:00:00Z"}', "1.0.0", now), 4);
+    assert.equal(ageInDays('{"1.0.0":"2026-11-06T12:00:00Z"}', "1.0.0", now), -1);
   });
   it("a package with an install script needs consent that names the package and version", () => {
     const r = j([obs("s", { hasInstallScript: true })], { "s@1.0.0": 30 });

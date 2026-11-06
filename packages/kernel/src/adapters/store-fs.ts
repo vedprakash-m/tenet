@@ -512,13 +512,16 @@ export class FsStore implements Store {
     return { pid: process.pid, procStart: start };
   }
   writeArtifact(dir: string, name: string, content: string): string {
+    const path = this.artifactPath(dir, name);
+    writeSynced(path, content);
+    return path;
+  }
+  readArtifact(dir: string, name: string): string | null { return readRecord(this.artifactPath(dir, name)); }
+  private artifactPath(dir: string, name: string): string {
     this.admit();
     if (!name || name.includes("/") || name === "." || name === "..") throw new KernelError("run-dir-unavailable", "invalid artifact name");
     const id = this.exists() ? this.marker()!.workspaceId : "unbound";
-    const rel = relative(join(tmpdir(), `tenet-${id}`), dir);
-    const path = join(this.tempDir(rel), name);
-    writeSynced(path, content);
-    return path;
+    return join(this.tempDir(relative(join(tmpdir(), `tenet-${id}`), dir)), name);
   }
   /** Only owned run leaves under real group directories are cleanup candidates. */
   private runFiles(): string[] {

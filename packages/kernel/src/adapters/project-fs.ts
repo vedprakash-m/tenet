@@ -82,7 +82,12 @@ export class FsProject implements Project {
     finally { if (fd >= 0) closeSync(fd); }
   }
 
-  read(rel: string): string | null { return this.content(rel)?.toString("utf8") ?? null; }
+  read(rel: string): string | null {
+    const bytes = this.content(rel);
+    if (bytes === null) return null;
+    if (!isUtf8(bytes)) throw new ProjectRefusal("invalid-utf8", `${rel} is not valid UTF-8; no replacement text was accepted`);
+    return bytes.toString("utf8");
+  }
 
   readBounded(rel: string, maxBytes: number): ProjectReadResult {
     if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || maxBytes > MAX_READ_BYTES) throw new RangeError("invalid project read byte limit");
@@ -100,6 +105,24 @@ export class FsProject implements Project {
         return { status: "unavailable", cause: "unreadable" };
       throw error;
     }
+  }
+
+  exists(rel: string): boolean {
+    const path = resolve(this.root, rel);
+    if (!path.startsWith(this.root + sep)) throw new ProjectRefusal("outside", `path escapes the project: ${rel}`);
+    const normalized = relative(this.root, path).split(sep).join("/");
+    let part = this.root;
+    for (const name of normalized.split("/")) {
+      part = join(part, name);
+      let info: ReturnType<typeof lstatSync>;
+      try { info = lstatSync(part); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+        throw error;
+      }
+      if (info.isSymbolicLink() || !info.isDirectory() && part !== path) return true;
+    }
+    return true;
   }
 
   write(rel: string, content: string): void { this.publish(rel, content); }
@@ -145,4 +168,3 @@ export class FsProject implements Project {
     }
   }
 }
-

@@ -8,70 +8,56 @@ import type { State, WorkContract } from "../core/schemas.ts";
 import type { Plan } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
 import { factsHash, nx, readinessOf, withWork } from "../verbs/common.ts";
-import { MANIFEST, TIMEOUT_MS, jobFor, lockFileOf, restore } from "./dependency-job.ts";
-import type { Manager } from "./dependency-job.ts";
+import { CI_ARGV, MANIFEST, approvedScripts, configRefusal, lastLines, layoutRefusal } from "../core/dependency-admission.ts";
+import { lockFileOf, nameOf, type Manager } from "../core/dependency-admission.ts";
+import { TIMEOUT_MS, jobFor, restore } from "./dependency-job.ts";
 import { start } from "./dependency-start.ts";
 import type { Decision, DecisionCtx } from "./types.ts";
 
-const nameOf = (id: string) => id.slice(0, id.lastIndexOf("@"));
-
 type Waiting = NonNullable<DecisionCtx["work"]["dependency"]>;
 
-/** The user declined: put the files back if they still equal what the resolution wrote, and drop the change. */
+/** The preview stays pending: say why nothing changed and what to do before answering again. */
+function held(c: DecisionCtx, why: string, next: string): Plan {
+  const waiting = c.state.pending.find((q) => q.id === "dependency-confirm");
+  const questions = waiting ? { questions: [waiting] } : {};
+  return { resp: { work: c.work.id, exit: 3, ...questions, reasons: [reason("revision-conflict", why)], next: [nx("ask", next, true)] } };
+}
+
+/** The user declined: restore only from complete before-images and a verified resolver output. */
 function decline(c: DecisionCtx, dep: Waiting): Plan {
   const { ports, state, work } = c;
-  const restored = restore(ports, dep);
-  const note = restored
-    ? "declined; package.json and the lockfile are as they were"
-    : "declined; the files changed meanwhile, so I left them";
+  if (!restore(ports, dep)) {
+    const why = "decline could not safely restore the before-images; no files were changed and the preview remains pending";
+    const plan = held(c, why, "Restore the package files to the preview or original contents, then answer again.");
+    return { ...plan, state: withWork(state, work) };
+  }
   const { dependency: _gone, ...cleared } = work;
   return {
     state: withWork({ ...state, pending: state.pending.filter((q) => q.id !== "dependency-confirm") }, cleared),
-    resp: { work: work.id, reasons: [reason("dependency-rejected", note, { note: true })] },
+    resp: {
+      work: work.id,
+      reasons: [reason("dependency-rejected", "declined; package.json and the lockfile are as they were", { note: true })],
+    },
   };
 }
 
 /** The files no longer equal what the preview showed: ask again instead of installing something else. */
 function changedSincePreview(c: DecisionCtx, dep: Waiting): Plan | undefined {
-  const { ports, state, work } = c;
+  const { ports } = c;
+  const present = (path: string) => ports.project.exists(path);
+  const layout = layoutRefusal(present, dep.manager);
+  if (layout)
+    return held(c, `${layout}; remove or review it before confirming`, "Review the package-manager lockfiles, then answer again.");
+  const config = configRefusal(present, dep.manager);
+  if (config) return held(c, `${config} appeared after the preview; remove or review it before confirming`,
+    "Review the project configuration, then answer again.");
   const lock = lockFileOf(dep.manager);
   const here = ports.project.hashes([MANIFEST, lock]);
   if (here[MANIFEST] === dep.after.manifest && here[lock] === dep.after.lock) return undefined;
-  const waiting = state.pending.find((q) => q.id === "dependency-confirm");
   const why = "package.json or the lockfile changed after the preview; decline to restore them, or ask for the change again";
-  return {
-    resp: {
-      work: work.id,
-      exit: 3,
-      ...(waiting ? { questions: [waiting] } : {}),
-      reasons: [reason("revision-conflict", why)],
-      next: [nx("ask", "Ask again.", true)],
-    },
-  };
+  return held(c, why, "Ask again.");
 }
 
-/** The install scripts the user named; each must have been named by the preview. */
-function approvedScripts(c: DecisionCtx, dep: Waiting): string[] {
-  const approved = (c.input.answers?.["dependency-scripts"] ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const unknown = approved.filter((s) => !dep.scripts.includes(s));
-  if (unknown.length) {
-    const why = `${unknown.join(", ")} was not named by the preview; its scripts need their own consent`;
-    throw new KernelError("restriction-key-unknown", why, { exit: 2 });
-  }
-  return approved;
-}
-
-const lastLines = (r: { stderr: string; stdout: string }, n: number) =>
-  (r.stderr || r.stdout).trim().split("\n").slice(-n).join("\n");
-
-const CI_ARGV: Record<Manager, string[]> = {
-  npm: ["npm", "ci", "--ignore-scripts", "--no-audit"],
-  pnpm: ["pnpm", "install", "--frozen-lockfile", "--ignore-scripts"],
-};
-const rebuildArgv = (manager: Manager, name: string): string[] => [manager, "rebuild", name];
 
 /** The exact install matching the resolved lockfile, scripts off, then a rebuild of each package whose scripts the user approved. */
 async function install(ports: Ports, runDir: string, manager: Manager, approved: string[]): Promise<{ ok?: boolean; failed?: string }> {
@@ -79,7 +65,7 @@ async function install(ports: Ports, runDir: string, manager: Manager, approved:
   const ci = await run(CI_ARGV[manager]);
   if (ci.exit !== 0) return { failed: `${manager} install: ${lastLines(ci, 4)}` };
   for (const id of approved) {
-    const r = await run(rebuildArgv(manager, nameOf(id)));
+    const r = await run([manager, "rebuild", nameOf(id)]);
     if (r.exit !== 0) return { failed: `${manager} rebuild ${nameOf(id)}: ${lastLines(r, 3)}` };
   }
   return { ok: true };
@@ -130,7 +116,7 @@ function settle(c: DecisionCtx): Plan {
   if (answer !== "confirm") throw new KernelError("revision-conflict", 'answer "confirm" or "decline"', { exit: 1 });
   const changed = changedSincePreview(c, dep);
   if (changed) return changed;
-  const approved = approvedScripts(c, dep);
+  const approved = approvedScripts(input.answers?.["dependency-scripts"], dep.scripts);
   return jobFor(
     c,
     { phase: "install", manager: dep.manager, scripts: approved },
