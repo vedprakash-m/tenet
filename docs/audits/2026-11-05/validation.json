@@ -1,0 +1,180 @@
+{
+  "date": "2026-11-05",
+  "baseCommit": "c07e13a088334dc5c2d7e07d647a42ac8cb5eb6a",
+  "sourceSnapshotSha256": "77a94bf05aed627e9e2e26a2cfecefec67fff985ebe0cf755a71c68c857ddf76",
+  "scope": "Local source/contract review and deterministic development validation; no installed-host/human qualification or release.",
+  "artifact": {
+    "bytes": 799293,
+    "sha256": "9215e08cb99e96769f0783792e14ee8efec343601aaa31dbe150e7ece5e10d9c",
+    "payloadFiles": 97,
+    "payloadManifestSha256": "43ea4f4e8e92fdc60e12b836fd5c1c1d2ff888040fcac26c6017ec7b0c9f60bb"
+  },
+  "finalChecks": {
+    "fullLocalCi": {
+      "command": "npm run ci",
+      "passed": true,
+      "node": "v26.3.0",
+      "tests": 1718,
+      "suites": 263,
+      "pass": 1718,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "approvedSourceTypecheck": true,
+    "approvedSourceAllLints": true,
+    "m0Coverage": true,
+    "approvedSourceBuild": true,
+    "completePayload": true,
+    "sameToolchainReproducibility": {
+      "passed": true,
+      "files": 97,
+      "node": "v26.3.0",
+      "esbuild": "0.28.2",
+      "typescript": "5.9.3",
+      "independentCleanOutputs": true,
+      "independentSourceOrDependencyRebuild": false
+    },
+    "focusedDependencyCore": {
+      "pass": 26,
+      "fail": 0
+    },
+    "focusedDependencyIntegration": {
+      "pass": 25,
+      "fail": 0
+    },
+    "approvedCombinedCoreAndFilesystemCompatibility": {
+      "pass": 66,
+      "fail": 0
+    },
+    "pnpmProperties": {
+      "seed": 20261105,
+      "runs": 500,
+      "passed": true
+    },
+    "diffCheck": true,
+    "privacyScan": {
+      "scope": "unstaged tracked diff plus new audit files",
+      "findings": 0,
+      "limitation": "heuristic scanner, not absence proof"
+    }
+  },
+  "builtWalkthroughs": {
+    "minimum": {
+      "runtime": "v22.12.0",
+      "bundle": {
+        "bytes": 799293,
+        "sha256": "9215e08cb99e96769f0783792e14ee8efec343601aaa31dbe150e7ece5e10d9c"
+      },
+      "scenarios": 152,
+      "passed": true,
+      "focused": {
+        "node": "v22.12.0",
+        "npm": "10.9.0",
+        "bundleSha256": "9215e08cb99e96769f0783792e14ee8efec343601aaa31dbe150e7ece5e10d9c",
+        "invalidDateDenied": true,
+        "noOutputPublishedOnDenial": true,
+        "validDatePreviewed": true,
+        "declineRestored": true,
+        "invalidIntentRefusedWithoutRewrite": true,
+        "registry": "synthetic loopback only",
+        "requests": 4,
+        "tarballRequests": 0
+      }
+    },
+    "current": {
+      "runtime": "v26.3.0",
+      "bundle": {
+        "bytes": 799293,
+        "sha256": "9215e08cb99e96769f0783792e14ee8efec343601aaa31dbe150e7ece5e10d9c"
+      },
+      "scenarios": 152,
+      "passed": true,
+      "focused": {
+        "node": "v26.3.0",
+        "npm": "11.16.0",
+        "bundleSha256": "9215e08cb99e96769f0783792e14ee8efec343601aaa31dbe150e7ece5e10d9c",
+        "invalidDateDenied": true,
+        "noOutputPublishedOnDenial": true,
+        "validDatePreviewed": true,
+        "declineRestored": true,
+        "invalidIntentRefusedWithoutRewrite": true,
+        "registry": "synthetic loopback only",
+        "requests": 4,
+        "tarballRequests": 0
+      }
+    }
+  },
+  "minimumRuntimeSource": {
+    "version": "v22.12.0",
+    "platform": "darwin-arm64",
+    "archive": "node-v22.12.0-darwin-arm64.tar.gz",
+    "archiveSha256": "293dcc6c2408da21562d135b0412525e381bb6fe150d688edb58fe850d0f3e13",
+    "source": "https://nodejs.org/dist/v22.12.0/",
+    "matchedPublishedShasums": true
+  },
+  "review": {
+    "independentReports": [
+      "protocol-review.md",
+      "workload-and-threat-review.md",
+      "diagnostics-and-repairs-review.md"
+    ],
+    "ownerAuthorizedReviewers": true,
+    "strictUtf8OwnerChoice": "Approve strict UTF-8 refusal (Recommended)",
+    "strictUtf8Applied": true,
+    "remainingContractsSigned": false
+  },
+  "history": [
+    {
+      "scope": "sandbox test attempt",
+      "result": "process-start identity cannot be inspected; rerun in supported process-inspection context, no capability weakening"
+    },
+    {
+      "scope": "earlier in-turn full run",
+      "result": "1713 passed, before the complete approved repair set; not final-source evidence"
+    },
+    {
+      "scope": "initial strict-decoding full run",
+      "counts": {
+        "tests": 1716,
+        "suites": 263,
+        "pass": 1715,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "result": "one explicit legacy-decoding compatibility assertion failed; not hidden or waived"
+    },
+    {
+      "scope": "intermediate strict-decoding full run",
+      "counts": {
+        "tests": 1718,
+        "suites": 263,
+        "pass": 1717,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "result": "same compatibility conflict; owner subsequently approved the canonical/test amendment"
+    },
+    {
+      "scope": "synthetic registry fixture development",
+      "result": "npm initially rejected invalid resolver timestamps itself; final fixture supplies valid resolver metadata then invalid age lookup; no external registry or model calls"
+    },
+    {
+      "scope": "installed node@24 path",
+      "result": "reported Node26.3.0; repeat only, not dual-runtime evidence"
+    }
+  ],
+  "limits": [
+    "No commit/push or exact-source hosted CI was performed. Local tracker remains in progress.",
+    "Final typecheck/lint/build/payload/reproducibility and focused compatibility checks were repeated after the owner-approved UTF-8 amendment; full-suite filesystem tests executed the approved new assertions.",
+    "pnpm real CLI conformance and full parsing remain incomplete.",
+    "Complete-target capacity, coupled schema/migration/native-dispatch mechanism, semantic ledger, all19 Should dispositions, host/campaign/human evidence and release approvals remain open.",
+    "Zero requirements qualified."
+  ],
+  "completeForLocalRepairBatch": true
+}
