@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-06 — Make filesystem watcher canaries race-safe
+
+- Keep each canary file until its recursive watcher reports the create event, then clean it up. This prevents the test from deleting the canary before the watcher observes it.
+- File: `packages/kernel/test/read-only-review.test.ts`. The focused test passes locally on Windows/Node 24.22.1. The previous hosted run failed only this test (1 of 1,742) on Ubuntu; exact-source hosted CI is pending. No runtime behavior or qualification claim changed.
+
 ## 2026-11-06 — Clarify observer-hook qualification gate
 
 - State that the source preview ships no observer hooks and any future hooks are gated on qualification, matching the UX requirements without implying a host observation or release commitment.

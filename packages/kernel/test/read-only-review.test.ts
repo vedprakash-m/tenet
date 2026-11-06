@@ -30,19 +30,19 @@ async function calibrateWatcher(root: string): Promise<void> {
   let watchError: Error | undefined;
   const watcher = watch(root, { recursive: true }, (_kind, path) => { if (path) events.push(path.toString()); });
   watcher.on("error", (error) => { watchError = error; });
+  const canary = join(nested, "watch-canary.tmp");
   try {
-    const canary = join(nested, "watch-canary.tmp");
     writeFileSync(canary, "temporary\n");
-    rmSync(canary);
-    assert.equal(existsSync(canary), false);
     await waitFor(() => {
       if (watchError) throw watchError;
       return events.some((path) => path.endsWith("watch-canary.tmp"));
     }, 5000, "nested watch canary");
     if (watchError) throw watchError;
   } finally {
+    rmSync(canary, { force: true });
     watcher.close();
   }
+  assert.equal(existsSync(canary), false);
 }
 
 function snapshot(root: string): string[] {
@@ -169,11 +169,14 @@ it("observes stateless review without project activity or traced mutating comman
     const canaryName = `watch-canary-${nonce}.tmp`;
     const canary = join(p.root, "src", canaryName);
     writeFileSync(canary, "temporary\n");
-    rmSync(canary);
-    await waitFor(() => {
-      if (watchError) throw watchError;
-      return events.some((event) => event.path?.endsWith(canaryName));
-    }, 5000, "project watch canary");
+    try {
+      await waitFor(() => {
+        if (watchError) throw watchError;
+        return events.some((event) => event.path?.endsWith(canaryName));
+      }, 5000, "project watch canary");
+    } finally {
+      rmSync(canary, { force: true });
+    }
     watcher.close();
     watcher = undefined;
 
