@@ -402,6 +402,77 @@ describe("verdict table [RES-02, EVD-01]", () => {
     assert.equal(continueRequired(v, { attemptsLeft: 1, stopReason: "repeated-failure" }), false);
     assert.equal(continueRequired(verdict(base()), { attemptsLeft: 2 }), false);
   });
+  it("keeps an introduced failure unverified across every stop and budget outcome [AC-27]", () => {
+    const stops: Array<VerdictInput["stopReason"]> = [undefined, "repeated-failure", "budget-exhausted", "host-limit", "user-stop", "declined"];
+    for (const kind of ["assertion", "timeout", "compile-or-import", "runtime"]) {
+      for (const stopReason of stops) {
+        for (const attemptsLeft of [0, 1, 2]) {
+          const input = {
+            ...base(), stopReason, attemptsLeft,
+            receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "fail", failures: [{ test: "introduced", kind, message: "failed" }] })],
+          };
+          const v = verdict(input);
+          const label = `${kind}, ${stopReason ?? "no stop"}, ${attemptsLeft} attempts`;
+          assert.equal(v.endpoint, "implemented-unverified", label);
+          assert.equal(v.scope, undefined, label);
+          assert.equal(v.stopReason, stopReason, label);
+          assert.deepEqual(v.reasons.filter(r => !r.note).map(r => r.code), ["evidence-failed"], label);
+          assert.equal(continueRequired(v, input), !stopReason && attemptsLeft > 0, label);
+        }
+      }
+    }
+  });
+  it("does not treat an excluded baseline failure as introduced work to retry [AC-27]", () => {
+    const failure = { test: "legacy.test.ts#existing", kind: "assertion", message: "unchanged" };
+    const stops: Array<VerdictInput["stopReason"]> = [undefined, "repeated-failure", "budget-exhausted", "host-limit", "user-stop", "declined"];
+    for (const excluded of [true, false]) {
+      for (const stopReason of stops) {
+        for (const attemptsLeft of [0, 1, 2]) {
+          const input: VerdictInput = {
+            ...base(), stopReason, attemptsLeft, baselineFailures: [failure.test], excludedScope: excluded ? [failure.test] : [],
+            receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "fail", failures: [failure] })],
+          };
+          const v = verdict(input);
+          const label = `${excluded ? "excluded" : "not excluded"}, ${stopReason ?? "no stop"}, ${attemptsLeft} attempts`;
+          assert.equal(v.endpoint, excluded ? "checked-local" : "implemented-unverified", label);
+          assert.equal(v.scope, excluded ? "committed" : undefined, label);
+          assert.equal(v.stopReason, stopReason, label);
+          assert.deepEqual(v.reasons.map(r => r.code), [excluded ? "baseline-failure-excluded" : "baseline-failure-not-excluded"], label);
+          assert.equal(v.reasons[0]?.note === true, excluded, label);
+          if (excluded) assert.ok(v.reasons[0]?.message.includes(failure.test), label);
+          assert.equal(continueRequired(v, input), false, label);
+        }
+      }
+    }
+  });
+  it("does not excuse partially excluded, mixed or unnamed failures at stop and budget boundaries [AC-27]", () => {
+    const legacy = { test: "legacy.test.ts#existing", kind: "assertion", message: "unchanged" };
+    const other = { test: "legacy.test.ts#other", kind: "assertion", message: "unchanged" };
+    const introduced = { test: "new.test.ts#introduced", kind: "assertion", message: "failed" };
+    const cases = [
+      { label: "partially excluded baseline", failures: [legacy, other], baseline: [legacy.test, other.test], code: "baseline-failure-not-excluded" },
+      { label: "baseline and introduced", failures: [legacy, introduced], baseline: [legacy.test], code: "evidence-failed" },
+      { label: "unnamed failure", failures: [], baseline: [legacy.test], code: "evidence-failed" },
+    ];
+    const stops: Array<VerdictInput["stopReason"]> = [undefined, "repeated-failure", "budget-exhausted", "host-limit", "user-stop", "declined"];
+    for (const c of cases) {
+      for (const stopReason of stops) {
+        for (const attemptsLeft of [0, 1, 2]) {
+          const input: VerdictInput = {
+            ...base(), stopReason, attemptsLeft, baselineFailures: c.baseline, excludedScope: [legacy.test],
+            receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "fail", failures: c.failures })],
+          };
+          const v = verdict(input);
+          const label = `${c.label}, ${stopReason ?? "no stop"}, ${attemptsLeft} attempts`;
+          assert.equal(v.endpoint, "implemented-unverified", label);
+          assert.equal(v.scope, undefined, label);
+          assert.equal(v.stopReason, stopReason, label);
+          assert.deepEqual(v.reasons.map(r => r.code), [c.code], label);
+          assert.equal(continueRequired(v, input), c.code === "evidence-failed" && !stopReason && attemptsLeft > 0, label);
+        }
+      }
+    }
+  });
   it("words the headline in the user's terms, naming scope in the headline", () => {
     assert.match(headline(verdict(base()), { profile: "feature", branch: "main" }), /^Checked locally .*committed on main/);
     const u = verdict({ ...base(), commitExists: false, committedTreeChecked: false, checkedIncludesHumanEdits: true });
