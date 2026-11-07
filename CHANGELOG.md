@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-07 — Prepare the hardened schema-1 bridge candidate
+
+- Add strict minimal rollback-terminal admission, duplicate raw-key/schema refusal, operation-local exclusive writer locks and read-only artifact paths. Preserve schema-1 corruption recovery and stateless advisory artifacts; do not add schema-2 activation, migration replay, release identity or capacity changes.
+- Files: `core/migration-terminal.ts`, `adapters/private-record-fs.ts`, `adapters/store-fs.ts`, bridge and filesystem tests/fixtures, `tools/reproducible-build.ts`, built bridge UAT fixtures, the untrusted workflow, `README.md`, `specs/tech-spec.md`, and `docs/schema-1-bridge.md`.
+- Failing-first terminal/writer/read-only/raw-duplicate/unbound-blob controls and reproducibility-identity controls were observed on Windows. Typecheck, lints and structural coverage pass locally; POSIX processes and built UAT require exact-source hosted gates. The verifier reports actual bundle, payload-manifest and input digests with source/toolchain identity, not a qualified or released bridge. Installed-host and power-loss behavior remain unobserved.
+
 ## 2026-11-07 — Extend verdict failure-boundary controls
 
 - Add test-only controls for introduced failures across stop/budget states, excluded versus non-excluded baseline failures, and partially excluded, mixed or unnamed failure reports. These characterize existing verdict behavior; no runtime rule changes.
