@@ -18,7 +18,8 @@ export function bridgeUat({ create, call, bundle, source, env, observations }) {
  const h = call(root, 'open', { profile: 'plan', request: 'inspect schema-1 bridge' }).handle;
  assert.equal(typeof h, 'string');
  writeFileSync(join(dir, 'migration-terminal.json'), terminal);
- assert.equal(call(root, 'status', { h }).exit, 0);
+ const admitted = call(root, 'inspect', { h, view: 'status' });
+ assert.equal(admitted.exit, 0, JSON.stringify(admitted));
  const config = { h, kind: 'config', target: 'style', propose: { value: 'concise' } };
  for (const raw of [
   terminal.replace('"protocolVersion":1', '"protocolVersion":2'),
@@ -28,7 +29,7 @@ export function bridgeUat({ create, call, bundle, source, env, observations }) {
  ]) {
   writeFileSync(join(dir, 'migration-terminal.json'), raw);
   const before = snapshot(dir);
-  for (const result of [call(root, 'status', { h }), call(root, 'decide', config)]) {
+  for (const result of [call(root, 'inspect', { h, view: 'status' }), call(root, 'decide', config)]) {
    assert.ok(result.reasons.some(reason => reason.code === 'unsupported-record'), JSON.stringify(result));
    assert.deepEqual(snapshot(dir), before);
   }
