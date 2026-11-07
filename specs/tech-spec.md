@@ -1216,10 +1216,26 @@ The Reviewer has a fresh context and the host's read, search and `usages` tools,
 | Evidence | Receipt summaries and open findings, with recorded IDs, severity, state and evidence |
 | Changes | Every changed path with its kind (test, configuration, locked, source) and line counts; diffs inline with function context (`git diff --function-context`) within the budget, otherwise paths only; lockfiles and generated snapshots replaced by the structured dependency diff (§9.11). All repository content is fenced as quoted data |
 | Attention (REV-03) | The attention items below, each needing a disposition |
-| Investigation list | In priority order: changed files, their linked acceptance tests, callers of each changed export (to locate with `usages`), changed routes and entry points |
+| Investigation list | In priority order: changed source files, their linked acceptance tests, direct importers/callers of each changed non-private interface or symbol (to locate with `usages`), changed routes and entry points, then unrelated adjacent files |
 | Rubric | Required axes, trait rubric items, the charter excerpt and active lessons (≤ 1,500 tokens) |
 
 **Design sketch.** Required in Standard and Deep when the change adds a module, changes an exported type or signature, touches persistence or shared policy, or adds a call across a module boundary; Quick work, obvious bug fixes and behavior-preserving refactors skip it, and in Deep the Architect drafts it. It states where the behavior belongs (an existing module, or why a new one), exported types and signatures that change, the call path from entry point to effect, which one place owns each invariant, what is reused or removed, and which abstractions are deliberately deferred. `scope.paths` is its file list. It targets 1,500 characters (capped at 4,000) and is confirmed with the examples in the same preview, never as a separate question. Afterwards the coordinator may refine internal detail itself through `decide {propose: basis}` without asking; a change to a commitment (behavior, compatibility, data, access, external effects, an exported interface others consume, or an architecture constraint the user set) needs the user. When it changes how components interact, its call path goes into `docs/architecture.md`. In Standard and Deep, a diff that adds a non-test source file or changes an export while no sketch exists raises one attention item, `sketch-missing`.
+
+**Interface-context priority (AGT-12).** Full and recheck manifests select a stable,
+deduplicated `investigation` path index: changed sources, accepted example and
+acceptance/boundary obligation test links (including unchanged tests), then
+remaining changed tests. Stateless review has no basis links. All selected paths
+are filtered for model-send exclusions before selection. `interfaceContext`
+carries changed-source candidates with `resolution: "unknown"` and directs the
+reviewer to identify changed non-private interfaces/symbols and resolve direct
+importers and callers on the named candidate with native `usages`, or disclosed
+text search when unavailable. Inspect those dependencies and linked acceptance
+tests before unrelated adjacent files; private-only changes require no interface
+claim. Static references prove neither runtime dispatch nor complete coverage.
+Unresolved dependencies remain reported, never zero callers. This is cooperative
+context selection, not a kernel import scanner or an observed host map. The
+complete metadata is hashed and counted within the unchanged assignment budget;
+changed-file metadata and required review paths are not narrowed by this index.
 
 **Basis confirmation (UX Spec UX-D1).** Each proposed element carries its `origin`, and the proposal says whether the sketch states a commitment (behavior, data, access, compatibility, an exported interface others consume, or an architecture constraint). `decide {propose: basis}` records the basis as confirmed from the request (capture `reported`, quoting the request) when every element is `origin: request` and the sketch states no commitment; otherwise it returns one `basis-confirm` question that lists Tenet's additions. An `origin: tenet` requirement stays an assumption until confirmed (INT-07). The origin labels are cooperative; seeded-misreading fixtures (AC-24) measure the residual.
 
