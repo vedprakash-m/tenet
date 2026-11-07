@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-07 — Extend verdict failure-boundary controls
+
+- Add test-only controls for introduced failures across stop/budget states, excluded versus non-excluded baseline failures, and partially excluded, mixed or unnamed failure reports. These characterize existing verdict behavior; no runtime rule changes.
+- File: `packages/kernel/test/verdict.test.ts`. The verdict suite passes 67/67 locally on Windows, with typecheck and all lints passing. The three tables check 162 combinations: 72 introduced-failure, 36 fully excluded/non-excluded baseline, and 54 partial/mixed/unnamed failure cases. Full supported-POSIX CI and public-pipeline proof remain pending; these tests do not establish failure-signature equivalence or complete AC-27 qualification.
+- Wrap-up validation: the complete Windows portability cohort passes 375/375 with no skips. Typecheck, all lints, M0 structural coverage, build (782 KB/800 KB), complete 97-file payload verification and same-source/toolchain reproducibility pass. Staged and prior writer-admission addition privacy scans found no likely leaks; scans are not proof of absence. Hosted full CI and real-repository built UAT must validate the published source separately.
+
 ## 2026-11-07 — Retry transient competing-writer admission reads
 
 - Retry only the bounded private-record read-change refusal during admission when a live competing lock is confirmed, within the existing lock deadline. Extract private-record filesystem helpers to keep the adapter within its established module-size budget, and align the project-reference UAT assertion with the named unsupported-configuration refusal.
