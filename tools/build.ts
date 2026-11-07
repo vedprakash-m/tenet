@@ -10,7 +10,7 @@ import { Policy } from "../packages/kernel/src/core/policy.ts";
 import { ReviewResult } from "../packages/kernel/src/core/schemas.ts";
 import { payloadChecksums, payloadFiles, payloadInventory } from "./payload.ts";
 
-const BUDGET_BYTES = 800 * 1024; // owner decision 2026-10-24 (was 750 KB, set 2026-10-19); zod is 447 KB of it (TS §3.2)
+const BUDGET_BYTES = 900 * 1024; // Owner D01/D01b, 2026-11-07; binary units (TS §3.2).
 export const GENERATED = ["LICENSE", "NOTICE", "kernel/tenet.mjs", "schemas/review-result.schema.json", "schemas/tenet.policy.schema.json"];
 
 function copySources(root: string, output: string, inventory: string[]): void {
