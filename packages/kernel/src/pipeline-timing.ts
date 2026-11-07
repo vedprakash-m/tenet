@@ -25,7 +25,7 @@ export function callTiming(ports: Ports) {
     let observation: HostTimings = {};
     if (collectHost) {
       try {
-        observation = ports.host.callTimings?.() ?? {};
+        if (ports.host.callTimings) observation = ports.host.callTimings();
       } catch (e) {
         invalid = true;
         throw e;

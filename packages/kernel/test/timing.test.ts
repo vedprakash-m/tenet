@@ -90,6 +90,11 @@ describe("five measured or unknown timing fields [NFR-05]", () => {
       f.ports.host.callTimings = () => ({ network: { ms, observedAt: "2026-11-07T00:00:00.000Z" } });
       assert.throws(() => callTiming(f.ports).read(), /host timing/i);
     }
+    for (const observed of [null, undefined, { extra: 1 }]) {
+      const f = fixture();
+      f.ports.host.callTimings = () => observed as never;
+      assert.throws(() => callTiming(f.ports).read(), /host timing/i);
+    }
   });
 
   it("returns an internal-error response for invalid host observations, including early refusals", async () => {
