@@ -1310,7 +1310,8 @@ try {
    focused(typed, h, checked); assert.equal(call(typed, 'finish', { h }, ['--no-commit']).data.endpoint, 'checked-local');
   } else {
    assert.equal(receipt.status, 'inconclusive', JSON.stringify(receipt));
-   assert.ok(receipt.reasons.includes(mode === 'references' ? 'not-executed' : 'population-mismatch'));
+   assert.ok(receipt.reasons.includes(mode === 'references' ? 'adapter-unsupported-config' : 'population-mismatch'));
+   if (mode === 'references') assert.ok(receipt.limitations.includes('tsconfig.json: references are not supported'));
    assert.notEqual(call(typed, 'finish', { h }, ['--no-commit']).data.endpoint, 'checked-local');
   }
   assert.equal(readFileSync(join(typed, 'tsconfig.tsbuildinfo'), 'utf8'), 'human build info');

@@ -1,9 +1,7 @@
 // The filesystem Store (TS §7): one state document replaced atomically, a transaction lock with guarded stale-break,
 // an append-only log with torn-write repair, hash-named blobs and the workspace marker.
-import { accessSync, chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, ftruncateSync, readdirSync, linkSync, lstatSync, mkdirSync, openSync, readSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
-import type { Stats } from "node:fs";
+import { accessSync, chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, ftruncateSync, readdirSync, linkSync, lstatSync, mkdirSync, openSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { isUtf8 } from "node:buffer";
 import { join, relative, sep } from "node:path";
 import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
@@ -17,13 +15,13 @@ import { recoveredState } from "../core/state.ts";
 import { schemaStatus } from "../core/versions.ts";
 import type { Clock, EvictReport, Footprint, LogEntry, Quarantined, Store, Tx } from "../ports/types.ts";
 import { isAlive, procStart } from "./proc.ts";
+import { admissionRecord, MAX_RECORD, parseRecord, readJson, readRecord } from "./private-record-fs.ts";
 import { quarantine, QUARANTINE_JOURNAL } from "./quarantine-fs.ts";
 
 interface Marker { workspaceId: string; tag: string; nonce: string; schema: number; dev: number; ino: number }
 interface LockInfo { pid: number; procStart: string; nonce: string; verb: string }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const MAX_RECORD = 50 * 1024 * 1024;
 const LogBase = z.object({ t: z.string().min(1) });
 const LogRecord = z.discriminatedUnion("kind", [
   LogBase.extend({ kind: z.literal("intent"), effect: z.string().min(1), id: z.string().min(1), op: z.unknown() }).passthrough(),
@@ -32,17 +30,6 @@ const LogRecord = z.discriminatedUnion("kind", [
     revision: z.number().int().nonnegative() }).passthrough(),
   LogBase.extend({ kind: z.literal("accounting") }).passthrough(),
 ]);
-
-function parseRecord(text: string): unknown {
-  const parsed: unknown = JSON.parse(text);
-  const pending: Array<[unknown, number]> = [[parsed, 0]];
-  while (pending.length) {
-    const [value, depth] = pending.pop()!;
-    if (depth > 64) throw new KernelError("unsupported-record", "a private record exceeds the depth bound");
-    if (value && typeof value === "object") for (const item of Object.values(value)) pending.push([item, depth + 1]);
-  }
-  return parsed;
-}
 
 function readJournal(text: string): { entries: LogEntry[]; keep: number } {
   const lines = text.split("\n"), entries: LogEntry[] = [];
@@ -65,73 +52,6 @@ function readJournal(text: string): { entries: LogEntry[]; keep: number } {
     keep += line.length + 1;
   }
   return { entries, keep };
-}
-
-/** Revalidate ctime-only changes without a second document-sized allocation. */
-function matchesRead(fd: number, content: Buffer, stamp: Stats): boolean {
-  const chunk = Buffer.alloc(Math.min(64 * 1024, content.length + 1));
-  let offset = 0;
-  for (;;) {
-    const count = readSync(fd, chunk, 0, Math.min(chunk.length, content.length - offset + 1), offset);
-    if (!count) break;
-    if (offset + count > content.length || !chunk.subarray(0, count).equals(content.subarray(offset, offset + count))) return false;
-    offset += count;
-  }
-  const after = fstatSync(fd);
-  return offset === content.length && after.size === stamp.size && after.mtimeMs === stamp.mtimeMs && after.ctimeMs === stamp.ctimeMs;
-}
-
-function readRecord(path: string, journal = false, corruptAsNull = false): string | null {
-  let descriptor = -1;
-  try {
-    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
-    const info = fstatSync(descriptor);
-    if (!info.isFile() || info.size > MAX_RECORD) {
-      throw new KernelError("unsupported-record", "a private record is not a regular file within the 50 MB bound");
-    }
-    const buffer = Buffer.alloc(info.size + 1);
-    let offset = 0;
-    while (offset < buffer.length) {
-      const count = readSync(descriptor, buffer, offset, buffer.length - offset, offset);
-      if (!count) break;
-      offset += count;
-    }
-    const after = fstatSync(descriptor);
-    if (offset !== info.size || after.size !== info.size || after.mtimeMs !== info.mtimeMs) {
-      throw new KernelError("unsupported-record", "a private record changed during its bounded read");
-    }
-    const content = buffer.subarray(0, offset);
-    if (after.ctimeMs !== info.ctimeMs && !matchesRead(descriptor, content, after)) {
-      throw new KernelError("unsupported-record", "a private record changed during its bounded read");
-    }
-    if (!isUtf8(journal ? content.subarray(0, content.lastIndexOf(0x0a) + 1) : content)) {
-      if (corruptAsNull) return null;
-      throw new KernelError("unsupported-record", "a private record contains invalid UTF-8");
-    }
-    return content.toString("utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-    if (error instanceof KernelError) throw error;
-    throw new KernelError("unsupported-record", "a private record cannot be read safely");
-  } finally { if (descriptor >= 0) closeSync(descriptor); }
-}
-
-const readJson = <T>(p: string): T | null => {
-  try {
-    const text = readRecord(p);
-    return text === null ? null : parseRecord(text) as T;
-  } catch { return null; }
-};
-
-function admissionRecord(path: string, marker = false): unknown {
-  try {
-    const text = readRecord(path, false, true);
-    return text === null ? null : parseRecord(text);
-  } catch (error) {
-    if (error instanceof SyntaxError) return null;
-    if (marker) throw new KernelError("marker-mismatch", "the ownership marker cannot be read safely");
-    throw new KernelError("unsupported-record", `unsupported private record: ${error instanceof Error ? error.message : "unsafe read"}`);
-  }
 }
 
 function fsyncDir(dir: string) {
@@ -216,6 +136,16 @@ export class FsStore implements Store {
     }
   }
 
+  private async admitBeforeLock(name: string, deadline: number): Promise<void> {
+    for (;;) try { this.admit(); return; } catch (e) {
+      if (!(e instanceof KernelError && e.reasons[0]?.code === "unsupported-record" && e.message === "a private record changed during its bounded read")) throw e;
+      const held = this.readLock(name);
+      if (!held || !isAlive(held.pid, held.procStart)) throw e;
+      if (Date.now() > deadline) throw new KernelError("kernel-busy", `held by ${held.verb} (pid ${held.pid})`);
+      await sleep(20);
+    }
+  }
+
   private marker(): Marker | null {
     const m = readJson<Marker>(this.p("marker"));
     if (!m || !/^ws_[a-z2-7]{10}$/.test(m.workspaceId) || !/^[a-z0-9]{4}$/.test(m.tag) || m.schema !== SCHEMA_VERSION || !m.nonce) {
@@ -285,14 +215,14 @@ export class FsStore implements Store {
   }
 
   private async claim(verb: string, name = "lock"): Promise<LockInfo> {
-    this.admit();
+    const deadline = Date.now() + this.lockWaitMs;
+    await this.admitBeforeLock(name, deadline);
     const me: LockInfo = { ...this.self(), nonce: this.rand.base32(12), verb };
     const tmp = this.p(`${name}.${me.nonce}`);
     writeSynced(tmp, JSON.stringify(me));
-    const deadline = Date.now() + this.lockWaitMs;
     try {
       for (;;) {
-        this.admit();
+        await this.admitBeforeLock(name, deadline);
         try { linkSync(tmp, this.p(name)); return me; } // atomic exclusive create with complete content
         catch (e) { if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e; }
         const held = this.readLock(name);
