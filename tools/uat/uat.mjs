@@ -86,7 +86,7 @@ try {
  assert.equal(call(interfaceRoot, 'check', { h: interfaceHandle, stage: 'baseline' }).data.receipts[0].status, 'fail');
  write(interfaceRoot, 'src/greet.ts', 'export const greet = (name: string): string => `Hello, ${name}!`;\n');
  write(interfaceRoot, 'src/unrelated.test.ts', 'import { expect, it } from "vitest"; it("unrelated", () => expect(2).toBe(2));\n');
- const interfaceChecked = call(interfaceRoot, 'check', { h: interfaceHandle, stage: 'candidate' }, ['--touched=src/greet.ts']);
+ const interfaceChecked = call(interfaceRoot, 'check', { h: interfaceHandle, stage: 'candidate' }, ['--touched=src/greet.ts,src/unrelated.test.ts']);
  const interfacePacket = focused(interfaceRoot, interfaceHandle, interfaceChecked);
  assert.ok(!interfacePacket.changes.some(change => change.path === 'src/greet.test.ts'), 'linked acceptance test is unchanged against the base');
  assert.deepEqual(interfacePacket.investigation, ['src/greet.ts', 'src/greet.test.ts', 'src/unrelated.test.ts']);
