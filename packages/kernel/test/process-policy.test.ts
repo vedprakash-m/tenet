@@ -61,10 +61,12 @@ describe("release process", () => {
     assert.ok(commands.includes("npm run uat"));
   });
 
-  it("gates actual frozen fixtures and starter peak RSS without ignoring failures", () => {
+  it("gates actual frozen fixtures and starter peak RSS without ignoring failures [NFR-01]", () => {
     const text = read(".github/workflows/system-budgets.yml");
-    assert.match(text, /node tools\/bench\.ts --fixture all --json/);
-    assert.match(text, /node tools\/starter-memory\.ts/);
+    const workflow = parse(text);
+    const commands = Object.values<{ steps: { run?: string }[] }>(workflow.jobs).flatMap(job => job.steps.map(step => step.run));
+    assert.ok(commands.includes("node tools/bench.ts --fixture all --json > system-budgets.json"));
+    assert.ok(commands.includes('node tools/starter-memory.ts "$RUNNER_TEMP/tenet-memory" > starter-memory.json'));
     assert.doesNotMatch(text, /continue-on-error|\|\| true/);
     assert.match(read("specs/PRD.md"), /400 MB server peak RSS/);
   });
