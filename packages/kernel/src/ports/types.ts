@@ -202,8 +202,8 @@ export interface Stack {
   assertSupportedConfiguration(root: string): void;
   argv(files: readonly string[] | "all", reportPath: string): string[];
   normalize(raw: string, root: string): Normalized;
-  /** A direct binary, never npx; null when the tool is not installed in the project. */
-  staticArgv(root: string, tool: StaticTool, report: string): string[] | null;
+  /** A direct binary, never npx; null when unavailable, or a named config refusal before launch. */
+  staticArgv(root: string, tool: StaticTool, report: string): string[] | { unsupportedConfig: string } | null;
   /** Where a static tool reports: tsc prints its diagnostics, ESLint writes its JSON report. */
   staticOutput(tool: StaticTool, r: Pick<RunResult, "stdout" | "report">): string | null;
   normalizeStatic(tool: StaticTool, out: { exit: number | undefined; raw: string | null }, root?: string): StaticNorm;

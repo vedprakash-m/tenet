@@ -4,7 +4,7 @@ import { failureSignature, recordAttempt, recordLaunchedChecks, stopFor, withSig
 import { hashOf } from "../core/ids.ts";
 import { declaredOutputs, movedNote } from "../core/outputs.ts";
 import { baselineDefinitionMatches, supportOf, wantsRed } from "../core/obligations.ts";
-import { receiptsFrom, settleReruns, staticReceipt } from "../core/receipts.ts";
+import { notRunFacts, receiptsFrom, settleReruns, staticReceipt } from "../core/receipts.ts";
 import type { ReceiptContext, RunFacts } from "../core/receipts.ts";
 import { carryDispositions, netAttention } from "../core/review.ts";
 import type { FileChange } from "../core/review.ts";
@@ -42,9 +42,7 @@ export const isE2e = (ob: Obligation): boolean => ob.tool === "playwright";
 export const staticReport = (runDir: string, tool: string): string => join(runDir, `${tool}.json`);
 export const e2eReport = (runDir: string): string => join(runDir, "playwright.json");
 
-const unexecuted = (run: Run): RunFacts => ({
-  timedOut: false, durationMs: 0, startedAt: run.ports.clock.now(), raw: null, after: run.facts.candidate, ran: false,
-});
+const unexecuted = (run: Run): RunFacts => ({ ...notRunFacts(run.ports.clock.now()), after: run.facts.candidate });
 
 /** Every tool's receipts bind to the same prepared candidate and run. */
 function receiptContext(run: Run, argv: string[]): ReceiptContext {
@@ -60,7 +58,8 @@ function staticReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
   const { ports, runDir } = run;
   return run.toRun.filter((ob) => isStatic(ob) && !isE2e(ob)).map((ob, i) => {
     const tool = ob.tool as StaticTool;
-    const argv = ports.stack.staticArgv(ports.root, tool, staticReport(runDir, tool)) ?? [];
+    const command = ports.stack.staticArgv(ports.root, tool, staticReport(runDir, tool));
+    const argv = Array.isArray(command) ? command : [];
     const ctx = { ...receiptContext(run, argv), population: run.facts.inv.entries };
     const ran = o.statics[ob.id] ?? unexecuted(run);
     const norm = ports.stack.normalizeStatic(tool, { exit: ran.exit, raw: ran.raw }, ports.root);

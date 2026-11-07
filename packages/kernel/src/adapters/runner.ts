@@ -97,7 +97,7 @@ export class ProcessRunner implements Runner {
     for (const ob of input.obligations.filter((item) => item.kind === "static" && item.tool !== "playwright")) {
       const tool = ob.tool as StaticTool, report = join(runDir, `${tool}.json`);
       const argv = input.stack.staticArgv(input.root, tool, report);
-      if (argv) add("static", argv, {}, [report]);
+      if (Array.isArray(argv)) add("static", argv, {}, [report]);
     }
     if (input.obligations.some((item) => item.tool === "playwright")) {
       const report = join(runDir, "playwright.json"), argv = input.stack.e2eArgv(input.root, report);

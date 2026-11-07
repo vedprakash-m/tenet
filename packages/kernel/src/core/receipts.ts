@@ -17,7 +17,13 @@ export interface RunFacts {
   raw: string | null;
   after: string;
   ran: boolean; // `after` is the inventory digest once the run ended
+  unsupportedConfig?: string;
 }
+
+export const notRunFacts = (startedAt: string, unsupportedConfig?: string): Omit<RunFacts, "after"> => ({
+  timedOut: false, durationMs: 0, startedAt, raw: null, ran: false,
+  ...(unsupportedConfig ? { unsupportedConfig } : {}),
+});
 
 export interface ReceiptContext {
   stage: Receipt["stage"];
@@ -169,7 +175,9 @@ export function staticReceipt(o: RunFacts, norm: StaticNorm, ob: Obligation, i: 
     if (limit) rec.limitations.push(redact(limit));
     return rec;
   };
-  if (!o.ran) return stop("not-executed", `${tool} requires a supported installed version and configuration`);
+  if (!o.ran) return o.unsupportedConfig
+    ? stop("adapter-unsupported-config", o.unsupportedConfig)
+    : stop("not-executed", `${tool} requires a supported installed version and configuration`);
   const early = runProblem(o, c);
   if (early) return stop(early);
   if (norm.status === "invalid") return stop("report-invalid", norm.problem);

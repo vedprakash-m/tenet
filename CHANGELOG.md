@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-06 — Name unsupported TypeScript configurations
+
+- Return a named `adapter-unsupported-config` refusal with an inconclusive receipt when static TypeScript checks cannot safely interpret `tsconfig.json`; preserve `null` for unavailable tools/configs and advance the adapter identity to `node-ts@28`.
+- Files: `packages/kernel/src/adapters/static-config.ts`, `packages/kernel/src/adapters/node-ts.ts`, `packages/kernel/src/adapters/runner.ts`, `packages/kernel/src/core/receipts.ts`, `packages/kernel/src/ports/types.ts`, `packages/kernel/src/verbs/check-evidence.ts`, `packages/kernel/src/verbs/check-execute.ts`, and their static-check tests.
+- The new configuration refusal controls pass 6/6. Typecheck, all lints, M0 coverage, build, payload verification and reproducible-build checks pass locally. Full Windows CI reports 1,096 passing, 631 failing and 17 skipped tests; platform-dependent mutating workflows are unsupported on this host, so this is not POSIX validation. Hosted POSIX CI and built UAT remain pending; Phase 4's broader adapter-matrix item remains open.
+
 ## 2026-11-06 — Make filesystem watcher canaries race-safe
 
 - Keep each canary file until its recursive watcher reports the create event, then clean it up. This prevents the test from deleting the canary before the watcher observes it.

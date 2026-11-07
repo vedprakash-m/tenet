@@ -255,12 +255,15 @@ export default { test: { reporters } };
     const finished = await finishFixture(p, { h, noCommit: true });
     assert.notEqual((finished.data as Record<string, unknown>)?.endpoint, "checked-local");
   });
-  for (const config of [
-    '{"extends":"./base.json"}', '{"compilerOptions":{"composite":true}}',
-    '{"compilerOptions":{"tsBuildInfoFile":"human-cache"}}', '{/* opaque JSONC */"compilerOptions":{}}',
-  ]) it(`refuses unimplemented TypeScript configuration before execution ${config} [EVD-05]`, () => {
+  for (const [config, unsupportedConfig] of [
+    ['{"extends":"./base.json"}', "tsconfig.json: extends is not supported"],
+    ['{"references":[{"path":"../base"}]}', "tsconfig.json: references are not supported"],
+    ['{"compilerOptions":{"composite":true}}', "tsconfig.json: compilerOptions.composite is not supported"],
+    ['{"compilerOptions":{"tsBuildInfoFile":"human-cache"}}', "tsconfig.json: compilerOptions.tsBuildInfoFile is not supported"],
+    ['{/* opaque JSONC */"compilerOptions":{}}', "tsconfig.json: must be plain JSON for static checks"],
+  ] as const) it(`names unimplemented TypeScript configuration before execution ${config} [EVD-05]`, () => {
     const p = project({ "tsconfig.json": config }); roots.push(p.root);
-    assert.equal(createStack().staticArgv(p.root, "tsc", "/run/report"), null);
+    assert.deepEqual(createStack().staticArgv(p.root, "tsc", "/run/report"), { unsupportedConfig });
   });
   for (const tool of ["tsc", "eslint"] as const) it(`does not launch an unsupported ${tool} version [EVD-05]`, () => {
     const p = project(); roots.push(p.root); rmSync(join(p.root, "node_modules"));
@@ -273,7 +276,9 @@ export default { test: { reporters } };
     const p = project({ "tsconfig.json": '{"compilerOptions":{"incremental":true,"types":[],"skipLibCheck":true}}' }); roots.push(p.root);
     const runDir = tmp(); roots.push(runDir);
     p.write("tsconfig.tsbuildinfo", "human build info");
-    const stack = createStack(), argv = stack.staticArgv(p.root, "tsc", join(runDir, "report"))!;
+    const stack = createStack(), command = stack.staticArgv(p.root, "tsc", join(runDir, "report"));
+    assert.ok(Array.isArray(command));
+    const argv = command;
     assert.ok(argv.includes("--project")); assert.ok(argv.includes("--listFiles"));
     assert.deepEqual(argv.slice(argv.indexOf("--incremental"), argv.indexOf("--incremental") + 2), ["--incremental", "false"]);
     const out = await p.ports().runner.run({ argv, cwd: p.root, runDir, timeoutMs: 10000 });
@@ -292,7 +297,8 @@ export default { test: { reporters } };
     const r = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     const receipt = Object.values(p.ports().store.read()!.state.work)[0]!.receipts.find(x => x.obligation === "OB-types")!;
     assert.equal(receipt.status, "inconclusive", JSON.stringify(r));
-    assert.ok(receipt.reasons.includes("not-executed"));
+    assert.deepEqual(receipt.reasons, ["adapter-unsupported-config"]);
+    assert.ok(receipt.limitations.includes("tsconfig.json: references are not supported"));
     const f = await finishFixture(p, { h, noCommit: true });
     assert.notEqual((f.data as any).endpoint, "checked-local");
   });

@@ -101,6 +101,14 @@ describe("static receipts", () => {
       normalizeStatic("eslint", { exit: 1, raw: contradictory }), { ...ob, id: "OB-lint", tool: "eslint" }, 0, ctx);
     assert.deepEqual([lint.status, lint.reasons], ["inconclusive", ["report-invalid"]]);
   });
+  it("names an unsupported TypeScript config on the inconclusive receipt [EVD-05]", () => {
+    const unsupported = staticReceipt(
+      run({ ran: false, unsupportedConfig: "tsconfig.json: extends is not supported" }),
+      normalizeStatic("tsc", { exit: 0, raw: null }), ob, 0, ctx,
+    );
+    assert.deepEqual([unsupported.status, unsupported.reasons], ["inconclusive", ["adapter-unsupported-config"]]);
+    assert.deepEqual(unsupported.limitations, ["tsconfig.json: extends is not supported"]);
+  });
 });
 
 describe("which static checks a contract needs", () => {

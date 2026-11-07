@@ -12,8 +12,9 @@ import { sha256 } from "../core/ids.ts";
 import { FsProject } from "./project-fs.ts";
 import { nestsTooDeep } from "./report-bounds.ts";
 import { normalizePlaywright, playwrightArgv } from "./playwright.ts";
+import { unsupportedTsConfig } from "./static-config.ts";
 
-const ADAPTER = "node-ts@27"; // 27: reject skipped Playwright errors.
+const ADAPTER = "node-ts@28"; // 28: report unsupported tsconfig.
 function installedMetadata(path: string, kind: "tool" | "dependency"): { record: Record<string, any>; digest: string } | null {
   let descriptor = -1;
   try {
@@ -453,9 +454,10 @@ export function createStack(): Stack {
       const script = join("node_modules", STATIC_SCRIPT[tool]);
       if (!existsSync(join(root, script))) return null;
       if (tool === "tsc") {
-        const config = meta.json("tsconfig.json");
-        if (!config || config.extends !== undefined || config.references?.length || config.compilerOptions?.composite
-          || config.compilerOptions?.tsBuildInfoFile !== undefined) return null;
+        const text = meta.text("tsconfig.json");
+        if (text === null) return null;
+        const unsupportedConfig = unsupportedTsConfig(text);
+        if (unsupportedConfig) return { unsupportedConfig };
       }
       return tool === "tsc"
         ? [process.execPath, script, "--noEmit", "--pretty", "false", "--project", "tsconfig.json", "--incremental", "false", "--listFiles"]

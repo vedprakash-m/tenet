@@ -1,5 +1,6 @@
 // Executing a check run outside the lock (TS §6.1): returns what the processes did as facts; receipts are read from them in finalize.
 import { join } from "node:path";
+import { notRunFacts } from "../core/receipts.ts";
 import type { RunFacts } from "../core/receipts.ts";
 import type { Obligation } from "../core/schemas.ts";
 import type { RunResult, StaticTool } from "../ports/types.ts";
@@ -26,8 +27,9 @@ const observed = (r: RunResult, raw: string | null): Omit<RunFacts, "after"> => 
 async function runStatic(run: Run, ob: Obligation): Promise<Omit<RunFacts, "after">> {
   const { ports, runDir } = run;
   const tool = ob.tool as StaticTool, report = staticReport(runDir, tool);
-  const argv = ports.stack.staticArgv(ports.root, tool, report);
-  if (!argv) return { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, ran: false };
+  const command = ports.stack.staticArgv(ports.root, tool, report);
+  if (!Array.isArray(command)) return notRunFacts(ports.clock.now(), command?.unsupportedConfig);
+  const argv = command;
   const r = await ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: TIMEOUT_MS, report });
   return observed(r, ports.stack.staticOutput(tool, r));
 }
