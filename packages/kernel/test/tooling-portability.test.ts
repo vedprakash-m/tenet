@@ -87,9 +87,9 @@ describe("build native process invocation", () => {
     const root = fixture();
     const result = run(root);
     assert.equal(result.status, 0, result.output);
-    assert.match(result.output, /build: plugin\/kernel\/tenet.mjs .* \(budget 800 KB\)/);
+    assert.match(result.output, /build: plugin\/kernel\/tenet.mjs .* \(budget 900 KB\)/);
     const bundle = join(root, "plugin/kernel/tenet.mjs");
-    assert.ok(statSync(bundle).size <= 800 * 1024);
+    assert.ok(statSync(bundle).size <= 900 * 1024);
     const bundled = spawnSync(process.execPath, [bundle], {
       encoding: "utf8", env: { ...process.env, NODE_DISABLE_COMPILE_CACHE: "1" },
     });
@@ -137,14 +137,23 @@ describe("build native process invocation", () => {
     assert.equal(existsSync(join(root, "plugin")), false);
   });
 
-  it("still rejects a bundle over the unchanged size budget", () => {
-    const root = fixture(`export const payload = ${JSON.stringify("x".repeat(801 * 1024))};`);
-    mkdirSync(join(root, "plugin"));
-    writeFileSync(join(root, "plugin/SHA256SUMS"), "stale\n");
+  it("admits exactly 900 KiB and rejects one byte more without stale checksums", () => {
+    const root = fixture('export const payload = "";');
+    const empty = run(root);
+    assert.equal(empty.status, 0, empty.output);
+    const bundle = join(root, "plugin/kernel/tenet.mjs");
+    const payload = "x".repeat(900 * 1024 - statSync(bundle).size);
+    const main = join(root, "packages/kernel/src/main.ts");
+    writeFileSync(main, `export const payload = ${JSON.stringify(payload)};`);
     const result = run(root);
-    assert.notEqual(result.status, 0);
-    assert.match(result.output, /build: bundle exceeds its size budget/);
-    assert.ok(statSync(join(root, "plugin/kernel/tenet.mjs")).size > 800 * 1024);
+    assert.equal(result.status, 0, result.output);
+    assert.equal(statSync(bundle).size, 900 * 1024);
+    assert.ok(existsSync(join(root, "plugin/SHA256SUMS")));
+    writeFileSync(main, `export const payload = ${JSON.stringify(`${payload}x`)};`);
+    const oversized = run(root);
+    assert.notEqual(oversized.status, 0);
+    assert.match(oversized.output, /build: bundle exceeds its size budget/);
+    assert.equal(statSync(bundle).size, 900 * 1024 + 1);
     assert.equal(existsSync(join(root, "plugin/SHA256SUMS")), false);
   });
 
