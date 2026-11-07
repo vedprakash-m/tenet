@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-07 — Cover undo ownership changes after preview
+
+- Add a real-Git regression proving that a foreign commit with the same
+  `Tenet-Work` label arriving after preview is refused at confirmation. Source,
+  index and history stay unchanged; no inverse is applied and no revert contract
+  is created. The existing slice 0 guard is unchanged.
+- File: `packages/kernel/test/undo.test.ts`. Tags: `[CON-12, GIT-04]`.
+  Local static gates pass; supported-POSIX CI is pending.
+
 ## 2026-11-07 — Extend verdict failure-boundary controls
 
 - Add test-only controls for introduced failures across stop/budget states, excluded versus non-excluded baseline failures, and partially excluded, mixed or unnamed failure reports. These characterize existing verdict behavior; no runtime rule changes.
