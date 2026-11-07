@@ -1,5 +1,8 @@
 # Diagnostics
 
+The save destination below is a candidate, not an owner-approved choice.
+Inside-project versus outside-project publication remains unresolved.
+
 Tenet does not capture or upload diagnostics automatically. On a user request,
 run `node plugin/kernel/tenet.mjs diagnostics` from the project and read the
 complete `data.text` preview. The response includes its SHA-256 in `data.hash`
@@ -30,7 +33,11 @@ separators, without traversal, `.git` or `.tenet` components. This deliberately
 narrows the old proposed arbitrary external-path export design; there is no new
 filesystem authority. The file is atomically published, private (0600), never
 overwritten and never written through a link. Project exclusions still apply.
-Keep exported files out of commits or delete them when no longer needed.
+A new unignored export changes the Git inventory and check candidate. It is
+not assigned to the active contract automatically: finish/commit can ask the
+existing unexplained-change question. Answering `not-mine` preserves the file
+outside that contract's commit. Keep exported files out of commits or delete
+them when no longer needed. Built-bundle attribution observation is pending.
 
 Saving requires initialized local state so the kernel can journal the effect;
 without state, copy the preview yourself. If the snapshot changed, the kernel
