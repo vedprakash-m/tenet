@@ -12,5 +12,7 @@ import { packet } from "./packet.ts";
 import { review } from "./review.ts";
 import { stop } from "./stop.ts";
 import { undo } from "./undo.ts";
+import { diagnostics } from "./diagnostics.ts";
 
-export const VERBS: Record<string, Verb> = Object.fromEntries([open, decide, check, findings, finish, review, inspect, stop, commit, packet, integrate, undo].map((v) => [v.name, v]));
+export const VERBS: Record<string, Verb> = Object.fromEntries(
+  [open, decide, check, findings, finish, review, inspect, stop, commit, packet, integrate, undo, diagnostics].map((v) => [v.name, v]));

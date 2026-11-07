@@ -8,9 +8,9 @@ import { recordedHardening, type HardeningOp } from "../decisions/hardening.ts";
 import type { UndoOp } from "../decisions/undo.ts";
 import { recordCommit, replayCommit } from "../core/attribution.ts";
 import { adoptionReplayNeeded } from "../core/state.ts";
+import { settleDiagnostics } from "./diagnostics.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
 import type { Ports, Tx } from "../ports/types.ts";
-
 export interface IntegrationOp { work: string; base: string; baseBefore: string; workTip: string }
 export type Unresolved = ReturnType<Tx["unresolved"]>[number];
 export type Outcome = { completed?: boolean; commit?: string; mode?: string; foreign?: unknown };
@@ -209,8 +209,8 @@ async function branch(r: Recovery, u: Unresolved) {
     r.uncertain.push(`an interrupted branch switch left the repository on ${now ?? "detached HEAD"}`);
   }
 }
-
 export const SETTLE: Record<string, (r: Recovery, u: Unresolved) => Promise<void>> = {
+  diagnostics: settleDiagnostics,
   "index-sync": indexSync, commit, integration, undo, scaffold, adopt, dependency, hardening, branch,
   async forget(r, u) {
     r.state = completeForget(r.ports, r.tx, r.state, (u.op as { lesson: string }).lesson).state;

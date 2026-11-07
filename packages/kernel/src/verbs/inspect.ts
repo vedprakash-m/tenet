@@ -18,6 +18,7 @@ import { gather, verdictInput } from "./facts.ts";
 import { settingsFor, sharedPolicy, withRequiredChecks } from "./reconcile.ts";
 
 const VERBS = {
+  diagnostics: "diagnostics [--save <relative.json> --preview-hash <sha256>]   preview redacted diagnostics; save only on request",
   open: "open --profile <feature|bug|refactor|investigate|plan|…> --request <text>   start or resume a contract",
   decide: "decide --h <handle> --kind <basis|dirty-overlap|acceptance|disposition|…>   record decisions and proposals",
   check: "check --h <handle> [--stage baseline|candidate] [--targeted] [--touched <paths>]   run the obligations",

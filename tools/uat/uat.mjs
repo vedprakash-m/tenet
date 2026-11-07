@@ -77,6 +77,39 @@ const waitUntil = async (fn, what) => {
  for (;;) { const found = fn(); if (found) return found; assert.ok(Date.now() < end, `timed out: ${what}`); await new Promise(r => setTimeout(r, 25)); }
 };
 try {
+ const diagnosticsRoot = create();
+ const absentDiagnostics = call(diagnosticsRoot, 'diagnostics');
+ assert.equal(absentDiagnostics.exit, 0);
+ assert.equal(JSON.parse(absentDiagnostics.data.text).state.initialized, false);
+ assert.equal(existsSync(join(diagnosticsRoot, '.tenet')), false);
+ const noStateSave = call(diagnosticsRoot, 'diagnostics',
+  { save: 'diagnostics.json', previewHash: absentDiagnostics.data.hash });
+ assert.equal(noStateSave.exit, 2);
+ assert.equal(existsSync(join(diagnosticsRoot, '.tenet')), false);
+ call(diagnosticsRoot, 'open', { profile: 'feature', request: 'diagnostics scratch UAT', lane: 'quick' });
+ const stateBeforeDiagnostics = readFileSync(join(diagnosticsRoot, '.tenet/state'));
+ const logBeforeDiagnostics = readFileSync(join(diagnosticsRoot, '.tenet/log'));
+ const previewDiagnostics = call(diagnosticsRoot, 'diagnostics');
+ assert.equal(previewDiagnostics.exit, 0);
+ assert.ok(Buffer.byteLength(previewDiagnostics.data.text) <= 4000);
+ assert.equal(createHash('sha256').update(previewDiagnostics.data.text).digest('hex'), previewDiagnostics.data.hash);
+ assert.deepEqual(readFileSync(join(diagnosticsRoot, '.tenet/state')), stateBeforeDiagnostics);
+ assert.deepEqual(readFileSync(join(diagnosticsRoot, '.tenet/log')), logBeforeDiagnostics);
+ assert.ok(!previewDiagnostics.data.text.includes('diagnostics scratch UAT'));
+ const savedDiagnostics = call(diagnosticsRoot, 'diagnostics',
+  { save: 'diagnostics.json', previewHash: previewDiagnostics.data.hash });
+ assert.equal(savedDiagnostics.exit, 0, JSON.stringify(savedDiagnostics));
+ assert.equal(readFileSync(join(diagnosticsRoot, 'diagnostics.json'), 'utf8'), previewDiagnostics.data.text);
+ assert.equal(statSync(join(diagnosticsRoot, 'diagnostics.json')).mode & 0o777, 0o600);
+ assert.deepEqual(readFileSync(join(diagnosticsRoot, '.tenet/state')), stateBeforeDiagnostics);
+ const repeatDiagnostics = call(diagnosticsRoot, 'diagnostics');
+ assert.equal(call(diagnosticsRoot, 'diagnostics',
+  { save: 'diagnostics.json', previewHash: repeatDiagnostics.data.hash }).exit, 2);
+ assert.equal(readFileSync(join(diagnosticsRoot, 'diagnostics.json'), 'utf8'), previewDiagnostics.data.text);
+ observations.push({ scenario: 'NFR-07 built diagnostics preview and explicit save',
+  bytes: previewDiagnostics.data.bytes, absentPreviewCreatesNothing: true, noStateSaveCreatesNothing: true,
+  previewPreservesStateAndJournal: true, savedExactPreview: true, privatePermissions: true, overwriteRefused: true });
+
  const inherited = create(), inheritedNames = ['constructor'];
  const inheritedCandidate = staticCandidate(inherited, 'preserve human files whose names match inherited properties');
  for (const name of inheritedNames) write(inherited, name, `human-owned ${name}\n`);
