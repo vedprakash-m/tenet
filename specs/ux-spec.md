@@ -518,6 +518,8 @@ Anything new from the user is handled before the next step (TS §5.2).
 
 ## 8. Configuration
 
+Capability provenance in `inspect status` distinguishes a reused keyed observation from a fresh declaration resolution. `doctor` is stateless; neither view implies a new native-host observation or qualification. An unavailable host version is shown as unknown and prevents reuse.
+
 ### 8.1 Principles
 
 - **Spoken first:** each of the 12 catalog settings (PRD Section 7.3) can be changed in words.
