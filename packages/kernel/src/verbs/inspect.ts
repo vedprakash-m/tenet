@@ -68,7 +68,10 @@ export const inspect: Verb<InspectInput> = {
 
   async run(ports, state, input): Promise<Plan> {
     switch (input.view) {
-      case "help": return { resp: { data: { verbs: VERBS } } };
+      case "help": return { resp: { data: {
+        verbs: VERBS,
+        capabilityCache: "Status shows cache provenance; doctor reads no state. Unknown host version prevents reuse.",
+      } } };
       case "doctor": {
         const d = doctor(ports, await ports.git.probe());
         return { resp: { kernel: true, data: d, ...(d.ok ? {} : { exit: 2 as const }) } };
@@ -76,9 +79,9 @@ export const inspect: Verb<InspectInput> = {
       case "status": {
         if (input.h) {
           const w = workOf(state, input.h);
-          return { resp: { work: w.id, data: { ...statusOf(state), contract: { label: w.label, state: w.state, lane: w.lane, level: w.level, branch: w.git.branch, limits: LIMITS[w.lane] }, handoff: handoffText(state!, w) } } };
+          return { resp: { work: w.id, data: { ...statusOf(state), capabilities: ports.host.capabilities(), contract: { label: w.label, state: w.state, lane: w.lane, level: w.level, branch: w.git.branch, limits: LIMITS[w.lane] }, handoff: handoffText(state!, w) } } };
         }
-        return { resp: { data: statusOf(state) } };
+        return { resp: { data: { ...statusOf(state), capabilities: ports.host.capabilities() } } };
       }
       case "why": {
         const w = withRequiredChecks(ports, state!, workOf(state, input.h));

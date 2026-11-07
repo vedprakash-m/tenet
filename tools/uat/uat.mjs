@@ -77,6 +77,41 @@ const waitUntil = async (fn, what) => {
  for (;;) { const found = fn(); if (found) return found; assert.ok(Date.now() < end, `timed out: ${what}`); await new Promise(r => setTimeout(r, 25)); }
 };
 try {
+ const capabilityRoot = create();
+ env.TENET_HOST_VERSION = 'uat-host-1';
+ try {
+  const opened = call(capabilityRoot, 'open', { profile: 'plan', request: 'plan a capability cache example' });
+  assert.equal(opened.exit, 0, JSON.stringify(opened));
+  const statePath = join(capabilityRoot, '.tenet/state');
+  const original = readFileSync(statePath, 'utf8'), cache = JSON.parse(original).capabilityCache;
+  assert.equal(Object.keys(cache).length, 10);
+  const reused = call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities;
+  for (const cap of Object.values(reused)) assert.equal(cap.provenance.reused, true);
+  write(capabilityRoot, 'unrelated.txt', 'not a declared capability input');
+  for (const cap of Object.values(call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities))
+   assert.equal(cap.provenance.reused, true);
+  write(capabilityRoot, 'AGENTS.md', 'new declared instruction input');
+  const changed = call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities;
+  assert.equal(changed.instructionFiles.provenance.reused, false);
+  assert.equal(changed.harness.provenance.reused, true);
+  call(capabilityRoot, 'inspect', { view: 'doctor' });
+  assert.equal(readFileSync(statePath, 'utf8'), original, 'read-only inspection must not save refreshed cache');
+  assert.equal(call(capabilityRoot, 'open', { profile: 'plan', request: 'plan after the declared input changed' }).exit, 0);
+  const refreshed = JSON.parse(readFileSync(statePath, 'utf8')).capabilityCache;
+  assert.notEqual(refreshed.instructionFiles.provenance.key, cache.instructionFiles.provenance.key);
+  assert.deepEqual(refreshed.harness, cache.harness);
+  env.TENET_HOST_VERSION = 'uat-host-2';
+  for (const cap of Object.values(call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities))
+   assert.equal(cap.provenance.reused, false);
+  delete env.TENET_HOST_VERSION;
+  for (const cap of Object.values(call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities))
+   assert.equal(cap.provenance.reused, false);
+  const freshDoctor = create();
+  call(freshDoctor, 'inspect', { view: 'doctor' });
+  assert.equal(existsSync(join(freshDoctor, '.tenet')), false);
+  observations.push({ scenario: 'INS-05 built capability cache: selective reuse, persisted provenance and stateless doctor', entries: 10 });
+ } finally { delete env.TENET_HOST_VERSION; }
+
  const inherited = create(), inheritedNames = ['constructor'];
  const inheritedCandidate = staticCandidate(inherited, 'preserve human files whose names match inherited properties');
  for (const name of inheritedNames) write(inherited, name, `human-owned ${name}\n`);

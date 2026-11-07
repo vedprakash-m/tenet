@@ -10,6 +10,7 @@ import { mutate } from "./pipeline-mutate.ts";
 import { versionNote } from "./pipeline-version.ts";
 import { render } from "./pipeline-render.ts";
 import { configurePolicy } from "./verbs/reconcile.ts";
+import { prepareCapabilities } from "./pipeline-capabilities.ts";
 import type { KernelResponse, Question, Reason, State } from "./core/schemas.ts";
 import type { Ports, Tx } from "./ports/types.ts";
 
@@ -101,11 +102,13 @@ export async function runVerb(ports: Ports, verbs: Record<string, Verb>, name: s
   try {
     if (cls === "stateless") {
       if (name === "review" || input.view === "doctor") configurePolicy(ports, null);
+      if (name === "review" || input.view === "doctor") prepareCapabilities(ports, null);
       return render(ports, name, (await verb.run(ports, null, input)).resp, null);
     }
     if (cls === "read-only") {
       const read = ports.store.exists() ? ports.store.read() : null;
       configurePolicy(ports, read?.state ?? null);
+      prepareCapabilities(ports, read?.state ?? null);
       const plan = await verb.run(ports, read?.state ?? null, input);
       if (input.h && read) plan.resp.reasons = [...versionNote(ports, read.state, input.h), ...(plan.resp.reasons ?? [])];
       return render(ports, name, plan.resp, read?.state ?? null);
