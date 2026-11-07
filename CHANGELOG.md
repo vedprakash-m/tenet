@@ -4,7 +4,8 @@
 
 - Set the central responsibility owner to 400,000 non-whitespace characters and the kernel bundle ceiling to 900 KiB. Charge configuration, schema, budget, migration and private-record companion files to their original owners; retain the per-file, complexity, nesting and width gates.
 - Record the reconciled candidate's measured owner totals and set other measured owners to those totals plus 5%, rounded up. Unmeasured owners retain prior allowances. These are capacity settings, not schema-2 activation, a qualified bridge or migration completion.
-- Files: `tools/lint-quality.ts`, `tools/quality-baseline.json`, `tools/build.ts`, `packages/kernel/test/quality-gate.test.ts`, `packages/kernel/test/invariants.test.ts`, `specs/tech-spec.md`, and this changelog. Quality-gate fixtures cover every split owner, including `verbs/inspect.ts`; supported-platform exact-head CI remains pending.
+- Files: `tools/lint-quality.ts`, `tools/quality-baseline.json`, `tools/build.ts`, `packages/kernel/test/quality-gate.test.ts`, `packages/kernel/test/invariants.test.ts`, `packages/kernel/test/tooling-portability.test.ts`, `specs/tech-spec.md`, and this changelog. Quality-gate fixtures cover every split owner, including `verbs/inspect.ts`. Portability controls use the approved bundle ceiling and prove acceptance at 921,600 bytes and refusal at 921,601 bytes without stale checksums; supported-platform exact-head CI remains pending.
+- The isolated capacity-only schema-1 runtime measures 248,251 central-owner characters and an 800,807-byte bundle. Its local build, payload and reproducibility checks pass. These measurements do not replace the approved ceilings or qualify schema-2 migration.
 
 ## 2026-11-07 — Extend verdict failure-boundary controls
 
