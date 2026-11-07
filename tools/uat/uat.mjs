@@ -110,6 +110,29 @@ try {
   bytes: previewDiagnostics.data.bytes, absentPreviewCreatesNothing: true, noStateSaveCreatesNothing: true,
   previewPreservesStateAndJournal: true, savedExactPreview: true, privatePermissions: true, overwriteRefused: true });
 
+ const diagnosticsAttribution = create();
+ const diagnosticsCandidate = staticCandidate(diagnosticsAttribution, 'observe diagnostics save attribution');
+ const attributionPreview = call(diagnosticsAttribution, 'diagnostics');
+ assert.equal(call(diagnosticsAttribution, 'diagnostics',
+  { save: 'diagnostics.json', previewHash: attributionPreview.data.hash }).exit, 0);
+ assert.equal(git(diagnosticsAttribution, 'status', '--porcelain', '--', 'diagnostics.json'), '?? diagnostics.json');
+ const attributionCheck = call(diagnosticsAttribution, 'check', { h: diagnosticsCandidate.h }, ['--touched=src/greet.ts']);
+ const attributionManifest = focused(diagnosticsAttribution, diagnosticsCandidate.h, attributionCheck);
+ assert.equal(attributionManifest.investigation.includes('diagnostics.json'), false);
+ const attributionFinish = call(diagnosticsAttribution, 'finish', { h: diagnosticsCandidate.h });
+ assert.ok(attributionFinish.questions?.some(question => question.id === 'unexplained'), JSON.stringify(attributionFinish));
+ assert.ok(attributionFinish.reasons.some(reason => reason.code === 'attribution-unexplained-change' &&
+  reason.message.includes('diagnostics.json')), JSON.stringify(attributionFinish));
+ assert.equal(call(diagnosticsAttribution, 'decide',
+  { h: diagnosticsCandidate.h, kind: 'unexplained', answers: { unexplained: 'not-mine' } }).exit, 0);
+ const attributionFinal = call(diagnosticsAttribution, 'finish', { h: diagnosticsCandidate.h });
+ assert.equal(attributionFinal.data.endpoint, 'checked-local', JSON.stringify(attributionFinal));
+ assert.equal(git(diagnosticsAttribution, 'ls-files', '--', 'diagnostics.json'), '');
+ assert.equal(readFileSync(join(diagnosticsAttribution, 'diagnostics.json'), 'utf8'), attributionPreview.data.text);
+ observations.push({ scenario: 'NFR-07 project-relative save is an unexplained active-work change',
+  initiallyUntracked: true, excludedFromReview: true, finishRequiresAttribution: true,
+  notMinePreservesUntrackedExport: true, endpoint: attributionFinal.data.endpoint });
+
  const inherited = create(), inheritedNames = ['constructor'];
  const inheritedCandidate = staticCandidate(inherited, 'preserve human files whose names match inherited properties');
  for (const name of inheritedNames) write(inherited, name, `human-owned ${name}\n`);
