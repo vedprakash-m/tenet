@@ -18,6 +18,12 @@ Copilot already chats, edits and runs tools. Tenet adds a fixed loop around a re
 
 What it does not do in this release line: deploy, push, or open pull requests on its own; run as a service; or send project content anywhere except through the host's model traffic.
 
+Kernel responses report `timing` for the current kernel call: measured active
+and tool/check milliseconds, plus provider, network and user-wait values from
+the host or null with unknown provenance. The shipped plugin does not observe
+those host values. These timings are not session totals or budget minutes;
+historical retries keep their original snapshot. `/tenet help` explains the scope.
+
 ## Status
 
 The [November 4 implementation audit](docs/audits/2026-11-04/implementation-audit.md) is a historical assessment of earlier source; its findings need reconciliation against subsequent repairs. The detailed progress record, `specs/plan.md`, is local-only and is not included in a fresh checkout. Deterministic evidence below is for commit `14aa0f71a5970c708e62423b44d5a06b81a93c94`, not later changes:
