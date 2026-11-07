@@ -44,6 +44,8 @@ jobs:
           cp plugin/skills/tenet-starter-ts-web-api/template/package.json plugin/skills/tenet-starter-ts-web-api/template/package-lock.json "$browser_tools/"
           npm ci --prefix "$browser_tools" --ignore-scripts --no-audit
           node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium
+      - name: Isolated native read-only review watcher control
+        run: node --test packages/kernel/test/read-only-review.test.ts
       - run: npm run ci
       - name: Capture actual schema-1 lifecycle records (one-shot)
         if: always() && matrix.os == 'ubuntu-latest' && github.event_name == 'push' && contains(github.event.head_commit.message, '[protocol-capture]')
