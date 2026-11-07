@@ -6,6 +6,7 @@
 - Add monthly current-model evaluation reminders, dispatch-only Linux built-bundle UAT, frozen-fixture budget CI and production startup/health peak-RSS measurement. Amend the starter target to 400 binary MB; this limited workload does not qualify the reference workload or full NFR-01.
 - Files: process documents and PR template; `tools/semver.ts`, `tools/starter-memory.ts`; process-policy, platform and memory tests; workflow YAML; `package.json`; `verbs/inspect.ts`; canonical memory specification.
 - ENG-08 uses the owner's revised skill-only, five-repeat choice. The preregistered introduction-compression proxy runs 40 independently recorded trials with frozen floors; native skill quality remains unknown and the baseline remains deployed. Branch protection, signing identity, private vulnerability reporting and release environment settings remain owner actions.
+- Preserve benchmark and RSS process failures with direct stdout redirection instead of `tee` pipelines. Run [42408929961](https://github.com/vedprakash-m/tenet/actions/runs/42408929961) contained a failed long-history warm-latency row (347 ms p95 against 300 ms) despite a green workflow; that artifact remains failure evidence, not qualification. Files: `.github/workflows/system-budgets.yml` and `packages/kernel/test/process-policy.test.ts`. The new `[NFR-01]` control failed before the repair and passes afterward; exact-head hosted gates remain pending.
 
 ## 2026-11-07 — Apply approved D01/D01b capacity ceilings
 
