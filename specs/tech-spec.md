@@ -28,7 +28,7 @@ A **pre-spike implementation baseline.** Host-dependent elements are marked **[S
 ### 0.4 Conventions
 
 - **Define once, cite by section.** Every rule has one home; elsewhere it is cited as `§n.n`, never restated. PRD sections are cited as "PRD Section n.n" and PRD IDs (`EVD-01`) are cited, never restated as new obligations.
-- **Byte units:** KB and MB in this document are binary: 1 KB is 1,024 bytes and 1 MB is 1,048,576 bytes (so the bundle's 800 KB is 819,200 bytes and the `.tenet/` 50 MB bound is 52,428,800 bytes), as `tools/build.ts` and `adapters/store-fs.ts` already read them. The 400 KB screenshot ceiling (§9.10) is 409,600 bytes. Owner blanket direction 2026-11-03, per decision-packet decision 5 and defect 5.
+- **Byte units:** KB and MB in this document are binary: 1 KB is 1,024 bytes and 1 MB is 1,048,576 bytes (so the bundle's 900 KiB ceiling is 921,600 bytes and the `.tenet/` 50 MB bound is 52,428,800 bytes), as `tools/build.ts` and `adapters/store-fs.ts` read them. The 400 KB screenshot ceiling (§9.10) is 409,600 bytes. Owner blanket direction 2026-11-03; bundle ceiling approved by D01/D01b on November 7.
 - **IDs:** TD-nn technical decision (§20.1); TQ-nn open technical question (§19.1); PA-n PRD amendment (§20.2); SP-nn spike (§19.1); reason codes in code font (Appendix C).
 - **Normative** sections are 2–13, 15, 17 and 19. Sections 1, 14.3, 21 and the appendices are informative.
 - Type sketches show shape, not final field names. Once code exists, the zod schemas are canonical and these sketches are deleted rather than kept in sync.
@@ -223,7 +223,7 @@ The schema-1 implementation derives common finding/review and basis-input views 
 
 - **TypeScript, strict;** `tsc --noEmit` in CI separately from bundling, because a successful bundle is not a successful type check.
 - **Runtime:** the project's Node, 22.12+ on 22.x or 24.x (exact patches pinned at approval), the same LTS lines as the brownfield matrix (PRD Section 2.3); every R1 project already needs Node (INS-07).
-- **Bundle:** esbuild to two minified ESM files, `kernel/tenet.mjs` (command line and MCP, ≤ 800 KB; zod is about 450 KB of it, and a call starts in about 90 ms at 580 KB; owner decisions, October 19 (750 KB) and October 24 (800 KB)) and `kernel/hook.mjs` (no dependencies, ≤ 20 KB, because it runs on every edit). Bundle sizes are CI gates, not reasons to hand-write library code.
+- **Bundle:** esbuild to two minified ESM files, `kernel/tenet.mjs` (command line and MCP, ≤ 900 KiB = 921,600 bytes, owner D01/D01b, November 7) and `kernel/hook.mjs` (no dependencies, ≤ 20 KB, because it runs on every edit). Bundle sizes are CI gates, not reasons to hand-write library code. A ceiling is not a measured bundle size or migration qualification.
 - **Startup:** flags parsed with `node:util` `parseArgs`; `module.enableCompileCache()` only if the cold benchmark (§14.1) needs it, and its cache is then listed as residue (§18).
 - **Tests:** `node:test` with `fast-check` (development only). **Reproducibility:** pinned lockfile; CI rebuilds and compares every payload hash.
 
@@ -624,25 +624,40 @@ Verb modules contain only their own logic. A front-end translates its transport 
 
 ### 6.2 Module map
 
-Budgets are set by the owner in lines and checked by `tools/lint-quality` in non-whitespace characters, at 57.6 per budgeted line (the density of the pipeline, verbs and decisions when their 3,000-line budget was set), so wrapping a line or splitting a function is not growth (owner decision, October 20). A module over its budget may not grow past its recorded ceiling, and the ceiling only falls. Raising a budget is an owner decision.
+Budgets are checked by `tools/lint-quality` in non-whitespace characters, so wrapping a line or splitting a function is not growth. Owner D01/D01b (November 7) sets the central owner to exactly 400,000 characters and every other measured owner below to its measured source size plus 5%, rounded up. Explicit character ceilings take precedence over historical line allowances. Owners without a new measurement retain their prior line allowance at 57.6 characters per line; no new measurement or headroom is claimed for them. A module over its budget may not grow past its recorded ceiling, and the ceiling only falls. Raising a budget is an owner decision.
+
+The November 7 measurements are of the reconciled, uncommitted schema-2 candidate, not the schema-1 runtime or a release. The central owner includes `pipeline*.ts`, every `verbs/*` and `decisions/*` file, and `core/config-binding.ts` and `core/config-proposal.ts`. The schemas owner includes `schemas.ts`, `schemas-legacy.ts`, `schemas-migrate.ts`, `schemas-upcast.ts`, `traits.ts` and the bridge's planned `migration-terminal.ts` (absent from this measurement); budget includes `budget.ts` and `budget-launch.ts`; store includes `store-fs.ts`, `migration-fs.ts` and `private-record-fs.ts`. Companion files are never excluded to obtain headroom. This capacity approval does not activate schema 2 or qualify migration or the required bridge.
+
+| Measured owner | Measured characters | Approved ceiling |
+|---|---:|---:|
+| Central owner | 312,864 | 400,000 |
+| Schemas | 73,710 | 77,396 |
+| Budget | 32,051 | 33,654 |
+| Store | 53,202 | 55,863 |
+| Git CLI | 37,826 | 39,718 |
+| Runner | 15,020 | 15,771 |
+| Node/TypeScript adapter | 20,150 | 21,158 |
+| Review | 19,840 | 20,832 |
+| Risk | 4,779 | 5,018 |
+| Verdict | 14,715 | 15,451 |
 
 | Module | Responsibility | PRD | Lines |
 |---|---|---|---|
-| `core/schemas` | zod inputs, records, outputs; limits | CON-04, SEC-06 | 455 (re-baselined October 20, owner decision, after the analyst-packet schemas: `AnalystResult`, `AnalystLink`, `AnalystFinding`, and the `FindingsInput` discriminated union; to 445 for TDD-03's `Obligation.alongsideReason` and `WorkContract`/`CheckInput`'s `alongside` fields); to 451 for `ModelRecord` and its three uses (RSC-02), to 455 for the active-time fields of `BudgetState`) |
+| `core/schemas` and companions above | zod inputs, records, outputs; limits | CON-04, SEC-06 | Character ceiling above replaces historical line allowance |
 | `core/lifecycle` | Work, plan item, requirement, example, test, finding, effect state machines | WRK-07 | 150 |
-| `core/risk` | Risk, lane floors, assistance level | WRK-04, INS-12 | 150 |
+| `core/risk` | Risk, lane floors, assistance level | WRK-04, INS-12 | Character ceiling above |
 | `core/authority` | Grants, action classes, scope, decision binding | WRK-02, WRK-03 | 150 |
-| `core/budget` | Counters, reservations, warnings, stops, failure signatures, usage summary | WRK-08, WRK-09, RSC-04 | 154: +4 lines for exact per-contract usage counts (owner-authorized 2026-10-31); current source 8,806 characters, 64 below its 8,870-character limit |
-| `core/verdict` | PRD Section 4.5.2 table; result and reading guide | RES-02, AC-27 | 300 |
-| `core/review` | Manifests, attention, review chain, packets, token estimate | REV-03, REV-08 | 350 |
+| `core/budget` and `core/budget-launch` | Counters, reservations, warnings, stops, failure signatures, usage summary | WRK-08, WRK-09, RSC-04 | Character ceiling above |
+| `core/verdict` | PRD Section 4.5.2 table; result and reading guide | RES-02, AC-27 | Character ceiling above |
+| `core/review` | Manifests, attention, review chain, packets, token estimate | REV-03, REV-08 | Character ceiling above |
 | `core/obligations`, `core/findings` | Obligations, applicability, trait composition; finding dispositions | QLT-06, REV-04 | 250 |
 | `core/config` | Resolution, restriction parsing, trust comparison | CFG, SEC-12 | 250 |
 | `core/attribution`, `core/ids`, `core/retention` | File attribution; IDs and reconciliation; admission and eviction | GIT-03, INT-10, CON-08 | 300 |
-| `pipeline`, `verbs/*`, `decisions/*` | The pipeline; one module per verb and per decision kind. No verb or decision file exceeds 265 lines (`tools/coverage` fails otherwise). Earlier owner-approved rebases and feature increments are recorded in the [implementation plan](plan.md#13-progress-log-append-only-newest-entry-at-top--this-is-the-handoff-record) and `tools/lint-quality.ts`. | — | 4,310 (**proposed, not owner-approved**: +18 lines, 0.42%, so the ENG-09 journal call record and the RES-05 demo slice fit together; they measure 248,109 characters against the old 247,219 limit; the exact figure awaits the owner under decision-packet decision 1): the earlier 4,292-line allowance, which was the 4,188-line allowance plus 10 lines (0.24%) for the reviewed schema-1 forget repair (owner approved 2026-10-27), 92 lines for the owner-approved WRK-06 SF-21–24 prototype hardening slice, and 2 lines for RSC-04's fresh usage publication (owner-authorized 2026-10-31). Character limit: 248,256 proposed (247,219 approved); source with both slices measures 248,109, leaving 147. `recover-effects.ts` has a 265-line ceiling for the added recovery path. No unrelated growth is authorized. |
-| `adapters/store-fs` | State document, lock, log, observations, blobs, marker | §7 | 450 |
-| `adapters/git-cli` | Git with argument arrays; the inspection profile; one temporary-index helper; the shadow repository | §10 | 650 |
-| `adapters/runner` | Envelopes, environment, process groups, run directories, ports | §9.3 | 350 |
-| `adapters/node-ts` | Detection, invocation, normalization, attention patterns | §9.5 | 350 |
+| Central owner and companions above | The pipeline; one module per verb and per decision kind. No verb or decision file exceeds 265 lines (`tools/coverage` fails otherwise). | — | 400,000 characters; the per-file ceiling is unchanged |
+| `adapters/store-fs` and companions above | State document, lock, log, observations, blobs, marker | §7 | Character ceiling above |
+| `adapters/git-cli` | Git with argument arrays; the inspection profile; one temporary-index helper; the shadow repository | §10 | Character ceiling above |
+| `adapters/runner` | Envelopes, environment, process groups, run directories, ports | §9.3 | Character ceiling above |
+| `adapters/node-ts` | Detection, invocation, normalization, attention patterns | §9.5 | Character ceiling above |
 | `adapters/host-vscode`, `frontends/*` | Descriptor and paths; command line, MCP and hook front-ends | §4 | 350 |
 
 ### 6.3 Operation classes
