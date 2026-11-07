@@ -6,6 +6,7 @@
 - Expose capability provenance in status and explain dependency declarations and stateless doctor behavior. Descriptor resolution is not a new native-host observation or qualification.
 - Files: `core/capabilities.ts`, `core/schemas.ts`, `adapters/host-plugin.ts`, new `pipeline-capabilities.ts`, pipeline/ports/wiring/status modules, descriptor and coordinator skill, three canonical specs, install help, new `capability-cache.test.ts`, and built UAT.
 - Six focused controls pass locally, including the documented Windows mutation refusal. Typecheck, all lints, M0 structural coverage, 785 KB/900 KB bundle and payload verification pass. Supported-POSIX persistence controls and built scratch UAT remain pending in exact-source hosted CI; native host behavior remains unobserved.
+- Hosted head 53d6fa6 exposed seven no-op/accounting regressions in Ubuntu's 1,754-test suite. Keep absent verb state absent instead of publishing current state for a cache refresh; add a portable red/green no-op control and built repeated-open controls. The focused suite now passes seven controls; repaired-source full CI/UAT remains pending.
 - Executable/effects changes retain the solo 72-hour review window; the owner merges. Shared approved D01 capacity-only changes are included, without schema-2 activation or dependency.
 
 ## 2026-11-07 — Apply approved D01/D01b capacity ceilings
