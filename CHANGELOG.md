@@ -16,6 +16,12 @@
 - Local Windows typecheck and preview/redaction controls pass. Full POSIX CI,
   real-kill save controls and built-bundle scratch UAT remain pending.
 
+## 2026-11-07 — Apply approved D01/D01b capacity ceilings
+
+- Set the central responsibility owner to 400,000 non-whitespace characters and the kernel bundle ceiling to 900 KiB. Charge configuration, schema, budget, migration and private-record companion files to their original owners; retain the per-file, complexity, nesting and width gates.
+- Record the reconciled candidate's measured owner totals and set other measured owners to those totals plus 5%, rounded up. Unmeasured owners retain prior allowances. These are capacity settings, not schema-2 activation, a qualified bridge or migration completion.
+- Files: `tools/lint-quality.ts`, `tools/quality-baseline.json`, `tools/build.ts`, `packages/kernel/test/quality-gate.test.ts`, `packages/kernel/test/invariants.test.ts`, `specs/tech-spec.md`, and this changelog. Quality-gate fixtures cover every split owner, including `verbs/inspect.ts`; supported-platform exact-head CI remains pending.
+
 ## 2026-11-07 — Extend verdict failure-boundary controls
 
 - Add test-only controls for introduced failures across stop/budget states, excluded versus non-excluded baseline failures, and partially excluded, mixed or unnamed failure reports. These characterize existing verdict behavior; no runtime rule changes.
