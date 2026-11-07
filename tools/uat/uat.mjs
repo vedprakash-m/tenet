@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { bridgeUat } from './bridge.mjs';
 const source = fileURLToPath(new URL('../../', import.meta.url));
 const bundle = process.env.TENET_TEST_BUNDLE ?? join(source, 'plugin/kernel/tenet.mjs');
 const roots = [];
@@ -77,6 +78,7 @@ const waitUntil = async (fn, what) => {
  for (;;) { const found = fn(); if (found) return found; assert.ok(Date.now() < end, `timed out: ${what}`); await new Promise(r => setTimeout(r, 25)); }
 };
 try {
+ bridgeUat({ create, call, bundle, source, env, observations });
  const inherited = create(), inheritedNames = ['constructor'];
  const inheritedCandidate = staticCandidate(inherited, 'preserve human files whose names match inherited properties');
  for (const name of inheritedNames) write(inherited, name, `human-owned ${name}\n`);

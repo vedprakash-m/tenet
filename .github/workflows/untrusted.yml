@@ -112,6 +112,8 @@ jobs:
         run: >-
           node --test --test-name-pattern="automatic temp cleanup boundaries"
           packages\kernel\test\store-boundary.test.ts
+      - name: Schema-1 bridge raw admission and terminal controls without POSIX transactions
+        run: node --test packages\kernel\test\schema-1-bridge.test.ts
       - name: Read-only recovery and pure lesson retirement without POSIX transactions
         run: >-
           node --test --test-name-pattern="interrupted resolution preserves unknown content|repeated lesson retirement"

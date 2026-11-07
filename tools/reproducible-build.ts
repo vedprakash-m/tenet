@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,7 +22,7 @@ function inputSnapshot(root: string): string {
 
 export async function verifyReproducible(
   root: string, scratch: string, build: (root: string, output: string) => Promise<void> = buildPayload,
-): Promise<{ files: number; manifestSha256: string; node: string; esbuild: string; typescript: string }> {
+): Promise<{ files: number; manifestSha256: string; kernelSha256: string; inputSha256: string; node: string; esbuild: string; typescript: string }> {
   const inventory = payloadInventory(JSON.parse(readFileSync(join(root, "tools/payload-files.json"), "utf8")));
   const before = inputSnapshot(root);
   const typescript: string = JSON.parse(readFileSync(join(root, "node_modules/typescript/package.json"), "utf8")).version;
@@ -39,6 +40,8 @@ export async function verifyReproducible(
     if (first !== second) throw new Error("reproducible build payloads differ");
     return {
       files: inventory.length, manifestSha256: createHash("sha256").update(first!).digest("hex"),
+      kernelSha256: createHash("sha256").update(readFileSync(join(outputs[0]!, "kernel/tenet.mjs"))).digest("hex"),
+      inputSha256: createHash("sha256").update(before).digest("hex"),
       node: process.version, esbuild: esbuildVersion, typescript,
     };
   } finally {
@@ -48,6 +51,8 @@ export async function verifyReproducible(
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const root = join(import.meta.dirname, "..");
+  const sourceCommit = execFileSync("git", ["rev-parse", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+  const sourceDirty = !!execFileSync("git", ["status", "--porcelain", "--untracked-files=normal"], { cwd: root, encoding: "utf8" }).trim();
   const result = await verifyReproducible(root, join(root, ".host-runs/test-fixtures"));
-  console.log(`reproducible: ${JSON.stringify(result)} (same source and installed toolchain, independent empty outputs only)`);
+  console.log(`reproducible: ${JSON.stringify({ ...result, sourceCommit, sourceDirty })} (same source and installed toolchain, independent empty outputs only; not a release)`);
 }

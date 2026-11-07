@@ -2,6 +2,7 @@ import { closeSync, constants, fstatSync, openSync, readSync } from "node:fs";
 import type { Stats } from "node:fs";
 import { isUtf8 } from "node:buffer";
 import { KernelError } from "../core/errors.ts";
+import { Terminal } from "../core/migration-terminal.ts";
 
 export const MAX_RECORD = 50 * 1024 * 1024;
 
@@ -14,6 +15,34 @@ export function parseRecord(text: string): unknown {
     if (value && typeof value === "object") for (const item of Object.values(value)) pending.push([item, depth + 1]);
   }
   return parsed;
+}
+
+/** Admission must inspect declarations before JSON.parse discards conflicting keys. */
+export function parseUniqueRecord(text: string): unknown {
+  if (Buffer.byteLength(text, "utf8") > MAX_RECORD) throw new KernelError("unsupported-record", "a private record exceeds the 50 MB bound");
+  const parsed = parseRecord(text), objects: Array<Set<string> | null> = [];
+  for (const token of text.matchAll(/"(?:[^"\\]|\\.)*"|[{}\[\]]/g)) {
+    const char = token[0];
+    switch (char) {
+      case "{": objects.push(new Set()); break;
+      case "[": objects.push(null); break;
+      case "}": case "]": objects.pop(); break;
+      default:
+        if (/^\s*:/.test(text.slice(token.index + char.length))) {
+          const key = JSON.parse(char) as string, keys = objects.at(-1)!;
+          if (keys?.has(key)) throw new KernelError("unsupported-record", "a private record has duplicate keys");
+          keys?.add(key);
+        }
+    }
+  }
+  return parsed;
+}
+
+export function readTerminal(path: string): Terminal | null {
+  const text = readRecord(path);
+  if (text === null) return null;
+  try { return Terminal.parse(parseUniqueRecord(text)); }
+  catch { throw new KernelError("unsupported-record", "the migration terminal record is invalid"); }
 }
 
 function matchesRead(fd: number, content: Buffer, stamp: Stats): boolean {
@@ -74,7 +103,7 @@ export const readJson = <T>(path: string): T | null => {
 export function admissionRecord(path: string, marker = false): unknown {
   try {
     const text = readRecord(path, false, true);
-    return text === null ? null : parseRecord(text);
+    return text === null ? null : parseUniqueRecord(text);
   } catch (error) {
     if (error instanceof SyntaxError) return null;
     if (marker) throw new KernelError("marker-mismatch", "the ownership marker cannot be read safely");
