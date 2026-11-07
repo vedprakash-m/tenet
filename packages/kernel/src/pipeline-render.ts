@@ -55,6 +55,7 @@ export function render(
     reasons,
     next: resp.next ?? [],
     budget: usage ? budgetProgress(usage) : { attempts: "0/0", rounds: "0/0", delegations: "0/0" },
+    ...(ports.timing ? { timing: ports.timing() } : {}),
     ...extra,
   };
   if (w && state) out.handle = handleOf(state, w);
@@ -111,7 +112,7 @@ export function stamp(
   if (final && w && verb.name !== "open")
     w.session = { ...w.session, last: { inputHash: inputHash(verb.name, input, world), response: res } };
   tx.publish(next);
-  tx.call({ verb: verb.name, exit: res.exit, revision, ...traceFields({
+  tx.call({ verb: verb.name, exit: res.exit, revision, ...(res.timing ? { timing: res.timing } : {}), ...traceFields({
     label: w?.label, intentRevision: next.project.intent.revision, startedAt, endedAt: ports.clock.now(), verb: verb.name,
     exit: res.exit, reasons: res.reasons, receipts: (resp.data as { receipts?: { status: string }[] } | undefined)?.receipts, final,
   }) });

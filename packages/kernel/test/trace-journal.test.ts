@@ -82,8 +82,25 @@ describe("journal call records are ENG-09 trace events", () => {
     const text = JSON.stringify(r.calls());
     assert.ok(!text.includes("ghp_") && !text.includes("add a greeting") && !text.includes("export const greet"));
     const allowed = new Set(["t", "kind", "verb", "exit", "revision", "work", "intentRevision", "startedAt", "durationMs",
-      "termination", "checkOutcome", "role", "model", "permission", "visibilityGaps"]);
+      "termination", "checkOutcome", "role", "model", "permission", "visibilityGaps", "timing"]);
     for (const e of r.calls()) for (const k of Object.keys(e)) assert.ok(allowed.has(k), `unexpected field ${k}`);
+  });
+
+  it("persists the response timing and preserves it on a historical retry [NFR-05]", async () => {
+    const r = rig();
+    const h = (await r.call("open", { profile: "feature", request: "add a greeting",
+      scopePaths: ["src/greet.ts"], lane: "quick" })).handle!;
+    const input = { h, kind: "basis", propose: BASIS };
+    const response = await r.call("decide", input);
+    assert.equal(response.exit, 0);
+    assert.equal(response.timing?.scope, "kernel-call");
+    assert.deepEqual(r.calls().at(-1)!.timing, response.timing);
+    const budget = structuredClone(Object.values(r.p.ports().store.read()!.state.work)[0]!.budget);
+    r.c.advance(60_000);
+    const retry = await r.call("decide", input);
+    assert.equal(retry.historical, true);
+    assert.deepEqual(retry.timing, response.timing);
+    assert.deepEqual(Object.values(r.p.ports().store.read()!.state.work)[0]!.budget, budget);
   });
 
   it("records written before the trace fields still read, and old trace records reduce to counts by verb and exit [ENG-09]", async () => {

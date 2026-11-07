@@ -68,7 +68,10 @@ export const inspect: Verb<InspectInput> = {
 
   async run(ports, state, input): Promise<Plan> {
     switch (input.view) {
-      case "help": return { resp: { data: { verbs: VERBS } } };
+      case "help": return { resp: { data: { verbs: VERBS,
+        timing: "Per kernel call: active and tool/check milliseconds are measured separately. " +
+          "Provider, network and user waiting are host observations or unknown with provenance; never estimates. " +
+          "Active budget minutes remain per-contract." } } };
       case "doctor": {
         const d = doctor(ports, await ports.git.probe());
         return { resp: { kernel: true, data: d, ...(d.ok ? {} : { exit: 2 as const }) } };
