@@ -7,6 +7,8 @@ import { CapabilityCache, UNKNOWN } from "../src/core/capabilities.ts";
 import type { Recipes } from "../src/ports/types.ts";
 import { hashOf } from "../src/core/ids.ts";
 import { State } from "../src/core/schemas.ts";
+import { emptyState } from "../src/core/state.ts";
+import { capabilitiesState } from "../src/pipeline-capabilities.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
@@ -91,6 +93,17 @@ describe("capability cache [INS-05]", () => {
     assert.equal(host.capabilities().instructionFiles.provenance?.reused, false);
     f.binding.harness = { value: "local", source: "static", dependencies: ["../outside"] };
     assert.equal(f.prepare(cache).capabilities().harness.value, "unknown");
+  });
+
+  it("does not turn a no-op or preview into a state publication", () => {
+    const p = project();
+    roots.push(p.root);
+    const host = fixture().prepare(), ports = { ...p.ports(), host };
+    const current = { ...emptyState("workspace", "tag"), capabilityCache: host.cache() };
+    for (const verb of ["open", "decide", "finish"]) {
+      assert.equal(capabilitiesState(ports, undefined, verb), undefined);
+      assert.equal(capabilitiesState(ports, current, verb), current);
+    }
   });
 
   it("persists across fresh calls, ignores unrelated files, and never writes from status or doctor", async () => {

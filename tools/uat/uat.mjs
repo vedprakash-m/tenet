@@ -85,6 +85,8 @@ try {
   const statePath = join(capabilityRoot, '.tenet/state');
   const original = readFileSync(statePath, 'utf8'), cache = JSON.parse(original).capabilityCache;
   assert.equal(Object.keys(cache).length, 10);
+  assert.equal(call(capabilityRoot, 'open', { profile: 'plan', request: 'plan a capability cache example' }).exit, 0);
+  assert.equal(readFileSync(statePath, 'utf8'), original, 'unchanged repeated open must not publish cache or accounting');
   const reused = call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities;
   for (const cap of Object.values(reused)) assert.equal(cap.provenance.reused, true);
   write(capabilityRoot, 'unrelated.txt', 'not a declared capability input');
@@ -106,6 +108,9 @@ try {
   delete env.TENET_HOST_VERSION;
   for (const cap of Object.values(call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities))
    assert.equal(cap.provenance.reused, false);
+  const beforeUnknownRepeat = readFileSync(statePath, 'utf8');
+  assert.equal(call(capabilityRoot, 'open', { profile: 'plan', request: 'plan after the declared input changed' }).exit, 0);
+  assert.equal(readFileSync(statePath, 'utf8'), beforeUnknownRepeat, 'unknown-host reprobe must not publish a no-op');
   const freshDoctor = create();
   call(freshDoctor, 'inspect', { view: 'doctor' });
   assert.equal(existsSync(join(freshDoctor, '.tenet')), false);

@@ -176,7 +176,7 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
   const plan = await verb.run(ports, current, input, { ...tx, state: current });
   addRecovery(plan, shared?.reasons ?? [], recovered);
   if (!plan.state && current !== tx.state) plan.state = current ?? undefined;
-  plan.state = capabilitiesState(ports, plan.state, verb.name, current);
+  plan.state = capabilitiesState(ports, plan.state, verb.name);
   if (!plan.state) return { res: render(ports, verb.name, plan.resp, tx.state), plan };
   const prepared = plan.job && ownerOf(plan.state, plan.job.id)?.session.inCall;
   if (prepared?.runDir) ports.store.writeArtifact(prepared.runDir, "run.json", JSON.stringify({ prepared: true }));

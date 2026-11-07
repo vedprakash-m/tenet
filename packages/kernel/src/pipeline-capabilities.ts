@@ -15,9 +15,8 @@ export function prepareCapabilities(ports: Ports, state: State | null): void {
   }, state?.capabilityCache);
 }
 
-export function capabilitiesState(ports: Ports, state: State | undefined, verb: string, current: State | null): State | undefined {
+export function capabilitiesState(ports: Ports, state: State | undefined, verb: string): State | undefined {
   if (verb === "stop") return state;
-  state ??= current ?? undefined;
   if (!state) return undefined;
   const cache = ports.host.cache?.();
   return cache && hashOf(cache) !== hashOf(state.capabilityCache ?? {})
