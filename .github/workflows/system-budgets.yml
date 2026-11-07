@@ -1,0 +1,81 @@
+# These gates measure only their named rows; a green run does not establish full NFR-01 or reference-workload qualification.
+name: system-budgets
+on:
+  pull_request:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: system-budgets-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  skill-experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit
+      - name: Execute the preregistered skill-only proxy, five trials per task and arm
+        run: node tools/skill-experiment.ts "$RUNNER_TEMP/tenet-skill-experiment"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: skill-experiment
+          path: ${{ runner.temp }}/tenet-skill-experiment
+          if-no-files-found: error
+          retention-days: 30
+  frozen-fixtures:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit
+      - run: npm run build
+      - name: Measure all frozen fixtures against the unchanged PRD system budgets
+        run: node tools/bench.ts --fixture all --json | tee system-budgets.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: system-budgets
+          path: system-budgets.json
+          if-no-files-found: error
+          retention-days: 30
+  starter-memory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Restore the actual starter in a scratch directory
+        run: |
+          starter="$RUNNER_TEMP/tenet-memory"
+          mkdir -p "$starter"
+          cp -R plugin/skills/tenet-starter-ts-web-api/template/. "$starter/"
+          npm ci --prefix "$starter" --ignore-scripts --no-audit
+          (cd "$starter" && npm rebuild better-sqlite3)
+      - name: Gate production startup and health peak RSS at 400 binary MB
+        run: node tools/starter-memory.ts "$RUNNER_TEMP/tenet-memory" | tee starter-memory.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: starter-memory
+          path: starter-memory.json
+          if-no-files-found: error
+          retention-days: 30
