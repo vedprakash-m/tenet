@@ -20,6 +20,35 @@ const branchy = (name: string, n: number) => `export function ${name}(x: number)
 const none: { functions: Record<string, never>; wide: Record<string, number>; modules?: Record<string, number> } = { functions: {}, wide: {} };
 
 describe("measuring", () => {
+  it("charges every split candidate helper to its existing responsibility owner", () => {
+    const files = {
+      "core/schemas.ts": "a",
+      "core/schemas-legacy.ts": "bb",
+      "core/schemas-migrate.ts": "ccc",
+      "core/schemas-upcast.ts": "dddd",
+      "core/traits.ts": "ttttt",
+      "core/migration-terminal.ts": "tttttt",
+      "core/budget.ts": "e",
+      "core/budget-launch.ts": "ff",
+      "adapters/store-fs.ts": "g",
+      "adapters/migration-fs.ts": "hh",
+      "adapters/private-record-fs.ts": "ppp",
+      "pipeline.ts": "iii",
+      "core/config-binding.ts": "jjjj",
+      "core/config-proposal.ts": "kkkkk",
+      "verbs/inspect.ts": "vvvvvv",
+      "decisions/configure.ts": "ddddddd",
+    };
+    const m = measure(tree(files));
+    assert.equal(m.modules["core/schemas"], 21);
+    assert.equal(m.modules["core/budget"], 3);
+    assert.equal(m.modules["adapters/store-fs"], 6);
+    assert.equal(m.modules["pipeline + verbs + decisions"], 25);
+    assert.equal(budgetChars("pipeline + verbs + decisions"), 400_000);
+    assert.equal(budgetChars("core/schemas"), 77_396);
+    assert.equal(budgetChars("core/budget"), 33_654);
+    assert.equal(budgetChars("adapters/store-fs"), 55_863);
+  });
   it("does not count CRLF terminators as width while retaining the exact width limit", () => {
     const text = `${"x".repeat(LIMITS.width)}\n${"y".repeat(LIMITS.width + 1)}\n`;
     const lf = measure(tree({ "core/risk.ts": text }));
