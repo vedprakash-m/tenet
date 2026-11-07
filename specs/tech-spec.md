@@ -680,7 +680,8 @@ Class: M mutating, R read-only, S stateless; C may run checks (obligation timeou
 | `undo` | M, C | Consequential | Inverse plan, preview, apply, check, commit (§10.5) |
 | `publish` (push, pull request) | — | — | **Cut from R1** (owner blanket direction 2026-11-03, per decision-packet decision 9B): no `publish` verb and no remote Git command exist. The user pushes or opens the pull request (§10.6) |
 | `stop <pause\|cancel\|abandon>` | M | Routine | Pause at a safe boundary, cancel owned processes, or close the contract; allowed while a check runs |
-| `inspect <view>` | R or S | Routine | `status`, `why`, `impact`, `doctor`, `residue`, `export` (redacted preview of a feedback, diagnostics or evidence bundle) |
+| `inspect <view>` | R or S | Routine | `status`, `why`, `impact`, `doctor`, `residue`; diagnostics use the separate verb below |
+| `diagnostics` | R; W only with `--save` | Routine preview; requested save | Complete redacted projection, <=4,000 UTF-8 bytes. `--save <relative.json> --preview-hash <hash>` binds exclusive private publication to the preview |
 
 `gc` and `migrate` are internal steps of `open` and `finish`. Finished and archived work stays addressable by label for acceptance, integration, undo and inspection; these never reset budgets, revive expired grants or re-acquire ownership unless they edit source.
 
@@ -1884,7 +1885,11 @@ Role, model and permission are held by the host. The kernel is told none of them
 
 **Retention.** Records older than 90 days reduce to the monthly summary, which counts calls by verb and by exit code (`core/journal-reduce.ts`). The new fields do not survive the reduction: a summary is a count, not a trace, and is not presented as one. A reader who needs trace fields for older work has only those counts.
 
-Records never contain file contents, prompts, secrets or command output. Field names are plain; the diagnostics export maps them to the pinned OpenTelemetry GenAI subset (ENG-06). `outcomeId`, wait times, cancellations and durations support the pilot (AC-12), whose active human minutes come from consented observation. Host-supplied usage figures, if any appear, are personal data kept out of shared files and exports without preview. `inspect doctor` reports payload hashes, capabilities with retirement rows, state health, ownership and recent reason codes; diagnostics exports are previewed in full and saved only to a chosen path.
+Records never contain file contents, prompts, secrets or command output. Field names are plain; OpenTelemetry mapping (ENG-06) is deferred. `outcomeId`, wait times, cancellations and durations support the pilot (AC-12), whose active human minutes come from consented observation. Host-supplied usage figures are personal data kept out of diagnostics.
+
+**NFR-07 diagnostics.** `diagnostics` previews complete redacted JSON without writing or appending calls, including with absent state. A closed projection includes kernel version/platform, state schema/revision and work-state counts, and up to 20 validated recent call rows: verb, exit, revision, timestamp, optional duration, termination and check outcome. Unknown host/model/permission facts and omitted/invalid records are explicit; reduced older history is not included. Oldest rows are shed to fit 4,000 UTF-8 bytes (a conservative bound for about 4,000 characters). No arbitrary state/log fields, source, requests, outcomes, paths, environment or command output are copied. Fixed redaction categories are keys, tokens, credentials, personal paths and emails; this is heuristic, not a guarantee.
+
+Saving is explicit: `--save <relative.json> --preview-hash <hash>`, with initialized state for journaling. Rebuild under the pipeline lock and refuse stale preview hashes. The new chosen-path surface is deliberately project-relative, not the old proposed arbitrary external-path export: refuse absolute/traversing paths and `.git`/`.tenet` components explicitly; use project exclusions and existing no-follow exclusive atomic publication, mode 0600. No overwrite, upload, automatic capture or new schema fields. Journal intent/result; recovery observes the bounded current target/hash and closes missing, matching, changed or unavailable targets without writing or fencing. Killed adapter temp-file cleanup is not claimed. Windows previews work; saves retain the POSIX mutation gate. Human request/preview readership is cooperative and native-host interaction is unobserved. See [diagnostics](../docs/diagnostics.md).
 
 ---
 

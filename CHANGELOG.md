@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-11-07 — Requested diagnostics preview and explicit save (NFR-07)
+
+- Add `diagnostics`: a closed, redacted JSON projection within 4,000 UTF-8 bytes.
+  Preview changes no files or journal. Save requires explicit `--save`, a matching
+  preview hash and initialized state; publication is private, exclusive and
+  project-relative. Recovery observes the target without retries or overwrite.
+- Fixed redaction categories: keys, tokens, credentials, personal paths and
+  emails. Heuristic limits, unknown host/model/permission provenance, omitted
+  records and absent state are explicit. No automatic capture/upload, schema
+  fields or ENG-06 mapping. Windows saves retain the existing mutation refusal.
+- Files: new `core/diagnostics.ts`, `verbs/diagnostics.ts`, diagnostics tests and
+  crash fixture; verb registry/help/recovery; plugin command, README/docs,
+  canonical technical/UX specs, and `tools/uat/uat.mjs`.
+- Local Windows typecheck and preview/redaction controls pass. Full POSIX CI,
+  real-kill save controls and built-bundle scratch UAT remain pending.
+
 ## 2026-11-07 — Extend verdict failure-boundary controls
 
 - Add test-only controls for introduced failures across stop/budget states, excluded versus non-excluded baseline failures, and partially excluded, mixed or unnamed failure reports. These characterize existing verdict behavior; no runtime rule changes.

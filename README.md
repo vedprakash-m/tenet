@@ -1,5 +1,9 @@
 # Tenet (working name)
 
+Diagnostics are available only on request: `node plugin/kernel/tenet.mjs diagnostics`
+previews a bounded redacted projection; saving requires explicit `--save` and the
+preview hash. See [diagnostics](docs/diagnostics.md) for included fields and limits. (working name)
+
 A governed, test-first engineering loop for GitHub Copilot in VS Code. A small local program (the kernel) records what is true about a piece of work. A plugin of agents, commands and skills does the work and cannot relabel what the kernel recorded.
 
 > **Status: preview. Nothing is qualified on a real host yet.**
