@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-07 — Process policies and CI measurements
+
+- Add Contributor Covenant 2.1, supported-version/security-report policy, PR compatibility and solo-review disclosures, strict SemVer checks and help version/source fields.
+- Add monthly current-model evaluation reminders, dispatch-only Linux built-bundle UAT, frozen-fixture budget CI and production startup/health peak-RSS measurement. Amend the starter target to 400 binary MB; this limited workload does not qualify the reference workload or full NFR-01.
+- Files: process documents and PR template; `tools/semver.ts`, `tools/starter-memory.ts`; process-policy, platform and memory tests; workflow YAML; `package.json`; `verbs/inspect.ts`; canonical memory specification.
+- ENG-08 uses the owner's revised skill-only, five-repeat choice. The preregistered introduction-compression proxy runs 40 independently recorded trials with frozen floors; native skill quality remains unknown and the baseline remains deployed. Branch protection, signing identity, private vulnerability reporting and release environment settings remain owner actions.
+
 ## 2026-11-07 — Extend verdict failure-boundary controls
 
 - Add test-only controls for introduced failures across stop/budget states, excluded versus non-excluded baseline failures, and partially excluded, mixed or unnamed failure reports. These characterize existing verdict behavior; no runtime rule changes.

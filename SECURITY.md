@@ -1,11 +1,10 @@
-<!-- DRAFT for owner review. The reporting channel, repository URL and supported versions are placeholders. Sources: PRD sections 5.5 and 5.9.2, tech-spec section 11. -->
 # Security policy
 
 ## Reporting a vulnerability
 
 Do not open a public issue for a security problem.
 
-Report it privately to: **PLACEHOLDER-SECURITY-CONTACT** (a private advisory form on PLACEHOLDER-REPOSITORY-URL, or a monitored address; the owner chooses one and fills it in before publication).
+Report it through [GitHub private vulnerability reporting](https://github.com/vedprakash-m/tenet/security/advisories/new). The repository owner must enable private vulnerability reporting in Settings → Code security before this channel is available. If the form is unavailable, do not put vulnerability details in a public issue; use GitHub's reporting controls to ask for a private channel without disclosing the vulnerability. This source checkout does not verify that the setting is enabled.
 
 Include: what you found, the version or commit, the steps to reproduce, and what you think the impact is. Do not include real credentials or other people's data.
 
@@ -25,7 +24,7 @@ Treat a critical vulnerability report or alert affecting a starter dependency un
 
 ## Supported versions
 
-PLACEHOLDER-SUPPORTED-VERSIONS. No release exists yet, so no version is supported. The intended policy (PRD Q-09) is: the latest minor release gets fixes; the previous minor gets security fixes for 3 months after a new minor ships.
+No public release exists yet, so no version is supported. Once releases ship, the latest minor release gets fixes; the previous minor gets security fixes for 3 months after a new minor ships (PRD §5.9.2). Other minors and withdrawn versions are unsupported. The release's support matrix and withdrawal advisories are authoritative; a source preview or a green CI run is not a supported release.
 
 ## What Tenet protects, and what it does not
 
@@ -65,6 +64,6 @@ The kernel validates all input with size and depth limits; uses no `eval`, `Func
 
 ## Release verification
 
-PLACEHOLDER-RELEASE-VERIFICATION. The planned chain is: a protected default branch, pinned build inputs, a reproducible build compared by independent rebuild, a signed tag with a build-provenance attestation, and install steps that let you confirm the installed version and source (`/tenet help` shows them). None of these exist yet; the release has not been built or published. Until it is, a downloaded copy cannot be verified, and look-alike plugins are a real risk.
+The [release verification procedure](docs/release/release-verification.md) describes the pinned build inputs, double-build comparison, signed-tag gate, provenance attestation and installed version/source checks. Workflow code exists; no public release has run through the chain. Branch protection, signing identity and the protected release environment remain owner actions. Until publication and verification, a downloaded copy is not authenticated by this policy.
 
 While there is one maintainer, a change to hooks, helpers, permissions, destinations or evaluators waits a public 72-hour review window on an open pull request, and release notes will say that no second maintainer reviewed it.

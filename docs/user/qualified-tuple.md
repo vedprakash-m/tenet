@@ -37,6 +37,8 @@ Copilot CLI was run once, before the VS Code runs. The results are hypotheses, a
 
 ## Support matrix
 
+**Current-model label (ENG-05): not yet evaluated with the current model.** Apply this label to each combination without a dated native-host suite run on that model. A host/model change invalidates the current-model evaluation label, not the historical observation record. The monthly `model-drift.yml` workflow requests a new run; an issue or deterministic CI pass is never evidence that it happened. When the model is unobservable, claims stop at the last evaluation date.
+
 | Environment | Status |
 |---|---|
 | VS Code with GitHub Copilot, macOS arm64 | Partly observed in the dated runs above; **not qualified** |

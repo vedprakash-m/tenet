@@ -1705,7 +1705,7 @@ Its security items become tests or constraints, not just review notes. For the e
 | Data size | 10,000 items, 50,000 loans, 2,000 users |
 | Concurrency | 20 simultaneous users; 5 simultaneous reservation attempts on one item |
 | Latency | p95 ≤ 200 ms for list, reserve and return at that load |
-| Resources | ≤ 300 MB server memory |
+| Resources | ≤ 400 MB server peak RSS (binary MB; owner amendment 2026-11-07), measured in CI; startup/health measurement does not qualify the reference workload |
 | Degradation | Busy database → bounded retry, then a clear "try again" response; no double booking |
 | Environment | Reference laptop (Apple silicon, 16 GB), warm start, WAL mode |
 
