@@ -4,8 +4,9 @@
 
 - Add invocation-local `active`, `tool`, `provider`, `network` and `userWait` timings to newly rendered responses and journal call records. Measure active and the union of tool/check intervals with a monotonic clock; preserve exact host observations or null with unknown provenance, never estimates. Invalid or failed host observations fail explicitly.
 - Preserve historical cached response timing, legacy optional response decoding, stored schema and existing active-budget accounting. The shipped plugin does not observe provider, network or user-wait timings; no native-host qualification is claimed.
-- Files: new `core/timing.ts`, `pipeline-timing.ts` and `test/timing.test.ts`; `pipeline.ts`, `pipeline-render.ts`, `core/schemas.ts`, `ports/types.ts`, `adapters/system.ts`, `verbs/inspect.ts`, `test/trace-journal.test.ts`, `tools/uat/uat.mjs`, both READMEs, and canonical technical/UX specifications.
+- Files: new `core/timing.ts`, `pipeline-timing.ts` and `test/timing.test.ts`; `pipeline.ts`, `pipeline-render.ts`, `core/schemas.ts`, `ports/types.ts`, `adapters/system.ts`, `verbs/inspect.ts`, `test/trace-journal.test.ts`, `test/audit-boundaries.test.ts`, `tools/uat/uat.mjs`, both READMEs, and canonical technical/UX specifications.
 - Ten timing fixtures and existing trace/quality controls pass locally (34 tests); Windows static gates, payload verification and same-source/toolchain reproducibility pass. Full POSIX CI and built real-repository UAT remain pending. Reuses the approved D01b capacity-only commits; no separate ceiling change.
+- Hosted validation exposed four transport-refusal stubs without timing ports and two stale shared capacity controls. The refusal stubs now supply only clock/host observations and still assert no repository state creation (4/4 pass locally); the shared capacity repair `070bb23` is reused unchanged (11/11 local portability fixtures pass). Revised exact-head hosted validation remains pending.
 
 ## 2026-11-07 — Apply approved D01/D01b capacity ceilings
 
