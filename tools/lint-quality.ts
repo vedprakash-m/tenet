@@ -16,20 +16,27 @@ export interface Baseline { functions: Record<string, Fn>; wide: Record<string, 
 
 /** Characters per budgeted line: the density of the pipeline, verbs and decisions when the owner set their 3,000-line budget (146,543 characters in 2,544 lines). */
 export const CHARS_PER_LINE = 57.6;
-export const budgetChars = (name: string): number => Math.round(BUDGETS[name]!.lines * CHARS_PER_LINE);
+export const budgetChars = (name: string): number =>
+  BUDGETS[name]!.characters ?? Math.round(BUDGETS[name]!.lines * CHARS_PER_LINE);
 
-/** Budgets set by the owner (TS §6.2) in lines, enforced as characters. A module is a file, or a group of files (a directory, or files matching a pattern). */
-export const BUDGETS: Record<string, { match: RegExp; lines: number }> = {
-  "core/schemas": { match: /^core\/schemas\.ts$/, lines: 467 }, // +3 receipt history (EVD-08; 0.58%), +3 outputs fields (EVD-09; 0.6%), +1 pinned adapter (LFC-03); pre-approved 2026-10-24 // +6 ModelRecord (RSC-02), +4 active-time fields (WRK-08), +5 dependency.manager (pnpm), 2026-10
-  "core/risk": { match: /^core\/risk\.ts$/, lines: 150 },
-  "core/budget": { match: /^core\/budget\.ts$/, lines: 154 }, // +4 lines for exact usage reporting (RSC-04); owner authorized friction-related rule amendments 2026-10-31
-  "core/verdict": { match: /^core\/verdict\.ts$/, lines: 300 },
-  "core/review": { match: /^core\/review\.ts$/, lines: 350 },
-  "adapters/store-fs": { match: /^adapters\/store-fs\.ts$/, lines: 450 },
-  "adapters/git-cli": { match: /^adapters\/git-cli\.ts$/, lines: 657 }, // +3 lines for the layout probe call (GIT-13; 0.38%), +4 for the declared-output parameter (EVD-09; 0.5%); both pre-approved 2026-10-24
-  "adapters/runner": { match: /^adapters\/runner\.ts$/, lines: 350 },
-  "adapters/node-ts": { match: /^adapters\/node-ts\.ts$/, lines: 350 },
-  "pipeline + verbs + decisions": { match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*)$/, lines: 4310 }, // PROPOSED, not owner-approved: +18 lines (0.42%; 248,256 characters) so the held ENG-09 journal record and RES-05 demo slice fit (decision-packet decision 1, recommendation A; exact figure awaits approval). WRK-06: +92 lines (owner-approved 2026-10-31) for prototype data gating, managed hardening blocks and journaled recovery; RSC-04 +2 lines owner-authorized 2026-10-31. Earlier increments: +10 crash-safe schema-1 forget; +4 early unsupported-platform admission; +36 hash-bound project-check envelopes; +36 lesson/forget workflow; +4 impact view; +23 cleanup/residue; +19 journal reduction; +11 layout notes; +3 plan impact; +80 check reruns/flaky/toolchain comparison; +41 declared outputs; +75 version reconciliation.
+/** Owner D01/D01b ceilings (TS §6.2). Split companions stay charged to their original owner. */
+export const BUDGETS: Record<string, { match: RegExp; lines: number; characters?: number }> = {
+  "core/schemas": {
+    match: /^core\/(?:schemas(?:-(?:legacy|migrate|upcast))?|traits|migration-terminal)\.ts$/,
+    lines: 467, characters: 77396,
+  },
+  "core/risk": { match: /^core\/risk\.ts$/, lines: 150, characters: 5018 },
+  "core/budget": { match: /^core\/budget(?:-launch)?\.ts$/, lines: 154, characters: 33654 },
+  "core/verdict": { match: /^core\/verdict\.ts$/, lines: 300, characters: 15451 },
+  "core/review": { match: /^core\/review\.ts$/, lines: 350, characters: 20832 },
+  "adapters/store-fs": { match: /^adapters\/(?:store|migration|private-record)-fs\.ts$/, lines: 450, characters: 55863 },
+  "adapters/git-cli": { match: /^adapters\/git-cli\.ts$/, lines: 657, characters: 39718 },
+  "adapters/runner": { match: /^adapters\/runner\.ts$/, lines: 350, characters: 15771 },
+  "adapters/node-ts": { match: /^adapters\/node-ts\.ts$/, lines: 350, characters: 21158 },
+  "pipeline + verbs + decisions": {
+    match: /^(pipeline[\w-]*\.ts|verbs\/.*|decisions\/.*|core\/config-(binding|proposal)\.ts)$/,
+    lines: 4310, characters: 400000,
+  }, // Owner D01/D01b, 2026-11-07: all split implementations remain charged to their owner.
 };
 
 const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => {
