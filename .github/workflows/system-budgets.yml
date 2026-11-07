@@ -11,6 +11,38 @@ concurrency:
   group: system-budgets-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  paired-diagnostics:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Build both frozen source identities without modifying them
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/tenet-budget-baseline" fe475fbb26cd5690a35f33acbb2371c902f3dc58
+          git worktree add --detach "$RUNNER_TEMP/tenet-budget-candidate" d036eefb889539b14f3cc367982016f89dd63270
+          for arm in baseline candidate; do
+            npm ci --prefix "$RUNNER_TEMP/tenet-budget-$arm" --ignore-scripts --no-audit
+            npm run build --prefix "$RUNNER_TEMP/tenet-budget-$arm"
+          done
+      - name: Retain five paired repeats on each previously failing fixture
+        run: node tools/bench-comparison.ts "$RUNNER_TEMP/tenet-budget-comparison" "$RUNNER_TEMP/tenet-budget-baseline" "$RUNNER_TEMP/tenet-budget-candidate" > paired-diagnostics.log 2> paired-diagnostics.stderr.log
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: paired-diagnostics
+          path: |
+            ${{ runner.temp }}/tenet-budget-comparison
+            paired-diagnostics.log
+            paired-diagnostics.stderr.log
+          if-no-files-found: error
+          retention-days: 30
   skill-experiment:
     runs-on: ubuntu-latest
     timeout-minutes: 15
