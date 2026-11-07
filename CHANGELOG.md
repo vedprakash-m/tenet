@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-07 — Retry transient competing-writer admission reads
+
+- Retry only the bounded private-record read-change refusal during admission when a live competing lock is confirmed, within the existing lock deadline. Extract private-record filesystem helpers to keep the adapter within its established module-size budget, and align the project-reference UAT assertion with the named unsupported-configuration refusal.
+- Files: `packages/kernel/src/adapters/store-fs.ts`, new `packages/kernel/src/adapters/private-record-fs.ts`, and `tools/uat/uat.mjs`.
+- Exact-source hosted run [42323039009](https://github.com/vedprakash-m/tenet/actions/runs/42323039009) passed on Ubuntu and macOS: full CI passed (1,744 tests, 0 failures on Ubuntu), and built UAT passed on current and minimum supported Node on both platforms. Windows portability passed. The one-shot capture step was skipped; this does not establish host observation, qualification or overall plan completion. Local Windows cannot run the real-process store test because directory `fsync` returns `EPERM`; local typecheck and all lints pass.
+
 ## 2026-11-06 — Name unsupported TypeScript configurations
 
 - Return a named `adapter-unsupported-config` refusal with an inconclusive receipt when static TypeScript checks cannot safely interpret `tsconfig.json`; preserve `null` for unavailable tools/configs and advance the adapter identity to `node-ts@28`.
