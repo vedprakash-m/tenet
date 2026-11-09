@@ -21,11 +21,22 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
       - run: npm ci --ignore-scripts --no-audit
+      - name: SemVer agrees and does not regress from the event base
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if test -n "$BASE_SHA" && test "$BASE_SHA" != 0000000000000000000000000000000000000000; then
+            previous="$(git show "$BASE_SHA:plugin/plugin.json" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.parse(s).version))')"
+            node tools/semver.ts "$previous"
+          else
+            npm run verify:semver
+          fi
       - name: Install the starter's locked Chromium for real browser journeys
         run: |
           browser_tools="$RUNNER_TEMP/tenet-browser-tools"
@@ -33,6 +44,8 @@ jobs:
           cp plugin/skills/tenet-starter-ts-web-api/template/package.json plugin/skills/tenet-starter-ts-web-api/template/package-lock.json "$browser_tools/"
           npm ci --prefix "$browser_tools" --ignore-scripts --no-audit
           node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium
+      - name: Isolated native read-only review watcher control
+        run: node --test packages/kernel/test/read-only-review.test.ts
       - run: npm run ci
       - name: Capture actual schema-1 lifecycle records (one-shot)
         if: always() && matrix.os == 'ubuntu-latest' && github.event_name == 'push' && contains(github.event.head_commit.message, '[protocol-capture]')

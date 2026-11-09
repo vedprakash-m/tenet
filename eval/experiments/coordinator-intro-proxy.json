@@ -1,0 +1,34 @@
+{
+  "scope": "deterministic prompt-compression proxy, not native skill quality",
+  "objective": "strictly reduce UTF-8 skill bytes with all quality floors unchanged",
+  "qualityFloors": [
+    "header and all text from ## Calling the kernel onward are byte-identical",
+    "retain the literal kernel authority statement",
+    "each evaluator consumes and hashes the exact skill at its arm commit",
+    "git fsck --strict succeeds on each frozen fixture"
+  ],
+  "candidate": {
+    "from": "You are one teammate. The kernel (`tenet`) decides what is true; you do the work and say it plainly.",
+    "to": "The kernel (`tenet`) decides what is true. Do the work; report plainly."
+  },
+  "fixtures": {
+    "small": { "files": 200, "commits": 20, "contracts": 0 },
+    "large": { "files": 10000, "commits": 50, "contracts": 0 },
+    "long-history": { "files": 1000, "commits": 5000, "contracts": 200 },
+    "reserved": { "files": 500, "commits": 25, "contracts": 0 }
+  },
+  "fixtureScope": "Git dimensions only; kernel contract history is not exercised by this proxy",
+  "decision": "decide(manifest, recordedTrials, {baseline: actualSurfaceBytes, candidate: actualSurfaceBytes}); proxy result only; baseline stays deployed",
+  "manifest": {
+    "hypothesis": "A shorter coordinator introduction retains the frozen structural floors; native quality is unknown.",
+    "surface": "plugin/skills/tenet/SKILL.md",
+    "baseline": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
+    "training": ["small", "large", "long-history"],
+    "holdout": ["reserved"],
+    "repeats": 5,
+    "budget": { "maxTrials": 40, "maxCredits": 1 },
+    "stopRule": "No retries. Preserve invalid executions; stop after 40 attempts or 600 seconds. Incomplete cells retain baseline.",
+    "tieRule": "simpler wins",
+    "disposition": "pending"
+  }
+}

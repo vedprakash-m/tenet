@@ -10,6 +10,7 @@ import { readinessOf } from "../src/verbs/common.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
 import { cleanup, tmp } from "./helpers.ts";
+import { KERNEL_VERSION } from "../src/version.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -150,7 +151,7 @@ describe("platform admission before mutation [INS-06, INS-12]", () => {
     for (const [name, content] of Object.entries(original)) assert.equal(readFileSync(join(state, name), "utf8"), content);
   });
 
-  it("refuses a real editing request on Windows without creating local state", async () => {
+  it("refuses a real editing request on Windows without creating local state and identifies stateless help [ENG-07]", async () => {
     const root = scratch();
     const ports = { ...createPorts(root), platform: "win32" as const };
     const response = await runVerb(ports, VERBS, "open", {
@@ -159,7 +160,14 @@ describe("platform admission before mutation [INS-06, INS-12]", () => {
     assert.equal(response.exit, 2, JSON.stringify(response));
     assert.equal(response.reasons[0]?.code, "capability-missing");
     assert.equal(existsSync(join(root, ".tenet")), false);
-    assert.equal((await runVerb(ports, VERBS, "inspect", { view: "help" })).exit, 0);
+    const help = await runVerb(ports, VERBS, "inspect", { view: "help" });
+    assert.equal(help.exit, 0);
+    assert.deepEqual(help.data, {
+      ...help.data as object,
+      version: KERNEL_VERSION,
+      source: "https://github.com/vedprakash-m/tenet",
+    }, "[ENG-07] stateless help reports the installed version and source");
+    assert.equal(existsSync(join(root, ".tenet")), false);
   });
 
   it("still validates input before reporting the platform boundary", async () => {

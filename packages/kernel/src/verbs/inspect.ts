@@ -16,6 +16,7 @@ import type { Ports } from "../ports/types.ts";
 import { nodeOk, readinessOf, workOf } from "./common.ts";
 import { gather, verdictInput } from "./facts.ts";
 import { settingsFor, sharedPolicy, withRequiredChecks } from "./reconcile.ts";
+import { KERNEL_VERSION } from "../version.ts";
 
 const VERBS = {
   open: "open --profile <feature|bug|refactor|investigate|plan|…> --request <text>   start or resume a contract",
@@ -69,7 +70,7 @@ export const inspect: Verb<InspectInput> = {
   async run(ports, state, input): Promise<Plan> {
     switch (input.view) {
       case "help": return { resp: { data: {
-        verbs: VERBS,
+        version: KERNEL_VERSION, source: "https://github.com/vedprakash-m/tenet", verbs: VERBS,
         capabilityCache: "Status shows cache provenance; doctor reads no state. Unknown host version prevents reuse.",
         timing: "Per kernel call: active and tool/check milliseconds are measured separately. " +
           "Provider, network and user waiting are host observations or unknown with provenance; never estimates. " +

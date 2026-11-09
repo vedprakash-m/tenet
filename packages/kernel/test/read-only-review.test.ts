@@ -26,19 +26,29 @@ async function waitForQuiet(events: unknown[]): Promise<void> {
 async function calibrateWatcher(root: string): Promise<void> {
   const nested = join(root, "nested");
   mkdirSync(nested, { recursive: true });
-  const events: string[] = [];
+  const events: { kind: string; path: string; elapsedMs: number }[] = [];
   let watchError: Error | undefined;
-  const watcher = watch(root, { recursive: true }, (_kind, path) => { if (path) events.push(path.toString()); });
+  const started = performance.now();
+  const watcher = watch(root, { recursive: true }, (kind, path) => {
+    if (path) events.push({ kind, path: path.toString(), elapsedMs: performance.now() - started });
+  });
   watcher.on("error", (error) => { watchError = error; });
   const canary = join(nested, "watch-canary.tmp");
   try {
     writeFileSync(canary, "temporary\n");
     await waitFor(() => {
       if (watchError) throw watchError;
-      return events.some((path) => path.endsWith("watch-canary.tmp"));
+      return events.some((event) => event.path.endsWith("watch-canary.tmp"));
     }, 5000, "nested watch canary");
     if (watchError) throw watchError;
   } finally {
+    if (!events.some((event) => event.path.endsWith("watch-canary.tmp"))) {
+      console.error("nested watcher calibration failed", JSON.stringify({
+        platform: process.platform, node: process.version, elapsedMs: performance.now() - started,
+        canaryPresent: existsSync(canary), watchError: watchError === undefined ? null : String(watchError),
+        eventCount: events.length, events: events.slice(0, 100),
+      }));
+    }
     rmSync(canary, { force: true });
     watcher.close();
   }
@@ -175,6 +185,13 @@ it("observes stateless review without project activity or traced mutating comman
         return events.some((event) => event.path?.endsWith(canaryName));
       }, 5000, "project watch canary");
     } finally {
+      if (!events.some((event) => event.path?.endsWith(canaryName))) {
+        console.error("project watcher calibration failed", JSON.stringify({
+          platform: process.platform, node: process.version, canaryPresent: existsSync(canary),
+          watchError: watchError === undefined ? null : String(watchError),
+          eventCount: events.length, events: events.slice(0, 100),
+        }));
+      }
       rmSync(canary, { force: true });
     }
     watcher.close();

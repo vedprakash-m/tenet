@@ -5,6 +5,8 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 > **Status: preview. Nothing is qualified on a real host yet.**
 > The qualified host tuple (VS Code, the Copilot extension, the model, the operating system) is **unrecorded**. No requirement has passed qualification. Read [Status](#status) before you install.
 
+**Source preview version:** `0.1.0-m0`. **Source:** [vedprakash-m/tenet](https://github.com/vedprakash-m/tenet). `/tenet help` reports the running kernel's version and source; compare these with the selected tag and verify payload checksums using the [release verification procedure](docs/release/release-verification.md). A matching version/source is identification, not publisher authentication.
+
 ## What Tenet adds
 
 Copilot already chats, edits and runs tools. Tenet adds a fixed loop around a request, and keeps its records outside the chat:
@@ -64,6 +66,8 @@ Full details: [docs/user/install-and-remove.md](docs/user/install-and-remove.md)
 ## Support matrix and assistance levels
 
 No combination is currently qualified. These observations are not support claims:
+
+Every combination without a dated native suite run for the current model is labeled **not yet evaluated with the current model**. Historical observations below do not evaluate today's model. Rerun the native suite monthly and whenever a model change is observed; `.github/workflows/model-drift.yml` opens a monthly reminder without running a model or changing support claims. If the model is unobservable, claims stop at the last evaluation date.
 
 | Environment | Status |
 |---|---|
