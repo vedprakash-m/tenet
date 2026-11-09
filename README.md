@@ -47,6 +47,8 @@ Capabilities described in this repository are intended outcomes until their gate
 
 The immediate release objective is a controlled developer preview for technical builders using the existing source-install route. Installed-host evaluation is intended to cover a small brownfield change, a starter journey, read-only review and interruption/resume with unrelated staged and dirty edits. These journeys are not yet qualified. Use disposable synthetic projects without sensitive data or production credentials; this is not a preservation guarantee for valuable work. The separate schema-2 protocol candidate is not included. No public release, new install route or native Windows mutation support is approved by this scope.
 
+The [schema-1 bridge candidate](docs/schema-1-bridge.md) adds rollback-terminal and writer-fence safeguards. It is not a published or qualified bridge; schema-2 activation remains blocked until the required bridge is available and its actual artifact is pinned.
+
 ## Before you install
 
 **No host tuple or release is qualified.** Treat this repository as a source preview, not as a supported public installation.

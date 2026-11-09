@@ -50,6 +50,8 @@ describe("clean-output payload reproducibility", () => {
     const result = await verifyReproducible(root, scratch);
     assert.equal(result.files, 7);
     assert.match(result.manifestSha256, /^[a-f0-9]{64}$/);
+    assert.match(result.kernelSha256, /^[a-f0-9]{64}$/);
+    assert.match(result.inputSha256, /^[a-f0-9]{64}$/);
     assert.equal(result.node, process.version);
     assert.equal(typeof result.esbuild, "string");
     assert.deepEqual(readdirSync(scratch), []);

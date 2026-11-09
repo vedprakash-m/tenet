@@ -37,6 +37,11 @@
 - Full, recheck and stateless packets direct native resolution of direct importers and callers of changed non-private interfaces/symbols before unrelated adjacent reads. Resolution stays unknown until evidenced; text-search fallback and unresolved/static coverage limitations are explicit. No stored schema, permissions, verdict or context-budget change.
 - Files: `packages/kernel/src/core/review.ts`, `packages/kernel/test/interface-context.test.ts`, `plugin/skills/tenet-review/SKILL.md`, `plugin/skills/tenet/resources/focused-review.md`, `tools/uat/uat.mjs`, and `specs/tech-spec.md`.
 - Five test-first [AGT-12] controls pass locally. The built scratch-repository UAT asserts unchanged linked test priority and unknown native resolution; supported-POSIX CI/UAT is pending. Native-host dependency resolution remains unobserved.
+## 2026-11-07 — Prepare the hardened schema-1 bridge candidate
+
+- Add strict minimal rollback-terminal admission, duplicate raw-key/schema refusal, operation-local exclusive writer locks and read-only artifact paths. Preserve schema-1 corruption recovery and stateless advisory artifacts; do not add schema-2 activation, migration replay, release identity or capacity changes.
+- Files: `core/migration-terminal.ts`, `adapters/private-record-fs.ts`, `adapters/store-fs.ts`, bridge and filesystem tests/fixtures, `tools/reproducible-build.ts`, built bridge UAT fixtures, the untrusted workflow, `README.md`, `specs/tech-spec.md`, and `docs/schema-1-bridge.md`.
+- Failing-first terminal/writer/read-only/raw-duplicate/unbound-blob controls and reproducibility-identity controls were observed on Windows. Typecheck, lints and structural coverage pass locally; POSIX processes and built UAT require exact-source hosted gates. The verifier reports actual bundle, payload-manifest and input digests with source/toolchain identity, not a qualified or released bridge. Installed-host and power-loss behavior remain unobserved.
 
 ## 2026-11-07 — Extend verdict failure-boundary controls
 

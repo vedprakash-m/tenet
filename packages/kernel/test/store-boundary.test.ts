@@ -23,6 +23,8 @@ describe("automatic temp cleanup boundaries", () => {
       workspaceId, tag: "test", nonce: "cleanup-fixture", schema: 1, dev, ino,
     }));
     const store = new FsStore(root, systemClock, systemRandom, { runFileCapBytes: 0 });
+    // These filesystem-only controls never inspect or break a stale lock.
+    if (process.platform === "win32") store.self = () => ({ pid: process.pid, procStart: "filesystem-fixture" });
     const base = join(store.tempDir("run-active"), "..");
     return { store, base };
   };
