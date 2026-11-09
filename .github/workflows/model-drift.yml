@@ -1,0 +1,28 @@
+name: monthly native model evaluation reminder
+on:
+  schedule:
+    - cron: "0 12 1 * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: monthly-native-evaluation-reminder
+  cancel-in-progress: false
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open this month's native evaluation reminder
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          month="$(date -u +%Y-%m)"
+          title="Native model evaluation reminder $month"
+          titles="$(gh issue list --state all --search "$title in:title" --json title --jq '.[].title')"
+          if printf '%s\n' "$titles" | grep -Fxq "$title"; then
+            echo "Reminder already exists for $month"
+          else
+            gh issue create --title "$title" --body "ENG-05: rerun the native-host suite this month and on any observed host model change. Record the exact host, extension, model (or unknown), OS, source revision, date and evidence. Until a dated native run exists for the current model, each combination remains **not yet evaluated with the current model**. If the model is unobservable, claims stop at the last evaluation date. This reminder neither runs a model nor qualifies a tuple; keep native runs within separately approved account and budget limits."
+          fi

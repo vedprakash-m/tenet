@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
+import { bridgeUat } from './bridge.mjs';
 const source = fileURLToPath(new URL('../../', import.meta.url));
 const bundle = process.env.TENET_TEST_BUNDLE ?? join(source, 'plugin/kernel/tenet.mjs');
 const roots = [];
@@ -28,6 +29,13 @@ const call = (root, verb, body = {}, flags = [], consentEnvelope = true) => {
  const result = spawnSync(process.execPath, [bundle, verb, ...args], { cwd: root, env, input: readsBody ? JSON.stringify(body) : '', encoding: 'utf8' });
  assert.equal(result.signal, null, result.stderr);
     const response = JSON.parse(result.stdout); assert.equal(result.status, response.exit);
+    assert.equal(response.timing.scope, 'kernel-call', '[NFR-05] built response timing scope');
+    for (const field of ['active', 'tool']) {
+        assert.equal(response.timing[field].source, 'kernel');
+        assert.ok(Number.isFinite(response.timing[field].ms) && response.timing[field].ms >= 0);
+    }
+    for (const field of ['provider', 'network', 'userWait'])
+        assert.deepEqual(response.timing[field], { ms: null, source: 'unknown', reason: 'host-not-reported' });
     if (consentEnvelope && verb === 'check' && response.questions?.some(question => question.id === 'envelope-consent')) {
         const h = body.h ?? flags.find(flag => flag.startsWith('--h='))?.slice(4);
         assert.equal(typeof h, 'string', 'check consent needs its handle');
@@ -66,7 +74,10 @@ const staticCandidate = (root, request) => {
  const h = call(root, 'open', { profile: 'feature', request, lane: 'quick' }).handle;
  assert.equal(call(root, 'decide', { h, kind: 'basis', propose: basis }).exit, 0);
  write(root, 'src/greet.test.ts', 'import { expect, it } from "vitest"; import { greet } from "./greet.ts"; it("greets", () => expect(greet("Ada")).toBe("Hello, Ada!"));\n');
- assert.equal(call(root, 'check', { h, stage: 'baseline' }).data.receipts[0].status, 'fail');
+ const baseline = call(root, 'check', { h, stage: 'baseline' });
+ assert.equal(baseline.data.receipts[0].status, 'fail');
+ assert.ok(baseline.timing.tool.ms > 0, '[NFR-05] real failed checks consume measured tool time');
+ assert.ok(baseline.timing.active.ms > 0, '[NFR-05] real calls consume measured kernel time');
  write(root, 'src/greet.ts', 'export const greet = (name: string): string => `Hello, ${name}!`;\n');
  const checked = call(root, 'check', { h, stage: 'candidate' }, ['--touched=src/greet.ts']);
  const w = Object.values(JSON.parse(readFileSync(join(root, '.tenet/state'), 'utf8')).work)[0];
@@ -77,6 +88,66 @@ const waitUntil = async (fn, what) => {
  for (;;) { const found = fn(); if (found) return found; assert.ok(Date.now() < end, `timed out: ${what}`); await new Promise(r => setTimeout(r, 25)); }
 };
 try {
+ const capabilityRoot = create();
+ env.TENET_HOST_VERSION = 'uat-host-1';
+ try {
+  const opened = call(capabilityRoot, 'open', { profile: 'plan', request: 'plan a capability cache example' });
+  assert.equal(opened.exit, 0, JSON.stringify(opened));
+  const statePath = join(capabilityRoot, '.tenet/state');
+  const original = readFileSync(statePath, 'utf8'), cache = JSON.parse(original).capabilityCache;
+  assert.equal(Object.keys(cache).length, 10);
+  assert.equal(call(capabilityRoot, 'open', { profile: 'plan', request: 'plan a capability cache example' }).exit, 0);
+  assert.equal(readFileSync(statePath, 'utf8'), original, 'unchanged repeated open must not publish cache or accounting');
+  const reused = call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities;
+  for (const cap of Object.values(reused)) assert.equal(cap.provenance.reused, true);
+  write(capabilityRoot, 'unrelated.txt', 'not a declared capability input');
+  for (const cap of Object.values(call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities))
+   assert.equal(cap.provenance.reused, true);
+  write(capabilityRoot, 'AGENTS.md', 'new declared instruction input');
+  const changed = call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities;
+  assert.equal(changed.instructionFiles.provenance.reused, false);
+  assert.equal(changed.harness.provenance.reused, true);
+  call(capabilityRoot, 'inspect', { view: 'doctor' });
+  assert.equal(readFileSync(statePath, 'utf8'), original, 'read-only inspection must not save refreshed cache');
+  assert.equal(call(capabilityRoot, 'open', { profile: 'plan', request: 'plan after the declared input changed' }).exit, 0);
+  const refreshed = JSON.parse(readFileSync(statePath, 'utf8')).capabilityCache;
+  assert.notEqual(refreshed.instructionFiles.provenance.key, cache.instructionFiles.provenance.key);
+  assert.deepEqual(refreshed.harness, cache.harness);
+  env.TENET_HOST_VERSION = 'uat-host-2';
+  for (const cap of Object.values(call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities))
+   assert.equal(cap.provenance.reused, false);
+  delete env.TENET_HOST_VERSION;
+  for (const cap of Object.values(call(capabilityRoot, 'inspect', { view: 'status' }).data.capabilities))
+   assert.equal(cap.provenance.reused, false);
+  const beforeUnknownRepeat = readFileSync(statePath, 'utf8');
+  assert.equal(call(capabilityRoot, 'open', { profile: 'plan', request: 'plan after the declared input changed' }).exit, 0);
+  assert.equal(readFileSync(statePath, 'utf8'), beforeUnknownRepeat, 'unknown-host reprobe must not publish a no-op');
+  const freshDoctor = create();
+  call(freshDoctor, 'inspect', { view: 'doctor' });
+  assert.equal(existsSync(join(freshDoctor, '.tenet')), false);
+  observations.push({ scenario: 'INS-05 built capability cache: selective reuse, persisted provenance and stateless doctor', entries: 10 });
+ } finally { delete env.TENET_HOST_VERSION; }
+ const interfaceRoot = create();
+ write(interfaceRoot, 'src/greet.test.ts', 'import { expect, it } from "vitest"; import { greet } from "./greet.ts"; it("greets", () => expect(greet("Ada")).toBe("Hello, Ada!"));\n');
+ write(interfaceRoot, 'src/unrelated.test.ts', 'import { expect, it } from "vitest"; it("unrelated", () => expect(1).toBe(1));\n');
+ git(interfaceRoot, 'add', '-A'); git(interfaceRoot, 'commit', '-qm', 'acceptance tests');
+ const interfaceHandle = call(interfaceRoot, 'open', { profile: 'feature', request: 'prioritize callers of the greeting interface', lane: 'quick' }).handle;
+ assert.equal(call(interfaceRoot, 'decide', { h: interfaceHandle, kind: 'basis', propose: basis }).exit, 0);
+ assert.equal(call(interfaceRoot, 'check', { h: interfaceHandle, stage: 'baseline' }).data.receipts[0].status, 'fail');
+ write(interfaceRoot, 'src/greet.ts', 'export const greet = (name: string): string => `Hello, ${name}!`;\n');
+ write(interfaceRoot, 'src/unrelated.test.ts', 'import { expect, it } from "vitest"; it("unrelated", () => expect(2).toBe(2));\n');
+ const interfaceChecked = call(interfaceRoot, 'check', { h: interfaceHandle, stage: 'candidate' }, ['--touched=src/greet.ts,src/unrelated.test.ts']);
+ const interfacePacket = focused(interfaceRoot, interfaceHandle, interfaceChecked);
+ assert.ok(!interfacePacket.changes.some(change => change.path === 'src/greet.test.ts'), 'linked acceptance test is unchanged against the base');
+ assert.deepEqual(interfacePacket.investigation, ['src/greet.ts', 'src/greet.test.ts', 'src/unrelated.test.ts']);
+ assert.deepEqual(interfacePacket.interfaceContext.changedSources, ['src/greet.ts']);
+ assert.equal(interfacePacket.interfaceContext.resolution, 'unknown');
+ assert.match(interfacePacket.interfaceContext.guidance.join(' '), /direct importers and callers/);
+ assert.match(interfacePacket.interfaceContext.guidance.join(' '), /before unrelated/);
+ assert.match(interfacePacket.rubric.join(''), /interfaceContext/);
+ observations.push({ scenario: '[AGT-12] built packet prioritizes unchanged linked acceptance tests and native direct dependency resolution', investigation: interfacePacket.investigation, resolution: interfacePacket.interfaceContext.resolution });
+
+ bridgeUat({ create, call, bundle, source, env, observations });
  const inherited = create(), inheritedNames = ['constructor'];
  const inheritedCandidate = staticCandidate(inherited, 'preserve human files whose names match inherited properties');
  for (const name of inheritedNames) write(inherited, name, `human-owned ${name}\n`);
@@ -851,17 +922,16 @@ try {
  const foreignCommit = git(root, 'rev-parse', 'HEAD');
  const foreignIndex = readFileSync(join(root, '.git/index'));
  const foreignUndo = call(root, 'undo', { h });
- assert.ok(foreignUndo.reasons.some(reason => reason.code === 'undo-conflict'), JSON.stringify(foreignUndo));
+ assert.equal(foreignUndo.exit, 2, JSON.stringify(foreignUndo));
+ assert.ok(foreignUndo.reasons.some(reason => reason.code === 'capability-missing'), JSON.stringify(foreignUndo));
  assert.equal(foreignUndo.questions?.length ?? 0, 0);
+ const refusedConfirm = call(root, 'decide', { h, kind: 'undo-confirm', answers: { 'undo-confirm': 'apply' } });
+ assert.notEqual(refusedConfirm.exit, 0, JSON.stringify(refusedConfirm));
  assert.equal(git(root, 'rev-parse', 'HEAD'), foreignCommit);
  assert.deepEqual(readFileSync(join(root, '.git/index')), foreignIndex);
  assert.equal(readFileSync(join(root, 'docs/foreign-label.md'), 'utf8'), 'unrelated human work\n');
- git(root, 'commit', '--amend', '-qm', 'Unrelated human commit without a work trailer');
- observations.push({ scenario: 'built undo rejects foreign commits with a repeated label', headPreserved: true, indexPreserved: true, humanContentPreserved: true, questionIssued: false });
- assert.equal(call(root, 'undo', { h }).questions[0].id, 'undo-confirm');
- const undone = call(root, 'decide', { h, kind: 'undo-confirm', answers: { 'undo-confirm': 'apply' } }); assert.equal(undone.exit, 0, JSON.stringify(undone));
- assert.match(readFileSync(join(root, 'src/greet.ts'), 'utf8'), /_name/); assert.equal(readFileSync(join(root, 'src/personal.ts'), 'utf8'), personal);
- observations.push({ scenario: 'built guarded working-tree undo', exit: undone.exit, humanFilePreserved: true, newContractRequiresChecks: true });
+ assert.equal(readFileSync(join(root, 'src/personal.ts'), 'utf8'), personal);
+ observations.push({ scenario: 'built preview refuses undo and undo-confirm', exit: foreignUndo.exit, headPreserved: true, indexPreserved: true, humanContentPreserved: true, questionIssued: false });
  const changedRunner = create();
  const rh = call(changedRunner, 'open', { profile: 'feature', request: 'runner changes', lane: 'quick' }).handle;
  call(changedRunner, 'decide', { h: rh, kind: 'basis', propose: basis });

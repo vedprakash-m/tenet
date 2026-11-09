@@ -4,6 +4,14 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 
 > **Status: preview. Nothing is qualified on a real host yet.**
 > The qualified host tuple (VS Code, the Copilot extension, the model, the operating system) is **unrecorded**. No requirement has passed qualification. Read [Status](#status) before you install.
+>
+> **Known open safety defects in this preview.** Use Tenet only on disposable projects without valuable work, sensitive data or credentials.
+> - `undo` is disabled: its path discovery can miss renamed and recreated files and overwrite your work.
+> - Consent can be applied to more than you were shown: a dirty-file answer can cover files added after the question, and a Git hook ran in a commit without recorded consent.
+> - Recovery after an interruption can remove a file that matches what Tenet meant to write, even if someone else created it, and does not always report what it did.
+> - A record key named `__proto__` can be lost when state is read, which can hide a changed support file from a check.
+
+**Source preview version:** `0.1.0-m0`. **Source:** [vedprakash-m/tenet](https://github.com/vedprakash-m/tenet). `/tenet help` reports the running kernel's version and source; compare these with the selected tag and verify payload checksums using the [release verification procedure](docs/release/release-verification.md). A matching version/source is identification, not publisher authentication.
 
 ## What Tenet adds
 
@@ -17,6 +25,12 @@ Copilot already chats, edits and runs tools. Tenet adds a fixed loop around a re
 - **Your work stays yours.** Tenet works on a branch and commits only files it wrote. Preserving your uncommitted edits is a requirement, not a fully established preview guarantee. Recovery of an interrupted dependency resolution leaves unknown file content untouched and blocks dependent work. The separate live resolution-failure path still restores the original manifest and lockfile without checking for intervening edits. Do not rely on dependency operations to preserve concurrent edits; the installed-host preservation journey remains unqualified.
 
 What it does not do in this release line: deploy, push, or open pull requests on its own; run as a service; or send project content anywhere except through the host's model traffic.
+
+Kernel responses report `timing` for the current kernel call: measured active
+and tool/check milliseconds, plus provider, network and user-wait values from
+the host or null with unknown provenance. The shipped plugin does not observe
+those host values. These timings are not session totals or budget minutes;
+historical retries keep their original snapshot. `/tenet help` explains the scope.
 
 ## Status
 
@@ -41,6 +55,8 @@ Capabilities described in this repository are intended outcomes until their gate
 
 The immediate release objective is a controlled developer preview for technical builders using the existing source-install route. Installed-host evaluation is intended to cover a small brownfield change, a starter journey, read-only review and interruption/resume with unrelated staged and dirty edits. These journeys are not yet qualified. Use disposable synthetic projects without sensitive data or production credentials; this is not a preservation guarantee for valuable work. The separate schema-2 protocol candidate is not included. No public release, new install route or native Windows mutation support is approved by this scope.
 
+The [schema-1 bridge candidate](docs/schema-1-bridge.md) adds rollback-terminal and writer-fence safeguards. It is not a published or qualified bridge; schema-2 activation remains blocked until the required bridge is available and its actual artifact is pinned.
+
 ## Before you install
 
 **No host tuple or release is qualified.** Treat this repository as a source preview, not as a supported public installation.
@@ -56,6 +72,8 @@ Full details: [docs/user/install-and-remove.md](docs/user/install-and-remove.md)
 ## Support matrix and assistance levels
 
 No combination is currently qualified. These observations are not support claims:
+
+Every combination without a dated native suite run for the current model is labeled **not yet evaluated with the current model**. Historical observations below do not evaluate today's model. Rerun the native suite monthly and whenever a model change is observed; `.github/workflows/model-drift.yml` opens a monthly reminder without running a model or changing support claims. If the model is unobservable, claims stop at the last evaluation date.
 
 | Environment | Status |
 |---|---|

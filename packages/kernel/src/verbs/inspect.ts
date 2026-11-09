@@ -16,6 +16,7 @@ import type { Ports } from "../ports/types.ts";
 import { nodeOk, readinessOf, workOf } from "./common.ts";
 import { gather, verdictInput } from "./facts.ts";
 import { settingsFor, sharedPolicy, withRequiredChecks } from "./reconcile.ts";
+import { KERNEL_VERSION } from "../version.ts";
 
 const VERBS = {
   open: "open --profile <feature|bug|refactor|investigate|plan|…> --request <text>   start or resume a contract",
@@ -68,7 +69,13 @@ export const inspect: Verb<InspectInput> = {
 
   async run(ports, state, input): Promise<Plan> {
     switch (input.view) {
-      case "help": return { resp: { data: { verbs: VERBS } } };
+      case "help": return { resp: { data: {
+        version: KERNEL_VERSION, source: "https://github.com/vedprakash-m/tenet", verbs: VERBS,
+        capabilityCache: "Status shows cache provenance; doctor reads no state. Unknown host version prevents reuse.",
+        timing: "Per kernel call: active and tool/check milliseconds are measured separately. " +
+          "Provider, network and user waiting are host observations or unknown with provenance; never estimates. " +
+          "Active budget minutes remain per-contract.",
+      } } };
       case "doctor": {
         const d = doctor(ports, await ports.git.probe());
         return { resp: { kernel: true, data: d, ...(d.ok ? {} : { exit: 2 as const }) } };
@@ -76,9 +83,9 @@ export const inspect: Verb<InspectInput> = {
       case "status": {
         if (input.h) {
           const w = workOf(state, input.h);
-          return { resp: { work: w.id, data: { ...statusOf(state), contract: { label: w.label, state: w.state, lane: w.lane, level: w.level, branch: w.git.branch, limits: LIMITS[w.lane] }, handoff: handoffText(state!, w) } } };
+          return { resp: { work: w.id, data: { ...statusOf(state), capabilities: ports.host.capabilities(), contract: { label: w.label, state: w.state, lane: w.lane, level: w.level, branch: w.git.branch, limits: LIMITS[w.lane] }, handoff: handoffText(state!, w) } } };
         }
-        return { resp: { data: statusOf(state) } };
+        return { resp: { data: { ...statusOf(state), capabilities: ports.host.capabilities() } } };
       }
       case "why": {
         const w = withRequiredChecks(ports, state!, workOf(state, input.h));

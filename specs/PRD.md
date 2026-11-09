@@ -736,7 +736,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 | INS-02 | The README shall state, before installation, prerequisites, publisher and verification steps, the support matrix and assistance levels, permissions and executable content, a first task, and update and removal steps. | Must | R1 | AC-01, AC-11 |
 | INS-03 | When invoked with a task, Tenet shall accept the task before any setup and run only the readiness checks that task depends on. | Must | M0 | AC-02, AC-21 |
 | INS-04 | Tenet shall distinguish plugin-ready, project-ready and action-ready states and report only those relevant to the current task. | Must | A | AC-03, AC-21 |
-| INS-05 | When the host version, plugin version, policy or relevant project inputs change, Tenet shall re-probe only the affected capabilities; otherwise it shall reuse cached observations with provenance. | Must | B | AC-19, AC-21 |
+| INS-05 | When the host version, plugin version, policy or relevant project inputs change, Tenet shall re-probe only the affected capabilities; otherwise it shall reuse cached observations with provenance. Each capability declares its dependencies; its key binds host version, plugin version, policy hash and declared-input hash. Unknown host identity or unavailable input never establishes a reusable observation. | Must | B | AC-19, AC-21 |
 | INS-06 | If a required capability is missing, Tenet shall block only dependent operations, name the missing prerequisite, and offer the safe next action and unaffected alternatives. | Must | A | AC-03 |
 | INS-07 | The installed product shall require no runtime, service, database, MCP server, API key or CI beyond the documented host account and the project's own tools; Tenet helpers reuse the project's Node.js. | Must | M0 | AC-01 |
 | INS-08 | If policy blocks plugin installation or required features, the README shall explain the native recovery path. | Should | R1 | AC-01 |
@@ -1705,7 +1705,7 @@ Its security items become tests or constraints, not just review notes. For the e
 | Data size | 10,000 items, 50,000 loans, 2,000 users |
 | Concurrency | 20 simultaneous users; 5 simultaneous reservation attempts on one item |
 | Latency | p95 ≤ 200 ms for list, reserve and return at that load |
-| Resources | ≤ 300 MB server memory |
+| Resources | ≤ 400 MB server peak RSS (binary MB; owner amendment 2026-11-07), measured in CI; startup/health measurement does not qualify the reference workload |
 | Degradation | Busy database → bounded retry, then a clear "try again" response; no double booking |
 | Environment | Reference laptop (Apple silicon, 16 GB), warm start, WAL mode |
 

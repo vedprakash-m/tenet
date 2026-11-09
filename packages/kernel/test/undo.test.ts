@@ -7,6 +7,11 @@ import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, project, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
+import { runVerb } from "../src/pipeline.ts";
+import { VERBS } from "../src/verbs/index.ts";
+import { enableUndoForTests } from "../src/verbs/undo.ts";
+
+enableUndoForTests();
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -47,6 +52,37 @@ describe("undo [GIT-04]", () => {
     assert.equal(readFileSync(join(p.root, "docs/foreign.md"), "utf8"), "human work with a repeated label\n");
     assert.equal(readFileSync(join(p.root, "src/greet.ts"), "utf8"), GREET_IMPL);
     assert.equal(p.ports().store.read()!.state.pending.length, 0);
+  });
+
+  it("rechecks label ownership when a foreign commit arrives after the preview [CON-12, GIT-04]", async () => {
+    const p = fresh();
+    const h = await finished(p);
+    const preview = await p.call("undo", { h });
+    assert.equal(preview.questions?.[0]?.id, "undo-confirm", JSON.stringify(preview));
+    const state = p.ports().store.read()!.state;
+    const work = Object.values(state.work).find((w) => w.git.commits.length)!;
+    p.write("docs/foreign.md", "later work with the same label\n");
+    p.git("add", "docs/foreign.md");
+    p.git("commit", "-qm", `Later work\n\nTenet-Work: ${work.label}`);
+    const before = p.git("rev-parse", "HEAD");
+    const index = readFileSync(join(p.root, ".git/index"));
+    let applied = false;
+    const ports = p.ports();
+    const inverse = ports.git.applyPatch.bind(ports.git);
+    ports.git.applyPatch = async (...args) => { applied = true; return inverse(...args); };
+
+    const result = await runVerb(ports, VERBS, "decide", { h, kind: "undo-confirm", answers: { "undo-confirm": "apply" } });
+
+    assert.equal(result.reasons[0]?.code, "undo-conflict", JSON.stringify(result));
+    assert.equal(applied, false, "the foreign commit must be refused before applying any inverse");
+    assert.equal(p.git("rev-parse", "HEAD"), before);
+    assert.deepEqual(readFileSync(join(p.root, ".git/index")), index);
+    assert.equal(readFileSync(join(p.root, "src/greet.ts"), "utf8"), GREET_IMPL);
+    assert.equal(readFileSync(join(p.root, "docs/foreign.md"), "utf8"), "later work with the same label\n");
+    const after = p.ports().store.read()!.state;
+    assert.equal(after.work[work.id]!.git.undoneBy, undefined);
+    assert.equal(Object.keys(after.work).length, Object.keys(state.work).length, "a refused confirmation creates no revert contract");
+    assert.equal(after.pending.find((q) => q.id === "undo-confirm")?.bind.factsHash, preview.questions![0]!.bind.factsHash);
   });
 
   it("previews first and changes nothing; on a yes reverts only the work, keeps later human changes, then checks and commits like any work", async () => {

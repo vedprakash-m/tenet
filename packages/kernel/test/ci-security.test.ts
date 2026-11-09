@@ -38,6 +38,15 @@ describe("workflows keep the untrusted tier untrusted [ENG-10]", () => {
     assert.ok(command.includes('node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium'));
     assert.doesNotMatch(command, /\bnpx\b|npm exec\b/, "do not resolve a separate unpinned Playwright");
   });
+  it("runs the isolated native watcher control without replacing full POSIX CI", () => {
+    const steps = workflows.find(({ f }) => f === "untrusted.yml")!.doc.jobs.t1.steps;
+    const commands: string[] = steps.map((step: { run?: string }) => step.run ?? "");
+    const control = commands.indexOf("node --test packages/kernel/test/read-only-review.test.ts");
+    assert.ok(control > commands.indexOf("npm ci --ignore-scripts --no-audit"));
+    assert.ok(control < commands.indexOf("npm run ci"));
+    assert.equal(steps[control]["continue-on-error"], undefined, "calibration failure remains a failed gate");
+    assert.equal(commands.filter(command => command === "npm run ci").length, 1);
+  });
   it("continuously checks Windows portability and minimum-runtime evaluation without claiming POSIX mutation support", () => {
     const workflow = workflows.find(({ f }) => f === "untrusted.yml")!.doc;
     const job = workflow.jobs["windows-portability"];

@@ -28,7 +28,7 @@ A **pre-spike implementation baseline.** Host-dependent elements are marked **[S
 ### 0.4 Conventions
 
 - **Define once, cite by section.** Every rule has one home; elsewhere it is cited as `§n.n`, never restated. PRD sections are cited as "PRD Section n.n" and PRD IDs (`EVD-01`) are cited, never restated as new obligations.
-- **Byte units:** KB and MB in this document are binary: 1 KB is 1,024 bytes and 1 MB is 1,048,576 bytes (so the bundle's 800 KB is 819,200 bytes and the `.tenet/` 50 MB bound is 52,428,800 bytes), as `tools/build.ts` and `adapters/store-fs.ts` already read them. The 400 KB screenshot ceiling (§9.10) is 409,600 bytes. Owner blanket direction 2026-11-03, per decision-packet decision 5 and defect 5.
+- **Byte units:** KB and MB in this document are binary: 1 KB is 1,024 bytes and 1 MB is 1,048,576 bytes (so the bundle's 900 KiB ceiling is 921,600 bytes and the `.tenet/` 50 MB bound is 52,428,800 bytes), as `tools/build.ts` and `adapters/store-fs.ts` read them. The 400 KB screenshot ceiling (§9.10) is 409,600 bytes. Owner blanket direction 2026-11-03; bundle ceiling approved by D01/D01b on November 7.
 - **IDs:** TD-nn technical decision (§20.1); TQ-nn open technical question (§19.1); PA-n PRD amendment (§20.2); SP-nn spike (§19.1); reason codes in code font (Appendix C).
 - **Normative** sections are 2–13, 15, 17 and 19. Sections 1, 14.3, 21 and the appendices are informative.
 - Type sketches show shape, not final field names. Once code exists, the zod schemas are canonical and these sketches are deleted rather than kept in sync.
@@ -223,7 +223,7 @@ The schema-1 implementation derives common finding/review and basis-input views 
 
 - **TypeScript, strict;** `tsc --noEmit` in CI separately from bundling, because a successful bundle is not a successful type check.
 - **Runtime:** the project's Node, 22.12+ on 22.x or 24.x (exact patches pinned at approval), the same LTS lines as the brownfield matrix (PRD Section 2.3); every R1 project already needs Node (INS-07).
-- **Bundle:** esbuild to two minified ESM files, `kernel/tenet.mjs` (command line and MCP, ≤ 800 KB; zod is about 450 KB of it, and a call starts in about 90 ms at 580 KB; owner decisions, October 19 (750 KB) and October 24 (800 KB)) and `kernel/hook.mjs` (no dependencies, ≤ 20 KB, because it runs on every edit). Bundle sizes are CI gates, not reasons to hand-write library code.
+- **Bundle:** esbuild to two minified ESM files, `kernel/tenet.mjs` (command line and MCP, ≤ 900 KiB = 921,600 bytes, owner D01/D01b, November 7) and `kernel/hook.mjs` (no dependencies, ≤ 20 KB, because it runs on every edit). Bundle sizes are CI gates, not reasons to hand-write library code. A ceiling is not a measured bundle size or migration qualification.
 - **Startup:** flags parsed with `node:util` `parseArgs`; `module.enableCompileCache()` only if the cold benchmark (§14.1) needs it, and its cache is then listed as residue (§18).
 - **Tests:** `node:test` with `fast-check` (development only). **Reproducibility:** pinned lockfile; CI rebuilds and compares every payload hash.
 
@@ -266,6 +266,10 @@ Tool lists change only through a release, never mid-session, because every schem
 Each command file names its agent, so Tenet's tool restrictions always apply. `status`, `help` and readiness work before `.tenet/` exists. Only review-only gets its own command, because its zero-write guarantee deserves a visible entry point. If another agent loads a Tenet skill, the skill points the user to `/tenet`.
 
 ### 4.4 Capabilities, native ownership and retirement
+
+**INS-05 cache identity:** each shipped descriptor entry declares up to 20 relative project-file `dependencies`. The Host port resolves only changed entries against a key hashing the explicit host version, shipped plugin/kernel version, governing policy-file hash plus resolved project-level settings, and the declared-input hash (including the declaration). `TENET_HOST_VERSION` supplies the host version; absent or invalid identity is unknown and prevents reuse, never inferred from Node or Git. Policy-configured bounded reads retain only digests; absent files have null digests, and unavailable/linked/excluded inputs make only their dependent capability unknown and non-reusable.
+
+Optional `State.capabilityCache` entries persist observations with key components and their original `probedAt` timestamp. The pipeline refreshes them only when the verb already publishes state under its ordinary mutating lock; cache refresh alone never turns a no-op or preview into a publication or accounting change. Read-only status can reuse them but never writes. Stateless doctor never reads or creates `.tenet/`. Descriptor outputs include provenance and `reused`; resolving a shipped declaration is not a new native-host observation or qualification. Legacy schema-1 state without this optional field remains valid.
 
 The descriptor (PRD Section 3.8.2) holds one key per capability with a source (`static`, `probe`, `observed`). Core code reads it through the `Host` port and never branches on host names (ENG-02). **As built (Alpha):** the descriptor is `plugin/com.github.copilot/descriptor.json`, read by the `Host` port (`adapters/host-plugin.ts`); an unreadable or invalid file reads as all-`unknown`. It has ten keys (`harness`, `subagents`, `hooks`, `approvalMode`, `model`, `usage`, `storage`, `checkpoints`, `questions`, `instructionFiles`), each with a value, a source and, for an observation, its evidence; an unobserved key says `unknown` and nothing more. Consumers: `inspect doctor` shows it, the review-independence control states what was observed, and the charter reader takes its candidate files from `instructionFiles`. `tools/lint-arch.ts` fails any host name in `core/`, `verbs/`, `decisions/` or the pipeline. `controls[]` classes are not yet derived from the descriptor: no class in PRD 5.4 changes with an observation yet. The intended control-class derivation remains unimplemented; a new observation alone does not upgrade a current mechanism label. "Fallback" is all Tenet builds; it is deleted when its retirement condition holds (PRD Section 15).
 
@@ -624,25 +628,40 @@ Verb modules contain only their own logic. A front-end translates its transport 
 
 ### 6.2 Module map
 
-Budgets are set by the owner in lines and checked by `tools/lint-quality` in non-whitespace characters, at 57.6 per budgeted line (the density of the pipeline, verbs and decisions when their 3,000-line budget was set), so wrapping a line or splitting a function is not growth (owner decision, October 20). A module over its budget may not grow past its recorded ceiling, and the ceiling only falls. Raising a budget is an owner decision.
+Budgets are checked by `tools/lint-quality` in non-whitespace characters, so wrapping a line or splitting a function is not growth. Owner D01/D01b (November 7) sets the central owner to exactly 400,000 characters and every other measured owner below to its measured source size plus 5%, rounded up. Explicit character ceilings take precedence over historical line allowances. Owners without a new measurement retain their prior line allowance at 57.6 characters per line; no new measurement or headroom is claimed for them. A module over its budget may not grow past its recorded ceiling, and the ceiling only falls. Raising a budget is an owner decision.
+
+The November 7 measurements are of the reconciled, uncommitted schema-2 candidate, not the schema-1 runtime or a release. The central owner includes `pipeline*.ts`, every `verbs/*` and `decisions/*` file, and `core/config-binding.ts` and `core/config-proposal.ts`. The schemas owner includes `schemas.ts`, `schemas-legacy.ts`, `schemas-migrate.ts`, `schemas-upcast.ts`, `traits.ts` and the bridge's planned `migration-terminal.ts` (absent from this measurement); budget includes `budget.ts` and `budget-launch.ts`; store includes `store-fs.ts`, `migration-fs.ts` and `private-record-fs.ts`. Companion files are never excluded to obtain headroom. This capacity approval does not activate schema 2 or qualify migration or the required bridge.
+
+| Measured owner | Measured characters | Approved ceiling |
+|---|---:|---:|
+| Central owner | 312,864 | 400,000 |
+| Schemas | 73,710 | 77,396 |
+| Budget | 32,051 | 33,654 |
+| Store | 53,202 | 55,863 |
+| Git CLI | 37,826 | 39,718 |
+| Runner | 15,020 | 15,771 |
+| Node/TypeScript adapter | 20,150 | 21,158 |
+| Review | 19,840 | 20,832 |
+| Risk | 4,779 | 5,018 |
+| Verdict | 14,715 | 15,451 |
 
 | Module | Responsibility | PRD | Lines |
 |---|---|---|---|
-| `core/schemas` | zod inputs, records, outputs; limits | CON-04, SEC-06 | 455 (re-baselined October 20, owner decision, after the analyst-packet schemas: `AnalystResult`, `AnalystLink`, `AnalystFinding`, and the `FindingsInput` discriminated union; to 445 for TDD-03's `Obligation.alongsideReason` and `WorkContract`/`CheckInput`'s `alongside` fields); to 451 for `ModelRecord` and its three uses (RSC-02), to 455 for the active-time fields of `BudgetState`) |
+| `core/schemas` and companions above | zod inputs, records, outputs; limits | CON-04, SEC-06 | Character ceiling above replaces historical line allowance |
 | `core/lifecycle` | Work, plan item, requirement, example, test, finding, effect state machines | WRK-07 | 150 |
-| `core/risk` | Risk, lane floors, assistance level | WRK-04, INS-12 | 150 |
+| `core/risk` | Risk, lane floors, assistance level | WRK-04, INS-12 | Character ceiling above |
 | `core/authority` | Grants, action classes, scope, decision binding | WRK-02, WRK-03 | 150 |
-| `core/budget` | Counters, reservations, warnings, stops, failure signatures, usage summary | WRK-08, WRK-09, RSC-04 | 154: +4 lines for exact per-contract usage counts (owner-authorized 2026-10-31); current source 8,806 characters, 64 below its 8,870-character limit |
-| `core/verdict` | PRD Section 4.5.2 table; result and reading guide | RES-02, AC-27 | 300 |
-| `core/review` | Manifests, attention, review chain, packets, token estimate | REV-03, REV-08 | 350 |
+| `core/budget` and `core/budget-launch` | Counters, reservations, warnings, stops, failure signatures, usage summary | WRK-08, WRK-09, RSC-04 | Character ceiling above |
+| `core/verdict` | PRD Section 4.5.2 table; result and reading guide | RES-02, AC-27 | Character ceiling above |
+| `core/review` | Manifests, attention, review chain, packets, token estimate | REV-03, REV-08 | Character ceiling above |
 | `core/obligations`, `core/findings` | Obligations, applicability, trait composition; finding dispositions | QLT-06, REV-04 | 250 |
 | `core/config` | Resolution, restriction parsing, trust comparison | CFG, SEC-12 | 250 |
 | `core/attribution`, `core/ids`, `core/retention` | File attribution; IDs and reconciliation; admission and eviction | GIT-03, INT-10, CON-08 | 300 |
-| `pipeline`, `verbs/*`, `decisions/*` | The pipeline; one module per verb and per decision kind. No verb or decision file exceeds 265 lines (`tools/coverage` fails otherwise). Earlier owner-approved rebases and feature increments are recorded in the [implementation plan](plan.md#13-progress-log-append-only-newest-entry-at-top--this-is-the-handoff-record) and `tools/lint-quality.ts`. | — | 4,310 (**proposed, not owner-approved**: +18 lines, 0.42%, so the ENG-09 journal call record and the RES-05 demo slice fit together; they measure 248,109 characters against the old 247,219 limit; the exact figure awaits the owner under decision-packet decision 1): the earlier 4,292-line allowance, which was the 4,188-line allowance plus 10 lines (0.24%) for the reviewed schema-1 forget repair (owner approved 2026-10-27), 92 lines for the owner-approved WRK-06 SF-21–24 prototype hardening slice, and 2 lines for RSC-04's fresh usage publication (owner-authorized 2026-10-31). Character limit: 248,256 proposed (247,219 approved); source with both slices measures 248,109, leaving 147. `recover-effects.ts` has a 265-line ceiling for the added recovery path. No unrelated growth is authorized. |
-| `adapters/store-fs` | State document, lock, log, observations, blobs, marker | §7 | 450 |
-| `adapters/git-cli` | Git with argument arrays; the inspection profile; one temporary-index helper; the shadow repository | §10 | 650 |
-| `adapters/runner` | Envelopes, environment, process groups, run directories, ports | §9.3 | 350 |
-| `adapters/node-ts` | Detection, invocation, normalization, attention patterns | §9.5 | 350 |
+| Central owner and companions above | The pipeline; one module per verb and per decision kind. No verb or decision file exceeds 265 lines (`tools/coverage` fails otherwise). | — | 400,000 characters; the per-file ceiling is unchanged |
+| `adapters/store-fs` and companions above | State document, lock, log, observations, blobs, marker | §7 | Character ceiling above |
+| `adapters/git-cli` | Git with argument arrays; the inspection profile; one temporary-index helper; the shadow repository | §10 | Character ceiling above |
+| `adapters/runner` | Envelopes, environment, process groups, run directories, ports | §9.3 | Character ceiling above |
+| `adapters/node-ts` | Detection, invocation, normalization, attention patterns | §9.5 | Character ceiling above |
 | `adapters/host-vscode`, `frontends/*` | Descriptor and paths; command line, MCP and hook front-ends | §4 | 350 |
 
 ### 6.3 Operation classes
@@ -712,6 +731,7 @@ type KernelResponse<T> = {
   effects?: { completed: EffectRef[]; uncertain: EffectRef[]; recovery?: string };
   changed?: { controls?: Control[]; presentation?: Presentation; model?: ModelRecord };   // only on change
   data?: T; historical?: true;
+  timing?: Timing;                                                        // current kernel-call snapshot (§8.6); absent on legacy cached responses
   kernel?: { version: string; payloadHash: string; schemaVersion: 1 };   // on open and doctor only
 };
 type Question = {          // shaped like askQuestions input
@@ -942,6 +962,7 @@ Temporary cleanup skips linked or non-directory workspace roots and manifest/rev
 ### 7.7 Schema migration and forgetting
 
 - **Implemented schema-1 admission (2026-10-24, owner stage 15):** before mutating dispatch/pre-lock maintenance, and independently at store writer entry points, admit locally owned marker/primary/previous schema metadata. Explicit incompatible or invalid declared schemas and presence of `.tenet/migration-transition.json` or `.tenet/migration-privacy.json` refuse before protected permissions, lock repair, journal repair, publication or cleanup. Waiting writers re-admit. Unsafe size/type/I/O/mutation reads refuse rather than authorize fallback; same-schema JSON/UTF-8 corruption may still use the existing previous-state diagnostic path. Imported/copied ownership keeps its explicit quarantine path; stateless review retains outside-project temp storage. Machine cleanup retains candidates not provably associated with the current admitted workspace. This is a bounded refusal safeguard, not schema-2 activation, migration, or qualification of a rollback bridge. Large-record admission latency remains unmeasured.
+- **Hardened schema-1 bridge candidate (R3, migration §16.3):** raw admission also refuses missing schema declarations and duplicate decoded JSON keys. Every synchronous owned-store writer claims the existing exclusive lock or reuses only its live operation-local context; direct contention refuses with `kernel-busy`, waiting asynchronous writers re-admit, and retained Tx writers refuse after release. Read-only artifact paths never create/chmod; diagnostic log/blob/residue reads admit independently. A terminal contains exactly `operationId` (32 lowercase hex), `protocolVersion: 1`, strict `versions: {from,to}`, `outcome`, and `bindingDigest` (64 lowercase hex). Valid pairs are 1→2/`upgraded` or 2→1/`rolled-back`; schema-1 admits only the latter, never as ownership or replay authority, and either active fence still refuses. Actual two-build kernel/payload/input digests and source/toolchain identity are recorded separately, never added to the terminal. Candidate evidence does not qualify or publish a bridge; schema-2 activation stays blocked until the required bridge is available and pinned. See `docs/schema-1-bridge.md`.
 - `state.schema` is upcast by pure functions on read; read-only calls upcast in memory only. The first mutating call that would write a newer schema returns `migration-needs-approval` (LFC-04); on acceptance the old document is kept as `state.v<N>.bak`; if declined, the kernel runs read-only. Rolling back the plugin restores the backup only if nothing was mutated since; otherwise the older kernel runs read-only and explains how to update.
 - Unknown fields are preserved under `_ext`, except in grants, restrictions and consents, where they make the record unsupported (`unsupported-record`, exit 4).
 - **Implemented schema-1 forgetting** (CON-10, PRD Section 5.15): confirmed `decide forget` fsyncs a `forget` intent with `{work, lesson}` IDs, purges packets containing its statement or quote only under the workspace temp `manifests/` directory, publishes the lesson-free state twice (clearing every cached response and `state.prev`), then fsyncs `{completed: true}`. Normal response publication follows. `Tx.state` exposes the document actually published, so response, cache and call-record revisions match disk. Recovery repeats the same completion for an unresolved intent and reports "an interrupted forget was finished"; stop defers effects. A retry after a lost response can report no such lesson (exit 2) while retaining that recovery note. Read-only views between a kill and recovery may still show the lesson; no masking is implemented. Run ownership records and check reports are outside the purge scope. Packet reads reuse bounded no-follow private-record admission; enumeration, read and deletion failures propagate, with only concurrent absence ignored. An inaccessible temp parent is not missing-packet proof. Failed purge retains the lesson and unresolved intent before any lesson-free publication/result; repairing access permits normal recovery. Copies already sent to the host's model and inert imported quarantine history remain outside this operation's reach. No schema backups exist in schema 1; migration recovery-set purge remains part of the inactive schema-2 contract.
@@ -1189,6 +1210,22 @@ All counters live in `BudgetState` (§7.2) and change only in `core/budget` (PRD
 
 **Usage reporting** (RSC-04; RSC-07 later): status and the result show, "as of" their last reconciliation, the attempt, review-round, delegation, Tenet-launched check and active-minute counts. The response `budget` retains lane usage strings (`attempts`, `rounds`, `delegations`) and also exposes exact numeric `attemptCount`, `reviewRoundCount`, `delegationCount`, `checksLaunched` and cumulative `activeMinutesTotal` fields. Tenet tokens are labeled as Tenet-injected context only; the model record and `usage: unknown` with the reason and where to look (the Copilot usage dashboard, `chat.subagents.showCreditUsage`, GitHub usage reports and budgets) are included where available. Tenet never converts tokens into credits, requests or money and never shows an allowance it does not know. Host-supplied figures, if they ever exist, are shown with source, scope and freshness, never estimated, summed with estimates, enforced or used to switch accounts or buy capacity (RSC-03).
 
+**Timing (NFR-05; owner-approved 2026-11-07):** every newly rendered response has
+`timing: {scope: "kernel-call", active, tool, provider, network, userWait}`.
+Active and tool are `{ms: number, source: "kernel"}`. The kernel measures elapsed
+time outside and inside the union of `Runner.run` intervals respectively,
+including rejected/timed-out runs; overlapping checks count once. Git adapter
+operations remain kernel work. The monotonic clock measures elapsed intervals,
+not CPU time; the snapshot ends at rendering, before publication. External fields
+are `{ms: number, source: "host", observedAt: ISO timestamp}` from the Host port,
+or `{ms: null, source: "unknown", reason: "host-not-reported"}`. Invalid host
+observations produce an internal-error response and `reason: "host-invalid"`,
+never estimated values. The shipped plugin has no host timing observation.
+Per-call active is additional observability, not the per-contract RSC-04
+`activeMinutesTotal`; budget accrual, limits and recovery remain unchanged.
+Timing never estimates work between calls or full-session waiting. Historical
+retries (§6.4) preserve the original snapshot; legacy responses may omit it.
+
 ### 8.7 Review: manifest, design sketch, attention and chain
 
 Local reuse correction (2026-11-04): packet issuance now uses the existing
@@ -1216,10 +1253,26 @@ The Reviewer has a fresh context and the host's read, search and `usages` tools,
 | Evidence | Receipt summaries and open findings, with recorded IDs, severity, state and evidence |
 | Changes | Every changed path with its kind (test, configuration, locked, source) and line counts; diffs inline with function context (`git diff --function-context`) within the budget, otherwise paths only; lockfiles and generated snapshots replaced by the structured dependency diff (§9.11). All repository content is fenced as quoted data |
 | Attention (REV-03) | The attention items below, each needing a disposition |
-| Investigation list | In priority order: changed files, their linked acceptance tests, callers of each changed export (to locate with `usages`), changed routes and entry points |
+| Investigation list | In priority order: changed source files, their linked acceptance tests, direct importers/callers of each changed non-private interface or symbol (to locate with `usages`), changed routes and entry points, then unrelated adjacent files |
 | Rubric | Required axes, trait rubric items, the charter excerpt and active lessons (≤ 1,500 tokens) |
 
 **Design sketch.** Required in Standard and Deep when the change adds a module, changes an exported type or signature, touches persistence or shared policy, or adds a call across a module boundary; Quick work, obvious bug fixes and behavior-preserving refactors skip it, and in Deep the Architect drafts it. It states where the behavior belongs (an existing module, or why a new one), exported types and signatures that change, the call path from entry point to effect, which one place owns each invariant, what is reused or removed, and which abstractions are deliberately deferred. `scope.paths` is its file list. It targets 1,500 characters (capped at 4,000) and is confirmed with the examples in the same preview, never as a separate question. Afterwards the coordinator may refine internal detail itself through `decide {propose: basis}` without asking; a change to a commitment (behavior, compatibility, data, access, external effects, an exported interface others consume, or an architecture constraint the user set) needs the user. When it changes how components interact, its call path goes into `docs/architecture.md`. In Standard and Deep, a diff that adds a non-test source file or changes an export while no sketch exists raises one attention item, `sketch-missing`.
+
+**Interface-context priority (AGT-12).** Full and recheck manifests select a stable,
+deduplicated `investigation` path index: changed sources, accepted example and
+acceptance/boundary obligation test links (including unchanged tests), then
+remaining changed tests. Stateless review has no basis links. All selected paths
+are filtered for model-send exclusions before selection. `interfaceContext`
+carries changed-source candidates with `resolution: "unknown"` and directs the
+reviewer to identify changed non-private interfaces/symbols and resolve direct
+importers and callers on the named candidate with native `usages`, or disclosed
+text search when unavailable. Inspect those dependencies and linked acceptance
+tests before unrelated adjacent files; private-only changes require no interface
+claim. Static references prove neither runtime dispatch nor complete coverage.
+Unresolved dependencies remain reported, never zero callers. This is cooperative
+context selection, not a kernel import scanner or an observed host map. The
+complete metadata is hashed and counted within the unchanged assignment budget;
+changed-file metadata and required review paths are not narrowed by this index.
 
 **Basis confirmation (UX Spec UX-D1).** Each proposed element carries its `origin`, and the proposal says whether the sketch states a commitment (behavior, data, access, compatibility, an exported interface others consume, or an architecture constraint). `decide {propose: basis}` records the basis as confirmed from the request (capture `reported`, quoting the request) when every element is `origin: request` and the sketch states no commitment; otherwise it returns one `basis-confirm` question that lists Tenet's additions. An `origin: tenet` requirement stays an assumption until confirmed (INT-07). The origin labels are cooperative; seeded-misreading fixtures (AC-24) measure the residual.
 
@@ -1748,6 +1801,8 @@ Data hooks expose `loading`, `empty`, `error`, `denied`, `conflict` and `success
 - **Screen reader:** VoiceOver with Safari over each changed critical journey (sign in, browse, reserve, return, admin overview) and its states; the observer records pass or fail per step in `docs/a11y-checks.md`, recorded by `decide` as a manual receipt (QLT-03). Release qualification covers every critical journey.
 - **Workload:** seed the PRD Section 5.16 data; build, then start the production API; 30 seconds of warm-up then 2 minutes; 20 concurrent clients in a 70/20/10 mix of list, reserve and return; concurrent sign-ins at the configured hashing limit; a 5-way same-item burst every 10 seconds; at least 5,000 samples; data reset to the seed before every run. It reports p50, p95, p99, error rates, peak RSS and event-loop delay, passes when the PRD targets hold with zero double bookings, and reports trends across changes (QLT-05). **Each fitness function declares its own degradation threshold** (e.g. p95 regresses by more than 20% across 3 consecutive checks); crossing it raises `fitness-trend-degraded` as an attention item needing a disposition, the same as any other finding — a slow decline across several individually-passing changes stops being purely informational once it's named.
 
+**Starter memory CI (approved MEM amendment):** the target is 400 binary MB peak server-process RSS. `tools/starter-memory.ts` launches the actual production starter in a scratch directory with an in-memory database and an ephemeral session secret, waits for the loopback listener, checks 100 health responses and reads Linux `/proc/<pid>/status` `VmHWM`. Missing/invalid measurements and values above the target fail the job. `.github/workflows/system-budgets.yml` runs this measurement and the separate frozen-fixture system-budget gate. Startup/health evidence does not qualify the reference workload above; host context, whole-call timeouts and aggregate eviction are not established by the fixture gate.
+
 ### 12.8 Hardening inventory and licensing
 
 `docs/hardening.md` starts with development-only identities, local binding, no TLS, the SQLite single-node envelope, no email, no backup schedule, production secrets and the deployment checklist; every prototype or shortcut adds to it (QLT-17). Tenet-owned template code is MIT (owner Q-03 decision, 2026-10-24), with its `LICENSE` included in generated projects; third-party dependencies retain their own licenses, and `THIRD_PARTY_NOTICES` lists them (OSS-04). `/api/health` returns `{status: "ok"}` plus the run token only when `TENET_RUN_TOKEN` is set.
@@ -1869,6 +1924,7 @@ type CallRecord = { t: "call";                                            // `t`
   work?: string;                                                          // the contract label; absent when the call has none
   intentRevision: number;                                                 // the project intent revision the call published
   startedAt: string; durationMs: number;
+  timing?: Timing;                                                        // same per-call snapshot as the response (§8.6), absent on legacy records
   termination?: "completed" | "cancelled" | "timeout" | "crashed";       // absent on the provisional record of a started job
   checkOutcome?: "pass" | "fail" | "inconclusive" | "skipped";            // `check` calls only; the worst receipt status
   role: "unknown"; model: "unknown"; permission: "unknown";               // host-dependent: written as unknown, never guessed

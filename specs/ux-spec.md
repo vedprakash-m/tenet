@@ -337,6 +337,12 @@ While parked, it names what's out of date and offers to resume:
 
 Budgets and agent counts appear only at 80% of a limit or in "why budget". After context compaction, Tenet recovers its state silently (TS §5.2); status is shown only when asked.
 
+When explaining timing (NFR-05), label it "this kernel call": active work and
+tool/check time are measured milliseconds, separate from per-contract budget
+minutes. Provider, network and user waiting are host observations with provenance,
+or "unknown (host did not report it)", never estimates or inferred gaps.
+Historical timings describe the earlier call, not current activity.
+
 **Why.** At most 10 lines: the effective value · where it came from · what overrides it · what it does not do · how to change it. Topics: headline (every reason a stronger one wasn't reached), lane, level, a setting, a control ("I detect changes to locked tests; I can't prevent them"), **a control's assurance** ("Checked locally: receipted checks and an independent reviewer, no protected CI yet" — TS §0.7, EVD-07), authority, model, cost.
 
 **Recovery.** The same anatomy with "Paused" or "Can't continue" as the headline:
@@ -517,6 +523,8 @@ Anything new from the user is handled before the next step (TS §5.2).
 ---
 
 ## 8. Configuration
+
+Capability provenance in `inspect status` distinguishes a reused keyed observation from a fresh declaration resolution. `doctor` is stateless; neither view implies a new native-host observation or qualification. An unavailable host version is shown as unknown and prevents reuse.
 
 ### 8.1 Principles
 

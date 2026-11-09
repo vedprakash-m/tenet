@@ -50,5 +50,16 @@
   "verbs/undo.ts": 5,
   "wire.ts": 2
  },
- "modules": {}
+ "modules": {
+  "core/schemas": 77396,
+  "core/risk": 5018,
+  "core/budget": 33654,
+  "core/verdict": 15451,
+  "core/review": 20832,
+  "adapters/store-fs": 55863,
+  "adapters/git-cli": 39718,
+  "adapters/runner": 15771,
+  "adapters/node-ts": 21158,
+  "pipeline + verbs + decisions": 400000
+ }
 }

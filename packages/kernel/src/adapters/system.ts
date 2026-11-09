@@ -4,7 +4,7 @@ import type { Clock, Random } from "../ports/types.ts";
 
 const ALPHABET = "abcdefghijklmnopqrstuvwxyz234567";
 
-export const systemClock: Clock = { now: () => new Date().toISOString(), ms: () => Date.now() };
+export const systemClock: Clock = { now: () => new Date().toISOString(), ms: () => performance.now() };
 
 export const systemRandom: Random = {
   base32(n) {

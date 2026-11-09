@@ -2,7 +2,8 @@
 // an append-only log with torn-write repair, hash-named blobs and the workspace marker.
 import { accessSync, chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, ftruncateSync, readdirSync, linkSync, lstatSync, mkdirSync, openSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, relative, sep } from "node:path";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { isAbsolute, join, relative, sep } from "node:path";
 import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
@@ -15,11 +16,12 @@ import { recoveredState } from "../core/state.ts";
 import { schemaStatus } from "../core/versions.ts";
 import type { Clock, EvictReport, Footprint, LogEntry, Quarantined, Store, Tx } from "../ports/types.ts";
 import { isAlive, procStart } from "./proc.ts";
-import { admissionRecord, MAX_RECORD, parseRecord, readJson, readRecord } from "./private-record-fs.ts";
+import { admissionRecord, MAX_RECORD, parseRecord, readJson, readRecord, readTerminal } from "./private-record-fs.ts";
 import { quarantine, QUARANTINE_JOURNAL } from "./quarantine-fs.ts";
 
 interface Marker { workspaceId: string; tag: string; nonce: string; schema: number; dev: number; ino: number }
 interface LockInfo { pid: number; procStart: string; nonce: string; verb: string }
+interface WriteContext { lock: LockInfo; active: boolean }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const LogBase = z.object({ t: z.string().min(1) });
@@ -97,6 +99,9 @@ export class FsStore implements Store {
   private lockWaitMs: number;
   private quarantined?: Quarantined;
   private opts: StoreOptions;
+  // Admission verdicts for state and state.prev, keyed by file identity: a changed file is read and parsed again.
+  private admitted = new Map<string, string>();
+  private writes = new AsyncLocalStorage<WriteContext>();
 
   constructor(root: string, clock: Clock, rand: Random, opts: StoreOptions = {}) {
     this.opts = opts;
@@ -130,10 +135,51 @@ export class FsStore implements Store {
     for (const name of ["migration-transition.json", "migration-privacy.json"]) {
       if (lstatSync(this.p(name), { throwIfNoEntry: false })) blocked();
     }
+    const terminal = readTerminal(this.p("migration-terminal.json"));
+    if (terminal && terminal.outcome !== "rolled-back") blocked();
     for (const name of ["state", "state.prev"]) {
+      const id = this.fileId(name, true);
+      if (id && this.admitted.get(name) === id) continue;
       const record = admissionRecord(this.p(name));
-      if (schemaStatus(record, SCHEMA_VERSION) === "unsupported") blocked();
+      if (record !== null && schemaStatus(record, SCHEMA_VERSION) !== "supported") blocked();
+      if (id) this.admitted.set(name, id); else this.admitted.delete(name);
     }
+  }
+
+  /** Identity of a store file; any replacement or content write changes it. `ctime` also tracks link-count changes. */
+  private fileId(name: string, ctime = false): string | null {
+    const st = lstatSync(this.p(name), { bigint: true, throwIfNoEntry: false });
+    return st ? `${st.dev}:${st.ino}:${st.size}:${st.mtimeNs}${ctime ? `:${st.ctimeNs}` : ""}` : null;
+  }
+
+  private inWrite<T>(context: WriteContext, fn: () => T): T {
+    if (!context.active || this.readLock("lock")?.nonce !== context.lock.nonce) {
+      throw new KernelError("unsupported-record", "the writer operation no longer holds its transaction lock");
+    }
+    this.admit();
+    return fn();
+  }
+
+  private write<T>(fn: () => T): T {
+    this.admit();
+    const active = this.writes.getStore();
+    if (active) return this.inWrite(active, fn);
+    const here = lstatSync(this.dir, { throwIfNoEntry: false });
+    if (!here) return fn();
+    this.marker();
+    const me: LockInfo = { ...this.self(), nonce: this.rand.base32(12), verb: "direct-write" };
+    const tmp = this.p(`lock.${me.nonce}`);
+    writeSynced(tmp, JSON.stringify(me));
+    try {
+      try { linkSync(tmp, this.p("lock")); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+        throw new KernelError("kernel-busy", "a direct writer needs the exclusive transaction lock");
+      }
+      const context = { lock: me, active: true };
+      try { return this.writes.run(context, () => this.inWrite(context, fn)); }
+      finally { context.active = false; this.release(me); }
+    } finally { rmSync(tmp, { force: true }); }
   }
 
   private async admitBeforeLock(name: string, deadline: number): Promise<void> {
@@ -297,6 +343,7 @@ export class FsStore implements Store {
   // ------------------------------------------------------------ transaction
   async transaction<T>(verb: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
     const me = await this.acquire(verb);
+    const context: WriteContext = { lock: me, active: true };
     try {
       this.admit();
       chmodSync(this.dir, 0o700);
@@ -313,17 +360,18 @@ export class FsStore implements Store {
         get state() { return published; },
         recovered: read?.recovered ?? false,
         ...(this.quarantined ? { quarantined: this.quarantined } : {}),
-        ensure: () => store.ensureMarker(),
-        publish: (next) => { published = store.publishState(next); },
-        call: (entry) => store.append({ kind: "call", ...entry }),
-        intent: (effect, id, op) => store.append({ kind: "intent", effect, id, op }),
-        result: (effect, id, outcome) => store.append({ kind: "result", effect, id, outcome }),
+        ensure: () => store.inWrite(context, () => store.ensureMarker()),
+        publish: (next) => store.inWrite(context, () => { published = store.publishState(next); }),
+        call: (entry) => store.inWrite(context, () => store.append({ kind: "call", ...entry })),
+        intent: (effect, id, op) => store.inWrite(context, () => store.append({ kind: "intent", effect, id, op })),
+        result: (effect, id, outcome) => store.inWrite(context, () => store.append({ kind: "result", effect, id, outcome })),
         unresolved: () => store.unresolved(),
-        evict: (keep) => store.evict(keep),
+        evict: (keep) => store.inWrite(context, () => store.evict(keep)),
         recent: (n) => { const log = store.readLog(); return n === undefined ? log : log.slice(-n); },
       };
-      return await fn(tx);
+      return await this.writes.run(context, () => fn(tx));
     } finally {
+      context.active = false;
       this.release(me);
     }
   }
@@ -341,19 +389,30 @@ export class FsStore implements Store {
   }
 
   private publishState(next: State) {
-    const current = this.exists() ? this.read()?.state : undefined;
+    // One full read: the state file's identity (without ctime, which linking state.prev changes) shows whether
+    // another writer replaced or edited it since; only then is it read again for the revision-conflict check.
+    const seen = this.fileId("state");
+    const before = this.exists() ? this.read() : null;
+    const current = before?.state;
     const doc = State.parse({ ...next, revision: (current?.revision ?? 0) + 1 });
     if (doc.workSeq || doc.generationSeq) this.append(accountingCheckpoint(doc, current));
     const tmp = this.p("state.tmp");
     writeSynced(tmp, JSON.stringify(doc));
     if (existsSync(this.p("state"))) {
       rmSync(this.p("state.prev.tmp"), { force: true });
-      linkSync(this.p(this.read()?.recovered ? "state.prev" : "state"), this.p("state.prev.tmp"));
+      linkSync(this.p(before?.recovered ? "state.prev" : "state"), this.p("state.prev.tmp"));
       renameSync(this.p("state.prev.tmp"), this.p("state.prev"));
     }
-    if ((this.read()?.state.revision ?? 0) !== (current?.revision ?? 0)) throw new KernelError("revision-conflict");
+    const moved = this.fileId("state") !== seen;
+    if (moved && (this.read()?.state.revision ?? 0) !== (current?.revision ?? 0)) throw new KernelError("revision-conflict");
     renameSync(tmp, this.p("state"));
     fsyncDir(this.dir);
+    // Both files were admitted before this write: state is the document just validated, state.prev a link to one
+    // admitted earlier in this transaction. Record them so the next admission does not parse them again.
+    for (const name of ["state", "state.prev"]) {
+      const id = this.fileId(name, true);
+      if (id) this.admitted.set(name, id);
+    }
     if (this.quarantined && doc.quarantine?.nonce === this.quarantined.nonce) this.finishQuarantine();
     return doc;
   }
@@ -391,6 +450,7 @@ export class FsStore implements Store {
   }
 
   readLog(): LogEntry[] {
+    this.admit();
     return readJournal(readRecord(this.p("log"), true) ?? "").entries;
   }
 
@@ -402,16 +462,19 @@ export class FsStore implements Store {
 
   // ------------------------------------------------------------ blobs and temp
   putBlob(content: string): string {
-    this.admit();
-    if (Buffer.byteLength(content, "utf8") > MAX_RECORD) {
-      throw new KernelError("unsupported-record", "a blob exceeds the 50 MB record bound");
-    }
-    const h = sha256(content);
-    mkdirSync(this.p("blobs"), { recursive: true, mode: 0o700 });
-    if (this.readBlob(h) === null) writeSynced(this.p(`blobs/${h}`), content);
-    return h;
+    return this.write(() => {
+      this.marker();
+      if (Buffer.byteLength(content, "utf8") > MAX_RECORD) {
+        throw new KernelError("unsupported-record", "a blob exceeds the 50 MB record bound");
+      }
+      const h = sha256(content);
+      mkdirSync(this.p("blobs"), { recursive: true, mode: 0o700 });
+      if (this.readBlob(h) === null) writeSynced(this.p(`blobs/${h}`), content);
+      return h;
+    });
   }
   readBlob(hash: string): string | null {
+    this.admit();
     if (!/^[a-f0-9]{64}$/.test(hash)) throw new KernelError("unsupported-record", "invalid blob hash");
     const content = readRecord(this.p(`blobs/${hash}`));
     if (content !== null && sha256(content) !== hash) throw new KernelError("unsupported-record", "blob hash mismatch");
@@ -419,17 +482,25 @@ export class FsStore implements Store {
   }
 
   tempDir(name: string): string {
+    return this.write(() => this.tempPath(name, true));
+  }
+  private tempPath(name: string, create: boolean): string {
     this.admit();
     const m = this.exists() ? this.marker() : null;
-    if (name.startsWith("/") || name.split("/").some(p => !p || p === "." || p === "..")) throw new KernelError("run-dir-unavailable", "invalid temp directory name");
+    if (isAbsolute(name) || name.includes("\\") || name.split("/").some(p => !p || p === "." || p === "..")) {
+      throw new KernelError("run-dir-unavailable", "invalid temp directory name");
+    }
     let dir = tmpdir();
     for (const part of [`tenet-${m?.workspaceId ?? "unbound"}`, ...name.split("/")]) {
       dir = join(dir, part);
       try {
-        try { mkdirSync(dir, { mode: 0o700 }); } catch (e) { if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e; }
-        const st = lstatSync(dir);
-        if (st.isSymbolicLink() || !st.isDirectory()) throw new Error("temp storage contains a link or non-directory");
-        chmodSync(dir, 0o700);
+        if (create) {
+          try { mkdirSync(dir, { mode: 0o700 }); } catch (e) { if ((e as NodeJS.ErrnoException).code !== "EEXIST") throw e; }
+        }
+        const st = lstatSync(dir, { throwIfNoEntry: false });
+        if (!st && !create) continue;
+        if (!st || st.isSymbolicLink() || !st.isDirectory()) throw new Error("temp storage contains a link or non-directory");
+        if (create) chmodSync(dir, 0o700);
       } catch (e) { throw new KernelError("run-dir-unavailable", String(e)); }
     }
     return dir;
@@ -442,16 +513,20 @@ export class FsStore implements Store {
     return { pid: process.pid, procStart: start };
   }
   writeArtifact(dir: string, name: string, content: string): string {
-    const path = this.artifactPath(dir, name);
-    writeSynced(path, content);
-    return path;
+    return this.write(() => {
+      const path = this.artifactPath(dir, name, true);
+      writeSynced(path, content);
+      return path;
+    });
   }
   readArtifact(dir: string, name: string): string | null { return readRecord(this.artifactPath(dir, name)); }
-  private artifactPath(dir: string, name: string): string {
+  private artifactPath(dir: string, name: string, create = false): string {
     this.admit();
-    if (!name || name.includes("/") || name === "." || name === "..") throw new KernelError("run-dir-unavailable", "invalid artifact name");
+    if (!name || /[/\\]/.test(name) || name === "." || name === "..") {
+      throw new KernelError("run-dir-unavailable", "invalid artifact name");
+    }
     const id = this.exists() ? this.marker()!.workspaceId : "unbound";
-    return join(this.tempDir(relative(join(tmpdir(), `tenet-${id}`), dir)), name);
+    return join(this.tempPath(relative(join(tmpdir(), `tenet-${id}`), dir).split(sep).join("/"), create), name);
   }
   /** Only owned run leaves under real group directories are cleanup candidates. */
   private runFiles(): string[] {
@@ -466,6 +541,9 @@ export class FsStore implements Store {
     });
   }
   sweepTemp(maxAgeMs: number, keep: readonly string[]): number {
+    return this.write(() => this.sweepTempInLock(maxAgeMs, keep));
+  }
+  private sweepTempInLock(maxAgeMs: number, keep: readonly string[]): number {
     let removed = 0;
     const old = (p: string) => { try { return Date.now() - lstatSync(p).mtimeMs > maxAgeMs; } catch { return false; } };
     for (const path of this.runFiles()) {
@@ -518,7 +596,9 @@ export class FsStore implements Store {
     return removed ? `Removed ${removed} old run folder(s): run files were over their cap.` : undefined;
   }
   evict(keep: readonly string[]): EvictReport {
-    this.admit();
+    return this.write(() => this.evictInLock(keep));
+  }
+  private evictInLock(keep: readonly string[]): EvictReport {
     const notes = [this.reduceLog(Date.parse(this.clock.now())), this.capRunFiles(keep)].filter((x): x is string => !!x);
     let classes: Array<{ name: string; bytes: number }> = [];
     try { classes = readdirSync(this.dir).map((name) => ({ name, bytes: this.sizeOf(join(this.dir, name)) })).sort((a, b) => b.bytes - a.bytes); } catch { /* no store yet */ }
@@ -533,6 +613,7 @@ export class FsStore implements Store {
     } catch { return 0; }
   }
   residue(): { tenet: Footprint | null; temp: Footprint | null } {
+    this.admit();
     const measure = (path: string): Footprint | null => {
       let files = 0, bytes = 0;
       const walk = (dir: string) => {
@@ -548,6 +629,10 @@ export class FsStore implements Store {
   }
   cleanTemp(scope: "project" | "machine", minAgeMs: number, remove: boolean): { removed: string[]; kept: string[] } {
     this.admit();
+    if (remove) return this.write(() => this.cleanTempInLock(scope, minAgeMs, true));
+    return this.cleanTempInLock(scope, minAgeMs, false);
+  }
+  private cleanTempInLock(scope: "project" | "machine", minAgeMs: number, remove: boolean): { removed: string[]; kept: string[] } {
     const own = this.exists() ? `tenet-${this.marker()!.workspaceId}` : null;
     const named = scope === "project"
       ? (own ? [own] : [])
@@ -567,6 +652,9 @@ export class FsStore implements Store {
     return out;
   }
   purge(texts: readonly string[]): number {
+    return this.write(() => this.purgeInLock(texts));
+  }
+  private purgeInLock(texts: readonly string[]): number {
     const base = this.tempBase();
     const needles = texts.filter((t) => t.length > 0);
     if (!base || !needles.length) return 0;

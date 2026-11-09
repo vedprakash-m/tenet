@@ -1,7 +1,7 @@
-<!-- DRAFT, prepared 2026-11-03 under the owner's blanket direction to build decision-packet recommendations as candidates. Nothing here has run. Signing, attestation, branch protection and the release environment are unobserved. Not a release approval. -->
-# Release verification and release notes (candidate)
+<!-- Signing, attestation, branch protection and the release environment remain unobserved. Not a release approval. -->
+# Release verification and release notes
 
-This describes the chain of PRD section 5.9.2 as the candidate workflow `.github/workflows/release.yml` would run it, the release notes mechanism (LFC-02), and the steps a user would follow to check an installed payload. Plan section 9.5 keeps the release chain open. Until a release has run end to end and someone has observed every link below, none of it is evidence for ENG-07.
+This describes the approved chain of PRD section 5.9.2 implemented in `.github/workflows/release.yml`, the release notes mechanism (LFC-02), and the steps a user would follow to check an installed payload. Static tests and ordinary CI can establish individual code/build controls, not an end-to-end published release. Signing, attestation, repository settings and installed-host behavior remain unobserved until exercised.
 
 ## The chain, link by link
 
@@ -14,6 +14,8 @@ This describes the chain of PRD section 5.9.2 as the candidate workflow `.github
 | Installed artifact | The manual procedure below. `inspect doctor` does not yet verify the installed payload (TS section 18). | A user runs the steps. | Unobserved. |
 
 Other controls the workflow relies on and does not create: mandatory two-factor authentication for maintainers, a protected `release` environment with required reviewers (release credentials stay in `publish` only), and the solo-maintainer review rule with its 72-hour public window. All are settings or practices outside the repository.
+
+The PR template requires compatibility classification and disclosure of a solo-maintainer review. Release notes retain that disclosure: a public PR waits at least 72 hours, then the owner may merge; without a second maintainer the notes say no second-maintainer review occurred. `npm run verify:semver` checks strict SemVer and kernel/plugin equality; untrusted CI also refuses regression from the event base. These process controls do not infer whether a particular change deserves a major, minor or patch increment.
 
 ## What the workflow checks before it builds
 

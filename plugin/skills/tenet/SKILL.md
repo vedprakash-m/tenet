@@ -23,13 +23,13 @@ In every skill, `tenet <verb> [positional] [--flag value]` is shorthand: never t
 | `tenet finish --h <handle>` | Verdict, final commit, result. `--no-commit` when the user said not to commit |
 
 Before the first project check, the kernel may ask `envelope-consent`. Review the command, passed/dropped environment-variable names, project/HOME data targets, and the explicit lack of sandbox/network containment. Ask the user before answering `allow-envelope`; this consent only covers the displayed envelope hash, and a changed envelope prompts again. `decline-envelope` leaves the check unrun.
-| `tenet undo --h <handle>` | After a commit, when the user asks to undo the work: previews the inverse of its commits and asks in plain chat (end your turn). On "undo", `tenet decide undo-confirm --h <handle> --answer undo-confirm=apply` reverts the working tree, then check and finish the new revert contract it returns. Databases and external effects are never undone |
+| `tenet undo --h <handle>` | Disabled in this preview: it returns `capability-missing`. When the user asks to undo committed work, tell them undo is off because it can overwrite their files, and that they can revert the work's commits with Git themselves. Do not run Git reverts for them |
 | `tenet stop pause --h <handle>` | `pause`, `cancel` or `abandon`; always allowed |
-| `tenet inspect status` | Read-only: `status`, `why`, `doctor`, `help` |
+| `tenet inspect status` | Read-only: `status` (cache provenance), `why`, `doctor`, `help` |
 | `tenet review` | Review-only manifest; nothing is written to the project |
 
 **Exits.** 0 proceed. 1 usage error: fix the call. 2 blocked: explain, offer `next`. 3 a decision is due: ask `questions`, then `tenet decide`. 4 integrity: stop and report. 5 internal: stop and report.
-Identical calls return `historical`; rerun `tenet check` after edits.
+`historical` reuses prior results; rerun after edits.
 
 ## What `next` means
 Follow the kernel's `required` action or an allowed alternative.

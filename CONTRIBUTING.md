@@ -1,4 +1,3 @@
-<!-- DRAFT for owner review. MIT is selected; remaining contribution/sign-off and code-of-conduct decisions are still pending. -->
 # Contributing
 
 Tenet records what is true about engineering work, so changes to it are held to the same standard: nothing is called done on a claim alone. This file says how a change gets in. The project rules for people and agents are in [.github/copilot-instructions.md](.github/copilot-instructions.md); read that file first.
@@ -6,9 +5,11 @@ Tenet records what is true about engineering work, so changes to it are held to 
 ## Before you start
 
 - **License:** Tenet and its own starter-template code use [MIT](LICENSE), selected by the owner on 2026-10-24. Contributions must be compatible with that license; incorporated third-party code retains its applicable licenses/notices. Remaining contribution and release-process decisions are not settled by license selection.
-- **Code of conduct:** PLACEHOLDER-CODE-OF-CONDUCT. The release requires one (PRD OSS-01); it is not written yet.
+- **Code of conduct:** [Contributor Covenant 2.1](CODE_OF_CONDUCT.md) applies to project participation.
 - **Security problems** go to the channel in [SECURITY.md](SECURITY.md), not to a public issue.
 - **Maintainers:** one person holds all maintainer roles today. There is no second maintainer, and independent review of consequential work is done by a fresh-context reviewer agent or by the owner (plan section 4.5).
+
+Changes to executable content, hooks, helpers, permissions, destinations or evaluators must wait a public 72-hour window on an open PR before the owner merges. Request an external reviewer when available. Release notes disclose that no second-maintainer review occurred and record the actual window; an agent pass is not a second maintainer. Use the [PR template](.github/pull_request_template.md) and [release-notes procedure](docs/release/release-verification.md).
 
 ## What the specs are
 
