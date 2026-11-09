@@ -1,7 +1,10 @@
 // Child process: confirms an undo, and dies after the revert contract is published but before the patch is applied.
 import { runVerb } from "../../src/pipeline.ts";
 import { VERBS } from "../../src/verbs/index.ts";
+import { enableUndoForTests } from "../../src/verbs/undo.ts";
 import { createPorts } from "../../src/wire.ts";
+
+enableUndoForTests();
 
 const [root, json] = [process.argv[2]!, process.argv[3]!];
 const ports = createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
