@@ -99,6 +99,8 @@ export class FsStore implements Store {
   private lockWaitMs: number;
   private quarantined?: Quarantined;
   private opts: StoreOptions;
+  // Admission verdicts for state and state.prev, keyed by file identity: a changed file is read and parsed again.
+  private admitted = new Map<string, string>();
   private writes = new AsyncLocalStorage<WriteContext>();
 
   constructor(root: string, clock: Clock, rand: Random, opts: StoreOptions = {}) {
@@ -136,8 +138,12 @@ export class FsStore implements Store {
     const terminal = readTerminal(this.p("migration-terminal.json"));
     if (terminal && terminal.outcome !== "rolled-back") blocked();
     for (const name of ["state", "state.prev"]) {
+      const st = lstatSync(this.p(name), { bigint: true, throwIfNoEntry: false });
+      const id = st && `${st.dev}:${st.ino}:${st.size}:${st.mtimeNs}:${st.ctimeNs}`;
+      if (id && this.admitted.get(name) === id) continue;
       const record = admissionRecord(this.p(name));
       if (record !== null && schemaStatus(record, SCHEMA_VERSION) !== "supported") blocked();
+      if (id) this.admitted.set(name, id); else this.admitted.delete(name);
     }
   }
 
