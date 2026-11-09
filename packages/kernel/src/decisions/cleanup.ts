@@ -4,6 +4,10 @@ import { KernelError } from "../core/errors.ts";
 import { cleanupPreview, tempBusy, STALE_MS } from "../core/residue.ts";
 import type { Decision } from "./types.ts";
 
+let removalEnabled = false;
+/** Test seam only: lets the existing cleanup tests keep exercising the disabled removal path. */
+export function enableCleanupForTests(): void { removalEnabled = true; }
+
 export const cleanup: Decision = {
   kind: "cleanup",
   run({ ports, state, work, input }) {
@@ -16,6 +20,10 @@ export const cleanup: Decision = {
     }
     const age = scope === "machine" ? STALE_MS : 0;
     const confirmed = input.answers?.["cleanup-confirm"] === "yes";
+    if (confirmed && !removalEnabled) {
+      const why = "cleanup removal is disabled in this preview because it can remove files Tenet did not create";
+      throw new KernelError("capability-missing", `${why}; preview it, then delete the listed folders yourself`, { exit: 2 });
+    }
     const plan = ports.store.cleanTemp(scope, age, confirmed);
     if (confirmed) return { resp: { work: work.id, data: { removed: plan.removed } } };
     const { question, preview } = cleanupPreview(scope, plan);

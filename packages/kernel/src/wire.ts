@@ -28,6 +28,7 @@ function pluginRoot(): string {
   return [join(here, ".."), join(here, "../../../plugin")].find((d) => existsSync(join(d, "skills"))) ?? join(here, "..");
 }
 
+export { dropGitLocalVars } from "./adapters/git-env.ts";
 export function createPorts(cwd: string, env: Record<string, string | undefined> = process.env): Ports {
   const root = workspaceRoot(cwd);
   const runner = new ProcessRunner(systemClock, env);

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-09 — Preview safety fixes: Git variables, consent binding, cleanup removal
+
+- Ignore Git's repository-local variables (`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE` and the rest of `git rev-parse --local-env-vars`, any case) in the kernel process, `GitCli`, the bench fixtures, the privacy check and the test helpers, so an inherited value cannot point them at another repository (P75, P77, P78). Files: `adapters/git-env.ts`, `adapters/git-cli.ts`, `wire.ts`, `main.ts`, `tools/bench-fixtures.ts`, `tools/privacy-check.ts`, `test/helpers.ts`; test `git-env.test.ts`.
+- A `dirty-overlap` answer must match the files the question showed, and the question names every file (P47, in part). Files: `decisions/simple.ts`, `verbs/dirty.ts`; test `dirty-overlap-bind.test.ts`.
+- After a declined hook or filter question, a later explicit `commit` asks again instead of running the hook (P48). File: `verbs/commit.ts`; test in `workflows.test.ts`.
+- Disable confirmed `decide cleanup` removal (`capability-missing`); the preview still lists what would be removed (P30). Files: `decisions/cleanup.ts`, `plugin/skills/tenet/SKILL.md`, `README.md`; test `cleanup-disabled.test.ts`, test-only seam in `residue.test.ts`.
+- Not qualified. Recovery and attribution defects (P61, P65), the missing dirty-file choices and NFR-01 remain open.
+
 ## 2026-11-08 — Integrated preview: undo disabled, record keys kept, admission cached
 
 - Merge open PRs #7, #8, #9, #11, #12, #13 and #14 into one candidate on `preview-integration`; #10's save is excluded. Conflicts were resolved by keeping both sides.

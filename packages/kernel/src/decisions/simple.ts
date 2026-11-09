@@ -21,6 +21,9 @@ export const dirtyOverlap: Decision = {
     const answer = input.answers?.["dirty-overlap"];
     if (!q || !paths.length) throw new KernelError("revision-conflict", "there is no open question about your edits", { exit: 2 });
     if (answer !== "keep-out" && answer !== "include") throw new KernelError("revision-conflict", 'answer "keep-out" or "include"', { exit: 1 });
+    if (factsHash([...paths].sort()) !== q.bind.factsHash) {
+      throw new KernelError("revision-conflict", "the files with your edits changed since the question was asked; run check to be asked again", { exit: 2 });
+    }
     const w = { ...work, ...(answer === "include" ? { includeDirty: [...work.includeDirty, ...paths] } : { keepOut: [...work.keepOut, ...paths] }) };
     const rest = state.pending.filter((p) => p.id !== "dirty-overlap");
     return { state: withWork({ ...state, pending: rest }, w), resp: { work: w.id, next: [nx(w.basis ? "check" : "basis", "Continue.", true)], data: { decided: paths, answer } } };
