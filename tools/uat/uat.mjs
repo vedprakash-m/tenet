@@ -126,6 +126,25 @@ try {
   assert.equal(existsSync(join(freshDoctor, '.tenet')), false);
   observations.push({ scenario: 'INS-05 built capability cache: selective reuse, persisted provenance and stateless doctor', entries: 10 });
  } finally { delete env.TENET_HOST_VERSION; }
+ const interfaceRoot = create();
+ write(interfaceRoot, 'src/greet.test.ts', 'import { expect, it } from "vitest"; import { greet } from "./greet.ts"; it("greets", () => expect(greet("Ada")).toBe("Hello, Ada!"));\n');
+ write(interfaceRoot, 'src/unrelated.test.ts', 'import { expect, it } from "vitest"; it("unrelated", () => expect(1).toBe(1));\n');
+ git(interfaceRoot, 'add', '-A'); git(interfaceRoot, 'commit', '-qm', 'acceptance tests');
+ const interfaceHandle = call(interfaceRoot, 'open', { profile: 'feature', request: 'prioritize callers of the greeting interface', lane: 'quick' }).handle;
+ assert.equal(call(interfaceRoot, 'decide', { h: interfaceHandle, kind: 'basis', propose: basis }).exit, 0);
+ assert.equal(call(interfaceRoot, 'check', { h: interfaceHandle, stage: 'baseline' }).data.receipts[0].status, 'fail');
+ write(interfaceRoot, 'src/greet.ts', 'export const greet = (name: string): string => `Hello, ${name}!`;\n');
+ write(interfaceRoot, 'src/unrelated.test.ts', 'import { expect, it } from "vitest"; it("unrelated", () => expect(2).toBe(2));\n');
+ const interfaceChecked = call(interfaceRoot, 'check', { h: interfaceHandle, stage: 'candidate' }, ['--touched=src/greet.ts,src/unrelated.test.ts']);
+ const interfacePacket = focused(interfaceRoot, interfaceHandle, interfaceChecked);
+ assert.ok(!interfacePacket.changes.some(change => change.path === 'src/greet.test.ts'), 'linked acceptance test is unchanged against the base');
+ assert.deepEqual(interfacePacket.investigation, ['src/greet.ts', 'src/greet.test.ts', 'src/unrelated.test.ts']);
+ assert.deepEqual(interfacePacket.interfaceContext.changedSources, ['src/greet.ts']);
+ assert.equal(interfacePacket.interfaceContext.resolution, 'unknown');
+ assert.match(interfacePacket.interfaceContext.guidance.join(' '), /direct importers and callers/);
+ assert.match(interfacePacket.interfaceContext.guidance.join(' '), /before unrelated/);
+ assert.match(interfacePacket.rubric.join(''), /interfaceContext/);
+ observations.push({ scenario: '[AGT-12] built packet prioritizes unchanged linked acceptance tests and native direct dependency resolution', investigation: interfacePacket.investigation, resolution: interfacePacket.interfaceContext.resolution });
 
  const inherited = create(), inheritedNames = ['constructor'];
  const inheritedCandidate = staticCandidate(inherited, 'preserve human files whose names match inherited properties');

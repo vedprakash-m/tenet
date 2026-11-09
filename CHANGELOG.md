@@ -31,6 +31,12 @@
 - File: `packages/kernel/test/undo.test.ts`. Tags: `[CON-12, GIT-04]`.
   Local static gates pass; supported-POSIX CI is pending.
 - Files: `tools/lint-quality.ts`, `tools/quality-baseline.json`, `tools/build.ts`, `packages/kernel/test/quality-gate.test.ts`, `packages/kernel/test/invariants.test.ts`, `specs/tech-spec.md`, and this changelog. Quality-gate fixtures cover every split owner, including `verbs/inspect.ts`; supported-platform exact-head CI remains pending.
+## 2026-11-07 — Prioritize interface-change review context
+
+- Order review investigation paths as changed sources, linked acceptance/boundary tests (including unchanged tests), then remaining changed tests. Deduplicate and apply model exclusions before selection.
+- Full, recheck and stateless packets direct native resolution of direct importers and callers of changed non-private interfaces/symbols before unrelated adjacent reads. Resolution stays unknown until evidenced; text-search fallback and unresolved/static coverage limitations are explicit. No stored schema, permissions, verdict or context-budget change.
+- Files: `packages/kernel/src/core/review.ts`, `packages/kernel/test/interface-context.test.ts`, `plugin/skills/tenet-review/SKILL.md`, `plugin/skills/tenet/resources/focused-review.md`, `tools/uat/uat.mjs`, and `specs/tech-spec.md`.
+- Five test-first [AGT-12] controls pass locally. The built scratch-repository UAT asserts unchanged linked test priority and unknown native resolution; supported-POSIX CI/UAT is pending. Native-host dependency resolution remains unobserved.
 
 ## 2026-11-07 — Extend verdict failure-boundary controls
 
