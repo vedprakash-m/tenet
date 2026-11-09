@@ -10,6 +10,29 @@ import { Timing } from "./timing.ts";
 
 export const SCHEMA_VERSION = 1 as const;
 
+/**
+ * A string-keyed record that keeps every own key of the input. `z.record` drops a key named `__proto__`, which
+ * lost support-file hashes and skipped validating that value; repository paths are data, whatever their name.
+ */
+export function ownRecord<V extends z.ZodType>(value: V) {
+  return z.unknown().transform((input, ctx): Record<string, z.output<V>> => {
+    const out: Record<string, z.output<V>> = {};
+    if (!input || typeof input !== "object" || Array.isArray(input)) {
+      ctx.addIssue({ code: "custom", message: "expected an object" });
+      return out;
+    }
+    for (const key of Object.keys(input)) {
+      const r = value.safeParse((input as Record<string, unknown>)[key]);
+      if (!r.success) {
+        for (const i of r.error.issues) ctx.addIssue({ code: "custom", message: i.message, path: [key, ...i.path] });
+        continue;
+      }
+      Object.defineProperty(out, key, { value: r.data, enumerable: true, writable: true, configurable: true });
+    }
+    return out;
+  });
+}
+
 /** An index lock is journalled before its inode becomes visible at Git's shared lock path. */
 export const IndexSyncRecord = z.strictObject({
   parent: z.string().regex(/^[a-f0-9]{40}$/).nullable(), head: z.string().regex(/^[a-f0-9]{40}$/),
@@ -111,7 +134,7 @@ export const Obligation = z.object({
   state: z.enum(["registered", "verified", "locked", "revised"]).optional(),
   baselineTestHash: z.string().optional(), // hash of the test file at its red run (red-invalidated, TS §8.1)
   baselineMatched: z.boolean().optional(),
-  baselineInputs: z.record(z.string(), z.string()).optional(),
+  baselineInputs: ownRecord(z.string()).optional(),
   alongsideReason: z.string().optional(), // TDD-03: a behavioral red was infeasible; the red is a declared negative control instead
 });
 export type Obligation = z.infer<typeof Obligation>;
@@ -182,7 +205,7 @@ export const ReviewLink = z.object({
   reservation: z.string(), mode: z.enum(["full", "recheck"]), candidate: z.string(), basisHash: z.string(),
   basedOn: z.string().optional(), uncovered: z.array(z.string()), verified: z.array(z.string()),
   independence: DispatchMode, status: z.string(),
-  files: z.record(z.string(), z.string()).default({}), // blob of each Tenet file when this review was issued
+  files: ownRecord(z.string()).default({}), // blob of each Tenet file when this review was issued
   axes: z.object({ behavior: z.enum(["pass", "fail"]), structure: z.enum(["pass", "fail"]) }).optional(), // the reviewer's judgment, never edited
   coverage: ReviewCoverage.optional(), openDependencies: z.array(z.string()).optional(), model: ModelRecord.optional(),
 });
@@ -207,7 +230,7 @@ export type AnalystLink = z.infer<typeof AnalystLink>;
 export const Reservation = z.object({
   id: z.string(), role: z.enum(["reviewer", "analyst"]), manifest: z.string(), manifestHash: z.string(),
   candidate: z.string(), basisHash: z.string(), attempt: z.number(), mode: z.enum(["full", "recheck"]),
-  files: z.record(z.string(), z.string()).default({}),
+  files: ownRecord(z.string()).default({}),
   retries: z.number().int().min(0).optional(),
   basedOn: z.string().optional(), requiredPaths: z.array(z.string()).optional(),
   analystRole: z.enum(["researcher", "architect", "security"]).optional(), question: z.string().optional(),
@@ -291,13 +314,13 @@ export const WorkContract = z.object({
     after: z.object({ manifest: z.string(), lock: z.string() }), // sha256 of the files as the resolution wrote them
   }).optional(),
   reverting: z.array(z.string()).optional(), // paths an undo was asked to revert: removing their assertions is the request, not a weakening
-  vetted: z.record(z.string(), z.string()), // recipe files written by a scaffold: path to sha256, exempt from attention while unchanged
+  vetted: ownRecord(z.string()), // recipe files written by a scaffold: path to sha256, exempt from attention while unchanged
   touched: z.array(z.object({ path: z.string(), hashAtLastCheck: z.string().optional() })),
   includeDirty: z.array(z.string()), // human-dirty files the user chose to include in Tenet's commit
   keepOut: z.array(z.string()), // human-dirty files Tenet edits in place and never commits
   budget: BudgetState,
   acceptance: z.enum(["pending", "accepted", "rejected", "accepted-with-residual-risk"]),
-  assessment: z.record(z.string(), z.enum(["low", "high"])),
+  assessment: ownRecord(z.enum(["low", "high"])),
   lastCheck: z.object({ candidate: z.string(), at: z.string(), stage: z.string() }).optional(),
   handoff: z.string().optional(),
   pinned: z.object({ tenet: z.string(), schema: z.number(), adapter: z.string().optional() }),
@@ -308,7 +331,7 @@ export type WorkContract = z.infer<typeof WorkContract>;
 export const Lock = z.object({
   path: z.string(), hash: z.string(), obligation: z.string(),
   anchor: z.union([z.object({ commit: z.string() }), z.object({ provisional: z.string() })]),
-  supportInputs: z.record(z.string(), z.string()), // support file to blob, locked with the test
+  supportInputs: ownRecord(z.string()), // support file to blob, locked with the test
   revisions: z.array(z.object({ path: z.string(), from: z.string(), to: z.string(), reason: z.string(), at: z.string() })).optional(),
 });
 export type Lock = z.infer<typeof Lock>;
@@ -343,11 +366,11 @@ export const State = z.strictObject({
   ])).default([]),
   locks: z.array(Lock), pending: z.array(Question),
   lessons: z.array(Lesson).default([]), // advice for packets, never authority (TS §8.9)
-  work: z.record(z.string(), WorkContract),
+  work: ownRecord(WorkContract),
   archive: z.array(z.object({ id: z.string(), label: z.string(), endpoint: Endpoint, blob: z.string(), finishedAt: z.string() })),
   recovered: z.object({ from: z.literal("state.prev"), at: z.string(), accounting: z.enum(["verified", "unknown"]).optional() }).optional(),
   quarantine: z.strictObject({ path: z.string().regex(/^quarantine-\d{4}-\d{2}-\d{2}-[a-z2-7]{12}$/), nonce: z.string().regex(/^[a-z2-7]{12}$/), entries: z.number().int().nonnegative(), choice: z.enum(["pending", "fresh", "review-requested"]) }).optional(),
-  _ext: z.record(z.string(), z.unknown()).optional(),
+  _ext: ownRecord(z.unknown()).optional(),
 });
 export type State = z.infer<typeof State>;
 

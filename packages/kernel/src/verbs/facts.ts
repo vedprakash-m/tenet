@@ -75,13 +75,21 @@ export function checkInputId(ports: Ports, w: WorkContract, candidate: string): 
 const lockApplies = (l: State["locks"][number], w: WorkContract, f: Facts): boolean =>
   "provisional" in l.anchor ? l.anchor.provisional === w.id : f.lockAnchors.has(l.anchor.commit) || f.inv.entries.has(l.path);
 
+/** Current blob of each test file and baseline input. Null prototype: a path named `__proto__` is a key like any other. */
+export function currentTestHashes(
+  obligations: WorkContract["obligations"], entries: ReadonlyMap<string, { blob?: string }>,
+): Record<string, string> {
+  const testHashes: Record<string, string> = Object.create(null);
+  for (const o of obligations) if (o.testFile) testHashes[o.testFile] = entries.get(o.testFile)?.blob ?? "";
+  for (const o of obligations) for (const p of Object.keys(o.baselineInputs ?? {})) testHashes[p] = entries.get(p)?.blob ?? "";
+  return testHashes;
+}
+
 /** Assembles the pure verdict's input from the contract and what the working tree shows now. */
 export function verdictInput(ports: Ports, st: State, w: WorkContract, facts: Facts): VerdictInput {
   const { inv, att } = facts;
   const commitExists = w.git.commits.length > 0;
-  const testHashes: Record<string, string> = {};
-  for (const o of w.obligations) if (o.testFile) testHashes[o.testFile] = inv.entries.get(o.testFile)?.blob ?? "";
-  for (const o of w.obligations) for (const p of Object.keys(o.baselineInputs ?? {})) testHashes[p] = inv.entries.get(p)?.blob ?? "";
+  const testHashes = currentTestHashes(w.obligations, inv.entries);
   const humanPresent = att.human.length + att.concurrent.length + att.unexplained.length + att.mixed.filter((p) => w.keepOut.includes(p)).length > 0;
   const vetted = ports.project.hashes(Object.keys(w.vetted));
   const recipeOnly = facts.reviewPaths.length > 0 && facts.reviewPaths.every(p => Object.hasOwn(w.vetted, p) && vetted[p] === w.vetted[p]);
