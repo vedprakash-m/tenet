@@ -6,6 +6,7 @@ import type { Random } from "../core/ids.ts";
 import type { IndexSyncRecord, Obligation, State } from "../core/schemas.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import type { CapabilityCache, Descriptor } from "../core/capabilities.ts";
+import type { HostTimings, Timing } from "../core/timing.ts";
 
 export type { Random };
 export interface Clock { now(): string; ms(): number }
@@ -263,10 +264,13 @@ export interface Host {
   capabilities(): Descriptor;
   prepare?(context: CapabilityContext, cache?: CapabilityCache): void;
   cache?(): CapabilityCache;
+  callTimings?(): HostTimings;
 }
 
 export interface Ports {
   platform: NodeJS.Platform;
   root: string; version: string; store: Store; git: Git; runner: Runner; stack: Stack; clock: Clock; rand: Random;
   recipes: Recipes; project: Project; host: Host;
+  /** Current invocation snapshot; absent outside the public pipeline. */
+  timing?: () => Timing;
 }

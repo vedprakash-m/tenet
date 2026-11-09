@@ -8,6 +8,13 @@
 - Six focused controls pass locally, including the documented Windows mutation refusal. Typecheck, all lints, M0 structural coverage, 785 KB/900 KB bundle and payload verification pass. Supported-POSIX persistence controls and built scratch UAT remain pending in exact-source hosted CI; native host behavior remains unobserved.
 - Hosted head 53d6fa6 exposed seven no-op/accounting regressions in Ubuntu's 1,754-test suite. Keep absent verb state absent instead of publishing current state for a cache refresh; add a portable red/green no-op control and built repeated-open controls. The focused suite now passes seven controls; repaired-source full CI/UAT remains pending.
 - Executable/effects changes retain the solo 72-hour review window; the owner merges. Shared approved D01 capacity-only changes are included, without schema-2 activation or dependency.
+## 2026-11-07 — Report five kernel-call timing fields (NFR-05)
+
+- Add invocation-local `active`, `tool`, `provider`, `network` and `userWait` timings to newly rendered responses and journal call records. Measure active and the union of tool/check intervals with a monotonic clock; preserve exact host observations or null with unknown provenance, never estimates. Invalid or failed host observations fail explicitly.
+- Preserve historical cached response timing, legacy optional response decoding, stored schema and existing active-budget accounting. The shipped plugin does not observe provider, network or user-wait timings; no native-host qualification is claimed.
+- Files: new `core/timing.ts`, `pipeline-timing.ts` and `test/timing.test.ts`; `pipeline.ts`, `pipeline-render.ts`, `core/schemas.ts`, `ports/types.ts`, `adapters/system.ts`, `verbs/inspect.ts`, `test/trace-journal.test.ts`, `test/audit-boundaries.test.ts`, `tools/uat/uat.mjs`, both READMEs, and canonical technical/UX specifications.
+- Ten timing fixtures and existing trace/quality controls pass locally (34 tests); Windows static gates, payload verification and same-source/toolchain reproducibility pass. Full POSIX CI and built real-repository UAT remain pending. Reuses the approved D01b capacity-only commits; no separate ceiling change.
+- Hosted validation exposed four transport-refusal stubs without timing ports and two stale shared capacity controls. The refusal stubs now supply only clock/host observations and still assert no repository state creation (4/4 pass locally); the shared capacity repair `070bb23` is reused unchanged (11/11 local portability fixtures pass). Revised exact-head hosted validation remains pending.
 
 ## 2026-11-07 — Apply approved D01/D01b capacity ceilings
 

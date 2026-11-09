@@ -119,12 +119,15 @@ describe("closed registry membership", () => {
       assert.equal(isReasonCode(name), false);
     });
 
-    it(`returns a transport error for inherited verb ${name} without throwing [NFR-03]`, async () => {
+    it(`returns a transport error for inherited verb ${name} without throwing [NFR-03, NFR-05]`, async () => {
       const root = fresh();
-      // An unknown verb must not consult ports or create state.
-      const response = await runVerb({ root } as Parameters<typeof runVerb>[0], VERBS, name, {});
+      // An unknown verb needs timing observations, but no repository ports or state.
+      const response = await runVerb({ root, clock: { ms: () => 0, now: () => "2026-11-07T00:00:00.000Z" },
+        host: { capabilities: () => ({}) } } as Parameters<typeof runVerb>[0], VERBS, name, {});
       assert.equal(response.exit, 1);
       assert.equal(response.reasons[0]?.code, "unknown-verb");
+      assert.equal(response.timing?.scope, "kernel-call");
+      assert.deepEqual(readdirSync(root), []);
     });
   }
 

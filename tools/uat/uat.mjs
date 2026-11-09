@@ -28,6 +28,13 @@ const call = (root, verb, body = {}, flags = [], consentEnvelope = true) => {
  const result = spawnSync(process.execPath, [bundle, verb, ...args], { cwd: root, env, input: readsBody ? JSON.stringify(body) : '', encoding: 'utf8' });
  assert.equal(result.signal, null, result.stderr);
     const response = JSON.parse(result.stdout); assert.equal(result.status, response.exit);
+    assert.equal(response.timing.scope, 'kernel-call', '[NFR-05] built response timing scope');
+    for (const field of ['active', 'tool']) {
+        assert.equal(response.timing[field].source, 'kernel');
+        assert.ok(Number.isFinite(response.timing[field].ms) && response.timing[field].ms >= 0);
+    }
+    for (const field of ['provider', 'network', 'userWait'])
+        assert.deepEqual(response.timing[field], { ms: null, source: 'unknown', reason: 'host-not-reported' });
     if (consentEnvelope && verb === 'check' && response.questions?.some(question => question.id === 'envelope-consent')) {
         const h = body.h ?? flags.find(flag => flag.startsWith('--h='))?.slice(4);
         assert.equal(typeof h, 'string', 'check consent needs its handle');
@@ -66,7 +73,10 @@ const staticCandidate = (root, request) => {
  const h = call(root, 'open', { profile: 'feature', request, lane: 'quick' }).handle;
  assert.equal(call(root, 'decide', { h, kind: 'basis', propose: basis }).exit, 0);
  write(root, 'src/greet.test.ts', 'import { expect, it } from "vitest"; import { greet } from "./greet.ts"; it("greets", () => expect(greet("Ada")).toBe("Hello, Ada!"));\n');
- assert.equal(call(root, 'check', { h, stage: 'baseline' }).data.receipts[0].status, 'fail');
+ const baseline = call(root, 'check', { h, stage: 'baseline' });
+ assert.equal(baseline.data.receipts[0].status, 'fail');
+ assert.ok(baseline.timing.tool.ms > 0, '[NFR-05] real failed checks consume measured tool time');
+ assert.ok(baseline.timing.active.ms > 0, '[NFR-05] real calls consume measured kernel time');
  write(root, 'src/greet.ts', 'export const greet = (name: string): string => `Hello, ${name}!`;\n');
  const checked = call(root, 'check', { h, stage: 'candidate' }, ['--touched=src/greet.ts']);
  const w = Object.values(JSON.parse(readFileSync(join(root, '.tenet/state'), 'utf8')).work)[0];

@@ -9,6 +9,7 @@ import { mutationSupported } from "./core/risk.ts";
 import { mutate } from "./pipeline-mutate.ts";
 import { versionNote } from "./pipeline-version.ts";
 import { render } from "./pipeline-render.ts";
+import { callTiming } from "./pipeline-timing.ts";
 import { configurePolicy } from "./verbs/reconcile.ts";
 import { prepareCapabilities } from "./pipeline-capabilities.ts";
 import type { KernelResponse, Question, Reason, State } from "./core/schemas.ts";
@@ -85,6 +86,15 @@ function fail(ports: Ports, verb: string, e: unknown, state: State | null): Kern
 }
 
 export async function runVerb(ports: Ports, verbs: Record<string, Verb>, name: string, raw: unknown): Promise<KernelResponse> {
+  const timing = callTiming(ports);
+  try {
+    return await executeVerb({ ...ports, runner: timing.runner, timing: timing.read }, verbs, name, raw);
+  } catch (e) {
+    return fail({ ...ports, timing: () => timing.read(false) }, name, e, null);
+  }
+}
+
+async function executeVerb(ports: Ports, verbs: Record<string, Verb>, name: string, raw: unknown): Promise<KernelResponse> {
   const verb = Object.hasOwn(verbs, name) && verbs[name];
   if (!verb) return render(ports, name, { exit: 1, reasons: [{ code: "unknown-verb", message: `no verb "${name}"` }] }, null);
   const problem = inputProblem(raw);

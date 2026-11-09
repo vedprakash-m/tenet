@@ -6,6 +6,7 @@ import { DemoProposal } from "./demo.ts";
 import { ExecutionEnvelope, InFlightCall } from "./execution-envelope.ts";
 import { Policy } from "./policy.ts";
 import { CapabilityCache } from "./capabilities.ts";
+import { Timing } from "./timing.ts";
 
 export const SCHEMA_VERSION = 1 as const;
 
@@ -399,6 +400,7 @@ export const KernelResponse = z.object({
   effects: z.object({ completed: z.array(z.string()), uncertain: z.array(z.string()), recovery: z.string().optional() }).optional(),
   data: z.unknown().optional(),
   historical: z.literal(true).optional(),
+  timing: Timing.optional(),
   kernel: z.object({ version: z.string(), schemaVersion: z.literal(1) }).optional(),
 });
 export type KernelResponse = z.infer<typeof KernelResponse>;

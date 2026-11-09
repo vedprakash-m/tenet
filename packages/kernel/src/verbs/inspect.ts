@@ -71,6 +71,9 @@ export const inspect: Verb<InspectInput> = {
       case "help": return { resp: { data: {
         verbs: VERBS,
         capabilityCache: "Status shows cache provenance; doctor reads no state. Unknown host version prevents reuse.",
+        timing: "Per kernel call: active and tool/check milliseconds are measured separately. " +
+          "Provider, network and user waiting are host observations or unknown with provenance; never estimates. " +
+          "Active budget minutes remain per-contract.",
       } } };
       case "doctor": {
         const d = doctor(ports, await ports.git.probe());

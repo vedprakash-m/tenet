@@ -19,6 +19,12 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 ## Use it
 `/tenet <what you want>` builds, fixes, refactors, plans or investigates. `/tenet status`, `/tenet why` and `/tenet help` answer without starting work. `/tenet-review` reviews code without changing anything.
 
+Kernel JSON responses include five `timing` fields scoped to this kernel call:
+active work and tool/check milliseconds are measured; provider, network and user
+waiting are host observations or unknown with provenance, never estimates.
+The shipped binding does not observe host timings. Per-contract budget minutes
+remain separate; a historical retry retains the earlier call's timing.
+
 To remove it, uninstall the plugin and delete `.tenet/` in the projects where you used it.
 
 ## License

@@ -731,6 +731,7 @@ type KernelResponse<T> = {
   effects?: { completed: EffectRef[]; uncertain: EffectRef[]; recovery?: string };
   changed?: { controls?: Control[]; presentation?: Presentation; model?: ModelRecord };   // only on change
   data?: T; historical?: true;
+  timing?: Timing;                                                        // current kernel-call snapshot (§8.6); absent on legacy cached responses
   kernel?: { version: string; payloadHash: string; schemaVersion: 1 };   // on open and doctor only
 };
 type Question = {          // shaped like askQuestions input
@@ -1207,6 +1208,22 @@ All counters live in `BudgetState` (§7.2) and change only in `core/budget` (PRD
 **Deep budget preview** (RES-09): the lane change lists expected native sessions, review rounds, full-suite and workload runs and the main cost drivers in plain words, never currency.
 
 **Usage reporting** (RSC-04; RSC-07 later): status and the result show, "as of" their last reconciliation, the attempt, review-round, delegation, Tenet-launched check and active-minute counts. The response `budget` retains lane usage strings (`attempts`, `rounds`, `delegations`) and also exposes exact numeric `attemptCount`, `reviewRoundCount`, `delegationCount`, `checksLaunched` and cumulative `activeMinutesTotal` fields. Tenet tokens are labeled as Tenet-injected context only; the model record and `usage: unknown` with the reason and where to look (the Copilot usage dashboard, `chat.subagents.showCreditUsage`, GitHub usage reports and budgets) are included where available. Tenet never converts tokens into credits, requests or money and never shows an allowance it does not know. Host-supplied figures, if they ever exist, are shown with source, scope and freshness, never estimated, summed with estimates, enforced or used to switch accounts or buy capacity (RSC-03).
+
+**Timing (NFR-05; owner-approved 2026-11-07):** every newly rendered response has
+`timing: {scope: "kernel-call", active, tool, provider, network, userWait}`.
+Active and tool are `{ms: number, source: "kernel"}`. The kernel measures elapsed
+time outside and inside the union of `Runner.run` intervals respectively,
+including rejected/timed-out runs; overlapping checks count once. Git adapter
+operations remain kernel work. The monotonic clock measures elapsed intervals,
+not CPU time; the snapshot ends at rendering, before publication. External fields
+are `{ms: number, source: "host", observedAt: ISO timestamp}` from the Host port,
+or `{ms: null, source: "unknown", reason: "host-not-reported"}`. Invalid host
+observations produce an internal-error response and `reason: "host-invalid"`,
+never estimated values. The shipped plugin has no host timing observation.
+Per-call active is additional observability, not the per-contract RSC-04
+`activeMinutesTotal`; budget accrual, limits and recovery remain unchanged.
+Timing never estimates work between calls or full-session waiting. Historical
+retries (§6.4) preserve the original snapshot; legacy responses may omit it.
 
 ### 8.7 Review: manifest, design sketch, attention and chain
 
@@ -1888,6 +1905,7 @@ type CallRecord = { t: "call";                                            // `t`
   work?: string;                                                          // the contract label; absent when the call has none
   intentRevision: number;                                                 // the project intent revision the call published
   startedAt: string; durationMs: number;
+  timing?: Timing;                                                        // same per-call snapshot as the response (§8.6), absent on legacy records
   termination?: "completed" | "cancelled" | "timeout" | "crashed";       // absent on the provisional record of a started job
   checkOutcome?: "pass" | "fail" | "inconclusive" | "skipped";            // `check` calls only; the worst receipt status
   role: "unknown"; model: "unknown"; permission: "unknown";               // host-dependent: written as unknown, never guessed
