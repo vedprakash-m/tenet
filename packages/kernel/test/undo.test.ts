@@ -9,6 +9,9 @@ import { BASIS, GREET_IMPL, GREET_TEST, project, finishFixture } from "./support
 import type { Project } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
+import { enableUndoForTests } from "../src/verbs/undo.ts";
+
+enableUndoForTests();
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));

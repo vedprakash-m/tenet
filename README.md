@@ -4,6 +4,12 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 
 > **Status: preview. Nothing is qualified on a real host yet.**
 > The qualified host tuple (VS Code, the Copilot extension, the model, the operating system) is **unrecorded**. No requirement has passed qualification. Read [Status](#status) before you install.
+>
+> **Known open safety defects in this preview.** Use Tenet only on disposable projects without valuable work, sensitive data or credentials.
+> - `undo` is disabled: its path discovery can miss renamed and recreated files and overwrite your work.
+> - Consent can be applied to more than you were shown: a dirty-file answer can cover files added after the question, and a Git hook ran in a commit without recorded consent.
+> - Recovery after an interruption can remove a file that matches what Tenet meant to write, even if someone else created it, and does not always report what it did.
+> - A record key named `__proto__` can be lost when state is read, which can hide a changed support file from a check.
 
 **Source preview version:** `0.1.0-m0`. **Source:** [vedprakash-m/tenet](https://github.com/vedprakash-m/tenet). `/tenet help` reports the running kernel's version and source; compare these with the selected tag and verify payload checksums using the [release verification procedure](docs/release/release-verification.md). A matching version/source is identification, not publisher authentication.
 

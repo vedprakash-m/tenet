@@ -19,8 +19,18 @@ export interface UndoPlan {
   later: string[];
 }
 
+// Undo is disabled in this preview: its path discovery can miss renamed and recreated files and overwrite human work
+// (plan §12.3 P67, P70–P72). Both the preview and `decide undo-confirm` plan through here, so this refuses both.
+let undoEnabled = false;
+/** Test seam only: lets existing undo tests keep exercising the disabled code path. */
+export function enableUndoForTests(): void { undoEnabled = true; }
+
 /** The inverse of this work's commits, or the reason it cannot be made. Reads only; changes nothing. */
 export async function planUndo(ports: Ports, st: State, w: WorkContract): Promise<UndoPlan> {
+  if (!undoEnabled) {
+    const why = "undo is disabled in this preview because it can overwrite human work";
+    throw new KernelError("capability-missing", `${why}; revert the work's commits with Git yourself`, { exit: 2 });
+  }
   if (w.git.mode !== "git") throw new KernelError("capability-missing", "undo needs the work to be committed in a Git repository", { exit: 2 });
   if (w.git.undoneBy) throw new KernelError("undo-conflict", `this work was already reverted by ${w.git.undoneBy}`, { exit: 2 });
   const found = await ports.git.workCommits(w.label);
