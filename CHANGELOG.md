@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-08 — Integrated preview: undo disabled, record keys kept, admission cached
+
+- Merge open PRs #7, #8, #9, #11, #12, #13 and #14 into one candidate on `preview-integration`; #10's save is excluded. Conflicts were resolved by keeping both sides.
+- Disable `undo` and `decide undo-confirm` (`capability-missing`); its path discovery can overwrite human work (P67, P70–P72). The README lists the open safety defects; the skill no longer offers undo. Files: `verbs/undo.ts`, `plugin/skills/tenet/SKILL.md`, `README.md`, `tools/uat/uat.mjs`; tests `undo-disabled.test.ts`, with a test-only seam in `undo.test.ts`, `backup-accounting.test.ts` and `fixtures/crash-undo.ts`.
+- Keep record keys named `__proto__` when state is read: `ownRecord` replaces `z.record` for persisted state maps, and `currentTestHashes` builds the verdict's hash map on a null-prototype object (AC-07/AC-17/AC-27). Files: `core/schemas.ts`, `verbs/facts.ts`; test `own-record-keys.test.ts`.
+- Cache state admission by file identity in `adapters/store-fs.ts`: #14's per-read admission re-parsed state on every blob and log access and raised long-history warm p95 from 347 ms to 904 ms on CI (435 ms after this change).
+- Publish state with one full read instead of three (each read also replays the journal), re-reading only when the state file's identity changed; record the just-published files as admitted; test duplicate keys in place instead of on a copied tail in `parseUniqueRecord`. Files: `adapters/store-fs.ts`, `adapters/private-record-fs.ts`; test `unique-record.test.ts`.
+- Not qualified. Linux/macOS CI before the cache change: 1,831/1,833 tests (the two failures were the test seam, since fixed). NFR-01 warm p95 still exceeds 300 ms.
+
 ## 2026-11-07 — Cache capabilities by declared dependency identity
 
 - Bind each capability's cache key to explicit host version, plugin version, project policy and declared inputs. Reuse only unchanged entries, retain original probe provenance, and refresh optional schema-1 state through the existing mutation pipeline. Unknown host identity prevents reuse; unavailable declared inputs degrade only their dependent capability.

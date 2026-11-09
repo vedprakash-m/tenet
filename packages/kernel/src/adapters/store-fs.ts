@@ -138,13 +138,18 @@ export class FsStore implements Store {
     const terminal = readTerminal(this.p("migration-terminal.json"));
     if (terminal && terminal.outcome !== "rolled-back") blocked();
     for (const name of ["state", "state.prev"]) {
-      const st = lstatSync(this.p(name), { bigint: true, throwIfNoEntry: false });
-      const id = st && `${st.dev}:${st.ino}:${st.size}:${st.mtimeNs}:${st.ctimeNs}`;
+      const id = this.fileId(name, true);
       if (id && this.admitted.get(name) === id) continue;
       const record = admissionRecord(this.p(name));
       if (record !== null && schemaStatus(record, SCHEMA_VERSION) !== "supported") blocked();
       if (id) this.admitted.set(name, id); else this.admitted.delete(name);
     }
+  }
+
+  /** Identity of a store file; any replacement or content write changes it. `ctime` also tracks link-count changes. */
+  private fileId(name: string, ctime = false): string | null {
+    const st = lstatSync(this.p(name), { bigint: true, throwIfNoEntry: false });
+    return st ? `${st.dev}:${st.ino}:${st.size}:${st.mtimeNs}${ctime ? `:${st.ctimeNs}` : ""}` : null;
   }
 
   private inWrite<T>(context: WriteContext, fn: () => T): T {
@@ -384,19 +389,30 @@ export class FsStore implements Store {
   }
 
   private publishState(next: State) {
-    const current = this.exists() ? this.read()?.state : undefined;
+    // One full read: the state file's identity (without ctime, which linking state.prev changes) shows whether
+    // another writer replaced or edited it since; only then is it read again for the revision-conflict check.
+    const seen = this.fileId("state");
+    const before = this.exists() ? this.read() : null;
+    const current = before?.state;
     const doc = State.parse({ ...next, revision: (current?.revision ?? 0) + 1 });
     if (doc.workSeq || doc.generationSeq) this.append(accountingCheckpoint(doc, current));
     const tmp = this.p("state.tmp");
     writeSynced(tmp, JSON.stringify(doc));
     if (existsSync(this.p("state"))) {
       rmSync(this.p("state.prev.tmp"), { force: true });
-      linkSync(this.p(this.read()?.recovered ? "state.prev" : "state"), this.p("state.prev.tmp"));
+      linkSync(this.p(before?.recovered ? "state.prev" : "state"), this.p("state.prev.tmp"));
       renameSync(this.p("state.prev.tmp"), this.p("state.prev"));
     }
-    if ((this.read()?.state.revision ?? 0) !== (current?.revision ?? 0)) throw new KernelError("revision-conflict");
+    const moved = this.fileId("state") !== seen;
+    if (moved && (this.read()?.state.revision ?? 0) !== (current?.revision ?? 0)) throw new KernelError("revision-conflict");
     renameSync(tmp, this.p("state"));
     fsyncDir(this.dir);
+    // Both files were admitted before this write: state is the document just validated, state.prev a link to one
+    // admitted earlier in this transaction. Record them so the next admission does not parse them again.
+    for (const name of ["state", "state.prev"]) {
+      const id = this.fileId(name, true);
+      if (id) this.admitted.set(name, id);
+    }
     if (this.quarantined && doc.quarantine?.nonce === this.quarantined.nonce) this.finishQuarantine();
     return doc;
   }

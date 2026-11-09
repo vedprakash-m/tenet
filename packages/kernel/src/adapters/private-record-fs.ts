@@ -21,6 +21,7 @@ export function parseRecord(text: string): unknown {
 export function parseUniqueRecord(text: string): unknown {
   if (Buffer.byteLength(text, "utf8") > MAX_RECORD) throw new KernelError("unsupported-record", "a private record exceeds the 50 MB bound");
   const parsed = parseRecord(text), objects: Array<Set<string> | null> = [];
+  const colon = /\s*:/y; // a string followed by a colon is a key; tested in place rather than on a copied tail
   for (const token of text.matchAll(/"(?:[^"\\]|\\.)*"|[{}\[\]]/g)) {
     const char = token[0];
     switch (char) {
@@ -28,7 +29,8 @@ export function parseUniqueRecord(text: string): unknown {
       case "[": objects.push(null); break;
       case "}": case "]": objects.pop(); break;
       default:
-        if (/^\s*:/.test(text.slice(token.index + char.length))) {
+        colon.lastIndex = token.index + char.length;
+        if (colon.test(text)) {
           const key = JSON.parse(char) as string, keys = objects.at(-1)!;
           if (keys?.has(key)) throw new KernelError("unsupported-record", "a private record has duplicate keys");
           keys?.add(key);
