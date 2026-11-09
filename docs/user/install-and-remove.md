@@ -12,6 +12,8 @@
 
 `inspect --view doctor` remains available on unsupported platforms, but reports `ok: false`, exit 2 and the platform readiness block rather than presenting a successful editing setup. Help, status and advisory review remain available.
 
+Capability observations are keyed by host version, shipped plugin version, governing policy and each capability's declared project inputs. `inspect --view status` shows provenance and `reused`; mutating calls save matching observations in the existing local state. Read-only calls never save them. `doctor` resolves fresh declarations without reading or creating `.tenet/`. A binding may pass the exact host version through `TENET_HOST_VERSION`; when it is absent, the version is unknown and observations are not reused. This does not detect capability support from a version number or qualify a host.
+
 The kernel's helper is found by the plugin's own path, not through your `PATH`. It does run the `node` that your `PATH` resolves; that is a documented residual risk.
 
 ## Install (preview route, from source)

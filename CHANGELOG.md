@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-07 — Cache capabilities by declared dependency identity
+
+- Bind each capability's cache key to explicit host version, plugin version, project policy and declared inputs. Reuse only unchanged entries, retain original probe provenance, and refresh optional schema-1 state through the existing mutation pipeline. Unknown host identity prevents reuse; unavailable declared inputs degrade only their dependent capability.
+- Expose capability provenance in status and explain dependency declarations and stateless doctor behavior. Descriptor resolution is not a new native-host observation or qualification.
+- Files: `core/capabilities.ts`, `core/schemas.ts`, `adapters/host-plugin.ts`, new `pipeline-capabilities.ts`, pipeline/ports/wiring/status modules, descriptor and coordinator skill, three canonical specs, install help, new `capability-cache.test.ts`, and built UAT.
+- Six focused controls pass locally, including the documented Windows mutation refusal. Typecheck, all lints, M0 structural coverage, 785 KB/900 KB bundle and payload verification pass. Supported-POSIX persistence controls and built scratch UAT remain pending in exact-source hosted CI; native host behavior remains unobserved.
+- Hosted head 53d6fa6 exposed seven no-op/accounting regressions in Ubuntu's 1,754-test suite. Keep absent verb state absent instead of publishing current state for a cache refresh; add a portable red/green no-op control and built repeated-open controls. The focused suite now passes seven controls; repaired-source full CI/UAT remains pending.
+- Executable/effects changes retain the solo 72-hour review window; the owner merges. Shared approved D01 capacity-only changes are included, without schema-2 activation or dependency.
+
 ## 2026-11-07 — Apply approved D01/D01b capacity ceilings
 
 - Set the central responsibility owner to 400,000 non-whitespace characters and the kernel bundle ceiling to 900 KiB. Charge configuration, schema, budget, migration and private-record companion files to their original owners; retain the per-file, complexity, nesting and width gates.
@@ -14,6 +23,7 @@
   is created. The existing slice 0 guard is unchanged.
 - File: `packages/kernel/test/undo.test.ts`. Tags: `[CON-12, GIT-04]`.
   Local static gates pass; supported-POSIX CI is pending.
+- Files: `tools/lint-quality.ts`, `tools/quality-baseline.json`, `tools/build.ts`, `packages/kernel/test/quality-gate.test.ts`, `packages/kernel/test/invariants.test.ts`, `specs/tech-spec.md`, and this changelog. Quality-gate fixtures cover every split owner, including `verbs/inspect.ts`; supported-platform exact-head CI remains pending.
 
 ## 2026-11-07 — Extend verdict failure-boundary controls
 

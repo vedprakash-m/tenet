@@ -14,6 +14,7 @@ import { versionGate } from "./pipeline-version.ts";
 import { recover } from "./verbs/recover.ts";
 import type { Recovered } from "./verbs/recover.ts";
 import { configurePolicy, reconcileShared, settingsFor, withRequiredChecks } from "./verbs/reconcile.ts";
+import { capabilitiesState, capabilityIdentity, prepareCapabilities } from "./pipeline-capabilities.ts";
 
 type Input = Record<string, any>;
 const EFFECT_DECISIONS = ["scaffold", "dependency", "sync-index", "undo-confirm"];
@@ -159,8 +160,11 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
     return fencedByUncertainty(ports, verb, tx, current, recovered);
   const shared = current && !["open", "stop"].includes(verb.name) ? reconcileShared(ports, current) : null;
   if (shared) current = shared.state;
-  if (verb.name !== "stop") configurePolicy(ports, current);
-  held.world = verb.identity ? await verb.identity(ports, input, current) : null;
+  if (verb.name !== "stop") {
+    configurePolicy(ports, current);
+    prepareCapabilities(ports, current);
+  }
+  held.world = capabilityIdentity(ports, verb.identity ? await verb.identity(ports, input, current) : null);
   if (input.h && current) {
     const gate = await envelope(ports, verb, input, current, held.world);
     if (gate.historical) {
@@ -172,6 +176,7 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
   const plan = await verb.run(ports, current, input, { ...tx, state: current });
   addRecovery(plan, shared?.reasons ?? [], recovered);
   if (!plan.state && current !== tx.state) plan.state = current ?? undefined;
+  plan.state = capabilitiesState(ports, plan.state, verb.name);
   if (!plan.state) return { res: render(ports, verb.name, plan.resp, tx.state), plan };
   const prepared = plan.job && ownerOf(plan.state, plan.job.id)?.session.inCall;
   if (prepared?.runDir) ports.store.writeArtifact(prepared.runDir, "run.json", JSON.stringify({ prepared: true }));

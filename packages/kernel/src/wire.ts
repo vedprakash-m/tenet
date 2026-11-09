@@ -35,6 +35,6 @@ export function createPorts(cwd: string, env: Record<string, string | undefined>
   return {
     platform: process.platform,
     root, version: KERNEL_VERSION, clock: systemClock, rand: systemRandom,
-    recipes, host: new PluginHost(recipes), project: new FsProject(root), store: new FsStore(root, systemClock, systemRandom), git: new GitCli(root, runner), runner, stack: createStack(),
+    recipes, host: new PluginHost(recipes, env.TENET_HOST_VERSION), project: new FsProject(root), store: new FsStore(root, systemClock, systemRandom), git: new GitCli(root, runner), runner, stack: createStack(),
   };
 }

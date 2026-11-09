@@ -5,7 +5,7 @@ import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
 import type { Random } from "../core/ids.ts";
 import type { IndexSyncRecord, Obligation, State } from "../core/schemas.ts";
 import type { Exclusion } from "../core/exclusions.ts";
-import type { Descriptor } from "../core/capabilities.ts";
+import type { CapabilityCache, Descriptor } from "../core/capabilities.ts";
 
 export type { Random };
 export interface Clock { now(): string; ms(): number }
@@ -255,7 +255,15 @@ export interface Project {
 }
 
 /** What the host binding says the host can do; core reads capabilities, never host names (ENG-02). */
-export interface Host { capabilities(): Descriptor }
+export interface CapabilityContext {
+  pluginVersion: string; policyHash: string; at: string;
+  read(path: string): ProjectReadResult;
+}
+export interface Host {
+  capabilities(): Descriptor;
+  prepare?(context: CapabilityContext, cache?: CapabilityCache): void;
+  cache?(): CapabilityCache;
+}
 
 export interface Ports {
   platform: NodeJS.Platform;

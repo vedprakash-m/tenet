@@ -5,6 +5,7 @@ import { settingsSchema } from "./config.ts";
 import { DemoProposal } from "./demo.ts";
 import { ExecutionEnvelope, InFlightCall } from "./execution-envelope.ts";
 import { Policy } from "./policy.ts";
+import { CapabilityCache } from "./capabilities.ts";
 
 export const SCHEMA_VERSION = 1 as const;
 
@@ -315,6 +316,7 @@ export const State = z.strictObject({
   schema: z.literal(SCHEMA_VERSION), revision: z.number(), workspaceId: z.string(), tag: z.string(),
   generationSeq: z.number(), workSeq: z.number(),
   sourceOwner: z.strictObject({ work: z.string(), generation: z.number() }).optional(),
+  capabilityCache: CapabilityCache.optional(),
   project: z.object({
     intent: z.object({
       revision: z.number(),
