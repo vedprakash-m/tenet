@@ -4,6 +4,7 @@
 // A line marked `privacy-ok` is skipped. This finds likely leaks; it is not proof there are none.
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { withoutGitLocalVars } from "../packages/kernel/src/adapters/git-env.ts";
 
 const RULES: Array<[string, RegExp]> = [
   ["a private key", /-----BEGIN [A-Z ]*PRIVATE KEY-----/],
@@ -40,7 +41,7 @@ export function scanDiff(diff: string): Finding[] {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const i = process.argv.indexOf("--range");
   const args = i > 0 ? ["log", "-p", "--format=", "-U0", process.argv[i + 1]!] : ["diff", "--cached", "-U0"];
-  const findings = scanDiff(execFileSync("git", args, { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 }));
+  const findings = scanDiff(execFileSync("git", args, { env: withoutGitLocalVars(process.env), encoding: "utf8", maxBuffer: 256 * 1024 * 1024 }));
   if (findings.length) {
     console.error(`privacy-check: ${findings.length} possible leak(s)\n${findings.map((f) => `${f.file}:${f.line}: ${f.what}`).join("\n")}`);
     process.exit(1);

@@ -5,6 +5,8 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { cleanup } from "./helpers.ts";
+import { enableCleanupForTests } from "../src/decisions/cleanup.ts";
+enableCleanupForTests();
 import { project } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 

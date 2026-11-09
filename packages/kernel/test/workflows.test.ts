@@ -118,6 +118,21 @@ describe("commit hooks (TS §10.3)", () => {
     assert.ok(consents.some((item) => item.kind === "envelope"));
   });
 
+  it("asks again before a later explicit commit when the hook question was declined, and runs no hook until consent [GIT-12]", async () => {
+    const p = fresh();
+    addHook(p, "#!/bin/sh\necho ran > hook-ran.txt\n");
+    const { h } = await toGreen(p);
+    const ask = await finishFixture(p, { h });
+    assert.equal(ask.questions![0]!.id, "hook-consent");
+    await p.call("decide", { h, kind: "hook-consent", answers: { "hook-consent": "keep-uncommitted" } });
+    const head = p.git("rev-parse", "HEAD");
+    const later = await p.call("commit", { h, subject: "Commit it after all" });
+    assert.equal(later.exit, 3, JSON.stringify(later));
+    assert.equal(later.questions![0]!.id, "hook-consent");
+    assert.equal(p.git("rev-parse", "HEAD"), head, "nothing was committed");
+    assert.equal(existsSync(join(p.root, "hook-ran.txt")), false, "the hook did not run");
+  });
+
   it("keeps the commit and reports a path a hook staged that is not Tenet's", async () => {
     const p = fresh();
     addHook(p, "#!/bin/sh\necho x > made-by-hook.txt\ngit add made-by-hook.txt\n");

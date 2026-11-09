@@ -1,5 +1,6 @@
 // Git argument arrays (TS §10). Inspection disables programs and hashes dirty blobs in Node.
 // Only exact, locked post-commit sync writes the user's index.
+import { withoutGitLocalVars } from "./git-env.ts";
 import { outputMatcher } from "../core/outputs.ts";
 import { repoLayout } from "./git-layout.ts";
 import { execFile } from "node:child_process";
@@ -216,7 +217,7 @@ export class GitCli implements Git {
     // Inspection disables configured filter programs.
     const neutral = o.filters ? [] : await this.neutralArgs();
     const env = {
-      ...process.env,
+      ...withoutGitLocalVars(process.env),
       GIT_TERMINAL_PROMPT: "0",
       ...(o.inspect === false ? {} : { GIT_OPTIONAL_LOCKS: "0" }),
       ...o.env,

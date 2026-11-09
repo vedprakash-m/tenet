@@ -53,7 +53,7 @@ async function blockers(ports: Ports, st: State, w: WorkContract, facts: Facts):
       changedSinceCheck(w, facts.inv, facts.tenetPaths).length) {
     throw new KernelError("stale", "run a full successful check before committing", { exit: 2 });
   }
-  if (probe.hooks && !st.consents.some((c) => c.kind === "hooks" && c.configHash === probe.hooks) && !w.git.noCommit) {
+  if (probe.hooks && !st.consents.some((c) => c.kind === "hooks" && c.configHash === probe.hooks)) {
     const q = hookQuestion(probe.hooks);
     return {
       state: { ...st, pending: [...st.pending.filter((p) => p.id !== q.id), q] },
@@ -67,7 +67,7 @@ async function blockers(ports: Ports, st: State, w: WorkContract, facts: Facts):
     };
   }
   const filters = await ports.git.filterGate();
-  if (filters && !st.consents.some((c) => c.kind === "filters" && c.configHash === filters.hash) && !w.git.noCommit) {
+  if (filters && !st.consents.some((c) => c.kind === "filters" && c.configHash === filters.hash)) {
     const q = filterQuestion(filters);
     return {
       state: { ...st, pending: [...st.pending.filter((p) => p.id !== q.id), q] },

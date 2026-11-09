@@ -14,7 +14,7 @@ export function dirtyQuestion(paths: readonly string[]): Question {
   const sorted = [...paths].sort();
   return question({
     id: "dirty-overlap", header: "Your edits", bind: { factsHash: factsHash(sorted) },
-    question: `You have uncommitted changes in ${sorted.slice(0, 3).join(", ")}${sorted.length > 3 ? ` and ${sorted.length - 3} more` : ""}, which this work needs to edit. What should happen to them?`,
+    question: `You have uncommitted changes in ${sorted.join(", ")}, which this work needs to edit. What should happen to them?`,
     options: [
       { label: "Edit in place, keep mine out of the commit", description: "I edit the file on top of your changes; the commit holds only my other files and your changes stay uncommitted.", recommended: true },
       { label: "Include them in my commit", description: "Your changes and mine in these files are committed together." },

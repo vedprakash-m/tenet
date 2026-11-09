@@ -1,3 +1,4 @@
+import { dropGitLocalVars } from "../src/adapters/git-env.ts";
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -7,6 +8,7 @@ import { FsStore } from "../src/adapters/store-fs.ts";
 import { emptyState } from "../src/core/state.ts";
 
 // Tests never depend on the developer's own Git configuration: identity is set per repository, nothing else is read.
+dropGitLocalVars(process.env);
 process.env.GIT_CONFIG_GLOBAL = "/dev/null";
 process.env.GIT_CONFIG_NOSYSTEM = "1";
 

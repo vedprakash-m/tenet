@@ -1,6 +1,7 @@
 // Reference fixtures for the §4.4.3 budgets (NFR-01, AC-19): small, large and long-history repositories.
 // Nothing is committed: each is generated from the numbers below, so two runs give the same HEAD. The sizes are a
 // proposal until the owner freezes them (PRD Q-06); changing one changes what "frozen" means for every stored result.
+import { withoutGitLocalVars } from "../packages/kernel/src/adapters/git-env.ts";
 import { execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 
@@ -25,7 +26,7 @@ const IDENT = "Tenet Bench <bench@example.test>";
 const FIRST_COMMIT_AT = 1_700_000_000;
 
 export const gitEnv = (): NodeJS.ProcessEnv => ({
-  ...process.env, GIT_CONFIG_GLOBAL: process.platform === "win32" ? "NUL" : "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
+  ...withoutGitLocalVars(process.env), GIT_CONFIG_GLOBAL: process.platform === "win32" ? "NUL" : "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
 });
 
 const pathOf = (n: number) => `d${Math.floor(n / PER_DIR)}/f${n % PER_DIR}.ts`;
