@@ -1,6 +1,4 @@
 // The small decision kinds: each is a few lines over one record. Kept together; split a kind out when it grows.
-import { CATALOG, isSettingKey, unknownSetting, validateSetting } from "../core/config.ts";
-import type { Scope } from "../core/config.ts";
 import { KernelError } from "../core/errors.ts";
 import { reason } from "../core/reasons.ts";
 import type { BasisElement, Finding, State, WorkContract } from "../core/schemas.ts";
@@ -184,33 +182,6 @@ export const branchSwitch: Decision = {
     const base = work.git.start.branch ?? "";
     if (switchFacts(base, dirty) !== q.bind.factsHash) throw new KernelError("revision-conflict", "your uncommitted files changed since the question was asked", { exit: 2 });
     return { state: withWork({ ...state, pending: rest }, { ...work, git: { ...work.git, switchConsent: q.bind.factsHash } }), resp: { work: work.id, next: [nx("integrate", "Integrate again; the switch is agreed.", true)] } };
-  },
-};
-
-/** A setting from the typed catalog: set for this task or this project, or reset. A change to what is already in force is no change (PRD §7.5). */
-export const config: Decision = {
-  kind: "config",
-  run({ state, work, input }) {
-    const key = input.target ?? "";
-    if (!isSettingKey(key)) throw new KernelError("restriction-key-unknown", unknownSetting(key), { exit: 2 });
-    const body = (input.propose ?? {}) as { value?: unknown; scope?: Scope; reset?: boolean };
-    const scope: Scope = body.scope ?? CATALOG[key].scopes[0] ?? "project";
-    const v = validateSetting(key, body.reset === true ? CATALOG[key].default : body.value, scope);
-    if (!v.ok) throw new KernelError("restriction-key-unknown", v.message, { exit: 2 });
-    if (body.reset === true) v.value = undefined;
-    const held = scope === "task" ? work.settings ?? {} : state.config.local;
-    const { [key]: had, ...rest } = held;
-    const hasConfigured = (key === "commands" || key === "required_checks") && v.value && Object.keys(v.value).length;
-    const data = {
-      setting: key,
-      scope,
-      ...(v.value === undefined ? { reset: true } : { value: v.value }),
-      ...(hasConfigured ? { limits: ["Stored declaration only: configured execution is unavailable; checks and checked-local are blocked."] } : {}),
-    };
-    if (JSON.stringify(had) === JSON.stringify(v.value)) return { resp: { work: work.id, data: { ...data, changed: false } } };
-    const next = v.value === undefined ? rest : { ...rest, [key]: v.value };
-    const out = scope === "task" ? withWork(state, { ...work, settings: next }) : withWork({ ...state, config: { revision: state.config.revision + 1, local: next } }, work);
-    return { state: out, resp: { work: work.id, data: { ...data, changed: true } } };
   },
 };
 

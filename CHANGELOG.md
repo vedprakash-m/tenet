@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-10 — Settings changes: read-back and confirmation before loosening
+
+- `decide config` now returns `data.interpreted`: the setting, scope, effective value before and after, when it takes effect (PRD §7.6) and the call that undoes it. A project change that loosens a protected path, exclusion, required check or dependency field, alters an existing required check, or changes a command now returns a `config-confirm` question (exit 3) and saves nothing; repeating the call with `--answer config-confirm=confirm` saves it, and `keep` closes the question. Tightening and preferences save at once. Comparison is on effective values, so removing a project copy of a path the shared policy still protects needs no question (CFG-01). The config decision moved to its own file. Files: `core/config.ts`, `decisions/config.ts` (from `decisions/simple.ts`), `decisions/index.ts`; tests `config-confirm.test.ts`, `config.test.ts`.
+
 ## 2026-11-10 — Demo path: screenshots for ui changes
 
 - `finish` demo proposals can now reference a screenshot as `{exampleId, path}`: an image (`.png`, `.jpg`, `.jpeg`, `.webp`) that the example's own check declares in `outputs` and that exists. `data.demo.screenshots` lists it with its SHA-256 and `verification: "declared-check-output-not-inspected"`; Tenet never inspects what it shows. Anything else is listed in `unavailable` (RES-05). The build skill now tells the coordinator how to send the demo, and `inspect help` names it. Files: `core/demo.ts`, `verbs/inspect.ts`, `plugin/skills/tenet-build/SKILL.md`; test `result-demo.test.ts`.

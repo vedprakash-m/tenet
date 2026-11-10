@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import fc from "fast-check";
 import { CATALOG, effectiveSettings, resolveSetting, validateSetting } from "../src/core/config.ts";
 import type { Layers } from "../src/core/config.ts";
-import { config } from "../src/decisions/simple.ts";
+import { config } from "../src/decisions/config.ts";
 import { KernelError } from "../src/core/errors.ts";
 import { emptyState, newContract } from "../src/core/state.ts";
 import type { Ports, Tx } from "../src/ports/types.ts";

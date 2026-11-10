@@ -18,7 +18,8 @@ import { basis } from "./basis.ts";
 import { undoConfirm } from "./undo.ts";
 import { scaffold } from "./scaffold.ts";
 import { modelLimit } from "./model-limit.ts";
-import { acceptance, branchSwitch, config, dirtyOverlap, disposition, repairLock, syncIndex, unexplained } from "./simple.ts";
+import { config } from "./config.ts";
+import { acceptance, branchSwitch, dirtyOverlap, disposition, repairLock, syncIndex, unexplained } from "./simple.ts";
 import type { Decision } from "./types.ts";
 
 export const DECISIONS: Record<string, Decision> = Object.fromEntries([
