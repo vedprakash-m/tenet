@@ -587,9 +587,9 @@ describe("injected failure 1: a human's edits on the files Tenet needs", () => {
     const o = await p.call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts", "src/note.ts"], lane: "standard" });
     assert.equal(o.questions![0]!.id, "dirty-overlap");
     const h = o.handle!;
-    await p.call("decide", { h, kind: "basis", propose: BASIS });
     const left = await p.call("decide", { h, kind: "dirty-overlap", answers: { "dirty-overlap": "leave-out" } });
     assert.equal(left.exit, 0, JSON.stringify(left));
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
     p.write("src/greet.test.ts", GREET_TEST);
     await p.call("check", { h, stage: "baseline" });
     const refused = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts", "src/note.ts"] });
