@@ -4,6 +4,7 @@
 // the project files arrive through a reader function.
 import { z } from "zod";
 import { basisHashOf } from "./basis-build.ts";
+import { glob } from "./exclusions.ts";
 import { redact } from "./redact.ts";
 import type { BasisElement } from "./schemas.ts";
 import type { ProjectReadResult } from "../ports/types.ts";
@@ -11,6 +12,9 @@ import type { ProjectReadResult } from "../ports/types.ts";
 /** The most a documentation or manifest source may be: a trusted kernel limit, never taken from the input. */
 export const DEMO_READ_BYTES = 64 * 1024;
 const MAX_PROPOSAL_BYTES = 32 * 1024;
+/** The largest screenshot the kernel reads to confirm it exists and to hash it. */
+export const SCREENSHOT_BYTES = 8 * 1024 * 1024;
+const IMAGE = /\.(?:png|jpe?g|webp)$/i;
 
 const UNSAFE = /[\u0000-\u001f\u007f-\u009f]/;
 const LONE_SURROGATE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/;
@@ -21,7 +25,6 @@ const RelPath = Text(200).refine(
   "must be a repository-relative path without parent traversal",
 );
 const ExampleId = z.string().max(200).regex(/^EX-\d+-[a-z0-9]+\.\d+$/, "must be a confirmed example id");
-const RefId = z.string().max(200).regex(/^[A-Za-z0-9][A-Za-z0-9:._-]*$/, "must be an identifier");
 
 const CommandSource = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("package-script"), path: RelPath, script: Text(100) }),
@@ -40,13 +43,13 @@ export const DemoProposal = z.strictObject({
   steps: z.array(z.strictObject({
     exampleId: ExampleId, instruction: Text(500).refine((s) => s.trim() !== "", "must not be blank"),
   })).max(60),
-  screenshots: z.array(z.strictObject({ receiptId: RefId, exampleId: ExampleId, attachmentId: RefId })).max(5),
+  screenshots: z.array(z.strictObject({ exampleId: ExampleId, path: RelPath })).max(5),
 }).superRefine((p, ctx) => {
   const problem = (message: string) => ctx.addIssue({ code: "custom", message });
   if (Buffer.byteLength(JSON.stringify(p)) > MAX_PROPOSAL_BYTES) problem("a demo proposal is at most 32 KiB");
   if (duplicate(p.commands.map(commandKey))) problem("a command source is named twice");
   if (duplicate(p.steps.map((s) => s.exampleId))) problem("an example has two steps");
-  if (duplicate(p.screenshots.map((s) => s.attachmentId))) problem("an attachment is selected twice");
+  if (duplicate(p.screenshots.map((s) => s.path))) problem("a screenshot is selected twice");
   const stepped = new Set(p.steps.map((s) => s.exampleId));
   if (p.screenshots.some((s) => !stepped.has(s.exampleId))) problem("a screenshot must belong to an example that has a step");
   if (p.surface === "internal" && (p.commands.length || p.steps.length || p.screenshots.length))
@@ -62,9 +65,7 @@ export interface Demo {
   surface: "ui" | "use";
   run: Array<{ instruction: string; cwd: string; source: CommandSource; verification: "source-checked-not-executed" }>;
   steps: Array<{ exampleId: string; text: string }>;
-  screenshots: Array<{
-    exampleId: string; receiptId: string; attachmentId: string; path: string; verification: "run-attached-presentation";
-  }>;
+  screenshots: Array<{ exampleId: string; path: string; sha256: string; verification: "declared-check-output-not-inspected" }>;
   unavailable: Unavailable[];
 }
 
@@ -158,8 +159,27 @@ function exampleSteps(p: DemoProposal, c: DemoContext, out: Unavailable[]): Demo
 }
 
 /**
+ * Screenshots: an image file that the example's own check declares as an output (EVD-09) and that exists now. The kernel
+ * hashes it but never looks at what it shows; that it shows the example is the check's and the coordinator's claim.
+ */
+function screenshotEntries(p: DemoProposal, c: DemoContext, get: DemoReader, out: Unavailable[]): Demo["screenshots"] {
+  const shots: Demo["screenshots"] = [];
+  const bound = new Set(c.basis?.elementIds ?? []);
+  for (const s of p.screenshots) {
+    const example = c.elements.find((e) => e.id === s.exampleId && e.kind === "example" && bound.has(e.id));
+    const declared = (example?.outputs ?? []).some((g) => glob(g).test(s.path));
+    if (!IMAGE.test(s.path) || !declared) { out.push({ part: "screenshot", ref: s.path, reason: "unsupported" }); continue; }
+    const read = get(s.path, SCREENSHOT_BYTES);
+    if (read.status !== "available") out.push({ part: "screenshot", ref: s.path, reason: "artifact-unavailable" });
+    else shots.push({ exampleId: s.exampleId, path: s.path, sha256: read.sha256, verification: "declared-check-output-not-inspected" });
+  }
+  if (p.surface === "ui" && !shots.length && !p.screenshots.length) out.push({ part: "screenshot", reason: "not-supplied" });
+  return shots;
+}
+
+/**
  * The demo block for a proposal, or none for an internal declaration. Applicability is the coordinator's declaration: until a
- * change assessment exists (QLT-11) the kernel cannot certify it, and says so. No screenshot can be referenced yet (RD-3, RD-4).
+ * change assessment exists (QLT-11) the kernel cannot certify it, and says so.
  */
 export function buildDemo(p: DemoProposal, c: DemoContext, read: DemoReader): Demo | undefined {
   if (p.surface === "internal") return undefined;
@@ -169,8 +189,7 @@ export function buildDemo(p: DemoProposal, c: DemoContext, read: DemoReader): De
   const run = runEntries(p.commands, c, get, out);
   if (!p.commands.length) out.push({ part: "run", reason: "not-supplied" });
   const steps = exampleSteps(p, c, out);
-  if (p.screenshots.length) for (const s of p.screenshots) out.push({ part: "screenshot", ref: s.attachmentId, reason: "unsupported" });
-  else if (p.surface === "ui") out.push({ part: "screenshot", reason: "not-supplied" });
+  const screenshots = screenshotEntries(p, c, get, out);
   out.push({ part: "applicability", reason: "applicability-unverified" });
-  return { surface: p.surface, run, steps, screenshots: [], unavailable: out };
+  return { surface: p.surface, run, steps, screenshots, unavailable: out };
 }

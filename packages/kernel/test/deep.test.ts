@@ -15,6 +15,7 @@ async function deepGreen(): Promise<{ p: Project; h: string; green: Awaited<Retu
   const p = project();
   roots.push(p.root);
   const h = (await p.call("open", { profile: "feature", request: "add a greeting", scopePaths: ["src/greet.ts"], lane: "deep" })).handle!;
+  await p.call("decide", { h, kind: "model-unqualified-for-deep", answers: { "model-unqualified-for-deep": "continue" } });
   await p.call("decide", { h, kind: "basis", propose: BASIS });
   p.write("src/greet.test.ts", GREET_TEST);
   await p.call("check", { h, stage: "baseline" });

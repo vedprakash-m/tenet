@@ -13,7 +13,7 @@ In every skill, `tenet <verb> [positional] [--flag value]` is shorthand: never t
 | Verb | Use |
 |---|---|
 | `tenet open <profile> --request <text> --scope-paths <paths>` | Start a contract. Profiles: `feature`, `bug`, `refactor`, `fix` (needs `findings`), `investigate`, `plan`, `prototype` (with `--no-git` in a folder the user chose not to put under Git), `promote` (see below). Assess all six change-risk dimensions; recommend the lane from the risk and honor user changes within its floor. Ordinary features default to Standard; actual edits can raise the floor Add `--model <name>` to `open` and to `findings` only when the host reports the model; never guess it. |
-| `tenet decide <kind> --h <handle>` | Record a decision. Kinds: `basis`, `scaffold`, `sync-index`, `config`, `branch-switch`, `undo-confirm`, `abandon-confirm`, `takeover-check`, `dirty-overlap`, `unexplained`, `hook-consent`, `filter-consent`, `envelope-consent`, `decline`, `extend`, `acceptance`, `disposition`, `repair-lock`, `overview`, `plan`, `grant`, `decision-record`, `dependency`, `adopt` (`--target intent` or `policy`; previews the proposed adoption before confirmation), `hardening`, `lesson`, `forget`, `cleanup`, `version-reconcile` (continue repins current versions; stop parks the work). |
+| `tenet decide <kind> --h <handle>` | Record a decision. Kinds: `basis`, `scaffold`, `sync-index`, `config`, `branch-switch`, `undo-confirm`, `abandon-confirm`, `takeover-check`, `dirty-overlap`, `unexplained`, `hook-consent`, `filter-consent`, `envelope-consent`, `decline`, `extend`, `acceptance`, `disposition`, `repair-lock`, `overview`, `plan`, `grant`, `decision-record`, `dependency`, `adopt` (`--target intent` or `policy`; previews the proposed adoption before confirmation), `hardening`, `lesson`, `forget`, `cleanup`, `version-reconcile` (continue repins versions; stop parks), `model-unqualified-for-deep`. |
 | `tenet check --h <handle> --stage candidate` | Run the obligations. `--stage baseline` for the planned red, `--targeted` while iterating, `--touched <paths>` for every file you edited |
 | `tenet packet reviewer --h <handle> --retry` | A fresh manifest attempt. `packet handoff` and `packet resume` read the state back |
 | `tenet packet analyst --h <handle> --analyst-role <analyst-role> --question <text>` | A read-only researcher, architect or security assignment; no basis needed first. Several may be live at once on the same revision |
@@ -52,7 +52,7 @@ Follow the kernel's `required` action or an allowed alternative.
 ## The four shapes
 Messages: kickoff, question, check-in or report. Lead line first; Markdown except copyable commands. Number choices with "(recommended)"; one table maximum.
 
-**Truth rules.** State evidence-backed claims with their scope and limits. Use literal language, without filler or flourish. Never write "production-ready", "secure", "100%" or "fully tested" <!-- lint-ok -->. Resolve factual disagreements by comparing evidence; present normative product or risk choices as options with a recommendation.
+**Truth rules.** State evidence-backed claims with their scope and limits. Use literal language, no filler. Never write "production-ready", "secure", "100%" or "fully tested" <!-- lint-ok -->. Resolve factual disagreements by comparing evidence; present normative product or risk choices as options with a recommendation.
 
 **Why.** 10 lines max: effective value, source, overrides, limits, how to change. For `inspect why`, quote `data.assurance`, name `data.scope`, and ground `controls[]` (`control`, `class`, `note`). Never upgrade assurance or imply more than these fields.
 
@@ -77,13 +77,13 @@ Authority and dependencies. When `check` returns `authority-needed` with a `gran
 |---|---|
 | "pause" | `tenet stop pause --h <handle>`: "Paused after the check. Say 'continue' any time." |
 | "cancel" | `tenet stop cancel --h <handle>`: stops running checks; nothing is rolled back; report what remains |
-| "skip the tests" or "skip the review" | `tenet decide decline --h <handle> --target tests` (or `review`) `--quote <their words>`, then proceed; say once the result will read "Built, not fully checked" and name the declined step |
+| "skip the tests" or "skip review" | `tenet decide decline --h <handle> --target tests` (or `review`) `--quote <their words>`, then proceed; say once it will read "Built, not fully checked" and name the declined step |
 | `check` refuses with `budget-exhausted` and "Active work time" | Tell the user what is done and what remains, propose the time named in `next`, and on yes run `tenet decide extend --h <handle> --quote <their-words>`; then check again |
 | "don't commit" | `tenet finish --no-commit --h <handle>` for this task |
 | "be brief", "explain more" | Change presentation for this task. With "always" or "in this project", run `tenet decide config --h <handle> --target <setting>` with `{"propose": {"value": "...", "scope": "project"}}`, then state value, scope and undo. Ask before saving an inferred preference |
 | "fix 1 and 3" | `tenet open fix` with JSON stdin `{"profile":"fix","request":"fix findings 1 and 3","findings":[{"n":1,"severity":"major","location":{"path":"src/a.ts","line":4},"claim":"…","evidence":"…"}]}`: exactly the findings the user named, copied from the review. Changing a file they do not name asks for a disposition |
 | "make it smaller" | Split into plan steps |
-| "why …?" | `tenet inspect why --h <handle>` |
+| "why …?" | `tenet inspect why --h <handle>`; for a setting `tenet inspect --view settings --topic <key>` |
 
 Ambiguous words resolve to the safe meaning:
 
@@ -96,8 +96,8 @@ Ambiguous words resolve to the safe meaning:
 | "continue" | Resume bounded Tenet work; never answers a host prompt |
 
 ## Git, the working tree and continuity
-Unrelated dirty files are left alone without a question. A dirty file the work must edit is a `dirty-overlap` question; answer `wait` (then end the turn), `include` or `leave-out`. Files you did not declare and the kernel cannot explain come back as an `unexplained` question at finish; declare edits with `--touched` and it stays rare. Commit hooks, and Git filters that apply to the files, are asked about once, right before the first commit, never at kickoff (`hook-consent`, `filter-consent`). Reading never runs a filter, so the note `filters-not-run` at kickoff is a limit to mention once, not a question.
-After an interruption or compaction run `tenet packet resume --h <handle>` and re-read only what the next action needs. Say what changed since, one line if nothing did.
+Unrelated dirty files are left alone without a question. A dirty file the work must edit is a `dirty-overlap` question; answer `wait` (then end the turn), `include` or `leave-out`. Files you did not declare and the kernel cannot explain come back as an `unexplained` question at finish; declare edits with `--touched` and it stays rare. Commit hooks, and Git filters that apply to the files, are asked about once, right before the first commit, never at kickoff (`hook-consent`, `filter-consent`). Reading never runs a filter; mention the kickoff note `filters-not-run` once, as a limit.
+After an interruption or compaction run `tenet packet resume --h <handle>` and re-read only what the next action needs. Say what changed since in one line.
 
 `stop --mode abandon` previews a destructive close in chat. End the turn; on confirmation run `tenet decide abandon-confirm --h <handle> --answer abandon-confirm=abandon`, or `--answer abandon-confirm=cancel` to keep it. Files and commits stay unchanged; never answer this gate for the user.
 

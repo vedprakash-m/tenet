@@ -19,6 +19,7 @@ import { outputsProblem } from "./check-outputs.ts";
 import { nx, withWork, workOf } from "./common.ts";
 import { toolchainOf } from "./check-rerun.ts";
 import { dirtyQuestion, leftOutChanged, settleCleaned, undecidedDirty } from "./dirty.ts";
+import { modelQuestion, needsModelAnswer } from "./model-limit.ts";
 import { checkInputId, gather, unauthorizedEdits, worldDigest } from "./facts.ts";
 import { settingsFor, unsupportedExecution } from "./reconcile.ts";
 
@@ -165,6 +166,10 @@ export const check: Verb<CheckInput> = {
         [reason("authority-needed", ungranted.slice(0, 3).join(", "))],
         "Ask the user; their words authorize the edits, or undo them."
       );
+    if (needsModelAnswer(w)) {
+      const why = "Ask the user: continue Deep work with this limitation, or pause.";
+      return ask(cur, w, modelQuestion(w), [reason("model-unqualified-for-deep", "the model is not qualified for Deep work")], why);
+    }
 
     const shape = shapeRun(ports, w, input, facts);
     const envelopeGate = checkEnvelopeGate(ports, cur, w, shape);

@@ -319,6 +319,7 @@ export const WorkContract = z.object({
   includeDirty: z.array(z.string()), // human-dirty files the user chose to include in Tenet's commit
   keepOut: z.array(z.string()), // human-dirty files Tenet never commits
   leaveOut: z.array(z.string()).optional(), // human-dirty files the user told Tenet not to edit at all (also in keepOut)
+  modelAck: z.string().optional(), // the model facts the user chose to continue Deep work with (RSC-08)
   budget: BudgetState,
   acceptance: z.enum(["pending", "accepted", "rejected", "accepted-with-residual-risk"]),
   assessment: ownRecord(z.enum(["low", "high"])),
