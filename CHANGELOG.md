@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-09 — Dirty-file choices: wait, include, leave out
+
+- The `dirty-overlap` question now offers the UX J-03b choices: `wait` (recommended; records nothing, and a file the user committed or set aside meanwhile stops being human-dirty at the next check), `include` (the named files are committed with the work), and `leave-out` (Tenet neither edits nor commits the file; a check that finds it declared or changed is refused with `attribution-mixed-file`). The legacy `keep-out` answer is still accepted. Owner decision 2026-11-09: consented inclusion of named files is allowed; PRD §5.12 now says so, matching the UX and Tech specs (P47). Files: `verbs/dirty.ts`, `verbs/check.ts`, `decisions/simple.ts`, `core/schemas.ts` (optional `leaveOut`), `plugin/skills/tenet/SKILL.md`, `README.md`, `specs/PRD.md`; tests `dirty-overlap-bind.test.ts`, `scenarios.test.ts`.
+
 ## 2026-11-09 — Preview safety fixes: Git variables, consent binding, cleanup removal
 
 - Ignore Git's repository-local variables (`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE` and the rest of `git rev-parse --local-env-vars`, any case) in the kernel process, `GitCli`, the bench fixtures, the privacy check and the test helpers, so an inherited value cannot point them at another repository (P75, P77, P78). Files: `adapters/git-env.ts`, `adapters/git-cli.ts`, `wire.ts`, `main.ts`, `tools/bench-fixtures.ts`, `tools/privacy-check.ts`, `test/helpers.ts`; test `git-env.test.ts`.

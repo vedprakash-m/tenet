@@ -18,7 +18,7 @@ import { execute } from "./check-execute.ts";
 import { outputsProblem } from "./check-outputs.ts";
 import { nx, withWork, workOf } from "./common.ts";
 import { toolchainOf } from "./check-rerun.ts";
-import { dirtyQuestion, undecidedDirty } from "./dirty.ts";
+import { dirtyQuestion, leftOutChanged, settleCleaned, undecidedDirty } from "./dirty.ts";
 import { checkInputId, gather, unauthorizedEdits, worldDigest } from "./facts.ts";
 import { settingsFor, unsupportedExecution } from "./reconcile.ts";
 
@@ -130,7 +130,14 @@ export const check: Verb<CheckInput> = {
         resp: { work: w0.id, exit: 3, questions: cur.pending, next: [nx("ask", "Answer the open question first.", true)] },
       };
 
-    const w = declare(w0, input);
+    const declared = declare(w0, input);
+    let facts = await gather(ports, declared);
+    const w = settleCleaned(declared, new Set(facts.att.changed));
+    if (w !== declared) facts = await gather(ports, w);
+    const leftOut = leftOutChanged(w, (p) => facts.inv.entries.get(p)?.blob);
+    if (leftOut.length) {
+      throw new KernelError("attribution-mixed-file", `${leftOut.join(", ")} changed, but the user asked to leave it out; restore it or ask the user`, { exit: 2 });
+    }
     const undecided = undecidedDirty(w);
     if (undecided.length)
       return ask(
@@ -140,7 +147,6 @@ export const check: Verb<CheckInput> = {
         [reason("attribution-mixed-file", undecided.join(", "))],
         "Ask the user what happens to their edits."
       );
-    const facts = await gather(ports, w);
     const unusable = await outputsProblem(ports, w);
     if (unusable) refuse("capability-missing", unusable);
     const linked = inputs.filter((path) => facts.inv.entries.get(path)?.mode === "120000");

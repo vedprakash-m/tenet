@@ -7,7 +7,6 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 >
 > **Known open safety defects in this preview.** Use Tenet only on disposable projects without valuable work, sensitive data or credentials.
 > - `undo` is disabled: its path discovery can miss renamed and recreated files and overwrite your work.
-> - The question about your uncommitted edits offers only "edit in place" or "include"; the specified "wait" and "leave this file out" choices are missing.
 > - Recovery after an interruption can remove a file that matches what Tenet meant to write, even if someone else created it, and does not always report what it did.
 > - Cleanup of run files only previews; removing them is disabled because it could remove files Tenet did not create.
 

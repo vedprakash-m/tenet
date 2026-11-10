@@ -317,7 +317,8 @@ export const WorkContract = z.object({
   vetted: ownRecord(z.string()), // recipe files written by a scaffold: path to sha256, exempt from attention while unchanged
   touched: z.array(z.object({ path: z.string(), hashAtLastCheck: z.string().optional() })),
   includeDirty: z.array(z.string()), // human-dirty files the user chose to include in Tenet's commit
-  keepOut: z.array(z.string()), // human-dirty files Tenet edits in place and never commits
+  keepOut: z.array(z.string()), // human-dirty files Tenet never commits
+  leaveOut: z.array(z.string()).optional(), // human-dirty files the user told Tenet not to edit at all (also in keepOut)
   budget: BudgetState,
   acceptance: z.enum(["pending", "accepted", "rejected", "accepted-with-residual-risk"]),
   assessment: ownRecord(z.enum(["low", "high"])),

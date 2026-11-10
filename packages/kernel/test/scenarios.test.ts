@@ -557,6 +557,47 @@ describe("injected failure 1: a human's edits on the files Tenet needs", () => {
     assert.match(p.git("show", "HEAD:src/greet.ts"), /my own work in progress/, "included by the user's choice, byte for byte");
   });
 
+  it("waits while the user commits their edits, then edits the file without asking again [GIT-10]", async () => {
+    const p = fresh();
+    p.write("src/greet.ts", "// my own work in progress\nexport const greet = (_name: string): string => '';\n");
+    const o = await p.call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts"], lane: "standard" });
+    assert.equal(o.questions![0]!.id, "dirty-overlap");
+    const h = o.handle!;
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    const waited = await p.call("decide", { h, kind: "dirty-overlap", answers: { "dirty-overlap": "wait" } });
+    assert.equal(waited.exit, 0, JSON.stringify(waited));
+    p.git("add", "src/greet.ts");
+    p.git("commit", "-qm", "my own work");
+    p.write("src/greet.test.ts", GREET_TEST);
+    const base = await p.call("check", { h, stage: "baseline" });
+    assert.notEqual(base.questions?.[0]?.id, "dirty-overlap", JSON.stringify(base));
+    p.write("src/greet.ts", `// my own work in progress\n${GREET_IMPL}`);
+    const g = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    assert.equal(g.exit, 0, JSON.stringify(g));
+    await p.call("findings", { h, result: reviewResult(d(g)) });
+    const f = await finishFixture(p, { h, subject: "greet" });
+    assert.equal(d(f).endpoint, "checked-local", JSON.stringify(f));
+    assert.match(p.git("show", "HEAD~1:src/greet.ts"), /my own work in progress/, "the user's own commit stays theirs");
+  });
+
+  it("refuses a check that changed a file the user asked to leave out, and keeps their bytes [GIT-10]", async () => {
+    const p = fresh();
+    const mine = "// my own work in progress\nexport const note = 1;\n";
+    p.write("src/note.ts", mine);
+    const o = await p.call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts", "src/note.ts"], lane: "standard" });
+    assert.equal(o.questions![0]!.id, "dirty-overlap");
+    const h = o.handle!;
+    await p.call("decide", { h, kind: "basis", propose: BASIS });
+    const left = await p.call("decide", { h, kind: "dirty-overlap", answers: { "dirty-overlap": "leave-out" } });
+    assert.equal(left.exit, 0, JSON.stringify(left));
+    p.write("src/greet.test.ts", GREET_TEST);
+    await p.call("check", { h, stage: "baseline" });
+    const refused = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts", "src/note.ts"] });
+    assert.equal(refused.exit, 2, JSON.stringify(refused));
+    assert.equal(refused.reasons[0]!.code, "attribution-mixed-file");
+    assert.equal(readFileSync(join(p.root, "src/note.ts"), "utf8"), mine);
+  });
+
   it("keeps a concurrent edit to an unrelated file out of the commit, byte for byte, and names the scope honestly [GIT-08]", async () => {
     const p = fresh({ "docs/notes.md": "# notes\n" });
     const { h } = await toRed(p);
