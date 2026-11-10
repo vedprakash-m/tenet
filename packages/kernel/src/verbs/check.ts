@@ -136,7 +136,8 @@ export const check: Verb<CheckInput> = {
     if (w !== declared) facts = await gather(ports, w);
     const leftOut = leftOutChanged(w, (p) => facts.inv.entries.get(p)?.blob);
     if (leftOut.length) {
-      throw new KernelError("attribution-mixed-file", `${leftOut.join(", ")} changed, but the user asked to leave it out; restore it or ask the user`, { exit: 2 });
+      const why = `${leftOut.join(", ")} changed, but the user asked to leave it out; restore it or ask the user`;
+      throw new KernelError("attribution-mixed-file", why, { exit: 2 });
     }
     const undecided = undecidedDirty(w);
     if (undecided.length)

@@ -25,15 +25,19 @@ export function leftOutChanged(w: WorkContract, blobNow: (path: string) => strin
   return (w.leaveOut ?? []).filter((p) => touched.has(p) || blobNow(p) !== start.get(p));
 }
 
-export const DIRTY_ANSWERS = ["wait", "include", "leave-out"] as const;
+const NO_COMMIT = `(Saying "don't commit" instead lets me edit alongside your changes without committing either.)`;
 
 export function dirtyQuestion(paths: readonly string[]): Question {
   const sorted = [...paths].sort();
   return question({
     id: "dirty-overlap", header: "Your edits", bind: { factsHash: factsHash(sorted) },
-    question: `You have uncommitted changes in ${sorted.join(", ")}, which this work needs to edit. What should happen to them? (Saying "don't commit" instead lets me edit alongside your changes without committing either.)`,
+    question: `You have uncommitted changes in ${sorted.join(", ")}, which this work needs to edit. What should happen to them? ${NO_COMMIT}`,
     options: [
-      { label: "Wait while you commit or set aside your edits, then say continue", description: "Answer: wait. Keeps your work and mine separate; I don't touch these files until you continue.", recommended: true },
+      {
+        label: "Wait while you commit or set aside your edits, then say continue",
+        description: "Answer: wait. Keeps your work and mine separate; I don't touch these files until you continue.",
+        recommended: true,
+      },
       { label: "Include your edits in this work", description: "Answer: include. Your changes and mine in these files are committed together." },
       { label: "Leave these files out", description: "Answer: leave-out. I don't edit or commit them; the change may be incomplete." },
     ],
