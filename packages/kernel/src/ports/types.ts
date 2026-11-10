@@ -221,10 +221,12 @@ export interface Stack {
 
 export interface EnvelopePlanInput {
   projectId: string; root: string; obligations: readonly Obligation[]; toExecute: readonly string[] | "all"; stack: Stack;
+  /** The declared workload commands (QLT-05), planned like any other command before their first spawn. */
+  workload?: { build?: string[]; run: string[] };
 }
 
 // ---------------------------------------------------------------- recipes and the project folder (starter scaffold)
-export type CheckTool = StaticTool | "e2e";
+export type CheckTool = StaticTool | "e2e" | "workload";
 export interface RecipeFile { path: string; content: string; mode: number }
 export interface Recipe {
   id: string; version: string; sentinel: string; lockfileSha256: string; protectedPaths: string[]; install: string[][]; files: RecipeFile[];

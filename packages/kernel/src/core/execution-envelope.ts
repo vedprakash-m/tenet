@@ -15,7 +15,7 @@ export const ExecutionEnvelope = z.strictObject({
   version: z.literal(1), projectId: z.string(),
   hash: z.string().regex(/^[a-f0-9]{64}$/),
   commands: z.array(z.strictObject({
-    kind: z.enum(["tests", "static", "e2e"]), argv: z.array(z.string()), cwd: z.string(),
+    kind: z.enum(["tests", "static", "e2e", "workload"]), argv: z.array(z.string()), cwd: z.string(),
     environment: z.strictObject({ passed: z.array(z.string()), dropped: z.array(z.string()) }),
     outputs: z.array(z.string()),
   })),

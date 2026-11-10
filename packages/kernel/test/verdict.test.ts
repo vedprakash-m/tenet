@@ -41,6 +41,16 @@ const base = (): VerdictInput => ({
 const codes = (i: VerdictInput) => verdict(i).reasons.filter((r) => !r.note).map((r) => r.code);
 
 describe("verdict table [RES-02, EVD-01]", () => {
+  it("holds a degraded fitness trend below checked-local until the user or a reviewer disposes it [QLT-05]", () => {
+    const item = { id: "AT-trend", path: "workload.json", line: 1, marker: false, pattern: "fitness-trend:list-p95-ms 100 to 121 ms (+21%, 3 runs)" };
+    const open = verdict({ ...base(), attention: [item] });
+    assert.notEqual(open.endpoint, "checked-local");
+    assert.ok(open.reasons.some((r) => r.code === "fitness-trend-degraded" && /not a result for the whole application/.test(r.message)));
+    const by = (who: "same-session" | "user" | "reviewer") => verdict({ ...base(), attention: [{ ...item, disposition: { by: who, outcome: "accepted", reason: "known" } }] });
+    assert.ok(by("same-session").reasons.some((r) => r.code === "fitness-trend-degraded"), "the session that caused it cannot accept it");
+    assert.equal(by("user").endpoint, "checked-local");
+    assert.equal(by("reviewer").endpoint, "checked-local");
+  });
   it("cannot claim Deep assurance without architecture and security evidence [WRK-04]", () => {
     const v = verdict({ ...base(), lane: "deep" });
     assert.notEqual(v.endpoint, "checked-local");
