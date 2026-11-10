@@ -100,6 +100,7 @@ export const REASONS = {
   "index-sync-needed": [0, "The index was left untouched after a commit; paths listed with a one-step sync"],
   "undo-conflict": [3, "An inverse patch overlaps a later change"],
   "integration-conflict": [3, "Integration is predicted to conflict; paths listed before any switch"],
+  "shared-merge-proposed": [3, "Integration conflicts only in INTENT.md; a merge by ID is proposed for confirmation before any switch"],
   "branch-switch-needed": [3, "Integration will switch the editor branch"],
   "repo-state-readonly": [2, "Rebase, merge, conflicts or detached HEAD"],
   "repo-shallow": [0, "Shallow clone: history is incomplete, so undo is limited to the history available"],

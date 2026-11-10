@@ -9,6 +9,7 @@ import type { Job, Plan, Verb } from "../pipeline.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 import { factsHash, nx, question, withWork, workOf } from "./common.ts";
 import { gather, worldDigest } from "./facts.ts";
+import { SHARED_INTENT, sharedMerge } from "./integrate-shared.ts";
 import { settingsFor } from "./reconcile.ts";
 
 export type IntegrationSetting = "offer" | "auto-on-accept" | "never";
@@ -51,10 +52,10 @@ function branches(w: WorkContract): { base: string; work: string } {
 
 export type IntegrateDone = (st: State, w: WorkContract) => { state: State; resp: Plan["resp"] };
 
-type Tips = { base: string; work: string; baseTip: string; workTip: string };
+type Tips = { base: string; work: string; baseTip: string; workTip: string; resolved?: Record<string, string> };
 
 /** Every refusal or question before the editor moves: Git state, hooks, vanished branches, conflicts, carried edits. */
-async function blockers(ports: Ports, st: State, w: WorkContract): Promise<Plan | Tips> {
+async function blockers(ports: Ports, st: State, w: WorkContract, agreed?: string): Promise<Plan | Tips> {
   const { base, work } = branches(w);
   const probe = await ports.git.probe();
   if (probe.state !== "ok") throw new KernelError("repo-state-readonly", probe.why);
@@ -72,11 +73,20 @@ async function blockers(ports: Ports, st: State, w: WorkContract): Promise<Plan 
   if (w.git.integrated?.commit && (await ports.git.refCommit(base)) === w.git.integrated.commit) {
     return { resp: { work: w.id, data: { integrated: w.git.integrated } } };
   }
-  // Conflicts are predicted before the editor leaves the work branch.
+  // Conflicts are predicted before the editor leaves the work branch; one only in INTENT.md gets a proposal (GIT-09).
   const predicted = await ports.git.predictConflicts(base, work);
-  if (predicted.paths.length) throw new KernelError("integration-conflict", predicted.paths.slice(0, 8).join(", "), { exit: 3 });
+  const conflict = () => new KernelError("integration-conflict", predicted.paths.slice(0, 8).join(", "), { exit: 3 });
+  const onlyShared = predicted.paths.length === 1 && predicted.paths[0] === SHARED_INTENT;
+  if (predicted.paths.length && !onlyShared) throw conflict();
   // Uncommitted edits travel with a branch switch: that is the one case that still asks, whatever the setting.
   const dirty = (await gather(ports, w, st.locks)).inv.status.map((s) => s.path);
+  let resolved: Record<string, string> | undefined;
+  if (onlyShared) {
+    const m = await sharedMerge(ports, { st, w, base, baseTip, workTip, dirty }, agreed);
+    if (!m) throw conflict();
+    if ("resp" in m) return m as Plan;
+    resolved = m as Record<string, string>;
+  }
   if (probe.branch !== base && dirty.length && w.git.switchConsent !== switchFacts(base, dirty)) {
     const q = switchQuestion(base, dirty);
     return {
@@ -90,7 +100,7 @@ async function blockers(ports: Ports, st: State, w: WorkContract): Promise<Plan 
       },
     };
   }
-  return { base, work, baseTip, workTip };
+  return { base, work, baseTip, workTip, ...(resolved ? { resolved } : {}) };
 }
 
 type Merged = {
@@ -157,10 +167,10 @@ function settle(
 }
 
 /** Preconditions, conflict prediction, the effect intent, then the merge as an external job. Shared with acceptance under auto-on-accept. */
-export async function startIntegrate(ports: Ports, tx: Tx, st: State, w: WorkContract): Promise<Plan> {
-  const blocked = await blockers(ports, st, w);
+export async function startIntegrate(ports: Ports, tx: Tx, st: State, w: WorkContract, agreed?: string): Promise<Plan> {
+  const blocked = await blockers(ports, st, w, agreed);
   if ("resp" in blocked) return blocked;
-  const { base, work, baseTip, workTip } = blocked;
+  const { base, work, baseTip, workTip, resolved } = blocked;
   const id = `i-${ports.rand.base32(6)}`;
   const runDir = ports.store.tempDir(`run-${id}`);
   tx.intent("integration", id, { work: w.id, base, baseBefore: baseTip, workTip });
@@ -175,7 +185,7 @@ export async function startIntegrate(ports: Ports, tx: Tx, st: State, w: WorkCon
   };
   const job: Job = {
     id,
-    execute: () => ports.git.integrate(base, work, { runDir, timeoutMs: 60_000 }),
+    execute: () => ports.git.integrate(base, work, { runDir, timeoutMs: 60_000, ...(resolved ? { resolved } : {}) }),
     finalize: async (tx2, st2, result) => settle(tx2, st2, w, id, base, result),
   };
   return { state: withWork(st, prepared), resp: { work: w.id }, job };
