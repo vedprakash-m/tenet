@@ -17,6 +17,7 @@ import { nodeOk, readinessOf, workOf } from "./common.ts";
 import { gather, verdictInput } from "./facts.ts";
 import { settingsFor, sharedPolicy, withRequiredChecks } from "./reconcile.ts";
 import { KERNEL_VERSION } from "../version.ts";
+import { diagnosticsExport } from "../core/diagnostics.ts";
 
 const VERBS = {
   open: "open --profile <feature|bug|refactor|investigate|plan|…> --request <text>   start or resume a contract",
@@ -30,7 +31,7 @@ const VERBS = {
   undo: "undo --h <handle>   preview the inverse of the work's commits; apply with decide undo-confirm",
   stop: "stop --h <handle> --mode <pause|cancel|abandon>   always allowed",
   review: "review [--scope working-tree]   review-only manifest, nothing written to the project",
-  inspect: "inspect [--view status|why|doctor|help|settings [--topic <setting>]|lessons|impact --topic <ids>|residue]   read-only views",
+  inspect: "inspect [--view status|why|doctor|help|settings [--topic <setting>]|lessons|impact --topic <ids>|residue|export]   read-only",
 };
 
 function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>) {
@@ -61,6 +62,21 @@ const statusOf = (st: State | null) => ({
   pending: (st?.pending ?? []).map((q) => q.id), sourceOwner: st?.sourceOwner?.work ?? null,
   plan: { items: (st?.project.intent.plan ?? []).map((i) => ({ id: i.id, outcome: i.outcome, state: i.state, dependsOn: i.dependsOn })), next: nextItem(st?.project.intent.plan ?? [])?.id ?? null },
 });
+
+function changedIds(topic = ""): string[] {
+  const ids = topic.split(",").map((x) => x.trim()).filter(Boolean);
+  if (!ids.length) throw new KernelError("capability-missing", "name the changed IDs: --topic REQ-001-abc,EX-001-abc.1", { exit: 1 });
+  return ids;
+}
+
+/** NFR-07: a preview only. The user saves the text where they choose; the kernel writes nothing. */
+function exportView(ports: Ports, state: State | null, topic = "diagnostics") {
+  if (topic !== "diagnostics") throw new KernelError("capability-missing", "the evidence and feedback bundles arrive later", { exit: 1 });
+  const log = state ? ports.store.readLog() : [];
+  return diagnosticsExport({
+    version: KERNEL_VERSION, platform: ports.platform, node: process.version, state, log, verbs: Object.keys(VERBS),
+  });
+}
 
 export const inspect: Verb<InspectInput> = {
   name: "inspect",
@@ -113,15 +129,12 @@ export const inspect: Verb<InspectInput> = {
         if (!isSettingKey(input.topic)) throw new KernelError("restriction-key-unknown", `"${input.topic}" is not a setting`, { exit: 2 });
         return { resp: { data: { setting: resolveSetting(input.topic, layersOf(state, w, sharedPolicy(ports, state))), revision } } };
       }
-      case "impact": {
-        const ids = (input.topic ?? "").split(",").map((x) => x.trim()).filter(Boolean);
-        if (!ids.length) throw new KernelError("capability-missing", "name the changed IDs: --topic REQ-001-abc,EX-001-abc.1", { exit: 1 });
-        return { resp: { data: { impact: impact(state!, ids) } } };
-      }
+      case "impact": return { resp: { data: { impact: impact(state!, changedIds(input.topic)) } } };
       case "residue": {
         const present = Object.fromEntries(ADOPTED_FILES.map((f) => [f, ports.project.hashes([f])[f] !== null]));
         return { resp: { data: { residue: residueView(ports.store.residue(), present) } } };
       }
+      case "export": return { resp: { data: exportView(ports, state, input.topic) } };
       case "lessons": return { resp: { data: { lessons: state?.lessons ?? [] } } };
       default:
         throw new KernelError("capability-missing", `the "${input.view}" view arrives after M0`, { exit: 1 });

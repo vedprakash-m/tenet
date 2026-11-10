@@ -79,6 +79,8 @@ export type Action = z.infer<typeof Action>;
 
 // ---------------------------------------------------------------- records (state document, TS §7.2)
 
+const TraitResults = z.array(z.object({ trait: z.string(), outcome: z.enum(["present", "unknown"]), evidence: z.array(z.string()) }));
+
 export const BasisElement = z.object({
   id: z.string(),
   origin: z.enum(["request", "tenet"]),
@@ -90,6 +92,7 @@ export const BasisElement = z.object({
   testFile: z.string().optional(),
   support: z.array(z.string()).optional(), // helpers, fixtures and setup files the test depends on: locked with it
   outputs: z.array(z.string()).max(20).optional(), // untracked data files its check writes (EVD-09)
+  threat: z.enum(["actor", "asset", "data", "abuse"]).optional(), // a section of the threat and data note (QLT-13)
   expiresAt: z.string().optional(),
   verifiedBy: z.union([
     z.array(z.object({ method: z.enum(["obligation", "review", "manual"]), ref: z.string() })),
@@ -320,6 +323,7 @@ export const WorkContract = z.object({
   keepOut: z.array(z.string()), // human-dirty files Tenet never commits
   leaveOut: z.array(z.string()).optional(), // human-dirty files the user told Tenet not to edit at all (also in keepOut)
   modelAck: z.string().optional(), // the model facts the user chose to continue Deep work with (RSC-08)
+  changeTraits: TraitResults.optional(), // QLT-11, detected at the last check
   budget: BudgetState,
   acceptance: z.enum(["pending", "accepted", "rejected", "accepted-with-residual-risk"]),
   assessment: ownRecord(z.enum(["low", "high"])),
@@ -351,6 +355,11 @@ export const State = z.strictObject({
       records: z.array(DecisionRecord).default([]), // decisions with their context and consequences (INT-10)
     }),
     moduleRoot: z.string(), traits: z.array(z.string()),
+    traitResults: TraitResults.optional(), // QLT-11
+    traitCorrections: z.array(z.object({
+      trait: z.string(), outcome: z.enum(["present", "absent"]), scope: z.enum(["project", "change"]),
+      work: z.string().optional(), bind: z.string(),
+    })).optional(), // the user's corrections, each bound to the detected results it answers
     recipe: z.object({ id: z.string(), version: z.string(), installed: z.boolean(), checks: z.array(z.enum(["tsc", "eslint", "e2e"])).optional() }).optional(), // the starter this project was scaffolded from
     adoption: z.object({
       intent: z.enum(["undecided", "adopted", "declined"]),
@@ -462,7 +471,7 @@ export const BasisElementInput = z.object({
   kind: BasisElement.shape.kind,
   text: z.string().min(1).max(2000),
   // of: ref of the requirement an example or invariant belongs to
-  ...BasisElement.pick({ origin: true, of: true, test: true, expect: true, testFile: true }).shape,
+  ...BasisElement.pick({ origin: true, of: true, test: true, expect: true, testFile: true, threat: true }).shape,
   support: z.array(z.string()).max(20).optional(),
   outputs: BasisElement.shape.outputs,
 });
@@ -537,7 +546,7 @@ export const UndoInput = z.object({ h: Handle, again: z.boolean().optional() });
 export type UndoInput = z.infer<typeof UndoInput>;
 
 export const InspectInput = z.object({
-  view: z.enum(["status", "why", "doctor", "help", "result", "impact", "residue", "settings", "lessons"]).default("status"),
+  view: z.enum(["status", "why", "doctor", "help", "result", "impact", "residue", "settings", "lessons", "export"]).default("status"),
   h: Handle.optional(), topic: z.string().optional(),
 });
 export type InspectInput = z.infer<typeof InspectInput>;

@@ -19,11 +19,12 @@ import { undoConfirm } from "./undo.ts";
 import { scaffold } from "./scaffold.ts";
 import { modelLimit } from "./model-limit.ts";
 import { config } from "./config.ts";
+import { traits } from "./traits.ts";
 import { acceptance, branchSwitch, dirtyOverlap, disposition, repairLock, sharedMerge, syncIndex, unexplained } from "./simple.ts";
 import type { Decision } from "./types.ts";
 
 export const DECISIONS: Record<string, Decision> = Object.fromEntries([
   basis, scaffold, dirtyOverlap, acceptance, disposition, repairLock, unexplained, extend, hookConsent, filterConsent, envelopeConsent,
   syncIndex, branchSwitch, sharedMerge, config, undoConfirm, adopt, overview, plan, grant, decisionRecord, dependency,
-  abandon, takeover, decline, lesson, forget, cleanup, versionReconcile, hardening, modelLimit,
+  abandon, takeover, decline, lesson, forget, cleanup, versionReconcile, hardening, modelLimit, traits,
 ].map((d) => [d.kind, d]));

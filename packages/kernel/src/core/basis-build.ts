@@ -27,6 +27,7 @@ function exampleCounts(all: readonly BasisElement[], own: ReadonlySet<string>): 
 function shaped(e: Proposed, id: string, parent: string | undefined): BasisElement {
   const el: BasisElement = { id, origin: e.origin, kind: e.kind, text: e.text, verifiedBy: [] };
   if (parent) el.of = parent;
+  if (e.threat) el.threat = e.threat;
   if (e.kind === "example") {
     el.test = e.test ?? "distinguishing";
     if (e.testFile) el.testFile = e.testFile;

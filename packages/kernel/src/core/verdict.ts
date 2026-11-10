@@ -2,6 +2,7 @@
 // more fresh passing evidence never weakens an endpoint, removing evidence never strengthens it.
 import { ceiling } from "./risk.ts";
 import { reason } from "./reasons.ts";
+import { threatGap, threatNoteStatus } from "./threat.ts";
 import { baselineDefinitionMatches, wantsRed } from "./obligations.ts";
 import type { AnalystLink, AttentionItem, BasisElement, Endpoint, Finding, Lane, Level, Obligation, Profile, Reason, Receipt, ReviewLink, Scope, StopReason, WorkContract } from "./schemas.ts";
 
@@ -32,6 +33,7 @@ export interface VerdictInput {
   reviewFiles?: Readonly<Record<string, string>>;
   findings: readonly Finding[];
   attention: readonly AttentionItem[];
+  changeTraits?: readonly string[]; // present change traits after corrections (QLT-11), for the threat note (QLT-13)
   declined: readonly string[];
   stopReason?: StopReason;
   attemptsLeft: number;
@@ -203,6 +205,16 @@ function judgeDeepPasses(i: VerdictInput): Reason[] {
 }
 
 /** Every reason the evidence gives, the blocking ones and the notes. */
+function judgeThreatNote(i: VerdictInput): Reason[] {
+  const s = threatNoteStatus(i.changeTraits ?? [], i.elements);
+  const gap = threatGap(s);
+  return [
+    ...(gap ? [reason("threat-note-open", gap, { refs: [...s.open, ...s.invalid] })] : []),
+    ...(s.required && s.constraints
+      ? [reason("threat-constraints-unchecked", `${s.constraints} security item(s) are constraints`, { note: true })] : []),
+  ];
+}
+
 function reasonsOf(i: VerdictInput): Reason[] {
   const r: Reason[] = [];
   if (i.lane === "deep") r.push(...judgeDeepPasses(i));
@@ -216,6 +228,7 @@ function reasonsOf(i: VerdictInput): Reason[] {
     r.push(reason("authority-needed", `protected path${i.unauthorized.length === 1 ? "" : "s"} ${paths}`, { refs: [...i.unauthorized] }));
   }
   if (i.behavioralChange) r.push(...judgeRed(i));
+  r.push(...judgeThreatNote(i));
   if (i.reviewRequired) r.push(...judgeReview(i));
   r.push(...judgeFindings(i), ...judgeAttention(i));
   for (const d of i.declined) r.push(reason("declined-step", d));
