@@ -1,4 +1,5 @@
 // What a finished check run turns into: the reasons, the next action, the review manifest, and the published contract.
+import { changeTraitsOf } from "./facts.ts";
 import { attemptsLeft } from "../core/budget.ts";
 import { KernelError } from "../core/errors.ts";
 import { executionDisclosures } from "../core/execution-envelope.ts";
@@ -170,6 +171,7 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
         : t
     ),
     lastCheck: { candidate: facts.candidate, at: now, stage },
+    changeTraits: changeTraitsOf(run.ports, st, cw, facts).results,
     ...(stop ? { stopReason: stop } : {}),
   };
   const step = nextStep(run, st, nw, receipts, obligations, stop, changes);

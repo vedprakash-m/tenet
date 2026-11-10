@@ -1,5 +1,7 @@
 // Facts observed from the working tree for one contract: inventory, attribution, candidate and check-input identity.
 // Shared by check, commit, finish and inspect so they all see the same thing.
+import { detectChange, effectiveTraits, traitBind } from "../core/trait-detect.ts";
+import type { TraitCorrection } from "../core/trait-detect.ts";
 import { attribute } from "../core/attribution.ts";
 import { routineAuthorized, uncoveredProtected } from "../core/authority.ts";
 import { attemptsLeft } from "../core/budget.ts";
@@ -86,6 +88,15 @@ export function currentTestHashes(
 }
 
 /** Assembles the pure verdict's input from the contract and what the working tree shows now. */
+/** Change traits from the paths this work changed, leaving out unchanged scaffold files the recipe vetted (QLT-11). */
+export function changeTraitsOf(ports: Ports, st: State, w: WorkContract, facts: Facts) {
+  const vetted = ports.project.hashes(Object.keys(w.vetted));
+  const paths = facts.reviewPaths.filter((p) => !(Object.hasOwn(w.vetted, p) && vetted[p] === w.vetted[p]));
+  const results = detectChange(paths);
+  const present = effectiveTraits(results, (st.project.traitCorrections ?? []) as TraitCorrection[], traitBind(results, "change", w.id));
+  return { results, present };
+}
+
 export function verdictInput(ports: Ports, st: State, w: WorkContract, facts: Facts): VerdictInput {
   const { inv, att } = facts;
   const commitExists = w.git.commits.length > 0;
@@ -114,6 +125,7 @@ export function verdictInput(ports: Ports, st: State, w: WorkContract, facts: Fa
     reviewFiles: Object.fromEntries(facts.reviewPaths.map((p) => [p, inv.entries.get(p)?.blob ?? ""])),
     findings: w.findings,
     attention: w.attention,
+    changeTraits: changeTraitsOf(ports, st, w, facts).present,
     declined: w.declined,
     attemptsLeft: attemptsLeft(w.budget, w.lane),
     commitExists,
