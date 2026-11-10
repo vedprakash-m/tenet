@@ -185,6 +185,23 @@ export const branchSwitch: Decision = {
   },
 };
 
+/** GIT-09: the answer to a merged INTENT.md proposal. Integration starts only if the proposal is still exactly the one shown. */
+export const sharedMerge: Decision = {
+  kind: "shared-merge",
+  async run({ ports, tx, state, work, input }) {
+    const q = state.pending.find((p) => p.id === "shared-merge");
+    const answer = input.answers?.["shared-merge"];
+    if (!q) throw new KernelError("revision-conflict", "there is no open proposal for a shared file", { exit: 2 });
+    if (answer !== "apply" && answer !== "cancel")
+      throw new KernelError("revision-conflict", 'answer "apply" or "cancel"', { exit: 1 });
+    const st = { ...state, pending: state.pending.filter((p) => p.id !== "shared-merge") };
+    if (answer === "cancel")
+      return { state: st, resp: { work: work.id, next: [nx("stop", "Nothing moved; resolve INTENT.md on the work branch.")] } };
+    // A changed tip or text gives a different proposal: it is asked again, never applied on the old answer.
+    return startIntegrate(ports, tx, st, work, q.bind.factsHash);
+  },
+};
+
 /** The one-step "sync my index" after a commit left the index untouched (TS §10.3 step 7): reruns only that step. */
 export const syncIndex: Decision = {
   kind: "sync-index",
