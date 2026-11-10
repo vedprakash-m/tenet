@@ -70,3 +70,14 @@ describe("dirty-overlap choices (UX J-03b)", () => {
     assert.deepEqual(leftOutChanged({ ...left, touched: [{ path: "src/a.ts" }] }, () => "x"), ["src/a.ts"]);
   });
 });
+
+describe("a dirty-overlap question the work no longer needs", () => {
+  it("[GIT-10] closes without recording a decision when the scope no longer covers the files", () => {
+    const w = { ...work(["src/a.ts"]), touched: [] };
+    const state = { pending: [dirtyQuestion(["src/a.ts"])], work: { W1: w } };
+    const plan = dirtyOverlap.run({ state, work: w, input: { answers: { "dirty-overlap": "include" } } } as unknown as DecisionCtx) as {
+      state: { pending: unknown[] }; resp: { data: { decided: string[] } };
+    };
+    assert.deepEqual([plan.state.pending, plan.resp.data.decided], [[], []]);
+  });
+});

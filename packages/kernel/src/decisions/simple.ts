@@ -19,7 +19,12 @@ export const dirtyOverlap: Decision = {
     const q = state.pending.find((p) => p.id === "dirty-overlap");
     const paths = undecidedDirty(work);
     const answer = input.answers?.["dirty-overlap"];
-    if (!q || !paths.length) throw new KernelError("revision-conflict", "there is no open question about your edits", { exit: 2 });
+    if (!q) throw new KernelError("revision-conflict", "there is no open question about your edits", { exit: 2 });
+    if (!paths.length) {
+      // The work no longer needs any of those files (its scope changed): the question is closed, nothing is recorded.
+      const rest = state.pending.filter((p) => p.id !== "dirty-overlap");
+      return { state: { ...state, pending: rest }, resp: { work: work.id, next: [nx("check", "Continue.", true)], data: { decided: [] } } };
+    }
     if (answer !== "wait" && answer !== "include" && answer !== "leave-out" && answer !== "keep-out") {
       throw new KernelError("revision-conflict", 'answer "wait", "include" or "leave-out"', { exit: 1 });
     }
