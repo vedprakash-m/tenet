@@ -133,8 +133,12 @@ export interface Git {
   refCommit(ref: string): Promise<string | null>;
   /** Files an integration would conflict on, from `git merge-tree` (writes objects only); supported is false before Git 2.38. */
   predictConflicts(base: string, work: string): Promise<{ supported: boolean; paths: string[] }>;
-  /** Switches to `base` and fast-forwards, or merges when the base moved. */
-  integrate(base: string, work: string, options?: { runDir: string; timeoutMs: number }): Promise<{ ok: boolean; commit?: string; mode?: "fast-forward" | "merge"; detail?: string; uncertain?: boolean }>;
+  /** The best common ancestor of two commits, or null when there is none (unrelated or shallow history). */
+  mergeBase(a: string, b: string): Promise<string | null>;
+  /** A file's bytes at a commit, as text; null when absent. */
+  showAt(treeish: string, path: string): Promise<string | null>;
+  /** Switches to `base` and fast-forwards, or merges when the base moved; `resolved` is the confirmed text of the only conflicted paths. */
+  integrate(base: string, work: string, options?: { runDir: string; timeoutMs: number; resolved?: Record<string, string> }): Promise<{ ok: boolean; commit?: string; mode?: "fast-forward" | "merge"; detail?: string; uncertain?: boolean }>;
   /** Postcondition for recovery: did this integration land (TS §7.4)? */
   reconcileIntegration(base: string, baseBefore: string, work: string): Promise<{ completed: boolean; commit?: string; mode?: "fast-forward" | "merge" }>;
   /** The parent of a commit, or null for a root commit. */

@@ -978,7 +978,32 @@ export class GitCli implements Git {
     return { supported: true, paths: fields.slice(0, end < 0 ? fields.length : end) };
   }
 
-  async integrate(base: string, work: string, options?: { runDir: string; timeoutMs: number }): ReturnType<Git["integrate"]> {
+  async mergeBase(a: string, b: string): Promise<string | null> {
+    return this.tryOut(["merge-base", a, b]);
+  }
+
+  async showAt(treeish: string, path: string): Promise<string | null> {
+    const r = await this.run(["cat-file", "blob", `${treeish}:${path}`]);
+    return r.code === 0 ? r.stdout : null;
+  }
+
+  /** GIT-09: Git stopped on the conflicts the user saw; only the confirmed paths may remain, and they get the confirmed text. */
+  private async commitResolved(
+    run: (args: string[]) => Promise<RunResult>, resolved: Record<string, string>, message: string,
+  ): Promise<string | null> {
+    const left = (await this.ok(["diff", "--name-only", "--diff-filter=U", "-z"])).split("\0").filter(Boolean).sort();
+    const want = Object.keys(resolved).sort();
+    if (left.join("\0") !== want.join("\0")) {
+      await run(["merge", "--abort"]);
+      return `the merge conflicted on ${left.join(", ") || "nothing"}, not on the confirmed ${want.join(", ")}`;
+    }
+    for (const [p, text] of Object.entries(resolved)) writeFileSync(join(this.root, p), text);
+    const add = await run(["add", "--", ...want.map((p) => `:(literal)${p}`)]);
+    const c = add.exit === 0 ? await run(["commit", "-q", "-m", message]) : add;
+    return c.exit !== 0 || c.timedOut || c.signal ? `${c.stdout}${c.stderr}` || "the resolved merge did not commit" : null;
+  }
+
+  async integrate(base: string, work: string, options?: Parameters<Git["integrate"]>[2]): ReturnType<Git["integrate"]> {
     await this.objectFormatSafe();
     await this.refuseFilters("integrating work");
     if ((await this.probe()).hooks)
@@ -1013,10 +1038,15 @@ export class GitCli implements Git {
         if (sw.exit !== 0 || sw.timedOut || sw.signal) return fail(sw.stderr || "branch switch did not complete cleanly");
       }
       const ff = (await this.run(["merge-base", "--is-ancestor", base, work])).code === 0;
+      const message = `Merge ${work} into ${base}`;
+      const resolved = ff ? undefined : options?.resolved;
       const m = await run(
-        ff ? ["merge", "-q", "--ff-only", work] : ["merge", "-q", "--no-ff", "-m", `Merge ${work} into ${base}`, work],
+        ff ? ["merge", "-q", "--ff-only", work] : ["merge", "-q", "--no-ff", ...(resolved ? ["--no-commit"] : ["-m", message]), work],
       );
-      if (m.exit !== 0 || m.timedOut || m.signal) return fail(`${m.stdout}${m.stderr}` || "integration did not complete cleanly");
+      if (resolved && !m.timedOut && !m.signal) {
+        const why = await this.commitResolved(run, resolved, message);
+        if (why) return fail(why);
+      } else if (m.exit !== 0 || m.timedOut || m.signal) return fail(`${m.stdout}${m.stderr}` || "integration did not complete cleanly");
       const commit = await this.tryOut(["rev-parse", "HEAD"]);
       return commit
         ? { ok: true, commit, mode: ff ? "fast-forward" : "merge" }
