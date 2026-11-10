@@ -97,8 +97,15 @@ function mergeLayers(key: SettingKey, a: unknown, b: unknown): Merged {
     case "exclusions": return { value: mergeExclusions(a, b), limits: [] };
     case "required_checks": return mergeChecks(a, b);
     case "dependency_policy": return { value: mergeDependency(a, b), limits: [] };
-    default: return { value: { ...((a as object) ?? {}), ...((b as object) ?? {}) }, limits: [] }; // commands: per check name, the project's own win
+    default: return mergeCommands(a as Record<string, unknown> | undefined, b as Record<string, unknown> | undefined);
   }
+}
+
+/** Commands, per check name: the project's own win, and a name both define differently is reported (CFG-03). */
+function mergeCommands(a: Record<string, unknown> = {}, b: Record<string, unknown> = {}): Merged {
+  const differ = Object.keys(b).filter((k) => k in a && JSON.stringify(a[k]) !== JSON.stringify(b[k]));
+  const limits = differ.map((k) => `command ${k} is defined differently in the shared policy and the project; the project's is used`);
+  return { value: { ...a, ...b }, limits };
 }
 
 export function resolveSetting(key: SettingKey, l: Layers): Resolved {
@@ -113,7 +120,8 @@ export function resolveSetting(key: SettingKey, l: Layers): Resolved {
       ...(key in l.local ? [{ source: "project" as const, value: l.local[key] }] : []),
       { source: "default", value: e.default },
     ];
-    return { ...base, value: stated[0]!.value, source: stated[0]!.source, adoption: "n/a", overridden: stated.slice(1) };
+    const limits = ADVISORY.has(key) ? [ADVISORY_LIMIT] : [];
+    return { ...base, limits, value: stated[0]!.value, source: stated[0]!.source, adoption: "n/a", overridden: stated.slice(1) };
   }
 
   const shared = l.shared as Record<string, unknown>;
@@ -125,6 +133,10 @@ export function resolveSetting(key: SettingKey, l: Layers): Resolved {
   if (declaredButNotRun(key, value)) limits.push(STORED_ONLY);
   return { ...base, value, limits, source: sources.map(([s]) => s).join(" + ") || "default", adoption: sharedUsed ? l.adoption.policy : "n/a", overridden: [], contributions };
 }
+
+/** Preferences the kernel only hands to the coordinator: no kernel check applies them (CFG-04). */
+const ADVISORY = new Set<string>(["style", "resource_mode"]);
+const ADVISORY_LIMIT = "Passed to the coordinator, which follows it; the kernel does not enforce it.";
 
 const STORED_ONLY = "Stored declaration only: configured execution is unavailable; checks and checked-local are blocked until it is implemented or the declaration is removed.";
 

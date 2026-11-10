@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-10 — Settings: conflicting commands, unenforced preferences, personal values
+
+- A command that the shared policy and the project define differently is now reported as a limit naming both sources; the project's still wins (CFG-03). `inspect --view settings --topic style` and `resource_mode` now say the kernel passes the value to the coordinator and does not enforce it (CFG-04). The coordinator skill sends "why" about a setting to that view. A test proves preferences have no field in the shared policy and that setting every preference at every scope changes no tracked file (CFG-08). Existing resolution tests now carry `[CFG-03]`/`[CFG-04]`. Files: `core/config.ts`, `plugin/skills/tenet/SKILL.md`; tests `config.test.ts`, `personal-settings.test.ts`.
+
 ## 2026-11-10 — Deep work warns about an unqualified or unknown model
 
 - Entering Deep work on a model whose label is not `qualified` returns one `model-unqualified-for-deep` question at `open`, and again before the first `check` after a later rise to Deep: "This model configuration hasn't been evaluated for Deep work. Continue with that limitation, or pause?" `continue` records the answer for this work and its model record only (a changed record asks again); `pause` parks the work. The model label is never changed and no other model is suggested (RSC-08, TS §4.8, UX §5.1). No qualification table exists yet, so every model is `unknown` and every Deep contract is asked. Files: `verbs/model-limit.ts`, `decisions/model-limit.ts`, `decisions/index.ts`, `verbs/open-new.ts`, `verbs/check.ts`, `core/schemas.ts` (optional `modelAck`), `plugin/skills/tenet/SKILL.md`; tests `model-qualification.test.ts`, `deep.test.ts`.

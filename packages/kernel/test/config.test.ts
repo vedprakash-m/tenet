@@ -82,7 +82,7 @@ describe("validating a change [CFG-06, PRD §7.5 item 1]", () => {
 });
 
 describe("resolving a preference [PRD §7.4]", () => {
-  it("the most specific source wins, and what it overrides is reported", () => {
+  it("the most specific source wins, and what it overrides is reported [CFG-03]", () => {
     const r = resolveSetting("checkpoints", layers({ local: { checkpoints: "minimal" }, task: { checkpoints: "each-phase" } }));
     assert.equal(r.value, "each-phase");
     assert.equal(r.source, "task");
@@ -97,14 +97,23 @@ describe("resolving a preference [PRD §7.4]", () => {
   it("a value set to the default is still a source (absent inherits, a stated value does not)", () => {
     assert.equal(resolveSetting("style", layers({ local: { style: "balanced" } })).source, "project");
   });
-  it("says how to change it", () => assert.match(resolveSetting("lane", layers()).howToChange, /decide config/));
+  it("says how to change it [CFG-04]", () => assert.match(resolveSetting("lane", layers()).howToChange, /decide config/));
+  it("explains the effective value, its source, adoption state, what it overrides and its limits [CFG-04]", () => {
+    const r = resolveSetting("style", layers({ local: { style: "guided" }, task: { style: "concise" } }));
+    assert.deepEqual([r.value, r.source, r.adoption], ["concise", "task", "n/a"]);
+    assert.deepEqual(r.overridden.map((o) => o.source), ["project", "default"]);
+    assert.match(r.limits.join(" "), /the kernel does not enforce it/);
+    assert.deepEqual(resolveSetting("lane", layers()).limits, [], "the kernel applies the lane itself");
+    const p = resolveSetting("protected_paths", layers({ shared: { protected_paths: ["db/**"] } }));
+    assert.deepEqual([p.source, p.adoption], ["shared policy", "undecided"]);
+  });
   it("shared_memory reads the adoption answer", () => {
     assert.equal(resolveSetting("shared_memory", layers({ adoption: { intent: "declined", policy: "undecided" } })).value, "declined");
   });
 });
 
 describe("resolving a restriction: sources only add [PRD §7.4 items 2, 14, 15]", () => {
-  it("protected paths are the union of every source, with each contribution shown", () => {
+  it("protected paths are the union of every source, with each contribution shown [CFG-03]", () => {
     const r = resolveSetting("protected_paths", layers({ shared: { protected_paths: ["db/**"] }, local: { protected_paths: ["infra/**", "db/**"] }, adoption: { intent: "undecided", policy: "adopted" } }));
     assert.deepEqual([...(r.value as string[])].sort(), ["db/**", "infra/**"]);
     assert.deepEqual(r.contributions!.map((c) => c.source).sort(), ["project", "shared policy"]);
@@ -114,7 +123,7 @@ describe("resolving a restriction: sources only add [PRD §7.4 items 2, 14, 15]"
     const r = resolveSetting("protected_paths", layers({ shared: { protected_paths: ["db/**"] }, local: { protected_paths: [] } }));
     assert.deepEqual(r.value, ["db/**"]);
   });
-  it("restrictions from a shared file that is not adopted still apply, and are shown as not adopted", () => {
+  it("restrictions from a shared file that is not adopted still apply, and are shown as not adopted [CFG-03]", () => {
     const r = resolveSetting("protected_paths", layers({ shared: { protected_paths: ["db/**"] } }));
     assert.deepEqual(r.value, ["db/**"]);
     assert.equal(r.adoption, "undecided");
@@ -123,7 +132,7 @@ describe("resolving a restriction: sources only add [PRD §7.4 items 2, 14, 15]"
     const r = resolveSetting("exclusions", layers({ shared: { exclusions: [{ pattern: "s/**", kinds: ["no-read"] }] }, local: { exclusions: [{ pattern: "s/**", kinds: ["no-edit"] }, { pattern: "t/**", kinds: ["no-export"] }] } }));
     assert.deepEqual(r.value, [{ pattern: "s/**", kinds: ["no-read", "no-edit"] }, { pattern: "t/**", kinds: ["no-export"] }]);
   });
-  it("required checks are the union by ID; conflicting projections are named and block evidence", () => {
+  it("required checks are the union by ID; conflicting projections are named and block evidence [CFG-03]", () => {
     const r = resolveSetting("required_checks", layers({ shared: { required_checks: [{ id: "unit", property: "behavior" }] }, local: { required_checks: [{ id: "unit", property: "other" }, { id: "e2e", property: "journeys" }] } }));
     assert.deepEqual((r.value as { id: string; property: string }[]).map((c) => [c.id, c.property]), [["unit", "behavior"], ["e2e", "journeys"]]);
     assert.ok(r.limits.some((l) => /unit/.test(l)));
@@ -136,7 +145,19 @@ describe("resolving a restriction: sources only add [PRD §7.4 items 2, 14, 15]"
     const r = resolveSetting("commands", layers({ shared: { commands: { test: { argv: ["npm", "test"] }, lint: { argv: ["npm", "run", "lint"] } } }, local: { commands: { test: { argv: ["npm", "run", "test:fast"] } } } }));
     assert.deepEqual(r.value, { test: { argv: ["npm", "run", "test:fast"] }, lint: { argv: ["npm", "run", "lint"] } });
   });
-  it("resolution does not depend on the order the sources were read", () => {
+  it("a command both sources define differently is named as a limit, with both sources [CFG-03]", () => {
+    const r = resolveSetting("commands", layers({ shared: { commands: { test: { argv: ["npm", "test"] } } }, local: { commands: { test: { argv: ["vitest"] } } } }));
+    assert.ok(r.limits.some((l) => /command test is defined differently in the shared policy and the project/.test(l)), JSON.stringify(r.limits));
+    const same = resolveSetting("commands", layers({ shared: { commands: { test: { argv: ["vitest"] } } }, local: { commands: { test: { argv: ["vitest"] } } } }));
+    assert.ok(!same.limits.some((l) => /defined differently/.test(l)));
+  });
+  it("a task preference never loosens a project commitment or a shared restriction [CFG-03]", () => {
+    const l = layers({ shared: { exclusions: [{ pattern: "s/**", kinds: ["no-edit"] }] }, local: { protected_paths: ["db/**"], lane: "deep" }, task: { lane: "quick" } });
+    assert.equal(resolveSetting("lane", l).value, "quick");
+    assert.deepEqual(resolveSetting("protected_paths", l).value, ["db/**"]);
+    assert.deepEqual(resolveSetting("exclusions", l).value, [{ pattern: "s/**", kinds: ["no-edit"] }]);
+  });
+  it("resolution does not depend on the order the sources were read [CFG-03]", () => {
     const list = fc.array(fc.constantFrom("a/**", "b/**", "c/**"), { maxLength: 3 });
     fc.assert(fc.property(list, list, (a, b) => {
       const x = resolveSetting("protected_paths", layers({ shared: { protected_paths: a }, local: { protected_paths: b } })).value as string[];
