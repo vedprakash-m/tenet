@@ -19,6 +19,7 @@ import { outputsProblem } from "./check-outputs.ts";
 import { nx, withWork, workOf } from "./common.ts";
 import { toolchainOf } from "./check-rerun.ts";
 import { dirtyQuestion, leftOutChanged, settleCleaned, undecidedDirty } from "./dirty.ts";
+import { modelQuestion, needsModelAnswer } from "./model-limit.ts";
 import { checkInputId, gather, unauthorizedEdits, worldDigest } from "./facts.ts";
 import { settingsFor, unsupportedExecution } from "./reconcile.ts";
 
@@ -138,6 +139,10 @@ export const check: Verb<CheckInput> = {
     if (leftOut.length) {
       const why = `${leftOut.join(", ")} changed, but the user asked to leave it out; restore it or ask the user`;
       throw new KernelError("attribution-mixed-file", why, { exit: 2 });
+    }
+    if (needsModelAnswer(w)) {
+      const why = "Ask the user: continue Deep work with this limitation, or pause.";
+      return ask(cur, w, modelQuestion(w), [reason("model-unqualified-for-deep", "the model is not qualified for Deep work")], why);
     }
     const undecided = undecidedDirty(w);
     if (undecided.length)

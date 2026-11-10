@@ -14,6 +14,7 @@ import type { Ports, RepoProbe } from "../ports/types.ts";
 import { quarantineSurface } from "../decisions/quarantine.ts";
 import { factsHash, question, readinessOf, withWork } from "./common.ts";
 import { dirtyQuestion, undecidedDirty } from "./dirty.ts";
+import { MODEL_LIMIT, modelQuestion, needsModelAnswer } from "./model-limit.ts";
 import { describe } from "./open-context.ts";
 import type { Ctx } from "./open-context.ts";
 import { settingsFor } from "./reconcile.ts";
@@ -207,6 +208,8 @@ export async function created(c: Ctx): Promise<Plan> {
   if (dirtyScope.length) {
     state = { ...state, pending: [...state.pending.filter((q) => q.id !== "dirty-overlap"), dirtyQuestion(dirtyScope)] };
   }
+  // Deep work on a model nobody qualified for it: the user chooses to continue or pause before Deep work starts (RSC-08).
+  if (needsModelAnswer(w)) state = { ...state, pending: [...state.pending.filter((q) => q.id !== MODEL_LIMIT), modelQuestion(w)] };
   const gen = state.generationSeq + 1;
   const next: State = {
     ...withWork(item ? claim(state, item.id, w.id) : state, w),
@@ -225,7 +228,7 @@ export async function created(c: Ctx): Promise<Plan> {
     ...layoutNotes(probe),
     ...(why && level !== "L4" ? [reason("capability-missing", why, { note: true })] : []),
   ];
-  const asking = next.pending.find((q) => q.id === "dirty-overlap") ?? c.shared.question;
+  const asking = next.pending.find((q) => q.id === "dirty-overlap" || q.id === MODEL_LIMIT) ?? c.shared.question;
   return {
     state: next,
     resp: {

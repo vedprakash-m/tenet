@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-10 — Deep work warns about an unqualified or unknown model
+
+- Entering Deep work on a model whose label is not `qualified` returns one `model-unqualified-for-deep` question at `open`, and again before the first `check` after a later rise to Deep: "This model configuration hasn't been evaluated for Deep work. Continue with that limitation, or pause?" `continue` records the answer for this work and its model record only (a changed record asks again); `pause` parks the work. The model label is never changed and no other model is suggested (RSC-08, TS §4.8, UX §5.1). No qualification table exists yet, so every model is `unknown` and every Deep contract is asked. Files: `verbs/model-limit.ts`, `decisions/model-limit.ts`, `decisions/index.ts`, `verbs/open-new.ts`, `verbs/check.ts`, `core/schemas.ts` (optional `modelAck`), `plugin/skills/tenet/SKILL.md`; tests `model-qualification.test.ts`, `deep.test.ts`.
+
 ## 2026-11-09 — Dirty-file choices: wait, include, leave out
 
 - The `dirty-overlap` question now offers the UX J-03b choices: `wait` (recommended; records nothing, and a file the user committed or set aside meanwhile stops being human-dirty at the next check), `include` (the named files are committed with the work), and `leave-out` (Tenet neither edits nor commits the file; a check that finds it declared or changed is refused with `attribution-mixed-file`). The legacy `keep-out` answer is still accepted. Owner decision 2026-11-09: consented inclusion of named files is allowed; PRD §5.12 now says so, matching the UX and Tech specs (P47). Files: `verbs/dirty.ts`, `verbs/check.ts`, `decisions/simple.ts`, `core/schemas.ts` (optional `leaveOut`), `plugin/skills/tenet/SKILL.md`, `README.md`, `specs/PRD.md`; tests `dirty-overlap-bind.test.ts`, `scenarios.test.ts`.
