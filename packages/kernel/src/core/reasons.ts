@@ -24,6 +24,8 @@ export const REASONS = {
   "accessibility-claim-narrowed": [0, "A changed critical journey lacks a screen-reader check"],
   "audit-unavailable": [0, "Advisory data was unavailable"],
   "fitness-trend-degraded": [0, "A fitness function crossed its declared degradation threshold"],
+  "threat-note-open": [0, "A security-relevant change lacks a complete threat note, or a note item is neither a test nor a constraint"],
+  "threat-constraints-unchecked": [0, "Security items in the threat and data note are constraints that no check covers"],
   "integration-unvalidated": [0, "Integrated tree not rechecked"],
   "dependency-unverified": [0, "A dependency change no verification explains"],
   "locked-test-changed": [0, "Locked file changed without disposition"],

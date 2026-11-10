@@ -113,12 +113,14 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
       elements: [
         { ref: "r1", kind: "requirement", origin: "request", text: "a signed-in member can see which items are available or on loan, reserve an available item, and return their own loan; repeated or concurrent returns are refused with a conflict" },
         { ref: "e1", kind: "example", origin: "request", of: "r1", test: "distinguishing", expect: "fail", testFile: "server/src/features/loans/loans.test.ts", text: "browsing shows availability; reserving an available item succeeds and marks it unavailable" },
-        { ref: "e2", kind: "example", origin: "request", of: "r1", test: "boundary", expect: "fail", testFile: "server/src/features/loans/loans.test.ts", text: "reserving an item already on loan is refused with a conflict, not a silent failure" },
+        { ref: "e2", kind: "example", origin: "request", of: "r1", test: "boundary", expect: "fail", threat: "abuse", testFile: "server/src/features/loans/loans.test.ts", text: "reserving an item already on loan is refused with a conflict, not a silent failure" },
         { ref: "e3", kind: "example", origin: "request", of: "r1", test: "boundary", expect: "pass", testFile: "server/test/concurrent-reservation.test.ts", text: "of 5 simultaneous reservation attempts on one item from separate processes, exactly one succeeds — a database-schema invariant (the unique partial index), true the moment the migration exists, independent of the feature logic this task adds" },
         { ref: "r2", kind: "requirement", origin: "request", text: "only an admin can see who currently has an item on loan; everyone else sees only availability" },
-        { ref: "e4", kind: "example", origin: "request", of: "r2", test: "distinguishing", expect: "fail", testFile: "server/src/features/loans/loans.test.ts", text: "the admin overview names the borrower; a member's own browse view never does, and a member is refused the admin overview" },
-        { ref: "e5", kind: "example", origin: "request", of: "r1", test: "distinguishing", expect: "fail", testFile: "server/src/features/loans/loans.test.ts", text: "a fresh actor-scoped read lists only the current member’s persisted loans and returns, with bounded pagination" },
+        { ref: "e4", kind: "example", origin: "request", of: "r2", test: "distinguishing", expect: "fail", threat: "asset", testFile: "server/src/features/loans/loans.test.ts", text: "the admin overview names the borrower; a member's own browse view never does, and a member is refused the admin overview" },
+        { ref: "e5", kind: "example", origin: "request", of: "r1", test: "distinguishing", expect: "fail", threat: "data", testFile: "server/src/features/loans/loans.test.ts", text: "a fresh actor-scoped read lists only the current member’s persisted loans and returns, with bounded pagination" },
         { ref: "i1", kind: "invariant", origin: "request", of: "r2", text: "no response a non-admin can read ever names another user's identity" },
+        // The threat and data note (QLT-13): the migration makes this a persistence change.
+        { ref: "t1", kind: "constraint", origin: "request", threat: "actor", text: "members and admins are signed-in actors; the session decides who is acting, never a request field" },
       ],
     } });
     assert.equal(basis.exit, 0, JSON.stringify(basis));
