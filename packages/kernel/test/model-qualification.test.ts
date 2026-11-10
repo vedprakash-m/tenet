@@ -46,7 +46,7 @@ describe("model warning before Deep work [RSC-08]", () => {
 
 describe("model warning through the public verbs [RSC-08]", { skip: !posix && "mutating work is refused on Windows" }, () => {
   it("[RSC-08] open and check ask before Deep work; after continue the check runs and the model stays unknown", async () => {
-    const p = project();
+    const p = project({}, { autoContinueModel: false });
     roots.push(p.root);
     const o = await p.call("open", { profile: "feature", request: "add a greeting", scopePaths: ["src/greet.ts"], lane: "deep" });
     assert.equal(o.exit, 3, JSON.stringify(o));
@@ -68,7 +68,7 @@ describe("model warning through the public verbs [RSC-08]", { skip: !posix && "m
   });
 
   it("[RSC-08] pause parks the work and a standard-lane contract is never asked", async () => {
-    const p = project();
+    const p = project({}, { autoContinueModel: false });
     roots.push(p.root);
     const h = (await p.call("open", { profile: "feature", request: "add a greeting", scopePaths: ["src/greet.ts"], lane: "deep" })).handle!;
     const paused = await p.call("decide", { h, kind: MODEL_LIMIT, answers: { [MODEL_LIMIT]: "pause" } });

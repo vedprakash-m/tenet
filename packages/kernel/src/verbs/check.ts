@@ -140,10 +140,6 @@ export const check: Verb<CheckInput> = {
       const why = `${leftOut.join(", ")} changed, but the user asked to leave it out; restore it or ask the user`;
       throw new KernelError("attribution-mixed-file", why, { exit: 2 });
     }
-    if (needsModelAnswer(w)) {
-      const why = "Ask the user: continue Deep work with this limitation, or pause.";
-      return ask(cur, w, modelQuestion(w), [reason("model-unqualified-for-deep", "the model is not qualified for Deep work")], why);
-    }
     const undecided = undecidedDirty(w);
     if (undecided.length)
       return ask(
@@ -170,6 +166,10 @@ export const check: Verb<CheckInput> = {
         [reason("authority-needed", ungranted.slice(0, 3).join(", "))],
         "Ask the user; their words authorize the edits, or undo them."
       );
+    if (needsModelAnswer(w)) {
+      const why = "Ask the user: continue Deep work with this limitation, or pause.";
+      return ask(cur, w, modelQuestion(w), [reason("model-unqualified-for-deep", "the model is not qualified for Deep work")], why);
+    }
 
     const shape = shapeRun(ports, w, input, facts);
     const envelopeGate = checkEnvelopeGate(ports, cur, w, shape);

@@ -17,7 +17,7 @@ const cliEnv = () => ({
   ...(process.platform === "darwin" ? { __CF_USER_TEXT_ENCODING: "test" } : {}),
 });
 
-export function project(files: Record<string, string> = {}, options: { autoConsentEnvelope?: boolean } = {}) {
+export function project(files: Record<string, string> = {}, options: { autoConsentEnvelope?: boolean; autoContinueModel?: boolean } = {}) {
   const root = tmp("tenet-fx-");
   initRepo(root);
   write(root, "package.json", '{"name":"fx","type":"module","private":true}\n');
@@ -31,17 +31,26 @@ export function project(files: Record<string, string> = {}, options: { autoConse
   const ports = () => createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
   const rawCall = (verb: string, input: Record<string, unknown> = {}): Promise<KernelResponse> => runVerb(ports(), VERBS, verb, input);
   const call = (verb: string, input: Record<string, unknown> = {}): Promise<KernelResponse> =>
-    options.autoConsentEnvelope === false ? rawCall(verb, input) : callWithEnvelopeConsent(rawCall, verb, input);
+    options.autoConsentEnvelope === false ? rawCall(verb, input) : callWithEnvelopeConsent(rawCall, verb, input, options.autoContinueModel !== false);
   return { root, call, rawCall, ports, git: (...a: string[]) => git(root, ...a), write: (rel: string, c: string) => write(root, rel, c) };
 }
 
+/** Answers the routine questions a scripted test is not about: envelope consent, and continuing Deep work on the
+ * unqualified test model (RSC-08; `model-qualification.test.ts` covers that question itself). */
 export async function callWithEnvelopeConsent(
   rawCall: (verb: string, input: Record<string, unknown>) => Promise<KernelResponse>,
   verb: string,
   input: Record<string, unknown>,
+  continueModel = true,
 ): Promise<KernelResponse> {
-  const response = await rawCall(verb, input);
-  if (!response.questions?.some((question) => question.id === "envelope-consent") || typeof input.h !== "string") return response;
+  let response = await rawCall(verb, input);
+  if (typeof input.h !== "string") return response;
+  if (continueModel && verb !== "decide" && response.questions?.some((q) => q.id === "model-unqualified-for-deep")) {
+    const go = await rawCall("decide", { h: input.h, kind: "model-unqualified-for-deep", answers: { "model-unqualified-for-deep": "continue" } });
+    if (go.exit !== 0) return go;
+    response = await rawCall(verb, input);
+  }
+  if (!response.questions?.some((question) => question.id === "envelope-consent")) return response;
   const approval = await rawCall("decide", {
     h: input.h, kind: "envelope-consent", answers: { "envelope-consent": "allow-envelope" },
   });
