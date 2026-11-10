@@ -1592,7 +1592,7 @@ On a dirty tree it asks the user (GIT-10) to:
 - leave them untouched (the default when Tenet's scope does not overlap them).
 
 **Staging and commits:**
-- Tenet preserves the user's index (for example by staging through a temporary index) and stages only paths and hunks it authored in scope; it never uses broad staging as a substitute for attribution.
+- Tenet preserves the user's index (for example by staging through a temporary index) and stages only paths and hunks it authored in scope, plus whole files the user expressly named for inclusion in answer to the GIT-10 question; it never uses broad staging as a substitute for attribution.
 - **Touched set:** the coordinator declares the files it edited; the kernel cross-checks content changes since its last boundary, and changes that no declared edit explains are treated as possible human edits that need a decision.
 - If a file contains both human and Tenet hunks, Tenet stops and asks.
 - After committing, Tenet updates the user's real index only for committed paths whose index entry still matched the previous HEAD; any other overlap stops for a decision.

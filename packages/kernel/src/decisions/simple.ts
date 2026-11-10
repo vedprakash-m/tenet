@@ -19,13 +19,27 @@ export const dirtyOverlap: Decision = {
     const q = state.pending.find((p) => p.id === "dirty-overlap");
     const paths = undecidedDirty(work);
     const answer = input.answers?.["dirty-overlap"];
-    if (!q || !paths.length) throw new KernelError("revision-conflict", "there is no open question about your edits", { exit: 2 });
-    if (answer !== "keep-out" && answer !== "include") throw new KernelError("revision-conflict", 'answer "keep-out" or "include"', { exit: 1 });
+    if (!q) throw new KernelError("revision-conflict", "there is no open question about your edits", { exit: 2 });
+    if (!paths.length) {
+      // The work no longer needs any of those files (its scope changed): the question is closed, nothing is recorded.
+      const rest = state.pending.filter((p) => p.id !== "dirty-overlap");
+      return { state: { ...state, pending: rest }, resp: { work: work.id, next: [nx("check", "Continue.", true)], data: { decided: [] } } };
+    }
+    if (answer !== "wait" && answer !== "include" && answer !== "leave-out" && answer !== "keep-out") {
+      throw new KernelError("revision-conflict", 'answer "wait", "include" or "leave-out"', { exit: 1 });
+    }
     if (factsHash([...paths].sort()) !== q.bind.factsHash) {
       throw new KernelError("revision-conflict", "the files with your edits changed since the question was asked; run check to be asked again", { exit: 2 });
     }
-    const w = { ...work, ...(answer === "include" ? { includeDirty: [...work.includeDirty, ...paths] } : { keepOut: [...work.keepOut, ...paths] }) };
     const rest = state.pending.filter((p) => p.id !== "dirty-overlap");
+    if (answer === "wait") {
+      // Nothing is recorded: the next check asks again about any file that is still dirty.
+      const next = [nx("ask", "Wait for the user to commit or set aside their edits and say continue; then run check.", true)];
+      return { state: { ...state, pending: rest }, resp: { work: work.id, next, data: { waiting: paths, answer } } };
+    }
+    const w = answer === "include"
+      ? { ...work, includeDirty: [...work.includeDirty, ...paths] }
+      : { ...work, keepOut: [...work.keepOut, ...paths], ...(answer === "leave-out" ? { leaveOut: [...(work.leaveOut ?? []), ...paths] } : {}) };
     return { state: withWork({ ...state, pending: rest }, w), resp: { work: w.id, next: [nx(w.basis ? "check" : "basis", "Continue.", true)], data: { decided: paths, answer } } };
   },
 };
