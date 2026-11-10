@@ -12,6 +12,7 @@ import { isLive, newContract } from "../core/state.ts";
 import type { Plan } from "../pipeline.ts";
 import type { Ports, RepoProbe } from "../ports/types.ts";
 import { quarantineSurface } from "../decisions/quarantine.ts";
+import { reconstructionSurface } from "../decisions/reconstruction.ts";
 import { factsHash, question, readinessOf, withWork } from "./common.ts";
 import { dirtyQuestion, undecidedDirty } from "./dirty.ts";
 import { MODEL_LIMIT, modelQuestion, needsModelAnswer } from "./model-limit.ts";
@@ -239,6 +240,7 @@ export async function created(c: Ctx): Promise<Plan> {
       ...(asking ? { questions: [asking], exit: 3 } : {}),
       ...(c.effects ? { effects: c.effects } : {}),
       progress: { phase: "proposed" },
+      ...reconstructionSurface(next),
       ...quarantineSurface(next),
     },
   };

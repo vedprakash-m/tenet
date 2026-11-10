@@ -883,6 +883,16 @@ export class GitCli implements Git {
     return { commits, shallow, merges };
   }
 
+  async tenetHistory(): Promise<{ labels: Record<string, number>; unmerged: string[]; shallow: boolean }> {
+    const shallow = (await this.tryOut(["rev-parse", "--is-shallow-repository"])) === "true";
+    const grep = "--grep=^Tenet-Work: W-[0-9]{4,5}$";
+    const log = await this.tryOut(["log", "--all", "-E", grep, "--format=%(trailers:key=Tenet-Work,valueonly)"]);
+    const labels: Record<string, number> = {};
+    for (const l of (log ?? "").split(/\s+/)) if (/^W-\d{4,5}$/.test(l)) labels[l] = (labels[l] ?? 0) + 1;
+    const refs = await this.tryOut(["for-each-ref", "--no-merged=HEAD", "--format=%(refname:short)", "refs/heads/tenet/"]);
+    return { labels, unmerged: (refs ?? "").split(/\s+/).filter(Boolean), shallow };
+  }
+
   async planUndo(
     commits: readonly string[],
   ): Promise<

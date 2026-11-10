@@ -103,7 +103,7 @@ After an interruption or compaction run `tenet packet resume --h <handle>` and r
 
 On `takeover-check`, ask in chat whether the earlier chat has stopped and end the turn. Only on that answer run `tenet decide takeover-check --h <handle> --answer takeover-check=stopped`; use `--answer takeover-check=wait` while it is still working. A new handle cannot stop native edits from the earlier chat.
 
-On `quarantine-review`, ask in chat and end the turn. Use `tenet decide adopt --target quarantine --h <handle> --answer quarantine-review=fresh` to keep the fresh start, or `--answer quarantine-review=review` for a metadata preview. Importing record contents is unavailable and no old grant, command, setting or consent is restored; restate approved intent through ordinary decisions.
+On `quarantine-review` or `reconstruction-review`, ask in chat, end the turn, then answer: `tenet decide adopt --target quarantine` (or `--target reconstruction`) `--h <handle> --answer <question id>=<choice>`: `fresh` keeps the fresh start, `review` previews import metadata, `use` loads what `INTENT.md` still shows as unadopted intent. No old grant, consent, receipt or lock returns.
 
 
 Intent changes. Before changing accepted intent, run `tenet inspect --view impact --topic <ids>` and tell the user what it names before you proceed.
