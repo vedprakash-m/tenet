@@ -106,8 +106,9 @@ describe("workload obligation [QLT-05]", () => {
     const r = workloadReceipt(green);
     assert.equal(r?.status, "fail");
     assert.match(r?.failures[0].message, /250 ms against the declared target 200/);
-    const std = await contract(p, 2, "standard");
-    assert.equal(workloadReceipt(std.green), undefined);
+    const standard = await workloadProject();
+    standard.value(100);
+    assert.equal(workloadReceipt((await contract(standard.p, 1, "standard")).green), undefined);
     const plain = await workloadProject(DECLARATION, ["tsc"]);
     assert.equal(workloadReceipt((await contract(plain.p, 1)).green), undefined);
   });
