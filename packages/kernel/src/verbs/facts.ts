@@ -115,7 +115,8 @@ export function verdictInput(ports: Ports, st: State, w: WorkContract, facts: Fa
     elements: st.project.intent.elements.filter((e) => w.basis?.elementIds.includes(e.id)),
     confirmedAssumptions: w.basis?.confirmedAssumptions ?? [],
     unsupportedChecks: unsupportedExecution(ports, st, w),
-    obligations: w.obligations, receipts: w.receipts, baselineFailures: [], excludedScope: [], testHashes,
+    obligations: w.obligations, receipts: w.receipts, testHashes,
+    sealedBaseline: w.sealedBaseline, exceptions: w.exceptions, treated: w.treated,
     unauthorized: unauthorizedEdits(ports, w, facts),
     changedLocks: st.locks.filter((l) => lockApplies(l, w, facts)).flatMap((l) => [
       ...(inv.entries.get(l.path)?.blob !== l.hash ? [l.path] : []),

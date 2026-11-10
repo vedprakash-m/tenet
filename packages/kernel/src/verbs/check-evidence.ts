@@ -12,6 +12,10 @@ import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
 import type { AttentionItem, BudgetState, Obligation, Receipt, State, StopReason, WorkContract } from "../core/schemas.ts";
 import type { Normalized, Ports, StaticTool } from "../ports/types.ts";
 import type { Facts } from "./facts.ts";
+import type { SealedRun } from "./check-sealed.ts";
+import { spared } from "../core/baseline.ts";
+import type { BaselineCtx } from "../core/baseline.ts";
+import type { Exclusion } from "../core/exclusions.ts";
 
 /** Everything a run decided before it started, which its result needs to be interpreted. */
 export interface Run {
@@ -30,13 +34,15 @@ export interface Run {
   id: string;
   /** Fingerprint of the toolchain when the run was prepared; a different one after the run means an input moved (EVD-11). */
   toolchain?: string;
+  /** The exclusion policy: paths it forbids reading stay out of the sealed starting copy (EVD-04). */
+  exclusions?: Exclusion[];
 }
 
 /** One rerun of failed required test files on unchanged inputs (EVD-08): what ran, which obligations it covers and where its report is. */
 export interface Rerun { facts: RunFacts; obligations: string[]; toExecute: "all" | string[]; report: string }
 
 /** What a check run observed: the test runner, and each static tool (including the e2e obligation) by obligation. */
-export interface Executed extends RunFacts { statics: Record<string, RunFacts>; reruns?: Rerun[]; moved?: string[] }
+export interface Executed extends RunFacts { statics: Record<string, RunFacts>; reruns?: Rerun[]; moved?: string[]; sealed?: SealedRun }
 export const isStatic = (ob: Obligation): boolean => ob.kind === "static";
 export const isE2e = (ob: Obligation): boolean => ob.tool === "playwright";
 export const staticReport = (runDir: string, tool: string): string => join(runDir, `${tool}.json`);
@@ -156,16 +162,20 @@ export function account(
   cw: WorkContract,
   o: Executed,
   receipts: Receipt[],
-  configFailed: boolean
+  configFailed: boolean,
+  ctx: BaselineCtx = {}
 ): { budget: BudgetState; stop: StopReason | undefined } {
   const ranTests = o.ran ? run.toRun.filter((ob) => !isStatic(ob) && !run.missing.some((m) => m.id === ob.id)).length : 0;
   const reran = (o.reruns ?? []).reduce((n, r) => n + r.obligations.length, 0); // each rerun obligation is a launched check (PRD §4.4.1)
-  const launched = ranTests + reran + run.toRun.filter((ob) => isStatic(ob) && o.statics[ob.id]?.ran).length;
+  const sealed = o.sealed?.run?.ran ? 1 : 0; // the starting-tree run is one launched check (EVD-04)
+  const launched = ranTests + reran + sealed + run.toRun.filter((ob) => isStatic(ob) && o.statics[ob.id]?.ran).length;
   let budget = recordLaunchedChecks(cw.budget, launched);
-  if (run.stage === "candidate" && run.scope === "full" && !configFailed) {
+  const failing = receipts.filter((r) => r.status === "fail");
+  const allSpared = failing.length > 0 && failing.every((r) => spared(r, ctx)); // failures that also fail at the start cost no attempt
+  if (run.stage === "candidate" && run.scope === "full" && !configFailed && !allSpared) {
     budget = recordAttempt(budget);
     // an attempt that failed before a flaky pass still counts as a failure for the repeated-failure signature
-    const first = receipts.find((r) => r.status === "fail") ?? receipts.find((r) => r.qualifiers.includes("flaky"));
+    const first = failing.find((r) => !spared(r, ctx)) ?? receipts.find((r) => r.qualifiers.includes("flaky"));
     const names = first?.status === "fail" ? (first.failures ?? []).map((f) => f.test) : (first?.history?.[0]?.failed ?? []);
     budget = first
       ? withSignature(

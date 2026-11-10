@@ -159,6 +159,8 @@ export const Receipt = z.object({
   }).optional(),
   failures: z.array(z.object({ test: z.string(), kind: z.string(), message: z.string() })).optional(),
   failureKinds: z.array(z.string()).optional(), // complete population classification, independent of bounded diagnostics
+  failureIds: z.array(z.string().max(300)).max(200).optional(), // the broader suite's failures: `<file>::<test>U+001F<kind>:<sig>` (EVD-04)
+  startAbsent: z.array(z.string()).max(200).optional(), // failing test files that did not exist at the contract's start
   analyzedFiles: z.array(z.string()).max(2000).optional(),
   versions: z.object({ tool: z.string(), reporter: z.string(), adapter: z.string() }),
   provenance: z.object({ runId: z.string(), runDir: z.string(), startedAt: z.string(), pid: z.number().optional() }),
@@ -328,6 +330,18 @@ export const WorkContract = z.object({
   acceptance: z.enum(["pending", "accepted", "rejected", "accepted-with-residual-risk"]),
   assessment: ownRecord(z.enum(["low", "high"])),
   lastCheck: z.object({ candidate: z.string(), at: z.string(), stage: z.string() }).optional(),
+  // One run of the suite on the starting files (EVD-04, TS §9.8): its failures, or why it could not run.
+  sealedBaseline: z.union([
+    z.object({
+      status: z.literal("recorded"), startId: z.string(), failed: z.array(z.string().max(300)).max(200), complete: z.boolean(), at: z.string(),
+    }),
+    z.object({ status: z.literal("unavailable"), why: z.string(), tries: z.number().int().nonnegative(), at: z.string() }),
+  ]).optional(),
+  // Broader-suite failures the user left out of this work (in their words), or made this work's to fix.
+  exceptions: z.array(z.object({
+    kind: z.literal("baseline-failure"), ids: z.array(z.string()).max(200), reason: z.string(), at: z.string(),
+  })).max(20).optional(),
+  treated: z.array(z.object({ ids: z.array(z.string()).max(200), at: z.string() })).max(20).optional(),
   handoff: z.string().optional(),
   pinned: z.object({ tenet: z.string(), schema: z.number(), adapter: z.string().optional() }),
   createdAt: z.string(), updatedAt: z.string(),

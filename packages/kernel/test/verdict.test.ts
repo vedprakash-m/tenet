@@ -35,9 +35,17 @@ const pass = (role: AnalystLink["role"], over: Partial<AnalystLink> = {}): Analy
 const base = (): VerdictInput => ({
   profile: "feature", level: "L4", implementationExists: true, prototypeRequested: false, behavioralChange: true, reviewRequired: true,
   candidate: "cand", checkInputId: CHECK, basisHash: "bh", elements: [req, ex], obligations: [ob, suite], receipts: [rc("OB-EX-1"), rc("OB-suite")],
-  baselineFailures: [], excludedScope: [], testHashes: { "a.test.ts": "h1" }, changedLocks: [], unauthorized: [], reviews: [link], analyses: [], findings: [], attention: [], declined: [],
+  testHashes: { "a.test.ts": "h1" }, changedLocks: [], unauthorized: [], reviews: [link], analyses: [], findings: [], attention: [], declined: [],
   attemptsLeft: 2, commitExists: true, committedTreeChecked: true, checkedIncludesHumanEdits: false, integratedStale: false,
 });
+/** A failing suite receipt that lists its failures, and a sealed starting record with these failure ids (EVD-04). */
+const idOf = (test: string, kind = "assertion") => `${test.replace("#", "::")}${kind}:sig`;
+const suiteFail = (failures: Array<{ test: string; kind: string; message: string }>, over: Partial<Receipt> = {}) => rc("OB-suite", {
+  status: "fail", failures, failureIds: failures.map((f) => idOf(f.test, f.kind)),
+  counts: { discovered: failures.length, executed: failures.length, passed: 0, failed: failures.length, skipped: 0, focused: 0 }, ...over,
+});
+const recorded = (failed: string[], complete = true) => ({ status: "recorded" as const, startId: "s", failed, complete, at: "t" });
+const sealedWith = (start: string[], excluded: string[]) => ({ sealedBaseline: recorded(start), exceptions: [{ ids: excluded }] });
 const codes = (i: VerdictInput) => verdict(i).reasons.filter((r) => !r.note).map((r) => r.code);
 
 describe("verdict table [RES-02, EVD-01]", () => {
@@ -116,45 +124,40 @@ describe("verdict table [RES-02, EVD-01]", () => {
     assert.equal(verdict({ ...base(), commitExists: false, committedTreeChecked: false, checkedIncludesHumanEdits: true }).scope, "working-tree-with-your-edits");
     assert.equal(verdict({ ...base(), checkedIncludesHumanEdits: true, committedTreeChecked: false }).scope, "working-tree-with-your-edits");
   });
-  it("allows a supplied matching baseline failure only when its scope is excluded", () => {
+  it("allows a matching sealed baseline failure only when the user excluded it [EVD-04]", () => {
     const failure = { test: "legacy.test.ts#existing-failure", kind: "assertion" as const, message: "still fails" };
-    const candidateFailure = rc("OB-suite", { status: "fail", failures: [failure] });
-    const withInputs = (baselineFailures: string[], excludedScope: string[]) =>
-      verdict({ ...base(), receipts: [rc("OB-EX-1"), candidateFailure], baselineFailures, excludedScope });
+    const id = idOf(failure.test);
+    const withInputs = (start: string[], excluded: string[]) =>
+      verdict({ ...base(), receipts: [rc("OB-EX-1"), suiteFail([failure])], ...sealedWith(start, excluded) });
 
-    const excluded = withInputs([failure.test], [failure.test]);
+    const excluded = withInputs([id], [id]);
     assert.equal(excluded.endpoint, "checked-local");
     assert.ok(excluded.reasons.some((r) => r.code === "baseline-failure-excluded" && r.note));
 
-    const notExcluded = withInputs([failure.test], []);
+    const notExcluded = withInputs([id], []);
     assert.equal(notExcluded.endpoint, "implemented-unverified");
     assert.ok(notExcluded.reasons.some((r) => r.code === "baseline-failure-not-excluded" && !r.note));
 
-    const notMatchingBaseline = withInputs([], [failure.test]);
+    const notMatchingBaseline = withInputs([], [id]);
     assert.equal(notMatchingBaseline.endpoint, "implemented-unverified");
-    assert.ok(notMatchingBaseline.reasons.some((r) => r.code === "evidence-failed" && !r.note));
+    assert.ok(notMatchingBaseline.reasons.some((r) => r.code === "evidence-failed" && !r.note && /weren't failing this way/.test(r.message)));
 
-    const differentBaselineTest = withInputs(["legacy.test.ts#different-failure"], [failure.test]);
+    const differentBaselineTest = withInputs([idOf("legacy.test.ts#different-failure")], [id]);
     assert.equal(differentBaselineTest.endpoint, "implemented-unverified");
     assert.ok(differentBaselineTest.reasons.some((r) => r.code === "evidence-failed" && !r.note));
   });
   it("lists every excluded pre-existing failure in the checked result [AC-27]", () => {
     const failures = [
       { test: "legacy.test.ts#first", kind: "assertion" as const, message: "first still fails" },
-      { test: "legacy.test.ts#second", kind: "timeout" as const, message: "second still fails" },
+      { test: "other.test.ts#second", kind: "timeout" as const, message: "second still fails" },
     ];
-    const names = failures.map((failure) => failure.test);
-    const v = verdict({
-      ...base(),
-      receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "fail", failures })],
-      baselineFailures: names,
-      excludedScope: names,
-    });
+    const ids = failures.map((failure) => idOf(failure.test, failure.kind));
+    const v = verdict({ ...base(), receipts: [rc("OB-EX-1"), suiteFail(failures)], ...sealedWith(ids, ids) });
 
     assert.equal(v.endpoint, "checked-local");
     const excluded = v.reasons.filter((r) => r.code === "baseline-failure-excluded");
     assert.equal(excluded.length, 1);
-    for (const name of names) assert.ok(excluded[0]!.message.includes(name), name);
+    for (const file of ["legacy.test.ts", "other.test.ts"]) assert.ok(excluded[0]!.message.includes(file), file);
   });
   it("does not silently narrow the acceptance basis when only part of the outcome is verified", () => {
     const secondRequirement: BasisElement = {
@@ -429,8 +432,8 @@ describe("verdict table [RES-02, EVD-01]", () => {
       for (const stopReason of stops) {
         for (const attemptsLeft of [0, 1, 2]) {
           const input: VerdictInput = {
-            ...base(), stopReason, attemptsLeft, baselineFailures: [failure.test], excludedScope: excluded ? [failure.test] : [],
-            receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "fail", failures: [failure] })],
+            ...base(), stopReason, attemptsLeft, ...sealedWith([idOf(failure.test)], excluded ? [idOf(failure.test)] : []),
+            receipts: [rc("OB-EX-1"), suiteFail([failure])],
           };
           const v = verdict(input);
           const label = `${excluded ? "excluded" : "not excluded"}, ${stopReason ?? "no stop"}, ${attemptsLeft} attempts`;
@@ -439,7 +442,7 @@ describe("verdict table [RES-02, EVD-01]", () => {
           assert.equal(v.stopReason, stopReason, label);
           assert.deepEqual(v.reasons.map(r => r.code), [excluded ? "baseline-failure-excluded" : "baseline-failure-not-excluded"], label);
           assert.equal(v.reasons[0]?.note === true, excluded, label);
-          if (excluded) assert.ok(v.reasons[0]?.message.includes(failure.test), label);
+          if (excluded) assert.ok(v.reasons[0]?.message.includes("legacy.test.ts"), label);
           assert.equal(continueRequired(v, input), false, label);
         }
       }
@@ -452,15 +455,15 @@ describe("verdict table [RES-02, EVD-01]", () => {
     const cases = [
       { label: "partially excluded baseline", failures: [legacy, other], baseline: [legacy.test, other.test], code: "baseline-failure-not-excluded" },
       { label: "baseline and introduced", failures: [legacy, introduced], baseline: [legacy.test], code: "evidence-failed" },
-      { label: "unnamed failure", failures: [], baseline: [legacy.test], code: "evidence-failed" },
+      { label: "unnamed failure", failures: [], baseline: [legacy.test], code: "classification-unknown" },
     ];
     const stops: Array<VerdictInput["stopReason"]> = [undefined, "repeated-failure", "budget-exhausted", "host-limit", "user-stop", "declined"];
     for (const c of cases) {
       for (const stopReason of stops) {
         for (const attemptsLeft of [0, 1, 2]) {
           const input: VerdictInput = {
-            ...base(), stopReason, attemptsLeft, baselineFailures: c.baseline, excludedScope: [legacy.test],
-            receipts: [rc("OB-EX-1"), rc("OB-suite", { status: "fail", failures: c.failures })],
+            ...base(), stopReason, attemptsLeft, ...sealedWith(c.baseline.map((t) => idOf(t)), [idOf(legacy.test)]),
+            receipts: [rc("OB-EX-1"), suiteFail(c.failures)],
           };
           const v = verdict(input);
           const label = `${c.label}, ${stopReason ?? "no stop"}, ${attemptsLeft} attempts`;

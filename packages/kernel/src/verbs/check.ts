@@ -180,6 +180,7 @@ export const check: Verb<CheckInput> = {
     const runId = `${w.label}-${ports.rand.base32(6)}`;
     const runDir = ports.store.tempDir(`run-${runId}`);
     const run: Run = { ports, w, runId, runDir, stage: input.stage as Run["stage"], facts, ...shape, executionEnvelope };
+    run.exclusions = settingsFor(ports, cur, w).exclusions as Exclusion[];
     run.toolchain = toolchainOf(ports);
     // Prepare: record the run intent in the contract and release the lock (TS §7.3).
     const prepared: WorkContract = {
