@@ -25,7 +25,7 @@ const VERBS = {
   packet: "packet --role <reviewer|handoff|resume> --h <handle> [--retry]   build a review manifest or a handoff",
   findings: "findings --h <handle> < review-result.json   record a review result",
   commit: "commit --h <handle> --subject <text>   checkpoint commit",
-  finish: "finish --h <handle> [--no-commit]   verdict, final commit, result",
+  finish: "finish --h <handle> [--no-commit] [stdin {\"demo\": ...}]   verdict, final commit, result, demo path",
   integrate: "integrate --h <handle>   merge the work branch into its base locally",
   undo: "undo --h <handle>   preview the inverse of the work's commits; apply with decide undo-confirm",
   stop: "stop --h <handle> --mode <pause|cancel|abandon>   always allowed",

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-10 — Demo path: screenshots for ui changes
+
+- `finish` demo proposals can now reference a screenshot as `{exampleId, path}`: an image (`.png`, `.jpg`, `.jpeg`, `.webp`) that the example's own check declares in `outputs` and that exists. `data.demo.screenshots` lists it with its SHA-256 and `verification: "declared-check-output-not-inspected"`; Tenet never inspects what it shows. Anything else is listed in `unavailable` (RES-05). The build skill now tells the coordinator how to send the demo, and `inspect help` names it. Files: `core/demo.ts`, `verbs/inspect.ts`, `plugin/skills/tenet-build/SKILL.md`; test `result-demo.test.ts`.
+
 ## 2026-11-10 — Settings: conflicting commands, unenforced preferences, personal values
 
 - A command that the shared policy and the project define differently is now reported as a limit naming both sources; the project's still wins (CFG-03). `inspect --view settings --topic style` and `resource_mode` now say the kernel passes the value to the coordinator and does not enforce it (CFG-04). The coordinator skill sends "why" about a setting to that view. A test proves preferences have no field in the shared policy and that setting every preference at every scope changes no tracked file (CFG-08). Existing resolution tests now carry `[CFG-03]`/`[CFG-04]`. Files: `core/config.ts`, `plugin/skills/tenet/SKILL.md`; tests `config.test.ts`, `personal-settings.test.ts`.

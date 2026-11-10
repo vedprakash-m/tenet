@@ -1,6 +1,6 @@
 // Result demo path, first slice (result-demo-path.md §10 to §12, RD-1 and RD-2): a strict bounded `finish --demo` proposal,
 // a structured `data.demo`, command and example references that are source-checked and never executed, and a declared
-// applicability limit. Screenshots, capture and receipt metadata are not part of this slice (RD-3, RD-4, RD-5).
+// applicability limit. A ui screenshot is an image the example's own check declares as an output; Tenet hashes it, never inspects it.
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { symlinkSync, writeFileSync } from "node:fs";
@@ -64,7 +64,7 @@ describe("demo proposal is strict and bounded (RD-1)", () => {
     rejects({ extra: 1 }, "top level");
     rejects({ steps: [{ exampleId: EX1, instruction: "go", extra: 1 }] }, "step");
     rejects({ commands: [{ kind: "package-script", path: "package.json", script: "dev", extra: 1 }] }, "command source");
-    rejects({ screenshots: [{ receiptId: "r1", exampleId: EX1, attachmentId: "a1", extra: 1 }] }, "screenshot");
+    rejects({ screenshots: [{ exampleId: EX1, path: "shots/a.png", extra: 1 }] }, "screenshot");
   });
 
   it("rejects over-bound input instead of truncating it", () => {
@@ -76,7 +76,7 @@ describe("demo proposal is strict and bounded (RD-1)", () => {
     rejects({ commands: [docSource(1, "x".repeat(501))] }, "long command");
     rejects({ commands: [scriptSource("s".repeat(101))] }, "long script name");
     rejects({ commands: [scriptSource("dev", `${"a/".repeat(100)}package.json`)] }, "long path");
-    const shots = Array.from({ length: 6 }, (_, i) => ({ receiptId: "r1", exampleId: EX1, attachmentId: `a${i}` }));
+    const shots = Array.from({ length: 6 }, (_, i) => ({ exampleId: EX1, path: `shots/a${i}.png` }));
     rejects({ surface: "ui", screenshots: shots }, "six screenshots");
     // 60 steps of 400 two-byte characters is within every field bound (800 bytes each) but over the 32 KiB proposal bound.
     rejects({ steps: Array.from({ length: 60 }, (_, i) => ({ exampleId: `EX-001-abc.${i + 1}`, instruction: "é".repeat(400) })) }, "32 KiB counted in bytes");
@@ -99,12 +99,12 @@ describe("demo proposal is strict and bounded (RD-1)", () => {
     rejects({ commands: [scriptSource("dev"), scriptSource("dev")] }, "duplicate script");
     rejects({ commands: [docSource(3, "npm run dev"), docSource(3, "npm run dev")] }, "duplicate documentation line");
     rejects({ steps: [{ exampleId: EX1, instruction: "a" }, { exampleId: EX1, instruction: "b" }] }, "duplicate example");
-    rejects({ surface: "ui", screenshots: [{ receiptId: "r1", exampleId: EX1, attachmentId: "a1" }, { receiptId: "r1", exampleId: EX1, attachmentId: "a1" }] }, "duplicate attachment");
+    rejects({ surface: "ui", screenshots: [{ exampleId: EX1, path: "shots/a.png" }, { exampleId: EX1, path: "shots/a.png" }] }, "duplicate attachment");
     rejects({ basisHash: "xyz" }, "hash shape");
     rejects({ steps: [{ exampleId: "not an id", instruction: "go" }] }, "example id shape");
     rejects({ commands: [docSource(0, "npm run dev")] }, "line zero");
     rejects({ commands: [docSource(1.5, "npm run dev")] }, "fractional line");
-    rejects({ surface: "ui", screenshots: [{ receiptId: "r1", exampleId: EX2, attachmentId: "a1" }] }, "screenshot for an example with no step");
+    rejects({ surface: "ui", screenshots: [{ exampleId: EX2, path: "shots/a.png" }] }, "screenshot for an example with no step");
   });
 
   it("requires an internal proposal to carry no commands, steps or screenshots", () => {
@@ -238,7 +238,7 @@ describe("run commands are source-checked and never executed (DP-T01)", () => {
 });
 
 describe("examples resolve against the pinned basis (DP-T02)", () => {
-  it("names each accepted example with its confirmed text, then the supplied guidance", () => {
+  it("[RES-05] names each accepted example with its confirmed text, then the supplied guidance", () => {
     const d = buildDemo(proposal(), contextFor(), reader(root()))!;
     assert.deepEqual(d.steps.map((s) => s.exampleId), [EX1, EX2]);
     assert.ok(d.steps[0]!.text.includes("greet('Ada') is 'Hello, Ada!'"));
@@ -312,7 +312,7 @@ describe("applicability is a coordinator declaration the kernel cannot certify (
     assert.equal(buildDemo(internal, contextFor(), reader(root())), undefined);
   });
 
-  it("states a missing run command, and for ui a missing screenshot, as unavailable rather than guessing", () => {
+  it("[RES-05] states a missing run command, and for ui a missing screenshot, as unavailable rather than guessing", () => {
     const ui = buildDemo(proposal({ surface: "ui" }), contextFor(), reader(root()))!;
     assert.ok(limits(ui).includes("run:not-supplied"));
     assert.ok(limits(ui).includes("screenshot:not-supplied"));
@@ -321,10 +321,29 @@ describe("applicability is a coordinator declaration the kernel cannot certify (
     assert.ok(!limits(use).some((l) => l.startsWith("screenshot")), "a use declaration does not require screenshots");
   });
 
-  it("refuses to reference a screenshot, because no capture or receipt-bound artifact exists in this slice", () => {
-    const d = buildDemo(proposal({ surface: "ui", screenshots: [{ receiptId: "r1", exampleId: EX1, attachmentId: "tenet-demo:EX-001-abc.1" }] }), contextFor(), reader(root()))!;
+  const shotElements = [ELEMENTS[0]!, { ...ELEMENTS[1]!, outputs: ["shots/*.png"] }, ELEMENTS[2]!];
+  const shotProposal = (screenshots: unknown[]) => proposal({ surface: "ui", basisHash: contextFor(shotElements).basis!.hash, screenshots });
+  it("[RES-05] for ui, references a screenshot the example's own check declared as an output, with its hash", () => {
+    const dir = root();
+    files(dir, { "shots/greet.png": "PNGDATA" });
+    const d = buildDemo(shotProposal([{ exampleId: EX1, path: "shots/greet.png" }]), contextFor(shotElements), reader(dir))!;
+    assert.equal(d.screenshots.length, 1);
+    assert.deepEqual([d.screenshots[0]!.exampleId, d.screenshots[0]!.path, d.screenshots[0]!.verification],
+      [EX1, "shots/greet.png", "declared-check-output-not-inspected"]);
+    assert.match(d.screenshots[0]!.sha256, /^[0-9a-f]{64}$/);
+    assert.ok(!limits(d).some((l) => l.startsWith("screenshot")));
+  });
+  it("[RES-05] refuses a screenshot that is not an image, not a declared output of that example, or missing", () => {
+    const dir = root();
+    files(dir, { "shots/greet.png": "PNGDATA", "other/greet.png": "PNGDATA", "shots/notes.txt": "x" });
+    const d = buildDemo(shotProposal([
+      { exampleId: EX1, path: "other/greet.png" }, { exampleId: EX1, path: "shots/notes.txt" }, { exampleId: EX1, path: "shots/gone.png" },
+    ]), contextFor(shotElements), reader(dir))!;
     assert.deepEqual(d.screenshots, []);
-    assert.ok(limits(d).includes("screenshot:unsupported:tenet-demo:EX-001-abc.1"));
+    assert.deepEqual(limits(d).filter((l) => l.startsWith("screenshot")),
+      ["screenshot:unsupported:other/greet.png", "screenshot:unsupported:shots/notes.txt", "screenshot:artifact-unavailable:shots/gone.png"]);
+    const plain = buildDemo(proposal({ surface: "ui", screenshots: [{ exampleId: EX1, path: "shots/greet.png" }] }), contextFor(), reader(dir))!;
+    assert.ok(limits(plain).includes("screenshot:unsupported:shots/greet.png"), "an example that declares no outputs cannot supply one");
   });
 });
 
@@ -354,7 +373,7 @@ describe("finish returns the demo without changing the verdict (E1, E3, E5)", ()
     return { endpoint, label, level, checks: normalized, acceptance, scope, stopReason };
   };
 
-  it("E1: exposes the documented command and a step naming the confirmed example", POSIX, async () => {
+  it("[RES-05] E1: exposes the documented command and a step naming the confirmed example", POSIX, async () => {
     const { p, h } = await fresh();
     const { w, elements } = stateOf(p);
     const example = elements.find((e) => e.kind === "example")!;
@@ -379,7 +398,7 @@ describe("finish returns the demo without changing the verdict (E1, E3, E5)", ()
     assert.equal((b.data as any).demo, undefined, "no proposal, no invented demo");
   });
 
-  it("E3: a missing run command is stated as unavailable", POSIX, async () => {
+  it("[RES-05] E3: a missing run command is stated as unavailable", POSIX, async () => {
     const { p, h } = await fresh();
     const f = await finishFixture(p, { h, noCommit: true, demo: { surface: "ui", basisHash: stateOf(p).w.basis!.hash, commands: [], steps: [], screenshots: [] } });
     const parts = (f.data as any).demo.unavailable.map((u: any) => `${u.part}:${u.reason}`);
