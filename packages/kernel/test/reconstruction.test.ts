@@ -128,7 +128,9 @@ describe("open after local records are lost [CON-07]", () => {
     assert.equal(Object.values(s.work)[0]!.label, "W-0008", "a new label never repeats one in history");
     assert.deepEqual([s.consents, s.trust, s.locks, s.project.intent.elements], [[], [], [], []]);
     const w = Object.values(s.work)[0]!;
-    assert.deepEqual([w.grants, w.receipts, w.reviews], [[], [], []]);
+    // The only grant is the routine one this open's own request gives; none comes from the repository.
+    assert.deepEqual(w.grants.map((g) => [g.source, g.quote]), [["request", "add returns"]]);
+    assert.deepEqual([w.receipts, w.reviews], [[], []]);
     assert.equal(s.project.adoption.intent, "undecided");
 
     const fenced = await p.call("decide", { h: r.handle!, kind: "basis", propose: BASIS });

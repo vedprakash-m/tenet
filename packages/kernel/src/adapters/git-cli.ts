@@ -892,8 +892,10 @@ export class GitCli implements Git {
     const labels: Record<string, number> = {};
     for (const l of await w("log", "--all", "-E", "--grep=^Tenet-Work: W-[0-9]{4,5}$", "--format=%(trailers:key=Tenet-Work,valueonly)"))
       labels[l] = (labels[l] ?? 0) + 1;
-    const unmerged = await w("for-each-ref", "--no-merged", "--format=%(refname:short)", "refs/heads/tenet/");
-    return { labels, unmerged, shallow: await this.shallow() };
+    return {
+      labels, unmerged: await w("for-each-ref", "--no-merged=HEAD", "--format=%(refname:short)", "refs/heads/tenet/"),
+      shallow: await this.shallow(),
+    };
   }
 
   async planUndo(
