@@ -23,7 +23,8 @@ async function finished(p: Project) {
   p.write("src/other.test.ts", 'import { expect, it } from "vitest";\nit("unrelated", () => { expect(1).toBe(1); });\n');
   p.git("add", "-A"); p.git("commit", "-qm", "an unrelated test that stays");
   const o = await p.call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts"], lane: "quick" });
-  const h = o.handle!;
+  assert.ok(o.handle, `could not open undo fixture: ${JSON.stringify(o)}`);
+  const h = o.handle;
   await p.call("decide", { h, kind: "basis", propose: BASIS });
   p.write("src/greet.test.ts", GREET_TEST);
   await p.call("check", { h, stage: "baseline" });
@@ -84,6 +85,98 @@ describe("undo [GIT-04]", () => {
     assert.equal(Object.keys(after.work).length, Object.keys(state.work).length, "a refused confirmation creates no revert contract");
     assert.equal(after.pending.find((q) => q.id === "undo-confirm")?.bind.factsHash, preview.questions![0]!.bind.factsHash);
   });
+
+  it("rechecks label ownership in merged history after preview [CON-12, GIT-04]", async () => {
+    const p = fresh();
+    const h = await finished(p);
+    p.write("docs/foreign.md", "later human work\n");
+    p.git("add", "docs/foreign.md");
+    p.git("commit", "-qm", "Later human work");
+    const preview = await p.call("undo", { h });
+    assert.equal(preview.questions?.[0]?.id, "undo-confirm", JSON.stringify(preview));
+    const state = p.ports().store.read()!.state;
+    const work = Object.values(state.work).find((w) => w.git.commits.length)!;
+    const previewHead = p.git("rev-parse", "HEAD");
+    const previewTree = p.git("rev-parse", "HEAD^{tree}");
+    const side = p.git("commit-tree", `${previewHead}^{tree}`, "-p", previewHead,
+      "-m", `Foreign side history\n\nTenet-Work: ${work.label}`);
+    p.git("merge", "--quiet", "--no-ff", "-m", "Merge side history", side);
+    const before = p.git("rev-parse", "HEAD");
+    assert.deepEqual(p.git("rev-list", "--parents", "-n", "1", "HEAD").split(" ").slice(1), [previewHead, side]);
+    assert.equal(p.git("rev-parse", "HEAD^{tree}"), previewTree);
+    assert.equal(p.git("rev-list", "--first-parent", "HEAD").split("\n").includes(side), false);
+    const index = readFileSync(join(p.root, ".git/index"));
+    let applied = false;
+    const ports = p.ports();
+    const inverse = ports.git.applyPatch.bind(ports.git);
+    ports.git.applyPatch = async (...args) => { applied = true; return inverse(...args); };
+
+    const result = await runVerb(ports, VERBS, "decide", { h, kind: "undo-confirm", answers: { "undo-confirm": "apply" } });
+
+    assert.equal(result.reasons[0]?.code, "undo-conflict", JSON.stringify(result));
+    assert.match(result.reasons[0]!.message, /ownership cannot be established/);
+    assert.equal(applied, false);
+    assert.equal(p.git("branch", "--show-current"), "main");
+    assert.equal(p.git("rev-parse", "HEAD"), before);
+    assert.deepEqual(readFileSync(join(p.root, ".git/index")), index);
+    assert.equal(readFileSync(join(p.root, "src/greet.ts"), "utf8"), GREET_IMPL);
+    assert.equal(readFileSync(join(p.root, "docs/foreign.md"), "utf8"), "later human work\n");
+    const after = p.ports().store.read()!.state;
+    assert.equal(after.work[work.id]!.git.undoneBy, undefined);
+    assert.equal(Object.keys(after.work).length, Object.keys(state.work).length);
+    assert.equal(after.pending.find((q) => q.id === "undo-confirm")?.bind.factsHash, preview.questions![0]!.bind.factsHash);
+  });
+
+  for (const sameLabel of [true, false]) {
+    it(`${sameLabel ? "refuses a same-label" : "allows a differently labeled"} empty commit after preview [GIT-04]`, async () => {
+      const p = fresh();
+      const h = await finished(p);
+      const preview = await p.call("undo", { h });
+      assert.equal(preview.questions?.[0]?.id, "undo-confirm", JSON.stringify(preview));
+      const state = p.ports().store.read()!.state;
+      const work = Object.values(state.work).find((w) => w.git.commits.length)!;
+      const previewHead = p.git("rev-parse", "HEAD");
+      const previewTree = p.git("rev-parse", "HEAD^{tree}");
+      const label = sameLabel ? work.label : "W-9999";
+      assert.equal(label === work.label, sameLabel);
+      p.git("commit", "--allow-empty", "-qm", `Later empty commit\n\nTenet-Work: ${label}`);
+      const before = p.git("rev-parse", "HEAD");
+      const index = readFileSync(join(p.root, ".git/index"));
+      assert.notEqual(before, previewHead);
+      assert.equal(p.git("rev-parse", "HEAD^"), previewHead);
+      assert.equal(p.git("rev-parse", "HEAD^{tree}"), previewTree);
+      let applied = false;
+      const ports = p.ports();
+      const inverse = ports.git.applyPatch.bind(ports.git);
+      ports.git.applyPatch = async (...args) => { applied = true; return inverse(...args); };
+
+      const result = await runVerb(ports, VERBS, "decide", {
+        h, kind: "undo-confirm", answers: { "undo-confirm": "apply" },
+      });
+
+      assert.equal(p.git("rev-parse", "HEAD"), before);
+      assert.deepEqual(readFileSync(join(p.root, ".git/index")), index);
+      const after = p.ports().store.read()!.state;
+      if (sameLabel) {
+        assert.equal(result.reasons[0]?.code, "undo-conflict", JSON.stringify(result));
+        assert.match(result.reasons[0]!.message, /ownership cannot be established/);
+        assert.equal(applied, false);
+        assert.equal(readFileSync(join(p.root, "src/greet.ts"), "utf8"), GREET_IMPL);
+        assert.equal(after.work[work.id]!.git.undoneBy, undefined);
+        assert.equal(Object.keys(after.work).length, Object.keys(state.work).length);
+        assert.equal(after.pending.find((q) => q.id === "undo-confirm")?.bind.factsHash, preview.questions![0]!.bind.factsHash);
+      } else {
+        assert.equal(result.exit, 0, JSON.stringify(result));
+        assert.equal(applied, true);
+        assert.equal(readFileSync(join(p.root, "src/greet.ts"), "utf8"), STUB);
+        assert.equal(existsSync(join(p.root, "src/greet.test.ts")), false);
+        assert.ok(after.work[work.id]!.git.undoneBy);
+        assert.equal(Object.keys(after.work).length, Object.keys(state.work).length + 1);
+        assert.equal(after.pending.some((q) => q.id === "undo-confirm"), false);
+        assert.ok(result.next?.some((next) => next.action === "check"), JSON.stringify(result));
+      }
+    });
+  }
 
   it("previews first and changes nothing; on a yes reverts only the work, keeps later human changes, then checks and commits like any work", async () => {
     const p = fresh();

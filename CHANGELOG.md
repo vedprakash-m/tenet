@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-12 — Undo confirmation tests that run on every platform (GIT-04)
+
+- New `packages/kernel/test/undo-confirm-simulated.test.ts` (22 tests): drives `undo` and `decide undo-confirm` with real Git and an in-memory store, so the confirmation checks run on Windows too, where the kernel refuses mutating work. It covers foreign same-label commits (including ones that leave the tree unchanged, in merged history, and empty), recorded merge, unreachable and shallow history, stale previews, overlapping or uncommitted human edits, recreated untracked files, cancel, and a clean apply that keeps later, staged, unstaged, untracked and ignored work. Undo stays disabled in the shipped kernel; the tests use the existing `enableUndoForTests` seam.
+- `undo.test.ts`: two added cases, a foreign same-label commit in merged history after the preview and same-label versus differently labeled empty commits after the preview.
+- `model-record.test.ts`: two test titles reworded so they claim no more than the assertions show.
+- Written on 2026-11-08 and 09 and brought onto current `main`; the documentation changes made at the same time were dropped because `main` has since disabled undo and cleanup removal and documents that itself.
+
 ## 2026-11-10 — Reading project intent back after `.tenet/` is lost (CON-07)
 
 - When `open` finds no state document and the repository has Tenet's marks (managed blocks in `INTENT.md`, damaged markers, `Tenet-Work` trailers, or unmerged `tenet/` branches), it reports what the repository still shows in a `reconstructed-from-repository` note (new reason code, exit 0): which shared files are present, commits per work label in history, unmerged work branches, shallow history, blocks it could not read, and a fixed list of what cannot be recovered. The work label sequence continues past the highest label in history, so a new label never repeats an old one. If `INTENT.md` has blocks it can read back, `open` asks one chat question, `reconstruction-review` (exit 3), bound to the exact recovered content; other calls are fenced until it is answered. `decide adopt --target reconstruction --answer reconstruction-review=use` loads the recovered overview, elements, decision records and plan items as unadopted intent and records `project.reconstructed` (IDs and what was not recovered); `=fresh` keeps an empty intent. If `INTENT.md` changed since the question, nothing is recovered and the question is asked again. `INTENT.md` and Git are only read.
