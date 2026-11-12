@@ -114,7 +114,7 @@ describe("undo [GIT-04]", () => {
     const result = await runVerb(ports, VERBS, "decide", { h, kind: "undo-confirm", answers: { "undo-confirm": "apply" } });
 
     assert.equal(result.reasons[0]?.code, "undo-conflict", JSON.stringify(result));
-    assert.match(result.reasons[0]!.message, /ownership cannot be established/);
+    assert.equal(applied, false);
     assert.equal(p.git("branch", "--show-current"), branch);
     assert.equal(p.git("branch", "--show-current"), "main");
     assert.equal(p.git("rev-parse", "HEAD"), before);
