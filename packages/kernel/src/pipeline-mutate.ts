@@ -34,6 +34,14 @@ function fence(current: State, verb: Verb, input: Input, w: WorkContract) {
       questions: [quarantine],
     });
   }
+  const recovered = current.pending.find((q) => q.id === "reconstruction-review");
+  const answersRecovered = input.kind === "abandon-confirm" || (input.kind === "adopt" && input.target === "reconstruction");
+  if (recovered && verb.name !== "stop" && !(verb.name === "decide" && answersRecovered)) {
+    throw new KernelError("reconstructed-from-repository", "Answer the question about the recovered records before continuing.", {
+      exit: 3,
+      questions: [recovered],
+    });
+  }
   const takeover = current.pending.find((q) => q.id === "takeover-check");
   if (takeover && verb.name !== "stop" && !(verb.name === "decide" && input.kind === "takeover-check")) {
     throw new KernelError("takeover-check", "confirm that the earlier chat has stopped before continuing", {

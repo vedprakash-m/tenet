@@ -15,8 +15,10 @@ export const running = (ports: Ports): Versions =>
 
 /** Decisions that answer other questions, so a pause never blocks them. */
 const ANSWERS = new Set(["version-reconcile", "abandon-confirm", "takeover-check", "repair-lock"]);
+const REVIEWS = ["quarantine", "reconstruction"];
 const answersOther = (verb: string, input: { kind?: string; target?: string }): boolean =>
-  verb === "stop" || (verb === "decide" && (ANSWERS.has(input.kind ?? "") || (input.kind === "adopt" && input.target === "quarantine")));
+  verb === "stop" ||
+  (verb === "decide" && (ANSWERS.has(input.kind ?? "") || (input.kind === "adopt" && REVIEWS.includes(input.target ?? ""))));
 
 /** An older document's missing adapter is back-filled silently; a drift stops every call but the answers (the fence runs first). */
 export function versionGate(ports: Ports, verb: string, input: { kind?: string; target?: string }, w: WorkContract, state: State) {

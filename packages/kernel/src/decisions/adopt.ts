@@ -11,6 +11,7 @@ import type { Plan } from "../pipeline.ts";
 import { factsHash, question, withWork } from "../verbs/common.ts";
 import type { Decision } from "./types.ts";
 import { reviewQuarantine } from "./quarantine.ts";
+import { reviewReconstruction } from "./reconstruction.ts";
 
 export const INTENT_FILE = "INTENT.md";
 export const POLICY_FILE = "tenet.policy.json";
@@ -98,6 +99,7 @@ export const adopt: Decision = {
   async run(c) {
     const { ports, tx, state, work, input } = c;
     if (input.target === "quarantine") return reviewQuarantine(c);
+    if (input.target === "reconstruction") return reviewReconstruction(c);
     if (input.target === "policy") {
       const text = ports.project.read(POLICY_FILE);
       if (text === null) throw new KernelError("capability-missing", `there is no ${POLICY_FILE} to adopt`, { exit: 2 });

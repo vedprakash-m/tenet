@@ -73,6 +73,7 @@ export const REASONS = {
   "takeover-check": [3, "The previous generation may still be working"],
   "revision-conflict": [2, "Expected revision differs"],
   "marker-mismatch": [3, "Copied, imported or marker-less state; quarantine decision"],
+  "reconstructed-from-repository": [0, "Local records were missing; what the repository still shows was read back, nothing else assumed"],
   "state-recovered-from-backup": [3, "Fallback to state.prev; grants suspended until reconfirmed"],
   "effect-uncertain": [3, "Intent without result that reconciliation could not resolve"],
   "lock-recovery-needed": [2, "A lock breaker died mid-break; a confirmed repair is needed"],
