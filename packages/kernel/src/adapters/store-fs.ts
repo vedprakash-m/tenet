@@ -195,9 +195,10 @@ export class FsStore implements Store {
   private async admitBeforeLock(name: string, deadline: number): Promise<void> {
     for (;;) try { this.admit(); return; } catch (e) {
       if (!(e instanceof KernelError && e.reasons[0]?.code === "unsupported-record" && e.message === "a private record changed during its bounded read")) throw e;
+      // A writer may finish and release the lock between its replacement and this check, so an unheld lock is retried too.
       const held = this.readLock(name);
-      if (!held || !isAlive(held.pid, held.procStart)) throw e;
-      if (Date.now() > deadline) throw new KernelError("kernel-busy", `held by ${held.verb} (pid ${held.pid})`);
+      if (held && !isAlive(held.pid, held.procStart)) throw e;
+      if (Date.now() > deadline) throw held ? new KernelError("kernel-busy", `held by ${held.verb} (pid ${held.pid})`) : e;
       await sleep(20);
     }
   }
