@@ -5,7 +5,7 @@ import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { GitCli } from "../src/adapters/git-cli.ts";
+import { SealingGit } from "../src/adapters/git-seal.ts";
 import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, finishFixture, project, reviewResult } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
@@ -150,7 +150,7 @@ describe("sealed copy of the starting files [EVD-04]", () => {
     write(root, "dirty.txt", "edited\n");
     write(root, "new.txt", "untracked\n");
     const index = readFileSync(join(root, ".git/index")), status = git(root, "status", "--porcelain=v1", "-uall");
-    const sealed = await new GitCli(root).materialize(head, join(out, "sealed"), (p) => !p.startsWith("secret/"),
+    const sealed = await new SealingGit(root).materialize(head, join(out, "sealed"), (p) => !p.startsWith("secret/"),
       { copy: [{ path: "dirty.txt", mode: "100644" }, { path: "new.txt", mode: "100644" }], remove: ["a.txt"] });
     assert.ok("root" in sealed, JSON.stringify(sealed));
     if (!("root" in sealed)) return;

@@ -3,7 +3,6 @@
 import { withoutGitLocalVars } from "./git-env.ts";
 import { outputMatcher } from "../core/outputs.ts";
 import { repoLayout } from "./git-layout.ts";
-import { materialize } from "./git-seal.ts";
 import { execFile } from "node:child_process";
 import {
   closeSync,
@@ -44,7 +43,6 @@ import type {
   RepoProbe,
   Runner,
   RunResult,
-  SealOverlay,
   StatusEntry,
 } from "../ports/types.ts";
 import { IndexSyncRecord } from "../core/schemas.ts";
@@ -189,10 +187,7 @@ function overlay(index: Map<string, Entry>, status: readonly StatusEntry[]): Map
 export const gitBlob = (content: Buffer): string =>
   createHash("sha1").update(`blob ${content.length}\0`).update(content).digest("hex");
 
-export class GitCli implements Git {
-  materialize(treeish: string, dest: string, keep: (p: string) => boolean, overlay: SealOverlay) {
-    return materialize(this.root, treeish, dest, keep, overlay);
-  }
+export class GitCli {
   private root: string;
   private exclusions: readonly Exclusion[] = [];
   private runner: Runner;

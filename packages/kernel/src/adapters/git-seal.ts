@@ -4,7 +4,8 @@ import { execFile } from "node:child_process";
 import { chmodSync, copyFileSync, mkdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { withoutGitLocalVars } from "./git-env.ts";
-import type { Sealed, SealOverlay } from "../ports/types.ts";
+import { GitCli } from "./git-cli.ts";
+import type { Git, Runner, Sealed, SealOverlay } from "../ports/types.ts";
 
 const MAX_FILES = 50_000;
 const MAX_BYTES = 500 * 1024 * 1024;
@@ -71,5 +72,17 @@ export async function materialize(
   } catch {
     dispose();
     return { problem: "materialize" };
+  }
+}
+
+/** The Git port with the sealed-copy writer; kept apart from `GitCli` so that adapter stays within its size budget. */
+export class SealingGit extends GitCli implements Git {
+  private readonly top: string;
+  constructor(root: string, runner?: Runner) {
+    super(root, runner);
+    this.top = root;
+  }
+  materialize(treeish: string, dest: string, keep: (p: string) => boolean, overlay: SealOverlay): Promise<Sealed> {
+    return materialize(this.top, treeish, dest, keep, overlay);
   }
 }
