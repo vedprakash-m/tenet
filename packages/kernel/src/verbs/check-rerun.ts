@@ -5,7 +5,7 @@ import { hashOf } from "../core/ids.ts";
 import { declaredOutputs, movedPaths } from "../core/outputs.ts";
 import type { RunFacts } from "../core/receipts.ts";
 import type { Ports, RunResult } from "../ports/types.ts";
-import { failedAmong, isStatic } from "./check-evidence.ts";
+import { failedAmong, isSharedTest } from "./check-evidence.ts";
 import type { Rerun, Run } from "./check-evidence.ts";
 
 const MAX_RERUNS = 2;
@@ -32,7 +32,7 @@ export async function rerunFailures(run: Run, first: RunFacts, inputs: readonly 
   const { ports, runDir } = run;
   const settled = first.ran && !first.timedOut && !first.signal && !first.outputTruncated && first.after === run.facts.candidate;
   if (run.stage === "baseline" || !settled || first.durationMs > FIRST_RUN_LIMIT_MS) return [];
-  const tests = run.toRun.filter((ob) => !isStatic(ob));
+  const tests = run.toRun.filter(isSharedTest);
   let failing = failedAmong(run, first, tests, run.toExecute, join(runDir, "vitest.json"));
   const out: Rerun[] = [];
   for (let i = 1; i <= MAX_RERUNS && failing.length; i++) {

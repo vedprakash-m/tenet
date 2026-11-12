@@ -4,11 +4,13 @@ import { failureSignature, recordAttempt, recordLaunchedChecks, stopFor, withSig
 import { hashOf } from "../core/ids.ts";
 import { declaredOutputs, movedNote } from "../core/outputs.ts";
 import { baselineDefinitionMatches, supportOf, wantsRed } from "../core/obligations.ts";
-import { notRunFacts, receiptsFrom, settleReruns, staticReceipt } from "../core/receipts.ts";
+import { notRunFacts, receiptsFrom, settleReruns, staticReceipt, workloadReceipt } from "../core/receipts.ts";
 import type { ReceiptContext, RunFacts } from "../core/receipts.ts";
 import { carryDispositions, netAttention } from "../core/review.ts";
 import type { FileChange } from "../core/review.ts";
 import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
+import { TREND_PREFIX } from "../core/fitness.ts";
+import type { ParsedWorkload } from "../core/fitness.ts";
 import type { AttentionItem, BudgetState, Obligation, Receipt, State, StopReason, WorkContract } from "../core/schemas.ts";
 import type { Normalized, Ports, StaticTool } from "../ports/types.ts";
 import type { Facts } from "./facts.ts";
@@ -30,6 +32,8 @@ export interface Run {
   id: string;
   /** Fingerprint of the toolchain when the run was prepared; a different one after the run means an input moved (EVD-11). */
   toolchain?: string;
+  /** The workload declaration, read when the run owes the workload obligation (QLT-05). */
+  workload?: ParsedWorkload;
 }
 
 /** One rerun of failed required test files on unchanged inputs (EVD-08): what ran, which obligations it covers and where its report is. */
@@ -39,6 +43,9 @@ export interface Rerun { facts: RunFacts; obligations: string[]; toExecute: "all
 export interface Executed extends RunFacts { statics: Record<string, RunFacts>; reruns?: Rerun[]; moved?: string[] }
 export const isStatic = (ob: Obligation): boolean => ob.kind === "static";
 export const isE2e = (ob: Obligation): boolean => ob.tool === "playwright";
+export const isWorkload = (ob: Obligation): boolean => ob.kind === "workload";
+/** Obligations judged from the shared test runner's report: neither a static tool nor the workload. */
+export const isSharedTest = (ob: Obligation): boolean => !isStatic(ob) && !isWorkload(ob);
 export const staticReport = (runDir: string, tool: string): string => join(runDir, `${tool}.json`);
 export const e2eReport = (runDir: string): string => join(runDir, "playwright.json");
 
@@ -80,6 +87,14 @@ function e2eReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
   return receiptsFrom(ran, norm, e2eObs, ctx).map((r, i) => ({ ...r, id: `RC-${runId}-${firstIndex + i + 1}` }));
 }
 
+/** The workload receipt, judged from its own run; absent from `statics` when an earlier required obligation failed. */
+function workloadReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
+  const ob = run.toRun.find(isWorkload);
+  if (!ob) return [];
+  const ran = o.statics[ob.id], argv = run.workload?.ok ? run.workload.decl.run : [];
+  return [workloadReceipt(ran ?? unexecuted(run), run.workload, ob, firstIndex, receiptContext(run, argv), !ran)];
+}
+
 /** The test obligations' receipts for one run of the test runner; a rerun is read the same way, over fewer obligations. */
 function testReceipts(run: Run, facts: RunFacts, tests: Obligation[], toExecute: "all" | string[], report: string): Receipt[] {
   const { ports } = run;
@@ -97,12 +112,13 @@ export function failedAmong(run: Run, facts: RunFacts, tests: Obligation[], toEx
 
 export function receiptsOf(run: Run, cw: WorkContract, o: Executed): Receipt[] {
   const { ports, facts, runDir } = run;
-  const tests = run.toRun.filter((ob) => !isStatic(ob));
+  const tests = run.toRun.filter(isSharedTest);
   const reruns = (o.reruns ?? []).map((r) =>
     testReceipts(run, r.facts, tests.filter((ob) => r.obligations.includes(ob.id)), r.toExecute, r.report));
   const receipts = settleReruns(testReceipts(run, o, tests, run.toExecute, join(runDir, "vitest.json")), reruns);
   receipts.push(...staticReceipts(run, o, tests.length));
   receipts.push(...e2eReceipts(run, o, tests.length + run.toRun.filter((ob) => isStatic(ob) && !isE2e(ob)).length));
+  receipts.push(...workloadReceipts(run, o, receipts.length));
   if (o.moved?.length)
     for (const r of receipts.filter((x) => x.reasons.includes("concurrent-edit")))
       r.limitations.push(movedNote(o.moved));
@@ -158,9 +174,9 @@ export function account(
   receipts: Receipt[],
   configFailed: boolean
 ): { budget: BudgetState; stop: StopReason | undefined } {
-  const ranTests = o.ran ? run.toRun.filter((ob) => !isStatic(ob) && !run.missing.some((m) => m.id === ob.id)).length : 0;
+  const ranTests = o.ran ? run.toRun.filter((ob) => isSharedTest(ob) && !run.missing.some((m) => m.id === ob.id)).length : 0;
   const reran = (o.reruns ?? []).reduce((n, r) => n + r.obligations.length, 0); // each rerun obligation is a launched check (PRD §4.4.1)
-  const launched = ranTests + reran + run.toRun.filter((ob) => isStatic(ob) && o.statics[ob.id]?.ran).length;
+  const launched = ranTests + reran + run.toRun.filter((ob) => !isSharedTest(ob) && o.statics[ob.id]?.ran).length;
   let budget = recordLaunchedChecks(cw.budget, launched);
   if (run.stage === "candidate" && run.scope === "full" && !configFailed) {
     budget = recordAttempt(budget);
@@ -214,7 +230,10 @@ export function applyLocks(run: Run, cw: WorkContract, locks: State["locks"], ob
 }
 
 /** Markers and weakenings counted net per hunk, plus configuration that decides what runs and declared scaffolding. */
-export async function attentionOf(run: Run, cw: WorkContract): Promise<{ changes: FileChange[]; attention: AttentionItem[] }> {
+/** `trend` is this run's fitness-trend items (QLT-05), or null when it judged no workload, which keeps the earlier ones. */
+export async function attentionOf(
+  run: Run, cw: WorkContract, trend: AttentionItem[] | null = null,
+): Promise<{ changes: FileChange[]; attention: AttentionItem[] }> {
   const { ports, facts } = run;
   const changes = await ports.git.changes(cw.git.base, facts.reviewPaths, ports.stack.classify);
   const vetted = ports.project.hashes(Object.keys(cw.vetted)); // recipe files a scaffold wrote raise nothing until someone changes them
@@ -240,5 +259,6 @@ export async function attentionOf(run: Run, cw: WorkContract): Promise<{ changes
     changes.filter((c) => !cw.reverting?.includes(c.path)),
     ports.stack.patterns
   );
-  return { changes, attention: carryDispositions(cw.attention, [...declared, ...outputs, ...stray, ...weakened, ...cfg]) };
+  const fitness = trend ?? cw.attention.filter((a) => a.pattern.startsWith(TREND_PREFIX));
+  return { changes, attention: carryDispositions(cw.attention, [...declared, ...outputs, ...stray, ...weakened, ...cfg, ...fitness]) };
 }

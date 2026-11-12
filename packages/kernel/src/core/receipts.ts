@@ -1,5 +1,7 @@
 // Receipts (TS §9.6): turn one observed run and its normalized report into one receipt per obligation. The adapter
 // normalized the report; this decides what it proves. A receipt that cannot prove anything is inconclusive, never a pass.
+import { judgeReport, SCOPE, UNAVAILABLE, WORKLOAD_FILE } from "./fitness.ts";
+import type { ParsedWorkload } from "./fitness.ts";
 import { redact } from "./redact.ts";
 import { reason } from "./reasons.ts";
 import type { ExecutionEnvelope, Obligation, Reason, Receipt } from "./schemas.ts";
@@ -193,6 +195,39 @@ export function staticReceipt(o: RunFacts, norm: StaticNorm, ob: Obligation, i: 
   rec.failures = norm.failures.map((f) => ({ ...f, message: redact(f.message) }));
   rec.failureKinds = [...new Set(norm.failures.map((f) => f.kind))];
   rec.status = norm.status;
+  return rec;
+}
+
+/** The declared workload (QLT-05): an invalid declaration means nothing ran; otherwise the kernel judges the report against
+ * the declared targets. `skipped` when an earlier required obligation failed, so no run was spent on it. */
+export function workloadReceipt(
+  o: RunFacts, parsed: ParsedWorkload | undefined, ob: Obligation, i: number, c: ReceiptContext, skipped: boolean,
+): Receipt {
+  const rec = blank(o, ob, i, c);
+  rec.versions = { tool: "workload", reporter: "workload-json", adapter: c.versions.adapter };
+  const stop = (code: string, ...limits: string[]) => {
+    rec.reasons.push(code);
+    rec.limitations.push(...limits, UNAVAILABLE, SCOPE);
+    return rec;
+  };
+  if (!parsed?.ok) return stop("workload-declaration-invalid", parsed ? parsed.problem : `${WORKLOAD_FILE} was not read`);
+  if (skipped) {
+    rec.status = "skipped";
+    rec.limitations.push("workload not run: a required obligation failed", UNAVAILABLE, SCOPE);
+    return rec;
+  }
+  const early = runProblem(o, c);
+  if (early === "timeout") return stop(early, "The workload timed out; its output does not establish a completed workload result.");
+  if (early) return stop(early);
+  const j = judgeReport(parsed.decl, o.exit!, o.raw);
+  rec.status = j.status;
+  rec.reasons.push(...j.reasons);
+  rec.limitations.push(...j.limitations);
+  if (j.failures.length) {
+    rec.failures = j.failures;
+    rec.failureKinds = [...new Set(j.failures.map((f) => f.kind))];
+  }
+  if (j.workload) rec.workload = j.workload;
   return rec;
 }
 

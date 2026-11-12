@@ -3,6 +3,7 @@ import { changeTraitsOf } from "./facts.ts";
 import { attemptsLeft } from "../core/budget.ts";
 import { KernelError } from "../core/errors.ts";
 import { executionDisclosures } from "../core/execution-envelope.ts";
+import { SCOPE, trendOf } from "../core/fitness.ts";
 import { reason } from "../core/reasons.ts";
 import { receiptReasons } from "../core/receipts.ts";
 import { fullChecksPassed } from "../core/verdict.ts";
@@ -104,6 +105,13 @@ function nextStep(
   return { reasons, next, data, work, passedAll };
 }
 
+/** The trend of each fitness function with this run's judged workload as its newest point (QLT-05); null when none was judged. */
+function workloadTrend(run: Run, st: State, receipts: Receipt[]) {
+  const r = receipts.find((x) => x.workload && (x.status === "pass" || x.status === "fail"));
+  if (!r?.workload || !run.workload?.ok) return null;
+  return trendOf(run.workload.decl, st.project.fitness ?? {}, { receipt: r.id, at: r.provenance.startedAt, workload: r.workload });
+}
+
 /** A prototype's recovery point: every check snapshots the folder into the shadow repository (TS §10.9). */
 async function snapshot(run: Run, nw: WorkContract, reasons: Reason[]) {
   if (nw.git.mode !== "shadow") return;
@@ -151,7 +159,9 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
   const matched = matchBaseline(run, cw, receipts);
   const { budget, stop } = account(run, cw, o, receipts, configFailed);
   const { locks, obligations } = applyLocks(run, cw, st.locks, matched, receipts);
-  const { changes, attention } = await attentionOf(run, cw);
+  const trend = workloadTrend(run, st, receipts);
+  const { changes, attention } = await attentionOf(run, cw, trend?.items ?? null);
+  const workload = receipts.some((r) => r.kind === "workload") ? { workload: { scope: SCOPE, trends: trend?.lines ?? [] } } : {};
   const now = ports.clock.now();
   const kept = cw.receipts.filter(
     (r) => !receipts.some((n) => n.obligation === r.obligation && n.stage === r.stage && n.scope === r.scope)
@@ -185,7 +195,7 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
       work: nw.id,
       reasons: step.reasons,
       next: step.next,
-      data: { ...step.data, ...data },
+      data: { ...step.data, ...workload, ...data },
       progress: { phase: "checking", ...(step.passedAll ? { boundary: "milestone" as const } : {}) },
       ...(stop ? { exit: 2 as const } : {}),
     },

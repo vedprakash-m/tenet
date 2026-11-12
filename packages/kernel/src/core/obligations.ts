@@ -5,6 +5,7 @@ import type { BasisElement, Obligation } from "./schemas.ts";
 export const obligationId = (elementId: string): string => `OB-${elementId}`;
 export const FULL_SUITE = "OB-suite";
 export const E2E_SUITE = "OB-e2e";
+export const WORKLOAD_OB = "OB-workload";
 
 const STATIC: Record<StaticTool, string> = { tsc: "OB-types", eslint: "OB-lint" };
 const ALIASES: Record<string, StaticTool> = { types: "tsc", typecheck: "tsc", lint: "eslint" };
@@ -43,6 +44,14 @@ export const withE2e = (obligations: readonly Obligation[], wanted: boolean): Ob
     ? [...obligations, { id: E2E_SUITE, kind: "static", category: "affected", tool: "playwright" }]
     : [...obligations];
 
+/** A Deep contract in a project whose recipe lists "workload" owes the declared workload (QLT-05); the file's presence
+ * decides nothing, so deleting `workload.json` cannot remove the obligation. */
+export const wantsWorkload = (recipe: readonly CheckTool[], lane: string): boolean => recipe.includes("workload") && lane === "deep";
+
+export const withWorkload = (obligations: readonly Obligation[], wanted: boolean): Obligation[] =>
+  wanted && !obligations.some((o) => o.id === WORKLOAD_OB)
+    ? [...obligations, { id: WORKLOAD_OB, kind: "workload", category: "release", tool: "workload" }]
+    : [...obligations];
 
 /** Requirements that have neither a boundary example nor an invariant (a negative statement) to go with them (INT-15). */
 export const withoutBoundary = (elements: readonly BasisElement[]): string[] =>

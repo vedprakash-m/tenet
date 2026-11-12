@@ -106,6 +106,8 @@ export class ProcessRunner implements Runner {
         PLAYWRIGHT_JSON_OUTPUT_NAME: report,
       }, [report, join(runDir, "e2e.db")]);
     }
+    if (input.workload?.build) add("workload", input.workload.build, {}, []);
+    if (input.workload) add("workload", input.workload.run, {}, []);
     return makeExecutionEnvelope(input.projectId, commands);
   }
 
