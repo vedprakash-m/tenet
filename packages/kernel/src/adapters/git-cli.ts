@@ -878,14 +878,29 @@ export class GitCli implements Git {
     return this.syncIndex(record.paths, record.parent, journal, record.head);
   }
 
+  private async shallow() {
+    return (await this.tryOut(["rev-parse", "--is-shallow-repository"])) === "true";
+  }
+
   async workCommits(label: string): Promise<{ commits: string[]; shallow: boolean; merges: boolean }> {
-    const shallow = (await this.tryOut(["rev-parse", "--is-shallow-repository"])) === "true";
+    const shallow = await this.shallow();
     const all = (await this.tryOut(["log", "--format=%H", "-E", `--grep=^Tenet-Work: ${label}$`, "HEAD"])) ?? "";
     const commits = all.split("\n").filter(Boolean);
     const merges = (await Promise.all(commits.map((c) => this.tryOut(["rev-list", "--parents", "-n", "1", c])))).some(
       (l) => (l ?? "").split(" ").length > 2,
     );
     return { commits, shallow, merges };
+  }
+
+  async tenetHistory() {
+    const w = async (...a: string[]) => (await this.tryOut(a))?.match(/\S+/g) ?? [];
+    const labels: Record<string, number> = {};
+    for (const l of await w("log", "--all", "-E", "--grep=^Tenet-Work: W-[0-9]{4,5}$", "--format=%(trailers:key=Tenet-Work,valueonly)"))
+      labels[l] = (labels[l] ?? 0) + 1;
+    return {
+      labels, unmerged: await w("for-each-ref", "--no-merged=HEAD", "--format=%(refname:short)", "refs/heads/tenet/"),
+      shallow: await this.shallow(),
+    };
   }
 
   async planUndo(

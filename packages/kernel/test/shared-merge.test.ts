@@ -93,6 +93,9 @@ async function diverged(p: Project, extra?: () => void) {
   p.git("add", "-A"); p.git("commit", "-qm", "intent");
   const o = await p.call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts"], lane: "quick" });
   const h = o.handle!;
+  // Managed blocks with no `.tenet/` look like lost local records (CON-07): keep the fresh start the test assumes.
+  assert.equal(o.questions?.[0]?.id, "reconstruction-review", JSON.stringify(o));
+  await p.call("decide", { h, kind: "adopt", target: "reconstruction", answers: { "reconstruction-review": "fresh" } });
   await p.call("decide", { h, kind: "basis", propose: BASIS });
   p.write("src/greet.test.ts", GREET_TEST);
   await p.call("check", { h, stage: "baseline" });

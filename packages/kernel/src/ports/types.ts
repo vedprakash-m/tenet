@@ -121,6 +121,8 @@ export interface Git {
   recoverIndexSync(record: unknown, journal: IndexJournal): Promise<CommitOutcome["indexSync"] | "uncertain">;
   /** Commits on the current history carrying `Tenet-Work: <label>`, newest first; `shallow` when history is cut short. */
   workCommits(label: string): Promise<{ commits: string[]; shallow: boolean; merges: boolean }>;
+  /** Read-only history after lost records (CON-07): commits per `Tenet-Work` label on all refs, and `tenet/` branches not in HEAD. */
+  tenetHistory(): Promise<{ labels: Record<string, number>; unmerged: string[]; shallow: boolean }>;
   /** The inverse of these commits (newest first) applied to a temporary index from HEAD; never touches the real index or tree. */
   planUndo(commits: readonly string[]): Promise<{ ok: true; tree: string; patch: string; paths: string[]; stat: string } | { ok: false; conflict: string[]; detail: string }>;
   /** Applies a patch to the working tree only (never the index); `include` limits it to these paths. */

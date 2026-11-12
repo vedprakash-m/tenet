@@ -16,6 +16,7 @@ import { reconcileShared } from "./reconcile.ts";
 import { recover } from "./recover.ts";
 import { takeoverFacts } from "../decisions/takeover.ts";
 import { quarantineQuestion, quarantineSurface } from "../decisions/quarantine.ts";
+import { offerReconstruction } from "../decisions/reconstruction.ts";
 
 /** Admission and housekeeping every `open` goes through: quarantine, recovery, a suspended backup, temp cleanup, shared files. */
 async function begin(ports: Ports, before: State | null, input: OpenInput, tx: Tx): Promise<Ctx> {
@@ -58,7 +59,11 @@ async function begin(ports: Ports, before: State | null, input: OpenInput, tx: T
     throw new KernelError("storage-protected-full", why, { exit: 2 });
   }
   if (kept.message) rec.completed.push(kept.message);
-  const shared = reconcileShared(ports, state);
+  // No state document at all (lost, or a fresh clone): read back what the repository still shows (CON-07).
+  const rebuilt = before ? undefined : await offerReconstruction(ports, state);
+  if (rebuilt) state = rebuilt.state;
+  const reconciled = reconcileShared(ports, state);
+  const shared = rebuilt ? { ...reconciled, reasons: [...rebuilt.reasons, ...reconciled.reasons] } : reconciled;
   const effects =
     rec.completed.length || rec.uncertain.length ? { completed: rec.completed, uncertain: rec.uncertain } : undefined;
   return { ports, input, before, state: shared.state, shared, effects, now: ports.clock.now() };

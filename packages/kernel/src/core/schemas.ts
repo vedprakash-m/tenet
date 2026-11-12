@@ -388,6 +388,8 @@ export const State = z.strictObject({
       charter: z.enum(["undecided", "adopted", "declined"]),
       offered: z.boolean().optional(), // the one-time offer to adopt shared files has been made (CON-01)
     }),
+    // Intent read back from INTENT.md after local records were lost (CON-07): which IDs, and what could not be recovered.
+    reconstructed: z.object({ at: z.string(), elementIds: z.array(z.string()), notRecovered: z.array(z.string()) }).optional(),
   }),
   config: z.strictObject({ local: settingsSchema("project"), revision: z.number() }),
   consents: z.array(z.strictObject({ kind: z.enum(["hooks", "filters", "envelope", "remote-read"]), configHash: z.string(), at: z.string() })),
