@@ -246,8 +246,9 @@ export class GitCli {
 
   // ------------------------------------------------------------ probe
   async probe(): Promise<RepoProbe> {
-    const version = ((await this.tryOut(["--version"])) ?? "git not found").replace(/^git version /, "");
-    const top = await this.tryOut(["rev-parse", "--show-toplevel"]);
+    const t = (...a: string[]) => this.tryOut(a); // run together (NFR-01)
+    const [ver, top] = await Promise.all([t("--version"), t("rev-parse", "--show-toplevel")]);
+    const version = (ver ?? "git not found").replace(/^git version /, "");
     if (!top)
       return {
         isRepo: false,
@@ -262,21 +263,23 @@ export class GitCli {
         hooks: null,
         layout: { shallow: false, submodules: [], lfs: false, linkedWorktree: false },
       };
-    const head = await this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]);
-    const branch = await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]);
-    const gitDir = (await this.tryOut(["rev-parse", "--absolute-git-dir"])) ?? join(top, ".git");
+    const [head, branch, gitDirO, cf, idO, rmO, hooksPath] = await Promise.all([
+      t("rev-parse", "--verify", "-q", "HEAD"), t("symbolic-ref", "-q", "--short", "HEAD"), t("rev-parse", "--absolute-git-dir"),
+      t("diff", "--cached", "--name-only", "--diff-filter=U"), t("var", "GIT_COMMITTER_IDENT"), t("remote"), t("config", "core.hooksPath"),
+    ]);
+    const gitDir = gitDirO ?? join(top, ".git");
     const busy = ["rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"].find((f) =>
       existsSync(join(gitDir, f)),
     );
-    const conflicts = (await this.tryOut(["diff", "--cached", "--name-only", "--diff-filter=U"])) ?? "";
+    const conflicts = cf ?? "";
     let state: RepoProbe["state"] = "ok",
       why: string | undefined;
     if (busy) [state, why] = ["readonly", `a ${busy.replace(/_HEAD$/, "").toLowerCase()} is in progress`];
     else if (conflicts) [state, why] = ["readonly", "there are unresolved conflicts"];
     else if (head && !branch) [state, why] = ["readonly", "HEAD is detached"];
-    const identity = (await this.tryOut(["var", "GIT_COMMITTER_IDENT"])) !== null;
-    const remotes = ((await this.tryOut(["remote"])) ?? "").split("\n").filter(Boolean);
-    const hooksDir = (await this.tryOut(["config", "core.hooksPath"])) ?? join(gitDir, "hooks");
+    const identity = idO !== null;
+    const remotes = (rmO ?? "").split("\n").filter(Boolean);
+    const hooksDir = hooksPath ?? join(gitDir, "hooks");
     const hooks = hookInventory([hooksDir.startsWith("/") ? hooksDir : join(top, hooksDir), join(top, ".husky")]);
     const layout = await repoLayout((args) => this.tryOut(args), top, gitDir);
     const probe: RepoProbe = { isRepo: true, shadow: this.shadow, version, top, head, branch, state, identity, remotes, hooks, layout };
@@ -339,9 +342,9 @@ export class GitCli {
     declaredInputs: readonly string[] = [],
     volatile: readonly string[] = [],
   ): Promise<Inventory> {
-    await this.objectFormatSafe();
-    const head = await this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]);
-    const branch = await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]);
+    const [, head, branch] = await Promise.all([
+      this.objectFormatSafe(), this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]), this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]),
+    ]);
     const skip = (p: string) => isKernelFile(p) || exclude.some((x) => p === x || p.startsWith(`${x}/`));
     const index = await this.indexEntries(skip);
     const isOutput = outputMatcher(volatile);
