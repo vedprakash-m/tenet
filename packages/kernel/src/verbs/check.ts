@@ -4,6 +4,8 @@ import { attemptsLeft, LIMITS, timeUp } from "../core/budget.ts";
 import { allowed } from "../core/exclusions.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
+import { parseWorkload, WORKLOAD_FILE } from "../core/fitness.ts";
+import type { ParsedWorkload } from "../core/fitness.ts";
 import { declaredInputs } from "../core/obligations.ts";
 import { reason } from "../core/reasons.ts";
 import { CheckInput } from "../core/schemas.ts";
@@ -13,6 +15,7 @@ import type { Ports } from "../ports/types.ts";
 import { grantQuestion } from "./authority.ts";
 import { finalizeCheck } from "./check-finalize.ts";
 import { checkEnvelopeGate } from "./check-envelope.ts";
+import { isWorkload } from "./check-evidence.ts";
 import type { Run } from "./check-evidence.ts";
 import { execute } from "./check-execute.ts";
 import { outputsProblem } from "./check-outputs.ts";
@@ -96,6 +99,13 @@ function ask(cur: State, w: WorkContract, q: Question, reasons: Reason[], why: s
   };
 }
 
+/** The declaration, read only when this run owes the workload; an unreadable file is a named problem, not an abort. */
+function readWorkload(ports: Ports): ParsedWorkload {
+  try { return parseWorkload(ports.project.read(WORKLOAD_FILE)); } catch (e) {
+    return { ok: false, problem: `${WORKLOAD_FILE} cannot be read: ${e instanceof Error ? e.message : String(e)}`.slice(0, 200) };
+  }
+}
+
 function shapeRun(ports: Ports, w: WorkContract, input: CheckInput, facts: Run["facts"]) {
   const baseline = input.stage === "baseline";
   const scope: Run["scope"] = baseline || input.targeted ? "targeted" : "full";
@@ -106,6 +116,7 @@ function shapeRun(ports: Ports, w: WorkContract, input: CheckInput, facts: Run["
     baseline,
     scope,
     toRun: scope === "full" ? w.obligations : acceptance,
+    ...(scope === "full" && w.obligations.some(isWorkload) ? { workload: readWorkload(ports) } : {}),
     missing: acceptance.filter((o) => !present(o.testFile!)),
     toExecute: scope === "full" ? ("all" as const) : files,
     id: checkInputId(ports, w, facts.candidate),

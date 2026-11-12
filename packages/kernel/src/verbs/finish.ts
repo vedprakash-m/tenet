@@ -7,6 +7,7 @@ import type { Demo } from "../core/demo.ts";
 import { handoffText } from "../core/handoff.ts";
 import { KernelError } from "../core/errors.ts";
 import { executionDisclosures } from "../core/execution-envelope.ts";
+import { appendSeries, raisedIds } from "../core/fitness.ts";
 import { releaseItem } from "../core/plan.ts";
 import { reason } from "../core/reasons.ts";
 import { FinishInput } from "../core/schemas.ts";
@@ -17,7 +18,7 @@ import type { Plan, Resp, Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
 import { isEditing, nx, reclaim, withWork, workOf } from "./common.ts";
 import { startCommit } from "./commit.ts";
-import { gather, verdictInput, worldDigest } from "./facts.ts";
+import { checkInputId, gather, verdictInput, worldDigest } from "./facts.ts";
 import type { Facts } from "./facts.ts";
 import { integrationSetting } from "./integrate.ts";
 import type { IntegrationSetting } from "./integrate.ts";
@@ -88,6 +89,17 @@ function result(
   };
 }
 
+/** One series point per finished contract, from its latest fresh judged workload receipt (QLT-05), in the same publish
+ * that finishes it; a retried finish finds the receipt already recorded and adds nothing. */
+function withSeries(ports: Ports, st: State, w: WorkContract, f: Facts): State {
+  const id = checkInputId(ports, w, f.candidate);
+  const r = w.receipts.filter((x) => x.workload && x.checkInputId === id && (x.status === "pass" || x.status === "fail")).at(-1);
+  if (!r?.workload) return st;
+  const point = { receipt: r.id, at: r.provenance.startedAt, workload: r.workload };
+  const fitness = appendSeries(st.project.fitness ?? {}, point, raisedIds(w.attention));
+  return { ...st, project: { ...st.project, fitness } };
+}
+
 /** The contract closes with its handoff (RES-04); the first checked-local result adds the one offer to save shared files (CON-01). */
 function close(
   ports: Ports, st: State, nw: WorkContract, f: Facts, v: Verdict, extra: Reason[], proposal?: FinishInput["demo"],
@@ -102,7 +114,7 @@ function close(
   const resp = result(ports, st, closed, v, f, extra, integrationSetting(ports, st, closed), offer, proposal);
   // The plan item this contract worked on is done when it reached checked-local, otherwise available again (INT-12).
   const plan = releaseItem(out.project.intent.plan, nw.id, v.endpoint === "checked-local");
-  const settled: State = { ...out, project: { ...out.project, intent: { ...out.project.intent, plan } } };
+  const settled: State = withSeries(ports, { ...out, project: { ...out.project, intent: { ...out.project.intent, plan } } }, nw, f);
   const adoption = { ...settled.project.adoption, offered: true };
   return { state: offer ? { ...settled, project: { ...settled.project, adoption } } : settled, resp };
 }

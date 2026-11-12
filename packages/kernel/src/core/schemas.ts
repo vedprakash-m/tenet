@@ -171,6 +171,8 @@ export const Receipt = z.object({
   reasons: z.array(z.string()), limitations: z.array(z.string()),
   candidate: z.string(),
   executionEnvelope: ExecutionEnvelope.optional(),
+  // QLT-05: the trended fitness values a workload report gave, its sample count and its series tag (project-reported)
+  workload: z.strictObject({ env: z.string(), samples: z.number(), measures: ownRecord(z.number()) }).optional(),
 });
 export type Receipt = z.infer<typeof Receipt>;
 
@@ -374,7 +376,12 @@ export const State = z.strictObject({
       trait: z.string(), outcome: z.enum(["present", "absent"]), scope: z.enum(["project", "change"]),
       work: z.string().optional(), bind: z.string(),
     })).optional(), // the user's corrections, each bound to the detected results it answers
-    recipe: z.object({ id: z.string(), version: z.string(), installed: z.boolean(), checks: z.array(z.enum(["tsc", "eslint", "e2e"])).optional() }).optional(), // the starter this project was scaffolded from
+    recipe: z.object({ id: z.string(), version: z.string(), installed: z.boolean(), checks: z.array(z.enum(["tsc", "eslint", "e2e", "workload"])).optional() }).optional(), // the starter this project was scaffolded from
+    // QLT-05: per fitness function, up to 12 points (one per finished Deep contract) and where the next window starts
+    fitness: ownRecord(z.strictObject({
+      points: z.array(z.strictObject({ value: z.number(), receipt: z.string(), at: z.string(), env: z.string() })).max(12),
+      raised: z.string().optional(),
+    })).optional(),
     adoption: z.object({
       intent: z.enum(["undecided", "adopted", "declined"]),
       policy: z.enum(["undecided", "adopted", "declined"]),

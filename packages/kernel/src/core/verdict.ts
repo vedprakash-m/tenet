@@ -1,6 +1,7 @@
 // The verdict table (PRD 4.5.2, TS §8.3). The only module that produces an endpoint. Pure and monotone:
 // more fresh passing evidence never weakens an endpoint, removing evidence never strengthens it.
 import { ceiling } from "./risk.ts";
+import { TREND_PREFIX } from "./fitness.ts";
 import { reason } from "./reasons.ts";
 import { threatGap, threatNoteStatus } from "./threat.ts";
 import { excused, failureReasons } from "./baseline.ts";
@@ -178,12 +179,16 @@ function judgeFindings(i: VerdictInput): Reason[] {
   return out;
 }
 
-/** Markers need a fresh-context review or the user; other attention needs any recorded disposition. */
+/** Markers and fitness trends need a fresh-context review or the user; other attention needs any recorded disposition. */
 function judgeAttention(i: VerdictInput): Reason[] {
   const out: Reason[] = [];
   for (const a of i.attention) {
     const d = a.disposition;
-    if (a.marker) {
+    if (a.pattern.startsWith(TREND_PREFIX)) {
+      const text = `${a.pattern.slice(TREND_PREFIX.length)} over the last Deep workload runs; ` +
+        "a trend of the declared workload on this machine, not a result for the whole application";
+      if (!d || d.by === "same-session") out.push(reason("fitness-trend-degraded", text, { refs: [a.id] }));
+    } else if (a.marker) {
       if (!d || d.outcome !== "accepted" || d.by === "same-session") out.push(reason("marker-unaccepted", `${a.path}:${a.line} ${a.pattern}`, { refs: [a.id] }));
     } else if (!d) out.push(reason("major-undisposed", `attention ${a.path}:${a.line} ${a.pattern}`, { refs: [a.id] }));
   }

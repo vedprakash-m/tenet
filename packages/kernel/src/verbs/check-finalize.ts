@@ -3,6 +3,7 @@ import { changeTraitsOf } from "./facts.ts";
 import { attemptsLeft } from "../core/budget.ts";
 import { KernelError } from "../core/errors.ts";
 import { executionDisclosures } from "../core/execution-envelope.ts";
+import { SCOPE, trendOf } from "../core/fitness.ts";
 import { reason } from "../core/reasons.ts";
 import { receiptReasons } from "../core/receipts.ts";
 import { fullChecksPassed } from "../core/verdict.ts";
@@ -10,9 +11,10 @@ import type { FileChange } from "../core/review.ts";
 import type { Obligation, Question, Reason, Receipt, State, StopReason, WorkContract } from "../core/schemas.ts";
 import type { Resp } from "../pipeline.ts";
 import { nx, withWork } from "./common.ts";
-import { account, applyLocks, attentionOf, matchBaseline, receiptsOf } from "./check-evidence.ts";
+import { applyLocks, attentionOf, matchBaseline, receiptsOf } from "./check-evidence.ts";
 import type { Executed, Run } from "./check-evidence.ts";
 import { issueReview } from "./manifest.ts";
+import { account } from "./check-account.ts";
 import { baselineQuestion, sealedEvidence } from "./check-sealed.ts";
 import { excused, failureReasons } from "../core/baseline.ts";
 import type { BaselineCtx } from "../core/baseline.ts";
@@ -113,6 +115,13 @@ function nextStep(
   return { reasons, next, data, work, passedAll, question };
 }
 
+/** The trend of each fitness function with this run's judged workload as its newest point (QLT-05); null when none was judged. */
+function workloadTrend(run: Run, st: State, receipts: Receipt[]) {
+  const r = receipts.find((x) => x.workload && (x.status === "pass" || x.status === "fail"));
+  if (!r?.workload || !run.workload?.ok) return null;
+  return trendOf(run.workload.decl, st.project.fitness ?? {}, { receipt: r.id, at: r.provenance.startedAt, workload: r.workload });
+}
+
 /** A prototype's recovery point: every check snapshots the folder into the shadow repository (TS §10.9). */
 async function snapshot(run: Run, nw: WorkContract, reasons: Reason[]) {
   if (nw.git.mode !== "shadow") return;
@@ -161,11 +170,12 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
   const ctx = sealedEvidence(run, cw, o, receipts);
   const { budget, stop } = account(run, cw, o, receipts, configFailed, ctx);
   const { locks, obligations } = applyLocks(run, cw, st.locks, matched, receipts);
-  const { changes, attention } = await attentionOf(run, cw);
+  const trend = workloadTrend(run, st, receipts);
+  const { changes, attention } = await attentionOf(run, cw, trend?.items ?? null);
+  const workload = receipts.some((r) => r.kind === "workload") ? { workload: { scope: SCOPE, trends: trend?.lines ?? [] } } : {};
   const now = ports.clock.now();
-  const kept = cw.receipts.filter(
-    (r) => !receipts.some((n) => n.obligation === r.obligation && n.stage === r.stage && n.scope === r.scope)
-  );
+  const replaced = (r: Receipt) => receipts.some((n) => n.obligation === r.obligation && n.stage === r.stage && n.scope === r.scope);
+  const kept = cw.receipts.filter((r) => !replaced(r));
   let nw: WorkContract = {
     ...cw,
     obligations,
@@ -197,7 +207,7 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
       work: nw.id,
       reasons: step.reasons,
       next: step.next,
-      data: { ...step.data, ...data },
+      data: { ...step.data, ...workload, ...data },
       progress: { phase: "checking", ...(step.passedAll ? { boundary: "milestone" as const } : {}) },
       ...(q ? { exit: 3 as const, questions: [q] } : stop ? { exit: 2 as const } : {}),
     },

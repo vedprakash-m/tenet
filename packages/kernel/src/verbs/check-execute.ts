@@ -4,7 +4,7 @@ import { notRunFacts } from "../core/receipts.ts";
 import type { RunFacts } from "../core/receipts.ts";
 import type { Obligation } from "../core/schemas.ts";
 import type { RunResult, StaticTool } from "../ports/types.ts";
-import { isE2e, isStatic, staticReport, e2eReport } from "./check-evidence.ts";
+import { isE2e, isStatic, isWorkload, staticReport, e2eReport } from "./check-evidence.ts";
 import type { Executed, Run } from "./check-evidence.ts";
 import { digestAfter, rerunFailures } from "./check-rerun.ts";
 import { sealedRun } from "./check-sealed.ts";
@@ -55,6 +55,24 @@ async function runE2e(run: Run): Promise<Omit<RunFacts, "after">> {
   return { timedOut: false, durationMs: 0, startedAt: ports.clock.now(), raw: null, ran: false };
 }
 
+/** The declared workload (QLT-05): its build, then its run, in this run directory under one declared timeout; no shell.
+ * The report is what the run prints. A failed build leaves no report, so the receipt cannot pass. */
+async function runWorkload(run: Run): Promise<Omit<RunFacts, "after">> {
+  const { ports, runDir } = run;
+  if (!run.workload?.ok) return notRunFacts(ports.clock.now());
+  const { build, run: argv, timeoutMs } = run.workload.decl;
+  let left = timeoutMs;
+  if (build) {
+    const b = await ports.runner.run({ argv: build, cwd: ports.root, runDir, timeoutMs: left });
+    if (b.exit !== 0 || b.timedOut || b.signal) return observed(b, null);
+    left = Math.max(1000, left - b.durationMs);
+  }
+  const r = await ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: left });
+  return observed(r, r.stdout);
+}
+
+const settledPass = (f: Omit<RunFacts, "after">): boolean => f.ran && f.exit === 0 && !f.timedOut && !f.signal && !f.outputTruncated;
+
 /** Runs the named test files (or everything) once, outside the lock, then each static check, and reports what the processes did. */
 export async function execute(run: Run, inputs: readonly string[]): Promise<Executed> {
   const { ports, runDir, toExecute, facts } = run;
@@ -65,6 +83,10 @@ export async function execute(run: Run, inputs: readonly string[]): Promise<Exec
   const statics: Record<string, Omit<RunFacts, "after">> = {};
   for (const ob of run.toRun.filter((o) => isStatic(o) && !isE2e(o))) statics[ob.id] = await runStatic(run, ob);
   for (const ob of run.toRun.filter(isE2e)) statics[ob.id] = await runE2e(run);
+  // The workload runs only once every other required obligation's process passed: no run is spent on a failing candidate.
+  const workload = run.toRun.find(isWorkload);
+  if (workload && settledPass(observed(r, r.report)) && Object.values(statics).every(settledPass))
+    statics[workload.id] = await runWorkload(run);
   const { digest: after, moved } = await digestAfter(run, inputs);
   const first: RunFacts = { ...observed(r, r.report), after };
   const reruns = await rerunFailures(run, first, inputs, (x) => observed(x, x.report));
