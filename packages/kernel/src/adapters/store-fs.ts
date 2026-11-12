@@ -101,6 +101,8 @@ export class FsStore implements Store {
   private opts: StoreOptions;
   // Admission verdicts for state and state.prev, keyed by file identity: a changed file is read and parsed again.
   private admitted = new Map<string, string>();
+  // The record admission just parsed, handed once to the next read of that same file version so it is not parsed twice.
+  private parsed = new Map<string, { id: string; value: unknown }>();
   private writes = new AsyncLocalStorage<WriteContext>();
 
   constructor(root: string, clock: Clock, rand: Random, opts: StoreOptions = {}) {
@@ -143,7 +145,15 @@ export class FsStore implements Store {
       const record = admissionRecord(this.p(name));
       if (record !== null && schemaStatus(record, SCHEMA_VERSION) !== "supported") blocked();
       if (id) this.admitted.set(name, id); else this.admitted.delete(name);
+      if (id && record !== null) this.parsed.set(name, { id, value: record }); else this.parsed.delete(name);
     }
+  }
+
+  /** Admission's parse of `name`, used at most once and only while the file is the version admission read. */
+  private takeParsed(name: string): unknown {
+    const hit = this.parsed.get(name);
+    this.parsed.delete(name);
+    return hit && hit.id === this.fileId(name, true) ? hit.value : null;
   }
 
   /** Identity of a store file; any replacement or content write changes it. `ctime` also tracks link-count changes. */
@@ -210,7 +220,7 @@ export class FsStore implements Store {
     if (!this.exists()) return null;
     this.marker();
     for (const [file, recovered] of [["state", false], ["state.prev", true]] as const) {
-      const raw = readJson<unknown>(this.p(file));
+      const raw = this.takeParsed(file) ?? readJson<unknown>(this.p(file));
       const parsed = raw ? State.safeParse(raw) : null;
       if (parsed?.success) {
         const m = this.marker()!;
