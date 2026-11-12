@@ -101,7 +101,7 @@ describe("undo [GIT-04]", () => {
     const side = p.git("commit-tree", `${previewHead}^{tree}`, "-p", previewHead,
       "-m", `Foreign side history\n\nTenet-Work: ${work.label}`);
     p.git("merge", "--quiet", "--no-ff", "-m", "Merge side history", side);
-    const before = p.git("rev-parse", "HEAD");
+    const before = p.git("rev-parse", "HEAD"), branch = p.git("branch", "--show-current");
     assert.deepEqual(p.git("rev-list", "--parents", "-n", "1", "HEAD").split(" ").slice(1), [previewHead, side]);
     assert.equal(p.git("rev-parse", "HEAD^{tree}"), previewTree);
     assert.equal(p.git("rev-list", "--first-parent", "HEAD").split("\n").includes(side), false);
@@ -115,7 +115,7 @@ describe("undo [GIT-04]", () => {
 
     assert.equal(result.reasons[0]?.code, "undo-conflict", JSON.stringify(result));
     assert.match(result.reasons[0]!.message, /ownership cannot be established/);
-    assert.equal(applied, false);
+    assert.equal(p.git("branch", "--show-current"), branch);
     assert.equal(p.git("branch", "--show-current"), "main");
     assert.equal(p.git("rev-parse", "HEAD"), before);
     assert.deepEqual(readFileSync(join(p.root, ".git/index")), index);
