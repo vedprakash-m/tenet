@@ -1,5 +1,6 @@
 // Receipts (TS §9.6): turn one observed run and its normalized report into one receipt per obligation. The adapter
 // normalized the report; this decides what it proves. A receipt that cannot prove anything is inconclusive, never a pass.
+import { failureIdsOf, MAX_IDS } from "./baseline.ts";
 import { judgeReport, SCOPE, UNAVAILABLE, WORKLOAD_FILE } from "./fitness.ts";
 import type { ParsedWorkload } from "./fitness.ts";
 import { redact } from "./redact.ts";
@@ -156,6 +157,7 @@ function receiptFor(o: RunFacts, norm: Normalized | null, ob: Obligation, i: num
     .slice(0, 5)
     .map((f) => ({ ...f, message: redact(f.message) })); // the record keeps no likely secret (SEC-11)
   rec.failureKinds = [...new Set(per.flatMap((p) => p.failureKinds))];
+  if (!ob.testFile && sum.failed) rec.failureIds = failureIdsOf(norm.files, files).ids.slice(0, MAX_IDS);
   if ([...norm.files.values()].some(file => file.focused)) return stop("focused-tests");
   if (sum.executed === 0 && sum.failed === 0) return stop("zero-tests"); // runners exit non-zero when they find nothing to run; that is no contradiction
   if (sum.skipped > 0 && ob.testFile) {

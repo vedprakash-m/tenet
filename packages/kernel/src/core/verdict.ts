@@ -4,6 +4,8 @@ import { ceiling } from "./risk.ts";
 import { TREND_PREFIX } from "./fitness.ts";
 import { reason } from "./reasons.ts";
 import { threatGap, threatNoteStatus } from "./threat.ts";
+import { excused, failureReasons } from "./baseline.ts";
+import type { BaselineCtx } from "./baseline.ts";
 import { baselineDefinitionMatches, wantsRed } from "./obligations.ts";
 import type { AnalystLink, AttentionItem, BasisElement, Endpoint, Finding, Lane, Level, Obligation, Profile, Reason, Receipt, ReviewLink, Scope, StopReason, WorkContract } from "./schemas.ts";
 
@@ -24,8 +26,10 @@ export interface VerdictInput {
   authorityAvailable?: boolean;
   obligations: readonly Obligation[];
   receipts: readonly Receipt[];
-  baselineFailures: readonly string[];
-  excludedScope: readonly string[];
+  /** The sealed starting-tree record and the user's decisions about broader-suite failures (EVD-04). */
+  sealedBaseline?: BaselineCtx["sealed"];
+  exceptions?: BaselineCtx["exceptions"];
+  treated?: BaselineCtx["treated"];
   testHashes: Readonly<Record<string, string>>; // current hash of each acceptance test file
   changedLocks: readonly string[]; // locked paths changed without disposition
   unauthorized: readonly string[]; // edits in protected paths that no grant covers (WRK-03)
@@ -62,7 +66,10 @@ export function fullChecksPassed(obligations: readonly Obligation[], receipts: r
 
 /** A checkpoint needs the latest current-input results, not an earlier green run or final review. */
 export function checkpointEvidence(work: WorkContract, candidate: string, checkInputId: string): boolean {
-  const receipts = work.obligations.flatMap(ob => fresh(work.receipts, ob.id, checkInputId) ?? []);
+  // a broader-suite failure the user left out of this work counts as passed (EVD-04)
+  const ctx = { sealed: work.sealedBaseline, exceptions: work.exceptions, treated: work.treated };
+  const receipts = work.obligations.flatMap(ob => fresh(work.receipts, ob.id, checkInputId) ?? [])
+    .map(r => (excused(r, ctx) ? { ...r, status: "pass" as const } : r));
   return work.lastCheck?.candidate === candidate && work.lastCheck.stage !== "baseline" &&
     receipts.every(r => r.candidate === candidate) && fullChecksPassed(work.obligations, receipts);
 }
@@ -74,16 +81,7 @@ function judgeObligation(ob: Obligation, i: VerdictInput): Reason[] {
     return [reason("evidence-inconclusive", `${ob.id}: ${rc.reasons.join(", ") || rc.status}`, { refs: [ob.id] })];
   }
   const out: Reason[] = [];
-  if (rc.status === "fail") {
-    const names = (rc.failures ?? []).map((f) => f.test);
-    const preexisting = names.length > 0 && names.every((n) => i.baselineFailures.includes(n));
-    if (!preexisting) out.push(reason("evidence-failed", ob.id, { refs: [ob.id] }));
-    else if (names.every((n) => i.excludedScope.includes(n))) {
-      const listed = `${ob.id}: ${names.join(", ")}`;
-      out.push(reason("baseline-failure-excluded", listed, { note: true }));
-    }
-    else out.push(reason("baseline-failure-not-excluded", ob.id, { refs: [ob.id] }));
-  }
+  if (rc.status === "fail") out.push(...failureReasons(ob, rc, { sealed: i.sealedBaseline, exceptions: i.exceptions, treated: i.treated }));
   if (rc.qualifiers.includes("flaky")) out.push(reason("evidence-flaky", ob.id, { refs: [ob.id] }));
   return out;
 }

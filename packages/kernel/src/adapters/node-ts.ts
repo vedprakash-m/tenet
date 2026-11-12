@@ -11,6 +11,7 @@ import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
 import { FsProject } from "./project-fs.ts";
 import { nestsTooDeep } from "./report-bounds.ts";
+import { shareDeps } from "./node-deps.ts";
 import { normalizePlaywright, playwrightArgv } from "./playwright.ts";
 import { unsupportedTsConfig } from "./static-config.ts";
 
@@ -192,6 +193,11 @@ const failureKind = (msg: string): string =>
         ? "timeout"
         : "runtime-error";
 
+/** A failure's kind and a short hash of its first message line with paths and numbers blanked, so two runs in different folders compare. */
+const PATHS = /(?:[A-Za-z]:)?[\\/][^\s'"()]+/g;
+const failureId = (test: string, kind: string, line: string): string =>
+  `${test}\u001f${kind}:${sha256(line.replace(PATHS, "<path>").replace(/\d+/g, "N")).slice(0, 8)}`;
+
 const invalid = (message: string): Normalized => ({ files: new Map(), discovered: 0, invalid: message });
 const FILE_STATUS = ["passed", "failed", "pending", "skipped"];
 const ASSERTION_STATUS = ["passed", "failed", "pending", "skipped", "todo", "disabled"];
@@ -248,13 +254,14 @@ function count(f: Counts, a: any): void {
   f.failureKinds = [...new Set([...f.failureKinds, ...kinds])];
   if (kinds.includes("focused")) f.focused++;
   if (f.failures.length < 5) f.failures.push({ test: a.fullName, kind: kind!, message: m });
+  f.ids!.push(failureId(a.fullName, kind!, stripVTControlCharacters(m)));
 }
 
 /** Counts for one admitted file, or the reason an assertion in it is invalid. */
 function countFile(t: any, path: string): Counts | string {
   const identities = new Set<string>();
   const f: Counts = {
-    executed: 0, passed: 0, failed: 0, skipped: 0, focused: 0, tests: [], outcomes: [], failureKinds: [], failures: [],
+    executed: 0, passed: 0, failed: 0, skipped: 0, focused: 0, tests: [], outcomes: [], failureKinds: [], failures: [], ids: [],
   };
   for (const a of t.assertionResults) {
     const problem = admitAssertion(a, identities);
@@ -266,11 +273,9 @@ function countFile(t: any, path: string): Counts | string {
   if (t.status === "failed" && (!f.failed || t.message)) {
     f.failed++;
     f.failureKinds.push("compile-or-import");
-    if (f.failures.length < 5) f.failures.push({
-      test: path,
-      kind: "compile-or-import",
-      message: message([String(t.message ?? "the file failed to load")]),
-    });
+    const m = message([String(t.message ?? "the file failed to load")]);
+    if (f.failures.length < 5) f.failures.push({ test: path, kind: "compile-or-import", message: m });
+    f.ids!.push(failureId(path, "compile-or-import", stripVTControlCharacters(m)));
   }
   return f;
 }
@@ -469,6 +474,7 @@ export function createStack(): Stack {
       String(metadata(root, exclusions).json("node_modules/@playwright/test/package.json")?.version ?? "none")),
     normalizeE2e: (out, root) => normalizePlaywright(out.raw, root),
     adapterVersion: () => ADAPTER,
+    shareDeps,
     fingerprint: (root): ToolVersions => {
       const meta = metadata(root, exclusions);
       return {

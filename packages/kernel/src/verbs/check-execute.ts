@@ -7,6 +7,7 @@ import type { RunResult, StaticTool } from "../ports/types.ts";
 import { isE2e, isStatic, isWorkload, staticReport, e2eReport } from "./check-evidence.ts";
 import type { Executed, Run } from "./check-evidence.ts";
 import { digestAfter, rerunFailures } from "./check-rerun.ts";
+import { sealedRun } from "./check-sealed.ts";
 
 const TIMEOUT_MS = 10 * 60_000;
 
@@ -89,10 +90,12 @@ export async function execute(run: Run, inputs: readonly string[]): Promise<Exec
   const { digest: after, moved } = await digestAfter(run, inputs);
   const first: RunFacts = { ...observed(r, r.report), after };
   const reruns = await rerunFailures(run, first, inputs, (x) => observed(x, x.report));
-  return {
+  const out: Executed = {
     ...first,
     statics: Object.fromEntries(Object.entries(statics).map(([id, s]) => [id, { ...s, after }])),
     ...(reruns.length ? { reruns } : {}),
     ...(after !== run.facts.candidate ? { moved } : {}),
   };
+  const sealed = await sealedRun(run, out, inputs);
+  return sealed ? { ...out, sealed } : out;
 }

@@ -1,6 +1,5 @@
 // How a finished check run becomes evidence: receipts, the baseline match, counters, locks and attention items.
 import { join } from "node:path";
-import { failureSignature, recordAttempt, recordLaunchedChecks, stopFor, withSignature } from "../core/budget.ts";
 import { hashOf } from "../core/ids.ts";
 import { declaredOutputs, movedNote } from "../core/outputs.ts";
 import { baselineDefinitionMatches, supportOf, wantsRed } from "../core/obligations.ts";
@@ -11,9 +10,11 @@ import type { FileChange } from "../core/review.ts";
 import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
 import { TREND_PREFIX } from "../core/fitness.ts";
 import type { ParsedWorkload } from "../core/fitness.ts";
-import type { AttentionItem, BudgetState, Obligation, Receipt, State, StopReason, WorkContract } from "../core/schemas.ts";
+import type { AttentionItem, Obligation, Receipt, State, WorkContract } from "../core/schemas.ts";
 import type { Normalized, Ports, StaticTool } from "../ports/types.ts";
 import type { Facts } from "./facts.ts";
+import type { SealedRun } from "./check-sealed.ts";
+import type { Exclusion } from "../core/exclusions.ts";
 
 /** Everything a run decided before it started, which its result needs to be interpreted. */
 export interface Run {
@@ -32,6 +33,8 @@ export interface Run {
   id: string;
   /** Fingerprint of the toolchain when the run was prepared; a different one after the run means an input moved (EVD-11). */
   toolchain?: string;
+  /** The exclusion policy: paths it forbids reading stay out of the sealed starting copy (EVD-04). */
+  exclusions?: Exclusion[];
   /** The workload declaration, read when the run owes the workload obligation (QLT-05). */
   workload?: ParsedWorkload;
 }
@@ -40,7 +43,7 @@ export interface Run {
 export interface Rerun { facts: RunFacts; obligations: string[]; toExecute: "all" | string[]; report: string }
 
 /** What a check run observed: the test runner, and each static tool (including the e2e obligation) by obligation. */
-export interface Executed extends RunFacts { statics: Record<string, RunFacts>; reruns?: Rerun[]; moved?: string[] }
+export interface Executed extends RunFacts { statics: Record<string, RunFacts>; reruns?: Rerun[]; moved?: string[]; sealed?: SealedRun }
 export const isStatic = (ob: Obligation): boolean => ob.kind === "static";
 export const isE2e = (ob: Obligation): boolean => ob.tool === "playwright";
 export const isWorkload = (ob: Obligation): boolean => ob.kind === "workload";
@@ -164,37 +167,6 @@ export function matchBaseline(run: Run, cw: WorkContract, receipts: Receipt[]): 
       baselineInputs: supportOf(ob, run.facts),
     };
   });
-}
-
-/** Launched checks always count; a full candidate run that could run counts one attempt and its failure signature (TS §8.6). */
-export function account(
-  run: Run,
-  cw: WorkContract,
-  o: Executed,
-  receipts: Receipt[],
-  configFailed: boolean
-): { budget: BudgetState; stop: StopReason | undefined } {
-  const ranTests = o.ran ? run.toRun.filter((ob) => isSharedTest(ob) && !run.missing.some((m) => m.id === ob.id)).length : 0;
-  const reran = (o.reruns ?? []).reduce((n, r) => n + r.obligations.length, 0); // each rerun obligation is a launched check (PRD §4.4.1)
-  const launched = ranTests + reran + run.toRun.filter((ob) => !isSharedTest(ob) && o.statics[ob.id]?.ran).length;
-  let budget = recordLaunchedChecks(cw.budget, launched);
-  if (run.stage === "candidate" && run.scope === "full" && !configFailed) {
-    budget = recordAttempt(budget);
-    // an attempt that failed before a flaky pass still counts as a failure for the repeated-failure signature
-    const first = receipts.find((r) => r.status === "fail") ?? receipts.find((r) => r.qualifiers.includes("flaky"));
-    const names = first?.status === "fail" ? (first.failures ?? []).map((f) => f.test) : (first?.history?.[0]?.failed ?? []);
-    budget = first
-      ? withSignature(
-          budget,
-          failureSignature(
-            first.obligation,
-            names,
-            first.failures?.[0]?.message ?? ""
-          )
-        )
-      : { ...budget, signatures: [] };
-  }
-  return { budget, stop: stopFor(budget, cw.lane) };
 }
 
 /** An acceptance test that went red to green is locked whole-file; a revised definition is marked, not locked (TS §9.7). */

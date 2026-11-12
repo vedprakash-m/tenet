@@ -187,7 +187,7 @@ function overlay(index: Map<string, Entry>, status: readonly StatusEntry[]): Map
 export const gitBlob = (content: Buffer): string =>
   createHash("sha1").update(`blob ${content.length}\0`).update(content).digest("hex");
 
-export class GitCli implements Git {
+export class GitCli {
   private root: string;
   private exclusions: readonly Exclusion[] = [];
   private runner: Runner;

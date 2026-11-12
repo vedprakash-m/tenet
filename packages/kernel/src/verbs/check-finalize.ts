@@ -8,12 +8,16 @@ import { reason } from "../core/reasons.ts";
 import { receiptReasons } from "../core/receipts.ts";
 import { fullChecksPassed } from "../core/verdict.ts";
 import type { FileChange } from "../core/review.ts";
-import type { Obligation, Reason, Receipt, State, StopReason, WorkContract } from "../core/schemas.ts";
+import type { Obligation, Question, Reason, Receipt, State, StopReason, WorkContract } from "../core/schemas.ts";
 import type { Resp } from "../pipeline.ts";
 import { nx, withWork } from "./common.ts";
-import { account, applyLocks, attentionOf, matchBaseline, receiptsOf } from "./check-evidence.ts";
+import { applyLocks, attentionOf, matchBaseline, receiptsOf } from "./check-evidence.ts";
 import type { Executed, Run } from "./check-evidence.ts";
 import { issueReview } from "./manifest.ts";
+import { account } from "./check-account.ts";
+import { baselineQuestion, sealedEvidence } from "./check-sealed.ts";
+import { excused, failureReasons } from "../core/baseline.ts";
+import type { BaselineCtx } from "../core/baseline.ts";
 
 type Next = Array<ReturnType<typeof nx>>;
 type Done = { state: State; resp: Resp };
@@ -25,13 +29,14 @@ interface Outcome {
   work: WorkContract;
 }
 
-/** A failed receipt is a reason to fix, except on the baseline where a planned red is expected; others say why they proved nothing. */
-function evidenceReasons(receipts: Receipt[], baseline: boolean): Reason[] {
+/** A failed receipt is a reason to fix, except on the baseline where a planned red is expected, and except a broader-suite
+ * failure that also fails on the starting files or could not be classified (EVD-04); others say why they proved nothing. */
+function evidenceReasons(receipts: Receipt[], baseline: boolean, ctx: BaselineCtx): Reason[] {
   return receipts.flatMap((r) => {
     if (r.status === "pass" && r.qualifiers.includes("flaky")) return [reason("evidence-flaky", r.obligation, { refs: [r.obligation] })];
     if (r.status !== "fail") return receiptReasons(r);
     const tests = (r.failures ?? []).map((f) => f.test).slice(0, 3).join(", ");
-    return baseline ? [] : [reason("evidence-failed", `${r.obligation}: ${tests}`, { refs: [r.obligation] })];
+    return baseline ? [] : failureReasons({ id: r.obligation }, r, ctx, `${r.obligation}: ${tests}`);
   });
 }
 
@@ -56,14 +61,16 @@ function nextStep(
   receipts: Receipt[],
   obligations: Obligation[],
   stop: StopReason | undefined,
-  changes: FileChange[]
-): Outcome & { passedAll: boolean } {
+  changes: FileChange[],
+  ctx: BaselineCtx
+): Outcome & { passedAll: boolean; question?: Question | undefined } {
   const { baseline, scope, stage } = run;
-  const failing = receipts.filter((r) => r.status === "fail");
+  const failing = receipts.filter((r) => r.status === "fail" && !excused(r, ctx)); // a failure the user left out counts as passed
   const configFailed = receipts.some((r) => r.status === "inconclusive");
   const flaky = receipts.some((r) => r.qualifiers.includes("flaky"));
-  const passedAll = fullChecksPassed(nw.obligations, receipts);
-  const reasons = evidenceReasons(receipts, baseline);
+  const passedAll = fullChecksPassed(nw.obligations, receipts.map((r) => (excused(r, ctx) ? { ...r, status: "pass" as const } : r)));
+  const reasons = evidenceReasons(receipts, baseline, ctx);
+  const question = stop || baseline ? undefined : baselineQuestion(receipts, ctx);
   let data: Record<string, unknown> = { stage, scope, receipts: receiptSummary(receipts) };
   const next: Next = [];
   let work = nw;
@@ -102,7 +109,10 @@ function nextStep(
         : nx("implement", "Continue.")
     );
   }
-  return { reasons, next, data, work, passedAll };
+  // the user's answer comes before any fix: whether these failures are this work's to fix is theirs to say (EVD-04)
+  const ask = "Ask the user: leave these failing tests out of this work, or fix them as part of it.";
+  if (question) next.splice(0, next.length, nx("ask", ask, true));
+  return { reasons, next, data, work, passedAll, question };
 }
 
 /** The trend of each fitness function with this run's judged workload as its newest point (QLT-05); null when none was judged. */
@@ -157,15 +167,15 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
   const receipts = receiptsOf(run, cw, o);
   const configFailed = receipts.some((r) => r.status === "inconclusive");
   const matched = matchBaseline(run, cw, receipts);
-  const { budget, stop } = account(run, cw, o, receipts, configFailed);
+  const ctx = sealedEvidence(run, cw, o, receipts);
+  const { budget, stop } = account(run, cw, o, receipts, configFailed, ctx);
   const { locks, obligations } = applyLocks(run, cw, st.locks, matched, receipts);
   const trend = workloadTrend(run, st, receipts);
   const { changes, attention } = await attentionOf(run, cw, trend?.items ?? null);
   const workload = receipts.some((r) => r.kind === "workload") ? { workload: { scope: SCOPE, trends: trend?.lines ?? [] } } : {};
   const now = ports.clock.now();
-  const kept = cw.receipts.filter(
-    (r) => !receipts.some((n) => n.obligation === r.obligation && n.stage === r.stage && n.scope === r.scope)
-  );
+  const replaced = (r: Receipt) => receipts.some((n) => n.obligation === r.obligation && n.stage === r.stage && n.scope === r.scope);
+  const kept = cw.receipts.filter((r) => !replaced(r));
   let nw: WorkContract = {
     ...cw,
     obligations,
@@ -183,21 +193,23 @@ export async function finalizeCheck(run: Run, st: State, result: unknown): Promi
     lastCheck: { candidate: facts.candidate, at: now, stage },
     changeTraits: changeTraitsOf(run.ports, st, cw, facts).results,
     ...(stop ? { stopReason: stop } : {}),
+    ...(ctx.sealed ? { sealedBaseline: ctx.sealed } : {}),
   };
-  const step = nextStep(run, st, nw, receipts, obligations, stop, changes);
+  const step = nextStep(run, st, nw, receipts, obligations, stop, changes, ctx);
+  const q = step.question, pending = q ? [...st.pending.filter((p) => p.id !== q.id), q] : st.pending;
   nw = step.work;
   await snapshot(run, nw, step.reasons);
   if (stage === "integrated" && step.passedAll && nw.git.integrated)
     nw = { ...nw, git: { ...nw.git, integrated: { ...nw.git.integrated, validated: true } } };
   return {
-    state: { ...withWork(st, nw), locks },
+    state: { ...withWork({ ...st, pending }, nw), locks },
     resp: {
       work: nw.id,
       reasons: step.reasons,
       next: step.next,
       data: { ...step.data, ...workload, ...data },
       progress: { phase: "checking", ...(step.passedAll ? { boundary: "milestone" as const } : {}) },
-      ...(stop ? { exit: 2 as const } : {}),
+      ...(q ? { exit: 3 as const, questions: [q] } : stop ? { exit: 2 as const } : {}),
     },
   };
 }

@@ -96,6 +96,10 @@ export interface CommitOutcome {
 }
 /** The configured Git filters that some file here uses: running one is an executable effect that needs the user's consent (GIT-12). */
 export interface FilterGate { names: string[]; hash: string }
+/** Start-dirty files laid over the sealed tree: copied from the working tree (already checked unchanged) or removed (EVD-04). */
+export interface SealOverlay { copy: Array<{ path: string; mode: string }>; remove: string[] }
+/** A sealed copy's real path and how to remove it, or why it could not be made. */
+export type Sealed = { root: string; dispose: () => void } | { problem: string };
 export interface Git {
   setExclusions(exclusions: readonly Exclusion[]): void;
   /** Reading never runs a filter. This names the ones a commit would run, or null when none applies. */
@@ -150,6 +154,8 @@ export interface Git {
   snapshot(message: string): Promise<string | null>;
   /** Creates and switches to a branch from HEAD, carrying the working tree; idempotent when already on it. */
   createBranch(name: string): Promise<void>;
+  /** Writes a tree's blobs as stored into the new directory `dest` (no checkout, index, filter or hook), then the overlay. */
+  materialize(treeish: string, dest: string, keep: (path: string) => boolean, overlay: SealOverlay): Promise<Sealed>;
 }
 
 // ---------------------------------------------------------------- runner
@@ -200,6 +206,7 @@ export interface Normalized {
     executed: number; passed: number; failed: number; skipped: number; focused: number; tests: string[];
     outcomes?: Array<{ test: string; status: "passed" | "failed" | "skipped"; kind?: string; kinds?: string[] }>;
     failureKinds: string[]; failures: Array<{ test: string; kind: string; message: string }>;
+    ids?: string[]; // every failure as `<test>U+001F<kind>:<signature of the first message line>` (EVD-04)
   }>;
   invalid?: string; discovered: number;
 }
@@ -218,6 +225,8 @@ export interface Stack {
   e2eArgv(root: string, report: string): string[] | null;
   normalizeE2e(out: { exit: number | undefined; raw: string | null }, root?: string): Normalized;
   fingerprint(root: string): ToolVersions;
+  /** Links the workspace's installed dependencies into a sealed copy, or says why that would not be safe (EVD-04). */
+  shareDeps(root: string, sealedRoot: string): string | undefined;
   /** The adapter's own version (LFC-03): what a contract pins, unlike the fingerprint, which also holds node and dependencies. */
   adapterVersion(): string;
   patterns: readonly AttentionPattern[];
