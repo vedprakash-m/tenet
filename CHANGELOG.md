@@ -5,7 +5,16 @@
 - New `packages/kernel/test/undo-confirm-simulated.test.ts` (22 tests): drives `undo` and `decide undo-confirm` with real Git and an in-memory store, so the confirmation checks run on Windows too, where the kernel refuses mutating work. It covers foreign same-label commits (including ones that leave the tree unchanged, in merged history, and empty), recorded merge, unreachable and shallow history, stale previews, overlapping or uncommitted human edits, recreated untracked files, cancel, and a clean apply that keeps later, staged, unstaged, untracked and ignored work. Undo stays disabled in the shipped kernel; the tests use the existing `enableUndoForTests` seam.
 - `undo.test.ts`: two added cases, a foreign same-label commit in merged history after the preview and same-label versus differently labeled empty commits after the preview.
 - `model-record.test.ts`: two test titles reworded so they claim no more than the assertions show.
+- `tools/uat/uat.mjs`: the filter stop/kill step waits until `run.json` holds `pid` and `procStart`. It read the file as soon as the filter's marker appeared, and the filter can start before the kernel writes them, which failed one Ubuntu run.
 - Written on 2026-11-08 and 09 and brought onto current `main`; the documentation changes made at the same time were dropped because `main` has since disabled undo and cleanup removal and documents that itself.
+
+## 2026-11-12 — Writer-race admission retry fix and NFR-01 latency trims (PR #25)
+
+- `adapters/store-fs.ts`: a writer waiting for admission before taking the lock now retries when it finds no lock held, instead of failing. Another writer can finish and release the lock between its replacement of the record and this check; the old code threw, which made the "no lost update [CON-04, AGT-08]" test fail intermittently on Ubuntu. A dead lock holder still fails at once; a live one gives `kernel-busy` after the deadline.
+- `adapters/store-fs.ts`: the record parsed during admission is reused by the next `read()` of the same file if the file is unchanged, instead of being read and parsed again.
+- `adapters/git-cli.ts`, `adapters/git-layout.ts`: independent Git probes run together (`Promise.all`) instead of one after another.
+- `adapters/private-record-fs.ts`: the duplicate-key check scans characters instead of using regular-expression matching; keys with escapes are decoded before comparison. New cases in `test/unique-record.test.ts` [CON-03].
+- Measured effect is small: in a paired main-versus-PR run, warm p95 medians were 278 ms vs 278 ms on the large fixture and 268 ms vs 254 ms on long-history. NFR-01 is not established; runner speed varies by about ±40 ms between runs.
 
 ## 2026-11-10 — Reading project intent back after `.tenet/` is lost (CON-07)
 
