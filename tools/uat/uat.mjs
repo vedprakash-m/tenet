@@ -1314,7 +1314,9 @@ try {
     await waitUntil(() => existsSync(marker), 'filter launch');
     const state = JSON.parse(readFileSync(join(filtered, '.tenet/state'), 'utf8'));
     const inCall = Object.values(state.work).find(w => w.session.inCall)?.session.inCall;
-    assert.equal(inCall.verb, 'commit'); record = JSON.parse(readFileSync(join(inCall.runDir, 'run.json'), 'utf8')); assert.ok(record.pid && record.procStart);
+    assert.equal(inCall.verb, 'commit');
+    // The filter can create its marker before the kernel records the process identity just after spawning it.
+    record = await waitUntil(() => { const r = JSON.parse(readFileSync(join(inCall.runDir, 'run.json'), 'utf8')); return r.pid && r.procStart && r; }, 'process identity');
     if (mode === 'killed') { child.kill('SIGKILL'); assert.equal((await done).signal, 'SIGKILL'); }
     const stopped = call(filtered, 'stop', { h: fh, mode: 'cancel' });
     assert.equal(stopped.exit, 2); assert.ok(stopped.reasons.some(r => r.code === 'effect-uncertain'));

@@ -24,7 +24,7 @@ describe("model record [RSC-02]", () => {
     assert.deepEqual(d(silent).model, { requested: "inherited", source: "unknown", qualification: "unknown" });
   });
 
-  it("records the model per assignment, and an assignment that reports none is unknown — the Reviewer and an analyst have no field to request a different one, so an unreported assignment can only inherit the active model [RSC-01]", async () => {
+  it("records the reported model per assignment and leaves unreported assignment provenance unknown [RSC-01]", async () => {
     const p = fresh();
     const h = (await p.call("open", { profile: "investigate", request: "x", model: "gpt-x" })).handle!;
     const packet = async (question: string) => d(await p.call("packet", { h, role: "analyst", analystRole: "researcher", question })).analyst.manifest as string;
@@ -48,7 +48,7 @@ describe("model record [RSC-02]", () => {
   });
 });
 
-describe("resource controls: proven by absence, not by a scenario — no mechanism exists to do either [RSC-01, RSC-03]", () => {
+describe("resource controls: name and action-class checks do not establish host enforcement [RSC-01, RSC-03]", () => {
   it("no verb or decision kind name is about switching models, funding, purchasing or enabling overage", () => {
     const names = [...Object.keys(VERBS), ...Object.keys(DECISIONS)];
     const suspect = /switch.*model|model.*switch|fund|purchase|overage|paid|billing|spend/i;
