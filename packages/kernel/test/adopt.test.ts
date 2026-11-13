@@ -187,10 +187,16 @@ describe("a policy holding a secret is refused, not adopted [SEC-11, CFG-11]", (
     ["a command name", { commands: { [TOKEN]: { argv: ["npm", "test"] } } }],
     ["an environment value", { commands: { test: { argv: ["npm", "test"], env: { T: TOKEN } } } }],
   ] as const) {
-    it(`refuses ${name} that looks like a secret and records nothing of it`, async () => {
+    it(`refuses ${name} that looks like a secret at open, and at adoption, and records nothing of it`, async () => {
+      const blocked = fresh({ "tenet.policy.json": JSON.stringify(policy) });
+      const o = await blocked.call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts"] });
+      assert.equal(o.exit, 2, JSON.stringify(o));
+      assert.equal(o.reasons[0]!.code, "restriction-key-unknown");
+      assert.equal(JSON.stringify(o).includes(TOKEN), false);
+
       const p = fresh();
-      p.write("tenet.policy.json", JSON.stringify(policy));
       const h = await withBasis(p);
+      p.write("tenet.policy.json", JSON.stringify(policy)); // the file arrives after the work started
       for (const answers of [undefined, ask]) {
         const r = await p.call("decide", { h, kind: "adopt", target: "policy", ...(answers ? { answers } : {}) });
         assert.equal(r.exit, 2, JSON.stringify(r));
