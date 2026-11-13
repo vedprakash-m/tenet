@@ -518,3 +518,32 @@ describe("verdict properties", () => {
     fc.assert(fc.property(arbReceipts, (rs) => JSON.stringify(verdict({ ...base(), receipts: rs })) === JSON.stringify(verdict({ ...base(), receipts: rs }))));
   });
 });
+
+describe("threat and data note in the verdict [QLT-13]", () => {
+  const note = (id: string, kind: BasisElement["kind"], threat: BasisElement["threat"]): BasisElement =>
+    ({ id, origin: "request", kind, text: id, verifiedBy: [], threat });
+  const complete = [req, { ...ex, threat: "data" as const }, { ...note("A-1", "assumption", "actor"), verifiedBy: [{ method: "manual" as const, ref: "confirmed by the user" }] }, note("C-1", "constraint", "asset"), note("C-2", "constraint", "abuse")];
+
+  it("[QLT-13] holds a security-relevant change below checked-local while its note is incomplete", () => {
+    const v = verdict({ ...base(), changeTraits: ["auth"] });
+    assert.notEqual(v.endpoint, "checked-local");
+    const open = v.reasons.find((r) => r.code === "threat-note-open");
+    assert.ok(open && !open.note, JSON.stringify(v.reasons));
+    assert.match(open.message, /missing actor, asset, data, abuse/);
+  });
+
+  it("[QLT-13] a complete note allows checked-local and says which security items are only constraints", () => {
+    const v = verdict({ ...base(), changeTraits: ["auth"], elements: complete, confirmedAssumptions: ["A-1"] });
+    assert.equal(v.endpoint, "checked-local", JSON.stringify(v.reasons));
+    assert.equal(v.reasons.some((r) => r.code === "threat-note-open"), false);
+    const unchecked = v.reasons.find((r) => r.code === "threat-constraints-unchecked");
+    assert.ok(unchecked?.note, JSON.stringify(v.reasons));
+    assert.match(unchecked.message, /: 2 security item\(s\) are constraints$/);
+  });
+
+  it("[QLT-13] needs no note for a change without a security-relevant trait", () => {
+    const v = verdict({ ...base(), changeTraits: ["ui"] });
+    assert.equal(v.endpoint, "checked-local");
+    assert.equal(v.reasons.some((r) => r.code.startsWith("threat-")), false);
+  });
+});

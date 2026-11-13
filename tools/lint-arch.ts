@@ -8,9 +8,10 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
+const SCRIPT = /\.(?:[cm]?[jt]sx?)$/;
 const listFiles = (dir: string): string[] => readdirSync(dir).flatMap((f) => {
   const p = join(dir, f);
-  return statSync(p).isDirectory() ? listFiles(p) : p.endsWith(".ts") ? [p] : [];
+  return statSync(p).isDirectory() ? listFiles(p) : SCRIPT.test(p) ? [p] : [];
 });
 
 const IO = /^node:(fs|fs\/promises|child_process|os|net|http|https|http2|dgram|tls|dns|cluster|readline|stream|process)$/;
@@ -25,6 +26,8 @@ const add = (rel: string, line: number, msg: string) => problems.push(`${rel}:${
 const all = listFiles(SRC);
 for (const file of all) {
   const rel = relative(SRC, file).split(sep).join("/");
+  // The quality lint, the line cap and the coverage tags read `.ts` only; any other script would escape all three.
+  if (!rel.endsWith(".ts") || rel.endsWith(".d.ts")) { add(rel, 1, "kernel sources are .ts files; other script extensions escape the lints"); continue; }
   const text = readFileSync(file, "utf8");
   text.split("\n").forEach((src, i) => {
     const n = i + 1;

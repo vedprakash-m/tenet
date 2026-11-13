@@ -45,3 +45,11 @@ it("probe result semantics and empty-output fallback are unchanged", () => {
   assert.deepEqual(probe(dir, 'console.log("false"); process.exit(1);'), { ok: false, value: false, error: "" });
   assert.deepEqual(probe(dir, 'process.exit(1);'), { ok: false, value: null, error: "no output" });
 });
+
+it("CRLF and LF stderr give the same failure detail, without a trailing carriage return", () => {
+  const dir = root();
+  for (const eol of ["\r\n", "\n"]) {
+    const source = `process.stderr.write(${JSON.stringify(`Error: synthetic failure${eol}second line${eol}`)}); process.exit(1);`;
+    assert.equal(probe(dir, source).error, "Error: synthetic failure", JSON.stringify(eol));
+  }
+});

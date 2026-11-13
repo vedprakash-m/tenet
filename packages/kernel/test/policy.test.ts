@@ -163,3 +163,34 @@ describe("applying a pulled policy", () => {
     assert.deepEqual(twice.applied, []);
   });
 });
+
+describe("secrets are refused in tenet.policy.json [SEC-11, CFG-11]", () => {
+  const TOKEN = "ghp_" + "c".repeat(36); // privacy-ok: a fake token for the refusal tests
+  const refused = (json: unknown, text = JSON.stringify(json)) => {
+    const r = parsePolicy(json, text);
+    assert.equal(r.ok, false, text);
+    if (r.ok) return "";
+    assert.equal(r.message.includes(TOKEN), false, "the refusal never repeats the secret");
+    assert.match(r.message, /looks like a secret/);
+    return r.message;
+  };
+  it("refuses a token-shaped command name or environment key without naming it", () => {
+    assert.match(refused({ commands: { [TOKEN]: { argv: ["npm", "test"] } } }), /^commands\.\[redacted key\] /);
+    assert.match(refused({ commands: { test: { argv: ["npm", "test"], env: { [TOKEN]: "1" } } } }), /^commands\.test\.env\.\[redacted key\] /);
+  });
+  it("refuses a token-shaped value, also when the file escapes it", () => {
+    assert.match(refused({ commands: { test: { argv: ["npm", "test", TOKEN] } } }), /^commands\.test\.argv\.2 /);
+    const escaped = `{"commands":{"test":{"argv":["npm"],"env":{"T":"${TOKEN.replace("_", "\u005f")}"}}}}`;
+    assert.match(refused(JSON.parse(escaped), escaped), /^commands\.test\.env\.T /);
+  });
+  it("refuses a credential assignment that spans a key and its value, and one that JSON parsing would discard", () => {
+    const pair = '{"commands":{"test":{"argv":["npm"],"env":{"API_TOKEN":"placeholder-1234"}}}}'; // privacy-ok
+    refused(JSON.parse(pair), pair);
+    const duplicate = `{"protected_paths":["${TOKEN}"],"protected_paths":["db/**"]}`;
+    assert.match(refused(JSON.parse(duplicate), duplicate), /^the file text /);
+  });
+  it("accepts ordinary commands, environment values and paths", () => {
+    const ok = { protected_paths: ["db/**"], commands: { test: { argv: ["npm", "test", "--", "--reporter=json"], env: { NODE_OPTIONS: "--max-old-space-size=4096", CI: "1" } } } };
+    assert.equal(parsePolicy(ok, JSON.stringify(ok)).ok, true);
+  });
+});

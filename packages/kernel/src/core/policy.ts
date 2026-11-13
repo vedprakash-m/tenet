@@ -3,6 +3,7 @@
 // waits for the user. There is no implication solver: a changed glob is a different path.
 import { z } from "zod";
 import { stableStringify } from "./ids.ts";
+import { redact } from "./redact.ts";
 
 const Kind = z.enum(["no-model-send", "no-read", "no-edit", "no-export", "no-routine-scan"]);
 type Kind = z.infer<typeof Kind>;
@@ -40,8 +41,30 @@ function distance(a: string, b: string): number {
 export const nearestKey = (key: string, keys: readonly string[]): string =>
   [...keys].sort((a, b) => distance(key, a) - distance(key, b))[0]!;
 
-/** Restriction-bearing: an unknown or malformed key blocks dependent work and the message names the nearest valid key (CFG-11). */
-export function parsePolicy(json: unknown): PolicyParse {
+const looksSecret = (s: string) => redact(s) !== s;
+
+/** The path of the first key or string that looks like a secret, with such a key shown as `[redacted key]`. */
+function secretPath(v: unknown, path: readonly string[]): string | null {
+  if (typeof v === "string") return looksSecret(v) ? path.join(".") : null;
+  if (!v || typeof v !== "object") return null;
+  for (const [k, x] of Object.entries(v)) {
+    if (looksSecret(k)) return [...path, "[redacted key]"].join(".");
+    const hit = secretPath(x, [...path, k]);
+    if (hit) return hit;
+  }
+  return null;
+}
+
+/**
+ * Restriction-bearing: an unknown or malformed key blocks dependent work and the message names the nearest valid key (CFG-11).
+ * Policy is recorded in State and fingerprinted, so a key or value that looks like a secret is refused, never redacted (SEC-11).
+ * `text` is the file as written: it also catches a secret that spans a key and its value, or sits in a key JSON parsing discards.
+ */
+export function parsePolicy(json: unknown, text?: string): PolicyParse {
+  const secret = secretPath(json, []) ?? (text !== undefined && looksSecret(text) ? "the file text" : null);
+  if (secret) {
+    return { ok: false, key: secret.split(".")[0], message: `${secret} looks like a secret; keep secrets out of tenet.policy.json` };
+  }
   const r = Policy.safeParse(json);
   if (r.success) return { ok: true, policy: r.data };
   const issue = r.error.issues[0]!;

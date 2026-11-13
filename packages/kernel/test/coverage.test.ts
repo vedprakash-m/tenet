@@ -400,3 +400,11 @@ test("the report-integrity CLI does not modify requirements, evidence, or Git st
     cleanup(root);
   }
 });
+test("counts a Must whose capability is switched off apart from the mapped ones, with the reason", () => {
+  const r = report(resolve(import.meta.dirname, "../../.."), "R1");
+  const disabled = r.disabled.map((d) => d.id).sort();
+  assert.deepEqual(disabled, ["GIT-04", "LFC-05"]);
+  for (const id of disabled) assert.equal(r.covered.some((c) => c.id === id), false, id);
+  assert.match(r.disabled.find((d) => d.id === "GIT-04")!.why, /undo is disabled/);
+  assert.equal(r.evidence.find((e) => e.id === "LFC-05")?.mapping, "capability-disabled");
+});

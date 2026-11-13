@@ -1,10 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { copyFileSync, mkdtempSync, rmSync } from "node:fs";
+import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { scanDiff } from "../../../tools/privacy-check.ts";
+import { fileURLToPath } from "node:url";
+import { scanDiff, scanNames } from "../../../tools/privacy-check.ts";
 
 const diff = (file: string, ...added: string[]) => `+++ b/${file}\n@@ -0,0 +1,${added.length} @@\n${added.map((l) => `+${l}`).join("\n")}\n`;
 
@@ -73,6 +74,71 @@ describe("privacy check", () => {
       for (const file of ["specs/PRD.md", "specs/tech-spec.md", "specs/ux-spec.md"]) {
         const result = spawnSync("git", ["-c", "core.excludesFile=", "check-ignore", "--no-index", file], { cwd: dir, encoding: "utf8" });
         assert.equal(result.status, 1, file);
+      }
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+});
+
+const TOKEN = "ghp_" + "b".repeat(30); // privacy-ok: a fake token for the scanner tests
+const CHECK = fileURLToPath(new URL("../../../tools/privacy-check.ts", import.meta.url));
+const GIT_ENV = { ...process.env, GIT_CONFIG_GLOBAL: process.platform === "win32" ? "NUL" : "/dev/null", GIT_CONFIG_NOSYSTEM: "1" };
+
+function repo(): { dir: string; git: (...a: string[]) => string; check: (...a: string[]) => ReturnType<typeof spawnSync> } {
+  const dir = mkdtempSync(join(tmpdir(), "tenet-privacy-"));
+  const git = (...a: string[]) => execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@example.test", "-c", "commit.gpgsign=false", ...a],
+    { cwd: dir, env: GIT_ENV, encoding: "utf8" }).trim();
+  git("-c", "init.defaultBranch=main", "-c", "init.templateDir=", "init", "--quiet");
+  writeFileSync(join(dir, "a.txt"), "start\n"); git("add", "."); git("commit", "-qm", "start");
+  const check = (...a: string[]) => spawnSync(process.execPath, [CHECK, ...a], { cwd: dir, env: GIT_ENV, encoding: "utf8" });
+  return { dir, git, check };
+}
+
+describe("privacy check boundaries [OSS-05]", () => {
+  it("scans an added line that starts with two plus signs, and does not take it for a file name", () => {
+    const f = scanDiff(`diff --git a/a.ts b/a.ts\n+++ b/a.ts\n@@ -0,0 +1,2 @@\n+++ const t = '${TOKEN}';\n+mail ada@corp.io\n`); // privacy-ok
+    assert.deepEqual(f.map((x) => [x.file, x.line, x.what]), [["a.ts", 1, "a token"], ["a.ts", 2, "an email address"]]);
+  });
+  it("checks every address on a line, and allows only the exact attribution address", () => {
+    assert.deepEqual(scanDiff(diff("a.md", "noreply@anthropic.com and ada@corp.io")).map((x) => x.what), ["an email address"]); // privacy-ok
+    assert.deepEqual(scanDiff(diff("a.md", "xnoreply@anthropic.com")).map((x) => x.what), ["an email address"]); // privacy-ok
+  });
+  it("names secret-store files from raw paths, including non-ASCII ones, and redacts a token-shaped file name", () => {
+    assert.deepEqual(scanNames(["keys/cert.p12", "docs/ok.md", "keys/café.pem"]).map((x) => x.file), ["keys/cert.p12", "keys/café.pem"]);
+    const f = scanDiff(diff(`notes-${TOKEN}.md`, "hello"));
+    assert.equal(f.length, 0);
+    const named = scanDiff(diff(`notes-${TOKEN}.md`, `x ${TOKEN}`));
+    assert.equal(named[0]!.file.includes(TOKEN), false);
+  });
+  it("flags a staged binary secret store that has no text diff", () => {
+    const { dir, git, check } = repo();
+    try {
+      writeFileSync(join(dir, "cert.p12"), Buffer.from([0, 1, 2, 0, 255]));
+      git("add", "cert.p12");
+      const r = check();
+      assert.equal(r.status, 1, String(r.stdout) + String(r.stderr));
+      assert.match(String(r.stderr), /cert\.p12:0: a file that looks like a secret store/);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+  it("scans a line that only a merge commit adds", () => {
+    const { dir, git, check } = repo();
+    try {
+      const base = git("rev-parse", "HEAD");
+      git("checkout", "-qb", "side"); writeFileSync(join(dir, "b.txt"), "side\n"); git("add", "."); git("commit", "-qm", "side");
+      git("checkout", "-q", "main"); writeFileSync(join(dir, "c.txt"), "main\n"); git("add", "."); git("commit", "-qm", "main");
+      git("merge", "--no-ff", "--no-commit", "-q", "side");
+      writeFileSync(join(dir, "d.txt"), `t = '${TOKEN}'\n`); git("add", "d.txt"); git("commit", "-qm", "merge");
+      const r = check("--range", `${base}..HEAD`);
+      assert.equal(r.status, 1, String(r.stdout) + String(r.stderr));
+      assert.match(String(r.stderr), /d\.txt:1: a token/);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+  it("refuses a range that is missing or looks like an option", () => {
+    const { dir, check } = repo();
+    try {
+      for (const args of [["--range", "--max-count=0"], ["--range"]]) {
+        const r = check(...args);
+        assert.equal(r.status, 2, args.join(" "));
+        assert.match(String(r.stderr), /range/);
       }
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });

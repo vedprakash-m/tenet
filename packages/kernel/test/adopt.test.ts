@@ -181,6 +181,30 @@ describe("adopting tenet.policy.json [CFG-11, PRD §7.4]", () => {
   });
 });
 
+describe("a policy holding a secret is refused, not adopted [SEC-11, CFG-11]", () => {
+  const TOKEN = "ghp_" + "f".repeat(36); // privacy-ok: a fake token for the refusal test
+  for (const [name, policy] of [
+    ["a command name", { commands: { [TOKEN]: { argv: ["npm", "test"] } } }],
+    ["an environment value", { commands: { test: { argv: ["npm", "test"], env: { T: TOKEN } } } }],
+  ] as const) {
+    it(`refuses ${name} that looks like a secret and records nothing of it`, async () => {
+      const p = fresh();
+      p.write("tenet.policy.json", JSON.stringify(policy));
+      const h = await withBasis(p);
+      for (const answers of [undefined, ask]) {
+        const r = await p.call("decide", { h, kind: "adopt", target: "policy", ...(answers ? { answers } : {}) });
+        assert.equal(r.exit, 2, JSON.stringify(r));
+        assert.equal(r.reasons[0]!.code, "restriction-key-unknown");
+        assert.match(r.reasons[0]!.message, /looks like a secret/);
+        assert.equal(JSON.stringify(r).includes(TOKEN), false);
+      }
+      assert.equal(state(p).trust.some((t) => t.file === "tenet.policy.json"), false);
+      assert.equal(state(p).project.adoption.policy, "undecided");
+      assert.equal(readFileSync(join(p.root, ".tenet/state"), "utf8").includes(TOKEN), false);
+    });
+  }
+});
+
 describe("open reconciles the shared files with what was adopted [PH0-4, PRD §7.4 item 14]", () => {
   async function adoptedPolicy(policy: object) {
     const p = fresh({ "tenet.policy.json": JSON.stringify(policy) });

@@ -20,7 +20,7 @@ const ROW = /^\| ([A-Z]{2,4}-\d+[a-z]?) \| (.*?) \| (Must|Should|Could|May) \| (
 
 export interface Requirement { id: string; text: string; level: string; milestone: string; acs: string[] }
 export interface EvidenceStatus {
-  id: string; mapping: "mapped" | "host-only" | "unmapped"; disposition: "unreviewed" | "partial" | "complete";
+  id: string; mapping: "mapped" | "capability-disabled" | "host-only" | "unmapped"; disposition: "unreviewed" | "partial" | "complete";
   uncoveredAcIds: string[]; evidenceTiers: string[];
   evidenceRefs: Array<{ kind: string; tier: string; path: string; sha256: string; acIds: string[]; outcome: string }>;
   campaignRef: { campaignId: string; path: string; sha256: string } | null;
@@ -28,7 +28,7 @@ export interface EvidenceStatus {
   qualification: "not-qualified" | "qualified";
 }
 export interface Report {
-  covered: Array<{ id: string; tests: number }>; hostOnly: Requirement[]; unreachable: Requirement[]; unmapped: Requirement[];
+  covered: Array<{ id: string; tests: number }>; disabled: Array<{ id: string; tests: number; why: string }>; hostOnly: Requirement[]; unreachable: Requirement[]; unmapped: Requirement[];
   reasonCodes: { referenced: number; total: number }; tooLong: Array<{ file: string; lines: number }>;
   evidence: EvidenceStatus[]; integrityErrors: string[];
 }
@@ -66,6 +66,16 @@ const LedgerRecord = z.object({
 const Ledger = z.object({ schemaVersion: z.literal(1), records: z.array(LedgerRecord) }).strict();
 type ValidatedCampaign = { evidenceRefs: z.infer<typeof EvidenceRef>[]; binding: { tuple: Record<string, unknown>; artifactSha256: string } | null };
 type ParsedLedgerRecord = z.infer<typeof LedgerRecord> & { campaign: ValidatedCampaign };
+
+/**
+ * Musts whose capability the shipped kernel switches off. Their tests reach the code only through a test-only enable seam,
+ * so they are counted apart from the mapped Musts. The `*-disabled.test.ts` suites prove the product refuses.
+ * Remove an entry when its capability is switched back on.
+ */
+export const DISABLED: Record<string, string> = {
+  "GIT-04": "undo is disabled in this preview (verbs/undo.ts)",
+  "LFC-05": "cleanup removal is disabled in this preview (decisions/cleanup.ts)",
+};
 
 /** Requirements that are agent behavior or host mechanics: there is nothing for the kernel to assert, so only T3 can show them. */
 const HOST_BY_NATURE: Record<string, string> = {
@@ -134,12 +144,13 @@ export function report(root: string, milestone: string): Report {
   const tiers = acTiers(readFileSync(join(root, "specs/tech-spec.md"), "utf8"));
   const files = Object.fromEntries(walk(join(root, "packages")).map((f) => [f, readFileSync(f, "utf8")]));
   const tagged = taggedTests(files);
-  const covered: Report["covered"] = [], hostOnly: Requirement[] = [], unreachable: Requirement[] = [], unmapped: Requirement[] = [];
+  const covered: Report["covered"] = [], disabled: Report["disabled"] = [], hostOnly: Requirement[] = [], unreachable: Requirement[] = [], unmapped: Requirement[] = [];
   const ledger = readLedger(root, allRequirements, integrityErrors);
   const evidence: EvidenceStatus[] = [];
   for (const r of reqs) {
     let mapping: EvidenceStatus["mapping"];
-    if (tagged.has(r.id)) { covered.push({ id: r.id, tests: tagged.get(r.id)! }); mapping = "mapped"; }
+    if (tagged.has(r.id) && DISABLED[r.id]) { disabled.push({ id: r.id, tests: tagged.get(r.id)!, why: DISABLED[r.id]! }); mapping = "capability-disabled"; }
+    else if (tagged.has(r.id)) { covered.push({ id: r.id, tests: tagged.get(r.id)! }); mapping = "mapped"; }
     else if (HOST_BY_NATURE[r.id]) { hostOnly.push(r); mapping = "host-only"; }
     else {
       const t1Capable = r.acs.length === 0 || r.acs.some((ac) => !tiers.has(ac) || tiers.get(ac)!.includes("T1"));
@@ -156,7 +167,7 @@ export function report(root: string, milestone: string): Report {
   }
   const all = Object.values(files).join("\n");
   const referenced = Object.keys(REASONS).filter((c) => new RegExp(`["'\`]${c}["'\`]`).test(all)).length;
-  return { covered, hostOnly, unreachable, unmapped, reasonCodes: { referenced, total: Object.keys(REASONS).length }, tooLong: tooLong(root), evidence, integrityErrors };
+  return { covered, disabled, hostOnly, unreachable, unmapped, reasonCodes: { referenced, total: Object.keys(REASONS).length }, tooLong: tooLongFiles(root), evidence, integrityErrors };
 }
 
 function readLedger(root: string, requirements: Requirement[], errors: string[]): Map<string, ParsedLedgerRecord> {
@@ -347,13 +358,13 @@ function validateCampaign(
 /** No verb or decision file is longer than this, and no source line packs >340 chars to evade the cap (owner decision, 2026-10-19; WRK-06 increment 2026-10-31). */
 const FILE_CAP = 265;
 const LINE_WIDTH_CAP = 340;
-function tooLong(root: string): Report["tooLong"] {
+export function tooLongFiles(root: string): Report["tooLong"] {
   const src = join(root, "packages/kernel/src");
-  const byLines = ["verbs", "decisions"]
-    .flatMap((d) => readdirSync(join(src, d)).filter((f) => f.endsWith(".ts")).map((f) => ({ file: `${d}/${f}`, lines: readFileSync(join(src, d, f), "utf8").split("\n").length })))
-    .filter((x) => x.lines > FILE_CAP);
   const walkTs = (d: string): string[] =>
     readdirSync(join(src, d), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walkTs(`${d}/${e.name}`) : e.name.endsWith(".ts") ? [`${d}/${e.name}`] : []));
+  const byLines = ["verbs", "decisions"] // nested files too: a subfolder must not escape the cap
+    .flatMap((d) => (existsSync(join(src, d)) ? walkTs(d) : []).map((file) => ({ file, lines: readFileSync(join(src, file), "utf8").split("\n").length })))
+    .filter((x) => x.lines > FILE_CAP);
   const byWidth = walkTs(".").flatMap((file) => {
     const max = Math.max(0, ...readFileSync(join(src, file), "utf8").split(/\r?\n/).map((l) => l.length));
     return max > LINE_WIDTH_CAP ? [{ file: `${file} (max line ${max} > ${LINE_WIDTH_CAP} chars)`, lines: max }] : [];
@@ -366,8 +377,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const milestone = i > 0 ? process.argv[i + 1] ?? "" : "M0";
   if (!ORDER.includes(milestone)) { console.error(`unknown milestone: ${milestone}`); process.exit(2); }
   const r = report(join(import.meta.dirname, ".."), milestone);
-  const total = r.covered.length + r.hostOnly.length + r.unreachable.length + r.unmapped.length;
-  console.log(`coverage ${milestone}: ${total} Musts · ${r.covered.length} with a T1 fixture · ${r.hostOnly.length} need the real host (T3/T4) · ${r.unreachable.length} not reachable yet · ${r.unmapped.length} unmapped`);
+  const total = r.covered.length + r.disabled.length + r.hostOnly.length + r.unreachable.length + r.unmapped.length;
+  console.log(`coverage ${milestone}: ${total} Musts · ${r.covered.length} with a T1 fixture · ${r.disabled.length} capability disabled · ${r.hostOnly.length} need the real host (T3/T4) · ${r.unreachable.length} not reachable yet · ${r.unmapped.length} unmapped`);
+  for (const d of r.disabled) console.log(`  capability disabled: ${d.id}: ${d.why}`);
   if (r.hostOnly.length) console.log(`  host only: ${r.hostOnly.map((x) => x.id).join(", ")}`);
   console.log(`  reason codes referenced by a fixture: ${r.reasonCodes.referenced} of ${r.reasonCodes.total}`);
   for (const item of r.evidence) {

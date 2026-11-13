@@ -109,7 +109,7 @@ export const adopt: Decision = {
       } catch {
         throw new KernelError("restriction-key-unknown", `${POLICY_FILE} is not valid JSON`, { exit: 2 });
       }
-      const parsed = parsePolicy(json);
+      const parsed = parsePolicy(json, text);
       if (!parsed.ok) throw new KernelError("restriction-key-unknown", parsed.message, { exit: 2 });
       const hash = sha256(text);
       const prev = state.trust.find((t) => t.file === POLICY_FILE);

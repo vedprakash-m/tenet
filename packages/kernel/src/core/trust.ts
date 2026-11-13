@@ -17,7 +17,7 @@ export function judgePolicyFile(entry: Entry, text: string): PolicyJudgement {
   if (fileHash === entry.hash) return { kind: "same" };
   let json: unknown = null;
   try { json = JSON.parse(text); } catch { /* an unparseable file is reported by the strict parse */ }
-  const parsed = parsePolicy(json);
+  const parsed = parsePolicy(json, text);
   if (!parsed.ok) return { kind: "unreadable", message: parsed.message };
   const eff = effectivePolicy(entry.restrictions as Policy, parsed.policy, false);
   return { kind: "changed", restrictions: eff.policy, fileHash, applied: eff.applied, pending: eff.pending };

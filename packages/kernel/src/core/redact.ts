@@ -19,10 +19,18 @@ const PATTERNS: Array<[RegExp, string]> = [
 
 export const redact = (s: string): string => PATTERNS.reduce((t, [re, to]) => t.replace(re, to), s);
 
-/** The same value with every string redacted; objects and arrays are copied, other values pass through. */
+/** The same value with every string and object key redacted; objects and arrays are copied, other values pass through. */
 export function redactDeep<T>(v: T): T {
   if (typeof v === "string") return redact(v) as T;
   if (Array.isArray(v)) return v.map(redactDeep) as T;
-  if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, redactDeep(x)])) as T;
+  if (v && typeof v === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, x] of Object.entries(v)) {
+      let key = redact(k);
+      for (let n = 2; key !== k && key in out; n++) key = `${redact(k)} (${n})`; // two redacted keys must not collapse into one
+      out[key] = redactDeep(x);
+    }
+    return out as T;
+  }
   return v;
 }

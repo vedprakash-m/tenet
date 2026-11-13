@@ -57,7 +57,7 @@ export function sharedPolicy(ports: Ports, state: State | null): Policy {
   const text = ports.project.read(POLICY_FILE);
   if (text === null) return t ? t.restrictions as Policy : {};
   let r;
-  try { r = parsePolicy(JSON.parse(text)); } catch { throw new KernelError("restriction-key-unknown", `${POLICY_FILE} is not valid JSON`, { exit: 2 }); }
+  try { r = parsePolicy(JSON.parse(text), text); } catch { throw new KernelError("restriction-key-unknown", `${POLICY_FILE} is not valid JSON`, { exit: 2 }); }
   if (!r.ok) throw new KernelError("restriction-key-unknown", `${POLICY_FILE}: ${r.message}`, { exit: 2 });
   return t ? effectivePolicy(t.restrictions as Policy, r.policy, false).policy : r.policy;
 }

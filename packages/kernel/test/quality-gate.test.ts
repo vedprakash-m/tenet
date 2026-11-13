@@ -6,6 +6,8 @@ import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { LIMITS, budgetChars, check, lowered, measure } from "../../../tools/lint-quality.ts";
 import { projectScratch } from "../../../tools/test-scratch.ts";
+import { lintArch } from "../../../tools/lint-arch.ts";
+import { tooLongFiles } from "../../../tools/coverage.ts";
 
 const dirs: string[] = [];
 after(() => dirs.forEach(dir => rmSync(dir, { recursive: true, force: true })));
@@ -139,5 +141,23 @@ describe("the real tree", () => {
     const root = join(import.meta.dirname, "../../..");
     const baseline = JSON.parse(readFileSync(join(root, "tools/quality-baseline.json"), "utf8"));
     assert.deepEqual(check(measure(join(root, "packages/kernel/src")), baseline), []);
+  });
+});
+
+describe("gate scope: every kernel source is scanned", () => {
+  it("refuses a kernel source with another script extension, which the scanners would skip", () => {
+    const d = tree({ "verbs/ok.ts": "export const a = 1;\n", "verbs/x.mts": 'import { readFileSync } from "node:fs";\n', "core/y.cts": "", "core/z.js": "" });
+    assert.deepEqual(lintArch(d).problems.sort(), ["core/y.cts:1: kernel sources are .ts files; other script extensions escape the lints",
+      "core/z.js:1: kernel sources are .ts files; other script extensions escape the lints",
+      "verbs/x.mts:1: kernel sources are .ts files; other script extensions escape the lints"]);
+  });
+  it("caps nested verb and decision files at 265 lines like top-level ones", () => {
+    const long = "export const a = 1;\n".repeat(266);
+    const root = tree({
+      "packages/kernel/src/verbs/top.ts": long, "packages/kernel/src/verbs/inspect/nested.ts": long,
+      "packages/kernel/src/decisions/a/b/deep.ts": long, "packages/kernel/src/decisions/short.ts": "export const b = 1;\n",
+      "packages/kernel/src/core/long.ts": long,
+    });
+    assert.deepEqual(tooLongFiles(root).map((t) => t.file).sort(), ["decisions/a/b/deep.ts", "verbs/inspect/nested.ts", "verbs/top.ts"]);
   });
 });

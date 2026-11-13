@@ -34,7 +34,7 @@ export function probe(workdir, source) {
   const last = (r.stdout ?? "").trim().split("\n").at(-1) ?? "";
   try { return { ok: r.status === 0, value: JSON.parse(last), error: "" }; }
   catch {
-    const line = (r.stderr ?? "").split("\n").find((l) => l.trim()) ?? "no output";
+    const line = (r.stderr ?? "").split(/\r?\n/).find((l) => l.trim()) ?? "no output";
     const root = resolve(workdir);
     // Normalize only this known fixture root; keep the failure text and other origins unchanged.
     const error = line.replaceAll(pathToFileURL(root).href, "<workdir>").replaceAll(root, "<workdir>");

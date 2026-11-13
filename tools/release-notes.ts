@@ -51,8 +51,9 @@ export function facts(root: string): string[] {
   const plan = readFileSync(join(root, "specs/plan.md"), "utf8");
   const r = report(root, "R1");
   const audit = releaseAuditReport(r);
-  const total = r.covered.length + r.hostOnly.length + r.unreachable.length + r.unmapped.length;
-  const live = `${r.covered.length} mapped / ${r.hostOnly.length} host-only / ${r.unmapped.length} unmapped of ${total} Musts`;
+  const total = r.covered.length + r.disabled.length + r.hostOnly.length + r.unreachable.length + r.unmapped.length;
+  const off = r.disabled.length ? ` / ${r.disabled.length} capability disabled` : "";
+  const live = `${r.covered.length} mapped${off} / ${r.hostOnly.length} host-only / ${r.unmapped.length} unmapped of ${total} Musts`;
   const stated = /\*\*(\d+ mapped \/ \d+ host-only \/ \d+ unmapped of \d+ Musts), (\d+) qualified\*\*/.exec(plan);
   const qualified = r.evidence.filter((e) => e.qualification === "qualified").length;
   const limits = /These controls do not[^.]*\./.exec(readFileSync(join(root, "specs/tech-spec.md"), "utf8"))?.[0];

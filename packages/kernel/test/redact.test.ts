@@ -90,3 +90,14 @@ describe("what a check prints never reaches the response or the record unredacte
     assert.equal(JSON.stringify(p.ports().store.read()!.state).includes(fake.openai), false);
   });
 });
+
+describe("redacting object keys [SEC-11]", () => {
+  it("redacts a token-shaped key and keeps two such keys apart", () => {
+    const a = "ghp_" + "d".repeat(36), b = "ghp_" + "e".repeat(36); // privacy-ok: fake tokens
+    const out = redactDeep({ commands: { [a]: 1, [b]: 2, test: 3 } });
+    const text = JSON.stringify(out);
+    assert.equal(text.includes(a) || text.includes(b), false);
+    assert.deepEqual(Object.values(out.commands as Record<string, number>).sort(), [1, 2, 3]);
+    assert.ok("test" in (out.commands as object));
+  });
+});
