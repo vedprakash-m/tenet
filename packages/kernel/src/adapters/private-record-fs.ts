@@ -21,23 +21,46 @@ export function parseRecord(text: string): unknown {
 export function parseUniqueRecord(text: string): unknown {
   if (Buffer.byteLength(text, "utf8") > MAX_RECORD) throw new KernelError("unsupported-record", "a private record exceeds the 50 MB bound");
   const parsed = parseRecord(text), objects: Array<Set<string> | null> = [];
-  const colon = /\s*:/y; // a string followed by a colon is a key; tested in place rather than on a copied tail
-  for (const token of text.matchAll(/"(?:[^"\\]|\\.)*"|[{}\[\]]/g)) {
-    const char = token[0];
-    switch (char) {
-      case "{": objects.push(new Set()); break;
-      case "[": objects.push(null); break;
-      case "}": case "]": objects.pop(); break;
-      default:
-        colon.lastIndex = token.index + char.length;
-        if (colon.test(text)) {
-          const key = JSON.parse(char) as string, keys = objects.at(-1)!;
-          if (keys?.has(key)) throw new KernelError("unsupported-record", "a private record has duplicate keys");
-          keys?.add(key);
-        }
-    }
+  // The text is valid JSON here, so one pass over character codes finds every string; a string followed by a colon is a key.
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c === 123) objects.push(new Set()); // {
+    else if (c === 91) objects.push(null); // [
+    else if (c === 125 || c === 93) objects.pop(); // } ]
+    else if (c === 34) i = string(text, i, objects.at(-1)); // "
   }
   return parsed;
+}
+
+/** Reads the string opening at `i`; if it is a key (followed by ":"), records it in `keys`. Returns its closing quote. */
+function string(text: string, i: number, keys: Set<string> | null | undefined): number {
+  const [end, escaped] = stringEnd(text, i);
+  if (text.charCodeAt(afterSpace(text, end + 1)) !== 58) return end;
+  const key = escaped ? JSON.parse(text.slice(i, end + 1)) as string : text.slice(i + 1, end);
+  if (keys?.has(key)) throw new KernelError("unsupported-record", "a private record has duplicate keys");
+  keys?.add(key);
+  return end;
+}
+
+/** The index of the quote closing the string that opens at `i`, and whether the string has an escape. */
+function stringEnd(text: string, i: number): [number, boolean] {
+  let escaped = false;
+  for (i++; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c === 92) [escaped, i] = [true, i + 1]; // a backslash escapes the next character
+    else if (c === 34) break;
+  }
+  return [i, escaped];
+}
+
+/** The first index at or after `i` that is not JSON whitespace. */
+function afterSpace(text: string, i: number): number {
+  while (i < text.length) {
+    const c = text.charCodeAt(i);
+    if (c !== 32 && c !== 9 && c !== 10 && c !== 13) break;
+    i++;
+  }
+  return i;
 }
 
 export function readTerminal(path: string): Terminal | null {
