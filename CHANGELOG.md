@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-13 — Two reason codes the kernel never produced: `basis-gap-open`, `disk-full`
+
+- **`basis-gap-open` (TS §8.3).** A basis gap the Reviewer reports is recorded as a major finding against `basis` (unchanged). While it has no disposition, the verdict now reports it as `basis-gap-open` instead of `major-undisposed`. The endpoint is unchanged: both hold the work below `checked-local`. Test: a new row in `verdict.test.ts`.
+- **`disk-full` (TS §15.2).** An error with `ENOSPC` or `EDQUOT`, or a message saying "No space left on device" (as Git prints it), is now `disk-full` (exit 2), not `internal-error` (exit 5). The message says to free space and repeat the call, and that the next mutating call reconciles completed effects. Not built: the response does not yet list the completed effects, as §15.2 asks. Test: `disk-full.test.ts`.
+- Kernel reason codes never produced: 10 of 125 (was 12).
+- Files: `core/verdict.ts`, `pipeline.ts`; tests `verdict.test.ts`, `disk-full.test.ts` (new).
+
 ## 2026-11-13 — Grader index, fixture overwrite, reason codes in the Tech Spec
 
 Further fixes from the 2026-11-13 audit; each code fix started with a failing test.
