@@ -236,6 +236,7 @@ describe("verdict table [RES-02, EVD-01]", () => {
     ["blocker-open", (i) => ({ ...i, findings: [finding({ severity: "blocker" })] }), "blocker-open", "implemented-unverified"],
     ["blocker is not closed by risk acceptance", (i) => ({ ...i, findings: [finding({ severity: "blocker", state: "risk-accepted" })] }), "blocker-open", "implemented-unverified"],
     ["major-undisposed", (i) => ({ ...i, findings: [finding({})] }), "major-undisposed", "implemented-unverified"],
+    ["basis-gap-open (a reviewer's basis gap left without a disposition)", (i) => ({ ...i, findings: [finding({ location: { path: "basis" }, history: [{ to: "valid", by: "reviewer", reason: "basis gap", at: "2026-01-01T00:00:00Z" }] })] }), "basis-gap-open", "implemented-unverified"],
     ["marker-unaccepted (same-session cannot accept)", (i) => ({ ...i, attention: [{ id: "A", path: "a.ts", line: 1, pattern: ".skip", marker: true, disposition: { by: "same-session", outcome: "accepted", reason: "r" } }] }), "marker-unaccepted", "implemented-unverified"],
     ["undisposed attention", (i) => ({ ...i, attention: [{ id: "A", path: "a.ts", line: 1, pattern: "mock", marker: false }] }), "major-undisposed", "implemented-unverified"],
     ["declined-step", (i) => ({ ...i, declined: ["review"] }), "declined-step", "implemented-unverified"],

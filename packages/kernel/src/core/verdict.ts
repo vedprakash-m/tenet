@@ -174,7 +174,11 @@ function judgeFindings(i: VerdictInput): Reason[] {
   const out: Reason[] = [];
   for (const f of i.findings) {
     if (f.severity === "blocker" && !FINDING_DONE.has(f.state)) out.push(reason("blocker-open", f.claim, { refs: [f.id] }));
-    else if (f.severity === "major" && !FINDING_DISPOSED.has(f.state)) out.push(reason("major-undisposed", f.claim, { refs: [f.id] }));
+    else if (f.severity === "major" && !FINDING_DISPOSED.has(f.state)) {
+      // A reviewer's basis gap is recorded as a major finding (verbs/findings.ts); report it by its own code.
+      const gap = f.history[0]?.reason === "basis gap";
+      out.push(reason(gap ? "basis-gap-open" : "major-undisposed", f.claim, { refs: [f.id] }));
+    }
   }
   return out;
 }

@@ -81,6 +81,11 @@ function fail(ports: Ports, verb: string, e: unknown, state: State | null): Kern
   }
   if (e instanceof ZodError) return render(ports, verb, { exit: 1, reasons: [invalidInput(e.issues, undefined)] }, state);
   const message = e instanceof Error ? e.message : String(e);
+  const errno = (e as NodeJS.ErrnoException)?.code ?? "";
+  if (errno === "ENOSPC" || errno === "EDQUOT" || /no space left on device/i.test(message)) {
+    return render(ports, verb, { exit: 2, reasons: [reason("disk-full",
+      "No space left on the device. Free space and repeat the call; the next mutating call reconciles completed effects.")] }, state);
+  }
   // Internal errors never yield a success-shaped response (TS §6.1 principle 5).
   return render(ports, verb, { exit: 5, reasons: [{ code: "internal-error", message }] }, state);
 }
