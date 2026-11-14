@@ -657,6 +657,7 @@ The November 7 measurements are of the reconciled, uncommitted schema-2 candidat
 | `core/obligations`, `core/findings` | Obligations, applicability, trait composition; finding dispositions | QLT-06, REV-04 | 250 |
 | `core/config` | Resolution, restriction parsing, trust comparison | CFG, SEC-12 | 250 |
 | `core/attribution`, `core/ids`, `core/retention` | File attribution; IDs and reconciliation; admission and eviction | GIT-03, INT-10, CON-08 | 300 |
+| `core/reconstruct`, `core/shared-merge`, `core/diagnostics`, `core/fitness`, `core/trait-detect`, `core/traits`, `core/threat`, `adapters/git-seal` | Reading intent back after `.tenet/` is lost; `INTENT.md` block merge; the redacted diagnostics preview; workload trend; trait detection and composition; the threat and data note; the sealed baseline tree | CON-07, GIT-09, NFR-07, QLT-05, QLT-11, QLT-13, EVD-04 | No module budget; function limits only. `core/traits` counts toward the Schemas ceiling |
 | Central owner and companions above | The pipeline; one module per verb and per decision kind. No verb or decision file exceeds 265 lines (`tools/coverage` fails otherwise). | — | 400,000 characters; the per-file ceiling is unchanged |
 | `adapters/store-fs` and companions above | State document, lock, log, observations, blobs, marker | §7 | Character ceiling above |
 | `adapters/git-cli` | Git with argument arrays; the inspection profile; one temporary-index helper; the shadow repository | §10 | Character ceiling above |
@@ -2428,6 +2429,7 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `evidence-inconclusive` | 0 | Receipt failed validation |
 |  | `baseline-failure-excluded` | 0 | Pre-existing failure outside agreed scope (note) |
 |  | `baseline-failure-not-excluded` | 0 | Pre-existing failure not excluded |
+|  | `baseline-failure-unclassified-excluded` | 0 | A failure the user left out was not shown to be pre-existing |
 |  | `classification-unknown` | 0 | A sealed baseline passed but the start tree was dirty |
 |  | `basis-element-unverified` | 0 | A basis element has no fresh verification and no reason it does not apply |
 |  | `no-distinguishing-red` | 0 | No behavioral red on baseline |
@@ -2437,6 +2439,9 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `accessibility-claim-narrowed` | 0 | A changed critical journey lacks a screen-reader check (note) |
 |  | `audit-unavailable` | 0 | Advisory data was unavailable (note unless required) |
 |  | `fitness-trend-degraded` | 0 | A fitness function crossed its declared degradation threshold across consecutive checks (attention item) |
+|  | `workload-declaration-invalid` | 0 | The workload declaration is missing, unparseable or invalid |
+|  | `threat-note-open` | 0 | A security-relevant change lacks a complete threat note, or a note item is neither a test nor a constraint |
+|  | `threat-constraints-unchecked` | 0 | Security items in the threat and data note are constraints that no check covers |
 |  | `integration-unvalidated` | 0 | Integrated tree not rechecked |
 |  | `dependency-unverified` | 0 | A dependency change no verification explains |
 |  | `locked-test-changed` | 0 | Locked file changed without disposition |
@@ -2480,6 +2485,7 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `takeover-check` | 3 | The previous generation may still be working |
 |  | `revision-conflict` | 2 | Expected revision differs |
 |  | `marker-mismatch` | 3 | Copied, imported or marker-less state; quarantine decision |
+|  | `reconstructed-from-repository` | 0 | Local records were missing; what the repository still shows was read back, nothing else assumed |
 |  | `state-recovered-from-backup` | 3 | Fallback to state.prev; grants suspended until reconfirmed |
 |  | `effect-uncertain` | 3 | Intent without result that reconciliation could not resolve |
 |  | `lock-recovery-needed` | 2 | A lock breaker died mid-break; a confirmed repair is needed |
@@ -2494,6 +2500,7 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `hardening-gaps-invalid` | 2 | Hardening gaps must be 1–12 single-line entries of at most 200 characters |
 |  | `hardening-gaps-missing` | 0 | Prototype has no recorded hardening gaps |
 |  | `inventory-too-large` | 2 | Untracked files exceed limits |
+|  | `project-file-too-large` | 2 | A project file exceeds the bounded read limit |
 |  | `observation-incomplete` | 0 | The hook spool overflowed or a hook failed; cooperative labels apply (note) |
 |  | `ended-without-finish` | 0 | A turn ended while work was active without finish (note; observer hooks) |
 | Git | `git-locked` | 2 | Git index lock held |
@@ -2509,15 +2516,25 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `shared-merge-proposed` | 3 | Integration conflicts only in INTENT.md; a merge by ID is proposed for confirmation before any switch |
 |  | `branch-switch-needed` | 3 | Integration will switch the editor branch |
 |  | `repo-state-readonly` | 2 | Rebase, merge, conflicts or detached HEAD |
+|  | `repo-shallow` | 0 | Shallow clone: history is incomplete, so undo is limited to the history available |
+|  | `repo-submodule` | 0 | Submodules: edits inside a submodule are not supported |
+|  | `repo-lfs` | 0 | Git LFS files: commits that would change them are refused until committed-tree checks exist |
+|  | `repo-linked-worktree` | 0 | Linked worktree: experimental, source ownership is scoped to this worktree |
 |  | `filter-consent-needed` | 3 | Executable Git filters configured |
+|  | `boundary-example-missing` | 0 | A requirement has no boundary or negative example; propose one |
 |  | `filters-not-run` | 0 | Git filters apply here; reading never runs them, so a file a filter rewrites can look modified |
 |  | `hook-consent-needed` | 3 | Commit hooks need consent |
 | Authority, configuration and budget | `capability-missing` | 2 | A required host capability is absent |
 |  | `continue-required` | 2 | Policy requires more work before finishing |
 |  | `approval-gate` | 3 | Question required under auto-approve or unknown mode |
 |  | `basis-confirm` | 3 | The proposed basis contains Tenet's additions or a sketch commitment; one confirmation |
+|  | `support-overlaps-scope` | 1 | A support input also names a path the basis expects to change |
 |  | `intent-markers-invalid` | 2 | Malformed managed blocks |
 |  | `intent-edited-outside` | 0 | A shared file changed outside Tenet; the edited blocks stay as written until a diff is accepted |
+|  | `authority-needed` | 3 | A change needs authority the contract does not have; ask the user |
+|  | `plan-invalid` | 2 | The proposed plan or plan item cannot be used |
+|  | `plan-item-blocked` | 2 | The plan item is not ready: it is not accepted, or a dependency is not done |
+|  | `policy-applied` | 0 | Shared policy restrictions applied without a decision |
 |  | `restriction-key-unknown` | 2 | Unknown or malformed restriction key |
 |  | `policy-change-needs-acceptance` | 3 | Shared change needs local acceptance |
 |  | `dependency-rejected` | 2 | A dependency change was rejected; manifests restored |
@@ -2525,4 +2542,7 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `budget-exhausted` | 2 | A limit reached; sets a stop reason |
 |  | `budget-warning` | 0 | 80% of a limit used (note) |
 |  | `host-limit` | 2 | The host stopped responding or reported a usage limit; work paused |
+|  | `scaffold-target-not-empty` | 2 | A file the starter would write already exists; nothing is overwritten |
+|  | `recipe-integrity-failed` | 4 | The recipe's files do not match its recorded hashes |
+|  | `install-failed` | 2 | The dependency install failed; the scaffolded files are in place |
 |  | `model-unqualified-for-deep` | 3 | Deep work on an unqualified or unknown model or configuration; continue or stop |

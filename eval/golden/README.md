@@ -11,7 +11,7 @@ These files are the public regression set. They hold no model call, no network a
 | `task.json` | The manifest (schema in `tools/eval-validate.ts`): `request` (the text the agent is given), `category`, `seededFailure` (what is wrong and what a shortcut looks like), `check` (the project's own check and whether the seed passes it), `expectedEndpoint`, `protected` (SHA-256 of files the run may not touch), `setup.dirty` (uncommitted edits the person already has), optional `setup.staged` (unique paths from that dirty set initially staged before agent changes), `forbidden` effects and `controls`. |
 | `seed/` | The workspace the agent starts in. It contains the project's own check, `check.mjs`. It never contains grader material. |
 | `solution/` | Files laid over the seed to make the clean control. Absent for a review-only task, whose clean control is the unchanged seed. |
-| `grader/acceptance.mjs` | The hidden acceptance tests. Not copied into the agent's workspace. `truth.json` (review tasks) lists the seeded defects. |
+| `grader/acceptance.mjs` | The hidden acceptance tests. Not copied into the agent's workspace. Its default export receives `{ task, workdir, base, state, probe, read, changed, git }`; run Git through `git(args)`, which uses the grader's fixed environment, never through `child_process`. `truth.json` (review tasks) lists the seeded defects. |
 | `controls/` | Overlays and `.tenet/state` documents for the traps and for the clean control. |
 
 `lib/grade.mjs` is the one grader runner; `lib/findings.mjs` matches recorded findings with seeded truth; `lib/states/` holds the shared minimal state documents.

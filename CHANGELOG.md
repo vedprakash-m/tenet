@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-13 — Grader index, fixture overwrite, reason codes in the Tech Spec
+
+Further fixes from the 2026-11-13 audit; each code fix started with a failing test.
+
+- **Grader Git calls (P89).** The `resume-config-preserve-staging` acceptance module ran Git with the inherited environment, so an inherited `GIT_INDEX_FILE` decided its staging check. Acceptance modules now get `git(args)` in their context; it is the grader's own helper with a fixed environment. `grade.mjs` exports `git`. Test: `eval-grader-git.test.ts` (an alternate index holding the edit no longer passes the check; staging in the ordinary index still does).
+- **Fixture target (P76).** `generateFixture` (`tools/bench-fixtures.ts`) refuses a target directory that already holds anything, before running Git, so `node tools/bench.ts fixture` can no longer overwrite existing files. A missing or empty directory is used as before. The check is not a lock against a concurrent writer. Test: `bench.test.ts`.
+- **Tech Spec backfill.** Appendix C gains the 19 registry codes it did not list, with the registry's exit and meaning. A new test, `reason-registry-spec.test.ts`, fails when the registry and Appendix C differ in codes or exits. The §6.2 module map gains a row for the modules the CON-07, GIT-09, NFR-07, QLT-05, QLT-11, QLT-13 and EVD-04 work added.
+- Files: `eval/golden/lib/grade.mjs`, `eval/golden/resume-config-preserve-staging/grader/acceptance.mjs`, `eval/golden/README.md`, `tools/bench-fixtures.ts`, `specs/tech-spec.md`; tests `eval-grader-git.test.ts` (new), `reason-registry-spec.test.ts` (new), `bench.test.ts`.
+
 ## 2026-11-13 — Audit fixes: privacy check, secrets in policy, lint scope, coverage honesty
 
 From the 2026-11-13 audit of `main` against the canonical specs. The owner waived the separate feature-spec review and sign-off steps for these fixes; each started with a failing test.
