@@ -15,7 +15,8 @@ const ENV = { PATH: process.env.PATH ?? "", GIT_CONFIG_GLOBAL: "/dev/null", GIT_
 
 export const sha256 = (text) => createHash("sha256").update(text).digest("hex");
 
-function git(workdir, args) {
+/** Git in `workdir` with a fixed environment, so an inherited GIT_DIR, GIT_INDEX_FILE or similar cannot redirect a check. */
+export function git(workdir, args) {
   const r = spawnSync("git", args, { cwd: workdir, encoding: "utf8", env: ENV });
   return { ok: r.status === 0, out: r.stdout ?? "" };
 }
@@ -118,7 +119,7 @@ export async function grade(taskDir, workdir, base) {
   const task = JSON.parse(readFileSync(join(taskDir, "task.json"), "utf8"));
   const state = readState(workdir);
   const acceptance = (await import(pathToFileURL(join(taskDir, "grader", "acceptance.mjs")).href)).default;
-  const ctx = { task, workdir, base, state, probe: (src) => probe(workdir, src), read: (p) => (existsSync(join(workdir, p)) ? readFileSync(join(workdir, p), "utf8") : null), changed: () => changedPaths(workdir, base) };
+  const ctx = { task, workdir, base, state, probe: (src) => probe(workdir, src), git: (args) => git(workdir, args), read: (p) => (existsSync(join(workdir, p)) ? readFileSync(join(workdir, p), "utf8") : null), changed: () => changedPaths(workdir, base) };
   const checks = (await acceptance(ctx)).map((c) => ({ id: c.id, kind: "acceptance", pass: Boolean(c.pass), detail: String(c.detail ?? "") }));
   const acceptancePassed = checks.every((c) => c.pass);
   const claim = endpointClaim(state);

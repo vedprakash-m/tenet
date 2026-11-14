@@ -2,7 +2,7 @@
 // unmeasured budget is never given a number. A stand-in bundle replaces the kernel, so these show the harness logic only;
 // no kernel latency is measured here, and none of these tests carries a requirement tag.
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -72,6 +72,16 @@ describe("reference fixtures", () => {
     assert.equal(a.head, b.head);
     assert.deepEqual({ files: a.files, commits: a.commits }, { files: 254, commits: 12 });
     assert.notEqual(generateFixture({ ...spec, commits: 13 }, scratch()).head, a.head);
+  });
+  it("refuse a target that already holds files and leave it unchanged (P76)", () => {
+    const dir = scratch();
+    mkdirSync(join(dir, "src"));
+    writeFileSync(join(dir, "src/greet.ts"), "// someone's work\n");
+    assert.throws(() => generateFixture({ files: 10, commits: 2, contracts: 0 }, dir), /not empty/);
+    assert.equal(readFileSync(join(dir, "src/greet.ts"), "utf8"), "// someone's work\n");
+    assert.equal(existsSync(join(dir, ".git")), false);
+    const fresh = join(scratch(), "new");
+    assert.equal(generateFixture({ files: 10, commits: 2, contracts: 0 }, fresh).commits, 2);
   });
   it("leave a clean checkout without kernel state, ignoring .tenet/", () => {
     const dir = scratch();

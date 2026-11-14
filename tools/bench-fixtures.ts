@@ -3,7 +3,7 @@
 // proposal until the owner freezes them (PRD Q-06); changing one changes what "frozen" means for every stored result.
 import { withoutGitLocalVars } from "../packages/kernel/src/adapters/git-env.ts";
 import { execFileSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readdirSync } from "node:fs";
 
 export interface FixtureSpec {
   /** Tracked source files under dN/fM.ts, 100 per directory. */
@@ -60,10 +60,12 @@ export function configureRepo(dir: string): void {
   for (const [key, value] of [["user.name", "Tenet Bench"], ["user.email", "bench@example.test"], ["commit.gpgsign", "false"], ["core.autocrlf", "false"]]) run(dir, ["config", key!, value!]);
 }
 
-/** Builds the repository in `dir` (created if missing) and checks `main` out. Returns HEAD so callers can compare runs;
- *  `files` counts every tracked path, which is `spec.files` plus four project files. */
+/** Builds the repository in `dir` (created if missing, refused if it holds anything) and checks `main` out. Returns HEAD so
+ *  callers can compare runs; `files` counts every tracked path, which is `spec.files` plus four project files. The empty
+ *  check is not a lock: a writer that adds files to `dir` while this runs can still lose them. */
 export function generateFixture(spec: FixtureSpec, dir: string): { head: string; files: number; commits: number } {
   mkdirSync(dir, { recursive: true });
+  if (readdirSync(dir).length) throw new Error(`fixture target is not empty: ${dir}`);
   const git = (args: string[], input?: Buffer) => run(dir, args, input);
   git(["init", "-q", "-b", "main"]);
   configureRepo(dir);
