@@ -2,7 +2,7 @@
 // Only exact, locked post-commit sync writes the user's index.
 import { withoutGitLocalVars } from "./git-env.ts";
 import { outputMatcher } from "../core/outputs.ts";
-import { repoLayout } from "./git-layout.ts";
+import { hookInventory, repoLayout } from "./git-layout.ts";
 import { execFile } from "node:child_process";
 import {
   closeSync,
@@ -109,29 +109,6 @@ const syncDir = (path: string) => {
     closeSync(fd);
   }
 };
-/** Hash of the hook files present (names and contents), or null when there are none: consent binds to it. */
-function hookInventory(dirs: string[]): string | null {
-  const seen: string[] = [];
-  for (const d of dirs) {
-    let names: string[] = [];
-    try {
-      names = readdirSync(d)
-        .filter((f) => !f.endsWith(".sample") && !f.startsWith("."))
-        .sort();
-    } catch {
-      continue;
-    }
-    for (const f of names) {
-      try {
-        seen.push(`${d.split("/").slice(-2).join("/")}/${f}:${sha256(readFileSync(join(d, f)))}`);
-      } catch {
-        /* a directory */
-      }
-    }
-  }
-  return seen.length ? sha256(seen.join("\n")).slice(0, 16) : null;
-}
-
 const commitFail = (reason: string, detail?: string): CommitOutcome => ({
   ok: false,
   reason,
@@ -193,6 +170,7 @@ export class GitCli {
   private runner: Runner;
   private neutral?: Promise<string[]>;
   private gate?: Promise<FilterGate | null>;
+  private format?: Promise<string | null>;
   private consented: ReadonlySet<string> = new Set();
   constructor(root: string, runner: Runner = new ProcessRunner(systemClock, process.env)) {
     this.root = root;
@@ -263,11 +241,12 @@ export class GitCli {
         hooks: null,
         layout: { shallow: false, submodules: [], lfs: false, linkedWorktree: false },
       };
-    const [head, branch, gitDirO, cf, idO, rmO, hooksPath] = await Promise.all([
-      t("rev-parse", "--verify", "-q", "HEAD"), t("symbolic-ref", "-q", "--short", "HEAD"), t("rev-parse", "--absolute-git-dir"),
+    const gitDirP = t("rev-parse", "--absolute-git-dir").then((d) => d ?? join(top, ".git"));
+    const layoutP = repoLayout((args) => this.tryOut(args), top, gitDirP);
+    const [head, branch, gitDir, cf, idO, rmO, hooksPath] = await Promise.all([
+      t("rev-parse", "--verify", "-q", "HEAD"), t("symbolic-ref", "-q", "--short", "HEAD"), gitDirP,
       t("diff", "--cached", "--name-only", "--diff-filter=U"), t("var", "GIT_COMMITTER_IDENT"), t("remote"), t("config", "core.hooksPath"),
     ]);
-    const gitDir = gitDirO ?? join(top, ".git");
     const busy = ["rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"].find((f) =>
       existsSync(join(gitDir, f)),
     );
@@ -281,7 +260,7 @@ export class GitCli {
     const remotes = (rmO ?? "").split("\n").filter(Boolean);
     const hooksDir = hooksPath ?? join(gitDir, "hooks");
     const hooks = hookInventory([hooksDir.startsWith("/") ? hooksDir : join(top, hooksDir), join(top, ".husky")]);
-    const layout = await repoLayout((args) => this.tryOut(args), top, gitDir);
+    const layout = await layoutP;
     const probe: RepoProbe = { isRepo: true, shadow: this.shadow, version, top, head, branch, state, identity, remotes, hooks, layout };
     if (why) probe.why = why;
     return probe;
@@ -289,7 +268,11 @@ export class GitCli {
 
   /** SHA-256 repositories hash differently from the blob ids computed here; they are refused rather than misread. */
   private async objectFormatSafe(): Promise<void> {
-    if ((await this.tryOut(["rev-parse", "--show-object-format"])) === "sha256")
+    // Fixed per repository; a null (no repository yet) is not kept.
+    this.format ??= this.tryOut(["rev-parse", "--show-object-format"]);
+    const format = await this.format;
+    if (format === null) this.format = undefined;
+    if (format === "sha256")
       throw new KernelError("capability-missing", "SHA-256 Git repositories are not supported by this adapter", { exit: 2 });
   }
 
@@ -342,24 +325,26 @@ export class GitCli {
     declaredInputs: readonly string[] = [],
     volatile: readonly string[] = [],
   ): Promise<Inventory> {
-    const [, head, branch] = await Promise.all([
+    // All but status at once (NFR-01); status needs the listings.
+    const [, head, branch, staged, others, tagged] = await Promise.all([
       this.objectFormatSafe(), this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]), this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]),
+      this.ok(["ls-files", "-s", "-z"]), this.ok(["ls-files", "--others", "--exclude-standard", "-z"]), this.ok(["ls-files", "-v", "-z"]),
     ]);
     const skip = (p: string) => isKernelFile(p) || exclude.some((x) => p === x || p.startsWith(`${x}/`));
-    const index = await this.indexEntries(skip);
+    const index = this.indexEntries(staged, skip);
     const isOutput = outputMatcher(volatile);
     const hide = (p: string) => skip(p) || (!index.has(p) && isOutput(p)); // a declared output is only ever untracked (EVD-09)
-    const status = await this.statusRows(hide, index);
+    const status = await this.statusRows(others, hide, index);
     const entries = overlay(index, status);
-    await this.hiddenChanges(skip, index, entries, status);
+    this.hiddenChanges(tagged, skip, index, entries, status);
     this.declaredChanges(hide, declaredInputs, index, entries, status);
     return { head, branch, entries, status, digest: this.digestOf(entries) };
   }
 
   /** Stage-0 index entries, minus Tenet's own files and the caller's exclusions. */
-  private async indexEntries(skip: (p: string) => boolean): Promise<Map<string, Entry>> {
+  private indexEntries(listed: string, skip: (p: string) => boolean): Map<string, Entry> {
     const index = new Map<string, Entry>();
-    for (const rec of (await this.ok(["ls-files", "-s", "-z"])).split("\0").filter(Boolean)) {
+    for (const rec of listed.split("\0").filter(Boolean)) {
       const tab = rec.indexOf("\t");
       const [mode, blob, stage] = rec.slice(0, tab).split(" ");
       const path = rec.slice(tab + 1);
@@ -369,8 +354,8 @@ export class GitCli {
   }
 
   /** Git status, plus the untracked files whose content Tenet reads itself. Too many untracked files is a refusal. */
-  private async statusRows(skip: (p: string) => boolean, index: Map<string, Entry>): Promise<StatusEntry[]> {
-    const others = (await this.ok(["ls-files", "--others", "--exclude-standard", "-z"])).split("\0").filter((p) => p && !skip(p));
+  private async statusRows(listed: string, skip: (p: string) => boolean, index: Map<string, Entry>): Promise<StatusEntry[]> {
+    const others = listed.split("\0").filter((p) => p && !skip(p));
     if (others.length > MAX_UNTRACKED)
       throw new KernelError("inventory-too-large", `${others.length} untracked files; add them to .gitignore`);
     const statOnly = [...index.keys(), ...others].filter((p) => !allowed("scan", p, this.exclusions));
@@ -386,13 +371,14 @@ export class GitCli {
   }
 
   /** Git status hides these paths ("assume unchanged" and similar). Their actual content must still enter the candidate identity. */
-  private async hiddenChanges(
+  private hiddenChanges(
+    tagged: string,
     skip: (p: string) => boolean,
     index: Map<string, Entry>,
     entries: Map<string, Entry>,
     status: StatusEntry[],
-  ): Promise<void> {
-    for (const rec of (await this.ok(["ls-files", "-v", "-z"])).split("\0").filter(Boolean)) {
+  ): void {
+    for (const rec of tagged.split("\0").filter(Boolean)) {
       if (rec[0] === "H") continue;
       const path = rec.slice(2);
       if (skip(path) || !index.has(path)) continue;

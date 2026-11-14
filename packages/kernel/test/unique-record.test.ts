@@ -26,4 +26,20 @@ describe("parseUniqueRecord", () => {
     refused('{"x":{"a\\"":1,"a\\"" :2}}');
     assert.deepEqual(parseUniqueRecord('{"a\\\\":1,"a":2}'), { "a\\": 1, a: 2 });
   });
+
+  it("refuses a value nested deeper than 64 containers, and accepts one at 64", () => {
+    const deep = (n: number, inner: string) => "[".repeat(n) + inner + "]".repeat(n);
+    assert.ok(Array.isArray(parseUniqueRecord(deep(64, "1"))));
+    assert.ok(Array.isArray(parseUniqueRecord(deep(65, ""))));
+    assert.throws(() => parseUniqueRecord(deep(65, "1")), /depth bound/);
+    assert.throws(() => parseUniqueRecord(deep(66, "")), /depth bound/);
+    assert.throws(() => parseUniqueRecord(`{"a":${deep(63, '{"b":1}')}}`), /depth bound/); // "b" holds a value at depth 65
+    assert.ok(parseUniqueRecord(`{"a":${deep(62, '{"b":1}')}}`));
+  });
+
+  it("finds keys after strings that hold escapes and quotes", () => {
+    refused('{"a":"x\\\\","a":1}');
+    assert.deepEqual(parseUniqueRecord('{"a":"\\\\"," b":"\\"a\\":"}'), { a: "\\", " b": '"a":' });
+  });
 });
+
