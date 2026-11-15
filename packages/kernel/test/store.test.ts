@@ -1,12 +1,12 @@
-import { spawn } from "node:child_process";
-import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { chmodSync, cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { KernelError } from "../src/core/errors.ts";
 import { Grant, State } from "../src/core/schemas.ts";
 import { emptyState, newContract } from "../src/core/state.ts";
-import { cleanup, initState, newStore, tmp } from "./helpers.ts";
+import { cleanup, initState, newStore, NO_POSIX_PROCESSES, tmp } from "./helpers.ts";
 
 const dirs: string[] = [];
 const fresh = () => { const d = tmp(); dirs.push(d); return d; };
@@ -118,6 +118,31 @@ describe("store: transactions", () => {
     assert.equal(read.state.revision, 2);
     assert.equal(read.state.workSeq, 7);
     assert.equal(JSON.parse(readFileSync(join(root, ".tenet/state.prev"), "utf8")).revision, 1);
+  });
+
+  it("waits when the lock is released between reading it and checking its holder [CON-04]", { skip: NO_POSIX_PROCESSES }, async () => {
+    // The race seen in CI: a torn read sends the writer to look at the lock; the holder releases it and exits before the
+    // liveness check, so the holder looks dead. The lock no longer names it, so the writer must retry, not refuse.
+    const root = fresh();
+    await initState(root);
+    const lock = join(root, ".tenet/lock");
+    const gone = spawnSync(process.execPath, ["-e", "0"]).pid!;
+    writeFileSync(lock, JSON.stringify({ pid: gone, procStart: "Thu Jan  1 00:00:00 1970", nonce: "releasedholdr", verb: "bump" }));
+    const store = newStore(root);
+    const seam = store as unknown as { admit(): void; readLock(name: string): { nonce: string } | null };
+    const admit = seam.admit.bind(store), readLock = seam.readLock.bind(store);
+    let torn = true;
+    seam.admit = () => {
+      if (torn) { torn = false; throw new KernelError("unsupported-record", "a private record changed during its bounded read"); }
+      admit();
+    };
+    seam.readLock = (name) => {
+      const held = readLock(name);
+      if (held?.nonce === "releasedholdr") rmSync(lock); // the holder releases right after this read
+      return held;
+    };
+    await store.transaction("t", async (tx) => tx.publish({ ...tx.state!, workSeq: 3 }));
+    assert.equal(newStore(root).read()!.state.workSeq, 3);
   });
 
   it("serializes competing writers across real processes: no lost update [CON-04, AGT-08]", async () => {
