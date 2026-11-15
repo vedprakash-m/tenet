@@ -87,6 +87,7 @@ const FIXED_COMMANDS = [
   ["ls-files", "-v", "-z"],
   ["remote"],
   ["rev-parse", "--show-toplevel"],
+  ["rev-parse", "--show-toplevel", "--absolute-git-dir", "--path-format=absolute", "--git-common-dir", "--is-shallow-repository"],
   ["rev-parse", "--verify", "-q", "HEAD"],
   ["rev-parse", "--absolute-git-dir"],
   ["rev-parse", "--is-shallow-repository"],
