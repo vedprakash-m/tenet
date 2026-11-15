@@ -40,7 +40,7 @@ describe("review: one focused recheck per contract", () => {
     kind: "review", manifest: "m1", reservation: "R1", attempt: 1, mode: "recheck",
     status: "completed", dispatchMode: "subagent-fresh", axes: { behavior: "pass", structure: "pass" },
     coverage: { inspected: [], uncovered: [], crossCutting: "checked", sampled: [] },
-    attention: [], findings: [], basisGaps: [],
+    attention: [], findings: [], basisGaps: [], openDependencies: [],
   });
   const workWith = (rechecks: number): WorkContract => contractFixture({
     budget: { ...newBudget(), rechecks, reservations: [reservation] },
@@ -105,12 +105,12 @@ describe("review and analyst reservation roles", () => {
     kind: "review", manifest: reservation.manifestHash, reservation: reservation.id, attempt: reservation.attempt, mode: reservation.mode,
     status: "completed", dispatchMode: "subagent-fresh", axes: { behavior: "pass", structure: "pass" },
     coverage: { inspected: [], uncovered: [], crossCutting: "checked", sampled: [] },
-    attention: [], findings: [], basisGaps: [],
+    attention: [], findings: [], basisGaps: [], openDependencies: [],
   });
   const analystResultFor = (reservation: Reservation) => AnalystResult.parse({
     kind: "analyst", manifest: reservation.manifestHash, reservation: reservation.id, attempt: reservation.attempt,
     role: "researcher", status: "completed", dispatchMode: "subagent-fresh", revision: reservation.candidate,
-    artifacts: [], findings: [],
+    artifacts: [], findings: [], openDependencies: [],
   });
   const workWithReservations = (reservations: Reservation[], focusedReview?: Reservation): WorkContract =>
     contractFixture({

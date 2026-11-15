@@ -23,7 +23,7 @@ const PLACEHOLDERS: Record<string, string> = {
 };
 /** A minimal valid body for verbs whose structured input arrives on stdin, so the line parses as it will run. */
 const BODIES: Record<string, Record<string, unknown>> = {
-  findings: { result: { kind: "review", manifest: "m", reservation: "r", attempt: 1, mode: "full", status: "completed", dispatchMode: "subagent-fresh", axes: { behavior: "pass", structure: "pass" }, coverage: { inspected: [], uncovered: [], crossCutting: "", sampled: [] }, attention: [], findings: [], basisGaps: [] } },
+  findings: { result: { kind: "review", manifest: "m", reservation: "r", attempt: 1, mode: "full", status: "completed", dispatchMode: "subagent-fresh", axes: { behavior: "pass", structure: "pass" }, coverage: { inspected: [], uncovered: [], crossCutting: "", sampled: [] }, attention: [], findings: [], basisGaps: [], openDependencies: [] } },
   decide: {},
 };
 
