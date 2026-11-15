@@ -23,13 +23,13 @@ jobs:
       - name: Attach, fsync from a child, compare clocks
         run: |
           cat > tracer.bt <<'EOF'
-          tracepoint:syscalls:sys_enter_fsync, tracepoint:syscalls:sys_enter_fdatasync { @s[tid] = nsecs; }
+          tracepoint:syscalls:sys_enter_fsync, tracepoint:syscalls:sys_enter_fdatasync { @s[tid] = nsecs(monotonic); @b[tid] = nsecs(boot); }
           tracepoint:syscalls:sys_exit_fsync, tracepoint:syscalls:sys_exit_fdatasync /@s[tid]/ {
-            printf("%d %d %d %d\n", pid, curtask->real_parent->tgid, @s[tid], nsecs - @s[tid]); delete(@s[tid]);
+            printf("%d %d %d %d %d\n", pid, curtask->real_parent->tgid, @s[tid], nsecs(monotonic) - @s[tid], @b[tid]); delete(@s, tid); delete(@b, tid);
           }
           EOF
           sudo -n bpftrace -o trace.txt tracer.bt > bpf.out 2> bpf.err &
-          for i in $(seq 1 100); do grep -qs Attaching bpf.out bpf.err trace.txt && break; sleep 0.2; done
+          for i in $(seq 1 100); do grep -qs Attached bpf.out bpf.err trace.txt && break; sleep 0.2; done
           echo "--- attach after ${i} polls"; cat bpf.out bpf.err; head -2 trace.txt || true
           cat > child.mjs <<'EOF'
           import { openSync, writeSync, fsyncSync, fdatasyncSync, closeSync } from "node:fs";
@@ -50,12 +50,12 @@ jobs:
           echo "--- trace lines: $(wc -l < trace.txt)"
           node -e '
             const calls = require("./calls.json");
-            const lines = require("fs").readFileSync("trace.txt", "utf8").split("\n").map((l) => l.trim().split(/\s+/)).filter((p) => p.length === 4 && /^\d+$/.test(p[0]));
+            const lines = require("fs").readFileSync("trace.txt", "utf8").split("\n").map((l) => l.trim().split(/\s+/)).filter((p) => p.length === 5 && /^\d+$/.test(p[0]));
             let ok = true;
             for (const c of calls) {
               const mine = lines.filter(([pid, ppid]) => +pid === c.pid || +ppid === c.pid);
               const inside = mine.filter(([, , st]) => BigInt(st) >= BigInt(c.start) && BigInt(st) <= BigInt(c.end));
-              console.log(`pid ${c.pid}: ${mine.length} by pid, ${inside.length} inside interval, durations ns ${inside.map((p) => p[3]).join(",")}`);
+              console.log(`call ${c.start}..${c.end} first ${JSON.stringify(mine[0])} pid ${c.pid}: ${mine.length} by pid, ${inside.length} inside interval, durations ns ${inside.map((p) => p[3]).join(",")}`);
               if (inside.length !== 2) ok = false;
             }
             console.log(ok ? "SPIKE OK" : "SPIKE FAILED"); process.exit(ok ? 0 : 1);'
