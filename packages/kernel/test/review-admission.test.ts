@@ -170,13 +170,15 @@ describe("review admission [WRK-08, REV-05]", () => {
             dispatchMode: lane === "quick" ? "same-session" : "subagent-fresh", openDependencies,
           }),
         }));
-        const unresolved = !!openDependencies?.length;
+        // An omitted field is not a report of none: it counts as one open dependency (P66, owner 2026-11-15).
+        const recorded = openDependencies ?? ["not reported: the result omitted openDependencies"];
+        const unresolved = recorded.length > 0;
         const next = plan.resp.next ?? [];
         assert.equal(next.some(action => action.action === "finish"), !unresolved, `${lane}/${openDependencies}`);
         if (unresolved) assert.ok(next.some(action => action.action === (lane === "quick" ? "focused-review" : "review") && action.required));
         const after = plan.state!.work[work.id]!;
         assert.equal(after.reviews.at(-1)!.status, unresolved ? "partial" : "completed");
-        assert.deepEqual(after.reviews.at(-1)!.openDependencies, openDependencies ?? []);
+        assert.deepEqual(after.reviews.at(-1)!.openDependencies, recorded);
         assert.equal(after.budget.reviewRounds, work.budget.reviewRounds + 1);
         assert.equal(after.budget.delegations, work.budget.delegations + (lane === "quick" ? 0 : 1));
         assert.equal(after.budget.reservations.length, 0);

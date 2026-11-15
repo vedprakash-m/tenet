@@ -80,7 +80,7 @@ export const REASONS = {
   "lock-recovery-needed": [2, "A lock breaker died mid-break; a confirmed repair is needed"],
   "migration-needs-approval": [3, "A newer state schema needs a previewed migration"],
   "version-changed": [3, "Tenet, its adapter or its state schema changed mid-contract"],
-  "unsupported-record": [4, "Unknown field in a grant, restriction or consent"],
+  "unsupported-record": [4, "A private record is unsupported or cannot be read safely"],
   "preload-present": [4, "A preload flag reached the kernel by another launch path"],
   "storage-protected-full": [2, "Protected data exceeds the ceiling"],
   "disk-full": [2, "No space left"],

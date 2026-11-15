@@ -64,6 +64,9 @@ export const RESEARCHER_RUBRIC = "Answer the question using evidence from the re
   + "Report what you could not find as an open dependency, never a guess.";
 export const REVIEW_ONLY_RUBRIC = "Review the change for correctness, structure and security. Return findings with path:line evidence.";
 
+/** A result that omits `openDependencies` has not reported "none" (AGT-05, P66): the omission counts as one open dependency. */
+const reportedDependencies = (deps: string[] | undefined): string[] => deps ?? ["not reported: the result omitted openDependencies"];
+
 const boundedRubric = (text: string): string[] =>
   text.split(/(?<=\n)/u).flatMap(line => line.match(/[\s\S]{1,200}/gu) ?? []);
 
@@ -240,13 +243,13 @@ export function applyResult(work: WorkContract, r: ReviewResult, res: Reservatio
     return d ? { ...a, disposition: { by: r.dispatchMode === "subagent-fresh" ? "reviewer" as const : "same-session" as const, outcome: d.disposition, reason: d.reason } } : a;
   });
   const missing = (res.requiredPaths ?? Object.keys(res.files)).filter(p => !r.coverage.inspected.some(x => x === p || x.startsWith(`${p}:`)));
-  const uncovered = [...new Set([...r.coverage.uncovered, ...missing, ...(r.coverage.crossCutting.trim() ? [] : ["cross-module interaction"]), ...(r.openDependencies ?? [])])];
+  const uncovered = [...new Set([...r.coverage.uncovered, ...missing, ...(r.coverage.crossCutting.trim() ? [] : ["cross-module interaction"]), ...reportedDependencies(r.openDependencies)])];
   const status = r.status === "completed" && uncovered.length ? "partial" : r.status;
   const link: ReviewLink = {
     reservation: res.id, mode: r.mode, candidate: res.candidate, basisHash: res.basisHash,
     uncovered, verified: (r.rechecked ?? []).filter((x) => x.outcome === "verified").map((x) => x.finding),
     independence: r.dispatchMode, status, files: res.files, axes: r.axes,
-    coverage: r.coverage, openDependencies: r.openDependencies ?? [],
+    coverage: r.coverage, openDependencies: reportedDependencies(r.openDependencies),
   };
   if (res.mode === "recheck") {
     if (res.basedOn) link.basedOn = res.basedOn;
@@ -347,7 +350,7 @@ export function applyAnalystResult(r: AnalystResult, res: Reservation, currentCa
   const link: AnalystLink = {
     reservation: res.id, role: res.analystRole!, question: res.question ?? "",
     revision: r.revision, status: r.status, independence: r.dispatchMode,
-    artifacts: r.artifacts, findings: r.findings, openDependencies: r.openDependencies ?? [],
+    artifacts: r.artifacts, findings: r.findings, openDependencies: reportedDependencies(r.openDependencies),
     ...(r.revision !== currentCandidate ? { stale: true } : {}),
     ...(r.sketch ? { sketch: r.sketch } : {}), ...(r.decisionRecord ? { decisionRecord: r.decisionRecord } : {}),
   };

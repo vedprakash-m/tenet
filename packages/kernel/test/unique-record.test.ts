@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fc from "fast-check";
 import { parseUniqueRecord } from "../src/adapters/private-record-fs.ts";
+import { KernelError } from "../src/core/errors.ts";
 
 const refused = (text: string) => assert.throws(() => parseUniqueRecord(text), /duplicate keys/, text);
 
@@ -64,6 +65,14 @@ describe("parseUniqueRecord", () => {
     const started = performance.now();
     assert.ok(parseUniqueRecord(text));
     assert.ok(performance.now() - started < 2_000);
+  });
+
+  it("reports a refused record without claiming an unknown grant field", () => {
+    assert.throws(() => parseUniqueRecord('{"a":1,"a":2}'), (error: unknown) => {
+      assert.ok(error instanceof KernelError);
+      assert.equal(error.reasons[0]!.message, "A private record is unsupported or cannot be read safely: a private record has duplicate keys");
+      return true;
+    });
   });
 });
 

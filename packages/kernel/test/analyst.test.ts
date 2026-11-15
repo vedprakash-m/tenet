@@ -118,6 +118,18 @@ describe("packet analyst [AGT-03]", () => {
     assert.equal(w.analyses[0]!.status, "partial");
   });
 
+  it("records an omitted openDependencies field as not reported, never as none [AGT-05]", async () => {
+    const p = fresh();
+    const h = (await p.call("open", { profile: "investigate", request: "x" })).handle!;
+    const r = await p.call("packet", { h, role: "analyst", analystRole: "researcher", question: "q" });
+    const { openDependencies: _omitted, ...result } = analystResult(templateOf(d(r).analyst.manifest));
+    const f = await p.call("findings", { h, result });
+    assert.equal(f.exit, 0, JSON.stringify(f));
+    assert.deepEqual(d(f).openDependencies, ["not reported: the result omitted openDependencies"]);
+    const w = Object.values(p.ports().store.read()!.state.work)[0]!;
+    assert.deepEqual(w.analyses[0]!.openDependencies, ["not reported: the result omitted openDependencies"]);
+  });
+
   it("rejects a result that does not match a live reservation", async () => {
     const p = fresh();
     const h = (await p.call("open", { profile: "investigate", request: "x" })).handle!;
