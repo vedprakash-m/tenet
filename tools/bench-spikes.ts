@@ -11,7 +11,23 @@ const [bundle, out] = [process.argv[2]!, process.argv[3]!];
 mkdirSync(out, { recursive: true });
 const source = join(out, "repo");
 generateFixture(FIXTURES["long-history"], source);
-const strace = process.argv[4] !== "plain" && spawnSync("strace", ["-V"]).status === 0;
+const prof = process.argv[4] === "prof";
+const strace = !prof && process.argv[4] !== "plain" && spawnSync("strace", ["-V"]).status === 0;
+/** Where a profiled call's wall time went: profile span, idle, GC, program, the busiest functions and the gaps. */
+function profileOf(path: string): string {
+  type Node = { id: number; callFrame: { functionName: string; url: string; lineNumber: number } };
+  const p = JSON.parse(readFileSync(path, "utf8")) as { nodes: Node[]; samples: number[]; timeDeltas: number[]; startTime: number; endTime: number };
+  const byId = new Map(p.nodes.map((x) => [x.id, x.callFrame])), self = new Map<string, number>();
+  let maxGap = 0, gapAt = 0, t = 0;
+  p.samples.forEach((s, i) => {
+    const d = (p.timeDeltas[i] ?? 0) / 1000; t += d;
+    if (d > maxGap) [maxGap, gapAt] = [d, t];
+    const f = byId.get(s)!, k = `${f.functionName || "(anon)"}@${f.url.split("/").pop()}:${f.lineNumber + 1}`;
+    self.set(k, (self.get(k) ?? 0) + d);
+  });
+  const top = [...self].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k, v]) => `${k} ${v.toFixed(0)}`).join(", ");
+  return `span ${((p.endTime - p.startTime) / 1000).toFixed(0)} ms, largest sample gap ${maxGap.toFixed(0)} ms at ${gapAt.toFixed(0)} ms; ${top}`;
+}
 const dirty = () => /Dirty:\s+(\d+)/.exec(readFileSync("/proc/meminfo", "utf8"))?.[1] + " kB";
 const BASIS = { outcome: "Return a greeting", scopePaths: ["src/"], elements: [
   { ref: "r", kind: "requirement", origin: "request", text: "greet returns Hello, Ada!" },
@@ -22,7 +38,9 @@ let n = 0;
 function call(label: string, argv: string[], body?: object, record = true): { handle?: string } {
   const env = gitEnv(); delete env.NODE_OPTIONS;
   const trace = join(out, `call-${++n}.strace`), before = dirty();
-  const args = strace && record ? ["-f", "-T", "-e", "trace=fsync,fdatasync,rename,link", "-o", trace, process.execPath, bundle, ...argv] : [bundle, ...argv];
+  const profiled = prof && record ? ["--cpu-prof", `--cpu-prof-dir=${out}`, `--cpu-prof-name=call-${n}.cpuprofile`] : [];
+  const args = strace && record ? ["-f", "-T", "-e", "trace=fsync,fdatasync,rename,link", "-o", trace, process.execPath, bundle, ...argv]
+    : [...profiled, bundle, ...argv];
   const t = performance.now();
   const r = spawnSync(strace && record ? "strace" : process.execPath, args, { cwd: source, env, input: body ? JSON.stringify(body) : "", encoding: "utf8", maxBuffer: 1 << 26 });
   const ms = performance.now() - t;
@@ -35,6 +53,7 @@ function call(label: string, argv: string[], body?: object, record = true): { ha
       const fs = ts.filter((m) => /sync/.test(m![2]!)).map((m) => Number(m![3]) * 1000);
       syncs = `fsyncs ${fs.length} total ${fs.reduce((a, b) => a + b, 0).toFixed(1)} ms max ${Math.max(0, ...fs).toFixed(1)} ms`;
     } catch { /* no strace */ }
+    if (profiled.length) try { syncs = profileOf(join(out, `call-${n}.cpuprofile`)); } catch (e) { syncs = String(e); }
     lines.push(`${String(n).padStart(4)} ${label.padEnd(18)} ${ms.toFixed(0).padStart(5)} ms exit ${resp.exit} active ${resp.timing?.active?.ms?.toFixed(0)} ms dirty-before ${before} ${syncs}`);
   }
   return resp;

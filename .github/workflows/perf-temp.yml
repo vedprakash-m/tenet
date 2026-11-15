@@ -38,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [plain, strace, plain-again]
+        mode: [prof, prof-2, prof-3, plain]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -50,7 +50,7 @@ jobs:
       - run: npm run build
       - run: command -v strace || (sudo apt-get update -q && sudo apt-get install -yq strace)
       - run: lscpu | head -20; cat /proc/sys/vm/dirty_expire_centisecs /proc/sys/vm/dirty_writeback_centisecs
-      - run: node tools/bench-spikes.ts "$PWD/plugin/kernel/tenet.mjs" "$RUNNER_TEMP/spikes" ${{ matrix.mode == 'strace' && 'strace' || 'plain' }}
+      - run: node tools/bench-spikes.ts "$PWD/plugin/kernel/tenet.mjs" "$RUNNER_TEMP/spikes" ${{ startsWith(matrix.mode, 'prof') && 'prof' || 'plain' }}
   paired:
     runs-on: ubuntu-latest
     timeout-minutes: 60
