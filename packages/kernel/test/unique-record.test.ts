@@ -1,6 +1,7 @@
 // Private records refuse duplicate keys at any depth; values and array items are never mistaken for keys.
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import fc from "fast-check";
 import { parseUniqueRecord } from "../src/adapters/private-record-fs.ts";
 
 const refused = (text: string) => assert.throws(() => parseUniqueRecord(text), /duplicate keys/, text);
@@ -40,6 +41,29 @@ describe("parseUniqueRecord", () => {
   it("finds keys after strings that hold escapes and quotes", () => {
     refused('{"a":"x\\\\","a":1}');
     assert.deepEqual(parseUniqueRecord('{"a":"\\\\"," b":"\\"a\\":"}'), { a: "\\", " b": '"a":' });
+  });
+
+  it("accepts every record without duplicates and refuses it once any object repeats a key", () => {
+    const key = fc.oneof(fc.constantFrom("a", "b", "a:", '"', "\\", "__proto__", "1", "01"), fc.string({ maxLength: 4 }));
+    const value = fc.letrec((tie) => ({
+      v: fc.oneof({ depthSize: "small" }, fc.string({ maxLength: 4 }), fc.integer(), fc.boolean(), fc.constant(null),
+        fc.array(tie("v"), { maxLength: 4 }), fc.dictionary(key, tie("v"), { maxKeys: 4 })),
+    })).v;
+    fc.assert(fc.property(fc.dictionary(key, value, { maxKeys: 5 }), fc.nat(), (record, pick) => {
+      const text = JSON.stringify(record, null, pick % 3);
+      assert.deepEqual(parseUniqueRecord(text), JSON.parse(text));
+      const rest = text.slice(1).trimStart(), dupKey = `"k${pick}":0`;
+      const doubled = `{${dupKey},${dupKey}${rest === "}" ? "" : ","}${rest}`;
+      refused(doubled);
+      refused(`[1,{"n":${doubled}}]`);
+    }), { numRuns: 300 });
+  });
+
+  it("scans text with many colons inside strings in linear time", () => {
+    const text = JSON.stringify({ a: Array.from({ length: 200_000 }, (_, i) => (i % 2 ? "x:y" : "z")) });
+    const started = performance.now();
+    assert.ok(parseUniqueRecord(text));
+    assert.ok(performance.now() - started < 2_000);
   });
 });
 

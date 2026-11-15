@@ -12,65 +12,45 @@ export function parseRecord(text: string): unknown {
   return parsed;
 }
 
-/** Recursion is safe here: it stops at depth 65. It allocates nothing per value, which matters on long histories (NFR-01). */
-function checkDepth(value: unknown, depth: number): void {
+/** Recursion is safe here: it stops at depth 65. It allocates nothing per value, which matters on long histories (NFR-01).
+ *  Returns the number of object keys in the parsed value. */
+function checkDepth(value: unknown, depth: number): number {
   if (depth > 64) throw new KernelError("unsupported-record", "a private record exceeds the depth bound");
-  if (!value || typeof value !== "object") return;
-  if (Array.isArray(value)) for (let i = 0; i < value.length; i++) checkDepth(value[i], depth + 1);
-  else for (const key in value) checkDepth((value as Record<string, unknown>)[key], depth + 1);
+  if (!value || typeof value !== "object") return 0;
+  let keys = 0;
+  if (Array.isArray(value)) for (let i = 0; i < value.length; i++) keys += checkDepth(value[i], depth + 1);
+  else for (const key in value) keys += 1 + checkDepth((value as Record<string, unknown>)[key], depth + 1);
+  return keys;
 }
 
-/** Admission must inspect declarations before JSON.parse discards conflicting keys. */
+/** Admission must see declarations that JSON.parse discards. Each key in the text becomes one property of its object
+ *  unless an earlier key of that object decodes to the same name, so the parsed value has fewer keys than the text
+ *  declares exactly when some object repeats a key. Text the kernel wrote is the serialization of its parsed value,
+ *  which never repeats a key, so that comparison settles the common case without scanning the text. */
 export function parseUniqueRecord(text: string): unknown {
   if (Buffer.byteLength(text, "utf8") > MAX_RECORD) throw new KernelError("unsupported-record", "a private record exceeds the 50 MB bound");
-  const parsed = parseRecord(text), objects: Array<Set<string> | null> = [];
-  const scan = { text, slash: text.indexOf("\\") };
-  // The text is valid JSON here, so one pass over character codes finds every string; a string followed by a colon is a key.
-  for (let i = 0; i < text.length; i++) {
-    const c = text.charCodeAt(i);
-    if (c === 123) objects.push(new Set()); // {
-    else if (c === 91) objects.push(null); // [
-    else if (c === 125 || c === 93) objects.pop(); // } ]
-    else if (c === 34) i = string(scan, i, objects.at(-1)); // "
+  const parsed: unknown = JSON.parse(text), keys = checkDepth(parsed, 0);
+  if (JSON.stringify(parsed) !== text && keys !== declaredKeys(text)) {
+    throw new KernelError("unsupported-record", "a private record has duplicate keys");
   }
   return parsed;
 }
 
-/** The text being scanned, and the position of the next backslash at or after the scan (-1 when none is left). */
-interface Scan { text: string; slash: number }
-
-/** Reads the string opening at `i`; if it is a key (followed by ":"), records it in `keys`. Returns its closing quote. */
-function string(scan: Scan, i: number, keys: Set<string> | null | undefined): number {
-  const text = scan.text, [end, escaped] = stringEnd(scan, i);
-  if (text.charCodeAt(afterSpace(text, end + 1)) !== 58) return end;
-  const key = escaped ? JSON.parse(text.slice(i, end + 1)) as string : text.slice(i + 1, end);
-  if (keys?.has(key)) throw new KernelError("unsupported-record", "a private record has duplicate keys");
-  keys?.add(key);
-  return end;
-}
-
-/** The index of the quote closing the string that opens at `i`, and whether the string has an escape. */
-function stringEnd(scan: Scan, i: number): [number, boolean] {
-  const text = scan.text, quote = text.indexOf('"', i + 1);
-  if (scan.slash !== -1 && scan.slash <= i) scan.slash = text.indexOf("\\", i + 1); // only moves forward, so the scan stays linear
-  if (scan.slash === -1 || scan.slash > quote) return [quote, false]; // no escape before the next quote: that quote closes it
-  let escaped = false;
-  for (i++; i < text.length; i++) {
-    const c = text.charCodeAt(i);
-    if (c === 92) [escaped, i] = [true, i + 1]; // a backslash escapes the next character
-    else if (c === 34) break;
+/** Keys declared in valid JSON text: outside strings, a colon appears only between a key and its value. */
+function declaredKeys(text: string): number {
+  let count = 0, colon = text.indexOf(":"), slash = text.indexOf("\\");
+  for (let i = 0; ;) {
+    const open = text.indexOf('"', i), stop = open === -1 ? text.length : open;
+    // `colon` and `slash` only move forward, so the whole scan stays linear in the text.
+    for (; colon !== -1 && colon < stop; colon = text.indexOf(":", colon + 1)) if (colon >= i) count++;
+    if (open === -1) return count;
+    let close = text.indexOf('"', open + 1);
+    if (slash !== -1 && slash <= open) slash = text.indexOf("\\", open + 1);
+    if (slash !== -1 && slash < close) { // an escape before that quote: walk the string to its real end
+      for (close = open + 1; text.charCodeAt(close) !== 34; close += text.charCodeAt(close) === 92 ? 2 : 1);
+    }
+    i = close + 1;
   }
-  return [i, escaped];
-}
-
-/** The first index at or after `i` that is not JSON whitespace. */
-function afterSpace(text: string, i: number): number {
-  while (i < text.length) {
-    const c = text.charCodeAt(i);
-    if (c !== 32 && c !== 9 && c !== 10 && c !== 13) break;
-    i++;
-  }
-  return i;
 }
 
 export function readTerminal(path: string): Terminal | null {
