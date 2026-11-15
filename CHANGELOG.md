@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-14 — A competing writer no longer fails when the lock is released mid-check (CON-04)
+
+- **Store lock wait.** When a read of a private record was torn by a concurrent writer, `admitBeforeLock` (`adapters/store-fs.ts`) read the lock and then checked whether its holder was alive. If the holder released the lock and exited between those two steps, the holder looked dead and the waiting writer failed with `unsupported-record` (exit 4) instead of waiting. It now re-reads the lock and treats the holder as dead only if the lock still names it. Seen once in CI (`store.test.ts` "serializes competing writers", run 43656649477). New test: "waits when the lock is released between reading it and checking its holder" in `store.test.ts`; it failed on the old code (branch `race-red`).
+- **macOS watcher calibration.** `read-only-review.test.ts` rewrites its canary file until the watcher reports it (up to 10 s), because macOS FSEvents can miss a single write made before its stream starts delivering. Test setup only.
+- Not changed: an `unsupported-record` response still prefixes its message with the registry meaning "Unknown field in a grant, restriction or consent", which is wrong for a torn read.
+
 ## 2026-11-14 — Audit follow-up: macOS kill race, NFR-01 coverage claim, module ceilings, Tech Spec limits
 
 - **Fewer serial Git rounds in `open` (`a50ab14`).** The repository probe starts its layout reads alongside its other reads; the inventory starts its three index listings with HEAD and the branch and runs only `status` after them; the object format is read once per adapter. The private-record depth check no longer allocates per value, and the duplicate-key scan finds a string's end with `indexOf` when no backslash precedes its closing quote. Measured: no benchmark change beyond runner-to-runner variation (warm p95 on one re-run: small 261 ms, large 317 ms, long-history 344 ms). NFR-01 still fails.
