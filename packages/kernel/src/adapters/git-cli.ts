@@ -2,7 +2,7 @@
 // Only exact, locked post-commit sync writes the user's index.
 import { withoutGitLocalVars } from "./git-env.ts";
 import { outputMatcher } from "../core/outputs.ts";
-import { hookInventory, repoLayout } from "./git-layout.ts";
+import { hookInventory, locate, repoLayout } from "./git-layout.ts";
 import { execFile } from "node:child_process";
 import {
   closeSync,
@@ -226,9 +226,9 @@ export class GitCli {
   // ------------------------------------------------------------ probe
   async probe(): Promise<RepoProbe> {
     const t = (...a: string[]) => this.tryOut(a); // run together (NFR-01)
-    const [ver, top] = await Promise.all([t("--version"), t("rev-parse", "--show-toplevel")]);
+    const [ver, located] = await Promise.all([t("--version"), locate((args) => this.tryOut(args))]);
     const version = (ver ?? "git not found").replace(/^git version /, "");
-    if (!top)
+    if (!located)
       return {
         isRepo: false,
         shadow: false,
@@ -242,10 +242,10 @@ export class GitCli {
         hooks: null,
         layout: { shallow: false, submodules: [], lfs: false, linkedWorktree: false },
       };
-    const gitDirP = t("rev-parse", "--absolute-git-dir").then((d) => d ?? join(top, ".git"));
-    const layoutP = repoLayout((args) => this.tryOut(args), top, gitDirP);
-    const [head, branch, gitDir, cf, idO, rmO, hooksPath] = await Promise.all([
-      t("rev-parse", "--verify", "-q", "HEAD"), t("symbolic-ref", "-q", "--short", "HEAD"), gitDirP,
+    const { top, gitDir } = located;
+    const layoutP = repoLayout((args) => this.tryOut(args), located);
+    const [head, branch, cf, idO, rmO, hooksPath] = await Promise.all([
+      t("rev-parse", "--verify", "-q", "HEAD"), t("symbolic-ref", "-q", "--short", "HEAD"),
       t("diff", "--cached", "--name-only", "--diff-filter=U"), t("var", "GIT_COMMITTER_IDENT"), t("remote"), t("config", "core.hooksPath"),
     ]);
     const busy = ["rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"].find((f) =>
