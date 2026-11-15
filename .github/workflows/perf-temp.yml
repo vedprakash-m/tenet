@@ -32,6 +32,25 @@ jobs:
             ${{ runner.temp }}/profile/summary.txt
             ${{ runner.temp }}/profile/*/*.cpuprofile
           retention-days: 7
+  spikes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [plain, strace, plain-again]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit
+      - run: npm run build
+      - run: command -v strace || (sudo apt-get update -q && sudo apt-get install -yq strace)
+      - run: lscpu | head -20; cat /proc/sys/vm/dirty_expire_centisecs /proc/sys/vm/dirty_writeback_centisecs
+      - run: node tools/bench-spikes.ts "$PWD/plugin/kernel/tenet.mjs" "$RUNNER_TEMP/spikes" ${{ matrix.mode == 'strace' && 'strace' || 'plain' }}
   paired:
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -39,11 +58,12 @@ jobs:
       fail-fast: false
       matrix:
         pair:
-          - { name: same-same, base: ab80f4718, candidate: ab80f4718 }
-          - { name: unique-keys, base: e03ccaa5b, candidate: 2f1d6f1b4 }
-          - { name: no-locales, base: 2f1d6f1b4, candidate: d3ef87215 }
-          - { name: jitless, base: d3ef87215, candidate: c9ad6f767 }
-          - { name: main-vs-tip, base: ab80f4718, candidate: HEAD }
+          - { name: unique-keys, base: e03ccaab67af0246411f2e85332c1c144e9df496, candidate: 2f1d6f1b4b0443e15b02f4a9df1ca4c3b18a9fbc }
+          - { name: filter-config, base: c9ad6f7671db41e5018e822a41821ec4dd396546, candidate: fd22aada9f62489f5b9210447c9c3b4060397346 }
+          - { name: jitless-fixed, base: fd22aada9f62489f5b9210447c9c3b4060397346, candidate: f20d8a353cec8ff1a36c51cd762af0fcab329378 }
+          - { name: one-rev-parse, base: f20d8a353cec8ff1a36c51cd762af0fcab329378, candidate: 959ec9c4570c7081c0d75beebf53f9ead7170785 }
+          - { name: main-vs-tip, base: ab80f471835d578a490677ad15b3db2f201d41b2, candidate: HEAD }
+          - { name: compile-cache-experiment, base: HEAD, candidate: HEAD, wrap: true }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -62,7 +82,19 @@ jobs:
             npm run build --prefix "$RUNNER_TEMP/$arm"
             cp "$RUNNER_TEMP/$arm/plugin/kernel/tenet.mjs" "$RUNNER_TEMP/$arm.mjs"
           done
-      - run: node tools/bench-pair.ts "$RUNNER_TEMP/base.mjs" "$RUNNER_TEMP/candidate.mjs" 3 | tee pair.log
+      - name: Experiment arm only, never shipped - enable the Node compile cache before loading the same bundle
+        if: matrix.pair.wrap
+        run: |
+          mkdir "$RUNNER_TEMP/compile-cache"
+          {
+            echo 'import { enableCompileCache } from "node:module";'
+            echo "enableCompileCache(\"$RUNNER_TEMP/compile-cache\");"
+            echo 'await import("./candidate.mjs");'
+          } > "$RUNNER_TEMP/wrapped.mjs"
+          cat "$RUNNER_TEMP/wrapped.mjs"
+      - run: node tools/bench-pair.ts "$RUNNER_TEMP/base.mjs" "$RUNNER_TEMP/${{ matrix.pair.wrap && 'wrapped' || 'candidate' }}.mjs" 3 | tee pair.log
+      - if: matrix.pair.wrap
+        run: du -sh "$RUNNER_TEMP/compile-cache"; find "$RUNNER_TEMP/compile-cache" -type f | head
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
