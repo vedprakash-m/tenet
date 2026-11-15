@@ -1,0 +1,61 @@
+# Temporary spike (NFR-01 stall-aware measurement): does bpftrace install and attach on ubuntu-latest, and do its
+# timestamps match process.hrtime.bigint()? Removed before the work is finished.
+name: fsync-trace-spike
+on:
+  push:
+    branches: ["claude/nfr01-stall-aware-afc863"]
+permissions:
+  contents: read
+jobs:
+  spike:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Install bpftrace
+        run: |
+          uname -a
+          sudo apt-get install -y bpftrace
+          bpftrace --version
+          lscpu | grep 'Model name'
+      - name: Attach, fsync from a child, compare clocks
+        run: |
+          cat > tracer.bt <<'EOF'
+          tracepoint:syscalls:sys_enter_fsync, tracepoint:syscalls:sys_enter_fdatasync { @s[tid] = nsecs; }
+          tracepoint:syscalls:sys_exit_fsync, tracepoint:syscalls:sys_exit_fdatasync /@s[tid]/ {
+            printf("%d %d %d %d\n", pid, curtask->real_parent->tgid, @s[tid], nsecs - @s[tid]); delete(@s[tid]);
+          }
+          EOF
+          sudo -n bpftrace -o trace.txt tracer.bt > bpf.out 2> bpf.err &
+          for i in $(seq 1 100); do grep -qs Attaching bpf.out bpf.err trace.txt && break; sleep 0.2; done
+          echo "--- attach after ${i} polls"; cat bpf.out bpf.err; head -2 trace.txt || true
+          cat > child.mjs <<'EOF'
+          import { openSync, writeSync, fsyncSync, fdatasyncSync, closeSync } from "node:fs";
+          const fd = openSync("child.tmp", "w"); writeSync(fd, "x".repeat(4096)); fsyncSync(fd); fdatasyncSync(fd); closeSync(fd);
+          EOF
+          node -e '
+            const { spawnSync } = require("child_process");
+            const out = [];
+            for (let i = 0; i < 5; i++) {
+              const s = process.hrtime.bigint();
+              const r = spawnSync(process.execPath, ["child.mjs"]);
+              const e = process.hrtime.bigint();
+              out.push({ pid: r.pid, start: String(s), end: String(e) });
+            }
+            require("fs").writeFileSync("calls.json", JSON.stringify(out));'
+          sleep 1
+          sudo pkill -INT bpftrace; wait || true
+          echo "--- trace lines: $(wc -l < trace.txt)"
+          node -e '
+            const calls = require("./calls.json");
+            const lines = require("fs").readFileSync("trace.txt", "utf8").split("\n").map((l) => l.trim().split(/\s+/)).filter((p) => p.length === 4 && /^\d+$/.test(p[0]));
+            let ok = true;
+            for (const c of calls) {
+              const mine = lines.filter(([pid, ppid]) => +pid === c.pid || +ppid === c.pid);
+              const inside = mine.filter(([, , st]) => BigInt(st) >= BigInt(c.start) && BigInt(st) <= BigInt(c.end));
+              console.log(`pid ${c.pid}: ${mine.length} by pid, ${inside.length} inside interval, durations ns ${inside.map((p) => p[3]).join(",")}`);
+              if (inside.length !== 2) ok = false;
+            }
+            console.log(ok ? "SPIKE OK" : "SPIKE FAILED"); process.exit(ok ? 0 : 1);'
