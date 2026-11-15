@@ -5,6 +5,7 @@ import { copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSy
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
+import type { Plugin } from "esbuild";
 import { z } from "zod";
 import { Policy } from "../packages/kernel/src/core/policy.ts";
 import { ReviewResult } from "../packages/kernel/src/core/schemas.ts";
@@ -12,6 +13,17 @@ import { payloadChecksums, payloadFiles, payloadInventory } from "./payload.ts";
 
 const BUDGET_BYTES = 900 * 1024; // Owner D01/D01b, 2026-11-07; binary units (TS §3.2).
 export const GENERATED = ["LICENSE", "NOTICE", "kernel/tenet.mjs", "schemas/review-result.schema.json", "schemas/tenet.policy.schema.json"];
+
+/** Zod re-exports every message locale as a namespace that esbuild cannot drop, about 250 KB the kernel never uses; the
+ *  English messages Zod configures by default are imported directly and stay. A smaller bundle loads faster (NFR-01). */
+const withoutZodLocales: Plugin = {
+  name: "without-zod-locales",
+  setup(b) {
+    b.onResolve({ filter: /^\.\.\/locales\/index\.js$/ }, (a) =>
+      /[\\/]node_modules[\\/]zod[\\/]/.test(a.importer) ? { path: "zod-locales", namespace: "empty" } : undefined);
+    b.onLoad({ filter: /.*/, namespace: "empty" }, () => ({ contents: "export {};" }));
+  },
+};
 
 function copySources(root: string, output: string, inventory: string[]): void {
   const source = join(root, "plugin");
@@ -46,7 +58,7 @@ export async function buildPayload(root: string, output = join(root, "plugin")):
   for (const name of ["LICENSE", "NOTICE"]) copyFileSync(join(root, name), join(output, name));
   await build({
     entryPoints: [join(root, "packages/kernel/src/main.ts")], outfile: bundle, bundle: true, platform: "node", format: "esm", target: "node22",
-    minify: true, legalComments: "none", banner: { js: "#!/usr/bin/env node" }, logLevel: "warning",
+    minify: true, legalComments: "none", banner: { js: "#!/usr/bin/env node" }, logLevel: "warning", plugins: [withoutZodLocales],
   });
 
   mkdirSync(join(output, "schemas"), { recursive: true });
