@@ -1,4 +1,5 @@
-# Temporary (NFR-01 work): CPU profile of the current bundle and a paired timing against BASE on one runner. Removed when done.
+# Temporary (NFR-01 work): CPU profile of the current bundle, and paired timings of each change against its parent on one
+# runner. Removed when done.
 name: perf-temp
 on:
   push:
@@ -9,8 +10,6 @@ permissions:
 concurrency:
   group: perf-temp-${{ github.ref }}
   cancel-in-progress: true
-env:
-  BASE: ab80f471835d578a490677ad15b3db2f201d41b2
 jobs:
   profile:
     runs-on: ubuntu-latest
@@ -35,7 +34,16 @@ jobs:
           retention-days: 7
   paired:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        pair:
+          - { name: same-same, base: ab80f4718, candidate: ab80f4718 }
+          - { name: unique-keys, base: e03ccaa5b, candidate: 2f1d6f1b4 }
+          - { name: no-locales, base: 2f1d6f1b4, candidate: d3ef87215 }
+          - { name: jitless, base: d3ef87215, candidate: c9ad6f767 }
+          - { name: main-vs-tip, base: ab80f4718, candidate: HEAD }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -45,18 +53,19 @@ jobs:
         with:
           node-version: 24
       - run: npm ci --ignore-scripts --no-audit
-      - run: npm run build
-      - name: Build the baseline bundle
+      - name: Build both bundles
         run: |
-          git worktree add --detach "$RUNNER_TEMP/base" "$BASE"
-          npm ci --prefix "$RUNNER_TEMP/base" --ignore-scripts --no-audit
-          npm run build --prefix "$RUNNER_TEMP/base"
-          cp "$RUNNER_TEMP/base/plugin/kernel/tenet.mjs" "$RUNNER_TEMP/baseline.mjs"
-          cp plugin/kernel/tenet.mjs "$RUNNER_TEMP/candidate.mjs"
-      - run: node tools/bench-pair.ts "$RUNNER_TEMP/baseline.mjs" "$RUNNER_TEMP/candidate.mjs" 4 | tee pair.log
+          for arm in base candidate; do
+            ref=${{ matrix.pair.base }}; [ $arm = candidate ] && ref=${{ matrix.pair.candidate }}
+            git worktree add --detach "$RUNNER_TEMP/$arm" "$ref"
+            npm ci --prefix "$RUNNER_TEMP/$arm" --ignore-scripts --no-audit
+            npm run build --prefix "$RUNNER_TEMP/$arm"
+            cp "$RUNNER_TEMP/$arm/plugin/kernel/tenet.mjs" "$RUNNER_TEMP/$arm.mjs"
+          done
+      - run: node tools/bench-pair.ts "$RUNNER_TEMP/base.mjs" "$RUNNER_TEMP/candidate.mjs" 3 | tee pair.log
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: paired
+          name: paired-${{ matrix.pair.name }}
           path: pair.log
           retention-days: 7
