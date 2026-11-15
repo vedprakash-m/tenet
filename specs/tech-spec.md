@@ -628,7 +628,7 @@ Verb modules contain only their own logic. A front-end translates its transport 
 
 ### 6.2 Module map
 
-Budgets are checked by `tools/lint-quality` in non-whitespace characters, so wrapping a line or splitting a function is not growth. Owner D01/D01b (November 7) sets the central owner to exactly 400,000 characters and every other measured owner below to its measured source size plus 5%, rounded up. Explicit character ceilings take precedence over historical line allowances. Owners without a new measurement retain their prior line allowance at 57.6 characters per line; no new measurement or headroom is claimed for them. A module over its budget may not grow past its recorded ceiling, and the ceiling only falls. Raising a budget is an owner decision.
+Budgets are checked by `tools/lint-quality` in non-whitespace characters, so wrapping a line or splitting a function is not growth. Owner D01/D01b (November 7) sets the central owner to exactly 400,000 characters and every other measured owner below to its measured source size plus 5%, rounded up. Explicit character ceilings take precedence over historical line allowances. Owners without a new measurement retain their prior line allowance at 57.6 characters per line; no new measurement or headroom is claimed for them. A module over its budget may not grow past its recorded ceiling, and the ceiling only falls. Raising a budget is an owner decision. Owner decision of 2026-11-14 raises the ceilings of Git CLI, Node/TypeScript adapter, Review, Risk and Verdict by 15% (rounded up), so the next changes to them need not compress names to fit.
 
 The November 7 measurements are of the reconciled, uncommitted schema-2 candidate, not the schema-1 runtime or a release. The central owner includes `pipeline*.ts`, every `verbs/*` and `decisions/*` file, and `core/config-binding.ts` and `core/config-proposal.ts`. The schemas owner includes `schemas.ts`, `schemas-legacy.ts`, `schemas-migrate.ts`, `schemas-upcast.ts`, `traits.ts` and the bridge's planned `migration-terminal.ts` (absent from this measurement); budget includes `budget.ts` and `budget-launch.ts`; store includes `store-fs.ts`, `migration-fs.ts` and `private-record-fs.ts`. Companion files are never excluded to obtain headroom. This capacity approval does not activate schema 2 or qualify migration or the required bridge.
 
@@ -638,12 +638,12 @@ The November 7 measurements are of the reconciled, uncommitted schema-2 candidat
 | Schemas | 73,710 | 77,396 |
 | Budget | 32,051 | 33,654 |
 | Store | 53,202 | 55,863 |
-| Git CLI | 37,826 | 39,718 |
+| Git CLI | 37,826 | 45,676 |
 | Runner | 15,020 | 15,771 |
-| Node/TypeScript adapter | 20,150 | 21,158 |
-| Review | 19,840 | 20,832 |
-| Risk | 4,779 | 5,018 |
-| Verdict | 14,715 | 15,451 |
+| Node/TypeScript adapter | 20,150 | 24,332 |
+| Review | 19,840 | 23,957 |
+| Risk | 4,779 | 5,771 |
+| Verdict | 14,715 | 17,769 |
 
 | Module | Responsibility | PRD | Lines |
 |---|---|---|---|
@@ -2546,3 +2546,17 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `recipe-integrity-failed` | 4 | The recipe's files do not match its recorded hashes |
 |  | `install-failed` | 2 | The dependency install failed; the scaffolded files are in place |
 |  | `model-unqualified-for-deep` | 3 | Deep work on an unqualified or unknown model or configuration; continue or stop |
+
+## Appendix D. Current implementation limits (informative)
+
+This appendix records where the built kernel stops short of the normative sections above, as of 2026-11-14 (owner decision of that date). It changes no requirement: each limit below is open work against the section it names, and the requirement stays unmet until the limit is removed. Remove an entry when its limit is gone.
+
+- **Undo and cleanup removal are switched off (GIT-04, LFC-05).** `undo` refuses every preview and confirmation, and cleanup previews without removing, both with `capability-missing`, until the defects that can overwrite human work (rename and ignored-file discovery) are fixed. Both stay in R1 scope (owner decision 2026-11-14); AC-17 is never-waivable.
+- **Reconstruction after `.tenet/` loss (CON-07, §15.3).** `open` reads back managed `INTENT.md` blocks, `Tenet-Work` trailers and unmerged `tenet/` branches. It does not scan `docs/decisions/` or test tags, proposes no lock manifest, re-adopts no policy or charter, and has no 500-commit bound (the trailer scan reads all refs). Damaged markers produce an `intent-markers-invalid` note and recover nothing instead of stopping `open` (§7.8). It does not ask which unfinished work to resume.
+- **Shared-file merge (GIT-09).** Only `INTENT.md` managed blocks are reconciled; decision files, `docs/architecture.md` and `docs/hardening.md` keep Git's conflict. A `content` collision proposes the work branch's text. Test tags and links outside the re-suffixed blocks are not updated, and same-ID collisions that Git merges without a conflict are not detected.
+- **Sealed baseline (EVD-04).** Dependencies are shared only by linking the workspace's `node_modules` when the starting `package.json` and lockfile equal the current files, a lockfile exists, there is no `workspaces` field and no top-level package links into the workspace; any other layout, an applying Git filter, a submodule, a tracked symbolic link, or a start tree over 50,000 files or 500 MB gives `sealed-deps-unavailable` or an unknown result without running anything.
+- **Reference workload (QLT-05).** The series tag uses the environment the report states, not kernel observations. There is no `build-not-fresh` check, the report is read from stdout only, and the series is shown only in the check response and the verdict reason.
+- **Traits and threat note (QLT-11, QLT-13).** Traits are detected, recorded and correctable, and the threat note gates the verdict. Missed-trait findings, lane raises for a trait first seen at check, trait-contributed obligations and note requirements for `unknown` traits are not built.
+- **Diagnostics export (NFR-07).** `inspect --view export` returns a redacted preview; saving it is left to the coordinator.
+- **Deep work on unqualified models (RSC-08).** No model qualification table exists, so every model is `unknown` and every Deep contract asks `model-unqualified-for-deep`.
+- **Reason codes not yet produced.** `alternative-check-missing`, `accessibility-claim-narrowed`, `audit-unavailable`, `dependency-unverified`, `port-in-use`, `server-identity-weak`, `build-not-fresh`, `migration-needs-approval`, `observation-incomplete` and `ended-without-finish` are in the registry and Appendix C, but no kernel path returns them yet.
