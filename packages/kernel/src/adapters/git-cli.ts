@@ -168,6 +168,7 @@ export class GitCli {
   private root: string;
   private exclusions: readonly Exclusion[] = [];
   private runner: Runner;
+  private inspected?: Promise<Map<string, string[]>>;
   private neutral?: Promise<string[]>;
   private gate?: Promise<FilterGate | null>;
   private format?: Promise<string | null>;
@@ -283,15 +284,21 @@ export class GitCli {
     return filterConfig(r.stdout);
   }
 
+  /** The configuration inspection is based on, read once; a commit reads it again (commitFilters). */
+  private inspectedConfig(): Promise<Map<string, string[]>> {
+    this.inspected ??= this.filterConfig();
+    return this.inspected;
+  }
+
   /** Disable programs during inspection. */
   private neutralArgs(): Promise<string[]> {
-    this.neutral ??= this.filterConfig().then(config => filterOverrides(config));
+    this.neutral ??= this.inspectedConfig().then(config => filterOverrides(config));
     return this.neutral;
   }
 
   /** Unused filters need no consent. */
   filterGate(): Promise<FilterGate | null> {
-    this.gate ??= this.findGate();
+    this.gate ??= this.findGate(this.inspectedConfig());
     return this.gate;
   }
 
