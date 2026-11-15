@@ -104,9 +104,6 @@ export class FsStore implements Store {
   private admitted = new Map<string, string>();
   // The record admission just parsed, handed once to the next read of that same file version so it is not parsed twice.
   private parsed = new Map<string, { id: string; value: unknown }>();
-  // Validated state documents, keyed by file identity like `admitted`; used only while a transaction runs.
-  private validated = new Map<string, { id: string; state: State }>();
-  private inTransaction = false;
   private unseenJournal?: Journal;
   private writes = new AsyncLocalStorage<WriteContext>();
 
@@ -152,18 +149,6 @@ export class FsStore implements Store {
       if (id) this.admitted.set(name, id); else this.admitted.delete(name);
       if (id && record !== null) this.parsed.set(name, { id, value: record }); else this.parsed.delete(name);
     }
-  }
-
-  /** The state document in `file`. A transaction reads it at its start and again when it publishes, so there each file
-   *  version is validated once (NFR-01) and every read gets its own copy; a version is remembered only when the file
-   *  kept one identity across the read. Outside a transaction a copy would cost more than it saves. */
-  private validState(file: "state" | "state.prev") {
-    const id = this.inTransaction ? this.fileId(file, true) : null, known = this.validated.get(file);
-    if (id && known?.id === id) return { success: true as const, data: structuredClone(known.state) };
-    const raw = this.takeParsed(file) ?? readJson<unknown>(this.p(file));
-    const parsed = raw ? State.safeParse(raw) : null;
-    if (parsed?.success && id && this.fileId(file, true) === id) this.validated.set(file, { id, state: structuredClone(parsed.data) });
-    return parsed;
   }
 
   /** Admission's parse of `name`, used at most once and only while the file is the version admission read. */
@@ -240,7 +225,8 @@ export class FsStore implements Store {
     if (!this.exists()) return null;
     this.marker();
     for (const [file, recovered] of [["state", false], ["state.prev", true]] as const) {
-      const parsed = this.validState(file);
+      const raw = this.takeParsed(file) ?? readJson<unknown>(this.p(file));
+      const parsed = raw ? State.safeParse(raw) : null;
       if (parsed?.success) {
         const m = this.marker()!;
         if (parsed.data.workspaceId !== m.workspaceId || parsed.data.tag !== m.tag) {
@@ -373,7 +359,6 @@ export class FsStore implements Store {
   async transaction<T>(verb: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
     const me = await this.acquire(verb);
     const context: WriteContext = { lock: me, active: true };
-    this.inTransaction = true;
     try {
       this.admit();
       chmodSync(this.dir, 0o700);
@@ -402,8 +387,6 @@ export class FsStore implements Store {
       return await this.writes.run(context, () => fn(tx));
     } finally {
       context.active = false;
-      this.inTransaction = false;
-      this.validated.clear();
       this.release(me);
     }
   }
