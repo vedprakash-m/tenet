@@ -35,11 +35,15 @@ async function calibrateWatcher(root: string): Promise<void> {
   watcher.on("error", (error) => { watchError = error; });
   const canary = join(nested, "watch-canary.tmp");
   try {
+    // macOS FSEvents can miss a write made before its stream starts delivering, so the canary is rewritten until seen
+    // (run 43656649477 saw no event in 5 s for a single early write).
+    let polls = 0;
     writeFileSync(canary, "temporary\n");
     await waitFor(() => {
       if (watchError) throw watchError;
+      if (++polls % 10 === 0) writeFileSync(canary, `temporary ${polls}\n`);
       return events.some((event) => event.path.endsWith("watch-canary.tmp"));
-    }, 5000, "nested watch canary");
+    }, 10000, "nested watch canary");
     if (watchError) throw watchError;
   } finally {
     if (!events.some((event) => event.path.endsWith("watch-canary.tmp"))) {

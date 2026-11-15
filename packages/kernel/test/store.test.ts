@@ -133,7 +133,11 @@ describe("store: transactions", () => {
     const admit = seam.admit.bind(store), readLock = seam.readLock.bind(store);
     let torn = true;
     seam.admit = () => {
-      if (torn) { torn = false; throw new KernelError("unsupported-record", "a private record changed during its bounded read"); }
+      // Tear the read the lock wait retries (the path in the CI failure), not the earlier checks in acquire.
+      if (torn && new Error().stack?.includes("admitBeforeLock")) {
+        torn = false;
+        throw new KernelError("unsupported-record", "a private record changed during its bounded read");
+      }
       admit();
     };
     seam.readLock = (name) => {
@@ -142,6 +146,7 @@ describe("store: transactions", () => {
       return held;
     };
     await store.transaction("t", async (tx) => tx.publish({ ...tx.state!, workSeq: 3 }));
+    assert.equal(torn, false, "the lock wait never saw the torn read");
     assert.equal(newStore(root).read()!.state.workSeq, 3);
   });
 

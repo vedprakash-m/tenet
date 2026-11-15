@@ -197,7 +197,9 @@ export class FsStore implements Store {
       if (!(e instanceof KernelError && e.reasons[0]?.code === "unsupported-record" && e.message === "a private record changed during its bounded read")) throw e;
       // A writer may finish and release the lock between its replacement and this check, so an unheld lock is retried too.
       const held = this.readLock(name);
-      if (held && !isAlive(held.pid, held.procStart)) throw e;
+      // A holder can release the lock and exit between that read and the liveness check; only a lock that still names
+      // the dead holder is stale.
+      if (held && !isAlive(held.pid, held.procStart) && this.readLock(name)?.nonce === held.nonce) throw e;
       if (Date.now() > deadline) throw held ? new KernelError("kernel-busy", `held by ${held.verb} (pid ${held.pid})`) : e;
       await sleep(20);
     }
