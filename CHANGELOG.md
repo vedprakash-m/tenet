@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-14 — Audit follow-up: macOS kill race, NFR-01 coverage claim, module ceilings, Tech Spec limits
+
+- **Fewer serial Git rounds in `open` (`a50ab14`).** The repository probe starts its layout reads alongside its other reads; the inventory starts its three index listings with HEAD and the branch and runs only `status` after them; the object format is read once per adapter. The private-record depth check no longer allocates per value, and the duplicate-key scan finds a string's end with `indexOf` when no backslash precedes its closing quote. Measured: no benchmark change beyond runner-to-runner variation (warm p95 on one re-run: small 261 ms, large 317 ms, long-history 344 ms). NFR-01 still fails.
+- **macOS group-kill race.** `killOwned` (`tools/host/copilot-cli.ts`) treats `EPERM` like `ESRCH`; macOS returns `EPERM` for a process group whose leader has exited but is not yet reaped, which failed the macOS job at random.
+- **NFR-01 no longer counts as mapped.** Tests of the benchmark tooling do not prove the kernel's budgets. `tools/coverage.ts` reports NFR-01 as not reachable by a T1 test, with the reason, and the `[NFR-01]` tags are removed from those tests. R1 coverage: 162 mapped, 2 capability disabled, 16 host-only, 1 not reachable, 0 unmapped.
+- **Module ceilings (owner decision).** Git CLI, Node/TypeScript adapter, Review, Risk and Verdict ceilings rise 15%, rounded up (`tools/lint-quality.ts`, `tools/quality-baseline.json`, TS §6.2).
+- **Tech Spec Appendix D (owner decision).** An informative list of where the built kernel stops short of the spec: undo and cleanup removal switched off; the limits of CON-07, GIT-09, EVD-04, QLT-05, QLT-11, QLT-13, NFR-07 and RSC-08; the ten reason codes no path returns. No requirement changes.
+- Files: `adapters/git-cli.ts`, `adapters/git-layout.ts`, `adapters/private-record-fs.ts`, `tools/coverage.ts`, `tools/host/copilot-cli.ts`, `tools/lint-quality.ts`, `tools/quality-baseline.json`, `specs/tech-spec.md`. Tests: `git-process-count.test.ts` (new), `unique-record.test.ts`, `host-cli.test.ts`, `coverage.test.ts`, `bench-comparison.test.ts`, `process-policy.test.ts`.
+
 ## 2026-11-13 — Two reason codes the kernel never produced: `basis-gap-open`, `disk-full`
 
 - **`basis-gap-open` (TS §8.3).** A basis gap the Reviewer reports is recorded as a major finding against `basis` (unchanged). While it has no disposition, the verdict now reports it as `basis-gap-open` instead of `major-undisposed`. The endpoint is unchanged: both hold the work below `checked-local`. Test: a new row in `verdict.test.ts`.
