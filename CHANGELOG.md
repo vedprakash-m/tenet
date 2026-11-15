@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-15 — Owner decisions P66, P69, F8 and the `unsupported-record` text
+
+- **An omitted `openDependencies` is not "none" (P66, AGT-05; `core/review.ts`).** A Reviewer or Analyst result that leaves the field out is still admitted, so its findings are kept, but the kernel records one open dependency, `not reported: the result omitted openDependencies`. A review is then partial (`review-partial-coverage`), as with a reported dependency. Tech Spec §5.4 now makes the field required. Links stored earlier keep their value. Tests: `review-admission.test.ts` (omitted field now needs review follow-up), `analyst.test.ts` (omitted field recorded as not reported).
+- **`unsupported-record` describes all its cases (`core/reasons.ts`, Tech Spec Appendix C).** The registry text said "Unknown field in a grant, restriction or consent", but every producer is a corrupt, oversized, too deep, duplicate-key, changed-while-read or otherwise unsafe record (§7.6). It now reads "A private record is unsupported or cannot be read safely"; the detail after the colon is unchanged. Test: `unique-record.test.ts`.
+- **AC-02 qualifies only through a confirmatory run (P69; PRD AC-02, Tech Spec §17.7).** Formative sessions are design input only; a separately frozen confirmatory run with new participants and the same thresholds is the qualifying evidence.
+- **Diagnostics export accepted for R1 as built (F8; Tech Spec Appendix D).** The kernel returns a redacted preview and does not save it.
+
 ## 2026-11-14 — Faster warm kernel calls (NFR-01)
 
 Each change was measured by a paired run: base and candidate bundles alternated on one runner, three repeats per fixture, comparing the per-call-type medians of `inspect status` and `open investigate` (an A/A run of one bundle varies by about 5 ms). Figures are candidate minus base, in ms, as status/open.

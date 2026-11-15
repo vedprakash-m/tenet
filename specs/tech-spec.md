@@ -491,7 +491,7 @@ type ReviewResult = {
   findings: Array<{ severity: "blocker" | "major" | "minor" | "note"; axis: "behavior" | "structure";
     location: { path: string; line?: number }; claim: string; evidence: string; fix?: string }>;
   basisGaps: Array<{ kind: "missing-requirement" | "missing-invariant" | "weak-test" | "out-of-scope-change"; detail: string }>;
-  openDependencies?: string[];
+  openDependencies: string[];   // required (AGT-05); [] when none remain
 };
 ```
 
@@ -545,7 +545,7 @@ Roles exchange kernel-built packets, never summaries of each other's chats: `rev
 
 Reviewer packets include `resultGuidance.sampledItem` with the strict `symbol`, `callers`, `opened`, `semantic` and `why` object shape; `coverage.sampled` remains empty when all callers were read. Examples are guidance, not fabricated findings or evidence. Stored `ReviewResult`, `ReviewCoverage` and verdict rules are unchanged; invalid prose still fails validation.
 
-Reviewer and Analyst packets also state that `openDependencies` is an array of plain strings, with evidence included in each string and `[]` when none remain. This mirrors the existing strict stored schemas; object-shaped dependencies remain invalid.
+Reviewer and Analyst packets also state that `openDependencies` is an array of plain strings, with evidence included in each string and `[]` when none remain. This mirrors the existing strict stored schemas; object-shaped dependencies remain invalid. Every Reviewer and Analyst result must report `openDependencies` (AGT-05). A result that omits it is still admitted, so its findings are kept, but the omission is not read as "none": the kernel records one open dependency, `not reported: the result omitted openDependencies`, which makes a review partial (`review-partial-coverage`) exactly as a reported open dependency does (owner decision P66, 2026-11-15). Links stored before this rule keep their recorded value.
 
 Every Reviewer/Analyst packet carries cooperative exclusion guidance: default secret and kernel-only patterns derived from `core/exclusions`, plus effective restrictions resolved for its contract. Stateless review carries current shared-policy restrictions without creating state. These apply before native reads/searches, including snippets; `.tenet`, excluded secrets and unrelated histories are not alternate evidence sources. Children use packet receipt summaries rather than inspect kernel records. This does not establish host-enforced containment or authorize a denied read. The conditional `.tenet/manifests` transport fallback above is not enabled by this repair; its compatibility with kernel-only exclusions must be settled before shipping that fallback.
 
@@ -2033,7 +2033,7 @@ Actions are pinned by SHA; no cache flows from the untrusted tier into the other
 | AC | Tier | Key fixtures |
 |---|---|---|
 | AC-01 | T3 | Install, uninstall, residue list (§18) |
-| AC-02, AC-21 | T4, T3 | Formative sessions; prompt distribution, grouped questions, cadence |
+| AC-02, AC-21 | T4, T3 | Formative sessions (design input only); AC-02 qualification by a separately frozen confirmatory run with the PRD thresholds; prompt distribution, grouped questions, cadence |
 | AC-03 | T1, T3 | Denied tools, missing capability, assistance levels, approval-mode question, no inference from linked worktrees |
 | AC-04 | T1, T3 | Stateless review under a filesystem watcher |
 | AC-05 | T1, T3 | Compile-error red, vacuous assertion, declared baseline expectations |
@@ -2491,7 +2491,7 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `lock-recovery-needed` | 2 | A lock breaker died mid-break; a confirmed repair is needed |
 |  | `migration-needs-approval` | 3 | A newer state schema needs a previewed migration |
 |  | `version-changed` | 3 | Tenet version changed mid-contract |
-|  | `unsupported-record` | 4 | Unknown field in a grant, restriction or consent |
+|  | `unsupported-record` | 4 | A private record is unsupported or cannot be read safely (an unknown field in a grant, restriction or consent, or a corrupt, oversized, too deep, duplicate-key or changed-while-read record; §7.6) |
 |  | `preload-present` | 4 | A preload flag reached the kernel by another launch path |
 |  | `storage-protected-full` | 2 | Protected data exceeds the ceiling |
 |  | `disk-full` | 2 | No space left |
@@ -2557,6 +2557,6 @@ This appendix records where the built kernel stops short of the normative sectio
 - **Sealed baseline (EVD-04).** Dependencies are shared only by linking the workspace's `node_modules` when the starting `package.json` and lockfile equal the current files, a lockfile exists, there is no `workspaces` field and no top-level package links into the workspace; any other layout, an applying Git filter, a submodule, a tracked symbolic link, or a start tree over 50,000 files or 500 MB gives `sealed-deps-unavailable` or an unknown result without running anything.
 - **Reference workload (QLT-05).** The series tag uses the environment the report states, not kernel observations. There is no `build-not-fresh` check, the report is read from stdout only, and the series is shown only in the check response and the verdict reason.
 - **Traits and threat note (QLT-11, QLT-13).** Traits are detected, recorded and correctable, and the threat note gates the verdict. Missed-trait findings, lane raises for a trait first seen at check, trait-contributed obligations and note requirements for `unknown` traits are not built.
-- **Diagnostics export (NFR-07).** `inspect --view export` returns a redacted preview; saving it is left to the coordinator.
+- **Diagnostics export (NFR-07).** `inspect --view export` returns a redacted preview; saving it is left to the coordinator. The owner accepted this for R1 on 2026-11-15 (F8): the kernel does not save the export or record where it was saved.
 - **Deep work on unqualified models (RSC-08).** No model qualification table exists, so every model is `unknown` and every Deep contract asks `model-unqualified-for-deep`.
 - **Reason codes not yet produced.** `alternative-check-missing`, `accessibility-claim-narrowed`, `audit-unavailable`, `dependency-unverified`, `port-in-use`, `server-identity-weak`, `build-not-fresh`, `migration-needs-approval`, `observation-incomplete` and `ended-without-finish` are in the registry and Appendix C, but no kernel path returns them yet.
