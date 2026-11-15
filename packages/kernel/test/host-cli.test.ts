@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { argvFor, reserveRun, runCopilot, summarize } from "../../../tools/host/copilot-cli.ts";
+import { argvFor, killOwned, reserveRun, runCopilot, summarize } from "../../../tools/host/copilot-cli.ts";
 import { git } from "./helpers.ts";
 
 const dirs: string[] = [];
@@ -171,5 +171,21 @@ describe("host CLI, live (SP-11 feasibility) [ENG-04]", { skip: !LIVE && "set TE
     assert.ok(existsSync(join(repo, ".tenet", "state")), "the kernel created its state: a model's claim alone would not");
     const state = JSON.parse(readFileSync(join(repo, ".tenet", "state"), "utf8"));
     assert.ok(Object.values(state.work as Record<string, { profile: string }>).some((w) => w.profile === "plan"));
+  });
+});
+
+describe("killOwned", () => {
+  for (const code of ["ESRCH", "EPERM"]) {
+    it(`falls back to the child itself when the group kill fails with ${code} (macOS reports EPERM for an unreaped group)`,
+      { skip: process.platform === "win32" && "win32 kills the child directly" }, (t) => {
+        t.mock.method(process, "kill", () => { throw Object.assign(new Error(code), { code }); });
+        const signals: unknown[] = [];
+        killOwned({ pid: 4242, kill: (s?: NodeJS.Signals | number) => { signals.push(s); return true; } });
+        assert.deepEqual(signals, ["SIGKILL"]);
+      });
+  }
+  it("still throws an unexpected group-kill error", { skip: process.platform === "win32" && "win32 kills the child directly" }, (t) => {
+    t.mock.method(process, "kill", () => { throw Object.assign(new Error("EINVAL"), { code: "EINVAL" }); });
+    assert.throws(() => killOwned({ pid: 4242, kill: () => true }), /EINVAL/);
   });
 });

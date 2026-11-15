@@ -61,7 +61,7 @@ describe("release process", () => {
     assert.ok(commands.includes("npm run uat"));
   });
 
-  it("gates actual frozen fixtures and starter peak RSS without ignoring failures [NFR-01]", () => {
+  it("gates actual frozen fixtures and starter peak RSS without ignoring failures", () => {
     const text = read(".github/workflows/system-budgets.yml");
     const workflow = parse(text);
     const commands = Object.values<{ steps: { run?: string }[] }>(workflow.jobs).flatMap(job => job.steps.map(step => step.run));

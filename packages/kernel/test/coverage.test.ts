@@ -408,3 +408,10 @@ test("counts a Must whose capability is switched off apart from the mapped ones,
   assert.match(r.disabled.find((d) => d.id === "GIT-04")!.why, /undo is disabled/);
   assert.equal(r.evidence.find((e) => e.id === "LFC-05")?.mapping, "capability-disabled");
 });
+test("counts a budget Must that only a benchmark run can show as not reachable by a T1 test, with the reason", () => {
+  const r = report(resolve(import.meta.dirname, "../../.."), "R1");
+  assert.deepEqual(r.unreachable.map((u) => u.id), ["NFR-01"]);
+  assert.equal(r.covered.some((c) => c.id === "NFR-01"), false);
+  assert.match(r.evidence.find((e) => e.id === "NFR-01")!.why ?? "", /system-budgets/);
+  assert.equal(r.evidence.find((e) => e.id === "NFR-01")?.mapping, "not-reachable");
+});

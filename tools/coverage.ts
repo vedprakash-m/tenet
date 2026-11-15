@@ -20,7 +20,7 @@ const ROW = /^\| ([A-Z]{2,4}-\d+[a-z]?) \| (.*?) \| (Must|Should|Could|May) \| (
 
 export interface Requirement { id: string; text: string; level: string; milestone: string; acs: string[] }
 export interface EvidenceStatus {
-  id: string; mapping: "mapped" | "capability-disabled" | "host-only" | "unmapped"; disposition: "unreviewed" | "partial" | "complete";
+  id: string; mapping: "mapped" | "capability-disabled" | "host-only" | "not-reachable" | "unmapped"; why?: string; disposition: "unreviewed" | "partial" | "complete";
   uncoveredAcIds: string[]; evidenceTiers: string[];
   evidenceRefs: Array<{ kind: string; tier: string; path: string; sha256: string; acIds: string[]; outcome: string }>;
   campaignRef: { campaignId: string; path: string; sha256: string } | null;
@@ -75,6 +75,14 @@ type ParsedLedgerRecord = z.infer<typeof LedgerRecord> & { campaign: ValidatedCa
 export const DISABLED: Record<string, string> = {
   "GIT-04": "undo is disabled in this preview (verbs/undo.ts)",
   "LFC-05": "cleanup removal is disabled in this preview (decisions/cleanup.ts)",
+};
+
+/**
+ * Musts that only a measurement on the frozen fixtures can show; a T1 test of the measuring tool is not evidence for them,
+ * so tags on such tests do not map them. Remove an entry when a T1 test can prove the requirement itself.
+ */
+export const MEASURED: Record<string, string> = {
+  "NFR-01": "only the system-budgets workflow measures the budgets on the frozen fixtures; its benchmark rows still fail",
 };
 
 /** Requirements that are agent behavior or host mechanics: there is nothing for the kernel to assert, so only T3 can show them. */
@@ -149,7 +157,8 @@ export function report(root: string, milestone: string): Report {
   const evidence: EvidenceStatus[] = [];
   for (const r of reqs) {
     let mapping: EvidenceStatus["mapping"];
-    if (tagged.has(r.id) && DISABLED[r.id]) { disabled.push({ id: r.id, tests: tagged.get(r.id)!, why: DISABLED[r.id]! }); mapping = "capability-disabled"; }
+    if (MEASURED[r.id]) { unreachable.push(r); mapping = "not-reachable"; }
+    else if (tagged.has(r.id) && DISABLED[r.id]) { disabled.push({ id: r.id, tests: tagged.get(r.id)!, why: DISABLED[r.id]! }); mapping = "capability-disabled"; }
     else if (tagged.has(r.id)) { covered.push({ id: r.id, tests: tagged.get(r.id)! }); mapping = "mapped"; }
     else if (HOST_BY_NATURE[r.id]) { hostOnly.push(r); mapping = "host-only"; }
     else {
@@ -158,7 +167,7 @@ export function report(root: string, milestone: string): Report {
       mapping = t1Capable ? "unmapped" : "host-only";
     }
     const record = ledger.get(r.id);
-    evidence.push({ id: r.id, mapping, disposition: record?.disposition ?? "unreviewed",
+    evidence.push({ id: r.id, mapping, ...(MEASURED[r.id] ? { why: MEASURED[r.id] } : {}), disposition: record?.disposition ?? "unreviewed",
       uncoveredAcIds: record?.uncoveredAcIds ?? [],
       evidenceTiers: [...new Set([...(record?.evidenceRefs.map((ref) => ref.tier) ?? []), ...(record?.campaign.evidenceRefs.map((ref) => ref.tier) ?? [])])].sort(),
       evidenceRefs: [...(record?.evidenceRefs ?? []), ...(record?.campaign.evidenceRefs ?? [])], campaignRef: record?.campaignRef ?? null,
@@ -380,6 +389,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const total = r.covered.length + r.disabled.length + r.hostOnly.length + r.unreachable.length + r.unmapped.length;
   console.log(`coverage ${milestone}: ${total} Musts · ${r.covered.length} with a T1 fixture · ${r.disabled.length} capability disabled · ${r.hostOnly.length} need the real host (T3/T4) · ${r.unreachable.length} not reachable yet · ${r.unmapped.length} unmapped`);
   for (const d of r.disabled) console.log(`  capability disabled: ${d.id}: ${d.why}`);
+  for (const u of r.unreachable) console.log(`  not reachable yet: ${u.id}: ${MEASURED[u.id] ?? "no T1 path"}`);
   if (r.hostOnly.length) console.log(`  host only: ${r.hostOnly.map((x) => x.id).join(", ")}`);
   console.log(`  reason codes referenced by a fixture: ${r.reasonCodes.referenced} of ${r.reasonCodes.total}`);
   for (const item of r.evidence) {

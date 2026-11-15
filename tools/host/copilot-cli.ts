@@ -43,12 +43,14 @@ export function summarize(jsonl: string): Summary {
 
 export interface HostOptions { bin?: string; outDir: string; env?: NodeJS.ProcessEnv }
 
-function killOwned(child: ChildProcess) {
+/** macOS answers EPERM instead of ESRCH when the group's leader has exited but is not yet reaped; both mean the group is gone. */
+export function killOwned(child: Pick<ChildProcess, "pid" | "kill">) {
   if (!child.pid) return;
   if (platform() === "win32") { child.kill("SIGKILL"); return; }
   try { process.kill(-child.pid, "SIGKILL"); }
   catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code !== "ESRCH" && code !== "EPERM") throw error;
     child.kill("SIGKILL");
   }
 }

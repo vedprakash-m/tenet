@@ -11,7 +11,7 @@ const rows = (fixture: string, ms = 1) => measuredRows(fixture, {
 });
 const results = () => PLAN.map(attempt => ({ attempt, rows: rows(attempt.fixture) }));
 
-it("freezes five paired repetitions on both failing fixtures and alternates order [NFR-01]", () => {
+it("freezes five paired repetitions on both failing fixtures and alternates order", () => {
   assert.equal(PLAN.length, 20);
   for (const fixture of ["large", "long-history"]) {
     for (const arm of ["baseline", "candidate"]) {
@@ -24,14 +24,14 @@ it("freezes five paired repetitions on both failing fixtures and alternates orde
   }
 });
 
-it("retains every repeated budget failure instead of selecting a passing run [NFR-01]", () => {
+it("retains every repeated budget failure instead of selecting a passing run", () => {
   const all = results();
   assert.deepEqual(summarize(all), { complete: true, failures: 0, exit: 0 });
   all[0]!.rows = rows(all[0]!.attempt.fixture, 301);
   assert.deepEqual(summarize(all), { complete: true, failures: 1, exit: 1 });
 });
 
-it("refuses missing, duplicate, empty or mislabeled repeated evidence [NFR-01]", () => {
+it("refuses missing, duplicate, empty or mislabeled repeated evidence", () => {
   assert.equal(summarize(results().slice(1)).exit, 1);
   const duplicate = results();
   duplicate[1] = duplicate[0]!;
