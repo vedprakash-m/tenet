@@ -58,12 +58,8 @@ jobs:
       fail-fast: false
       matrix:
         pair:
-          - { name: unique-keys, base: e03ccaab67af0246411f2e85332c1c144e9df496, candidate: 2f1d6f1b4b0443e15b02f4a9df1ca4c3b18a9fbc }
-          - { name: filter-config, base: c9ad6f7671db41e5018e822a41821ec4dd396546, candidate: fd22aada9f62489f5b9210447c9c3b4060397346 }
-          - { name: jitless-fixed, base: fd22aada9f62489f5b9210447c9c3b4060397346, candidate: f20d8a353cec8ff1a36c51cd762af0fcab329378 }
-          - { name: one-rev-parse, base: f20d8a353cec8ff1a36c51cd762af0fcab329378, candidate: 959ec9c4570c7081c0d75beebf53f9ead7170785 }
+          - { name: state-reuse, base: 959ec9c4570c7081c0d75beebf53f9ead7170785, candidate: ff5bace398f42033c35a47485a94b7ff084c8ee0 }
           - { name: main-vs-tip, base: ab80f471835d578a490677ad15b3db2f201d41b2, candidate: HEAD }
-          - { name: compile-cache-experiment, base: HEAD, candidate: HEAD, wrap: true }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
