@@ -32,25 +32,6 @@ jobs:
             ${{ runner.temp }}/profile/summary.txt
             ${{ runner.temp }}/profile/*/*.cpuprofile
           retention-days: 7
-  spikes:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        mode: [strace-1, strace-2, strace-3, strace-4, strace-5, strace-6]
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: 24
-      - run: npm ci --ignore-scripts --no-audit
-      - run: npm run build
-      - run: command -v strace || (sudo apt-get update -q && sudo apt-get install -yq strace)
-      - run: lscpu | grep "Model name"; findmnt -T "$RUNNER_TEMP"
-      - run: node tools/bench-spikes.ts "$PWD/plugin/kernel/tenet.mjs" "$RUNNER_TEMP/spikes" strace
   paired:
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -58,7 +39,7 @@ jobs:
       fail-fast: false
       matrix:
         pair:
-          - { name: journal-reuse, base: ed81a280c7bdf485a0d9653346913d9cb1efc859, candidate: fa9abc0c3aab54a1efcb4d0222e485bbfd626e26 }
+          - { name: journal-reuse, base: d3d107f8189397ece92b72894e3a617341ce0e97, candidate: fa9abc0c3aab54a1efcb4d0222e485bbfd626e26 }
           - { name: main-vs-tip, base: 39e0523c9a97161656e1beb04b7d20755d8b1d8c, candidate: HEAD }
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
