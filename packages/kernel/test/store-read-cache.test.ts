@@ -50,3 +50,45 @@ describe("store: validated state reuse", { skip: NO_POSIX_PROCESSES }, () => {
     assert.equal(counted(() => { store.read(); store.read(); }).parses, 2);
   });
 });
+
+/** JSON.parse calls on journal lines that mention `marker`, made while `fn` runs. */
+async function lineParses(marker: string, fn: () => Promise<unknown>): Promise<number> {
+  const original = JSON.parse;
+  let n = 0;
+  JSON.parse = ((text: string, reviver?: never) => { if (typeof text === "string" && text.includes(marker)) n++; return original(text, reviver); }) as typeof JSON.parse;
+  try { await fn(); } finally { JSON.parse = original; }
+  return n;
+}
+
+describe("store: journal parse reuse", { skip: NO_POSIX_PROCESSES }, () => {
+  it("parses each journal record once in a transaction that only reads it, and still sees records appended since", async () => {
+    const root = tmp();
+    dirs.push(root);
+    const store = await initState(root);
+    await store.transaction("test", async (tx) => { for (let i = 0; i < 3; i++) tx.call({ verb: "journal-probe", exit: 0, revision: i }); });
+    let recent: unknown[] = [];
+    const parses = await lineParses('"journal-probe"', () => store.transaction("test", async (tx) => {
+      assert.deepEqual(tx.unresolved(), []);
+      tx.call({ verb: "journal-probe", exit: 0, revision: 3 });
+      recent = tx.recent();
+    }));
+    // Three records read once at the transaction's start; the appended one checked before it is written, then read once.
+    assert.equal(parses, 5);
+    assert.deepEqual(recent.filter((e) => (e as { verb?: string }).verb === "journal-probe").map((e) => (e as { revision: number }).revision), [0, 1, 2, 3]);
+  });
+
+  it("never lets a caller's change to the records it was given reach another read", async () => {
+    const root = tmp();
+    dirs.push(root);
+    const store = await initState(root);
+    await store.transaction("test", async (tx) => {
+      tx.call({ verb: "journal-probe", exit: 0, revision: 0 });
+      const first = tx.recent() as Array<{ verb?: string; exit?: number }>;
+      first.find((e) => e.verb === "journal-probe")!.exit = 4;
+      first.length = 0;
+      const again = tx.recent() as Array<{ verb?: string; exit?: number }>;
+      assert.equal(again.find((e) => e.verb === "journal-probe")?.exit, 0);
+      assert.equal(store.readLog().find((e) => e.verb === "journal-probe")?.exit, 0);
+    });
+  });
+});

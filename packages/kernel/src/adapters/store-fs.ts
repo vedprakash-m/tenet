@@ -22,6 +22,7 @@ import { quarantine, QUARANTINE_JOURNAL } from "./quarantine-fs.ts";
 interface Marker { workspaceId: string; tag: string; nonce: string; schema: number; dev: number; ino: number }
 interface LockInfo { pid: number; procStart: string; nonce: string; verb: string }
 interface WriteContext { lock: LockInfo; active: boolean }
+interface Journal { text: string; entries: LogEntry[]; keep: number }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const LogBase = z.object({ t: z.string().min(1) });
@@ -106,6 +107,7 @@ export class FsStore implements Store {
   // Validated state documents, keyed by file identity like `admitted`; used only while a transaction runs.
   private validated = new Map<string, { id: string; state: State }>();
   private inTransaction = false;
+  private unseenJournal?: Journal;
   private writes = new AsyncLocalStorage<WriteContext>();
 
   constructor(root: string, clock: Clock, rand: Random, opts: StoreOptions = {}) {
@@ -244,7 +246,7 @@ export class FsStore implements Store {
         if (parsed.data.workspaceId !== m.workspaceId || parsed.data.tag !== m.tag) {
           throw new KernelError("marker-mismatch", "the state belongs to another workspace");
         }
-        const records = this.readLog();
+        const records = this.journal(true).entries; // only reduced into the state below, never handed out
         const state = recovered ? recoveredState(parsed.data, this.clock.now(), records) : recoverAccounting(parsed.data, records).state;
         return { state, recovered };
       }
@@ -454,12 +456,8 @@ export class FsStore implements Store {
 
   // ------------------------------------------------------------ log
   private repairLogTail() {
-    this.admit();
-    const path = this.p("log");
-    const text = readRecord(path, true);
-    if (!text) return;
-    const { keep } = readJournal(text);
-    if (keep !== text.length) writeSynced(path, text.slice(0, keep));
+    const { text, keep } = this.journal(true);
+    if (keep !== text.length) writeSynced(this.p("log"), text.slice(0, keep));
   }
 
   private append(entry: Omit<LogEntry, "t">) {
@@ -480,14 +478,32 @@ export class FsStore implements Store {
   }
 
   readLog(): LogEntry[] {
+    return this.journal().entries;
+  }
+
+  /** The journal's records. `unseen`: the caller hands none of them out, so the next read may take this parse instead of
+   *  parsing again (NFR-01), extended by any records appended since. Taken once, so no two callers share a record. */
+  private journal(unseen = false): Journal {
     this.admit();
-    return readJournal(readRecord(this.p("log"), true) ?? "").entries;
+    const text = readRecord(this.p("log"), true) ?? "", prior = this.unseenJournal;
+    this.unseenJournal = undefined;
+    let parsed: { entries: LogEntry[]; keep: number };
+    if (prior && prior.keep === prior.text.length && text.startsWith(prior.text)) { // every record of `prior` is still there
+      const rest = readJournal(text.slice(prior.text.length));
+      parsed = { entries: [...prior.entries, ...rest.entries], keep: prior.keep + rest.keep };
+    } else parsed = readJournal(text);
+    const read = { text, ...parsed };
+    if (unseen) this.unseenJournal = read;
+    return read;
   }
 
   private unresolved() {
-    const log = this.readLog();
+    const read = this.journal(), log = read.entries;
     const done = new Set(log.filter((e) => e.kind === "result").map((e) => JSON.stringify([e.effect, e.id])));
-    return log.filter((e) => e.kind === "intent" && !done.has(JSON.stringify([e.effect, e.id]))).map((e) => ({ effect: e.effect!, id: e.id!, op: e.op }));
+    const open = log.filter((e) => e.kind === "intent" && !done.has(JSON.stringify([e.effect, e.id])))
+      .map((e) => ({ effect: e.effect!, id: e.id!, op: e.op }));
+    if (!open.length) this.unseenJournal = read; // no record of this parse was handed out
+    return open;
   }
 
   // ------------------------------------------------------------ blobs and temp
