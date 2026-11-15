@@ -1,0 +1,62 @@
+# Temporary (NFR-01 work): CPU profile of the current bundle and a paired timing against BASE on one runner. Removed when done.
+name: perf-temp
+on:
+  push:
+    branches: ["claude/nfr01-speed-*"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: perf-temp-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  BASE: ab80f471835d578a490677ad15b3db2f201d41b2
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit
+      - run: npm run build
+      - run: node tools/bench-profile.ts "$PWD/plugin/kernel/tenet.mjs" "$RUNNER_TEMP/profile"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: profile
+          path: |
+            ${{ runner.temp }}/profile/summary.txt
+            ${{ runner.temp }}/profile/*/*.cpuprofile
+          retention-days: 7
+  paired:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit
+      - run: npm run build
+      - name: Build the baseline bundle
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/base" "$BASE"
+          npm ci --prefix "$RUNNER_TEMP/base" --ignore-scripts --no-audit
+          npm run build --prefix "$RUNNER_TEMP/base"
+          cp "$RUNNER_TEMP/base/plugin/kernel/tenet.mjs" "$RUNNER_TEMP/baseline.mjs"
+          cp plugin/kernel/tenet.mjs "$RUNNER_TEMP/candidate.mjs"
+      - run: node tools/bench-pair.ts "$RUNNER_TEMP/baseline.mjs" "$RUNNER_TEMP/candidate.mjs" 4 | tee pair.log
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: paired
+          path: pair.log
+          retention-days: 7
