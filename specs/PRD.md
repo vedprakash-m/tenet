@@ -1071,7 +1071,7 @@ Limits are checked by the coordinator through a helper counter before each new a
 | `.tenet/` storage, including archives and artifacts | ≤ 50 MB, managed by Section 5.15 | Boundary-checked | Provisional |
 | Resume reconstruction | ≤ 2 min | Observed | Provisional |
 
-Budgets are finite and part of the support profile. Zero never means unlimited. Comparative overhead (Section 1.6) is measured only in evaluation.
+Budgets are finite and part of the support profile. Zero never means unlimited. Comparative overhead (Section 1.6) is measured only in evaluation. The warm bookkeeping latency budget is judged on a fixed number of runs; a run whose miss is explained by measured storage stalls is reported as environment-invalid, retained and not judged, and too many such runs leave the budget unestablished (Tech Spec §14.1).
 
 ### 4.5 Endpoint verdict policy
 
