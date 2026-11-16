@@ -138,8 +138,9 @@ describe("fsync tracing with bpftrace (E12)", () => {
       calls = [fake, open, decide, stop];
     } finally { tracer.stop(); }
     assert.equal(tracer.error, undefined);
-    const [fake, open, decide, stop] = attributeFsyncs(calls, tracer.events());
-    assert.equal(fake!.fsyncMs?.length, 2);
+    const events = tracer.events();
+    const [fake, open, decide, stop] = attributeFsyncs(calls, events);
+    assert.equal(fake!.fsyncMs?.length, 2, `child pid ${fake!.pid}; traced ${events.length} fsyncs from pids ${[...new Set(events.map((e) => `${e.pid}<${e.ppid}`))].slice(0, 12).join(" ")}`);
     for (const c of [open, decide, stop]) {
       assert.equal(c!.exit, 0, `${c!.label} exited ${c!.exit} (${c!.reason})`);
       assert.ok((c!.fsyncMs?.length ?? 0) >= 1, `${c!.label}: no fsync attributed`);

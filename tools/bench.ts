@@ -135,8 +135,11 @@ export function judgeWarmRuns(runs: WarmRun[], cap = MAX_INVALID_RUNS): { status
 
 export interface FsyncTracer { stop(): void; events(): TraceEvent[]; error?: string }
 const sleep = (ms: number) => { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); };
+// Only the benchmark process ($1), its children (kernel calls) and grandchildren (their Git processes) are traced, so other
+// load on the machine cannot fill bpftrace's event buffer; a lost event makes the whole trace missing.
 const BPF = [
-  "tracepoint:syscalls:sys_enter_fsync, tracepoint:syscalls:sys_enter_fdatasync { @s[tid] = nsecs; }",
+  "tracepoint:syscalls:sys_enter_fsync, tracepoint:syscalls:sys_enter_fdatasync",
+  "/pid == $1 || curtask->real_parent->tgid == $1 || curtask->real_parent->real_parent->tgid == $1/ { @s[tid] = nsecs; }",
   "tracepoint:syscalls:sys_exit_fsync, tracepoint:syscalls:sys_exit_fdatasync /@s[tid]/ {",
   '  printf("%d %d %d %d\\n", pid, curtask->real_parent->tgid, @s[tid], nsecs - @s[tid]); delete(@s, tid);',
   "}",
@@ -150,7 +153,7 @@ export function startFsyncTracer(dir: string): FsyncTracer {
   writeFileSync(prog, BPF);
   let list: TraceEvent[] = [];
   const tracer: FsyncTracer = { events: () => list, stop: () => {} };
-  const started = spawnSync("sh", ["-c", 'sudo -n bpftrace -o "$1" "$2" < /dev/null > "$3" 2>&1 & echo $!', "sh", out, prog, log], { encoding: "utf8" });
+  const started = spawnSync("sh", ["-c", 'sudo -n bpftrace -o "$1" "$2" "$4" < /dev/null > "$3" 2>&1 & echo $!', "sh", out, prog, log, String(process.pid)], { encoding: "utf8" });
   const pid = Number(started.stdout?.trim());
   const text = (p: string) => (existsSync(p) ? readFileSync(p, "utf8") : "");
   const alive = () => pid > 0 && existsSync(`/proc/${pid}`);
@@ -170,6 +173,8 @@ export function startFsyncTracer(dir: string): FsyncTracer {
     spawnSync("sudo", ["-n", "pkill", "-INT", "-f", `^bpftrace -o ${out}`]);
     for (let i = 0; i < 300 && alive(); i++) sleep(100);
     if (alive()) { tracer.error = "bpftrace did not exit within 30 s of SIGINT"; return; }
+    const lost = /Lost \d+ events/i.exec(text(log) + text(out));
+    if (lost) { tracer.error = `bpftrace reported "${lost[0]}", so some fsyncs are not in the trace`; return; }
     try { list = parseTrace(text(out), { pid: process.pid, atNs }); } catch (e) { tracer.error = (e as Error).message; }
   };
   return tracer;
