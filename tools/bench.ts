@@ -10,7 +10,7 @@
 // the budget only because of fsyncs of STALL_THRESHOLD_MS or more is environment-invalid: reported, not judged.
 import { spawnSync, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync, writeSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { cpus, platform as osPlatform, release, tmpdir, totalmem } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,11 +21,11 @@ import type { FixtureName, FixtureSpec } from "./bench-fixtures.ts";
 export type Status = "pass" | "fail" | "inconclusive" | "not-measurable" | "unobservable" | "delegated";
 export interface Row { id: string; prd: string; target: string; status: Status; fixture?: string; observed?: string; detail: string; stallThresholdMs?: number; trace?: Trace; runs?: WarmRun[] }
 /** `fsyncMs`: durations of the traced fsyncs attributed to this call; absent when not traced. */
-export interface Call { label: string; ms: number; exit: number | null; reason?: string; pid?: number; startNs?: bigint; endNs?: bigint; fsyncMs?: number[] }
+export interface Call { label: string; ms: number; exit: number | null; reason?: string; pid?: number; fsyncMs?: number[] }
 export type Trace = "ok" | "missing" | "off";
 export interface FsyncStats { count: number; totalMs: number; p50Ms: number; p99Ms: number; maxMs: number; stalls: number; excessMs: number }
 export interface WarmRun { run: number; class: "pass" | "fail" | "inconclusive" | "environment-invalid"; trace: Trace; n: number; p95Ms: number; adjustedP95Ms: number; maxMs: number; fsync?: FsyncStats; observed?: string; detail?: string }
-export interface TraceEvent { pid: number; ppid: number; startNs: bigint; durMs: number }
+export interface TraceEvent { pid: number; ppid: number; durMs: number }
 
 /** Tech Spec 14.1; a test keeps these equal to its text. */
 export const STALL_THRESHOLD_MS = 20, WARM_RUNS = 5, MAX_INVALID_RUNS = 2;
@@ -62,9 +62,9 @@ const kernelEnv = (): NodeJS.ProcessEnv => { const env = gitEnv(); delete env.NO
 
 /** One kernel process, timed as the host would see it: spawn, Node start and the call itself. */
 export function callKernel(bundle: string, cwd: string, label: string, argv: string[], body?: object): Call & { response?: { handle?: string } } {
-  const startNs = process.hrtime.bigint(), t = performance.now();
+  const t = performance.now();
   const r = spawnSync(process.execPath, [bundle, ...argv], { cwd, env: kernelEnv(), input: body ? JSON.stringify(body) : "", encoding: "utf8", timeout: 120_000, maxBuffer: 1 << 26 });
-  const ms = performance.now() - t, at = { pid: r.pid, startNs, endNs: process.hrtime.bigint() };
+  const ms = performance.now() - t, at = { pid: r.pid };
   try {
     const response = JSON.parse(r.stdout) as { exit: number; handle?: string; reasons?: Array<{ code: string }> };
     return { label, ms, exit: response.exit, reason: response.reasons?.[0]?.code, response, ...at };
@@ -74,24 +74,21 @@ export function callKernel(bundle: string, cwd: string, label: string, argv: str
 const r1 = (x: number): number => Math.round(x * 10) / 10;
 const sum = (xs: number[]): number => xs.reduce((a, b) => a + b, 0);
 
-/** bpftrace lines "pid ppid start duration" (ns, bpftrace's own clock). The benchmark's marker fsync, made at hrtime `atNs`,
- *  maps that clock onto process.hrtime. Other lines (the attach message, maps printed at exit) are ignored. */
-export function parseTrace(text: string, marker: { pid: number; atNs: bigint }): TraceEvent[] {
-  const raw = text.split(/\r?\n/).map((l) => /^(\d+) (\d+) (\d+) (\d+)$/.exec(l.trim())).filter((m) => m !== null)
-    .map((m) => ({ pid: Number(m[1]), ppid: Number(m[2]), start: BigInt(m[3]!), durMs: Number(m[4]) / 1e6 }));
-  const mark = raw.find((e) => e.pid === marker.pid);
-  if (!mark) throw new Error("the trace holds no marker fsync from the benchmark process, so its clock cannot be aligned");
-  const offset = marker.atNs - mark.start;
-  return raw.map((e) => ({ pid: e.pid, ppid: e.ppid, startNs: e.start + offset, durMs: e.durMs }));
+/** bpftrace lines "pid ppid duration-ns". Other lines (the attach message, maps printed at exit) are ignored. */
+export function parseTrace(text: string): TraceEvent[] {
+  return text.split(/\r?\n/).map((l) => /^(\d+) (\d+) (\d+)$/.exec(l.trim())).filter((m) => m !== null)
+    .map((m) => ({ pid: Number(m[1]), ppid: Number(m[2]), durMs: Number(m[3]) / 1e6 }));
 }
 
-/** An fsync belongs to a call when the call's process or a direct child of it made it while the call ran. */
-export function attributeFsyncs(calls: Call[], events: TraceEvent[], slackNs = 1_000_000n): Call[] {
-  return calls.map((c) => {
-    const { pid, startNs, endNs } = c;
-    if (pid === undefined || startNs === undefined || endNs === undefined) return { ...c, fsyncMs: [] };
-    return { ...c, fsyncMs: events.filter((e) => (e.pid === pid || e.ppid === pid) && e.startNs >= startNs - slackNs && e.startNs <= endNs + slackNs).map((e) => e.durMs) };
-  });
+/** True while each call's process ID is higher than the one before: Linux hands out IDs in increasing order until they
+ *  wrap at pid_max, so increasing IDs mean no ID named two processes during these calls. */
+export const pidsIncrease = (calls: Call[]): boolean => calls.every((c, i) => i === 0 || (c.pid ?? 0) > (calls[i - 1]!.pid ?? 0));
+
+/** An fsync belongs to a call when the call's process or a direct child of it made it. If the IDs wrapped, a PID may name
+ *  two processes, so nothing is attributed and the run's trace counts as missing. */
+export function attributeFsyncs(calls: Call[], events: TraceEvent[]): Call[] {
+  if (!pidsIncrease(calls)) return calls.map(({ fsyncMs: _, ...c }) => c);
+  return calls.map((c) => ({ ...c, fsyncMs: c.pid === undefined ? [] : events.filter((e) => e.pid === c.pid || e.ppid === c.pid).map((e) => e.durMs) }));
 }
 
 const mutating = (c: Call): boolean => /^(open|decide|stop)\b/.test(c.label);
@@ -123,9 +120,11 @@ export function judgeWarmRuns(runs: WarmRun[], cap = MAX_INVALID_RUNS): { status
   const first = runs.find((r) => r.class === "inconclusive");
   if (first) return { status: "inconclusive", observed: `run ${first.run}: ${first.observed}`, detail: first.detail ?? "" };
   const n = (k: WarmRun["class"]) => runs.filter((r) => r.class === k).length;
-  const invalid = n("environment-invalid"), stats = runs.flatMap((r) => (r.fsync ? [r.fsync] : []));
+  const invalid = n("environment-invalid"), stats = runs.flatMap((r) => (r.trace === "ok" && r.fsync ? [r.fsync] : []));
   const counts = `runs ${runs.length}: ${n("pass")} pass, ${n("fail")} fail, ${invalid} environment-invalid`;
-  const stalls = stats.length ? `stalls ${sum(stats.map((s) => s.stalls))}, max fsync ${Math.max(...stats.map((s) => s.maxMs)).toFixed(0)} ms` : "fsync not traced";
+  const missing = runs.filter((r) => r.trace === "missing").length;
+  const stalls = [stats.length ? `stalls ${sum(stats.map((s) => s.stalls))}, max fsync ${Math.max(...stats.map((s) => s.maxMs)).toFixed(0)} ms` : "",
+    missing ? `fsync trace missing in ${missing} of ${runs.length} runs (judged on wall time)` : ""].filter(Boolean).join(", ") || "fsync not traced";
   const valid = runs.filter((r) => r.class === "pass" || r.class === "fail");
   if (invalid > cap || !valid.length) return { status: "inconclusive", observed: `${counts} (cap ${cap}); ${stalls}`,
     detail: `More than ${cap} of ${runs.length} runs missed the budget only because of storage or scheduling stalls; the budget is not established by this measurement.` };
@@ -133,7 +132,8 @@ export function judgeWarmRuns(runs: WarmRun[], cap = MAX_INVALID_RUNS): { status
     detail: "Each run on a freshly generated fixture, pooled over open, decide, inspect status and stop; check and finish are not timed. Environment-invalid runs are listed and not judged (Tech Spec 14.1)." };
 }
 
-export interface FsyncTracer { stop(): void; events(): TraceEvent[]; error?: string }
+/** `diagnostics`: trace line count and the tail of bpftrace's own messages, for the report. */
+export interface FsyncTracer { stop(): void; events(): TraceEvent[]; error?: string; diagnostics(): string }
 const sleep = (ms: number) => { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); };
 // Only the benchmark process ($1), its children (kernel calls) and grandchildren (their Git processes) are traced, so other
 // load on the machine cannot fill bpftrace's event buffer; a lost event makes the whole trace missing.
@@ -141,21 +141,22 @@ const BPF = [
   "tracepoint:syscalls:sys_enter_fsync, tracepoint:syscalls:sys_enter_fdatasync",
   "/pid == $1 || curtask->real_parent->tgid == $1 || curtask->real_parent->real_parent->tgid == $1/ { @s[tid] = nsecs; }",
   "tracepoint:syscalls:sys_exit_fsync, tracepoint:syscalls:sys_exit_fdatasync /@s[tid]/ {",
-  '  printf("%d %d %d %d\\n", pid, curtask->real_parent->tgid, @s[tid], nsecs - @s[tid]); delete(@s, tid);',
+  '  printf("%d %d %d\\n", pid, curtask->real_parent->tgid, nsecs - @s[tid]); delete(@s, tid);',
   "}",
   "END { clear(@s); }",
   "",
 ].join("\n");
 
-/** Starts bpftrace under passwordless sudo, waits until it has attached, then makes one marker fsync to align its clock. */
+/** Starts bpftrace under passwordless sudo and waits until it has attached. */
 export function startFsyncTracer(dir: string): FsyncTracer {
   const out = join(dir, "fsync.trace"), log = join(dir, "fsync.log"), prog = join(dir, "fsync.bt");
   writeFileSync(prog, BPF);
   let list: TraceEvent[] = [];
-  const tracer: FsyncTracer = { events: () => list, stop: () => {} };
+  const text = (p: string) => (existsSync(p) ? readFileSync(p, "utf8") : "");
+  const tracer: FsyncTracer = { events: () => list, stop: () => {},
+    diagnostics: () => `${parseTrace(text(out)).length} trace lines; bpftrace said: ${(text(log) + text(out)).split(/\r?\n/).filter((l) => l && !/^\d+ \d+ \d+$/.test(l)).slice(-5).join(" | ").slice(0, 400)}` };
   const started = spawnSync("sh", ["-c", 'sudo -n bpftrace -o "$1" "$2" "$4" < /dev/null > "$3" 2>&1 & echo $!', "sh", out, prog, log, String(process.pid)], { encoding: "utf8" });
   const pid = Number(started.stdout?.trim());
-  const text = (p: string) => (existsSync(p) ? readFileSync(p, "utf8") : "");
   const alive = () => pid > 0 && existsSync(`/proc/${pid}`);
   const attached = () => /Attached/.test(text(log) + text(out));
   for (let i = 0; i < 600 && alive() && !attached(); i++) sleep(100);
@@ -164,18 +165,15 @@ export function startFsyncTracer(dir: string): FsyncTracer {
     if (alive()) spawnSync("sudo", ["-n", "pkill", "-INT", "-f", `^bpftrace -o ${out}`]);
     return tracer;
   }
-  const fd = openSync(join(dir, "marker"), "w");
-  writeSync(fd, "m");
-  const atNs = process.hrtime.bigint();
-  fsyncSync(fd);
-  closeSync(fd);
+  sleep(250);
   tracer.stop = () => {
+    if (!alive()) { tracer.error = `bpftrace exited before the measurement ended: ${text(log).trim().slice(-300) || "no output"}`; return; }
     spawnSync("sudo", ["-n", "pkill", "-INT", "-f", `^bpftrace -o ${out}`]);
     for (let i = 0; i < 300 && alive(); i++) sleep(100);
     if (alive()) { tracer.error = "bpftrace did not exit within 30 s of SIGINT"; return; }
     const lost = /Lost \d+ events/i.exec(text(log) + text(out));
     if (lost) { tracer.error = `bpftrace reported "${lost[0]}", so some fsyncs are not in the trace`; return; }
-    try { list = parseTrace(text(out), { pid: process.pid, atNs }); } catch (e) { tracer.error = (e as Error).message; }
+    list = parseTrace(text(out));
   };
   return tracer;
 }
@@ -282,8 +280,10 @@ export function runBench(opts: { bundle: string; fixtures: FixtureName[]; platfo
           measured.push([name, list]);
         }
       } finally { tracer?.stop(); }
-      if (tracer) fsyncTrace = tracer.error ? `missing: ${tracer.error}` : "ok";
+      const all = measured.flatMap(([, list]) => list.flatMap((m) => m.warm));
+      if (tracer && !tracer.error && !pidsIncrease(all)) tracer.error = "process IDs wrapped during the measurement, so a PID may name two processes";
       const events = tracer && !tracer.error ? tracer.events() : undefined;
+      if (tracer) fsyncTrace = `${tracer.error ? `missing: ${tracer.error}` : "ok"}; ${tracer.diagnostics()}`;
       for (const [name, list] of measured) {
         const runs = list.map((m, i) => classifyWarmRun(events ? attributeFsyncs(m.warm, events) : m.warm, Boolean(tracer), i + 1));
         environmentInvalidRuns += runs.filter((r) => r.class === "environment-invalid").length;

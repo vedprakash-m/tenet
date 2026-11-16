@@ -82,23 +82,22 @@ describe("stall-aware warm runs (Tech Spec 14.1)", () => {
     assert.equal(judgeWarmRuns(of("pass", "pass", "fail", "pass", "environment-invalid")).status, "fail");
     assert.equal(judgeWarmRuns(of("pass", "inconclusive", "fail", "pass", "pass")).status, "inconclusive");
     assert.match(judgeWarmRuns(of("pass", "pass", "pass", "pass", "pass")).observed, /^p95 260 ms \(worst valid run\), runs 5: 5 pass, 0 fail, 0 environment-invalid; stalls 0, max fsync 1 ms$/);
+    const missing = of("pass", "pass").map((r, i) => (i ? { ...r, trace: "missing" as const } : r));
+    assert.match(judgeWarmRuns(missing).observed, /; stalls 0, max fsync 1 ms, fsync trace missing in 1 of 2 runs \(judged on wall time\)$/);
   });
-  it("attributes a traced fsync to the call by process or parent, inside the call's interval only (E9)", () => {
-    // bpftrace's clock is not process.hrtime's; the bench's own marker fsync (PID 50) gives the offset.
+  it("attributes a traced fsync to the call by its process or a direct child, and to nothing once process IDs wrap (E9)", () => {
     const trace = parseTrace([
       "Attached 4 probes",
-      "50 1 500 1000",           // marker: the bench process, made at hrtime 10,500 (offset 10,000)
-      "100 1 1500 2000000",      // the call's own process
-      "200 100 1600 30000000",   // a Git child of the call
-      "100 1 2009000 5000000",   // same PID well after the call ended (reuse)
-      "300 1 1550 7000000",      // another process
+      "100 1 2000000",     // the call's own process
+      "200 100 30000000",  // a Git child of the call
+      "300 1 7000000",     // another process
       "@s[12]: 4",
-    ].join("\n"), { pid: 50, atNs: 10_500n });
-    assert.equal(trace.length, 5);
-    assert.equal(trace[1]!.startNs, 11_500n);
-    const [c] = attributeFsyncs([{ label: "open investigate", ms: 1, exit: 0, pid: 100, startNs: 11_000n, endNs: 12_000n }], trace);
-    assert.deepEqual(c!.fsyncMs, [2, 30]);
-    assert.throws(() => parseTrace("100 1 1500 2000000", { pid: 50, atNs: 1n }), /marker/);
+    ].join("\n"));
+    assert.equal(trace.length, 3);
+    const calls: Call[] = [{ label: "open investigate", ms: 1, exit: 0, pid: 100 }, { label: "status", ms: 1, exit: 0, pid: 150 }];
+    assert.deepEqual(attributeFsyncs(calls, trace).map((c) => c.fsyncMs), [[2, 30], []]);
+    // A lower process ID after a higher one means the IDs wrapped, so a PID may name two processes: nothing is attributed.
+    assert.deepEqual(attributeFsyncs([calls[1]!, calls[0]!], trace).map((c) => c.fsyncMs), [undefined, undefined]);
   });
   it("keeps the threshold, the run count and the cap equal to the Tech Spec text (E13)", () => {
     const ts = readFileSync(join(import.meta.dirname, "../../../specs/tech-spec.md"), "utf8");
@@ -137,7 +136,7 @@ describe("fsync tracing with bpftrace (E12)", () => {
       const stop = callKernel(bundle, repo, "stop pause", ["stop", "pause", "--h", h]);
       calls = [fake, open, decide, stop];
     } finally { tracer.stop(); }
-    assert.equal(tracer.error, undefined);
+    assert.equal(tracer.error, undefined, tracer.diagnostics());
     const events = tracer.events();
     const [fake, open, decide, stop] = attributeFsyncs(calls, events);
     assert.equal(fake!.fsyncMs?.length, 2, `child pid ${fake!.pid}; traced ${events.length} fsyncs from pids ${[...new Set(events.map((e) => `${e.pid}<${e.ppid}`))].slice(0, 12).join(" ")}`);
