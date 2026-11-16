@@ -1,13 +1,16 @@
 // Benchmarks for the PRD §4.4.3 system budgets (NFR-01, AC-19) against the built kernel bundle:
-//   node tools/bench.ts [--fixture small|large|long-history|all] [--bundle <path>] [--json]
+//   node tools/bench.ts [--fixture small|large|long-history|all] [--bundle <path>] [--json] [--fsync-trace]
 //   node tools/bench.ts fixture <name> <dir>      generate one reference fixture and stop
 // Every row of the §4.4.3 table gets a status. A budget this tool cannot measure is listed as such with the reason; it
 // is never given a number. The kernel refuses mutating verbs on win32, so there nothing is observable and the run
 // reports `unobservable` for every measured row (exit 3). Exit 0: no measured row failed; 1: a row failed or was
 // inconclusive; 2: usage. Exit 0 does not establish NFR-01 while any row is not measurable. Not part of CI.
+// The warm row is judged on WARM_RUNS runs (Tech Spec 14.1). With --fsync-trace (Linux, passwordless sudo, bpftrace) the
+// fsync system calls of each kernel process and its direct children are traced from outside the process; a run that misses
+// the budget only because of fsyncs of STALL_THRESHOLD_MS or more is environment-invalid: reported, not judged.
 import { spawnSync, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, lstatSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { closeSync, existsSync, fsyncSync, lstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync, writeSync } from "node:fs";
 import { cpus, platform as osPlatform, release, tmpdir, totalmem } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,8 +19,16 @@ import { FIXTURES, configureRepo, generateFixture, gitEnv } from "./bench-fixtur
 import type { FixtureName, FixtureSpec } from "./bench-fixtures.ts";
 
 export type Status = "pass" | "fail" | "inconclusive" | "not-measurable" | "unobservable" | "delegated";
-export interface Row { id: string; prd: string; target: string; status: Status; fixture?: string; observed?: string; detail: string }
-export interface Call { label: string; ms: number; exit: number | null; reason?: string }
+export interface Row { id: string; prd: string; target: string; status: Status; fixture?: string; observed?: string; detail: string; stallThresholdMs?: number; trace?: Trace; runs?: WarmRun[] }
+/** `fsyncMs`: durations of the traced fsyncs attributed to this call; absent when not traced. */
+export interface Call { label: string; ms: number; exit: number | null; reason?: string; pid?: number; startNs?: bigint; endNs?: bigint; fsyncMs?: number[] }
+export type Trace = "ok" | "missing" | "off";
+export interface FsyncStats { count: number; totalMs: number; p50Ms: number; p99Ms: number; maxMs: number; stalls: number; excessMs: number }
+export interface WarmRun { run: number; class: "pass" | "fail" | "inconclusive" | "environment-invalid"; trace: Trace; n: number; p95Ms: number; adjustedP95Ms: number; maxMs: number; fsync?: FsyncStats; observed?: string; detail?: string }
+export interface TraceEvent { pid: number; ppid: number; startNs: bigint; durMs: number }
+
+/** Tech Spec 14.1; a test keeps these equal to its text. */
+export const STALL_THRESHOLD_MS = 20, WARM_RUNS = 5, MAX_INVALID_RUNS = 2;
 
 /** `prd` is the start of the §4.4.3 row's first column; tests compare these against the PRD table. */
 export const BUDGETS: Array<{ id: string; prd: string; target: string; fixed?: { status: Status; detail: string } }> = [
@@ -51,13 +62,117 @@ const kernelEnv = (): NodeJS.ProcessEnv => { const env = gitEnv(); delete env.NO
 
 /** One kernel process, timed as the host would see it: spawn, Node start and the call itself. */
 export function callKernel(bundle: string, cwd: string, label: string, argv: string[], body?: object): Call & { response?: { handle?: string } } {
-  const t = performance.now();
+  const startNs = process.hrtime.bigint(), t = performance.now();
   const r = spawnSync(process.execPath, [bundle, ...argv], { cwd, env: kernelEnv(), input: body ? JSON.stringify(body) : "", encoding: "utf8", timeout: 120_000, maxBuffer: 1 << 26 });
-  const ms = performance.now() - t;
+  const ms = performance.now() - t, at = { pid: r.pid, startNs, endNs: process.hrtime.bigint() };
   try {
     const response = JSON.parse(r.stdout) as { exit: number; handle?: string; reasons?: Array<{ code: string }> };
-    return { label, ms, exit: response.exit, reason: response.reasons?.[0]?.code, response };
-  } catch { return { label, ms, exit: null, reason: (r.stderr || "no JSON on stdout").slice(0, 80) }; }
+    return { label, ms, exit: response.exit, reason: response.reasons?.[0]?.code, response, ...at };
+  } catch { return { label, ms, exit: null, reason: (r.stderr || "no JSON on stdout").slice(0, 80), ...at }; }
+}
+
+const r1 = (x: number): number => Math.round(x * 10) / 10;
+const sum = (xs: number[]): number => xs.reduce((a, b) => a + b, 0);
+
+/** bpftrace lines "pid ppid start duration" (ns, bpftrace's own clock). The benchmark's marker fsync, made at hrtime `atNs`,
+ *  maps that clock onto process.hrtime. Other lines (the attach message, maps printed at exit) are ignored. */
+export function parseTrace(text: string, marker: { pid: number; atNs: bigint }): TraceEvent[] {
+  const raw = text.split(/\r?\n/).map((l) => /^(\d+) (\d+) (\d+) (\d+)$/.exec(l.trim())).filter((m) => m !== null)
+    .map((m) => ({ pid: Number(m[1]), ppid: Number(m[2]), start: BigInt(m[3]!), durMs: Number(m[4]) / 1e6 }));
+  const mark = raw.find((e) => e.pid === marker.pid);
+  if (!mark) throw new Error("the trace holds no marker fsync from the benchmark process, so its clock cannot be aligned");
+  const offset = marker.atNs - mark.start;
+  return raw.map((e) => ({ pid: e.pid, ppid: e.ppid, startNs: e.start + offset, durMs: e.durMs }));
+}
+
+/** An fsync belongs to a call when the call's process or a direct child of it made it while the call ran. */
+export function attributeFsyncs(calls: Call[], events: TraceEvent[], slackNs = 1_000_000n): Call[] {
+  return calls.map((c) => {
+    const { pid, startNs, endNs } = c;
+    if (pid === undefined || startNs === undefined || endNs === undefined) return { ...c, fsyncMs: [] };
+    return { ...c, fsyncMs: events.filter((e) => (e.pid === pid || e.ppid === pid) && e.startNs >= startNs - slackNs && e.startNs <= endNs + slackNs).map((e) => e.durMs) };
+  });
+}
+
+const mutating = (c: Call): boolean => /^(open|decide|stop)\b/.test(c.label);
+
+/** One warm run (Tech Spec 14.1). Removing only f - T from a stalled fsync of f ms keeps the adjusted time an upper bound for
+ *  the call without the stall; the adjusted p95 only decides the class and is never reported as the latency. */
+export function classifyWarmRun(calls: Call[], traced: boolean, run = 1): WarmRun {
+  const judged = judgeLatency(calls, [0], 300);
+  const ms = calls.map((c) => c.ms);
+  const trace: Trace = !traced ? "off" : calls.some((c) => c.fsyncMs === undefined || (mutating(c) && c.exit === 0 && !c.fsyncMs.length)) ? "missing" : "ok";
+  const excess = (c: Call) => sum((c.fsyncMs ?? []).filter((f) => f >= STALL_THRESHOLD_MS).map((f) => f - STALL_THRESHOLD_MS));
+  const all = calls.flatMap((c) => c.fsyncMs ?? []);
+  const fsync: FsyncStats | undefined = trace === "off" ? undefined : {
+    count: all.length, totalMs: r1(sum(all)), p50Ms: all.length ? r1(percentile(all, 50)) : 0, p99Ms: all.length ? r1(percentile(all, 99)) : 0,
+    maxMs: all.length ? r1(Math.max(...all)) : 0, stalls: all.filter((f) => f >= STALL_THRESHOLD_MS).length, excessMs: r1(sum(calls.map(excess))),
+  };
+  const p95 = calls.length ? percentile(ms, 95) : 0;
+  const adjusted = trace === "ok" && calls.length ? percentile(calls.map((c) => c.ms - excess(c)), 95) : p95;
+  const cls: WarmRun["class"] = judged.status === "inconclusive" ? "inconclusive" : p95 <= 300 ? "pass"
+    : trace === "ok" && fsync!.stalls > 0 && adjusted <= 300 ? "environment-invalid" : "fail";
+  return {
+    run, class: cls, trace, n: calls.length, p95Ms: r1(p95), adjustedP95Ms: r1(adjusted), maxMs: calls.length ? r1(Math.max(...ms)) : 0,
+    ...(fsync ? { fsync } : {}), ...(cls === "inconclusive" ? { observed: judged.observed, detail: judged.detail } : {}),
+  };
+}
+
+/** A fixture's warm row: every valid run must pass, and more than `cap` environment-invalid runs leave it unestablished. */
+export function judgeWarmRuns(runs: WarmRun[], cap = MAX_INVALID_RUNS): { status: Status; observed: string; detail: string } {
+  const first = runs.find((r) => r.class === "inconclusive");
+  if (first) return { status: "inconclusive", observed: `run ${first.run}: ${first.observed}`, detail: first.detail ?? "" };
+  const n = (k: WarmRun["class"]) => runs.filter((r) => r.class === k).length;
+  const invalid = n("environment-invalid"), stats = runs.flatMap((r) => (r.fsync ? [r.fsync] : []));
+  const counts = `runs ${runs.length}: ${n("pass")} pass, ${n("fail")} fail, ${invalid} environment-invalid`;
+  const stalls = stats.length ? `stalls ${sum(stats.map((s) => s.stalls))}, max fsync ${Math.max(...stats.map((s) => s.maxMs)).toFixed(0)} ms` : "fsync not traced";
+  const valid = runs.filter((r) => r.class === "pass" || r.class === "fail");
+  if (invalid > cap || !valid.length) return { status: "inconclusive", observed: `${counts} (cap ${cap}); ${stalls}`,
+    detail: `More than ${cap} of ${runs.length} runs missed the budget only because of storage or scheduling stalls; the budget is not established by this measurement.` };
+  return { status: n("fail") ? "fail" : "pass", observed: `p95 ${Math.max(...valid.map((r) => r.p95Ms)).toFixed(0)} ms (worst valid run), ${counts}; ${stalls}`,
+    detail: "Each run on a freshly generated fixture, pooled over open, decide, inspect status and stop; check and finish are not timed. Environment-invalid runs are listed and not judged (Tech Spec 14.1)." };
+}
+
+export interface FsyncTracer { stop(): void; events(): TraceEvent[]; error?: string }
+const sleep = (ms: number) => { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); };
+const BPF = [
+  "tracepoint:syscalls:sys_enter_fsync, tracepoint:syscalls:sys_enter_fdatasync { @s[tid] = nsecs; }",
+  "tracepoint:syscalls:sys_exit_fsync, tracepoint:syscalls:sys_exit_fdatasync /@s[tid]/ {",
+  '  printf("%d %d %d %d\\n", pid, curtask->real_parent->tgid, @s[tid], nsecs - @s[tid]); delete(@s, tid);',
+  "}",
+  "END { clear(@s); }",
+  "",
+].join("\n");
+
+/** Starts bpftrace under passwordless sudo, waits until it has attached, then makes one marker fsync to align its clock. */
+export function startFsyncTracer(dir: string): FsyncTracer {
+  const out = join(dir, "fsync.trace"), log = join(dir, "fsync.log"), prog = join(dir, "fsync.bt");
+  writeFileSync(prog, BPF);
+  let list: TraceEvent[] = [];
+  const tracer: FsyncTracer = { events: () => list, stop: () => {} };
+  const started = spawnSync("sh", ["-c", 'sudo -n bpftrace -o "$1" "$2" < /dev/null > "$3" 2>&1 & echo $!', "sh", out, prog, log], { encoding: "utf8" });
+  const pid = Number(started.stdout?.trim());
+  const text = (p: string) => (existsSync(p) ? readFileSync(p, "utf8") : "");
+  const alive = () => pid > 0 && existsSync(`/proc/${pid}`);
+  const attached = () => /Attached/.test(text(log) + text(out));
+  for (let i = 0; i < 600 && alive() && !attached(); i++) sleep(100);
+  if (!attached()) {
+    tracer.error = `bpftrace did not attach: ${`${started.stderr ?? ""}${text(log)}`.trim().slice(0, 300) || "no output"}`;
+    if (alive()) spawnSync("sudo", ["-n", "pkill", "-INT", "-f", `^bpftrace -o ${out}`]);
+    return tracer;
+  }
+  const fd = openSync(join(dir, "marker"), "w");
+  writeSync(fd, "m");
+  const atNs = process.hrtime.bigint();
+  fsyncSync(fd);
+  closeSync(fd);
+  tracer.stop = () => {
+    spawnSync("sudo", ["-n", "pkill", "-INT", "-f", `^bpftrace -o ${out}`]);
+    for (let i = 0; i < 300 && alive(); i++) sleep(100);
+    if (alive()) { tracer.error = "bpftrace did not exit within 30 s of SIGINT"; return; }
+    try { list = parseTrace(text(out), { pid: process.pid, atNs }); } catch (e) { tracer.error = (e as Error).message; }
+  };
+  return tracer;
 }
 
 export const dirSize = (dir: string): number => readdirSync(dir, { withFileTypes: true }).reduce((sum, e) => {
@@ -100,22 +215,27 @@ export function measureFixture(bundle: string, name: string, spec: FixtureSpec, 
   return { cold, warm, resume, storageBytes: tenetSize(source) };
 }
 
-export function measuredRows(name: string, m: Measured): Row[] {
+/** `warmRuns`, when given, replaces the single-run warm judgment with the Tech Spec 14.1 judgment over every run. */
+export function measuredRows(name: string, m: Measured, warmRuns?: WarmRun[]): Row[] {
   const row = (id: string, status: Status, observed: string, detail: string): Row => {
     const b = BUDGETS.find((x) => x.id === id)!;
     return { id, prd: b.prd, target: b.target, status, fixture: name, observed, detail };
   };
   const warm = judgeLatency(m.warm, [0], 300), cold = judgeLatency(m.cold, [0], 1000);
   const resumeMs = m.resume.reduce((s, c) => s + c.ms, 0), resumeOk = m.resume.every((c) => c.exit !== null && [0, 3].includes(c.exit));
+  const runs = warmRuns && judgeWarmRuns(warmRuns);
+  const trace: Trace | undefined = warmRuns && (warmRuns.every((r) => r.trace === "off") ? "off" : warmRuns.every((r) => r.trace === "ok") ? "ok" : "missing");
   return [
-    row("bookkeeping-warm", warm.status, warm.observed, warm.detail || "Pooled over open, decide, inspect status and stop; check and finish are not timed (see notes)."),
+    runs ? { ...row("bookkeeping-warm", runs.status, runs.observed, runs.detail), stallThresholdMs: STALL_THRESHOLD_MS, trace, runs: warmRuns }
+      : row("bookkeeping-warm", warm.status, warm.observed, warm.detail || "Pooled over open, decide, inspect status and stop; check and finish are not timed (see notes)."),
     row("bookkeeping-cold", cold.status, cold.observed, cold.detail || "First kernel call in a fresh clone; the OS file cache is not dropped, so a true cold start is unobserved."),
     row("tenet-storage", m.storageBytes === null ? "inconclusive" : m.storageBytes <= 50 * MB ? "pass" : "fail", m.storageBytes === null ? "no .tenet/ directory" : `${(m.storageBytes / MB).toFixed(2)} MB`, "Size after this workload only; whether growth stays under the cap depends on eviction, which is not built."),
     row("resume", resumeOk ? (resumeMs <= 120_000 ? "pass" : "fail") : "inconclusive", `${resumeMs.toFixed(0)} ms`, "Kernel side only: `open --resume` and the first status. Host re-orientation and an abrupt-kill resume are unobserved."),
   ];
 }
 
-export interface Report { platform: string; environment: Record<string, unknown>; rows: Row[]; summary: Record<Status, number>; exit: 0 | 1 | 3 }
+/** `environmentInvalidRuns` counts warm runs across fixtures; it is not a row status, so it sits outside `summary`. */
+export interface Report { platform: string; environment: Record<string, unknown>; rows: Row[]; summary: Record<Status, number>; environmentInvalidRuns: number; fsyncTrace: string; exit: 0 | 1 | 3 }
 
 function bundleInfo(path: string): Record<string, unknown> {
   try { const b = readFileSync(path); return { path, bytes: b.length, sha256: createHash("sha256").update(b).digest("hex") }; }
@@ -129,34 +249,62 @@ const environment = (bundle: string): Record<string, unknown> => ({
   referenceHardware: "not defined (PRD 4.4.3 names none); results are for this machine only",
 });
 
-export function runBench(opts: { bundle: string; fixtures: FixtureName[]; platform?: string }): Report {
+/** Every fixture is measured `runs` times (Tech Spec 14.1), each on a freshly generated fixture; only the warm row uses
+ *  every run, the other rows come from run 1. With `trace`, bpftrace runs for the whole measurement. */
+export function runBench(opts: { bundle: string; fixtures: FixtureName[]; platform?: string; runs?: number; trace?: boolean; specs?: Partial<Record<FixtureName, FixtureSpec>> }): Report {
   const platform = opts.platform ?? process.platform;
   const rows: Row[] = [];
   const unobservable = platform === "win32";
   const scratch = unobservable ? "" : mkdtempSync(join(tmpdir(), "tenet-nfr01-"));
+  let fsyncTrace = "off", environmentInvalidRuns = 0;
   try {
     for (const b of BUDGETS) {
       if (b.fixed) rows.push({ id: b.id, prd: b.prd, target: b.target, ...b.fixed });
       else if (unobservable) for (const name of opts.fixtures) rows.push({ id: b.id, prd: b.prd, target: b.target, status: "unobservable", fixture: name, detail: "The kernel refuses mutating verbs on win32 (capability-missing), so these calls cannot be made here." });
     }
-    if (!unobservable) for (const name of opts.fixtures) rows.push(...measuredRows(name, measureFixture(opts.bundle, name, FIXTURES[name], scratch)));
+    if (!unobservable) {
+      const tracer = opts.trace ? startFsyncTracer(scratch) : undefined;
+      const measured: Array<[FixtureName, Measured[]]> = [];
+      try {
+        for (const name of opts.fixtures) {
+          const list: Measured[] = [];
+          for (let i = 1; i <= (opts.runs ?? WARM_RUNS); i++) {
+            const dir = join(scratch, `${name}-run-${i}`);
+            mkdirSync(dir);
+            list.push(measureFixture(opts.bundle, name, opts.specs?.[name] ?? FIXTURES[name], dir));
+            rmSync(dir, { recursive: true, force: true });
+          }
+          measured.push([name, list]);
+        }
+      } finally { tracer?.stop(); }
+      if (tracer) fsyncTrace = tracer.error ? `missing: ${tracer.error}` : "ok";
+      const events = tracer && !tracer.error ? tracer.events() : undefined;
+      for (const [name, list] of measured) {
+        const runs = list.map((m, i) => classifyWarmRun(events ? attributeFsyncs(m.warm, events) : m.warm, Boolean(tracer), i + 1));
+        environmentInvalidRuns += runs.filter((r) => r.class === "environment-invalid").length;
+        rows.push(...measuredRows(name, list[0]!, runs));
+      }
+    }
   } finally { if (scratch) rmSync(scratch, { recursive: true, force: true }); }
   const summary = { pass: 0, fail: 0, inconclusive: 0, "not-measurable": 0, unobservable: 0, delegated: 0 } as Record<Status, number>;
   for (const r of rows) summary[r.status]++;
   const exit = unobservable ? 3 : summary.fail || summary.inconclusive ? 1 : 0;
-  return { platform, environment: environment(opts.bundle), rows, summary, exit };
+  return { platform, environment: environment(opts.bundle), rows, summary, environmentInvalidRuns, fsyncTrace, exit };
 }
 
+const runLine = (r: WarmRun): string => `${" ".repeat(15)}run ${r.run} ${r.class.padEnd(20)} p95 ${r.p95Ms.toFixed(0)} ms, adjusted ${r.adjustedP95Ms.toFixed(0)} ms, max ${r.maxMs.toFixed(0)} ms, n=${r.n}; `
+  + (r.fsync ? `fsync ${r.fsync.count}, p50 ${r.fsync.p50Ms} ms, p99 ${r.fsync.p99Ms} ms, max ${r.fsync.maxMs} ms, stalls ${r.fsync.stalls}, trace ${r.trace}` : `trace ${r.trace}`);
+
 export function render(report: Report): string {
-  const lines = report.rows.map((r) => `${r.status.padEnd(14)} ${r.id.padEnd(17)} ${(r.fixture ?? "-").padEnd(13)} ${r.target.padEnd(38)} ${r.observed ?? ""}\n${" ".repeat(15)}${r.detail}`);
+  const lines = report.rows.map((r) => [`${r.status.padEnd(14)} ${r.id.padEnd(17)} ${(r.fixture ?? "-").padEnd(13)} ${r.target.padEnd(38)} ${r.observed ?? ""}`, `${" ".repeat(15)}${r.detail}`, ...(r.runs ?? []).map(runLine)].join("\n"));
   const s = report.summary;
-  return [`environment: ${JSON.stringify(report.environment)}`, ...lines,
-    `rows: ${Object.entries(s).map(([k, v]) => `${v} ${k}`).join(", ")}`,
+  return [`environment: ${JSON.stringify(report.environment)}`, `fsync trace: ${report.fsyncTrace}`, ...lines,
+    `rows: ${Object.entries(s).map(([k, v]) => `${v} ${k}`).join(", ")}; environment-invalid warm runs: ${report.environmentInvalidRuns} (listed above, not judged)`,
     s["not-measurable"] || s.unobservable ? "NFR-01 is not established by this run: some budgets were not measurable or not observable." : "All measurable rows passed."].join("\n");
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const { values, positionals } = parseArgs({ allowPositionals: true, options: { fixture: { type: "string", default: "all" }, bundle: { type: "string" }, json: { type: "boolean", default: false } } });
+  const { values, positionals } = parseArgs({ allowPositionals: true, options: { fixture: { type: "string", default: "all" }, bundle: { type: "string" }, json: { type: "boolean", default: false }, "fsync-trace": { type: "boolean", default: false } } });
   const names = Object.keys(FIXTURES) as FixtureName[];
   if (positionals[0] === "fixture") {
     const name = positionals[1] as FixtureName, dir = positionals[2];
@@ -167,7 +315,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     const bundle = values.bundle ?? process.env.TENET_TEST_BUNDLE ?? join(import.meta.dirname, "../plugin/kernel/tenet.mjs");
     if (!fixtures.length) { console.error(`unknown fixture "${values.fixture}"; use ${names.join(", ")} or all`); process.exit(2); }
     if (process.platform !== "win32" && bundleInfo(bundle).missing) { console.error(`no bundle at ${bundle}; run npm run build`); process.exit(2); }
-    const report = runBench({ bundle, fixtures });
+    const report = runBench({ bundle, fixtures, trace: values["fsync-trace"] });
     console.log(values.json ? JSON.stringify(report, null, 2) : render(report));
     process.exit(report.exit);
   }
