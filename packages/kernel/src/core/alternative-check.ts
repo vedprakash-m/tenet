@@ -90,6 +90,7 @@ function buildCoverageState() {
       value.split(/[\\/]/).every((part) => part && part !== "." && part !== ".."),
     "coverage path must stay relative to the recipe",
   );
+  const workId = z.string().regex(/^(?:W-\d+|wk_[a-z2-7]{10})$/).max(32);
   const check = z.strictObject({
     tool: z.enum(["vitest", "playwright"]), config: relativePath, file: relativePath,
     tag: z.string().regex(/^COV-[a-z0-9-]{1,48}$/), support: z.array(relativePath).max(1000),
@@ -102,18 +103,18 @@ function buildCoverageState() {
     primary: check, alternative: check,
   });
   const binding = z.strictObject({
-    work: z.string().regex(/^W-\d+$/).max(32),
+    work: workId,
     basisHash: hash, mappingId: id, mappingHash: hash, reviewHash: hash, boundAt: z.string().max(64),
   });
   const flaky = z.strictObject({
-    work: z.string().regex(/^W-\d+$/).max(32),
+    work: workId,
     obligation: z.string().regex(/^OB-[A-Za-z0-9._-]{1,64}$/),
     basisHash: hash, checkInput: z.string().regex(/^[a-f0-9]{24}$/),
     receipt: z.string().max(120), run: z.string().max(120),
     publication: z.number().int().positive(), firstFailedAt: z.string().max(64), historyHash: hash,
   });
   const result = z.strictObject({
-    role: z.enum(["primary", "alternative"]), work: z.string().regex(/^W-\d+$/).max(32),
+    role: z.enum(["primary", "alternative"]), work: workId,
     obligation: z.string().regex(/^OB-[A-Za-z0-9._-]{1,64}$/), basisHash: hash,
     checkInput: z.string().regex(/^[a-f0-9]{24}$/), mappingHash: hash, reviewHash: hash, checkHash: hash,
     receipt: z.string().max(120), run: z.string().max(120),

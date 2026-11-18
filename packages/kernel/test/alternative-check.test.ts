@@ -80,6 +80,15 @@ describe("recipe coverage state [AC-27]", () => {
     assert.equal(Object.values(readCoverageState(recorded.state).results)[0]!.attempt, 1);
   });
 
+  it("accepts generated production work IDs in coverage bindings", () => {
+    const mapping = record("signed-out-session", "a");
+    const state = bindRecipeCoverage(
+      installRecipeCoverage(emptyState("workspace", "tag"), [mapping]),
+      "wk_2kzhz7aovw", hash("f"), "2026-11-18T00:00:00Z",
+    );
+    assert.ok(readCoverageState(state).bindings["wk_2kzhz7aovw\u001fsigned-out-session"]);
+  });
+
   it("preserves unrelated extensions and binds exact mapping evidence to the accepted basis", () => {
     const state = { ...emptyState("workspace", "tag"), _ext: { unrelated: { keep: true } } };
     const installed = installRecipeCoverage(state, [record("signed-out-session", "a")]);
