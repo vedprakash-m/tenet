@@ -45,11 +45,11 @@ describe("untrusted validation keeps its trust boundary [ENG-10]", () => {
 
   it("has preflight, source, built-UAT, Windows and exact aggregate jobs", () => {
     const names = Object.keys(untrusted.doc.jobs);
-    for (const job of ["preflight", "source", "bundle-payload", "bundle-uat", "windows-portability", "windows-minimum", "tenet-validation"])
+    for (const job of ["preflight", "source", "bundle-producer", "bundle-payload", "bundle-uat", "windows-portability", "windows-minimum", "tenet-validation"])
       assert.ok(names.includes(job), job);
     const aggregate = untrusted.doc.jobs["tenet-validation"];
     assert.equal(aggregate.if, "always()");
-    assert.deepEqual(aggregate.needs, ["preflight", "source", "bundle-payload", "bundle-uat", "windows-portability", "windows-minimum"]);
+    assert.deepEqual(aggregate.needs, ["preflight", "source", "bundle-producer", "bundle-payload", "bundle-uat", "windows-portability", "windows-minimum"]);
     const aggregateRuns = commands("tenet-validation").join("\n");
     assert.match(aggregateRuns, /test "\$SOURCE" = success/);
     assert.match(aggregateRuns, /test "\$BUNDLE_PAYLOAD" = success/);
@@ -57,6 +57,7 @@ describe("untrusted validation keeps its trust boundary [ENG-10]", () => {
     assert.match(aggregateRuns, /test "\$WINDOWS" = success/);
     assert.match(aggregateRuns, /test "\$WINDOWS_MINIMUM" = success/);
     assert.match(aggregateRuns, /tools\/uat\/verify-groups\.mjs/);
+    assert.match(aggregateRuns, /cmp .*tenet\.mjs/);
     assert.match(aggregateRuns, /verify-execution\.ts --lane source/);
     assert.ok(aggregate.steps.some((step: { with?: { pattern?: string } }) => step.with?.pattern === "source-*"));
   });
@@ -72,7 +73,7 @@ describe("untrusted validation keeps its trust boundary [ENG-10]", () => {
   it("runs source once per POSIX OS with locked Chromium and complete structured evidence", () => {
     assert.deepEqual(untrusted.doc.jobs.source.strategy.matrix.os, ["ubuntu-latest", "macos-latest"]);
     assert.deepEqual(untrusted.doc.jobs.source.strategy.matrix.shard.map((item: { value: string }) => item.value),
-      ["1/4", "2/4", "3/4", "4/4"]);
+      ["1/2", "2/2"]);
     const runs = commands("source").join("\n");
     assert.match(runs, /tools\/test-runner\.ts --lane source --concurrency=4 --shard/);
     assert.match(runs, /tools\/verify-execution\.ts --partial --lane source/);
@@ -95,6 +96,15 @@ describe("untrusted validation keeps its trust boundary [ENG-10]", () => {
     assert.equal(runs.filter((command) => command.includes("verify-smoke.mjs")).length, 2);
     assert.ok(runs.some((command) => command.includes("TENET_LEGACY_CAPTURE_DIR") &&
       command.includes("tools/protocol-legacy-capture.mjs")));
+  });
+
+  it("starts UAT from a checked shared payload while native builds prove identical bytes", () => {
+    assert.deepEqual(untrusted.doc.jobs["bundle-uat"].needs, ["bundle-producer"]);
+    const runs = commands("bundle-producer");
+    assert.ok(runs.includes("npm run build"));
+    assert.ok(runs.includes("npm run verify:payload"));
+    assert.ok(untrusted.doc.jobs["bundle-uat"].steps.some(
+      (step: { with?: { name?: string } }) => step.with?.name === "bundle-payload-shared"));
   });
 
   it("partitions the protected UAT population into exact independent groups", () => {

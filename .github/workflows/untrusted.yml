@@ -54,13 +54,9 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         shard:
           - id: "1"
-            value: "1/4"
+            value: "1/2"
           - id: "2"
-            value: "2/4"
-          - id: "3"
-            value: "3/4"
-          - id: "4"
-            value: "4/4"
+            value: "2/2"
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -91,6 +87,32 @@ jobs:
             ${{ runner.temp }}/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json
             ${{ runner.temp }}/execution-source-${{ matrix.os }}-${{ matrix.shard.id }}.json
           if-no-files-found: warn
+          retention-days: 14
+
+  bundle-producer:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit
+      - run: npm run build
+      - run: npm run verify:payload
+      - name: Shared bundle smoke
+        run: npm run --silent uat:smoke > "$RUNNER_TEMP/uat-shared-smoke.json"
+      - name: Verify shared bundle smoke
+        run: node --experimental-strip-types tools/uat/verify-smoke.mjs "$RUNNER_TEMP/uat-shared-smoke.json" plugin/kernel/tenet.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bundle-payload-shared
+          path: plugin/kernel/tenet.mjs
+          if-no-files-found: error
           retention-days: 14
 
   bundle-payload:
@@ -171,7 +193,7 @@ jobs:
           retention-days: 14
 
   bundle-uat:
-    needs: bundle-payload
+    needs: [bundle-producer]
     strategy:
       fail-fast: false
       matrix:
@@ -198,7 +220,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: bundle-payload-${{ matrix.os }}
+          name: bundle-payload-shared
           path: ${{ github.workspace }}/plugin/kernel
       - name: Install locked Chromium for the starter group
         if: matrix.group.id == 'starter'
@@ -313,7 +335,7 @@ jobs:
 
   tenet-validation:
     name: Tenet validation
-    needs: [preflight, source, bundle-payload, bundle-uat, windows-portability, windows-minimum]
+    needs: [preflight, source, bundle-producer, bundle-payload, bundle-uat, windows-portability, windows-minimum]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -336,18 +358,25 @@ jobs:
           pattern: uat-*
           merge-multiple: true
           path: ${{ runner.temp }}/uat-reports
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.bundle-producer.result == 'success' && needs.bundle-payload.result == 'success'
+        with:
+          pattern: bundle-payload-*
+          path: ${{ runner.temp }}/bundle-reports
       - name: Require every lane
         env:
           PREFLIGHT: ${{ needs.preflight.result }}
           SOURCE: ${{ needs.source.result }}
+          BUNDLE_PRODUCER: ${{ needs.bundle-producer.result }}
           BUNDLE_PAYLOAD: ${{ needs.bundle-payload.result }}
           BUNDLE_UAT: ${{ needs.bundle-uat.result }}
           WINDOWS: ${{ needs.windows-portability.result }}
           WINDOWS_MINIMUM: ${{ needs.windows-minimum.result }}
         run: |
-          printf 'preflight=%s source=%s bundle-payload=%s bundle-uat=%s windows=%s windows-minimum=%s\n' "$PREFLIGHT" "$SOURCE" "$BUNDLE_PAYLOAD" "$BUNDLE_UAT" "$WINDOWS" "$WINDOWS_MINIMUM"
+          printf 'preflight=%s source=%s bundle-producer=%s bundle-payload=%s bundle-uat=%s windows=%s windows-minimum=%s\n' "$PREFLIGHT" "$SOURCE" "$BUNDLE_PRODUCER" "$BUNDLE_PAYLOAD" "$BUNDLE_UAT" "$WINDOWS" "$WINDOWS_MINIMUM"
           test "$PREFLIGHT" = success
           test "$SOURCE" = success
+          test "$BUNDLE_PRODUCER" = success
           test "$BUNDLE_PAYLOAD" = success
           test "$BUNDLE_UAT" = success
           test "$WINDOWS" = success
@@ -357,4 +386,6 @@ jobs:
           test -n "$ubuntu" && test -n "$macos"
           node --experimental-strip-types tools/verify-execution.ts --lane source --reports "$ubuntu" --output "$RUNNER_TEMP/execution-ubuntu.json"
           node --experimental-strip-types tools/verify-execution.ts --lane source --reports "$macos" --output "$RUNNER_TEMP/execution-macos.json"
-          node tools/uat/verify-groups.mjs "$RUNNER_TEMP/uat-reports"
+          cmp "$RUNNER_TEMP/bundle-reports/bundle-payload-shared/tenet.mjs" "$RUNNER_TEMP/bundle-reports/bundle-payload-ubuntu-latest/tenet.mjs"
+          cmp "$RUNNER_TEMP/bundle-reports/bundle-payload-shared/tenet.mjs" "$RUNNER_TEMP/bundle-reports/bundle-payload-macos-latest/tenet.mjs"
+          node tools/uat/verify-groups.mjs "$RUNNER_TEMP/uat-reports" "$RUNNER_TEMP/bundle-reports/bundle-payload-shared/tenet.mjs"
