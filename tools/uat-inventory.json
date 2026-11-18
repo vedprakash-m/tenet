@@ -1,7 +1,17 @@
 {
-  "version": 1,
+  "version": 2,
   "observations": 157,
   "discriminatorsSha256": "e299aece7bd9f13abb6179dcb5c6356726e377d2cc94a8b8d2d3ed954039d63c",
+  "groups": [
+    { "id": "core", "start": 1, "end": 23, "observations": 23 },
+    { "id": "effects", "start": 24, "end": 52, "observations": 29 },
+    { "id": "starter", "start": 53, "end": 56, "observations": 4 },
+    { "id": "metadata", "start": 57, "end": 78, "observations": 22 },
+    { "id": "workflow", "start": 79, "end": 92, "observations": 14 },
+    { "id": "accounting", "start": 93, "end": 124, "observations": 32 },
+    { "id": "git-process", "start": 125, "end": 138, "observations": 14 },
+    { "id": "admission", "start": 139, "end": 157, "observations": 19 }
+  ],
   "cases": [
     {
       "id": "uat-001-ddfd82458629",

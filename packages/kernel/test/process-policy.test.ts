@@ -65,7 +65,8 @@ describe("release process", () => {
     const text = read(".github/workflows/system-budgets.yml");
     const workflow = parse(text);
     const commands = Object.values<{ steps: { run?: string }[] }>(workflow.jobs).flatMap(job => job.steps.map(step => step.run));
-    assert.ok(commands.includes("node tools/bench.ts --fixture all --json --fsync-trace > system-budgets.json"));
+    assert.deepEqual(workflow.jobs["frozen-fixtures"].strategy.matrix.fixture, ["small", "large", "long-history"]);
+    assert.ok(commands.includes('node tools/bench.ts --fixture "${{ matrix.fixture }}" --json --fsync-trace > "system-budgets-${{ matrix.fixture }}.json"'));
     assert.ok(commands.includes('node --test --test-name-pattern "fsync tracing" packages/kernel/test/bench.test.ts'));
     assert.match(text, /TENET_FSYNC_TRACE_REQUIRED: "1"/);
     assert.ok(commands.includes('node tools/starter-memory.ts "$RUNNER_TEMP/tenet-memory" > starter-memory.json'));

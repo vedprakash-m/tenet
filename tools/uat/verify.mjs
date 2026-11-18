@@ -5,11 +5,17 @@ import { resolve } from "node:path";
 
 const input = process.argv[2];
 const bundlePath = process.argv[3];
-if (!input || !bundlePath) throw new Error("usage: node tools/uat/verify.mjs <uat-report.json> <bundle>");
+const groupFlag = process.argv.find((arg) => arg.startsWith("--group="));
+const requestedGroup = groupFlag?.slice("--group=".length);
+if (!input || !bundlePath) throw new Error("usage: node tools/uat/verify.mjs <uat-report.json> <bundle> [--group=<id>]");
 const report = JSON.parse(readFileSync(resolve(input), "utf8"));
 const inventory = JSON.parse(readFileSync(resolve("tools/uat-inventory.json"), "utf8"));
+const group = requestedGroup ? inventory.groups.find((item) => item.id === requestedGroup) : undefined;
+assert.ok(!requestedGroup || group, `unknown UAT group: ${requestedGroup}`);
+assert.equal(report.group, requestedGroup ?? "all", "UAT group mismatch");
+const expectedCases = group ? inventory.cases.slice(group.start - 1, group.end) : inventory.cases;
 assert.equal(report.runtime, process.env.ACTUAL_NODE ?? process.version, "UAT runtime mismatch");
-assert.equal(report.observations?.length, inventory.observations, "complete UAT population");
+assert.equal(report.observations?.length, expectedCases.length, "UAT group population");
 const variants = report.observations.map((item) => JSON.stringify([item.scenario, item.point ?? "", item.mode ?? "", item.kind ?? "", item.version ?? ""]));
 assert.equal(new Set(variants).size, variants.length, "UAT scenario variants must be unique");
 for (const item of report.observations) {
@@ -38,12 +44,23 @@ const canonical = report.observations.map((item) => JSON.stringify({
   completed: item.completed ?? null,
   version: item.version ?? null,
 })).join("\n");
-assert.equal(createHash("sha256").update(canonical).digest("hex"), inventory.discriminatorsSha256,
-  "UAT population differs from the protected baseline");
+const discriminator = (item) => JSON.stringify({
+  scenario: item.scenario,
+  point: item.point ?? null,
+  mode: item.mode ?? null,
+  kind: item.kind ?? null,
+  effect: item.effect ?? null,
+  completed: item.completed ?? null,
+  version: item.version ?? null,
+});
+assert.equal(canonical, expectedCases.map(discriminator).join("\n"), "UAT population differs from the protected baseline");
+if (!group) assert.equal(createHash("sha256").update(canonical).digest("hex"), inventory.discriminatorsSha256,
+  "complete UAT population digest differs from the protected baseline");
 for (const [index, item] of report.observations.entries()) {
+  const canonicalIndex = (group?.start ?? 1) - 1 + index;
   const identity = JSON.stringify(item, Object.keys(item).filter((key) => key !== "id").sort());
-  const expected = `uat-${String(index + 1).padStart(3, "0")}-${createHash("sha256").update(identity).digest("hex").slice(0, 12)}`;
+  const expected = `uat-${String(canonicalIndex + 1).padStart(3, "0")}-${createHash("sha256").update(identity).digest("hex").slice(0, 12)}`;
   assert.equal(item.id, expected, "UAT case ID does not bind its observation");
-  assert.equal(item.id, inventory.cases[index]?.id, "UAT case differs from the protected inventory");
+  assert.equal(item.id, inventory.cases[canonicalIndex]?.id, "UAT case differs from the protected inventory");
 }
-console.log(`UAT: ${report.observations.length} unique scenarios on ${report.runtime}`);
+console.log(`UAT${group ? ` ${group.id}` : ""}: ${report.observations.length} unique scenarios on ${report.runtime}`);

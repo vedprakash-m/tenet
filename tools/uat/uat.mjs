@@ -6,11 +6,19 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { bridgeUat } from './bridge.mjs';
+const inventory = JSON.parse(readFileSync(new URL('../uat-inventory.json', import.meta.url), 'utf8'));
 if (process.argv.includes('--list')) {
- const inventory = JSON.parse(readFileSync(new URL('../uat-inventory.json', import.meta.url), 'utf8'));
  process.stdout.write(JSON.stringify(inventory, null, 2) + '\n');
  process.exit(0);
 }
+const groupFlag = process.argv.find(arg => arg.startsWith('--group='));
+const requestedGroup = groupFlag?.slice('--group='.length);
+if (requestedGroup && !inventory.groups?.some(group => group.id === requestedGroup))
+ throw new Error(`unknown UAT group: ${requestedGroup}`);
+const group = inventory.groups?.find(item => item.id === requestedGroup);
+const runGroup = async (id, run) => {
+ if (!requestedGroup || requestedGroup === id) await run();
+};
 const source = fileURLToPath(new URL('../../', import.meta.url));
 const bundle = process.env.TENET_TEST_BUNDLE ?? join(source, 'plugin/kernel/tenet.mjs');
 const roots = [];
@@ -93,6 +101,7 @@ const waitUntil = async (fn, what) => {
  for (;;) { const found = fn(); if (found) return found; assert.ok(Date.now() < end, `timed out: ${what}`); await new Promise(r => setTimeout(r, 25)); }
 };
 try {
+ await runGroup('core', async () => {
  const capabilityRoot = create();
  env.TENET_HOST_VERSION = 'uat-host-1';
  try {
@@ -304,6 +313,8 @@ try {
   assert.equal(r.revision, JSON.parse(readFileSync(join(uncertain, '.tenet/state'), 'utf8')).revision);
   observations.push({ scenario: 'built recovery refusal uses actual published revision', realForgetKill: true, syntheticUnknownIntent: true, uncertaintyPreserved: true });
  }
+ });
+ await runGroup('effects', async () => {
  const helpRoot = create();
  const helpCommands = [
   ['open', ['investigate', '--help']], ['decide', ['config', '--help']],
@@ -666,6 +677,8 @@ try {
  }
  observations.push({ scenario: 'built historical adoption replay cannot replace newer accepted trust', provenancePreserved: true,
   ownedFileHashPreserved: true, humanProsePreserved: true, repeatedRecoveryIdempotent: true });
+ });
+ await runGroup('starter', async () => {
  const scaffoldReplay = mkdtempSync(join(tmpdir(), 'tenet-scaffold-replay-')); roots.push(scaffoldReplay);
  git(scaffoldReplay, 'init', '-q', '-b', 'main');
  git(scaffoldReplay, 'config', 'user.name', 'Test'); git(scaffoldReplay, 'config', 'user.email', 'test@example.com');
@@ -723,6 +736,8 @@ try {
  }
  observations.push({ scenario: 'built finished scaffold is not reapplied after transient touched paths clear',
   realStarterInstalled: true, finishedContractUnchanged: true, recipeRecordUnchanged: true, humanNotesPreserved: true, repeatedRecoveryIdempotent: true });
+ });
+ await runGroup('metadata', async () => {
  const dependencyIdentity = create();
  rmSync(join(dependencyIdentity, 'node_modules')); mkdirSync(join(dependencyIdentity, 'node_modules'));
  for (const name of ['vitest', 'typescript']) symlinkSync(join(source, 'node_modules', name), join(dependencyIdentity, 'node_modules', name));
@@ -896,6 +911,8 @@ try {
   assert.equal(readFileSync(join(unsafePackage, '.tenet/state'), 'utf8'), before);
   observations.push({ scenario: `built ${kind} project package metadata is not treated as absent`, exit: 2, statePreserved: true });
  }
+ });
+ await runGroup('workflow', async () => {
  const root = create();
  const opened = call(root, 'open', { request: 'greeting', scopePaths: ['src/'] }, ['--profile=feature', '--lane=quick']); assert.equal(opened.exit, 0);
  const h = opened.handle;
@@ -1029,6 +1046,8 @@ try {
  assert.ok(unknown.reasons.some(r => r.code === 'state-recovered-from-backup' && r.message.includes('unknown')));
  assert.equal(git(legacy, 'branch', '--show-current'), 'main'); assert.equal(readFileSync(join(legacy, '.tenet/state'), 'utf8'), '{ corrupt');
  observations.push({ scenario: 'built unknown legacy accounting fences new editing authority', exit: unknown.exit, handleIssued: false, branchUnchanged: true, recordsUnchanged: true });
+ });
+ await runGroup('accounting', async () => {
  for (const completed of ['commit', 'commit:extra', 'both']) {
   const pendingRoot = create();
   const handle = call(pendingRoot, 'open', { profile: 'feature', request: `pending effect pair ${completed}`, lane: 'quick' }).handle;
@@ -1232,6 +1251,8 @@ try {
  const typesWork = Object.values(JSON.parse(readFileSync(join(configuredTypes, '.tenet/state'), 'utf8')).work)[0];
  assert.equal(typesWork.budget.checksLaunched, 0); assert.equal(typesWork.receipts.length, 0);
  observations.push({ scenario: 'built named static configuration refuses substitution', defaultConfigExit: 0, requiredConfigExit: 2, admissionExit: 2, substituteLaunched: false, receiptIssued: false });
+ });
+ await runGroup('git-process', async () => {
  for (const custom of [false, true]) {
   const hooked = create(), dir = custom ? '.githooks' : '.git/hooks';
   if (custom) git(hooked, 'config', 'core.hooksPath', dir);
@@ -1352,6 +1373,8 @@ try {
    observations.push({ scenario: `built guarded filter ${mode}`, endpoint: finished.data.endpoint, scope: finished.data.scope, minimalEnvironment: true, headChanged: git(filtered, 'rev-parse', 'HEAD') !== head, humanBytesPreserved: mode !== 'mutate', filterMutationPreserved: mode === 'mutate' });
   }
  }
+ });
+ await runGroup('admission', async () => {
  const doctorPolicy = create();
  write(doctorPolicy, 'tenet.policy.json', JSON.stringify({ exclusions: [{ pattern: 'package.json', kinds: ['no-read'] }] }));
  const doctorRefusal = call(doctorPolicy, 'inspect', { view: 'doctor' });
@@ -1362,7 +1385,8 @@ try {
  const conflict = create(), required = { id: 'types', property: 'project compiles', tool: 'tsc' };
  write(conflict, 'tenet.policy.json', JSON.stringify({ required_checks: [required] }));
  const conflictHandle = call(conflict, 'open', { profile: 'feature', request: 'required check conflict', lane: 'quick' }).handle;
- assert.equal(call(conflict, 'decide', { h: conflictHandle, kind: 'basis', propose: basis }).exit, 0);
+ const conflictBasis = call(conflict, 'decide', { h: conflictHandle, kind: 'basis', propose: basis });
+ assert.equal(conflictBasis.exit, 0, JSON.stringify(conflictBasis));
  assert.equal(call(conflict, 'decide', { h: conflictHandle, kind: 'config', target: 'required_checks', propose: { value: [{ ...required, population: 'server/**/*.ts' }] } }).exit, 0);
  const conflictCheck = call(conflict, 'check', { h: conflictHandle, stage: 'baseline' });
  assert.equal(conflictCheck.exit, 2); assert.ok(conflictCheck.reasons.some(r => /defined differently/.test(r.message)));
@@ -1499,11 +1523,12 @@ try {
  symlinkSync(outside, join(linked, '.tenet'));
  const refusal = call(linked, 'open', { profile: 'feature', request: 'greeting' }); assert.notEqual(refusal.exit, 0); assert.deepEqual(readdirSync(outside), []);
  observations.push({ scenario: 'symlinked state directory', exit: refusal.exit, reason: refusal.reasons[0].code, outsideWrites: false });
+ });
  const artifact = readFileSync(bundle);
  const identified = observations.map((observation, index) => {
   const identity = JSON.stringify(observation, Object.keys(observation).sort());
   const hash = createHash('sha256').update(identity).digest('hex').slice(0, 12);
-  return { id: `uat-${String(index + 1).padStart(3, '0')}-${hash}`, ...observation };
+  return { id: `uat-${String(index + (group?.start ?? 1)).padStart(3, '0')}-${hash}`, ...observation };
  });
  const sourceIdentity = {
   commit: process.env.GITHUB_SHA ?? null,
@@ -1513,7 +1538,7 @@ try {
   runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
   ref: process.env.GITHUB_REF ?? null,
  };
- process.stdout.write(JSON.stringify({ version: 1, runtime: process.version, git: git(root, '--version'), source: sourceIdentity, bundle: { bytes: artifact.length, sha256: createHash('sha256').update(artifact).digest('hex') }, observations: identified }, null, 2) + '\n');
+ process.stdout.write(JSON.stringify({ version: 1, runtime: process.version, group: requestedGroup ?? 'all', git: git(source, '--version'), source: sourceIdentity, bundle: { bytes: artifact.length, sha256: createHash('sha256').update(artifact).digest('hex') }, observations: identified }, null, 2) + '\n');
 } finally { roots.forEach(root => {
  try { const id = JSON.parse(readFileSync(join(root, '.tenet/state'), 'utf8')).workspaceId; if (/^ws_[a-z2-7]{10}$/.test(id)) rmSync(join(tmpdir(), `tenet-${id}`), { recursive: true, force: true }); } catch { /* no state in this scratch folder */ }
  rmSync(root, { recursive: true, force: true });

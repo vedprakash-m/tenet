@@ -54,9 +54,21 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         shard:
           - id: "1"
-            value: "1/2"
+            value: "1/8"
           - id: "2"
-            value: "2/2"
+            value: "2/8"
+          - id: "3"
+            value: "3/8"
+          - id: "4"
+            value: "4/8"
+          - id: "5"
+            value: "5/8"
+          - id: "6"
+            value: "6/8"
+          - id: "7"
+            value: "7/8"
+          - id: "8"
+            value: "8/8"
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -68,13 +80,12 @@ jobs:
         with:
           node-version: 24
       - run: npm ci --ignore-scripts --no-audit
-      - name: Install locked Chromium for the source lane
+      - name: Install locked starter tools for the source lane
         run: |
           browser_tools="$RUNNER_TEMP/tenet-browser-tools"
           mkdir -p "$browser_tools"
           cp plugin/skills/tenet-starter-ts-web-api/template/package.json plugin/skills/tenet-starter-ts-web-api/template/package-lock.json "$browser_tools/"
           npm ci --prefix "$browser_tools" --ignore-scripts --no-audit
-          node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium
       - name: Source tests with structured evidence
         run: TENET_STARTER_NODE_MODULES="$RUNNER_TEMP/tenet-browser-tools/node_modules" node --experimental-strip-types tools/test-runner.ts --lane source --concurrency=2 --shard "${{ matrix.shard.value }}" --report "$RUNNER_TEMP/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json"
       - name: Verify source shard population
@@ -89,7 +100,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  bundle-uat:
+  bundle-payload:
     needs: preflight
     strategy:
       fail-fast: false
@@ -106,13 +117,6 @@ jobs:
         with:
           node-version: 24
       - run: npm ci --ignore-scripts --no-audit
-      - name: Install locked Chromium for the bundle lane
-        run: |
-          browser_tools="$RUNNER_TEMP/tenet-browser-tools"
-          mkdir -p "$browser_tools"
-          cp plugin/skills/tenet-starter-ts-web-api/template/package.json plugin/skills/tenet-starter-ts-web-api/template/package-lock.json "$browser_tools/"
-          npm ci --prefix "$browser_tools" --ignore-scripts --no-audit
-          node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium
       - run: npm run build
       - run: npm run verify:payload
       - run: npm run verify:reproducible
@@ -155,22 +159,80 @@ jobs:
         run: npm run --silent uat:smoke > "$RUNNER_TEMP/uat-smoke-22.json"
       - name: Verify minimum-Node extracted payload
         run: node --experimental-strip-types tools/uat/verify-smoke.mjs "$RUNNER_TEMP/uat-smoke-22.json" plugin/kernel/tenet.mjs
-      - name: Full minimum-Node built campaign
-        run: npm run --silent uat > "$RUNNER_TEMP/uat-full.json"
-      - name: Verify complete minimum-Node campaign
-        env:
-          ACTUAL_NODE: v22.12.0
-        run: node --experimental-strip-types tools/uat/verify.mjs "$RUNNER_TEMP/uat-full.json" plugin/kernel/tenet.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bundle-payload-${{ matrix.os }}
+          path: plugin/kernel/tenet.mjs
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: bundle-${{ matrix.os }}
+          name: bundle-evidence-${{ matrix.os }}
           path: |
             ${{ runner.temp }}/test-postbuild.json
             ${{ runner.temp }}/execution-postbuild.json
             ${{ runner.temp }}/uat-smoke.json
             ${{ runner.temp }}/uat-smoke-22.json
-            ${{ runner.temp }}/uat-full.json
+          if-no-files-found: warn
+          retention-days: 14
+
+  bundle-uat:
+    needs: bundle-payload
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        group:
+          - { id: core }
+          - { id: effects }
+          - { id: starter }
+          - { id: metadata }
+          - { id: workflow }
+          - { id: accounting }
+          - { id: git-process }
+          - { id: admission }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.12.0
+      - run: npm ci --ignore-scripts --no-audit
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: bundle-payload-${{ matrix.os }}
+          path: ${{ runner.temp }}/tenet-bundle
+      - name: Install locked Chromium for the starter group
+        if: matrix.group.id == 'starter'
+        run: |
+          browser_tools="$RUNNER_TEMP/tenet-browser-tools"
+          mkdir -p "$browser_tools"
+          cp plugin/skills/tenet-starter-ts-web-api/template/package.json plugin/skills/tenet-starter-ts-web-api/template/package-lock.json "$browser_tools/"
+          npm ci --prefix "$browser_tools" --ignore-scripts --no-audit
+          node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium
+      - name: Full minimum-Node UAT group
+        env:
+          ACTUAL_NODE: v22.12.0
+          TENET_TEST_BUNDLE: ${{ runner.temp }}/tenet-bundle/tenet.mjs
+        run: |
+          if test "${{ matrix.group.id }}" = starter; then
+            export TENET_STARTER_NODE_MODULES="$RUNNER_TEMP/tenet-browser-tools/node_modules"
+          fi
+          node tools/uat/uat.mjs --group="${{ matrix.group.id }}" > "$RUNNER_TEMP/uat-${{ matrix.os }}-${{ matrix.group.id }}.json"
+      - name: Verify minimum-Node UAT group
+        env:
+          ACTUAL_NODE: v22.12.0
+        run: node --experimental-strip-types tools/uat/verify.mjs "$RUNNER_TEMP/uat-${{ matrix.os }}-${{ matrix.group.id }}.json" "$RUNNER_TEMP/tenet-bundle/tenet.mjs" --group="${{ matrix.group.id }}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: uat-${{ matrix.os }}-${{ matrix.group.id }}
+          path: ${{ runner.temp }}/uat-${{ matrix.os }}-${{ matrix.group.id }}.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -223,9 +285,21 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm rebuild better-sqlite3
           node --experimental-strip-types node_modules\vitest\vitest.mjs run server\test\restore.test.ts server\test\migrate.test.ts server\test\schema-history.test.ts
+
+  windows-minimum:
+    needs: preflight
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22.12.0
+      - run: npm ci --ignore-scripts --no-audit
+      - run: npm run build
+      - run: npm run verify:payload
       - run: >-
           node --experimental-strip-types --test packages\eval\test\protocol.test.ts packages\eval\test\replay.test.ts packages\eval\test\report.test.ts packages\kernel\test\payload.test.ts packages\kernel\test\host-launch.test.ts packages\kernel\test\report-paths.test.ts packages\kernel\test\playwright-adapter.test.ts packages\kernel\test\receipts.test.ts
       - name: Windows review population on minimum Node
@@ -236,6 +310,8 @@ jobs:
         shell: pwsh
         run: |
           $starter = Join-Path $env:RUNNER_TEMP "tenet-starter-restore"
+          New-Item -ItemType Directory -Path $starter -Force | Out-Null
+          Get-ChildItem plugin\skills\tenet-starter-ts-web-api\template -Force | Copy-Item -Destination $starter -Recurse -Force
           Set-Location $starter
           npm ci --ignore-scripts --no-audit --engine-strict
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -244,7 +320,7 @@ jobs:
 
   tenet-validation:
     name: Tenet validation
-    needs: [preflight, source, bundle-uat, windows-portability]
+    needs: [preflight, source, bundle-payload, bundle-uat, windows-portability, windows-minimum]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -261,20 +337,31 @@ jobs:
           pattern: source-*
           merge-multiple: true
           path: ${{ runner.temp }}/source-reports
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.bundle-uat.result == 'success'
+        with:
+          pattern: uat-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/uat-reports
       - name: Require every lane
         env:
           PREFLIGHT: ${{ needs.preflight.result }}
           SOURCE: ${{ needs.source.result }}
-          BUNDLE: ${{ needs.bundle-uat.result }}
+          BUNDLE_PAYLOAD: ${{ needs.bundle-payload.result }}
+          BUNDLE_UAT: ${{ needs.bundle-uat.result }}
           WINDOWS: ${{ needs.windows-portability.result }}
+          WINDOWS_MINIMUM: ${{ needs.windows-minimum.result }}
         run: |
-          printf 'preflight=%s source=%s bundle=%s windows=%s\n' "$PREFLIGHT" "$SOURCE" "$BUNDLE" "$WINDOWS"
+          printf 'preflight=%s source=%s bundle-payload=%s bundle-uat=%s windows=%s windows-minimum=%s\n' "$PREFLIGHT" "$SOURCE" "$BUNDLE_PAYLOAD" "$BUNDLE_UAT" "$WINDOWS" "$WINDOWS_MINIMUM"
           test "$PREFLIGHT" = success
           test "$SOURCE" = success
-          test "$BUNDLE" = success
+          test "$BUNDLE_PAYLOAD" = success
+          test "$BUNDLE_UAT" = success
           test "$WINDOWS" = success
+          test "$WINDOWS_MINIMUM" = success
           ubuntu="$(find "$RUNNER_TEMP/source-reports" -name 'test-source-ubuntu-latest-*.json' -print | paste -sd, -)"
           macos="$(find "$RUNNER_TEMP/source-reports" -name 'test-source-macos-latest-*.json' -print | paste -sd, -)"
           test -n "$ubuntu" && test -n "$macos"
           node --experimental-strip-types tools/verify-execution.ts --lane source --reports "$ubuntu" --output "$RUNNER_TEMP/execution-ubuntu.json"
           node --experimental-strip-types tools/verify-execution.ts --lane source --reports "$macos" --output "$RUNNER_TEMP/execution-macos.json"
+          node tools/uat/verify-groups.mjs "$RUNNER_TEMP/uat-reports"

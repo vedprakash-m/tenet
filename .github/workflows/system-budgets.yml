@@ -65,8 +65,12 @@ jobs:
           if-no-files-found: error
           retention-days: 30
   frozen-fixtures:
+    strategy:
+      fail-fast: false
+      matrix:
+        fixture: [small, large, long-history]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -84,13 +88,13 @@ jobs:
         env:
           TENET_FSYNC_TRACE_REQUIRED: "1"
         run: node --test --test-name-pattern "fsync tracing" packages/kernel/test/bench.test.ts
-      - name: Measure all frozen fixtures against the unchanged PRD system budgets (5 runs each, stalls traced)
-        run: node tools/bench.ts --fixture all --json --fsync-trace > system-budgets.json
+      - name: Measure one frozen fixture against the unchanged PRD system budgets (5 runs, stalls traced)
+        run: node tools/bench.ts --fixture "${{ matrix.fixture }}" --json --fsync-trace > "system-budgets-${{ matrix.fixture }}.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: system-budgets
-          path: system-budgets.json
+          name: system-budgets-${{ matrix.fixture }}
+          path: system-budgets-${{ matrix.fixture }}.json
           if-no-files-found: error
           retention-days: 30
   starter-memory:

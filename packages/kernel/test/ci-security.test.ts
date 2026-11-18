@@ -11,6 +11,7 @@ const workflows = readdirSync(dir).filter((file) => /\.ya?ml$/.test(file)).map((
   file, text: readFileSync(join(dir, file), "utf8"), doc: parse(readFileSync(join(dir, file), "utf8")),
 }));
 const starterWorkflow = readFileSync(join(root, "plugin/skills/tenet-starter-ts-web-api/template/.github/workflows/ci.yml"), "utf8");
+const uatInventory = JSON.parse(readFileSync(join(root, "tools/uat-inventory.json"), "utf8"));
 const untrusted = workflows.find(({ file }) => file === "untrusted.yml")!;
 const commands = (job: string): string[] => untrusted.doc.jobs[job].steps.map((step: { run?: string }) => step.run ?? "");
 
@@ -44,12 +45,19 @@ describe("untrusted validation keeps its trust boundary [ENG-10]", () => {
 
   it("has preflight, source, built-UAT, Windows and exact aggregate jobs", () => {
     const names = Object.keys(untrusted.doc.jobs);
-    for (const job of ["preflight", "source", "bundle-uat", "windows-portability", "tenet-validation"]) assert.ok(names.includes(job), job);
+    for (const job of ["preflight", "source", "bundle-payload", "bundle-uat", "windows-portability", "windows-minimum", "tenet-validation"])
+      assert.ok(names.includes(job), job);
     const aggregate = untrusted.doc.jobs["tenet-validation"];
     assert.equal(aggregate.if, "always()");
-    assert.deepEqual(aggregate.needs, ["preflight", "source", "bundle-uat", "windows-portability"]);
-    assert.match(commands("tenet-validation").join("\n"), /test "\$SOURCE" = success/);
-    assert.match(commands("tenet-validation").join("\n"), /verify-execution\.ts --lane source/);
+    assert.deepEqual(aggregate.needs, ["preflight", "source", "bundle-payload", "bundle-uat", "windows-portability", "windows-minimum"]);
+    const aggregateRuns = commands("tenet-validation").join("\n");
+    assert.match(aggregateRuns, /test "\$SOURCE" = success/);
+    assert.match(aggregateRuns, /test "\$BUNDLE_PAYLOAD" = success/);
+    assert.match(aggregateRuns, /test "\$BUNDLE_UAT" = success/);
+    assert.match(aggregateRuns, /test "\$WINDOWS" = success/);
+    assert.match(aggregateRuns, /test "\$WINDOWS_MINIMUM" = success/);
+    assert.match(aggregateRuns, /tools\/uat\/verify-groups\.mjs/);
+    assert.match(aggregateRuns, /verify-execution\.ts --lane source/);
     assert.ok(aggregate.steps.some((step: { with?: { pattern?: string } }) => step.with?.pattern === "source-*"));
   });
 
@@ -63,30 +71,52 @@ describe("untrusted validation keeps its trust boundary [ENG-10]", () => {
 
   it("runs source once per POSIX OS with locked Chromium and complete structured evidence", () => {
     assert.deepEqual(untrusted.doc.jobs.source.strategy.matrix.os, ["ubuntu-latest", "macos-latest"]);
-    assert.deepEqual(untrusted.doc.jobs.source.strategy.matrix.shard.map((item: { value: string }) => item.value), ["1/2", "2/2"]);
+    assert.deepEqual(untrusted.doc.jobs.source.strategy.matrix.shard.map((item: { value: string }) => item.value),
+      ["1/8", "2/8", "3/8", "4/8", "5/8", "6/8", "7/8", "8/8"]);
     const runs = commands("source").join("\n");
     assert.match(runs, /tools\/test-runner\.ts --lane source --concurrency=2 --shard/);
     assert.match(runs, /tools\/verify-execution\.ts --partial --lane source/);
-    assert.match(runs, /@playwright\/test\/cli\.js" install --with-deps chromium/);
+    assert.match(runs, /npm ci --prefix "\$browser_tools" --ignore-scripts --no-audit/);
+    assert.doesNotMatch(runs, /playwright\/test\/cli\.js" install --with-deps chromium/);
     assert.doesNotMatch(runs, /\bnpx\b|npm exec\b/);
     assert.equal(commands("source").filter((command) => command.includes("test-runner.ts")).length, 1);
   });
 
   it("builds before bundle-only tests and replaces duplicate Node 24 UAT with one smoke", () => {
-    const runs = commands("bundle-uat");
+    const runs = commands("bundle-payload");
     const build = runs.indexOf("npm run build");
     const post = runs.findIndex((command) => command.includes("--lane postbuild"));
     const smoke = runs.findIndex((command) => command.includes("uat:smoke"));
-    const minimum = runs.findIndex((command) => command.includes("tools/uat/verify.mjs"));
-    assert.ok(build >= 0 && post > build && smoke > post && minimum > smoke);
-    assert.equal(runs.filter((command) => command.includes("tools/uat/uat.mjs") || command.includes("npm run --silent uat >")).length, 1);
-    const nodes = untrusted.doc.jobs["bundle-uat"].steps
+    assert.ok(build >= 0 && post > build && smoke > post);
+    const nodes = untrusted.doc.jobs["bundle-payload"].steps
       .filter((step: { uses?: string }) => step.uses?.startsWith("actions/setup-node@"))
       .map((step: { with: { "node-version": string | number } }) => String(step.with["node-version"]));
     assert.deepEqual(nodes, ["24", "22.12.0"]);
     assert.equal(runs.filter((command) => command.includes("verify-smoke.mjs")).length, 2);
     assert.ok(runs.some((command) => command.includes("TENET_LEGACY_CAPTURE_DIR") &&
       command.includes("tools/protocol-legacy-capture.mjs")));
+  });
+
+  it("partitions the protected UAT population into exact independent groups", () => {
+    const groups = uatInventory.groups;
+    assert.deepEqual(groups.map((group: { id: string }) => group.id),
+      ["core", "effects", "starter", "metadata", "workflow", "accounting", "git-process", "admission"]);
+    assert.equal(groups.reduce((total: number, group: { observations: number }) => total + group.observations, 0), 157);
+    assert.deepEqual(groups.map((group: { start: number }) => group.start),
+      [1, 24, 53, 57, 79, 93, 125, 139]);
+    assert.deepEqual(groups.map((group: { end: number }) => group.end),
+      [23, 52, 56, 78, 92, 124, 138, 157]);
+    assert.equal(uatInventory.cases.length, uatInventory.observations);
+    const matrix = untrusted.doc.jobs["bundle-uat"].strategy.matrix;
+    assert.deepEqual(matrix.os, ["ubuntu-latest", "macos-latest"]);
+    assert.deepEqual(matrix.group.map((group: { id: string }) => group.id), groups.map((group: { id: string }) => group.id));
+    const runs = commands("bundle-uat").join("\n");
+    assert.match(runs, /uat\/uat\.mjs --group/);
+    assert.match(runs, /uat\/verify\.mjs .* --group/);
+    const nodes = untrusted.doc.jobs["bundle-uat"].steps
+      .filter((step: { uses?: string }) => step.uses?.startsWith("actions/setup-node@"))
+      .map((step: { with: { "node-version": string | number } }) => String(step.with["node-version"]));
+    assert.deepEqual(nodes, ["22.12.0"]);
   });
 
   it("continues Windows portability and gates the Windows-only inverse-patch leaf", () => {
@@ -102,7 +132,19 @@ describe("untrusted validation keeps its trust boundary [ENG-10]", () => {
     const nodes = untrusted.doc.jobs["windows-portability"].steps
       .filter((step: { uses?: string }) => step.uses?.startsWith("actions/setup-node@"))
       .map((step: { with: { "node-version": string | number } }) => String(step.with["node-version"]));
-    assert.deepEqual(nodes, ["24", "22.12.0"]);
+    assert.deepEqual(nodes, ["24"]);
+  });
+
+  it("runs the minimum-Node Windows population concurrently", () => {
+    const runs = commands("windows-minimum").join("\n");
+    assert.match(runs, /npm run build/);
+    assert.match(runs, /--lane windows-review/);
+    assert.match(runs, /npm rebuild better-sqlite3/);
+    assert.match(runs, /server\\test\\schema-history\.test\.ts/);
+    const nodes = untrusted.doc.jobs["windows-minimum"].steps
+      .filter((step: { uses?: string }) => step.uses?.startsWith("actions/setup-node@"))
+      .map((step: { with: { "node-version": string | number } }) => String(step.with["node-version"]));
+    assert.deepEqual(nodes, ["22.12.0"]);
   });
 
   it("pins workflow actions and the generated starter workflow", () => {

@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { cleanup, tmp } from "./helpers.ts";
-import { selectedFiles } from "../../../tools/test-runner.ts";
+import { partitionFiles, selectedFiles } from "../../../tools/test-runner.ts";
 import { verifyReports } from "../../../tools/verify-execution.ts";
 
 const inventory = {
@@ -56,6 +56,17 @@ describe("validation evidence population", () => {
       ]);
       assert.deepEqual(selectedFiles(root, "postbuild"), ["packages/kernel/test/postbuild.test.ts"]);
     } finally { cleanup(root); }
+  });
+
+  it("balances source shards by measured file duration without changing their union", () => {
+    const files = ["a.test.ts", "b.test.ts", "c.test.ts", "d.test.ts"];
+    const durations = new Map([["a.test.ts", 100], ["b.test.ts", 90], ["c.test.ts", 10], ["d.test.ts", 10]]);
+    const first = partitionFiles(files, durations, "1/2");
+    const second = partitionFiles(files, durations, "2/2");
+    assert.deepEqual([...first, ...second].sort(), files);
+    assert.equal(new Set(first.filter((file) => second.includes(file))).size, 0);
+    assert.ok(Math.max(first.reduce((sum, file) => sum + durations.get(file)!, 0),
+      second.reduce((sum, file) => sum + durations.get(file)!, 0)) <= 110);
   });
 
   it("accepts a complete non-overlapping shard union", () => {
