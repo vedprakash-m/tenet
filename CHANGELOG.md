@@ -1,5 +1,82 @@
 # Changelog
 
+## 2026-11-17 — Warn about Windows metadata links
+
+- `README.md` and `plugin/README.md` warn that Windows can follow linked installed Vitest metadata outside the project. A built-CLI control observed this with synthetic data; no real user-data exposure was established.
+- `packages/kernel/test/readme.test.ts` checks that both preview guides include the warning. The new test failed before the documentation change; all five README tests pass afterward. The unsafe read remains unfixed; the warning does not prevent it.
+
+## 2026-11-17 — Flag key files before publication
+
+- `tools/privacy-check.ts` now flags `.key` filenames as possible secret stores in staged changes and outgoing ranges, including binary files. Secret-store filename checks are case-insensitive. Benign matches also require review; the check remains a heuristic, not proof that no secrets are present.
+- `packages/kernel/test/privacy.test.ts` covers text and raw names, a real staged binary and a real committed binary. All three new tests failed before the fix.
+- Privacy tests now isolate scratch Git subprocesses from inherited Git variables and global ignore files. The regression failed before each correction; all 18 privacy tests pass locally on Windows with both conflicts injected.
+
+## 2026-11-17 — Refuse unsafe inverse-patch writes
+
+- `GitCli.applyPatch` now refuses before creating an inverse-patch artifact on Windows or when the runtime lacks `O_NOFOLLOW`. The existing filter check still runs first; ordinary Windows mutations were already refused by the pipeline.
+- The linked-artifact regression now places its target outside the scratch repository, and a Windows test checks the explicit `capability-missing` refusal and absence of an artifact. Both failed before the guard and pass locally. Ancestor-link safety and supported-POSIX behavior remain unverified.
+- Simulated undo cases keep their success and preservation assertions when the inverse adapter is available. When it is unavailable, they check the uncertain effect and preservation of Git state and human files. The four previously failing cases and two unavailable-adapter controls pass locally on Windows; the supported-POSIX success path remains unverified. These tests bypass normal platform admission and are not supported-platform UAT.
+
+## 2026-11-17 — Correct the Windows network-boundary test
+
+- `packages/kernel/test/requirements.test.ts` now compares the allowed `node:net` source against its exact native path. This fixes the Windows separator failure without changing the kernel.
+- The network and MCP checks, typecheck and lints pass locally on Windows. The full Windows CI run before this correction had 1,320 passing, 644 failing and 48 skipped tests; supported-platform CI remains unverified.
+
+## 2026-11-17 — Use reserved privacy test addresses
+
+- Replaced real-looking scanner fixture addresses with `example.invalid` addresses in `packages/kernel/test/privacy.test.ts`; the exact-allowlist negative control still constructs the same test input. Scanner behavior is unchanged.
+- Twelve branch-safe privacy tests pass locally. The merge-only privacy test was not run because it creates another branch.
+
+## 2026-11-17 — Correct diagnostics coverage tags
+
+- Removed `[NFR-07]` tags from preview-only diagnostics tests: they do not prove the full requirement. Test behavior is unchanged, and NFR-07 remains unqualified.
+- The three isolated preview tests, typecheck, lints and M0 coverage pass locally. R1 coverage now reports NFR-07 as unmapped; the public-path test and full CI were not run.
+
+## 2026-11-17 — Bound the starter test timeout
+
+- Set the starter Vitest default timeout to 30 seconds. ESLint initialization and tests that start child processes exceeded the former five-second default; existing explicit per-test limits and assertions are unchanged.
+- In an isolated copy using the exact locked dependencies, Node 24.22.1 and Node 22.12.0 each passed typecheck, lint, all 145 tests, the web build and all 12 Chromium journeys. The Node 22.12 install used `--engine-strict`. These are Windows observations, not installed-host or supported-POSIX qualification.
+
+## 2026-11-17 — Correct scenario titles
+
+- `packages/kernel/test/scenarios.test.ts` now describes the tested `include` answer and committed human line accurately, and no longer claims the suppression-marker case tests weakened assertions or a disposition. Assertions and the `[GIT-10]` tag are unchanged. This does not resolve the dirty-file consent, recovery or misleading-success gaps.
+- The test file's syntax check, R1 coverage mapping and repository lints pass locally. The scenarios and full CI were not run for these title-only corrections.
+
+## 2026-11-16 — Restore the starter's minimum-Node install
+
+- Restored the documented TypeScript-ESLint 8.55.0 pin and updated the starter lockfile, recipe checksum and notices. The 8.72.1 graph failed a clean `npm ci --engine-strict` on Node 22.12 because its visitor-keys dependency requires Node 22.13.
+- The Windows minimum-runtime CI step now clean-installs the starter with engine checks before rebuilding SQLite. Its workflow regression failed before that step was added.
+- On Windows, the final lockfile passed a clean Node 22.12 strict install, SQLite rebuild, typecheck, lint, all 145 starter tests, build and OpenAPI export. Node 24 passed the same checks and 145 tests with its configured two-worker limit and a 30-second test timeout; its default test command timed out twice. Host CPU sampled at 96–100% afterward; the cause of the timeouts is not established.
+- On both Node versions, 59 selected restore-related tests and all 12 Chromium journey tests passed in an isolated starter copy. This does not establish installed-host behavior.
+- GitHub-reviewed advisory GHSA-g3hv-75wg-m249 flags the restored transitive minimatch 9.0.9 and also flagged the previous 10.2.6. No repair or exploitability claim is made. The npm registry audit was rate-limited.
+
+## 2026-11-16 — Keep lint fixtures small
+
+- `packages/kernel/test/tools.test.ts` now excludes recipe templates when copying lint fixtures, matching the linter's existing scope and avoiding repeated copies of installed starter dependencies. Product behavior is unchanged.
+- The new fixture regression failed before the change; the complete tooling test file passes locally.
+
+## 2026-11-16 — Make the marker-mismatch fixture reliable
+
+- `packages/kernel/test/schema-1-bridge.test.ts` now selects a different inode value explicitly; adding one can leave a large Windows inode unchanged after numeric rounding. This changes only the test fixture, not marker ownership behavior or the open P108 defect.
+- The focused control failed before the correction and passed eight repeated runs afterward. The schema-1 bridge suite passed locally on Node 24.22.1 and Node 22.12.0.
+
+## 2026-11-16 — Correct preview removal guidance (INS-02, LFC-05)
+
+- `README.md`, `plugin/README.md` and `docs/user/install-and-remove.md` now say to request uninstall help before removing the plugin, describe `.tenet/` removal as optional, and disclose that the residue listing is incomplete and cleanup removal is disabled. The guide warns that the residue output still makes an overstrong cleanup claim. The plugin README no longer promises preservation of uncommitted work.
+- The root README describes a dependency resolution failure before publication without claiming that all publication or recovery is safe.
+- `packages/kernel/test/readme.test.ts` checks the three removal guides. The new check failed before the documentation correction and passes locally. The Windows CI run passed pre-test gates, then reported test failures and was stopped before completion. Installed-host removal and complete residue discovery remain unobserved or incomplete.
+
+## 2026-11-16 — Partial recovery-run retention (P91)
+
+- Housekeeping now adds nonempty run directories referenced by unresolved effect intents to the keep lists for age-based cleanup and size-cap eviction.
+- This is incomplete: simulated missing-state controls still remove run data needed by a producer-shaped commit intent or an in-flight accounting checkpoint. The retention contract is unsigned and the change is not approved for release.
+- Test: `storage-eviction.test.ts` verifies the unresolved `runDir` reaches both keep lists; the focused test failed before the fix and passes after it.
+- A focused test also verifies that live run, focused review and reservation paths remain in both keep lists alongside a valid unresolved recovery path; malformed or empty `runDir` values are excluded.
+- Added real-store cases using `run-*` directories and a process record for age-based cleanup and size-cap eviction, including removal after the intent is resolved. They have not reached their assertions on Windows: directory `fsync` fails during store setup.
+- Validation: `npm run typecheck` and the focused test pass. `npm run ci` passed typecheck, lints, coverage, semver, build, payload and reproducibility, then failed in the local Windows full test suite on unsupported mutating-work fixtures and directory `fsync` errors; no overall CI pass is claimed.
+- The later Windows CI rerun passed the same pre-test stages and reported test failures; it was stopped before the suite finished. Both P91 real-store cases again failed at setup with directory `fsync` `EPERM`.
+- A further Windows CI run finished with 1,319 passing, 644 failing and 48 skipped tests. Its failures include the Windows mutation refusal and directory `fsync` errors; not every failure was classified. It began before the marker-fixture correction, so it is not a single-revision gate.
+
 ## 2026-11-15 — Stall-aware warm latency measurement (NFR-01, owner decision D1(c))
 
 - **Five runs per fixture, with fsync stalls traced from outside the kernel (`tools/bench.ts`).** The warm bookkeeping row is now judged on 5 runs per fixture, fixed in advance, each on a freshly generated fixture. Cold, storage and resume rows still come from the first run. With `--fsync-trace` (Linux, passwordless `sudo`, `bpftrace`), the benchmark traces every `fsync`/`fdatasync` system call of each kernel process and of its direct children, and matches each one to its call by process ID (the kernel process, or its direct child). bpftrace filters in the kernel to the benchmark process, its children and its grandchildren. The trace counts as missing if bpftrace reports lost events, exits early, or the process IDs of the calls ever decrease (a wraparound, after which one ID could name two processes). The kernel, the bundle and the launch command do not change; a Node preload is not possible because the kernel refuses one (`preload-present`).

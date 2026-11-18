@@ -931,6 +931,9 @@ export class GitCli {
   ): ReturnType<Git["applyPatch"]> {
     await this.objectFormatSafe();
     await this.refuseFilters("undoing work");
+    if (process.platform === "win32" || constants.O_NOFOLLOW === undefined) {
+      throw new KernelError("capability-missing", "Safe inverse-patch application is unavailable on this runtime.");
+    }
     const runDir = options?.runDir ?? mkdtempSync(join(tmpdir(), "tenet-patch-"));
     const file = join(runDir, "inverse.patch");
     const fd = openSync(file, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW, 0o600);

@@ -1,5 +1,5 @@
 // The lints are tested like product code: each rule has a fixture that must fail, so a lint that stops catching shows up.
-import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, sep } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -12,7 +12,7 @@ const scratch = () => { const d = tmp("tenet-lint-"); dirs.push(d); return d; };
 after(() => dirs.forEach(cleanup));
 
 const PLUGIN = join(import.meta.dirname, "../../../plugin");
-const copy = () => { const d = scratch(); cpSync(PLUGIN, d, { recursive: true, filter: (s) => !/\/kernel(\/|$)|\/schemas(\/|$)/.test(s.split(sep).join("/")) }); return d; };
+const copy = (source = PLUGIN) => { const d = scratch(); cpSync(source, d, { recursive: true, filter: (s) => !/\/(?:kernel|schemas|template)(\/|$)/.test(s.split(sep).join("/")) }); return d; };
 const edit = (root: string, rel: string, fn: (s: string) => string) => writeFileSync(join(root, rel), fn(readFileSync(join(root, rel), "utf8").replace(/\r\n/g, "\n")));
 
 describe("license packaging", () => {
@@ -52,6 +52,17 @@ describe("license packaging", () => {
 
 describe("lint-skills [ENG-03]", () => {
   it("passes the shipped payload [ENG-01]", () => assert.deepEqual(lintPayload(PLUGIN), []));
+
+  it("keeps recipe templates out of lint fixtures", () => {
+    const source = scratch();
+    const skill = join(source, "skills", "starter");
+    mkdirSync(join(skill, "template", "node_modules"), { recursive: true });
+    writeFileSync(join(skill, "SKILL.md"), "skill");
+    writeFileSync(join(skill, "template", "node_modules", "dependency.js"), "dependency");
+    const copied = copy(source);
+    assert.ok(existsSync(join(copied, "skills", "starter", "SKILL.md")));
+    assert.equal(existsSync(join(copied, "skills", "starter", "template")), false);
+  });
 
   it("fails an unknown verb, flag, decision kind and a call that does not satisfy its schema", () => {
     const d = copy();

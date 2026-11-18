@@ -11,9 +11,10 @@ import { emptyState } from "../src/core/state.ts";
 import { cleanup, tmp } from "./helpers.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
+import { reclaim } from "../src/verbs/common.ts";
 import { systemClock } from "../src/adapters/system.ts";
-import { project } from "./support/fixture.ts";
-import type { Clock } from "../src/ports/types.ts";
+import { contractFixture, project } from "./support/fixture.ts";
+import type { Clock, Ports, Tx } from "../src/ports/types.ts";
 
 const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
@@ -151,7 +152,7 @@ describe("journal reduction into summaries [CON-08, AC-19]", () => {
 
 describe("run-file cap and ceiling [CON-08, AC-19]", () => {
   const runDir = (store: FsStore, name: string, bytes: number, ageDays: number) => {
-    const dir = store.tempDir(`manifests/${name}`);
+    const dir = store.tempDir(name);
     writeFileSync(join(dir, "f"), "x".repeat(bytes));
     const t = new Date(Date.now() - ageDays * DAY);
     utimesSync(join(dir, "f"), t, t); utimesSync(dir, t, t);
@@ -159,11 +160,83 @@ describe("run-file cap and ceiling [CON-08, AC-19]", () => {
   };
   it("over its cap, removes the oldest run folders first and never one a live reservation names", async () => {
     const { store } = await fresh({ runFileCapBytes: 2_500 });
-    const oldest = runDir(store, "a", 1_000, 5), middle = runDir(store, "b", 1_000, 3), newest = runDir(store, "c", 1_000, 1);
+    const oldest = runDir(store, "manifests/a", 1_000, 5), middle = runDir(store, "manifests/b", 1_000, 3), newest = runDir(store, "manifests/c", 1_000, 1);
     const r = await evict(store, [oldest]);
     assert.deepEqual([existsSync(oldest), existsSync(middle), existsSync(newest)], [true, false, true]);
     assert.match(r.message ?? "", /run files/);
   });
+
+  it("includes unresolved recovery run directories in both retention keep lists [AC-17]", async () => {
+    const referenced = "pending-undo-run";
+    let swept: readonly string[] = [];
+    let evicted: readonly string[] = [];
+    const ports = { store: { sweepTemp: (_age: number, keep: readonly string[]) => { swept = keep; return 0; } } } as unknown as Ports;
+    const tx = {
+      unresolved: () => [{ effect: "undo", id: "pending", op: { runDir: referenced } }],
+      evict: (keep: readonly string[]) => { evicted = keep; return { overCeiling: false, largest: [] }; },
+    } as unknown as Tx;
+    reclaim(ports, tx, emptyState("workspace", "tag"));
+    assert.deepEqual(swept, [referenced]);
+    assert.deepEqual(evicted, [referenced]);
+  });
+
+  it("keeps live run and review paths alongside valid unresolved recovery paths [AC-17]", () => {
+    const work = contractFixture({});
+    const reservation = {
+      id: "review", role: "reviewer" as const, manifest: "reserved-manifest", manifestHash: "hash",
+      candidate: "candidate", basisHash: "basis", attempt: 1, mode: "full" as const, files: {},
+    };
+    work.session.inCall = { runId: "run", verb: "check", since: "t", runDir: "live-run" };
+    work.focusedReview = { ...reservation, id: "focused", manifest: "focused-manifest" };
+    work.budget.reservations = [reservation];
+    const state = { ...emptyState("workspace", "tag"), work: { [work.id]: work } };
+    const expected = ["live-run", "focused-manifest", "reserved-manifest", "pending-run"];
+    let swept: readonly string[] = [];
+    let evicted: readonly string[] = [];
+    const ports = { store: { sweepTemp: (_age: number, keep: readonly string[]) => { swept = keep; return 0; } } } as unknown as Ports;
+    const tx = {
+      unresolved: () => [
+        { effect: "undo", id: "pending", op: { runDir: "pending-run" } },
+        { effect: "commit", id: "empty", op: { runDir: "" } },
+        { effect: "commit", id: "missing", op: {} },
+        { effect: "commit", id: "null", op: null },
+        { effect: "commit", id: "number", op: { runDir: 1 } },
+      ],
+      evict: (keep: readonly string[]) => { evicted = keep; return { overCeiling: false, largest: [] }; },
+    } as unknown as Tx;
+    reclaim(ports, tx, state);
+    assert.deepEqual(swept, expected);
+    assert.deepEqual(evicted, expected);
+  });
+
+  for (const { name, age, cap } of [
+    { name: "age-based cleanup", age: 2, cap: 10_000_000 },
+    { name: "size-cap eviction", age: 0.5, cap: 500 },
+  ]) {
+    it(`retains unresolved recovery files through ${name} and removes them after resolution [AC-17]`, async () => {
+      const { store } = await fresh({ runFileCapBytes: cap });
+      ago(0);
+      const pending = runDir(store, "run-pending", 1_000, age);
+      const other = runDir(store, "run-other", 1_000, age);
+      const record = '{"prepared":true}';
+      writeFileSync(join(pending, "run.json"), record);
+      const t = new Date(Date.now() - age * DAY);
+      utimesSync(join(pending, "run.json"), t, t); utimesSync(pending, t, t);
+      await store.transaction("intent", async (tx) => tx.intent("undo", "pending", { runDir: pending }));
+      const ports = { store };
+
+      await store.transaction("reclaim-pending", async (tx) => reclaim(ports, tx, tx.state!));
+      assert.equal(existsSync(pending), true);
+      assert.equal(readFileSync(join(pending, "run.json"), "utf8"), record);
+      assert.equal(existsSync(other), false);
+
+      await store.transaction("reclaim-resolved", async (tx) => {
+        tx.result("undo", "pending", { ok: true });
+        reclaim(ports, tx, tx.state!);
+      });
+      assert.equal(existsSync(pending), false);
+    });
+  }
 
   it("reports protected data above the ceiling with its largest classes, and refuses data-adding calls but not stop", async () => {
     const { store, root } = await fresh({ ceilingBytes: 1_500 });

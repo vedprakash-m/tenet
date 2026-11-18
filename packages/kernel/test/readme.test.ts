@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 const readme = readFileSync(new URL("../../../README.md", import.meta.url), "utf8");
+const pluginReadme = readFileSync(new URL("../../../plugin/README.md", import.meta.url), "utf8");
+const removalGuide = readFileSync(new URL("../../../docs/user/install-and-remove.md", import.meta.url), "utf8");
 
 describe("installation README [INS-02]", () => {
   it("states publisher and source-verification limits without draft placeholders", () => {
@@ -27,6 +29,22 @@ describe("installation README [INS-02]", () => {
     assert.match(readme, /## Three requests to start with/);
     assert.match(readme, /## Update/);
     assert.match(readme, /## Remove/);
+  });
+
+  it("gives safe preview removal guidance before the plugin is removed", () => {
+    for (const [name, text] of [["root README", readme], ["plugin README", pluginReadme], ["removal guide", removalGuide]] as const) {
+      assert.match(text, /help uninstall[\s\S]*remov(?:e|ing) the plugin/i, name);
+      assert.match(text, /cleanup removal is disabled/i, name);
+      assert.match(text, /residue (?:list|listing) is incomplete/i, name);
+      assert.match(text, /(?:optionally|optional)[^.]*\.tenet\//i, name);
+    }
+  });
+
+  it("warns about the observed Windows metadata-link exposure", () => {
+    for (const [name, text] of [["root README", readme], ["plugin README", pluginReadme]] as const) {
+      assert.match(text, /On Windows,[^.]*linked installed Vitest metadata[^.]*outside the project/i, name);
+      assert.match(text, /Do not use Tenet in untrusted workspaces or with untrusted installed dependencies/i, name);
+    }
   });
 });
 

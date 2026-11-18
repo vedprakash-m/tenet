@@ -7,7 +7,7 @@
     "eslint",
     "e2e"
   ],
-  "lockfileSha256": "d0deaaa65eb92134bc8efcd9044cb425c0ea31854ca0f1ecf51ff80d8ea4a4bb",
+  "lockfileSha256": "6293e51ac0973c1cfb17d9fdce257578de6ff5c2027eeec4887be4a17a4ddd91",
   "protectedPaths": [
     "server/src/platform/auth/*",
     "server/src/platform/session/*",

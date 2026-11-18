@@ -57,7 +57,7 @@ describe("what ships makes no network connection and bundles no MCP [SEC-03, SEC
       assert.doesNotMatch(s, net, f);
       if (/from ["']node:net["']/.test(s)) {
         assert.doesNotMatch(s, client, `${f}: node:net is for the EVD-13 port allocator only, never a client`);
-        assert.match(f, /adapters\/runner\.ts$/, `${f}: node:net is reserved for the EVD-13 port allocator in adapters/runner.ts`);
+        assert.equal(f, join(ROOT, "packages/kernel/src/adapters/runner.ts"), `${f}: node:net is reserved for the EVD-13 port allocator in adapters/runner.ts`);
       }
     }
     if (existsSync(bundle)) assert.doesNotMatch(readFileSync(bundle, "utf8"), /from ["']node:(?:http|https|http2|tls)["']|import\(["']node:(?:net|http|https)["']\)/);

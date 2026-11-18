@@ -9,6 +9,7 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 > - `undo` is disabled: its path discovery can miss renamed and recreated files and overwrite your work.
 > - Recovery after an interruption can remove a file that matches what Tenet meant to write, even if someone else created it, and does not always report what it did.
 > - Cleanup of run files only previews; removing them is disabled because it could remove files Tenet did not create.
+> - On Windows, Tenet can follow linked installed Vitest metadata and read a file outside the project. Do not use Tenet in untrusted workspaces or with untrusted installed dependencies.
 
 **Source preview version:** `0.1.0-m0`. **Source:** [vedprakash-m/tenet](https://github.com/vedprakash-m/tenet). `/tenet help` reports the running kernel's version and source; compare these with the selected tag and verify payload checksums using the [release verification procedure](docs/release/release-verification.md). A matching version/source is identification, not publisher authentication.
 
@@ -21,7 +22,7 @@ Copilot already chats, edits and runs tools. Tenet adds a fixed loop around a re
 - **Checks that run through the kernel.** Test results are recorded as receipts tied to the exact files they ran against. A later edit makes a receipt stale.
 - **A reviewer subagent.** It reads the change and reports findings with a severity and a disposition. Dispatch has been observed on VS Code; host-enforced context isolation and tool restrictions have not.
 - **One stated outcome.** Each piece of work ends with a label chosen by fixed rules, such as `checked-local`, `implemented-unverified`, `prototype`, `findings-only` or `blocked`. The label names what was and was not shown. `checked-local` is not owner acceptance and is not production readiness.
-- **Your work stays yours.** Tenet works on a branch and commits only files it wrote. Preserving your uncommitted edits is a requirement, not a fully established preview guarantee. Recovery of an interrupted dependency resolution leaves unknown file content untouched and blocks dependent work. The separate live resolution-failure path still restores the original manifest and lockfile without checking for intervening edits. Do not rely on dependency operations to preserve concurrent edits; the installed-host preservation journey remains unqualified.
+- **Your work stays yours.** Tenet works on a branch and commits only files it wrote. Preserving your uncommitted edits is a requirement, not a fully established preview guarantee. Recovery of an interrupted dependency resolution leaves unknown file content untouched and blocks dependent work. A resolution failure before publication does not publish resolver output; publication and recovery can still be uncertain. Do not rely on dependency operations to preserve concurrent edits; the installed-host preservation journey remains unqualified.
 
 What it does not do in this release line: deploy, push, or open pull requests on its own; run as a service; or send project content anywhere except through the host's model traffic.
 
@@ -105,7 +106,7 @@ Then point VS Code's `chat.pluginLocations` setting at the `plugin/` folder of t
 
 ## Remove
 
-Remove the plugin from `chat.pluginLocations` (uninstall behavior is unobserved on the host), then in each project where you used Tenet ask Tenet "help uninstall". It lists what remains and offers two previewed cleanups. Tenet never deletes `.tenet/` or your files; you remove `.tenet/` yourself. See [docs/user/install-and-remove.md](docs/user/install-and-remove.md).
+In each project where you used Tenet, ask "help uninstall" before removing the plugin from `chat.pluginLocations`. The residue listing is incomplete. Cleanup removal is disabled in this preview; review any files yourself before deleting them. Optionally remove `.tenet/` yourself after uninstalling; this deletes Tenet's project records. Host uninstall behavior is unobserved. See [docs/user/install-and-remove.md](docs/user/install-and-remove.md).
 
 ## Three requests to start with
 

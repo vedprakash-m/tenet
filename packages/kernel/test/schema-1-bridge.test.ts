@@ -159,7 +159,9 @@ describe("schema-1 rollback bridge [LFC-04, CON-05]", () => {
   it("does not turn copied terminal metadata into ownership", () => {
     const { dir, store } = fixture();
     const marker = JSON.parse(readFileSync(join(dir, "marker"), "utf8"));
-    writeFileSync(join(dir, "marker"), JSON.stringify({ ...marker, ino: marker.ino + 1 }));
+    const differentIno = marker.ino === 0 ? 1 : 0;
+    assert.notEqual(differentIno, marker.ino, "the copied marker must have a different inode");
+    writeFileSync(join(dir, "marker"), JSON.stringify({ ...marker, ino: differentIno }));
     writeFileSync(join(dir, "migration-terminal.json"), JSON.stringify(terminal()));
     const before = snapshot(dir);
     assert.throws(() => store.putBlob("foreign"), error =>

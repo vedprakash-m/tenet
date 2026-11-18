@@ -43,10 +43,15 @@ export { handleOf };
 
 /** Housekeeping at a boundary (CON-08): day-old run files go, old journal records become counts, run files stay under their cap.
  *  Run folders a live run or reservation uses are never removed. Returns the one sentence to report, if anything changed. */
-export function reclaim(ports: Ports, tx: Tx, state: State): EvictReport {
-  const keep = Object.values(state.work).flatMap((w) =>
+export function reclaim(ports: Pick<Ports, "store">, tx: Tx, state: State): EvictReport {
+  const active = Object.values(state.work).flatMap((w) =>
     [w.session.inCall?.runDir, w.focusedReview?.manifest, ...w.budget.reservations.map((r) => r.manifest)].filter((x): x is string => !!x)
   );
+  const recovering = tx.unresolved().flatMap(({ op }) => {
+    if (typeof op !== "object" || op === null || !("runDir" in op) || typeof op.runDir !== "string" || !op.runDir) return [];
+    return [op.runDir];
+  });
+  const keep = [...active, ...recovering];
   ports.store.sweepTemp(24 * 3600_000, keep);
   return tx.evict(keep);
 }

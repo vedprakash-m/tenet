@@ -240,7 +240,7 @@ describe("misleading-success traps (AC-07)", () => {
     assert.ok(!(await finishFixture(p, { h, noCommit: true })).reasons.some((r) => r.code === "locked-test-changed"));
   });
 
-  it("a weakened assertion raises an attention item that needs a disposition, and a marker needs the reviewer or the user", async () => {
+  it("an unaccepted suppression marker blocks checked-local", async () => {
     const p = fresh({ "src/other.test.ts": 'import { it, expect } from "vitest";\nit("o", () => { expect(1).toBe(1); });\n' });
     const { h } = await toRed(p, { lane: "quick" });
     p.write("src/greet.ts", `${GREET_IMPL}// @ts-ignore\nexport const x: number = "s" as any;\n`);
@@ -533,7 +533,7 @@ describe("review-only and read-only calls write nothing to the project", () => {
 });
 
 describe("injected failure 1: a human's edits on the files Tenet needs", () => {
-  it("asks before editing a file that is dirty at the start, and keeps the human's lines out of the commit when asked [GIT-10]", async () => {
+  it("asks about a dirty file and includes the human line in the commit after an include answer [GIT-10]", async () => {
     const p = fresh();
     p.write("src/greet.ts", "// my own work in progress\nexport const greet = (_name: string): string => '';\n");
     const o = await p.call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts"], lane: "standard" });

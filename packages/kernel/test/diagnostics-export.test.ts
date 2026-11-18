@@ -16,8 +16,8 @@ const call = (n: number, extra: Record<string, unknown> = {}): LogEntry =>
 const build = (log: LogEntry[], state: State | null = null) =>
   diagnosticsExport({ version: "0.1.0", platform: "linux", node: "v24.0.0", state, log, verbs: VERBS });
 
-describe("diagnostics export [NFR-07]", () => {
-  it("[NFR-07] keeps closed-set call fields and leaves out free text, paths and effect bodies", () => {
+describe("diagnostics export", () => {
+  it("keeps closed-set call fields and leaves out free text, paths and effect bodies", () => {
     const log: LogEntry[] = [
       call(1, { work: "W-0001", durationMs: 12, note: `token=${FAKE}` }),
       call(2, { verb: "not-a-verb" }),
@@ -33,13 +33,13 @@ describe("diagnostics export [NFR-07]", () => {
     assert.match(out.note, /Nothing has been sent or saved/);
   });
 
-  it("[NFR-07] never exports outcome or request text from the state", () => {
+  it("never exports outcome or request text from the state", () => {
     const out = build([], emptyState("ws", "k7q"));
     assert.equal(JSON.parse(out.text).state.initialized, true);
     assert.ok(!out.text.includes("purpose"));
   });
 
-  it("[NFR-07] stays within the size cap and reports what it left out", () => {
+  it("stays within the size cap and reports what it left out", () => {
     const log = Array.from({ length: 300 }, (_, i) => call(i));
     const out = build(log);
     assert.ok(out.bytes <= EXPORT_BYTES);
@@ -52,7 +52,7 @@ describe("diagnostics export [NFR-07]", () => {
   const roots: string[] = [];
   after(() => roots.forEach(cleanup));
 
-  it("[NFR-07] inspect --view export previews the bundle and writes nothing into the project", async () => {
+  it("inspect --view export previews the bundle and writes nothing into the project", async () => {
     const p = project({ "README.md": "hello\n" });
     roots.push(p.root);
     const before = readdirSync(p.root).sort();

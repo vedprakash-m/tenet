@@ -87,6 +87,11 @@ describe("workflows keep the untrusted tier untrusted [ENG-10]", () => {
       assert.ok(job.steps[index].run.includes("server\\test\\schema-history.test.ts"));
     }
     assert.ok(job.steps[restoreSteps[0]!].run.includes("npm ci --ignore-scripts --no-audit"));
+    const minimumRestore = job.steps[restoreSteps[1]!].run as string;
+    const strictInstall = minimumRestore.indexOf("npm ci --ignore-scripts --no-audit --engine-strict");
+    assert.ok(strictInstall >= 0 && strictInstall < minimumRestore.indexOf("npm rebuild better-sqlite3"),
+      "the minimum Node must clean-install the starter with engine checks before rebuilding its native addon");
+    assert.match(minimumRestore, /npm ci --ignore-scripts --no-audit --engine-strict\r?\n\s*if \(\$LASTEXITCODE -ne 0\) \{ exit \$LASTEXITCODE \}/);
     assert.deepEqual(workflow.jobs.t1.strategy.matrix.os, ["ubuntu-latest", "macos-latest"]);
   });
   it("rejects mutable action branches, tags and abbreviated commits", () => {

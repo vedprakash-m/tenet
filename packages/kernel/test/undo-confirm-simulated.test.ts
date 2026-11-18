@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { constants, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { it } from "node:test";
@@ -15,6 +15,8 @@ import { createPorts } from "../src/wire.ts";
 
 enableUndoForTests();
 
+const inverseUnavailable = process.platform === "win32" || constants.O_NOFOLLOW === undefined;
+
 type Scenario =
   | "same-label-at-preview" | "same-label" | "same-label-merged" | "relevant-after-preview" | "unchanged"
   | "same-label-empty" | "different-label-empty"
@@ -22,7 +24,7 @@ type Scenario =
   | "recorded-unreachable-after-preview"
   | "multiple-owned" | "overlap" | "dirty-owned" | "dirty-after-preview"
   | "staged-after-preview" | "dirty-during-confirm" | "untracked-affected-at-preview"
-  | "untracked-affected-after-preview" | "cancel";
+  | "untracked-affected-after-preview" | "inverse-unavailable" | "cancel";
 
 const isGitEnv = (key: string) => key.toUpperCase().startsWith("GIT_");
 
@@ -327,24 +329,26 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
     assert.equal(git("rev-parse", "HEAD"), beforeHead);
     assert.deepEqual(readFileSync(join(root, ".git", "index")), beforeIndex);
     assert.equal(existsSync(join(root, ".tenet")), false);
-    if (scenario === "unchanged" || scenario === "different-label-empty" || multipleOwned) {
+    const shouldApply = scenario === "unchanged" || scenario === "different-label-empty" || multipleOwned;
+    if (scenario === "inverse-unavailable" || (inverseUnavailable && shouldApply)) {
+      assert.equal(confirmation.exit, 2, JSON.stringify(confirmation));
+      assert.equal(confirmation.reasons[0]?.code, "effect-uncertain");
+      assert.match(confirmation.reasons[0]!.message, /Safe inverse-patch application is unavailable/);
+      assert.deepEqual(confirmation.effects?.completed, []);
+      assert.deepEqual(confirmation.effects?.uncertain, ["undo postcondition is not established"]);
+      assert.equal(applyCount, 0);
+      assert.equal(plans - previewPlans, 1);
+      assert.equal(readFileSync(join(root, "src", "owned.txt"), "utf8"),
+        multipleOwned ? "header\nsecond owned\nfooter\nlater human\n" : "owned change\n");
+      assert.equal(memory.intents.length, 1);
+      assert.deepEqual(memory.results, []);
+    } else if (shouldApply) {
       assert.equal(confirmation.exit, 0, JSON.stringify(confirmation));
       assert.equal(applyCount, 1);
       assert.equal(plans - previewPlans, 1);
       assert.ok(confirmation.next?.some((next) => next.action === "check"), JSON.stringify(confirmation));
       assert.equal(readFileSync(join(root, "src", "owned.txt"), "utf8"),
         multipleOwned ? "header\nbefore\nfooter\nlater human\n" : "before\n");
-      if (multipleOwned) {
-        assert.equal(readFileSync(join(root, "docs", "staged.txt"), "utf8"), "human staged\nhuman unstaged\n");
-        assert.equal(readFileSync(join(root, "docs", "dirty.txt"), "utf8"), "human dirty\n");
-        assert.deepEqual(readFileSync(join(root, "docs", "untracked.bin")), untrackedBytes);
-        assert.deepEqual(readFileSync(join(root, "docs", "ignored.bin")), ignoredBytes);
-        assert.equal(git("show", ":docs/staged.txt"), "human staged");
-        assert.equal(git("show", ":docs/dirty.txt"), "initial dirty");
-        assert.equal(git("status", "--short", "--", "docs/untracked.bin"), "?? docs/untracked.bin");
-        assert.equal(git("status", "--short", "--", "docs/ignored.bin"), "");
-        assert.equal(git("check-ignore", "docs/ignored.bin"), "docs/ignored.bin");
-      }
       assert.equal(memory.intents.length, 1);
       assert.deepEqual(memory.results.map((result) => result.outcome), [{ completed: true }]);
       assert.ok(memory.state().work[work.id]!.git.undoneBy);
@@ -401,6 +405,17 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
         assert.match(confirmation.reasons[0]!.message, /uncommitted changes/);
       }
     }
+    if (multipleOwned) {
+      assert.equal(readFileSync(join(root, "docs", "staged.txt"), "utf8"), "human staged\nhuman unstaged\n");
+      assert.equal(readFileSync(join(root, "docs", "dirty.txt"), "utf8"), "human dirty\n");
+      assert.deepEqual(readFileSync(join(root, "docs", "untracked.bin")), untrackedBytes);
+      assert.deepEqual(readFileSync(join(root, "docs", "ignored.bin")), ignoredBytes);
+      assert.equal(git("show", ":docs/staged.txt"), "human staged");
+      assert.equal(git("show", ":docs/dirty.txt"), "initial dirty");
+      assert.equal(git("status", "--short", "--", "docs/untracked.bin"), "?? docs/untracked.bin");
+      assert.equal(git("status", "--short", "--", "docs/ignored.bin"), "");
+      assert.equal(git("check-ignore", "docs/ignored.bin"), "docs/ignored.bin");
+    }
   } finally {
     for (const key of Object.keys(process.env).filter(isGitEnv)) delete process.env[key];
     for (const [key, value] of savedGitEnv) process.env[key] = value;
@@ -408,7 +423,7 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
   }
 }
 
-it("isolates scratch Git operations from inherited mixed-case Git variables", async () => {
+async function observeWithGitOverrides(scenario: Scenario) {
   const scratch = mkdtempSync(join(tmpdir(), "tenet-undo-env-"));
   const sentinel = join(scratch, "sentinel");
   const config = join(scratch, "global.gitconfig");
@@ -436,7 +451,7 @@ it("isolates scratch Git operations from inherited mixed-case Git variables", as
     process.env.Git_Config_Count = "1";
     process.env.Git_Config_Key_0 = "user.name";
     process.env.Git_Config_Value_0 = "inherited override";
-    await observe("unchanged", () => {
+    await observe(scenario, () => {
       assert.equal(process.env.Git_Dir, undefined);
       assert.equal(process.env.Git_Work_Tree, undefined);
       assert.equal(process.env.Git_Index_File, undefined);
@@ -460,7 +475,16 @@ it("isolates scratch Git operations from inherited mixed-case Git variables", as
     for (const [key, value] of savedGitEnv) process.env[key] = value;
     rmSync(scratch, { recursive: true, force: true });
   }
+}
+
+it("isolates scratch Git operations from inherited mixed-case Git variables", async () => {
+  await observeWithGitOverrides("unchanged");
 });
+
+it("isolates scratch Git operations when the inverse adapter is unavailable",
+  { skip: !inverseUnavailable && "safe inverse-patch application is available" }, async () => {
+    await observeWithGitOverrides("same-label");
+  });
 
 it("restores inherited Git overrides after a simulated undo setup failure", async () => {
   const savedGitEnv = Object.entries(process.env).filter(([key]) => isGitEnv(key));
@@ -522,7 +546,7 @@ it("refuses a same-label empty commit after preview with a simulated store [GIT-
   await observe("same-label-empty");
 });
 
-it("allows a differently labeled empty commit after preview with a simulated store [GIT-04]", async () => {
+it("accepts a differently labeled empty commit before applying or reporting an unavailable adapter [GIT-04]", async () => {
   await observe("different-label-empty");
 });
 
@@ -530,13 +554,18 @@ it("refuses a stale undo preview after a later same-file commit with a simulated
   await observe("relevant-after-preview");
 });
 
-it("applies an unchanged undo preview with a simulated store [GIT-04]", async () => {
+it("applies an unchanged undo preview when safe or reports an unavailable adapter [GIT-04]", async () => {
   await observe("unchanged");
 });
 
-it("reverts multiple owned commits and preserves later, staged, unstaged, untracked and ignored work with a simulated store [GIT-04]", async () => {
+it("preserves later, staged, unstaged, untracked and ignored work for multiple owned commits when undo succeeds or is unavailable [GIT-04]", async () => {
   await observe("multiple-owned");
 });
+
+it("keeps a simulated undo uncertain when the inverse adapter is unavailable",
+  { skip: !inverseUnavailable && "safe inverse-patch application is available" }, async () => {
+    await observe("inverse-unavailable");
+  });
 
 it("refuses a later overlapping human commit before preview with a simulated store [GIT-04]", async () => {
   await observe("overlap");

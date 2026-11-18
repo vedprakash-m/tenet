@@ -176,6 +176,8 @@ jobs:
         run: |
           $starter = Join-Path $env:RUNNER_TEMP "tenet-starter-restore"
           Set-Location $starter
+          npm ci --ignore-scripts --no-audit --engine-strict
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm rebuild better-sqlite3
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node --experimental-strip-types node_modules\vitest\vitest.mjs run server\test\restore.test.ts server\test\migrate.test.ts server\test\schema-history.test.ts

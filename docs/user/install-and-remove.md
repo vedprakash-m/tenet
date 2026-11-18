@@ -42,36 +42,36 @@ Not observed: any step of plugin update; whether work in progress survives one.
 
 Uninstall behavior on the host is **unobserved**. The steps below are the intended ones.
 
-1. In each project where you used Tenet, ask: **"help uninstall"** (or "what does Tenet leave behind"). Tenet lists what remains. It does not change anything while it lists.
-2. Decide which cleanup you want (below).
+1. In each project where you used Tenet, ask: **"help uninstall"** (or "what does Tenet leave behind"). Tenet lists some residue without removing it.
+2. Review the residue and cleanup previews (below).
 3. Remove the plugin from `chat.pluginLocations`.
-4. Remove `.tenet/` yourself, if you want it gone: `rm -rf .tenet` from the project root. Tenet cannot delete the store it is running in, and it never removes `.tenet/` or your files.
+4. Optionally remove `.tenet/` yourself after uninstalling. This deletes Tenet's project records. Tenet cannot delete the store it is running in.
 
 ### What remains (the residue listing)
 
-Under the hood this is `tenet inspect --view residue`. It reports:
+Under the hood this is `tenet inspect --view residue`. The residue listing is incomplete: it does not identify every possible residual file, including decision records and the charter block. Its note says cleanup removes only run files Tenet wrote, but cleanup removal is disabled and the preview does not establish ownership. It reports:
 
 | What | Where | Who removes it |
 |---|---|---|
 | Tenet's records for the project: state, log, blobs | `.tenet/` in the project, with file count and size | You |
 | Adopted documents, if any: `INTENT.md`, `tenet.policy.json`, `docs/architecture.md`, `docs/hardening.md`, each shown present or absent | The project | They are your documents and stay. Delete them yourself if you do not want them. |
 | Test tags (`@tenet`) in test files; `Tenet-Work` trailers in commits; the code, specs and evidence you committed | The project and its Git history | They stay |
-| Run files: review and analyst packets, reports | A `tenet-ws_…` folder in the system temp folder, with file count and size | The cleanup below |
+| Run files: review and analyst packets, reports | A `tenet-ws_…` folder in the system temp folder, with file count and size | You, after reviewing them |
 
-Tenet installs no service. Test processes left running by a failed check are checked and named before any removal rather than promised away.
+Tenet installs no service. Do not assume that a residue listing identifies every running process or file.
 
 ### Cleanups (`decide cleanup`)
 
-Two scopes. Each shows a preview first, then waits for a yes. It only removes run folders in the temp folder.
+Cleanup removal is disabled in this preview because it could remove files Tenet did not create. Each scope shows a preview, but a confirmed removal is refused. Review any files yourself before deleting them.
 
-| Scope | Removes | Notes |
+| Scope | Previewed run folders | Notes |
 |---|---|---|
 | This project | This project's run folder | Refused while a check or review/analyst packet still holds run files |
-| This machine | Stale run folders whose ownership Tenet can verify for this workspace | Recent folders and folders belonging to other or unverifiable workspaces are kept and listed |
+| This machine | Run folders reported as stale for this workspace | The preview also reports folders it would keep |
 
-Both scopes protect active checks and open packets. Stopping a check and completing a review are separate actions: pausing or abandoning work does not release an outstanding packet. Record its actual result when available; retrying keeps a packet open. Never fabricate a review to enable cleanup. Safe disposal of an unfinished packet has not been implemented.
+Cleanup preview is refused while a check or packet is active. Stopping a check and completing a review are separate actions: pausing or abandoning work does not release an outstanding packet. Record its actual result when available; retrying keeps a packet open. Never fabricate a review to enable cleanup. Safe disposal of an unfinished packet has not been implemented.
 
-Say "clean up" and then choose project or machine. Tenet shows what would go and what stays, and states that `.tenet/` and your files are not touched. Nothing is removed until you answer yes.
+Say "clean up" and then choose project or machine to request a preview. Do not rely on the preview as proof of ownership or a complete list.
 
 ## Update
 

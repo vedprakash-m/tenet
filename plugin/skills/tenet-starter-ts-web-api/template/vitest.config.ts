@@ -1,3 +1,3 @@
 import { defineConfig } from "vitest/config";
 
-export default defineConfig({ test: { include: ["server/**/*.test.ts", "shared/**/*.test.ts", "web/**/*.test.ts"], environment: "node", maxWorkers: 2 } });
+export default defineConfig({ test: { include: ["server/**/*.test.ts", "shared/**/*.test.ts", "web/**/*.test.ts"], environment: "node", maxWorkers: 2, testTimeout: 30_000 } });

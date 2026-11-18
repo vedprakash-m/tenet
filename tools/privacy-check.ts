@@ -15,7 +15,7 @@ const RULES: Array<[string, RegExp]> = [
 ];
 const EMAIL = /\b[A-Za-z0-9._%+-]+@(?!example\.(?:com|test|org)\b|users\.noreply\.github\.com|noreply\.)[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
 const ALLOWED_EMAIL = "noreply@anthropic.com";
-const SECRET_FILE = /(?:^|\/)\.env(?:\.(?!example$).+)?$|\.(?:pem|p12)$|(?:^|\/)id_(?:rsa|ed25519)/;
+const SECRET_FILE = /(?:^|\/)\.env(?:\.(?!example$).+)?$|\.(?:pem|p12|key)$|(?:^|\/)id_(?:rsa|ed25519)/i;
 const SECRET_STORE = "a file that looks like a secret store";
 
 export interface Finding { file: string; line: number; what: string }

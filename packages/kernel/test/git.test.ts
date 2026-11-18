@@ -4,6 +4,7 @@ import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { GitCli, gitBlob } from "../src/adapters/git-cli.ts";
+import { KernelError } from "../src/core/errors.ts";
 import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
 
 const dirs: string[] = [];
@@ -23,12 +24,23 @@ const kind = (p: string) => (p.endsWith(".test.ts") ? "test" as const : "source"
 
 describe("git: probe and inventory", () => {
   it("refuses a linked inverse-patch artifact without changing its target [SEC-06]", async () => {
-    const { g, root } = repo(), runDir = tmp(); dirs.push(runDir);
-    const target = join(root, "outside"); writeFileSync(target, "preserve me");
+    const { g } = repo(), runDir = tmp(); dirs.push(runDir);
+    const outside = tmp(); dirs.push(outside);
+    const target = join(outside, "target"); writeFileSync(target, "preserve me");
     symlinkSync(target, join(runDir, "inverse.patch"));
     await assert.rejects(g.applyPatch("not a patch", [], { runDir, timeoutMs: 1000 }));
     assert.equal(readFileSync(target, "utf8"), "preserve me");
   });
+  it("refuses inverse-patch writes on Windows before creating the artifact [SEC-06]",
+    { skip: process.platform !== "win32" }, async () => {
+      const { g } = repo(), runDir = tmp(); dirs.push(runDir);
+      await assert.rejects(g.applyPatch("not a patch", [], { runDir, timeoutMs: 1000 }), (error: unknown) => {
+        assert.ok(error instanceof KernelError);
+        assert.equal(error.reasons[0]?.code, "capability-missing");
+        return true;
+      });
+      assert.equal(existsSync(join(runDir, "inverse.patch")), false);
+    });
   it("uses custom operation exclusions and tracks excluded inputs by stat [SEC-14]", async () => {
     const { g, root } = repo();
     g.setExclusions([{ pattern: "private/", kinds: ["no-read"] }, { pattern: "src/a.ts", kinds: ["no-model-send"] }]);
