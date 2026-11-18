@@ -54,20 +54,25 @@ export function selectedFiles(root: string, laneName: string): string[] {
   return selected.sort();
 }
 
-export function partitionFiles(files: string[], durations: Map<string, number>, shard: string): string[] {
+export function partitionFiles(files: string[], durations: Map<string, number>, shard: string, serialFiles: string[] = []): string[] {
   const match = /^([1-9]\d*)\/([1-9]\d*)$/.exec(shard);
   if (!match || Number(match[1]) > Number(match[2])) throw new Error(`invalid test shard: ${shard}`);
   const selected = Number(match[1]) - 1, count = Number(match[2]);
+  const serial = new Set(serialFiles.map(normalize));
+  if (serial.size && count < 2) throw new Error("serialized test files require a dedicated shard");
   const buckets: Array<{ files: string[]; duration: number }> = Array.from({ length: count }, () => ({ files: [], duration: 0 }));
-  for (const file of [...files].sort((a, b) => (durations.get(b) ?? 1) - (durations.get(a) ?? 1) || a.localeCompare(b))) {
+  const serialBucket = serial.size ? count - 1 : -1;
+  for (const file of [...files].filter((file) => !serial.has(file)).sort((a, b) => (durations.get(b) ?? 1) - (durations.get(a) ?? 1) || a.localeCompare(b))) {
     const duration = durations.get(file) ?? 1;
-    const bucketIndex = buckets.reduce((best, candidate, index) =>
+    const parallelCount = serial.size ? count - 1 : count;
+    const bucketIndex = buckets.slice(0, parallelCount).reduce((best, candidate, index) =>
       candidate.duration < buckets[best]!.duration ||
       (candidate.duration === buckets[best]!.duration && candidate.files.length < buckets[best]!.files.length) ? index : best, 0);
     const bucket = buckets[bucketIndex]!;
     bucket.files.push(file);
     bucket.duration += duration;
   }
+  for (const file of files) if (serial.has(file)) buckets[serialBucket]!.files.push(file);
   return buckets[selected]!.files.sort();
 }
 
@@ -100,7 +105,7 @@ export async function runTests(root: string, laneName: string, output: string, s
   if (lane.requiresBundle) statSync(join(root, "plugin/kernel/tenet.mjs"));
   const files = selectedFiles(root, laneName);
   if (!files.length) throw new Error(`test lane ${laneName} selected no files`);
-  const runFiles = shard ? partitionFiles(files, durationWeights(root), shard) : files;
+  const runFiles = shard ? partitionFiles(files, durationWeights(root), shard, lane.serialFiles) : files;
   if (!runFiles.length) throw new Error(`test lane ${laneName} shard ${shard} selected no files`);
   const reporter = `./${normalize(relative(root, join(root, "tools/test-reporter.mjs")))}`;
   const effectiveConcurrency = concurrencyForFiles(runFiles, concurrency, lane.serialFiles);

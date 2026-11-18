@@ -67,6 +67,7 @@ describe("validation evidence population", () => {
     assert.equal(new Set(first.filter((file) => second.includes(file))).size, 0);
     assert.ok(Math.max(first.reduce((sum, file) => sum + durations.get(file)!, 0),
       second.reduce((sum, file) => sum + durations.get(file)!, 0)) <= 110);
+    assert.deepEqual(partitionFiles(files, durations, "3/3", ["d.test.ts"]), ["d.test.ts"]);
   });
 
   it("serializes a shard that owns a real-process race", () => {

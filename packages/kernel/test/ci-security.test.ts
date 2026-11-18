@@ -73,7 +73,7 @@ describe("untrusted validation keeps its trust boundary [ENG-10]", () => {
   it("runs source once per POSIX OS with locked Chromium and complete structured evidence", () => {
     assert.deepEqual(untrusted.doc.jobs.source.strategy.matrix.os, ["ubuntu-latest", "macos-latest"]);
     assert.deepEqual(untrusted.doc.jobs.source.strategy.matrix.shard.map((item: { value: string }) => item.value),
-      ["1/4", "2/4", "3/4", "4/4"]);
+      ["1/5", "2/5", "3/5", "4/5", "5/5"]);
     const runs = commands("source").join("\n");
     assert.match(runs, /tools\/test-runner\.ts --lane source --concurrency=2 --shard/);
     assert.match(runs, /tools\/verify-execution\.ts --partial --lane source/);
