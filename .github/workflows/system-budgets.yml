@@ -3,7 +3,7 @@ name: system-budgets
 on:
   pull_request:
   push:
-    branches: ["**"]
+    branches: ["main"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   paired-diagnostics:
-    if: github.event_name != 'push'
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:

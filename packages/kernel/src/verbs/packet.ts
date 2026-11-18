@@ -10,6 +10,7 @@ import type { Verb } from "../pipeline.ts";
 import { nx, withWork, workOf } from "./common.ts";
 import { checkInputId, gather, worldDigest } from "./facts.ts";
 import { issueAnalyst, issueReview } from "./manifest.ts";
+import { coverageEvidenceForReceipts } from "../core/alternative-check.ts";
 
 export const packet: Verb<PacketInput> = {
   name: "packet",
@@ -37,7 +38,11 @@ export const packet: Verb<PacketInput> = {
       };
     }
     if (!w.basis) throw new KernelError("continue-required", "record a basis first", { exit: 2 });
-    if (!checkpointEvidence(w, facts.candidate, checkInputId(ports, w, facts.candidate))) return { resp: { work: w.id, exit: 2, reasons: [reason("stale", "run a full passing check before requesting a review")], next: [nx("check", "Check the current candidate first.", true)] } };
+    const inputId = checkInputId(ports, w, facts.candidate);
+    const coverage = coverageEvidenceForReceipts(state!, w.id, w.basis.hash, w.receipts, inputId);
+    if (!checkpointEvidence(
+      w, facts.candidate, inputId, coverage.approval, coverage.evidence,
+    )) return { resp: { work: w.id, exit: 2, reasons: [reason("stale", "run a full passing check before requesting a review")], next: [nx("check", "Check the current candidate first.", true)] } };
     const changes = await ports.git.changes(w.git.base, facts.reviewPaths, ports.stack.classify);
     const issued = issueReview(ports, state!, w, facts, changes, !!input.retry);
     return { state: withWork(state!, issued.work), resp: { work: w.id, reasons: issued.reasons, next: issued.next, ...(issued.data ? { data: issued.data } : {}) } };

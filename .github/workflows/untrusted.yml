@@ -1,23 +1,19 @@
-# Untrusted workflow: runs on every pull request, including from forks. Read-only token, no secrets, no network
-# beyond installing locked dependencies, their pinned Chromium and required system libraries. It runs the whole T1 suite (plan §5.2, TS §17.6).
-# The development loop runs TypeScript directly (Node 24+); the shipped bundle must also run on the minimum Node.
+# Untrusted validation: read-only token, no secrets, locked provisioning, no trusted artifact reuse.
 name: untrusted
 on:
   pull_request:
   push:
-    branches: ["**"]
+    branches: ["main"]
+  workflow_dispatch:
 concurrency:
-  group: untrusted-${{ github.ref }}
-  cancel-in-progress: true
+  group: untrusted-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'push' || github.ref != 'refs/heads/main' }}
 permissions:
   contents: read
 jobs:
-  t1:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -27,59 +23,159 @@ jobs:
         with:
           node-version: 24
       - run: npm ci --ignore-scripts --no-audit
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run coverage
       - name: SemVer agrees and does not regress from the event base
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           if test -n "$BASE_SHA" && test "$BASE_SHA" != 0000000000000000000000000000000000000000; then
             previous="$(git show "$BASE_SHA:plugin/plugin.json" | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>console.log(JSON.parse(s).version))')"
-            node tools/semver.ts "$previous"
+            node --experimental-strip-types tools/semver.ts "$previous"
           else
             npm run verify:semver
           fi
-      - name: Install the starter's locked Chromium for real browser journeys
+      - name: Privacy and PII heuristic for the candidate range
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if test -n "$BASE_SHA" && test "$BASE_SHA" != 0000000000000000000000000000000000000000; then
+            node --experimental-strip-types tools/privacy-check.ts --range "$BASE_SHA..$GITHUB_SHA"
+          else
+            npm run privacy
+          fi
+
+  source:
+    needs: preflight
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        shard:
+          - id: "1"
+            value: "1/2"
+          - id: "2"
+            value: "2/2"
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit
+      - name: Install locked Chromium for the source lane
         run: |
           browser_tools="$RUNNER_TEMP/tenet-browser-tools"
           mkdir -p "$browser_tools"
           cp plugin/skills/tenet-starter-ts-web-api/template/package.json plugin/skills/tenet-starter-ts-web-api/template/package-lock.json "$browser_tools/"
           npm ci --prefix "$browser_tools" --ignore-scripts --no-audit
           node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium
-      - name: Isolated native read-only review watcher control
-        run: node --test packages/kernel/test/read-only-review.test.ts
-      - run: npm run ci
-      - name: Capture actual schema-1 lifecycle records (one-shot)
+      - name: Source tests with structured evidence
+        run: node --experimental-strip-types tools/test-runner.ts --lane source --concurrency=2 --shard "${{ matrix.shard.value }}" --report "$RUNNER_TEMP/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json"
+      - name: Verify source shard population
+        run: node --experimental-strip-types tools/verify-execution.ts --partial --lane source --reports "$RUNNER_TEMP/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json" --output "$RUNNER_TEMP/execution-source-${{ matrix.os }}-${{ matrix.shard.id }}.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: source-${{ matrix.os }}-${{ matrix.shard.id }}
+          path: |
+            ${{ runner.temp }}/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json
+            ${{ runner.temp }}/execution-source-${{ matrix.os }}-${{ matrix.shard.id }}.json
+          if-no-files-found: error
+          retention-days: 14
+
+  bundle-uat:
+    needs: preflight
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-audit
+      - name: Install locked Chromium for the bundle lane
+        run: |
+          browser_tools="$RUNNER_TEMP/tenet-browser-tools"
+          mkdir -p "$browser_tools"
+          cp plugin/skills/tenet-starter-ts-web-api/template/package.json plugin/skills/tenet-starter-ts-web-api/template/package-lock.json "$browser_tools/"
+          npm ci --prefix "$browser_tools" --ignore-scripts --no-audit
+          node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium
+      - run: npm run build
+      - run: npm run verify:payload
+      - run: npm run verify:reproducible
+      - name: Build-dependent source assertions
+        run: node --experimental-strip-types tools/test-runner.ts --lane postbuild --report "$RUNNER_TEMP/test-postbuild.json"
+      - name: Verify complete post-build population
+        run: node --experimental-strip-types tools/verify-execution.ts --lane postbuild --reports "$RUNNER_TEMP/test-postbuild.json" --output "$RUNNER_TEMP/execution-postbuild.json"
+      - name: Capture schema-1 lifecycle records when explicitly requested
         if: always() && matrix.os == 'ubuntu-latest' && github.event_name == 'push' && contains(github.event.head_commit.message, '[protocol-capture]')
         env:
           SOURCE_COMMIT: ${{ github.event.before }}
         run: |
           capture="$RUNNER_TEMP/tenet-legacy-capture"
           mkdir -p "$capture"
-          run_capture() {
+          capture_test() {
             TENET_LEGACY_CAPTURE_DIR="$capture" node --test --test-name-pattern="$2" "$1"
           }
-          run_capture packages/kernel/test/branch-admission.test.ts "allows branch creation when only a commit hook exists"
-          run_capture packages/kernel/test/workflows.test.ts "leaves the index untouched.*syncs in one step"
-          run_capture packages/kernel/test/scaffold.test.ts "writes the template with the project name"
-          run_capture packages/kernel/test/dependency.test.ts "resolves without installing, previews what changes"
-          run_capture packages/kernel/test/adopt.test.ts "previews first, writes nothing until the user answers"
-          run_capture packages/kernel/test/prototype.test.ts "creates and snapshots a hardening inventory when absent"
-          run_capture packages/kernel/test/integrate.test.ts "fast-forwards the base, moves the editor"
-          run_capture packages/kernel/test/undo.test.ts "previews first and changes nothing"
-          run_capture packages/kernel/test/forget-recovery.test.ts "FG-1 clears state|FG-3 finishes after primary damage"
-          run_capture packages/kernel/test/project-recovery.test.ts "keeps an adoption linked postcondition unresolved"
+          capture_test packages/kernel/test/branch-admission.test.ts "allows branch creation when only a commit hook exists"
+          capture_test packages/kernel/test/workflows.test.ts "leaves the index untouched.*syncs in one step"
+          capture_test packages/kernel/test/scaffold.test.ts "writes the template with the project name"
+          capture_test packages/kernel/test/dependency.test.ts "resolves without installing, previews what changes"
+          capture_test packages/kernel/test/adopt.test.ts "previews first, writes nothing until the user answers"
+          capture_test packages/kernel/test/prototype.test.ts "creates and snapshots a hardening inventory when absent"
+          capture_test packages/kernel/test/integrate.test.ts "fast-forwards the base, moves the editor"
+          capture_test packages/kernel/test/undo.test.ts "previews first and changes nothing"
+          capture_test packages/kernel/test/forget-recovery.test.ts "FG-1 clears state|FG-3 finishes after primary damage"
+          capture_test packages/kernel/test/project-recovery.test.ts "keeps an adoption linked postcondition unresolved"
           if ! git cat-file -e "$SOURCE_COMMIT^{commit}" 2>/dev/null; then
             git fetch --no-tags --depth=1 origin "$SOURCE_COMMIT"
           fi
           node tools/protocol-legacy-capture.mjs "$capture" "$SOURCE_COMMIT"
-      - name: The shipped bundle, driven through real repositories
-        run: npm run uat
+      - name: Node 24 bundle smoke
+        run: npm run --silent uat:smoke > "$RUNNER_TEMP/uat-smoke.json"
+      - name: Verify Node 24 bundle smoke
+        run: node --experimental-strip-types tools/uat/verify-smoke.mjs "$RUNNER_TEMP/uat-smoke.json" plugin/kernel/tenet.mjs
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22.12.0
-      - name: The shipped bundle, driven through real repositories, on the minimum supported Node
-        run: npm run uat
+      - name: Extracted-payload smoke on minimum Node
+        run: npm run --silent uat:smoke > "$RUNNER_TEMP/uat-smoke-22.json"
+      - name: Verify minimum-Node extracted payload
+        run: node --experimental-strip-types tools/uat/verify-smoke.mjs "$RUNNER_TEMP/uat-smoke-22.json" plugin/kernel/tenet.mjs
+      - name: Full minimum-Node built campaign
+        run: npm run --silent uat > "$RUNNER_TEMP/uat-full.json"
+      - name: Verify complete minimum-Node campaign
+        env:
+          ACTUAL_NODE: v22.12.0
+        run: node --experimental-strip-types tools/uat/verify.mjs "$RUNNER_TEMP/uat-full.json" plugin/kernel/tenet.mjs
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bundle-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/test-postbuild.json
+            ${{ runner.temp }}/execution-postbuild.json
+            ${{ runner.temp }}/uat-smoke.json
+            ${{ runner.temp }}/uat-smoke-22.json
+            ${{ runner.temp }}/uat-full.json
+          if-no-files-found: error
+          retention-days: 14
+
   windows-portability:
+    needs: preflight
     runs-on: windows-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -88,57 +184,33 @@ jobs:
         with:
           node-version: 24
       - run: npm ci --ignore-scripts --no-audit
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run coverage
       - run: npm run build
       - run: npm run verify:payload
       - run: npm run verify:reproducible
-      - name: Windows tooling, pure rules, offline evaluation and platform refusal only
-        run: >-
-          node --test --test-concurrency=4
-          packages\eval\test\protocol.test.ts
-          packages\eval\test\replay.test.ts
-          packages\eval\test\report.test.ts
-          packages\kernel\test\tooling-portability.test.ts
-          packages\kernel\test\payload.test.ts
-          packages\kernel\test\reproducible-build.test.ts
-          packages\kernel\test\tools.test.ts
-          packages\kernel\test\quality-gate.test.ts
-          packages\kernel\test\coverage.test.ts
-          packages\kernel\test\platform.test.ts
-          packages\kernel\test\host-launch.test.ts
-          packages\kernel\test\ci-security.test.ts
-          packages\kernel\test\core.test.ts
-          packages\kernel\test\config.test.ts
-          packages\kernel\test\verdict.test.ts
-          packages\kernel\test\report-paths.test.ts
-          packages\kernel\test\playwright-adapter.test.ts
-          packages\kernel\test\receipts.test.ts
-      - name: Windows pure static normalization and report population
-        run: >-
-          node --test
-          --test-name-pattern="static report population and bounds|normalizing typecheck output|normalizing lint output|static receipts|which static checks a contract needs"
-          packages\kernel\test\static-conformance.test.ts
-          packages\kernel\test\static-checks.test.ts
-      - name: Real filesystem cleanup boundaries without POSIX transactions
-        run: >-
-          node --test --test-name-pattern="automatic temp cleanup boundaries"
-          packages\kernel\test\store-boundary.test.ts
-      - name: Schema-1 bridge raw admission and terminal controls without POSIX transactions
-        run: node --test packages\kernel\test\schema-1-bridge.test.ts
-      - name: Read-only recovery and pure lesson retirement without POSIX transactions
-        run: >-
-          node --test --test-name-pattern="interrupted resolution preserves unknown content|repeated lesson retirement"
-          packages\kernel\test\dependency.test.ts
-          packages\kernel\test\lessons.test.ts
-      - name: Review result admission without POSIX transactions
-        run: >-
-          node --test
-          --test-name-pattern="review: one focused recheck|review and analyst reservation roles|carries recorded findings|reuses review completion|requires review follow-up for reported open dependencies|keeps required Deep passes visible|keeps unresolved finding states|requests Deep passes from the latest|keeps an unresolved latest Deep pass|includes each named finding|counts the complete recheck result template|refuses ambiguous attention claims|refuses invalid recheck claims|refuses full-review verification"
-          packages\kernel\test\reason-codes.test.ts
-          packages\kernel\test\review-admission.test.ts
-      - name: Real starter restore and rollback crash prefixes on Node 24
+      - run: >-
+          node --test --test-concurrency=4 packages\eval\test\protocol.test.ts packages\eval\test\replay.test.ts packages\eval\test\report.test.ts packages\kernel\test\tooling-portability.test.ts packages\kernel\test\payload.test.ts packages\kernel\test\reproducible-build.test.ts packages\kernel\test\tools.test.ts packages\kernel\test\quality-gate.test.ts packages\kernel\test\coverage.test.ts packages\kernel\test\platform.test.ts packages\kernel\test\host-launch.test.ts packages\kernel\test\ci-security.test.ts packages\kernel\test\core.test.ts packages\kernel\test\config.test.ts packages\kernel\test\verdict.test.ts packages\kernel\test\report-paths.test.ts packages\kernel\test\playwright-adapter.test.ts packages\kernel\test\receipts.test.ts packages\kernel\test\verify-execution.test.ts packages\kernel\test\bundle.test.ts
+      - name: Windows inverse-patch population
+        run: |
+          node --experimental-strip-types tools/test-runner.ts --lane windows-inverse --report "$env:RUNNER_TEMP\windows-inverse.json"
+          node --experimental-strip-types tools/verify-execution.ts --lane windows-inverse --reports "$env:RUNNER_TEMP\windows-inverse.json" --output "$env:RUNNER_TEMP\windows-inverse-verified.json"
+      - name: Windows static population
+        run: |
+          node --experimental-strip-types tools/test-runner.ts --lane windows-static --report "$env:RUNNER_TEMP\windows-static.json"
+          node --experimental-strip-types tools/verify-execution.ts --lane windows-static --reports "$env:RUNNER_TEMP\windows-static.json" --output "$env:RUNNER_TEMP\windows-static-verified.json"
+      - name: Windows cleanup population
+        run: |
+          node --experimental-strip-types tools/test-runner.ts --lane windows-cleanup --report "$env:RUNNER_TEMP\windows-cleanup.json"
+          node --experimental-strip-types tools/verify-execution.ts --lane windows-cleanup --reports "$env:RUNNER_TEMP\windows-cleanup.json" --output "$env:RUNNER_TEMP\windows-cleanup-verified.json"
+      - run: node --test packages\kernel\test\schema-1-bridge.test.ts
+      - name: Windows recovery population
+        run: |
+          node --experimental-strip-types tools/test-runner.ts --lane windows-recovery --report "$env:RUNNER_TEMP\windows-recovery.json"
+          node --experimental-strip-types tools/verify-execution.ts --lane windows-recovery --reports "$env:RUNNER_TEMP\windows-recovery.json" --output "$env:RUNNER_TEMP\windows-recovery-verified.json"
+      - name: Windows review population
+        run: |
+          node --experimental-strip-types tools/test-runner.ts --lane windows-review --report "$env:RUNNER_TEMP\windows-review.json"
+          node --experimental-strip-types tools/verify-execution.ts --lane windows-review --reports "$env:RUNNER_TEMP\windows-review.json" --output "$env:RUNNER_TEMP\windows-review-verified.json"
+      - name: Real starter restore on Node 24
         shell: pwsh
         run: |
           $starter = Join-Path $env:RUNNER_TEMP "tenet-starter-restore"
@@ -148,30 +220,17 @@ jobs:
           npm ci --ignore-scripts --no-audit
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm rebuild better-sqlite3
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node --experimental-strip-types node_modules\vitest\vitest.mjs run server\test\restore.test.ts server\test\migrate.test.ts server\test\schema-history.test.ts
-          exit $LASTEXITCODE
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22.12.0
-      - name: Windows bounded file identities and payload checks on minimum Node
-        run: >-
-          node --experimental-strip-types --test
-          packages\eval\test\protocol.test.ts
-          packages\eval\test\replay.test.ts
-          packages\eval\test\report.test.ts
-          packages\kernel\test\payload.test.ts
-          packages\kernel\test\host-launch.test.ts
-          packages\kernel\test\report-paths.test.ts
-          packages\kernel\test\playwright-adapter.test.ts
-          packages\kernel\test\receipts.test.ts
-      - name: Review result admission on minimum Node without POSIX transactions
-        run: >-
-          node --experimental-strip-types --test
-          --test-name-pattern="review: one focused recheck|review and analyst reservation roles|carries recorded findings|reuses review completion|requires review follow-up for reported open dependencies|keeps required Deep passes visible|keeps unresolved finding states|requests Deep passes from the latest|keeps an unresolved latest Deep pass|includes each named finding|counts the complete recheck result template|refuses ambiguous attention claims|refuses invalid recheck claims|refuses full-review verification"
-          packages\kernel\test\reason-codes.test.ts
-          packages\kernel\test\review-admission.test.ts
-      - name: Real starter restore and rollback crash prefixes on minimum Node
+      - run: >-
+          node --experimental-strip-types --test packages\eval\test\protocol.test.ts packages\eval\test\replay.test.ts packages\eval\test\report.test.ts packages\kernel\test\payload.test.ts packages\kernel\test\host-launch.test.ts packages\kernel\test\report-paths.test.ts packages\kernel\test\playwright-adapter.test.ts packages\kernel\test\receipts.test.ts
+      - name: Windows review population on minimum Node
+        run: |
+          node --experimental-strip-types tools/test-runner.ts --lane windows-review --report "$env:RUNNER_TEMP\windows-review-22.json"
+          node --experimental-strip-types tools/verify-execution.ts --lane windows-review --reports "$env:RUNNER_TEMP\windows-review-22.json" --output "$env:RUNNER_TEMP\windows-review-22-verified.json"
+      - name: Real starter restore on minimum Node
         shell: pwsh
         run: |
           $starter = Join-Path $env:RUNNER_TEMP "tenet-starter-restore"
@@ -179,6 +238,41 @@ jobs:
           npm ci --ignore-scripts --no-audit --engine-strict
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm rebuild better-sqlite3
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           node --experimental-strip-types node_modules\vitest\vitest.mjs run server\test\restore.test.ts server\test\migrate.test.ts server\test\schema-history.test.ts
-          exit $LASTEXITCODE
+
+  tenet-validation:
+    name: Tenet validation
+    needs: [preflight, source, bundle-uat, windows-portability]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.source.result == 'success'
+        with:
+          pattern: source-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/source-reports
+      - name: Require every lane
+        env:
+          PREFLIGHT: ${{ needs.preflight.result }}
+          SOURCE: ${{ needs.source.result }}
+          BUNDLE: ${{ needs.bundle-uat.result }}
+          WINDOWS: ${{ needs.windows-portability.result }}
+        run: |
+          printf 'preflight=%s source=%s bundle=%s windows=%s\n' "$PREFLIGHT" "$SOURCE" "$BUNDLE" "$WINDOWS"
+          test "$PREFLIGHT" = success
+          test "$SOURCE" = success
+          test "$BUNDLE" = success
+          test "$WINDOWS" = success
+          ubuntu="$(find "$RUNNER_TEMP/source-reports" -name 'test-source-ubuntu-latest-*.json' -print | paste -sd, -)"
+          macos="$(find "$RUNNER_TEMP/source-reports" -name 'test-source-macos-latest-*.json' -print | paste -sd, -)"
+          test -n "$ubuntu" && test -n "$macos"
+          node --experimental-strip-types tools/verify-execution.ts --lane source --reports "$ubuntu" --output "$RUNNER_TEMP/execution-ubuntu.json"
+          node --experimental-strip-types tools/verify-execution.ts --lane source --reports "$macos" --output "$RUNNER_TEMP/execution-macos.json"

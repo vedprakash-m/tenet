@@ -39,12 +39,14 @@ jobs:
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq .object.type)" = tag
           tag_object="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq .object.sha)"
           test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$tag_object" --jq .verification.verified)" = true
-      - name: The untrusted workflow passed on this exact commit
+      - name: The untrusted aggregate passed on this exact main commit
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          passed="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/untrusted.yml/runs?head_sha=$GITHUB_SHA&status=success" --jq .total_count)"
-          test "$passed" -ge 1
+          run_id="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/untrusted.yml/runs?head_sha=$GITHUB_SHA&status=success" --jq '[.workflow_runs[] | select(.head_branch == "main" and .event == "push")][0].id')"
+          test -n "$run_id" && test "$run_id" != null
+          passed="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" --jq '[.jobs[] | select(.name == "Tenet validation" and .conclusion == "success")] | length')"
+          test "$passed" -eq 1
       - run: npm ci --ignore-scripts --no-audit
       - name: The tag names the shipped version
         run: test "$TAG" = "v$(node -p "require('./plugin/plugin.json').version")"

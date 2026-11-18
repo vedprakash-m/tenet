@@ -14,6 +14,7 @@ import { settingsFor, unsupportedExecution } from "./reconcile.ts";
 import { isEditingProfile } from "../core/risk.ts";
 import { declaredInputs } from "../core/obligations.ts";
 import { declaredOutputs } from "../core/outputs.ts";
+import { coverageEvidenceForReceipts, stickyCoverageReceipts } from "../core/alternative-check.ts";
 
 export interface Facts {
   inv: Inventory;
@@ -61,8 +62,10 @@ export function unauthorizedEdits(ports: Ports, w: WorkContract, f: Facts): stri
 
 /** Bind the contract base (EVD-01), source candidate and check definitions (TS §8.8). */
 export function checkInputId(ports: Ports, w: WorkContract, candidate: string): string {
-  const defs = w.obligations.map(({ id, kind, category, tool, testFile, support, outputs, test, expectation, example }) => ({
-    id, kind, category, tool, testFile, support, outputs, test, expectation, example,
+  const defs = w.obligations.map(({
+    id, kind, category, tool, testFile, support, outputs, test, expectation, example, coverageTag, coverageHash,
+  }) => ({
+    id, kind, category, tool, testFile, support, outputs, test, expectation, example, coverageTag, coverageHash,
   }));
   return hashOf({ base: w.git.base, candidate, defs, toolchain: ports.stack.fingerprint(ports.root), envelope: { cwd: ".", env: { CI: "1" }, argv: "vitest run --reporter=json" } }).slice(0, 24);
 }
@@ -104,6 +107,10 @@ export function verdictInput(ports: Ports, st: State, w: WorkContract, facts: Fa
   const humanPresent = att.human.length + att.concurrent.length + att.unexplained.length + att.mixed.filter((p) => w.keepOut.includes(p)).length > 0;
   const vetted = ports.project.hashes(Object.keys(w.vetted));
   const recipeOnly = facts.reviewPaths.length > 0 && facts.reviewPaths.every(p => Object.hasOwn(w.vetted, p) && vetted[p] === w.vetted[p]);
+  const receipts = stickyCoverageReceipts(st, w.id, w.basis?.hash ?? "", w.receipts);
+  const coverage = coverageEvidenceForReceipts(
+    st, w.id, w.basis?.hash ?? "", receipts, checkInputId(ports, w, facts.candidate),
+  );
   const i: VerdictInput = {
     profile: w.profile, level: w.level, lane: w.lane,
     authorityAvailable: !isEditingProfile(w.profile) || routineAuthorized(w.grants, ports.clock.now()),
@@ -115,7 +122,8 @@ export function verdictInput(ports: Ports, st: State, w: WorkContract, facts: Fa
     elements: st.project.intent.elements.filter((e) => w.basis?.elementIds.includes(e.id)),
     confirmedAssumptions: w.basis?.confirmedAssumptions ?? [],
     unsupportedChecks: unsupportedExecution(ports, st, w),
-    obligations: w.obligations, receipts: w.receipts, testHashes,
+    obligations: w.obligations, receipts, testHashes,
+    coverageApproval: coverage.approval, coverageEvidence: coverage.evidence,
     sealedBaseline: w.sealedBaseline, exceptions: w.exceptions, treated: w.treated,
     unauthorized: unauthorizedEdits(ports, w, facts),
     changedLocks: st.locks.filter((l) => lockApplies(l, w, facts)).flatMap((l) => [

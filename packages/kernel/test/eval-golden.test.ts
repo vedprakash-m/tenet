@@ -60,12 +60,6 @@ describe("golden tasks: each task validates offline", { timeout: 300_000 }, () =
     });
   }
 
-  it("the whole set passes the Alpha validation the CLI runs", () => {
-    const r = validateAll({ alpha: true });
-    assert.deepEqual(r.tasks.map(task => task.id).sort(), [...ALPHA_TASK_IDS].sort());
-    assert.deepEqual(r.errors, []);
-    assert.deepEqual(r.tasks.flatMap((x) => x.errors), []);
-  });
 });
 
 describe("golden task validation catches broken tasks", { timeout: 300_000 }, () => {

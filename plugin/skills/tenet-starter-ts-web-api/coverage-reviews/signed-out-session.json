@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "mappingHash": "ae2e5bac2f94937a318179cf5b22596ba763a0089db57c1140177eeb112c509f",
+  "primaryFileHash": "cd39760c5131ce439f01f456934238e4dbe988df95dc482f03597d34264efa62",
+  "alternativeFileHash": "7c99b6af7ef74bf71c00515a685b5981236343dc1e066e4d6f230abc5a348568",
+  "primaryConfigHash": "c60b272f369b17c6e3c961d1488383c455c70bb034a20c2084512536bbd2cf4b",
+  "alternativeConfigHash": "bbfa67776587a30c5fd3a80b711776b79c720e7990d73cb748e89f20ff9f3902",
+  "primaryDefinitionHash": "9e646cf09bc26805a7bff29587ce4a830c9b37289b16f782d354f23e79a1a6f7",
+  "alternativeDefinitionHash": "aed02610531c18c2f2846f6be93e8fbd4c56b36a4d8767369da461a2157e65a3",
+  "review": {
+    "kind": "review",
+    "manifest": "ed20d7094aeea51c3afe2afec4587244b7c95fc28cc23aa9bdeaf9d422063e5d",
+    "reservation": "D13-signed-out-session-20261118",
+    "attempt": 1,
+    "mode": "full",
+    "status": "completed",
+    "dispatchMode": "subagent-fresh",
+    "axes": {
+      "behavior": "pass",
+      "structure": "pass"
+    },
+    "coverage": {
+      "inspected": [
+        "recipe.json",
+        "coverage/d13/vitest.config.ts",
+        "coverage/d13/vitest/signed-out-session.test.ts",
+        "coverage/d13/playwright.config.ts",
+        "coverage/d13/playwright/signed-out-session.e2e.spec.ts",
+        "server/src/",
+        "server/migrations/",
+        "server/test/support/admission.ts",
+        "server/test/support/browser-identities.ts",
+        "server/test/support/browser-server.ts",
+        "web/",
+        "vite.config.ts",
+        "tsconfig.json",
+        "specs/flaky-alternative-check.md"
+      ],
+      "uncovered": [],
+      "crossCutting": "The Vitest and Playwright checks cover the same confirmed-sign-out property with a preserved stale session credential.",
+      "sampled": []
+    },
+    "attention": [],
+    "findings": [],
+    "basisGaps": [],
+    "openDependencies": []
+  }
+}

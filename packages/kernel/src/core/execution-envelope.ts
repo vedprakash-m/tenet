@@ -18,6 +18,8 @@ export const ExecutionEnvelope = z.strictObject({
     kind: z.enum(["tests", "static", "e2e", "workload"]), argv: z.array(z.string()), cwd: z.string(),
     environment: z.strictObject({ passed: z.array(z.string()), dropped: z.array(z.string()) }),
     outputs: z.array(z.string()),
+    maxAttempts: z.number().int().min(1).max(3).optional(),
+    maxPortAttempts: z.number().int().min(1).max(3).optional(),
   })),
   writablePaths: z.array(z.string()), expectedNetwork: z.enum(["none", "localhost", "declared", "unknown"]),
   dataTargets: z.array(z.string()), containment: z.enum(["none-observed", "cooperative", "os-enforced"]),
@@ -75,7 +77,10 @@ export function executionDisclosures(envelopes: ExecutionEnvelope[], consents: S
 export function envelopeQuestion(envelope: ExecutionEnvelope): Question {
   const passed = [...new Set(envelope.commands.flatMap((command) => command.environment.passed))].sort();
   const dropped = [...new Set(envelope.commands.flatMap((command) => command.environment.dropped))].sort();
-  const commands = envelope.commands.map((command) => `${command.kind}: ${command.argv.join(" ")}`).join("; ");
+  const commands = envelope.commands.map((command) =>
+    `${command.kind}${command.maxAttempts ? ` (up to ${command.maxAttempts} attempts` +
+      `${command.maxPortAttempts ? `, ${command.maxPortAttempts} port launches each` : ""})` : ""}: ${command.argv.join(" ")}`
+  ).join("; ");
   const list = (items: string[]) => items.length ? items.join(", ") : "none";
   return {
     id: "envelope-consent", header: "Project check execution", channel: "chat", bind: { factsHash: envelope.hash },

@@ -67,6 +67,11 @@ function taggedOnly(per: readonly FileCounts[], tag: string): FileCounts[] | nul
   }];
 }
 
+function coveragePopulationMatches(per: readonly FileCounts[], tag: string | undefined): boolean {
+  if (!tag) return true;
+  return per.flatMap((file) => file.outcomes ?? []).filter((test) => test.test.includes(`[${tag}]`)).length === 1;
+}
+
 /** The receipt before any judgement: inconclusive, with the identity and provenance of the run. */
 function blank(o: RunFacts, ob: Obligation, i: number, c: ReceiptContext): Receipt {
   const rec: Receipt = {
@@ -146,8 +151,10 @@ function receiptFor(o: RunFacts, norm: Normalized | null, ob: Obligation, i: num
   // An acceptance test is one file; the suite is every file the report names.
   const files = ob.testFile ? [ob.testFile] : [...norm.files.keys()];
   const whole = files.flatMap((f) => norm.files.get(f) ?? []);
-  if (whole.length !== files.length) return stop("population-mismatch");
-  const tagged = ob.example ? taggedOnly(whole, ob.example) : null;
+  if (whole.length !== files.length || !coveragePopulationMatches(whole, ob.coverageTag))
+    return stop("population-mismatch");
+  const tag = ob.coverageTag ?? ob.example;
+  const tagged = tag ? taggedOnly(whole, tag) : null;
   const per = tagged ?? whole;
   if (tagged) rec.limitations.push(`matched by its own tagged assertions, not every test in ${ob.testFile}`);
   const sum = sumOf(per);

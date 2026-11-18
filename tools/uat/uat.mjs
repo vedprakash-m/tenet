@@ -6,6 +6,11 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { bridgeUat } from './bridge.mjs';
+if (process.argv.includes('--list')) {
+ const inventory = JSON.parse(readFileSync(new URL('../uat-inventory.json', import.meta.url), 'utf8'));
+ process.stdout.write(JSON.stringify(inventory, null, 2) + '\n');
+ process.exit(0);
+}
 const source = fileURLToPath(new URL('../../', import.meta.url));
 const bundle = process.env.TENET_TEST_BUNDLE ?? join(source, 'plugin/kernel/tenet.mjs');
 const roots = [];
@@ -1495,7 +1500,20 @@ try {
  const refusal = call(linked, 'open', { profile: 'feature', request: 'greeting' }); assert.notEqual(refusal.exit, 0); assert.deepEqual(readdirSync(outside), []);
  observations.push({ scenario: 'symlinked state directory', exit: refusal.exit, reason: refusal.reasons[0].code, outsideWrites: false });
  const artifact = readFileSync(bundle);
- process.stdout.write(JSON.stringify({ runtime: process.version, git: git(root, '--version'), bundle: { bytes: artifact.length, sha256: createHash('sha256').update(artifact).digest('hex') }, observations }, null, 2) + '\n');
+ const identified = observations.map((observation, index) => {
+  const identity = JSON.stringify(observation, Object.keys(observation).sort());
+  const hash = createHash('sha256').update(identity).digest('hex').slice(0, 12);
+  return { id: `uat-${String(index + 1).padStart(3, '0')}-${hash}`, ...observation };
+ });
+ const sourceIdentity = {
+  commit: process.env.GITHUB_SHA ?? null,
+  workflow: process.env.GITHUB_WORKFLOW ?? null,
+  workflowRef: process.env.GITHUB_WORKFLOW_REF ?? null,
+  runId: process.env.GITHUB_RUN_ID ?? null,
+  runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
+  ref: process.env.GITHUB_REF ?? null,
+ };
+ process.stdout.write(JSON.stringify({ version: 1, runtime: process.version, git: git(root, '--version'), source: sourceIdentity, bundle: { bytes: artifact.length, sha256: createHash('sha256').update(artifact).digest('hex') }, observations: identified }, null, 2) + '\n');
 } finally { roots.forEach(root => {
  try { const id = JSON.parse(readFileSync(join(root, '.tenet/state'), 'utf8')).workspaceId; if (/^ws_[a-z2-7]{10}$/.test(id)) rmSync(join(tmpdir(), `tenet-${id}`), { recursive: true, force: true }); } catch { /* no state in this scratch folder */ }
  rmSync(root, { recursive: true, force: true });

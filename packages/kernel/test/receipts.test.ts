@@ -9,9 +9,10 @@ import { cleanup, tmp, write } from "./helpers.ts";
 import { receiptsFrom, settleReruns } from "../src/core/receipts.ts";
 import type { ReceiptContext, RunFacts } from "../src/core/receipts.ts";
 import type { Obligation, Receipt, WorkContract } from "../src/core/schemas.ts";
+import type { RecipeCoverageRecord } from "../src/ports/types.ts";
 import { createStack, normalize } from "../src/adapters/node-ts.ts";
 import { normalizePlaywright } from "../src/adapters/playwright.ts";
-import { matchBaseline } from "../src/verbs/check-evidence.ts";
+import { matchBaseline, receiptsOf } from "../src/verbs/check-evidence.ts";
 import type { Run } from "../src/verbs/check-evidence.ts";
 
 const ob: Obligation = { id: "OB-1", kind: "test", category: "acceptance", testFile: "a.test.ts" };
@@ -71,6 +72,94 @@ describe("receipts", () => {
       }
     }
     assert.notEqual(createStack().adapterVersion(), "node-ts@26");
+  });
+
+  it("requires an exactly-once coverage tag rather than falling back to the whole file", () => {
+    const selected = { ...ob, coverageTag: "COV-signed-out-session" } as Obligation;
+    const absent = report([{ status: "passed" }], "/p/a.test.ts", false);
+    const missing = one(selected, run(), norm(absent));
+    assert.equal(missing.status, "inconclusive");
+    assert.deepEqual(missing.reasons, ["population-mismatch"]);
+
+    const duplicate = JSON.parse(absent);
+    duplicate.testResults[0].assertionResults = [
+      { fullName: "[COV-signed-out-session] first", status: "passed", failureMessages: [] },
+      { fullName: "[COV-signed-out-session] second", status: "passed", failureMessages: [] },
+    ];
+    const repeated = one(selected, run(), norm(JSON.stringify(duplicate)));
+    assert.equal(repeated.status, "inconclusive");
+    assert.deepEqual(repeated.reasons, ["population-mismatch"]);
+  });
+
+  it("settles a flaky coverage primary and a clean alternative into two attributable receipts", () => {
+    const primary: Obligation = {
+      id: "OB-signed-out-session", kind: "test", category: "boundary", tool: "vitest",
+      testFile: "coverage/d13/vitest/signed-out-session.test.ts", coverageTag: "COV-signed-out-session",
+    };
+    const stack = createStack();
+    stack.fingerprint = () => ({
+      node: "v24", tool: "vitest@5", reporter: "json", adapter: "node-ts@test",
+      static: {}, dependencies: "test",
+    });
+    stack.coverageArgv = (_root, check) => ["node", check.file];
+    const h = "a".repeat(64);
+    const mapping: RecipeCoverageRecord = {
+      id: "signed-out-session", obligation: primary.id,
+      primary: { tool: "vitest", config: "coverage/d13/vitest.config.ts", file: primary.testFile!, tag: "COV-signed-out-session", support: [] },
+      alternative: { tool: "playwright", config: "coverage/d13/playwright.config.ts", file: "coverage/d13/playwright/signed-out-session.e2e.spec.ts", tag: "COV-signed-out-session", support: [] },
+      mappingHash: h, reviewHash: h, primaryDefinitionHash: h, alternativeDefinitionHash: h,
+      reviewReservation: "review", reviewManifestHash: h,
+    };
+    const r = {
+      ports: { root: "/p", stack }, w: { obligations: [primary] } as WorkContract,
+      executionEnvelope: { argv: [], cwd: ".", env: [], network: "none", data: [], writes: [], outputs: [], credentialExposure: "none", consent: null },
+      runId: "coverage-run", runDir: "/run", stage: "candidate", baseline: false, scope: "full",
+      toRun: [primary], toExecute: "all", missing: [], coverage: [mapping], id: "chk",
+      facts: { candidate: "d0" }, exclusions: [],
+    } as unknown as Run;
+    const vitestFailure = JSON.stringify({
+      testResults: [{ name: "/p/" + primary.testFile, status: "failed", assertionResults: [{
+        fullName: "[COV-signed-out-session] rejects stale session", status: "failed",
+        failureMessages: ["AssertionError: expected 401"],
+      }] }],
+    });
+    const vitestPass = JSON.stringify({
+      testResults: [{ name: "/p/" + primary.testFile, status: "passed", assertionResults: [{
+        fullName: "[COV-signed-out-session] rejects stale session", status: "passed", failureMessages: [],
+      }] }],
+    });
+    const playwrightPass = JSON.stringify({
+      suites: [{ title: mapping.alternative.file, file: mapping.alternative.file, specs: [{
+        title: "[COV-signed-out-session] rejects stale session", ok: true, tests: [{
+          status: "expected", expectedStatus: "passed", results: [{ status: "passed", errors: [] }],
+        }],
+      }] }],
+      stats: { expected: 1, skipped: 0, unexpected: 0, flaky: 0 },
+    });
+    const facts = (raw: string, status = 0) => run({
+      raw, exit: status, after: "d0", durationMs: 5, startedAt: "t",
+    });
+    const result = receiptsOf(r, r.w, {
+      ...facts(vitestPass), ran: true, statics: {},
+      coverage: {
+        [mapping.id]: {
+          primary: [
+            { check: mapping.primary, report: "/run/primary-1.json", facts: facts(vitestFailure, 1) },
+            { check: mapping.primary, report: "/run/primary-2.json", facts: facts(vitestPass) },
+          ],
+          alternative: [
+            { check: mapping.alternative, report: "/run/alternative-1.json", facts: facts(playwrightPass) },
+          ],
+        },
+      },
+    });
+    const first = result.find((receipt) => receipt.obligation === primary.id)!;
+    const second = result.find((receipt) => receipt.obligation.endsWith("-alternative"))!;
+    assert.equal(first.status, "pass");
+    assert.deepEqual(first.qualifiers, ["flaky"]);
+    assert.equal(first.history?.length, 2);
+    assert.equal(second.status, "pass");
+    assert.deepEqual(second.qualifiers, []);
   });
 
   it("never discards failure diagnostics attached to nonfailed assertions [EVD-02, EVD-05, TDD-02]", () => {

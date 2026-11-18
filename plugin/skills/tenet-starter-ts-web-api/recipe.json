@@ -1,6 +1,6 @@
 {
   "id": "ts-web-api",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "sentinel": "tenet-starter-app",
   "checks": [
     "tsc",
@@ -8,6 +8,41 @@
     "e2e"
   ],
   "lockfileSha256": "6293e51ac0973c1cfb17d9fdce257578de6ff5c2027eeec4887be4a17a4ddd91",
+  "coverage": [
+    {
+      "id": "signed-out-session",
+      "obligation": "OB-signed-out-session",
+      "property": "After a confirmed sign-out, /api/auth/me returns 401 for the signed-out session.",
+      "population": "one signed-in synthetic user and one owned session in the current candidate",
+      "primary": {
+        "tool": "vitest",
+        "config": "coverage/d13/vitest.config.ts",
+        "file": "coverage/d13/vitest/signed-out-session.test.ts",
+        "tag": "COV-signed-out-session",
+        "support": [
+          "server/src",
+          "server/migrations",
+          "server/test/support/admission.ts"
+        ]
+      },
+      "alternative": {
+        "tool": "playwright",
+        "config": "coverage/d13/playwright.config.ts",
+        "file": "coverage/d13/playwright/signed-out-session.e2e.spec.ts",
+        "tag": "COV-signed-out-session",
+        "support": [
+          "server/src",
+          "server/migrations",
+          "server/test/support/browser-identities.ts",
+          "server/test/support/browser-server.ts",
+          "web",
+          "vite.config.ts",
+          "tsconfig.json"
+        ]
+      },
+      "review": "coverage-reviews/signed-out-session.json"
+    }
+  ],
   "protectedPaths": [
     "server/src/platform/auth/*",
     "server/src/platform/session/*",

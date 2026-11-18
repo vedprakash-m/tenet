@@ -4,17 +4,18 @@ import { hashOf } from "../core/ids.ts";
 import { declaredOutputs, movedNote } from "../core/outputs.ts";
 import { baselineDefinitionMatches, supportOf, wantsRed } from "../core/obligations.ts";
 import { notRunFacts, receiptsFrom, settleReruns, staticReceipt, workloadReceipt } from "../core/receipts.ts";
-import type { ReceiptContext, RunFacts } from "../core/receipts.ts";
+import type { RunFacts } from "../core/receipts.ts";
 import { carryDispositions, netAttention } from "../core/review.ts";
 import type { FileChange } from "../core/review.ts";
 import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
 import { TREND_PREFIX } from "../core/fitness.ts";
 import type { ParsedWorkload } from "../core/fitness.ts";
 import type { AttentionItem, Obligation, Receipt, State, WorkContract } from "../core/schemas.ts";
-import type { Normalized, Ports, StaticTool } from "../ports/types.ts";
+import type { Normalized, Ports, RecipeCoverageCheck, RecipeCoverageRecord, StaticTool } from "../ports/types.ts";
 import type { Facts } from "./facts.ts";
 import type { SealedRun } from "./check-sealed.ts";
 import type { Exclusion } from "../core/exclusions.ts";
+import { coverageReceipts, receiptContext } from "./check-coverage.ts";
 
 /** Everything a run decided before it started, which its result needs to be interpreted. */
 export interface Run {
@@ -35,6 +36,7 @@ export interface Run {
   toolchain?: string;
   /** The exclusion policy: paths it forbids reading stay out of the sealed starting copy (EVD-04). */
   exclusions?: Exclusion[];
+  coverage?: RecipeCoverageRecord[];
   /** The workload declaration, read when the run owes the workload obligation (QLT-05). */
   workload?: ParsedWorkload;
 }
@@ -42,26 +44,31 @@ export interface Run {
 /** One rerun of failed required test files on unchanged inputs (EVD-08): what ran, which obligations it covers and where its report is. */
 export interface Rerun { facts: RunFacts; obligations: string[]; toExecute: "all" | string[]; report: string }
 
+export interface CoverageAttempt { check: RecipeCoverageCheck; facts: RunFacts; report: string; launches?: number }
+export interface CoverageExecuted {
+  primary: CoverageAttempt[];
+  alternative?: CoverageAttempt[];
+}
+export interface E2eAttempt { facts: RunFacts; report: string; launches?: number }
+
 /** What a check run observed: the test runner, and each static tool (including the e2e obligation) by obligation. */
-export interface Executed extends RunFacts { statics: Record<string, RunFacts>; reruns?: Rerun[]; moved?: string[]; sealed?: SealedRun }
+export interface Executed extends RunFacts {
+  statics: Record<string, RunFacts>;
+  reruns?: Rerun[];
+  coverage?: Record<string, CoverageExecuted>;
+  e2e?: Record<string, E2eAttempt[]>;
+  moved?: string[];
+  sealed?: SealedRun;
+}
 export const isStatic = (ob: Obligation): boolean => ob.kind === "static";
 export const isE2e = (ob: Obligation): boolean => ob.tool === "playwright";
 export const isWorkload = (ob: Obligation): boolean => ob.kind === "workload";
 /** Obligations judged from the shared test runner's report: neither a static tool nor the workload. */
-export const isSharedTest = (ob: Obligation): boolean => !isStatic(ob) && !isWorkload(ob);
+export const isSharedTest = (ob: Obligation): boolean => !isStatic(ob) && !isWorkload(ob) && !ob.coverageTag;
 export const staticReport = (runDir: string, tool: string): string => join(runDir, `${tool}.json`);
 export const e2eReport = (runDir: string): string => join(runDir, "playwright.json");
 
 const unexecuted = (run: Run): RunFacts => ({ ...notRunFacts(run.ports.clock.now()), after: run.facts.candidate });
-
-/** Every tool's receipts bind to the same prepared candidate and run. */
-function receiptContext(run: Run, argv: string[]): ReceiptContext {
-  const { ports, facts, stage, scope, runId, runDir, executionEnvelope } = run;
-  return {
-    stage, scope, id: run.id, candidate: facts.candidate, runId, runDir, argv, before: facts.candidate,
-    versions: ports.stack.fingerprint(ports.root), executionEnvelope, missing: new Set<string>(),
-  };
-}
 
 /** A static check is judged by its own run, on the same candidate as the tests. */
 function staticReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
@@ -82,12 +89,27 @@ function staticReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
 function e2eReceipts(run: Run, o: Executed, firstIndex: number): Receipt[] {
   const { ports, runId, runDir } = run;
   const e2eObs = run.toRun.filter(isE2e);
-  if (!e2eObs.length) return [];
-  const ran = o.statics[e2eObs[0]!.id] ?? unexecuted(run);
-  const norm = ports.stack.normalizeE2e({ exit: ran.exit, raw: ran.raw }, ports.root);
-  const ctx = receiptContext(run, ports.stack.e2eArgv(ports.root, e2eReport(runDir)) ?? []);
-  ctx.versions = { ...ctx.versions, tool: `playwright@${ctx.versions.static.playwright ?? "none"}`, reporter: "playwright-json" };
-  return receiptsFrom(ran, norm, e2eObs, ctx).map((r, i) => ({ ...r, id: `RC-${runId}-${firstIndex + i + 1}` }));
+  return e2eObs.flatMap((obligation, index) => {
+    const attempts = o.e2e?.[obligation.id] ?? [{
+      facts: o.statics[obligation.id] ?? unexecuted(run),
+      report: e2eReport(runDir),
+    }];
+    const selected = (attempt: E2eAttempt) => {
+      const norm = ports.stack.normalizeE2e({ exit: attempt.facts.exit, raw: attempt.facts.raw }, ports.root);
+      const ctx = receiptContext(run, ports.stack.e2eArgv(ports.root, attempt.report) ?? []);
+      ctx.versions = {
+        ...ctx.versions,
+        tool: `playwright@${ctx.versions.static.playwright ?? "none"}`,
+        reporter: "playwright-json",
+      };
+      return receiptsFrom(attempt.facts, norm, [obligation], ctx)[0]!;
+    };
+    const settled = settleReruns(
+      [selected(attempts[0]!)],
+      attempts.slice(1).map((attempt) => [selected(attempt)]),
+    )[0]!;
+    return [{ ...settled, id: `RC-${runId}-${firstIndex + index + 1}` }];
+  });
 }
 
 /** The workload receipt, judged from its own run; absent from `statics` when an earlier required obligation failed. */
@@ -122,6 +144,7 @@ export function receiptsOf(run: Run, cw: WorkContract, o: Executed): Receipt[] {
   receipts.push(...staticReceipts(run, o, tests.length));
   receipts.push(...e2eReceipts(run, o, tests.length + run.toRun.filter((ob) => isStatic(ob) && !isE2e(ob)).length));
   receipts.push(...workloadReceipts(run, o, receipts.length));
+  receipts.push(...coverageReceipts(run, o, receipts.length));
   if (o.moved?.length)
     for (const r of receipts.filter((x) => x.reasons.includes("concurrent-edit")))
       r.limitations.push(movedNote(o.moved));

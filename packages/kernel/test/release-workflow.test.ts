@@ -17,7 +17,9 @@ describe("release workflow candidate", () => {
   it("runs on a version tag only, never on a pull request or a branch push", () => {
     assert.deepEqual(Object.keys(doc.on), ["push"]);
     assert.deepEqual(Object.keys(doc.on.push), ["tags"]);
-    assert.doesNotMatch(text, /pull_request|workflow_run|issue_comment/);
+    assert.equal(Object.hasOwn(doc.on, "pull_request"), false);
+    assert.equal(Object.hasOwn(doc.on, "workflow_run"), false);
+    assert.equal(Object.hasOwn(doc.on, "issue_comment"), false);
   });
 
   it("pins every remote action to a commit, including the attestation action", () => {
@@ -51,6 +53,9 @@ describe("release workflow candidate", () => {
     assert.match(gate, /\.object\.type\)" = tag/);
     assert.match(gate, /verification\.verified\)" = true/);
     assert.match(gate, /untrusted\.yml\/runs\?head_sha=\$GITHUB_SHA&status=success/);
+    assert.match(gate, /\.name == "Tenet validation" and \.conclusion == "success"/);
+    assert.match(gate, /\.head_branch == "main"/);
+    assert.match(gate, /\.event == "push"/);
     assert.match(gate, /plugin\/plugin\.json/);
     assert.match(gate, /tools\/release-notes\.ts --check "docs\/release\/notes\/\$TAG\.md"/);
     assert.match(gate, /tools\/release-audit\.ts --milestone R1/);

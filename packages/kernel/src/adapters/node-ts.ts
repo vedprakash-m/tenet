@@ -4,7 +4,7 @@ import { closeSync, constants, existsSync, fstatSync, openSync, readSync } from 
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import type { AttentionPattern, FileChange } from "../core/review.ts";
-import type { Detection, Normalized, StaticNorm, StaticTool, Stack, ToolVersions } from "../ports/types.ts";
+import type { Detection, Normalized, RecipeCoverageCheck, StaticNorm, StaticTool, Stack, ToolVersions } from "../ports/types.ts";
 import { allowed } from "../core/exclusions.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
@@ -430,6 +430,27 @@ export function normalizeStatic(tool: StaticTool, out: { exit: number | undefine
 const STATIC_SCRIPT: Record<StaticTool, string> = { tsc: "typescript/bin/tsc", eslint: "eslint/bin/eslint.js" };
 const STATIC_VERSION: Record<StaticTool, string> = { tsc: "5.9.3", eslint: "9.39.1" };
 
+function selectedCoverageArgv(
+  root: string,
+  check: RecipeCoverageCheck,
+  report: string,
+  exclusions: readonly Exclusion[],
+): string[] | null {
+  const meta = metadata(root, exclusions);
+  if (check.tool === "vitest") {
+    const version = Number(String(meta.json("node_modules/vitest/package.json")?.version ?? "none").split(".")[0]);
+    if (!SUPPORTED.includes(version)) return null;
+    return [
+      process.execPath, "node_modules/vitest/vitest.mjs", "run",
+      "--reporter=json", `--outputFile=${report}`, "--no-color", "--allowOnly=false",
+      "--dangerouslyIgnoreUnhandledErrors=false", `--config=${check.config}`, check.file,
+    ];
+  }
+  const command = playwrightArgv(root, report,
+    String(meta.json("node_modules/@playwright/test/package.json")?.version ?? "none"));
+  return command ? [...command, `--config=${check.config}`, check.file] : null;
+}
+
 export function createStack(): Stack {
   let exclusions: readonly Exclusion[] = [];
   return {
@@ -472,6 +493,7 @@ export function createStack(): Stack {
     normalizeStatic,
     e2eArgv: (root, report) => playwrightArgv(root, report,
       String(metadata(root, exclusions).json("node_modules/@playwright/test/package.json")?.version ?? "none")),
+    coverageArgv: (root, check, report) => selectedCoverageArgv(root, check, report, exclusions),
     normalizeE2e: (out, root) => normalizePlaywright(out.raw, root),
     adapterVersion: () => ADAPTER,
     shareDeps,

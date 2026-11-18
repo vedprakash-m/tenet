@@ -22,6 +22,7 @@ import { checkInputId, gather, verdictInput, worldDigest } from "./facts.ts";
 import type { Facts } from "./facts.ts";
 import { integrationSetting } from "./integrate.ts";
 import type { IntegrationSetting } from "./integrate.ts";
+import { coverageEvidenceForReceipts, coveredCoverageEvidence } from "../core/alternative-check.ts";
 
 const MAX_REASONS = 8;
 
@@ -47,8 +48,20 @@ function result(
     ...(missingReason ? [missingReason] : []), ...extra];
   const shown = reasons.slice(0, MAX_REASONS);
   if (missingReason && !shown.includes(missingReason)) shown[MAX_REASONS - 1] = missingReason;
-  const latestByOb = new Map(w.receipts.filter((r) => r.stage !== "baseline").map((r) => [r.obligation, r]));
+  const required = new Set(w.obligations.map((obligation) => obligation.id));
+  const latestByOb = new Map(w.receipts
+    .filter((r) => r.stage !== "baseline" && required.has(r.obligation))
+    .map((r) => [r.obligation, r]));
   const checks = [...latestByOb.values()].map((r) => ({ obligation: r.obligation, status: r.status, counts: r.counts }));
+  const coverageInput = coverageEvidenceForReceipts(
+    st, w.id, w.basis?.hash ?? "", w.receipts, checkInputId(ports, w, facts.candidate),
+  );
+  const coverage = coveredCoverageEvidence(w.receipts, coverageInput.approval, coverageInput.evidence)
+    .map((item) => ({
+      obligation: item.obligation,
+      primaryReceipt: item.primaryReceipt,
+      alternativeReceipt: item.alternativeReceipt,
+    }));
   const lastReview = w.reviews.at(-1);
   const review = lastReview
     ? { independence: lastReview.independence, axes: lastReview.axes ?? null, uncovered: lastReview.uncovered }
@@ -74,6 +87,7 @@ function result(
       ...(v.stopReason ? { stopReason: v.stopReason } : {}),
       acceptance: w.acceptance,
       checks,
+      ...(coverage.length ? { coverage } : {}),
       executionEnvelopes: executionDisclosures(w.receipts.flatMap(r => r.executionEnvelope ?? []), st.consents),
       usage: summarize(w.budget, w.lane),
       ...(w.model ? { model: w.model } : {}),

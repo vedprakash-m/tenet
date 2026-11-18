@@ -12,6 +12,7 @@ import { nx, withWork, workOf } from "./common.ts";
 import { filterQuestion, hookQuestion, unexplainedQuestion } from "./commit-questions.ts";
 import { checkInputId, gather, worldDigest } from "./facts.ts";
 import type { Facts } from "./facts.ts";
+import { coverageEvidenceForReceipts } from "../core/alternative-check.ts";
 
 export type Done = (
   st: State,
@@ -49,7 +50,11 @@ async function blockers(ports: Ports, st: State, w: WorkContract, facts: Facts):
   }
   if (!facts.tenetPaths.length) return null;
   // Last-check rule: a Tenet file edited after the last successful check cannot be committed as checked.
-  if (!checkpointEvidence(w, facts.candidate, checkInputId(ports, w, facts.candidate)) ||
+  const inputId = checkInputId(ports, w, facts.candidate);
+  const coverage = coverageEvidenceForReceipts(st, w.id, w.basis?.hash ?? "", w.receipts, inputId);
+  if (!checkpointEvidence(
+    w, facts.candidate, inputId, coverage.approval, coverage.evidence,
+  ) ||
       changedSinceCheck(w, facts.inv, facts.tenetPaths).length) {
     throw new KernelError("stale", "run a full successful check before committing", { exit: 2 });
   }

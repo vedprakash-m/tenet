@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-18 — Reduce CI runtime without dropping required evidence
+
+- Reworked untrusted validation into preflight, source, bundle/UAT, Windows and aggregate lanes. Exact `main` pushes and pull requests now run a structured `Tenet validation` result; feature-branch pushes do not rerun the full graph. The complete Node 22.12 UAT remains required on supported POSIX, while Node 24 uses an extracted-payload smoke.
+- Added `tools/test-runner.ts`, `tools/test-reporter.mjs`, `tools/test-inventory.json` and `tools/verify-execution.ts` to bind each lane to discovered files, exact protected leaves, run identity and passing structured results. Bundle-dependent assertions now have a separate post-build population and an absent bundle cannot silently skip them.
+- Added stable UAT scenario identities and a protected 157-observation baseline. Release admission now requires the successful `Tenet validation` job on the exact `main` commit.
+- Removed the repeated Alpha-catalog validation, duplicate standalone watcher run and repeated Node 24 full UAT. `verify:reproducible` now typechecks once before its two independent builds. Existing real Git, crash, browser, native SQLite and minimum-Node boundaries remain.
+
 ## 2026-11-17 — Warn about Windows metadata links
 
 - `README.md` and `plugin/README.md` warn that Windows can follow linked installed Vitest metadata outside the project. A built-CLI control observed this with synthetic data; no real user-data exposure was established.

@@ -65,13 +65,16 @@ Node 24 or newer runs the TypeScript sources directly. The shipped bundle must r
 ```bash
 npm ci
 npm run ci
+npm run validate
 ```
 
-`npm run ci` runs typecheck, `lint-arch`, `lint-skills`, the quality lint, coverage, the build, payload and reproducibility verification, and every test.
+`npm run ci` runs typecheck, `lint-arch`, `lint-skills`, the quality lint, coverage, the build, payload and reproducibility verification, and every test. `npm run test:source` reports the build-independent test population, while `npm run test:postbuild` requires the generated bundle and runs the build-dependent population. `npm run uat` drives the complete shipped bundle campaign. `npm run validate` composes the full local source/build gate and the complete built-bundle campaign against the same checkout.
+
+CI uses the versioned `tools/test-inventory.json` and `tools/verify-execution.ts` to reject missing, duplicate or skipped required evidence. `tools/test-runner.ts` emits one structured execution report per lane; `tools/uat/verify.mjs` binds the complete minimum-Node campaign to the retained 157-observation population. Add a test to the normal source glob, and update the explicit inventory only when its execution boundary changes.
 
 Run the full mutation, process-group and crash-recovery suite on macOS or Linux. Windows can build the bundle and run the deterministic tooling, pure-rule and platform-refusal tests, but it has no supported mutation port (Tech Spec §4.9). A passing Windows build or focused suite is not a passing full CI gate or host qualification; do not skip the POSIX tests to claim one.
 
-The untrusted workflow retains full macOS/Linux CI and has a separate Windows portability job. That job runs focused checks on Node 24 and the offline evaluator/payload regressions on Node 22.12; it is not the POSIX mutation suite. Synthetic local tooling/evaluation fixtures use unique directories under the existing ignored `.host-runs/test-fixtures/` area so parallel tests cannot change checkout-wide Git status. Each suite removes only its owned directories.
+The untrusted workflow runs preflight once, validates the source lane on macOS and Linux, then builds and runs bundle-dependent assertions and the complete minimum-Node UAT on each platform. Node 24 receives a separate extracted-payload smoke instead of a duplicate full UAT. The Windows portability job runs the focused Node 24 and 22.12 selections, including the Windows inverse-patch refusal. The `Tenet validation` aggregate is the workflow result. Synthetic local tooling/evaluation fixtures use unique directories under the existing ignored `.host-runs/test-fixtures/` area so parallel tests cannot change checkout-wide Git status. Each suite removes only its owned directories.
 
 ### Build payload integrity
 
@@ -79,7 +82,7 @@ The build checks every file in `plugin/` against the explicit [payload inclusion
 
 The generated checksum file is invalidated before compilation and is git-ignored. After building, run `npm run verify:payload` to check the complete current payload against it. Editing payload files after building requires rebuilding; line-ending changes also change hashes. These local checks provide neither authenticity nor atomic protection from concurrent file replacement. They do not replace independent clean release builds, signed provenance, installed-payload verification or qualification.
 
-Run `npm run verify:reproducible` to build the entire payload twice in separate empty output directories. It does not create a Git branch/worktree or modify the source payload. It checks both inclusion lists/checksum files, compares every file's exact-byte hash, and refuses observed input changes. Its before/after snapshot covers package/lock/config files, root notices, kernel/evaluator/tool source trees, static payload files and installed TypeScript and esbuild compiler files, including platform binaries. The result records Node, esbuild and TypeScript versions and the manifest hash; it makes no cross-OS or independent-install claim. Transient changes restored between snapshots are not detected, and the existing installed dependencies are reused, not reinstalled or authenticated. The two uniquely owned output directories are removed on success or failure. CI runs this on macOS, Linux and Windows. Independent clean source/dependency rebuilds, installed verification and signing remain release gates.
+Run `npm run verify:reproducible` to typecheck once, then build the entire payload twice in separate empty output directories. It does not create a Git branch/worktree or modify the source payload. It checks both inclusion lists/checksum files, compares every file's exact-byte hash, and refuses observed input changes. Its before/after snapshot covers package/lock/config files, root notices, kernel/evaluator/tool source trees, static payload files and installed TypeScript and esbuild compiler files, including platform binaries. The result records Node, esbuild and TypeScript versions and the manifest hash; it makes no cross-OS or independent-install claim. Transient changes restored between snapshots are not detected, and the existing installed dependencies are reused, not reinstalled or authenticated. The two uniquely owned output directories are removed on success or failure. CI runs this on macOS, Linux and Windows. Independent clean source/dependency rebuilds, installed verification and signing remain release gates.
 
 ## Plugin text is product behavior
 

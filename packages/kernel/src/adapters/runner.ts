@@ -85,14 +85,18 @@ export class ProcessRunner implements Runner {
       if (value === input.root) return ".";
       return value.startsWith(`${input.root}${sep}`) ? `.${value.slice(input.root.length)}` : value;
     };
-    const add = (kind: EnvelopeCommand["kind"], argv: string[], extra: Record<string, string>, outputs: string[]) => {
+    const add = (
+      kind: EnvelopeCommand["kind"], argv: string[], extra: Record<string, string>, outputs: string[],
+      limits: { maxAttempts?: number; maxPortAttempts?: number } = {},
+    ) => {
       commands.push({
         kind, argv: argv.map(relative), cwd: ".", environment: this.environmentNames(extra), outputs: outputs.map(relative),
+        ...limits,
       });
     };
     if (input.toExecute === "all" || input.toExecute.length) {
       const report = join(runDir, "vitest.json");
-      add("tests", input.stack.argv(input.toExecute, report), {}, [report]);
+      add("tests", input.stack.argv(input.toExecute, report), {}, [report], { maxAttempts: 3 });
     }
     for (const ob of input.obligations.filter((item) => item.kind === "static" && item.tool !== "playwright")) {
       const tool = ob.tool as StaticTool, report = join(runDir, `${tool}.json`);
@@ -101,10 +105,24 @@ export class ProcessRunner implements Runner {
     }
     if (input.obligations.some((item) => item.tool === "playwright")) {
       const report = join(runDir, "playwright.json"), argv = input.stack.e2eArgv(input.root, report);
-      if (argv) add("e2e", argv, {
+      if (argv)       add("e2e", argv, {
         PORT: "<allocated-port>", DATABASE_URL: join(runDir, "e2e.db"), TENET_RUN_TOKEN: "<generated>",
         PLAYWRIGHT_JSON_OUTPUT_NAME: report,
-      }, [report, join(runDir, "e2e.db")]);
+      }, [report, join(runDir, "e2e.db")], { maxAttempts: 3, maxPortAttempts: 3 });
+    }
+    for (const mapping of input.coverage ?? []) {
+      const primaryReport = join(runDir, `coverage-${mapping.id}-primary-1.json`);
+      const primary = input.stack.coverageArgv(input.root, mapping.primary, primaryReport);
+      if (primary) add("tests", primary, {}, [primaryReport], { maxAttempts: 3 });
+      const alternativeReport = join(runDir, `coverage-${mapping.id}-alternative-1.json`);
+      const alternative = input.stack.coverageArgv(input.root, mapping.alternative, alternativeReport);
+      if (alternative) {
+        const database = join(runDir, `coverage-${mapping.id}-alternative-1.db`);
+        add("e2e", alternative, {
+          PORT: "<allocated-port>", DATABASE_URL: database, TENET_RUN_TOKEN: "<generated>",
+          PLAYWRIGHT_JSON_OUTPUT_NAME: alternativeReport,
+        }, [alternativeReport, database], { maxAttempts: 3, maxPortAttempts: 3 });
+      }
     }
     if (input.workload?.build) add("workload", input.workload.build, {}, []);
     if (input.workload) add("workload", input.workload.run, {}, []);

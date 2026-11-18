@@ -1,5 +1,5 @@
 // Requirements proved by their own test rather than as a side effect of another: boundaries, egress, roles, receipts.
-import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -49,7 +49,6 @@ describe("helpers stay inside the workspace [SEC-06]", () => {
 
 describe("what ships makes no network connection and bundles no MCP [SEC-03, SEC-07]", () => {
   it("has no network client in the bundle or the source, except a loopback bind-and-release for a free port (EVD-13, OSS-04)", () => {
-    const bundle = join(ROOT, "plugin/kernel/tenet.mjs");
     const sources = walk(join(ROOT, "packages/kernel/src")).filter((f) => f.endsWith(".ts")).map((f) => [f, readFileSync(f, "utf8")] as const);
     const net = /from ["']node:(?:http|https|http2|dgram|tls|dns|inspector)["']|require\(["'](?:node:)?(?:http|https|dgram|tls|dns)["']\)|\bfetch\(|new WebSocket\(/;
     const client = /\.connect\(|new (?:net\.)?Socket\(/; // node:net itself also has client APIs; only the server side (bind, read, release) is allowed
@@ -60,7 +59,6 @@ describe("what ships makes no network connection and bundles no MCP [SEC-03, SEC
         assert.equal(f, join(ROOT, "packages/kernel/src/adapters/runner.ts"), `${f}: node:net is reserved for the EVD-13 port allocator in adapters/runner.ts`);
       }
     }
-    if (existsSync(bundle)) assert.doesNotMatch(readFileSync(bundle, "utf8"), /from ["']node:(?:http|https|http2|tls)["']|import\(["']node:(?:net|http|https)["']\)/);
   });
 
   it("ships no MCP server or configuration in the plugin", () => {

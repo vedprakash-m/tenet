@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "root": "packages",
+  "patternSuffix": ".test.ts",
+  "lanes": {
+    "source": {
+      "exclude": [
+        "packages/kernel/test/invariants.test.ts",
+        "packages/kernel/test/bundle.test.ts"
+      ],
+      "allowedSkips": [
+        "packages/kernel/test/git.test.ts :: git: probe and inventory :: refuses inverse-patch writes on Windows before creating the artifact [SEC-06]",
+        "packages/kernel/test/host-cli.test.ts :: host CLI, live (SP-11 feasibility) [ENG-04]",
+        "packages/kernel/test/host-sp08.test.ts :: SP-08 live on the Copilot CLI (one case: --test-name-pattern with its ID and a colon; see docs/audits/2026-10-24/sp08-cli.md)",
+        "packages/kernel/test/undo-confirm-simulated.test.ts :: isolates scratch Git operations when the inverse adapter is unavailable",
+        "packages/kernel/test/undo-confirm-simulated.test.ts :: keeps a simulated undo uncertain when the inverse adapter is unavailable"
+      ]
+    },
+    "postbuild": {
+      "include": [
+        "packages/kernel/test/invariants.test.ts",
+        "packages/kernel/test/bundle.test.ts"
+      ],
+      "requiresBundle": true,
+      "requiredLeaves": [
+        "packages/kernel/test/bundle.test.ts :: built payload-only rules [SEC-03, SEC-07] :: contains no runtime network client import beyond the admitted source boundary",
+        "packages/kernel/test/invariants.test.ts :: the shipped bundle (INS-07: no runtime beyond Node) :: is one self-contained file within its size budget, and runs with nothing but Node [INS-07]"
+      ]
+    },
+    "all": {
+      "requiresBundle": true
+    },
+    "windows-inverse": {
+      "include": ["packages/kernel/test/git.test.ts"],
+      "namePattern": "refuses inverse-patch writes on Windows before creating the artifact",
+      "requiredLeaves": [
+        "packages/kernel/test/git.test.ts :: git: probe and inventory :: refuses inverse-patch writes on Windows before creating the artifact [SEC-06]"
+      ]
+    },
+    "windows-static": {
+      "include": [
+        "packages/kernel/test/static-conformance.test.ts",
+        "packages/kernel/test/static-checks.test.ts"
+      ],
+      "namePattern": "static report population and bounds|normalizing typecheck output|normalizing lint output|static receipts|which static checks a contract needs",
+      "requiredLeaves": [
+        "packages/kernel/test/static-checks.test.ts :: normalizing typecheck output [EVD-05] :: passes a clean run and names each error with its file, line and code",
+        "packages/kernel/test/static-conformance.test.ts :: static report population and bounds :: does not accept a silent compiler as proof of a nonempty analyzed population [EVD-02, EVD-05]",
+        "packages/kernel/test/static-checks.test.ts :: static receipts :: passes only a completed run on an unchanged tree"
+      ]
+    },
+    "windows-cleanup": {
+      "include": ["packages/kernel/test/store-boundary.test.ts"],
+      "namePattern": "automatic temp cleanup boundaries",
+      "requiredLeaves": [
+        "packages/kernel/test/store-boundary.test.ts :: automatic temp cleanup boundaries :: never evicts human files through a linked manifests group [SEC-06, CON-04]"
+      ]
+    },
+    "windows-recovery": {
+      "include": [
+        "packages/kernel/test/dependency.test.ts",
+        "packages/kernel/test/lessons.test.ts"
+      ],
+      "namePattern": "interrupted resolution preserves unknown content|repeated lesson retirement",
+      "requiredLeaves": [
+        "packages/kernel/test/dependency.test.ts :: interrupted resolution preserves unknown content [CON-03, SEC-05] :: npm: preserves changed manifest and a new human lockfile on repeated recovery",
+        "packages/kernel/test/lessons.test.ts :: repeated lesson retirement [LRN-02, LRN-05] :: retires the named contradiction without duplicating an existing active lesson"
+      ]
+    },
+    "windows-review": {
+      "include": [
+        "packages/kernel/test/reason-codes.test.ts",
+        "packages/kernel/test/review-admission.test.ts"
+      ],
+      "namePattern": "review: one focused recheck|review and analyst reservation roles|carries recorded findings|reuses review completion|requires review follow-up for reported open dependencies|keeps required Deep passes visible|keeps unresolved finding states|requests Deep passes from the latest|keeps an unresolved latest Deep pass|includes each named finding|counts the complete recheck result template|refuses ambiguous attention claims|refuses invalid recheck claims|refuses full-review verification",
+      "requiredLeaves": [
+        "packages/kernel/test/reason-codes.test.ts :: review: one focused recheck per contract :: refuses a second recheck result with recheck-exhausted and accepts the first [REV-05]",
+        "packages/kernel/test/reason-codes.test.ts :: review and analyst reservation roles :: refuses duplicate or unexplained attention dispositions before review application [REV-03]"
+      ]
+    }
+  }
+}

@@ -6,6 +6,27 @@ import type { BudgetState, Receipt, StopReason, WorkContract } from "../core/sch
 import { isSharedTest } from "./check-evidence.ts";
 import type { Executed, Run } from "./check-evidence.ts";
 
+function coverageLaunches(executed: Executed): number {
+  return Object.values(executed.coverage ?? {}).reduce(
+    (total, item) => total +
+      item.primary.reduce((count, attempt) => count + (attempt.launches ?? (attempt.facts.ran ? 1 : 0)), 0) +
+      (item.alternative ?? []).reduce(
+        (count, attempt) => count + (attempt.launches ?? (attempt.facts.ran ? 1 : 0)), 0,
+      ),
+    0,
+  );
+}
+
+function extraE2eLaunches(executed: Executed): number {
+  return Object.entries(executed.e2e ?? {}).reduce((total, [id, attempts]) => {
+    const launches = attempts.reduce(
+      (count, attempt) => count + (attempt.launches ?? (attempt.facts.ran ? 1 : 0)),
+      0,
+    );
+    return total + Math.max(0, launches - (executed.statics[id]?.ran ? 1 : 0));
+  }, 0);
+}
+
 /** Launched checks always count; a full candidate run that could run counts one attempt and its failure signature (TS §8.6). */
 export function account(
   run: Run,
@@ -18,7 +39,9 @@ export function account(
   const ranTests = o.ran ? run.toRun.filter((ob) => isSharedTest(ob) && !run.missing.some((m) => m.id === ob.id)).length : 0;
   const reran = (o.reruns ?? []).reduce((n, r) => n + r.obligations.length, 0); // each rerun obligation is a launched check (PRD §4.4.1)
   const sealed = o.sealed?.run?.ran ? 1 : 0; // the starting-tree run is one launched check (EVD-04)
-  const launched = ranTests + reran + sealed + run.toRun.filter((ob) => !isSharedTest(ob) && o.statics[ob.id]?.ran).length;
+  const coverage = coverageLaunches(o), e2eReruns = extraE2eLaunches(o);
+  const launched = ranTests + reran + sealed + coverage + e2eReruns +
+    run.toRun.filter((ob) => !isSharedTest(ob) && o.statics[ob.id]?.ran && !ob.coverageTag).length;
   let budget = recordLaunchedChecks(cw.budget, launched);
   const failing = receipts.filter((r) => r.status === "fail");
   const allSpared = failing.length > 0 && failing.every((r) => spared(r, ctx)); // failures that also fail at the start cost no attempt

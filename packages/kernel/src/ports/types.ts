@@ -223,6 +223,7 @@ export interface Stack {
   normalizeStatic(tool: StaticTool, out: { exit: number | undefined; raw: string | null }, root?: string): StaticNorm;
   /** A direct binary, never npx; null when Playwright is not installed or not configured (EVD-13, TS §9.3 Servers). */
   e2eArgv(root: string, report: string): string[] | null;
+  coverageArgv(root: string, check: RecipeCoverageCheck, report: string): string[] | null;
   normalizeE2e(out: { exit: number | undefined; raw: string | null }, root?: string): Normalized;
   fingerprint(root: string): ToolVersions;
   /** Links the workspace's installed dependencies into a sealed copy, or says why that would not be safe (EVD-04). */
@@ -236,6 +237,7 @@ export interface Stack {
 
 export interface EnvelopePlanInput {
   projectId: string; root: string; obligations: readonly Obligation[]; toExecute: readonly string[] | "all"; stack: Stack;
+  coverage?: readonly RecipeCoverageRecord[];
   /** The declared workload commands (QLT-05), planned like any other command before their first spawn. */
   workload?: { build?: string[]; run: string[] };
 }
@@ -243,10 +245,51 @@ export interface EnvelopePlanInput {
 // ---------------------------------------------------------------- recipes and the project folder (starter scaffold)
 export type CheckTool = StaticTool | "e2e" | "workload";
 export interface RecipeFile { path: string; content: string; mode: number }
+export interface RecipeCoverageCheck {
+  tool: "vitest" | "playwright";
+  config: string;
+  file: string;
+  tag: string;
+  support: string[];
+}
+export interface RecipeCoverageReview {
+  path: string;
+  independence: "subagent-fresh";
+  reservation: string;
+  manifestHash: string;
+  status: "completed";
+  disposition: "approved";
+  mappingHash: string;
+  primaryFileHash: string;
+  alternativeFileHash: string;
+  primaryConfigHash: string;
+  alternativeConfigHash: string;
+}
+export interface RecipeCoverage {
+  id: string;
+  obligation: string;
+  property: string;
+  population: string;
+  primary: RecipeCoverageCheck;
+  alternative: RecipeCoverageCheck;
+  review: RecipeCoverageReview;
+  mappingHash: string;
+  reviewHash: string;
+  primaryDefinitionHash: string;
+  alternativeDefinitionHash: string;
+}
+export type RecipeCoverageRecord = Pick<RecipeCoverage,
+  "id" | "obligation" | "primary" | "alternative" | "mappingHash" | "reviewHash" |
+  "primaryDefinitionHash" | "alternativeDefinitionHash"> & {
+  reviewReservation: string;
+  reviewManifestHash: string;
+};
 export interface Recipe {
   id: string; version: string; sentinel: string; lockfileSha256: string; protectedPaths: string[]; install: string[][]; files: RecipeFile[];
   /** The checks every project from this recipe owes (typecheck, lint, end-to-end). */
   checks?: CheckTool[];
+  /** Independently reviewed alternative evidence, when the recipe declares a narrow exact property. */
+  coverage?: RecipeCoverage[];
 }
 export interface Recipes {
   load(id: string): Recipe | null;

@@ -26,13 +26,16 @@ export async function verifyReproducible(
   const inventory = payloadInventory(JSON.parse(readFileSync(join(root, "tools/payload-files.json"), "utf8")));
   const before = inputSnapshot(root);
   const typescript: string = JSON.parse(readFileSync(join(root, "node_modules/typescript/package.json"), "utf8")).version;
+  if (build === buildPayload)
+    execFileSync(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "--noEmit"], { cwd: root, stdio: "inherit" });
   mkdirSync(scratch, { recursive: true });
   const owned = mkdtempSync(join(realpathSync(scratch), "reproducible-"));
   try {
     const outputs = ["first", "second"].map(name => join(owned, name));
     for (const output of outputs) {
       mkdirSync(output);
-      await build(root, output);
+      if (build === buildPayload) await buildPayload(root, output, false);
+      else await build(root, output);
     }
     if (inputSnapshot(root) !== before) throw new Error("reproducible build inputs changed during verification");
     for (const output of outputs) verifyPayload(output, inventory);

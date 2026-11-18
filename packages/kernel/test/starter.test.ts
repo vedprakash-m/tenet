@@ -1,7 +1,7 @@
 // The real starter recipe, installed from its pinned lockfile. Needs the network (npm ci); set TENET_OFFLINE=1 to skip.
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { join, sep } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup, git, initRepo, tmp } from "./helpers.ts";
@@ -9,7 +9,11 @@ import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
 import { procStart } from "../src/adapters/proc.ts";
+import { FsRecipes } from "../src/adapters/recipes-fs.ts";
 import { callWithEnvelopeConsent, reviewResult, waitFor } from "./support/fixture.ts";
+import { contractFixture } from "./support/fixture.ts";
+import { scaffolded } from "../src/decisions/scaffold.ts";
+import { createStack } from "../src/adapters/node-ts.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -48,6 +52,137 @@ describe("the ts-web-api recipe", () => {
     assert.ok(playwright.includes('"${process.execPath}" --experimental-strip-types'), "quote the source-server executable when its installed path contains spaces");
   });
 
+  it("admits the independently reviewed signed-out-session coverage pair [AC-27]", () => {
+    const recipe = new FsRecipes(join(PLUGIN, "../..")).load("ts-web-api")!;
+    assert.equal(recipe.coverage?.length, 1);
+    const mapping = recipe.coverage?.[0]!;
+    assert.deepEqual(
+      [mapping.id, mapping.obligation, mapping.primary.tool, mapping.alternative.tool],
+      ["signed-out-session", "OB-signed-out-session", "vitest", "playwright"],
+    );
+    assert.equal(mapping.primary.config, "coverage/d13/vitest.config.ts");
+    assert.equal(mapping.alternative.config, "coverage/d13/playwright.config.ts");
+    assert.equal(mapping.review.independence, "subagent-fresh");
+    assert.equal(mapping.review.status, "completed");
+    assert.equal(mapping.review.disposition, "approved");
+    assert.match(mapping.mappingHash, /^[a-f0-9]{64}$/);
+    assert.match(mapping.reviewHash, /^[a-f0-9]{64}$/);
+    assert.match(mapping.primaryDefinitionHash, /^[a-f0-9]{64}$/);
+    assert.match(mapping.alternativeDefinitionHash, /^[a-f0-9]{64}$/);
+  });
+
+  it("adds the primary coverage check as an exact tagged obligation", () => {
+    const recipe = new FsRecipes(join(PLUGIN, "../..")).load("ts-web-api")!;
+    const add = scaffolded as (...args: any[]) => ReturnType<typeof scaffolded>;
+    const work = add(contractFixture(), {}, [], recipe.checks ?? [], recipe.coverage ?? []);
+    const obligation = work.obligations.find((item) => item.id === "OB-signed-out-session");
+    assert.equal(obligation?.tool, "vitest");
+    assert.equal(obligation?.testFile, "coverage/d13/vitest/signed-out-session.test.ts");
+    assert.equal(obligation?.coverageTag, "COV-signed-out-session");
+    assert.equal(obligation?.test, "preservation");
+    assert.equal(obligation?.expectation, "pass");
+    assert.match(obligation?.coverageHash ?? "", /^[a-f0-9]{64}$/);
+  });
+
+  it("refuses a real obligation that collides with a reserved coverage role", () => {
+    const recipe = new FsRecipes(join(PLUGIN, "../..")).load("ts-web-api")!;
+    const add = scaffolded as (...args: any[]) => ReturnType<typeof scaffolded>;
+    assert.throws(
+      () => add(
+        contractFixture({ obligations: [{
+          id: "OB-signed-out-session-alternative", kind: "test", category: "acceptance",
+        }] }),
+        {}, [], recipe.checks ?? [], recipe.coverage ?? [],
+      ),
+      (error: any) => error.reasons?.[0]?.code === "evidence-inconclusive",
+    );
+  });
+
+  it("constructs direct isolated runner commands from the recipe mapping", () => {
+    const recipe = new FsRecipes(join(PLUGIN, "../..")).load("ts-web-api")!;
+    const mapping = recipe.coverage![0]!;
+    const stack = createStack() as ReturnType<typeof createStack> & {
+      coverageArgv(root: string, check: typeof mapping.primary, report: string): string[] | null;
+    };
+    const vitest = stack.coverageArgv(join(PLUGIN, "template"), mapping.primary, "/run/vitest.json")!;
+    assert.deepEqual(vitest.slice(0, 3), [process.execPath, "node_modules/vitest/vitest.mjs", "run"]);
+    assert.ok(vitest.includes("--config=coverage/d13/vitest.config.ts"));
+    assert.ok(vitest.includes("coverage/d13/vitest/signed-out-session.test.ts"));
+    assert.ok(!vitest.includes("npm"));
+    const playwright = stack.coverageArgv(join(PLUGIN, "template"), mapping.alternative, "/run/playwright.json")!;
+    assert.deepEqual(playwright.slice(0, 2), [process.execPath, join("node_modules", "@playwright", "test", "cli.js")]);
+    assert.ok(playwright.includes("--config=coverage/d13/playwright.config.ts"));
+    assert.ok(playwright.includes("coverage/d13/playwright/signed-out-session.e2e.spec.ts"));
+  });
+
+  it("includes both coverage commands in the consent envelope before execution", () => {
+    const recipe = new FsRecipes(join(PLUGIN, "../..")).load("ts-web-api")!;
+    const mapping = recipe.coverage![0]!;
+    const stack = createStack();
+    const ports = createPorts(join(PLUGIN, "template"), { PATH: process.env.PATH, HOME: process.env.HOME });
+    const envelope = ports.runner.planEnvelope({
+      projectId: "workspace", root: join(PLUGIN, "template"),
+      obligations: [], toExecute: [], stack,
+      coverage: [mapping],
+    } as any);
+    const commands = (envelope as any).commands as Array<{
+      argv: string[]; outputs: string[]; maxAttempts?: number; maxPortAttempts?: number;
+    }>;
+    const primary = commands.find((command) => command.argv.includes(`--config=${mapping.primary.config}`))!;
+    const alternative = commands.find((command) => command.argv.includes(`--config=${mapping.alternative.config}`))!;
+    assert.equal(primary.maxAttempts, 3);
+    assert.equal(alternative.maxAttempts, 3);
+    assert.equal(alternative.maxPortAttempts, 3);
+    assert.ok(commands.some((command) => command.outputs.some((path) => path.includes("coverage-"))));
+  });
+
+  it("refuses a coverage review whose mapped test bytes changed", () => {
+    const plugin = tmp("tenet-recipe-");
+    roots.push(plugin);
+    const skill = join(plugin, "skills", "tenet-starter-ts-web-api");
+    mkdirSync(join(plugin, "skills"), { recursive: true });
+    cpSync(PLUGIN, skill, {
+      recursive: true,
+      filter: (source) => !source.split(sep).includes("node_modules"),
+    });
+    const primary = join(skill, "template", "coverage", "d13", "vitest", "signed-out-session.test.ts");
+    writeFileSync(primary, `${readFileSync(primary, "utf8")}\n// changed after review\n`);
+    assert.throws(() => new FsRecipes(plugin).load("ts-web-api"), /coverage review does not bind primaryFileHash/);
+  });
+
+  it("refuses duplicate coverage obligations before loading files", () => {
+    const plugin = tmp("tenet-recipe-");
+    roots.push(plugin);
+    const skill = join(plugin, "skills", "tenet-starter-ts-web-api");
+    mkdirSync(join(plugin, "skills"), { recursive: true });
+    cpSync(PLUGIN, skill, {
+      recursive: true,
+      filter: (source) => !source.split(sep).includes("node_modules"),
+    });
+    const recipePath = join(skill, "recipe.json");
+    const recipe = JSON.parse(readFileSync(recipePath, "utf8"));
+    recipe.coverage.push({ ...recipe.coverage[0], id: "duplicate-obligation" });
+    writeFileSync(recipePath, JSON.stringify(recipe));
+    assert.throws(() => new FsRecipes(plugin).load("ts-web-api"), /coverage IDs and obligations must be unique/);
+  });
+
+  it("reports a missing coverage review as an unsupported recipe", () => {
+    const plugin = tmp("tenet-recipe-");
+    roots.push(plugin);
+    const skill = join(plugin, "skills", "tenet-starter-ts-web-api");
+    mkdirSync(join(plugin, "skills"), { recursive: true });
+    cpSync(PLUGIN, skill, {
+      recursive: true,
+      filter: (source) => !source.split(sep).includes("node_modules"),
+    });
+    rmSync(join(skill, "coverage-reviews", "signed-out-session.json"));
+    assert.throws(
+      () => new FsRecipes(plugin).load("ts-web-api"),
+      (error: any) => error.reasons?.[0]?.code === "adapter-unsupported-config" &&
+        /coverage review is unavailable/.test(error.message),
+    );
+  });
+
   it("names every recipe-protected path in the starter kickoff instructions", () => {
     const recipe = JSON.parse(readFileSync(join(PLUGIN, "recipe.json"), "utf8"));
     const skill = readFileSync(join(PLUGIN, "SKILL.md"), "utf8");
@@ -83,7 +218,7 @@ describe("the ts-web-api recipe", () => {
     } });
     const s = await call("decide", { h, kind: "scaffold", propose: { name: "loan-desk" } });
     assert.equal(s.exit, 0, JSON.stringify(s));
-    assert.equal(d(s).version, "0.4.8");
+    assert.equal(d(s).version, "0.4.9");
 
     const c = await call("check", { h, stage: "candidate" });
     assert.equal(c.exit, 0, JSON.stringify(c));

@@ -1,6 +1,9 @@
 // Obligations derived from the accepted basis (TS §9.2). Recipes and traits declare; they never bypass rules.
 import type { CheckTool, StaticTool } from "../ports/types.ts";
 import type { BasisElement, Obligation } from "./schemas.ts";
+import type { RecipeCoverageRecord } from "../ports/types.ts";
+import { sha256, stableStringify } from "./ids.ts";
+import { KernelError } from "./errors.ts";
 
 export const obligationId = (elementId: string): string => `OB-${elementId}`;
 export const FULL_SUITE = "OB-suite";
@@ -43,6 +46,58 @@ export const withE2e = (obligations: readonly Obligation[], wanted: boolean): Ob
   wanted && !obligations.some((o) => o.id === E2E_SUITE)
     ? [...obligations, { id: E2E_SUITE, kind: "static", category: "affected", tool: "playwright" }]
     : [...obligations];
+
+/** Recipe-only tagged obligations: dedicated, never part of the ordinary suite population. */
+export const withCoverage = (
+  obligations: readonly Obligation[],
+  coverage: readonly RecipeCoverageRecord[],
+): Obligation[] => {
+  const ids = new Set(coverage.map((mapping) => mapping.obligation));
+  return [
+    ...obligations.filter((obligation) => !ids.has(obligation.id)),
+    ...coverage.map((mapping): Obligation => {
+      const coverageHash = sha256(stableStringify({
+        mappingHash: mapping.mappingHash,
+        reviewHash: mapping.reviewHash,
+        primaryDefinitionHash: mapping.primaryDefinitionHash,
+        alternativeDefinitionHash: mapping.alternativeDefinitionHash,
+      }));
+      const next: Obligation = {
+        id: mapping.obligation,
+        kind: "test",
+        category: "boundary",
+        tool: mapping.primary.tool,
+        testFile: mapping.primary.file,
+        coverageTag: mapping.primary.tag,
+        test: "preservation",
+        expectation: "pass",
+        coverageHash,
+        support: [
+          mapping.primary.config, ...mapping.primary.support,
+          mapping.alternative.config, mapping.alternative.file, ...mapping.alternative.support,
+        ],
+        state: "registered",
+      };
+      const prior = obligations.find((obligation) => obligation.id === mapping.obligation);
+      const alternative = obligations.find((obligation) => obligation.id === `${mapping.obligation}-alternative`);
+      if (prior && prior.coverageHash !== coverageHash) {
+        throw new KernelError(
+          "evidence-inconclusive",
+          `coverage obligation ${mapping.obligation} collides with an existing obligation`,
+          { exit: 2 },
+        );
+      }
+      if (alternative) {
+        throw new KernelError(
+          "evidence-inconclusive",
+          `reserved coverage role ${mapping.obligation}-alternative collides with an existing obligation`,
+          { exit: 2 },
+        );
+      }
+      return prior?.coverageHash === coverageHash ? { ...prior, ...next } : next;
+    }),
+  ];
+};
 
 /** A Deep contract in a project whose recipe lists "workload" owes the declared workload (QLT-05); the file's presence
  * decides nothing, so deleting `workload.json` cannot remove the obligation. */

@@ -8,6 +8,8 @@ import { excused, failureReasons } from "./baseline.ts";
 import type { BaselineCtx } from "./baseline.ts";
 import { baselineDefinitionMatches, wantsRed } from "./obligations.ts";
 import type { AnalystLink, AttentionItem, BasisElement, Endpoint, Finding, Lane, Level, Obligation, Profile, Reason, Receipt, ReviewLink, Scope, StopReason, WorkContract } from "./schemas.ts";
+import { coveredObligationIds, coveredReceiptIds } from "./alternative-check.ts";
+import type { CoverageApproval, CoverageEvidence } from "./alternative-check.ts";
 
 export interface VerdictInput {
   profile: Profile | "review";
@@ -26,6 +28,8 @@ export interface VerdictInput {
   authorityAvailable?: boolean;
   obligations: readonly Obligation[];
   receipts: readonly Receipt[];
+  coverageApproval?: readonly CoverageApproval[];
+  coverageEvidence?: readonly CoverageEvidence[];
   /** The sealed starting-tree record and the user's decisions about broader-suite failures (EVD-04). */
   sealedBaseline?: BaselineCtx["sealed"];
   exceptions?: BaselineCtx["exceptions"];
@@ -58,23 +62,43 @@ const fresh = (receipts: readonly Receipt[], id: string, checkInputId: string): 
   receipts.filter((r) => r.obligation === id && r.checkInputId === checkInputId && r.stage !== "baseline").at(-1); // a planned red is not evidence of the candidate
 
 /** A green boundary needs a full, nonflaky pass covering every required obligation. */
-export function fullChecksPassed(obligations: readonly Obligation[], receipts: readonly Receipt[]): boolean {
+export function fullChecksPassed(
+  obligations: readonly Obligation[],
+  receipts: readonly Receipt[],
+  coverageApproval: readonly CoverageApproval[] = [],
+  coverageEvidence: readonly CoverageEvidence[] = [],
+): boolean {
+  const covered = coveredReceiptIds(receipts, coverageApproval, coverageEvidence);
+  const coveredObligations = coveredObligationIds(receipts, coverageApproval, coverageEvidence);
   return receipts.length > 0 &&
-    receipts.every(r => r.stage !== "baseline" && r.scope === "full" && r.status === "pass" && !r.qualifiers.includes("flaky")) &&
-    obligations.every(ob => receipts.some(r => r.obligation === ob.id));
+    receipts.every(r => r.stage !== "baseline" && r.scope === "full" && r.status === "pass" &&
+      (!r.qualifiers.includes("flaky") || covered.has(r.id) || coveredObligations.has(r.obligation))) &&
+    obligations.every(ob => coveredObligations.has(ob.id) || receipts.some(r => r.obligation === ob.id));
 }
 
 /** A checkpoint needs the latest current-input results, not an earlier green run or final review. */
-export function checkpointEvidence(work: WorkContract, candidate: string, checkInputId: string): boolean {
+export function checkpointEvidence(
+  work: WorkContract,
+  candidate: string,
+  checkInputId: string,
+  coverageApproval: readonly CoverageApproval[] = [],
+  coverageEvidence: readonly CoverageEvidence[] = [],
+): boolean {
   // a broader-suite failure the user left out of this work counts as passed (EVD-04)
   const ctx = { sealed: work.sealedBaseline, exceptions: work.exceptions, treated: work.treated };
-  const receipts = work.obligations.flatMap(ob => fresh(work.receipts, ob.id, checkInputId) ?? [])
+  const currentIds = [
+    ...work.obligations.map((obligation) => obligation.id),
+    ...work.receipts.filter((receipt) => receipt.checkInputId === checkInputId).map((receipt) => receipt.obligation),
+  ];
+  const receipts = [...new Set(currentIds)].flatMap((id) => fresh(work.receipts, id, checkInputId) ?? [])
     .map(r => (excused(r, ctx) ? { ...r, status: "pass" as const } : r));
   return work.lastCheck?.candidate === candidate && work.lastCheck.stage !== "baseline" &&
-    receipts.every(r => r.candidate === candidate) && fullChecksPassed(work.obligations, receipts);
+    receipts.every(r => r.candidate === candidate) &&
+    fullChecksPassed(work.obligations, receipts, coverageApproval, coverageEvidence);
 }
 
 function judgeObligation(ob: Obligation, i: VerdictInput): Reason[] {
+  if (coveredObligationIds(i.receipts, i.coverageApproval, i.coverageEvidence).has(ob.id)) return [];
   const rc = fresh(i.receipts, ob.id, i.checkInputId);
   if (!rc) return [i.receipts.some((r) => r.obligation === ob.id && r.stage !== "baseline") ? reason("stale", ob.id, { refs: [ob.id] }) : reason("evidence-missing", ob.id, { refs: [ob.id] })];
   if (rc.status === "skipped" || rc.status === "inconclusive") {
@@ -82,13 +106,16 @@ function judgeObligation(ob: Obligation, i: VerdictInput): Reason[] {
   }
   const out: Reason[] = [];
   if (rc.status === "fail") out.push(...failureReasons(ob, rc, { sealed: i.sealedBaseline, exceptions: i.exceptions, treated: i.treated }));
-  if (rc.qualifiers.includes("flaky")) out.push(reason("evidence-flaky", ob.id, { refs: [ob.id] }));
+  const covered = coveredReceiptIds(i.receipts, i.coverageApproval, i.coverageEvidence).has(rc.id);
+  if (rc.qualifiers.includes("flaky") && !covered) out.push(reason("evidence-flaky", ob.id, { refs: [ob.id] }));
   return out;
 }
 
 const passed = (i: VerdictInput, id: string): boolean => {
+  if (coveredObligationIds(i.receipts, i.coverageApproval, i.coverageEvidence).has(id)) return true;
   const rc = fresh(i.receipts, id, i.checkInputId);
-  return !!rc && rc.status === "pass" && !rc.qualifiers.includes("flaky");
+  const covered = rc && coveredReceiptIds(i.receipts, i.coverageApproval, i.coverageEvidence).has(rc.id);
+  return !!rc && rc.status === "pass" && (!rc.qualifiers.includes("flaky") || !!covered);
 };
 
 const reviewOk = (i: VerdictInput): boolean => judgeReview(i).every(r => r.note);

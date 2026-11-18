@@ -1,0 +1,640 @@
+{
+  "version": 1,
+  "observations": 157,
+  "discriminatorsSha256": "e299aece7bd9f13abb6179dcb5c6356726e377d2cc94a8b8d2d3ed954039d63c",
+  "cases": [
+    {
+      "id": "uat-001-ddfd82458629",
+      "scenario": "INS-05 built capability cache: selective reuse, persisted provenance and stateless doctor"
+    },
+    {
+      "id": "uat-002-485b127ae8ff",
+      "scenario": "[AGT-12] built packet prioritizes unchanged linked acceptance tests and native direct dependency resolution"
+    },
+    {
+      "id": "uat-003-30be1243ce67",
+      "scenario": "built schema-1 bridge refuses invalid terminals, active fences and target schema without mutation"
+    },
+    {
+      "id": "uat-004-5abc3e178839",
+      "scenario": "synthetic terminal publisher interrupted under actual bundle lock",
+      "point": "before-terminal"
+    },
+    {
+      "id": "uat-005-46dd7fd7beba",
+      "scenario": "synthetic terminal publisher interrupted under actual bundle lock",
+      "point": "after-terminal"
+    },
+    {
+      "id": "uat-006-5a78571f4ef7",
+      "scenario": "synthetic terminal publisher interrupted under actual bundle lock",
+      "point": "after-fence-removal"
+    },
+    {
+      "id": "uat-007-62cd5322020d",
+      "scenario": "built inherited filenames remain human work through explicit attribution and commit"
+    },
+    {
+      "id": "uat-008-2e88babe80ec",
+      "scenario": "built inherited filenames do not bypass protected-path authority or lane assessment"
+    },
+    {
+      "id": "uat-009-72e24a5ae518",
+      "scenario": "built changed unvetted configuration requires explicit attention disposition"
+    },
+    {
+      "id": "uat-010-a548b0cab255",
+      "scenario": "built crash-safe forget normal"
+    },
+    {
+      "id": "uat-011-87e300b0b2ad",
+      "scenario": "built crash-safe forget after-intent"
+    },
+    {
+      "id": "uat-012-301afc9a21eb",
+      "scenario": "built crash-safe forget after-purge"
+    },
+    {
+      "id": "uat-013-087879a0c54f",
+      "scenario": "built crash-safe forget after-first"
+    },
+    {
+      "id": "uat-014-78e3be2e1159",
+      "scenario": "built crash-safe forget after-second"
+    },
+    {
+      "id": "uat-015-0c6e247ec12d",
+      "scenario": "built crash-safe forget after-result"
+    },
+    {
+      "id": "uat-016-87ddfbdb7545",
+      "scenario": "built output declaration addition invalidates red"
+    },
+    {
+      "id": "uat-017-5f1aba0b744e",
+      "scenario": "built output declaration removal invalidates red"
+    },
+    {
+      "id": "uat-018-a5fe7983cdab",
+      "scenario": "built forget refuses unreadable-file"
+    },
+    {
+      "id": "uat-019-648838a3e4d0",
+      "scenario": "built forget refuses unreadable-directory"
+    },
+    {
+      "id": "uat-020-bc25f48feb10",
+      "scenario": "built forget refuses unwritable-directory"
+    },
+    {
+      "id": "uat-021-e182157a5bea",
+      "scenario": "built forget refuses oversized-file"
+    },
+    {
+      "id": "uat-022-f07bdec4bc10",
+      "scenario": "built forget refuses invalid-utf8"
+    },
+    {
+      "id": "uat-023-a6d5d68bc35a",
+      "scenario": "built recovery refusal uses actual published revision"
+    },
+    {
+      "id": "uat-024-1dcff9bd6b43",
+      "scenario": "built mutating-subcommand help is stateless"
+    },
+    {
+      "id": "uat-025-52f46c82b579",
+      "scenario": "built inherited verb names produce structured usage errors without state"
+    },
+    {
+      "id": "uat-026-8df750559c0d",
+      "scenario": "built secret-bearing proposal refuses before state, backup or journal writes"
+    },
+    {
+      "id": "uat-027-f77b6bcf2ef7",
+      "scenario": "built installed Playwright version change stales passing evidence without a Git change"
+    },
+    {
+      "id": "uat-028-8dfc42cfaeac",
+      "scenario": "built ignored Playwright configuration invalidates receipts and baseline proof"
+    },
+    {
+      "id": "uat-029-51d3e2dda5e4",
+      "scenario": "built compatibility admission preserves state"
+    },
+    {
+      "id": "uat-030-0acdf309eaa0",
+      "scenario": "built compatibility admission preserves state.prev"
+    },
+    {
+      "id": "uat-031-4d291e96a2cb",
+      "scenario": "built compatibility admission preserves marker"
+    },
+    {
+      "id": "uat-032-f986d971c267",
+      "scenario": "built compatibility admission preserves migration-transition.json"
+    },
+    {
+      "id": "uat-033-c9d0a88002b0",
+      "scenario": "built compatibility admission preserves migration-privacy.json"
+    },
+    {
+      "id": "uat-034-3fd9e11eaf8b",
+      "scenario": "built compatibility admission preserves oversized-state"
+    },
+    {
+      "id": "uat-035-1d2ff9c5e57f",
+      "scenario": "built stateless review refuses oversized complete packets"
+    },
+    {
+      "id": "uat-036-575300a54248",
+      "scenario": "built repeated open surfaces synthetic pinned adapter drift"
+    },
+    {
+      "id": "uat-037-d425c13f9593",
+      "scenario": "built corrupt journal refuses without erasing evidence"
+    },
+    {
+      "id": "uat-038-46f87af3b277",
+      "scenario": "built oversized journal refuses before repair"
+    },
+    {
+      "id": "uat-039-3c4352dc24f2",
+      "scenario": "built open cleanup never follows linked private temp storage"
+    },
+    {
+      "id": "uat-040-3f960d34a47b",
+      "scenario": "built hook-replaced merge cannot finalize or reconcile as the planned commit"
+    },
+    {
+      "id": "uat-041-93c98ad66bb4",
+      "scenario": "built hook-replaced merge with replacement refs cannot finalize or reconcile as the planned commit"
+    },
+    {
+      "id": "uat-042-c157d923cf11",
+      "scenario": "built replacement refs cannot hide foreign hook-committed human content"
+    },
+    {
+      "id": "uat-043-a8dd067a6407",
+      "scenario": "built prepared-call recovery fifo admission"
+    },
+    {
+      "id": "uat-044-e1f3545a6b9c",
+      "scenario": "built prepared-call recovery short admission"
+    },
+    {
+      "id": "uat-045-8f09c1d42b3d",
+      "scenario": "built prepared-call recovery prepared-grow admission"
+    },
+    {
+      "id": "uat-046-46cbd023f87c",
+      "scenario": "built crashed unknown check requires fresh same-envelope consent"
+    },
+    {
+      "id": "uat-047-fb6b0bbb2f63",
+      "scenario": "built cancelled unknown check requires fresh same-envelope consent"
+    },
+    {
+      "id": "uat-048-d9189bdfd6e0",
+      "scenario": "built recorded commit replay complete foreign metadata"
+    },
+    {
+      "id": "uat-049-8b1b5b109f16",
+      "scenario": "built recorded commit replay complete-long-history foreign metadata"
+    },
+    {
+      "id": "uat-050-985b6d92aef8",
+      "scenario": "built recorded commit replay legacy foreign metadata"
+    },
+    {
+      "id": "uat-051-8ff571930cba",
+      "scenario": "built recorded commit replay malformed foreign metadata"
+    },
+    {
+      "id": "uat-052-7cb00720051b",
+      "scenario": "built historical adoption replay cannot replace newer accepted trust"
+    },
+    {
+      "id": "uat-053-fb6cfe507860",
+      "scenario": "built starter carries the selected MIT license"
+    },
+    {
+      "id": "uat-054-34ed47e7ed2f",
+      "scenario": "built starter source-bound browser account journeys"
+    },
+    {
+      "id": "uat-055-f09795249c5b",
+      "scenario": "built starter source-bound OpenAPI export",
+      "version": "3.1.0"
+    },
+    {
+      "id": "uat-056-e9b589079bd2",
+      "scenario": "built finished scaffold is not reapplied after transient touched paths clear"
+    },
+    {
+      "id": "uat-057-f42df3d67ed7",
+      "scenario": "built installed dependency record changes invalidate passing evidence"
+    },
+    {
+      "id": "uat-058-ed7efeaef8cd",
+      "scenario": "built malformed installed dependency record refuses before a new check"
+    },
+    {
+      "id": "uat-059-4a4676ec7d96",
+      "scenario": "built oversized installed tool metadata refuses before launch"
+    },
+    {
+      "id": "uat-060-4479a466c664",
+      "scenario": "built linked installed tool metadata refuses before launch"
+    },
+    {
+      "id": "uat-061-c1c450e63a4f",
+      "scenario": "built invalid-utf8 installed tool metadata refuses before launch"
+    },
+    {
+      "id": "uat-062-6fca3767613f",
+      "scenario": "built deep installed tool metadata refuses before launch"
+    },
+    {
+      "id": "uat-063-9f6d9b25e93a",
+      "scenario": "built invalid UTF-8 in private state refuses admission"
+    },
+    {
+      "id": "uat-064-92067a8a8077",
+      "scenario": "built invalid UTF-8 in private marker refuses admission"
+    },
+    {
+      "id": "uat-065-9f69f991aaaf",
+      "scenario": "built invalid UTF-8 in private log refuses admission"
+    },
+    {
+      "id": "uat-066-26b9ff4e0fd7",
+      "scenario": "built valid Unicode and torn multibyte journal recovery preserve accepted text"
+    },
+    {
+      "id": "uat-067-e3628c429f60",
+      "scenario": "built same-size private state mutation refuses admission"
+    },
+    {
+      "id": "uat-068-2ddcf05dd3c0",
+      "scenario": "built same-size private marker mutation refuses admission"
+    },
+    {
+      "id": "uat-069-de7c40604e11",
+      "scenario": "built same-size private log mutation refuses admission"
+    },
+    {
+      "id": "uat-070-e6fae8d1cb9c",
+      "scenario": "built same-size installed tool metadata mutation refuses before launch"
+    },
+    {
+      "id": "uat-071-735c7c0ece8b",
+      "scenario": "built same-size installed dependency metadata mutation refuses before launch"
+    },
+    {
+      "id": "uat-072-98b1d3aefbbd",
+      "scenario": "built grow project read refuses after concurrent mutation"
+    },
+    {
+      "id": "uat-073-a5605cea819f",
+      "scenario": "built oversized project read refuses after concurrent mutation"
+    },
+    {
+      "id": "uat-074-e935744ce03e",
+      "scenario": "built shrink project read refuses after concurrent mutation"
+    },
+    {
+      "id": "uat-075-50d835090a2b",
+      "scenario": "built overwrite project read refuses after concurrent mutation"
+    },
+    {
+      "id": "uat-076-a3eff14b9284",
+      "scenario": "built oversized project package metadata is not treated as absent"
+    },
+    {
+      "id": "uat-077-9d720882aec1",
+      "scenario": "built linked project package metadata is not treated as absent"
+    },
+    {
+      "id": "uat-078-ac87257cb1d2",
+      "scenario": "built directory project package metadata is not treated as absent"
+    },
+    {
+      "id": "uat-079-eb5619bf6308",
+      "scenario": "built reviewer packet is readable and exclusion-aware"
+    },
+    {
+      "id": "uat-080-8becdc12357f",
+      "scenario": "built CLI red-green-finish with concurrent human file inside predicted scope"
+    },
+    {
+      "id": "uat-081-8b32e1260b25",
+      "scenario": "unimplemented committed-tree stage"
+    },
+    {
+      "id": "uat-082-31ad174c1ff5",
+      "scenario": "built guarded local integration with carried human file",
+      "mode": "fast-forward"
+    },
+    {
+      "id": "uat-083-c6d8a05d01fe",
+      "scenario": "built preview refuses undo and undo-confirm"
+    },
+    {
+      "id": "uat-084-76e957c303fa",
+      "scenario": "built readiness reprobe after runner version change"
+    },
+    {
+      "id": "uat-085-3b2acd8519ef",
+      "scenario": "built ignored acceptance and new ignored configuration"
+    },
+    {
+      "id": "uat-086-9cd1c42d867f",
+      "scenario": "passing unrelated suite without baseline proof"
+    },
+    {
+      "id": "uat-087-6fe648463f0e",
+      "scenario": "built active-chat takeover"
+    },
+    {
+      "id": "uat-088-1c16b1b82728",
+      "scenario": "built abandonment preview, cancel and confirm"
+    },
+    {
+      "id": "uat-089-939f91b7bbaf",
+      "scenario": "built copied-state quarantine and metadata review"
+    },
+    {
+      "id": "uat-090-279c84f3a211",
+      "scenario": "built markerless-state quarantine and fresh-start choice"
+    },
+    {
+      "id": "uat-091-b0d3238ddccd",
+      "scenario": "built backup recovery conserves real candidate costs"
+    },
+    {
+      "id": "uat-092-679f967f70c0",
+      "scenario": "built unknown legacy accounting fences new editing authority"
+    },
+    {
+      "id": "uat-093-bfaff08f8d63",
+      "scenario": "built pending effect pair after commit result"
+    },
+    {
+      "id": "uat-094-8a6ecdb6e373",
+      "scenario": "built pending effect pair after commit:extra result"
+    },
+    {
+      "id": "uat-095-c1fad0d107a3",
+      "scenario": "built pending effect pair after both result"
+    },
+    {
+      "id": "uat-096-2fc54d422496",
+      "scenario": "built unknown effect toString pending dispatch"
+    },
+    {
+      "id": "uat-097-877c1e7e6794",
+      "scenario": "built unknown effect toString completed dispatch"
+    },
+    {
+      "id": "uat-098-6ba73cc80d93",
+      "scenario": "built unknown effect constructor pending dispatch"
+    },
+    {
+      "id": "uat-099-9541dbf07417",
+      "scenario": "built unknown effect constructor completed dispatch"
+    },
+    {
+      "id": "uat-100-72a774da2587",
+      "scenario": "built unknown effect __proto__ pending dispatch"
+    },
+    {
+      "id": "uat-101-47e068d86d0d",
+      "scenario": "built unknown effect __proto__ completed dispatch"
+    },
+    {
+      "id": "uat-102-9902db71884a",
+      "scenario": "built unknown effect hasOwnProperty pending dispatch"
+    },
+    {
+      "id": "uat-103-96ad18164ae7",
+      "scenario": "built unknown effect hasOwnProperty completed dispatch"
+    },
+    {
+      "id": "uat-104-f820909f4304",
+      "scenario": "built unknown effect __defineGetter__ pending dispatch"
+    },
+    {
+      "id": "uat-105-2957f4fdeae6",
+      "scenario": "built unknown effect __defineGetter__ completed dispatch"
+    },
+    {
+      "id": "uat-106-86043d4ec857",
+      "scenario": "built unknown effect future-effect pending dispatch"
+    },
+    {
+      "id": "uat-107-3ad6dc7a6c20",
+      "scenario": "built unknown effect future-effect completed dispatch"
+    },
+    {
+      "id": "uat-108-64b2e5a1bca6",
+      "scenario": "built backup checkpoint in-flight retry"
+    },
+    {
+      "id": "uat-109-39d3a26ea2d1",
+      "scenario": "built backup checkpoint completeness retry"
+    },
+    {
+      "id": "uat-110-03696d751f59",
+      "scenario": "built backup checkpoint budget retry"
+    },
+    {
+      "id": "uat-111-b856cdc444f2",
+      "scenario": "built backup checkpoint sequence retry"
+    },
+    {
+      "id": "uat-112-aa991f0ce8ef",
+      "scenario": "built backup checkpoint identical retry"
+    },
+    {
+      "id": "uat-113-aaa21d8657a8",
+      "scenario": "built backup checkpoint budget-progress retry"
+    },
+    {
+      "id": "uat-114-1994112ec64a",
+      "scenario": "built backup checkpoint sequence-progress retry"
+    },
+    {
+      "id": "uat-115-53c2e885bf8f",
+      "scenario": "built atomic project write predictable-temp-link"
+    },
+    {
+      "id": "uat-116-2e3dcd3ae36a",
+      "scenario": "built atomic project write after-temp-fsync"
+    },
+    {
+      "id": "uat-117-b0534dc89ce4",
+      "scenario": "built atomic project write after-publish"
+    },
+    {
+      "id": "uat-118-5ad07eb13c57",
+      "scenario": "built atomic project write after-dir-fsync"
+    },
+    {
+      "id": "uat-119-127070611acf",
+      "scenario": "built unreadable adoption remains uncertain through stop"
+    },
+    {
+      "id": "uat-120-37129a6489c8",
+      "scenario": "built secret alias is refused before adoption preview"
+    },
+    {
+      "id": "uat-121-fe944b6d2f83",
+      "scenario": "built stop preserves interrupted scaffold under tighter policy"
+    },
+    {
+      "id": "uat-122-2b282166787e",
+      "scenario": "built stop preserves interrupted scaffold under tighter adopted policy"
+    },
+    {
+      "id": "uat-123-d933c6c9f83c",
+      "scenario": "built contradictory lint child cannot produce a passing receipt"
+    },
+    {
+      "id": "uat-124-3c70e975be2c",
+      "scenario": "built named static configuration refuses substitution"
+    },
+    {
+      "id": "uat-125-4cd4c7f9830a",
+      "scenario": "built default checkout-hook admission"
+    },
+    {
+      "id": "uat-126-c3d8a1fa26c6",
+      "scenario": "built configured checkout-hook admission"
+    },
+    {
+      "id": "uat-127-853fe801396a",
+      "scenario": "built index recovery before-lock"
+    },
+    {
+      "id": "uat-128-ab5e616283ee",
+      "scenario": "built index recovery after-lock"
+    },
+    {
+      "id": "uat-129-4fafd4bc2370",
+      "scenario": "built index recovery before-rename"
+    },
+    {
+      "id": "uat-130-89820b67dea6",
+      "scenario": "built index recovery after-rename"
+    },
+    {
+      "id": "uat-131-ee1cca958aaa",
+      "scenario": "built index recovery manual-after-lock"
+    },
+    {
+      "id": "uat-132-f47e83bfc3c2",
+      "scenario": "built index recovery failed-directory-sync"
+    },
+    {
+      "id": "uat-133-ccf1bcb5888d",
+      "scenario": "user-level Git LFS filter configuration"
+    },
+    {
+      "id": "uat-134-13b15e3ca977",
+      "scenario": "built guarded filter pass"
+    },
+    {
+      "id": "uat-135-d7b17eabd236",
+      "scenario": "built guarded filter transform"
+    },
+    {
+      "id": "uat-136-8896d6fcac29",
+      "scenario": "built guarded filter mutate"
+    },
+    {
+      "id": "uat-137-c7a8095ea2ec",
+      "scenario": "built guarded filter stop"
+    },
+    {
+      "id": "uat-138-32f67b163c9c",
+      "scenario": "built guarded filter killed"
+    },
+    {
+      "id": "uat-139-9e99a687f441",
+      "scenario": "built stateless doctor honors metadata exclusions"
+    },
+    {
+      "id": "uat-140-7f1649314e82",
+      "scenario": "built conflicting required definitions refuse before launch"
+    },
+    {
+      "id": "uat-141-5173b2971d88",
+      "scenario": "built TypeScript default population"
+    },
+    {
+      "id": "uat-142-bd95fdc5ca92",
+      "scenario": "built TypeScript ignored-input population"
+    },
+    {
+      "id": "uat-143-ef9630fb85f2",
+      "scenario": "built TypeScript references population"
+    },
+    {
+      "id": "uat-144-bd96a064b620",
+      "scenario": "built synthetic compiler unsupported version"
+    },
+    {
+      "id": "uat-145-3df254fb712a",
+      "scenario": "built synthetic compiler truncated valid prefix"
+    },
+    {
+      "id": "uat-146-df39de32fb63",
+      "scenario": "built private artifact fifo write admission"
+    },
+    {
+      "id": "uat-147-e3b1f1a713f8",
+      "scenario": "built private artifact fifo-reader write admission"
+    },
+    {
+      "id": "uat-148-23c316a43a98",
+      "scenario": "built private artifact directory write admission"
+    },
+    {
+      "id": "uat-149-14255227cbc2",
+      "scenario": "built private artifact link write admission"
+    },
+    {
+      "id": "uat-150-3c78585c2f39",
+      "scenario": "built private artifact regular write admission"
+    },
+    {
+      "id": "uat-151-1facd52808bd",
+      "scenario": "built synthetic Vitest report stable admission"
+    },
+    {
+      "id": "uat-152-03dbe6f18b50",
+      "scenario": "built synthetic Vitest report invalid-utf8 admission"
+    },
+    {
+      "id": "uat-153-aefed17d1407",
+      "scenario": "built synthetic Vitest report overwrite-json admission"
+    },
+    {
+      "id": "uat-154-9d54b62ecbc9",
+      "scenario": "built synthetic Vitest report replace-fifo admission"
+    },
+    {
+      "id": "uat-155-54f7c69bd7f8",
+      "scenario": "built synthetic Vitest report replace-directory admission"
+    },
+    {
+      "id": "uat-156-8a2f5fc16712",
+      "scenario": "built synthetic Vitest report replace-link admission"
+    },
+    {
+      "id": "uat-157-d967dfaae6b6",
+      "scenario": "symlinked state directory"
+    }
+  ]
+}

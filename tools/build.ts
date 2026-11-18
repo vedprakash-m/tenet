@@ -44,14 +44,14 @@ function copySources(root: string, output: string, inventory: string[]): void {
   }
 }
 
-export async function buildPayload(root: string, output = join(root, "plugin")): Promise<void> {
+export async function buildPayload(root: string, output = join(root, "plugin"), typecheck = true): Promise<void> {
   const source = resolve(root, "plugin");
   output = resolve(output);
   const sumsPath = join(output, "SHA256SUMS");
   if (output === source) rmSync(sumsPath, { force: true });
   const inventory = payloadInventory(JSON.parse(readFileSync(join(root, "tools/payload-files.json"), "utf8")));
   if (output !== source) copySources(root, output, inventory);
-  execFileSync(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "--noEmit"], { cwd: root, stdio: "inherit" });
+  if (typecheck) execFileSync(process.execPath, [join(root, "node_modules/typescript/bin/tsc"), "--noEmit"], { cwd: root, stdio: "inherit" });
 
   const bundle = join(output, "kernel/tenet.mjs");
   mkdirSync(dirname(bundle), { recursive: true });

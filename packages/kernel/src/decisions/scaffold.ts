@@ -5,13 +5,14 @@ import { basename } from "node:path";
 import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
-import { wantedStatic, wantsE2e, withE2e, withStatic } from "../core/obligations.ts";
+import { wantedStatic, wantsE2e, withCoverage, withE2e, withStatic } from "../core/obligations.ts";
 import { reason } from "../core/reasons.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
-import type { CheckTool, Recipe } from "../ports/types.ts";
+import type { CheckTool, Recipe, RecipeCoverage, RecipeCoverageRecord } from "../ports/types.ts";
 import type { Job } from "../pipeline.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 import { assistanceLevel } from "../core/risk.ts";
+import { bindRecipeCoverage, installRecipeCoverage } from "../core/alternative-check.ts";
 import { nx, readinessOf, withWork } from "../verbs/common.ts";
 import type { Decision } from "./types.ts";
 
@@ -36,7 +37,7 @@ const projectName = (root: string) =>
 /** What the scaffold effect's intent records, so recovery can verify and finish it. */
 export interface ScaffoldOp {
   work: string;
-  recipe: { id: string; version: string; checks?: CheckTool[] };
+  recipe: { id: string; version: string; checks?: CheckTool[]; coverage?: RecipeCoverageRecord[] };
   expected: Record<string, string>;
   protect: string[];
 }
@@ -46,12 +47,13 @@ export const scaffolded = (
   w: WorkContract,
   expected: Readonly<Record<string, string>>,
   protect: readonly string[],
-  checks: readonly CheckTool[]
+  checks: readonly CheckTool[],
+  coverage: readonly RecipeCoverageRecord[] = [],
 ): WorkContract => ({
   ...w,
   vetted: { ...w.vetted, ...expected },
   // the recipe names the checks its projects owe
-  obligations: withE2e(withStatic(w.obligations, wantedStatic(checks, [])), wantsE2e(checks)),
+  obligations: withCoverage(withE2e(withStatic(w.obligations, wantedStatic(checks, [])), wantsE2e(checks)), coverage),
   touched: [
     ...w.touched,
     ...Object.keys(expected)
@@ -62,6 +64,18 @@ export const scaffolded = (
 });
 
 type Req = z.infer<typeof Request>;
+const coverageRecord = (coverage: RecipeCoverage): RecipeCoverageRecord => ({
+  id: coverage.id,
+  obligation: coverage.obligation,
+  primary: coverage.primary,
+  alternative: coverage.alternative,
+  mappingHash: coverage.mappingHash,
+  reviewHash: coverage.reviewHash,
+  primaryDefinitionHash: coverage.primaryDefinitionHash,
+  alternativeDefinitionHash: coverage.alternativeDefinitionHash,
+  reviewReservation: coverage.review.reservation,
+  reviewManifestHash: coverage.review.manifestHash,
+});
 
 /** The recipe with its files for this project: pinned lockfile verified, sentinel replaced, expected hashes and protected paths. */
 function prepare(ports: Ports, req: Req) {
@@ -99,10 +113,16 @@ function writeFiles(
   if (prior && ours) return { state, w: work };
   const clash = p.paths.filter((path) => here[path] !== null);
   if (clash.length) throw new KernelError("scaffold-target-not-empty", clash.slice(0, 5).join(", "));
+  const coverage = (p.recipe.coverage ?? []).map(coverageRecord);
+  let admitted = installRecipeCoverage(state, coverage);
+  if (work.basis) admitted = bindRecipeCoverage(admitted, work.id, work.basis.hash, ports.clock.now());
   const id = `s-${ports.rand.base32(6)}`;
   const op: ScaffoldOp = {
     work: work.id,
-    recipe: { id: p.recipe.id, version: p.recipe.version, checks: p.recipe.checks ?? [] },
+    recipe: {
+      id: p.recipe.id, version: p.recipe.version, checks: p.recipe.checks ?? [],
+      coverage,
+    },
     expected: p.expected,
     protect: p.protect,
   };
@@ -110,7 +130,10 @@ function writeFiles(
   ports.project.writeNew(p.files); // exclusive create: a file that appeared meanwhile makes this throw, not overwrite
   tx.result("scaffold", id, { completed: true, files: p.paths.length });
   const recipe = { id: p.recipe.id, version: p.recipe.version, installed: false, checks: p.recipe.checks ?? [] };
-  return { state: { ...state, project: { ...state.project, recipe } }, w: scaffolded(work, p.expected, p.protect, p.recipe.checks ?? []) };
+  return {
+    state: { ...admitted, project: { ...admitted.project, recipe } },
+    w: scaffolded(work, p.expected, p.protect, p.recipe.checks ?? [], coverage),
+  };
 }
 
 async function install(ports: Ports, recipe: Recipe, runDir: string) {

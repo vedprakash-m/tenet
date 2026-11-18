@@ -214,6 +214,72 @@ describe("verdict table [RES-02, EVD-01]", () => {
     });
     assert.equal(checkpointEvidence(work, "cand", CHECK), false);
   });
+  it("accepts a mapped flaky obligation only with fresh clean alternative evidence [AC-27]", () => {
+    const primary = rc("OB-EX-1", { qualifiers: ["flaky"], history: [
+      { status: "fail", failed: ["signed-out-session"], at: "t1" },
+      { status: "pass", failed: [], at: "t2" },
+    ] });
+    const alternative = rc("OB-signed-out-session-browser", {
+      id: "RC-alternative", checkInputId: CHECK,
+    });
+    const covered = {
+      ...base(),
+      receipts: [primary, rc("OB-suite"), alternative],
+      coverageApproval: [{
+        mappingHash: "mapping", reviewHash: "review", obligation: "OB-EX-1",
+        checkInputId: CHECK, alternativeCheckInputId: CHECK,
+      }],
+      coverageEvidence: [{
+        mappingHash: "mapping", reviewHash: "review", obligation: "OB-EX-1", checkInputId: CHECK,
+        alternativeCheckInputId: CHECK, primaryReceipt: primary.id, alternativeReceipt: alternative.id,
+        primaryStatus: "pass", primaryQualifier: "flaky",
+        alternativeStatus: "pass", alternativeQualifier: "none",
+      }],
+    } as VerdictInput;
+    assert.equal(verdict(covered).endpoint, "checked-local", JSON.stringify(verdict(covered).reasons));
+    assert.ok(!verdict(covered).reasons.some((r) => r.code === "evidence-flaky"));
+    const work = contractFixture({
+      obligations: [...covered.obligations],
+      receipts: [...covered.receipts],
+      lastCheck: { candidate: "cand", at: "t", stage: "candidate" },
+    });
+    assert.equal(
+      checkpointEvidence(work, "cand", CHECK, covered.coverageApproval, covered.coverageEvidence),
+      true,
+      "the non-mandatory alternative receipt remains part of checkpoint evidence",
+    );
+    assert.equal(
+      checkpointEvidence(
+        { ...work, receipts: work.receipts.filter((receipt) => receipt.id !== alternative.id) },
+        "cand", CHECK, covered.coverageApproval, covered.coverageEvidence,
+      ),
+      true,
+      "validated role records keep coverage after the ordinary receipt cap evicts the alternative",
+    );
+    assert.equal(
+      checkpointEvidence(
+        { ...work, receipts: [rc("OB-suite")] },
+        "cand", CHECK, covered.coverageApproval, covered.coverageEvidence,
+      ),
+      true,
+      "validated role records keep the covered obligation after both role receipts are evicted",
+    );
+    assert.equal(
+      verdict({ ...covered, receipts: [rc("OB-suite")] }).endpoint,
+      "checked-local",
+      "verdict uses the validated role projection when both ordinary role receipts are evicted",
+    );
+    for (const change of [
+      { coverageEvidence: [] },
+      { coverageEvidence: [{ ...(covered.coverageEvidence?.[0]!), reviewHash: "other" }] },
+      { receipts: [primary, rc("OB-suite"), { ...alternative, qualifiers: ["flaky"] }] },
+      { receipts: [primary, rc("OB-suite"), { ...alternative, checkInputId: "old" }] },
+    ]) {
+      const blocked = verdict({ ...covered, ...change } as VerdictInput);
+      assert.notEqual(blocked.endpoint, "checked-local", JSON.stringify(change));
+      assert.ok(blocked.reasons.some((r) => r.code === "evidence-flaky"));
+    }
+  });
   const rows: Array<[string, (i: VerdictInput) => VerdictInput, string, string]> = [
     ["evidence-missing", (i) => ({ ...i, receipts: [rc("OB-EX-1")] }), "evidence-missing", "implemented-unverified"],
     ["a planned red is not evidence of the candidate", (i) => ({ ...i, receipts: [rc("OB-EX-1", { stage: "baseline", status: "pass" }), rc("OB-suite")] }), "evidence-missing", "implemented-unverified"],

@@ -13,7 +13,6 @@ import { describe, surface } from "./open-context.ts";
 import type { Ctx } from "./open-context.ts";
 import { admitFolder, created } from "./open-new.ts";
 import { reconcileShared } from "./reconcile.ts";
-import { recover } from "./recover.ts";
 import { takeoverFacts } from "../decisions/takeover.ts";
 import { quarantineQuestion, quarantineSurface } from "../decisions/quarantine.ts";
 import { offerReconstruction } from "../decisions/reconstruction.ts";
@@ -43,8 +42,6 @@ async function begin(ports: Ports, before: State | null, input: OpenInput, tx: T
     state = { ...state, quarantine: { ...tx.quarantined, choice: "pending" } };
     state = { ...state, pending: [...state.pending, quarantineQuestion(state)] };
   }
-  const rec = await recover(ports, tx, state);
-  state = rec.state;
   if (state.recovered && state.recovered.accounting !== "verified" && isEditingProfile(input.profile)) {
     throw new KernelError(
       "state-recovered-from-backup",
@@ -58,14 +55,12 @@ async function begin(ports: Ports, before: State | null, input: OpenInput, tx: T
     const why = `.tenet/ holds protected data past its ceiling (${big}); stop or finish work, or clean up, before adding more`;
     throw new KernelError("storage-protected-full", why, { exit: 2 });
   }
-  if (kept.message) rec.completed.push(kept.message);
+  const effects = kept.message ? { completed: [kept.message], uncertain: [] } : undefined;
   // No state document at all (lost, or a fresh clone): read back what the repository still shows (CON-07).
   const rebuilt = before ? undefined : await offerReconstruction(ports, state);
   if (rebuilt) state = rebuilt.state;
   const reconciled = reconcileShared(ports, state);
   const shared = rebuilt ? { ...reconciled, reasons: [...rebuilt.reasons, ...reconciled.reasons] } : reconciled;
-  const effects =
-    rec.completed.length || rec.uncertain.length ? { completed: rec.completed, uncertain: rec.uncertain } : undefined;
   return { ports, input, before, state: shared.state, shared, effects, now: ports.clock.now() };
 }
 

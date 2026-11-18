@@ -129,6 +129,8 @@ export const Obligation = z.object({
   targeted: z.boolean().optional(),
   tool: z.string().optional(), // adapter tool id, e.g. "vitest"
   example: z.string().optional(),
+  coverageTag: z.string().regex(/^COV-[a-z0-9-]{1,48}$/).optional(),
+  coverageHash: z.string().regex(/^[a-f0-9]{64}$/).optional(),
   testFile: z.string().optional(),
   support: BasisElement.shape.support,
   outputs: BasisElement.shape.outputs,

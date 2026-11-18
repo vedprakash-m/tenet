@@ -24,12 +24,39 @@ import { toolchainOf } from "./check-rerun.ts";
 import { dirtyQuestion, leftOutChanged, settleCleaned, undecidedDirty } from "./dirty.ts";
 import { modelQuestion, needsModelAnswer } from "./model-limit.ts";
 import { checkInputId, gather, unauthorizedEdits, worldDigest } from "./facts.ts";
+import { boundRecipeCoverage } from "../core/alternative-check.ts";
+import { coverageDefinitionHash } from "../core/alternative-check.ts";
 import { settingsFor, unsupportedExecution } from "./reconcile.ts";
 
 const refuse = (code: "capability-missing" | "stale-session" | "continue-required", why: string): never => {
   throw new KernelError(code, why, { exit: 2 });
 };
 const safePath = (p: string) => !p.startsWith("/") && !p.split("/").includes("..");
+
+export function admitCoverageDefinitions(ports: Ports, coverage: ReturnType<typeof boundRecipeCoverage>): void {
+  const paths = [...new Set(coverage.flatMap((mapping) => [
+    mapping.primary.config, mapping.primary.file, ...mapping.primary.support,
+    mapping.alternative.config, mapping.alternative.file, ...mapping.alternative.support,
+  ]))];
+  const hashes = ports.project.hashes(paths);
+  for (const mapping of coverage) {
+    const primary = coverageDefinitionHash(
+      mapping.primary, hashes[mapping.primary.config] ?? "", hashes[mapping.primary.file] ?? "",
+      Object.fromEntries(mapping.primary.support.map((path) => [path, hashes[path] ?? ""])),
+    );
+    const alternative = coverageDefinitionHash(
+      mapping.alternative, hashes[mapping.alternative.config] ?? "", hashes[mapping.alternative.file] ?? "",
+      Object.fromEntries(mapping.alternative.support.map((path) => [path, hashes[path] ?? ""])),
+    );
+    if (primary !== mapping.primaryDefinitionHash || alternative !== mapping.alternativeDefinitionHash) {
+      throw new KernelError(
+        "evidence-inconclusive",
+        `coverage mapping ${mapping.id} no longer matches its reviewed test and config files`,
+        { exit: 2 },
+      );
+    }
+  }
+}
 
 /** Every reason the kernel refuses to launch a check at all, before anything is written. */
 function admit(ports: Ports, cur: State, w: WorkContract, input: CheckInput, inputs: readonly string[]) {
@@ -106,12 +133,12 @@ function readWorkload(ports: Ports): ParsedWorkload {
   }
 }
 
-function shapeRun(ports: Ports, w: WorkContract, input: CheckInput, facts: Run["facts"]) {
+function shapeRun(ports: Ports, state: State, w: WorkContract, input: CheckInput, facts: Run["facts"]) {
   const baseline = input.stage === "baseline";
   const scope: Run["scope"] = baseline || input.targeted ? "targeted" : "full";
   const acceptance = w.obligations.filter((o) => o.testFile);
   const present = (f: string) => facts.inv.entries.has(f);
-  const files = acceptance.map((o) => o.testFile!).filter(present);
+  const files = acceptance.filter((o) => !o.coverageTag).map((o) => o.testFile!).filter(present);
   return {
     baseline,
     scope,
@@ -120,6 +147,7 @@ function shapeRun(ports: Ports, w: WorkContract, input: CheckInput, facts: Run["
     missing: acceptance.filter((o) => !present(o.testFile!)),
     toExecute: scope === "full" ? ("all" as const) : files,
     id: checkInputId(ports, w, facts.candidate),
+    coverage: boundRecipeCoverage(state, w.id, w.basis?.hash ?? ""),
   };
 }
 
@@ -182,7 +210,8 @@ export const check: Verb<CheckInput> = {
       return ask(cur, w, modelQuestion(w), [reason("model-unqualified-for-deep", "the model is not qualified for Deep work")], why);
     }
 
-    const shape = shapeRun(ports, w, input, facts);
+    const shape = shapeRun(ports, cur, w, input, facts);
+    admitCoverageDefinitions(ports, shape.coverage);
     const envelopeGate = checkEnvelopeGate(ports, cur, w, shape);
     if (envelopeGate.plan) return envelopeGate.plan;
     const executionEnvelope = envelopeGate.envelope;
@@ -204,7 +233,7 @@ export const check: Verb<CheckInput> = {
     const job: Job = {
       id: runId,
       execute: () => execute(run, inputs),
-      finalize: async (_tx, st, result) => finalizeCheck(run, st, result),
+      finalize: async (tx, st, result) => finalizeCheck(run, st, result, (tx.state?.revision ?? 0) + 1),
     };
     return { state: withWork(cur, prepared), resp: { work: w.id, progress: { phase: "checking" } }, job };
   },

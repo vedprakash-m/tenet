@@ -19,7 +19,7 @@ The PR template requires compatibility classification and disclosure of a solo-m
 
 ## What the workflow checks before it builds
 
-The `gate` job fails the run if any of these is false: the commit is on `main`; the tag is annotated and GitHub reports its signature as verified; the `untrusted` workflow succeeded on the same commit; the tag equals `v` plus the `plugin/plugin.json` version; `docs/release/notes/<tag>.md` has a written statement in every section (`node tools/release-notes.ts --check`); and `node tools/release-audit.ts --milestone R1` passes. The last check fails today, by design: no due Must is qualified. The workflow therefore cannot produce a release until that changes. The `publish` job creates a draft release only; the owner publishes it by hand.
+The `gate` job fails the run if any of these is false: the commit is on `main`; the tag is annotated and GitHub reports its signature as verified; an exact-head `untrusted` **push** run completed its `Tenet validation` aggregate successfully; the tag equals `v` plus the `plugin/plugin.json` version; `docs/release/notes/<tag>.md` has a written statement in every section (`node tools/release-notes.ts --check`); and `node tools/release-audit.ts --milestone R1` passes. Pull-request and manual `workflow_dispatch` evidence cannot replace that exact-main push result. The last check fails today, by design: no due Must is qualified. The workflow therefore cannot produce a release until that changes. The `publish` job creates a draft release only; the owner publishes it by hand.
 
 ## Release notes (LFC-02)
 

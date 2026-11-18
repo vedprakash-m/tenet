@@ -4,12 +4,13 @@ import { adopted, type AdoptOp } from "../decisions/adopt.ts";
 import { completeForget } from "../decisions/forget.ts";
 import { MANIFEST, lockFileOf, type DependencyOp } from "../core/dependency-admission.ts";
 import { scaffolded, type ScaffoldOp } from "../decisions/scaffold.ts";
+import { bindRecipeCoverage, installRecipeCoverage } from "../core/alternative-check.ts";
 import { recordedHardening, type HardeningOp } from "../decisions/hardening.ts";
-import type { UndoOp } from "../decisions/undo.ts";
 import { recordCommit, replayCommit } from "../core/attribution.ts";
 import { adoptionReplayNeeded } from "../core/state.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
 import type { Ports, Tx } from "../ports/types.ts";
+import { recoverUndo } from "./recover-undo.ts";
 
 export interface IntegrationOp { work: string; base: string; baseBefore: string; workTip: string }
 export type Unresolved = ReturnType<Tx["unresolved"]>[number];
@@ -21,8 +22,18 @@ const withGit = (r: Recovery, w: WorkContract, git: Partial<WorkContract["git"]>
 const applyIntegration = (r: Recovery, w: WorkContract, op: IntegrationOp, commit: string, moved: boolean) =>
   withGit(r, w, { integrated: { into: op.base, commit, moved, validated: !moved } });
 function applyScaffold(r: Recovery, w: WorkContract, op: ScaffoldOp) {
-  put(r, scaffolded(w, op.expected, op.protect, op.recipe.checks ?? []));
-  r.state = { ...r.state, project: { ...r.state.project, recipe: r.state.project.recipe ?? { ...op.recipe, installed: false } } };
+  put(r, scaffolded(w, op.expected, op.protect, op.recipe.checks ?? [], op.recipe.coverage ?? []));
+  let state = installRecipeCoverage(r.state, op.recipe.coverage ?? []);
+  if (w.basis) state = bindRecipeCoverage(state, w.id, w.basis.hash, r.ports.clock.now());
+  r.state = {
+    ...state,
+    project: {
+      ...state.project,
+      recipe: state.project.recipe ?? {
+        id: op.recipe.id, version: op.recipe.version, installed: false, checks: op.recipe.checks ?? [],
+      },
+    },
+  };
 }
 
 async function indexSync(r: Recovery, u: Unresolved) {
@@ -78,40 +89,6 @@ async function integration(r: Recovery, u: Unresolved) {
     r.tx.result("integration", u.id, { completed: false });
     r.completed.push("an interrupted integration did not happen");
   }
-}
-
-/** The contract the undo belonged to is gone (a backup was restored): only a confirmed pre-image proves it never happened. */
-async function undoWithoutContract(r: Recovery, u: Unresolved, op: UndoOp) {
-  const stopped = op.runDir ? await r.ports.runner.stopRun(op.runDir) : "unknown";
-  if (stopped === "unknown") {
-    r.uncertain.push("the interrupted undo lost its contract and has uncertain process ownership");
-    return;
-  }
-  const here = await r.ports.git.inventory([]);
-  if (op.paths.every((p) => (here.entries.get(p)?.blob ?? null) === op.pre[p])) {
-    r.tx.result("undo", u.id, { completed: false });
-    r.completed.push("an interrupted undo did not happen");
-  } else {
-    r.uncertain.push("the interrupted undo may have landed but recovery lost its contract; review the current tree");
-  }
-}
-
-async function undo(r: Recovery, u: Unresolved) {
-  const op = u.op as UndoOp;
-  if (!r.state.work[op.work]) return undoWithoutContract(r, u, op);
-  const here = await r.ports.git.inventory([]);
-  const at = (p: string) => here.entries.get(p)?.blob ?? null;
-  const todo = op.paths.filter((p) => at(p) !== op.post[p]);
-  if (todo.some((p) => at(p) !== op.pre[p])) {
-    r.uncertain.push(`the undo touched files that have since changed (${todo.slice(0, 3).join(", ")})`);
-    return;
-  }
-  const patch = r.ports.store.readBlob(op.patch);
-  const runOpts = op.runDir ? { runDir: op.runDir, timeoutMs: 60_000 } : undefined;
-  const ok = !todo.length || (!!patch && (await r.ports.git.applyPatch(patch, todo, runOpts)).ok);
-  if (ok) r.tx.result("undo", u.id, { completed: true });
-  if (!ok) { r.uncertain.push("an interrupted undo could not be finished"); return; }
-  r.completed.push(todo.length ? "an interrupted undo was finished" : "the undo had been applied before the result was recorded");
 }
 
 async function scaffold(r: Recovery, u: Unresolved) {
@@ -211,7 +188,7 @@ async function branch(r: Recovery, u: Unresolved) {
 }
 
 export const SETTLE: Record<string, (r: Recovery, u: Unresolved) => Promise<void>> = {
-  "index-sync": indexSync, commit, integration, undo, scaffold, adopt, dependency, hardening, branch,
+  "index-sync": indexSync, commit, integration, undo: recoverUndo, scaffold, adopt, dependency, hardening, branch,
   async forget(r, u) {
     r.state = completeForget(r.ports, r.tx, r.state, (u.op as { lesson: string }).lesson).state;
     r.completed.push("an interrupted forget was finished");

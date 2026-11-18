@@ -15,6 +15,24 @@ const fresh = () => { const p = project(); roots.push(p.root); return p; };
 after(() => roots.forEach(cleanup));
 
 describe("audit: common mutation boundaries", () => {
+  it("runs shared recovery once during repeated open, reserving the second unresolved scan for retention",
+    { skip: process.platform === "win32" }, async () => {
+    const p = fresh();
+    const ports = { ...p.ports(), platform: "linux" as const };
+    await runVerb(ports, VERBS, "open", { profile: "feature", request: "first", lane: "quick" });
+    const transaction = ports.store.transaction.bind(ports.store);
+    let unresolved = 0;
+    ports.store.transaction = (verb, fn) => transaction(verb, async (tx) => {
+      const original = tx.unresolved;
+      const counted = Object.create(tx) as typeof tx;
+      counted.unresolved = () => { unresolved++; return original(); };
+      return fn(counted);
+    });
+    const response = await runVerb(ports, VERBS, "open", { profile: "investigate", request: "second" });
+    assert.equal(response.exit, 0, JSON.stringify(response));
+    assert.equal(unresolved, 2, "pipeline recovery and retention each scan unresolved effects once");
+  });
+
   it("binds check identity to the contract base without following later HEAD commits [EVD-01, EVD-03]", async () => {
     const p = fresh();
     await p.call("open", { profile: "feature", request: "base identity", lane: "quick" });
