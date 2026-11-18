@@ -32,6 +32,7 @@ import type { RecipeCoverageRecord } from "../src/ports/types.ts";
 import { handoffText } from "../src/core/handoff.ts";
 import { cleanup } from "./helpers.ts";
 import { toolchainOf } from "../src/verbs/check-rerun.ts";
+import { FsRecipes } from "../src/adapters/recipes-fs.ts";
 
 const hash = (char: string) => char.repeat(64);
 const checkInput = (char: string) => char.repeat(24);
@@ -60,6 +61,13 @@ const receipt = (obligation: string, over: Partial<Receipt> = {}): Receipt => ({
 });
 
 describe("recipe coverage state [AC-27]", () => {
+  it("normalizes the shipped recipe's reviewed mapping before persisting it", () => {
+    const recipe = new FsRecipes(join(import.meta.dirname, "../../../plugin")).load("ts-web-api")!;
+    const state = installRecipeCoverage(emptyState("workspace", "tag"), recipe.coverage ?? []);
+    const stored = CoverageState.parse(JSON.parse(JSON.stringify(state._ext![COVERAGE_EXT])));
+    assert.equal(stored.recipe.mappings["signed-out-session"]?.reviewReservation, recipe.coverage![0]!.review.reservation);
+  });
+
   it("preserves unrelated extensions and binds exact mapping evidence to the accepted basis", () => {
     const state = { ...emptyState("workspace", "tag"), _ext: { unrelated: { keep: true } } };
     const installed = installRecipeCoverage(state, [record("signed-out-session", "a")]);

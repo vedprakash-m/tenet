@@ -903,98 +903,6 @@
         "count": 1
       },
       {
-        "key": "packages/kernel/test/bench.test.ts :: benchmark budgets :: accounts for every row of the PRD 4.4.3 table",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: benchmark budgets :: lists the unbuilt pieces as not measurable and gives them no number",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: benchmark budgets :: reports every measured row as unobservable on win32 without starting the kernel",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: benchmark harness with a stand-in kernel :: calls the latency rows inconclusive when the kernel refuses the calls",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: benchmark harness with a stand-in kernel :: judges the warm row on every run, reports each one, and takes the other rows from run 1",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: benchmark harness with a stand-in kernel :: makes the planned calls and turns them into one row per measured budget",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: benchmark statistics :: passes at the limit, fails above it, and says nothing when a call ended outside its expected exit",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: benchmark statistics :: takes the nearest-rank percentile",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: fsync tracing with bpftrace (E12) :: attributes a child's two fsyncs, and fsyncs to the real kernel's open, decide and stop",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: reference fixtures :: are generated, not committed, and the same spec gives the same history",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: reference fixtures :: keep the shapes the budgets name",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: reference fixtures :: leave a clean checkout without kernel state, ignoring .tenet/",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: reference fixtures :: refuse a target that already holds files and leave it unchanged (P76)",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: attributes a traced fsync to the call by its process or a direct child, and to nothing once process IDs wrap (E9)",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: calls a miss environment-invalid when the stall time above 20 ms explains it (E2)",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: calls a run inconclusive when a call ended outside exit 0 (E6)",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: fails a miss that the removed stall time does not explain (E3)",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: fails a miss with no stall (E1)",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: judges an untraced run on wall time only (E5)",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: judges the row: every valid run passes, at most 2 of 5 environment-invalid (E8)",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: keeps the threshold, the run count and the cap equal to the Tech Spec text (E13)",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: marks the trace missing when a successful mutating call shows no fsync, and then excuses nothing (E7)",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: passes a run that met the budget despite a stall, and counts the stall (E4)",
-        "count": 1
-      },
-      {
         "key": "packages/kernel/test/boundary-example.test.ts :: boundary examples [INT-15] :: names a requirement that has only a distinguishing example, in Standard",
         "count": 1
       },
@@ -8124,6 +8032,98 @@
       }
     ],
     "postbuild": [
+      {
+        "key": "packages/kernel/test/bench.test.ts :: benchmark budgets :: accounts for every row of the PRD 4.4.3 table",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: benchmark budgets :: lists the unbuilt pieces as not measurable and gives them no number",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: benchmark budgets :: reports every measured row as unobservable on win32 without starting the kernel",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: benchmark harness with a stand-in kernel :: calls the latency rows inconclusive when the kernel refuses the calls",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: benchmark harness with a stand-in kernel :: judges the warm row on every run, reports each one, and takes the other rows from run 1",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: benchmark harness with a stand-in kernel :: makes the planned calls and turns them into one row per measured budget",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: benchmark statistics :: passes at the limit, fails above it, and says nothing when a call ended outside its expected exit",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: benchmark statistics :: takes the nearest-rank percentile",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: fsync tracing with bpftrace (E12) :: attributes a child's two fsyncs, and fsyncs to the real kernel's open, decide and stop",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: reference fixtures :: are generated, not committed, and the same spec gives the same history",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: reference fixtures :: keep the shapes the budgets name",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: reference fixtures :: leave a clean checkout without kernel state, ignoring .tenet/",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: reference fixtures :: refuse a target that already holds files and leave it unchanged (P76)",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: attributes a traced fsync to the call by its process or a direct child, and to nothing once process IDs wrap (E9)",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: calls a miss environment-invalid when the stall time above 20 ms explains it (E2)",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: calls a run inconclusive when a call ended outside exit 0 (E6)",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: fails a miss that the removed stall time does not explain (E3)",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: fails a miss with no stall (E1)",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: judges an untraced run on wall time only (E5)",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: judges the row: every valid run passes, at most 2 of 5 environment-invalid (E8)",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: keeps the threshold, the run count and the cap equal to the Tech Spec text (E13)",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: marks the trace missing when a successful mutating call shows no fsync, and then excuses nothing (E7)",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/bench.test.ts :: stall-aware warm runs (Tech Spec 14.1) :: passes a run that met the budget despite a stall, and counts the stall (E4)",
+        "count": 1
+      },
       {
         "key": "packages/kernel/test/bundle.test.ts :: built payload-only rules [SEC-03, SEC-07] :: contains no runtime network client import beyond the admitted source boundary",
         "count": 1

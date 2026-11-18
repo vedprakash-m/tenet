@@ -6,7 +6,8 @@
     "source": {
       "exclude": [
         "packages/kernel/test/invariants.test.ts",
-        "packages/kernel/test/bundle.test.ts"
+        "packages/kernel/test/bundle.test.ts",
+        "packages/kernel/test/bench.test.ts"
       ],
       "allowedSkips": [
         "packages/kernel/test/git.test.ts :: git: probe and inventory :: refuses inverse-patch writes on Windows before creating the artifact [SEC-06]",
@@ -19,7 +20,8 @@
     "postbuild": {
       "include": [
         "packages/kernel/test/invariants.test.ts",
-        "packages/kernel/test/bundle.test.ts"
+        "packages/kernel/test/bundle.test.ts",
+        "packages/kernel/test/bench.test.ts"
       ],
       "requiresBundle": true,
       "requiredLeaves": [

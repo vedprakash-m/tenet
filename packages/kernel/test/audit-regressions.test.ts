@@ -24,8 +24,13 @@ describe("audit: common mutation boundaries", () => {
     let unresolved = 0;
     ports.store.transaction = (verb, fn) => transaction(verb, async (tx) => {
       const original = tx.unresolved;
-      const counted = Object.create(tx) as typeof tx;
-      counted.unresolved = () => { unresolved++; return original(); };
+      const counted = new Proxy(tx, {
+        get(target, property) {
+          if (property === "unresolved") return () => { unresolved++; return original(); };
+          const value = Reflect.get(target, property, target);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
       return fn(counted);
     });
     const response = await runVerb(ports, VERBS, "open", { profile: "investigate", request: "second" });

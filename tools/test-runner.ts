@@ -67,6 +67,7 @@ export async function runTests(root: string, laneName: string, output: string, s
   if (!files.length) throw new Error(`test lane ${laneName} selected no files`);
   const reporter = `./${normalize(relative(root, join(root, "tools/test-reporter.mjs")))}`;
   const args = [
+    ...(process.versions.node.startsWith("22.") ? ["--experimental-strip-types"] : []),
     "--test", `--test-concurrency=${concurrency}`, "--test-reporter", reporter,
     ...((shard) ? [`--test-shard=${shard}`] : []),
     ...((lane.namePattern) ? [`--test-name-pattern=${lane.namePattern}`] : []),

@@ -1,6 +1,6 @@
 import type { Receipt } from "./schemas.ts";
 import type { State } from "./schemas.ts";
-import type { RecipeCoverageRecord } from "../ports/types.ts";
+import type { RecipeCoverage, RecipeCoverageRecord } from "../ports/types.ts";
 import type { RecipeCoverageCheck } from "../ports/types.ts";
 import { z } from "zod";
 import { KernelError } from "./errors.ts";
@@ -150,17 +150,22 @@ function withCoverageState(state: State, coverage: CoverageState): State {
 }
 
 /** Stores only reviewed hashes and closed runner definitions; recipe prose and review text stay in the plugin payload. */
-export function installRecipeCoverage(state: State, coverage: readonly RecipeCoverageRecord[]): State {
+export function installRecipeCoverage(state: State, coverage: readonly (RecipeCoverageRecord | RecipeCoverage)[]): State {
   if (!coverage.length) return state;
   const current = readCoverageState(state), mappings = { ...current.recipe.mappings };
   for (const mapping of coverage) {
+    const review = "review" in mapping ? mapping.review : undefined;
+    const reviewReservation = "reviewReservation" in mapping ? mapping.reviewReservation : review?.reservation;
+    const reviewManifestHash = "reviewManifestHash" in mapping ? mapping.reviewManifestHash : review?.manifestHash;
+    if (!reviewReservation || !reviewManifestHash)
+      throw new KernelError("adapter-unsupported-config", "coverage mapping lacks its reviewed identity", { exit: 2 });
     const next = {
       id: mapping.id,
       obligation: mapping.obligation,
       mappingHash: mapping.mappingHash,
       reviewHash: mapping.reviewHash,
-      reviewReservation: mapping.reviewReservation,
-      reviewManifestHash: mapping.reviewManifestHash,
+      reviewReservation,
+      reviewManifestHash,
       primaryDefinitionHash: mapping.primaryDefinitionHash,
       alternativeDefinitionHash: mapping.alternativeDefinitionHash,
       primary: mapping.primary,

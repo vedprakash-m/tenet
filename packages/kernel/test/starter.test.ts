@@ -4,7 +4,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import { join, sep } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { cleanup, git, initRepo, tmp } from "./helpers.ts";
+import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
@@ -104,12 +104,16 @@ describe("the ts-web-api recipe", () => {
     const stack = createStack() as ReturnType<typeof createStack> & {
       coverageArgv(root: string, check: typeof mapping.primary, report: string): string[] | null;
     };
-    const vitest = stack.coverageArgv(join(PLUGIN, "template"), mapping.primary, "/run/vitest.json")!;
+    const root = tmp("tenet-coverage-argv-"); roots.push(root);
+    write(root, "node_modules/vitest/package.json", '{"version":"5.0.5"}\n');
+    write(root, "node_modules/@playwright/test/package.json", '{"version":"1.64.1"}\n');
+    write(root, "node_modules/@playwright/test/cli.js", "process.exit(0);\n");
+    const vitest = stack.coverageArgv(root, mapping.primary, "/run/vitest.json")!;
     assert.deepEqual(vitest.slice(0, 3), [process.execPath, "node_modules/vitest/vitest.mjs", "run"]);
     assert.ok(vitest.includes("--config=coverage/d13/vitest.config.ts"));
     assert.ok(vitest.includes("coverage/d13/vitest/signed-out-session.test.ts"));
     assert.ok(!vitest.includes("npm"));
-    const playwright = stack.coverageArgv(join(PLUGIN, "template"), mapping.alternative, "/run/playwright.json")!;
+    const playwright = stack.coverageArgv(root, mapping.alternative, "/run/playwright.json")!;
     assert.deepEqual(playwright.slice(0, 2), [process.execPath, join("node_modules", "@playwright", "test", "cli.js")]);
     assert.ok(playwright.includes("--config=coverage/d13/playwright.config.ts"));
     assert.ok(playwright.includes("coverage/d13/playwright/signed-out-session.e2e.spec.ts"));
@@ -119,9 +123,13 @@ describe("the ts-web-api recipe", () => {
     const recipe = new FsRecipes(join(PLUGIN, "../..")).load("ts-web-api")!;
     const mapping = recipe.coverage![0]!;
     const stack = createStack();
-    const ports = createPorts(join(PLUGIN, "template"), { PATH: process.env.PATH, HOME: process.env.HOME });
+    const root = tmp("tenet-coverage-envelope-"); roots.push(root);
+    write(root, "node_modules/vitest/package.json", '{"version":"5.0.5"}\n');
+    write(root, "node_modules/@playwright/test/package.json", '{"version":"1.64.1"}\n');
+    write(root, "node_modules/@playwright/test/cli.js", "process.exit(0);\n");
+    const ports = createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
     const envelope = ports.runner.planEnvelope({
-      projectId: "workspace", root: join(PLUGIN, "template"),
+      projectId: "workspace", root,
       obligations: [], toExecute: [], stack,
       coverage: [mapping],
     } as any);
