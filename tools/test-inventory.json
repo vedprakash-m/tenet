@@ -27,6 +27,9 @@
       "requiredLeaves": [
         "packages/kernel/test/bundle.test.ts :: built payload-only rules [SEC-03, SEC-07] :: contains no runtime network client import beyond the admitted source boundary",
         "packages/kernel/test/invariants.test.ts :: the shipped bundle (INS-07: no runtime beyond Node) :: is one self-contained file within its size budget, and runs with nothing but Node [INS-07]"
+      ],
+      "allowedSkips": [
+        "packages/kernel/test/bench.test.ts :: fsync tracing with bpftrace (E12) :: attributes a child's two fsyncs, and fsyncs to the real kernel's open, decide and stop"
       ]
     },
     "all": {

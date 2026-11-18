@@ -17,118 +17,130 @@ export interface CoverageApproval {
 export interface CoverageEvidence extends CoverageApproval {
   primaryReceipt: string;
   alternativeReceipt: string;
-  primaryStatus?: z.infer<typeof Result>["status"];
-  primaryQualifier?: z.infer<typeof Result>["qualifier"];
-  alternativeStatus?: z.infer<typeof Result>["status"];
-  alternativeQualifier?: z.infer<typeof Result>["qualifier"];
+  primaryStatus?: ResultRecord["status"];
+  primaryQualifier?: ResultRecord["qualifier"];
+  alternativeStatus?: ResultRecord["status"];
+  alternativeQualifier?: ResultRecord["qualifier"];
 }
 
 export const COVERAGE_EXT = "checkCoverage.v1";
-const HASH = z.string().regex(/^[a-f0-9]{64}$/);
-const ID = z.string().regex(/^[A-Za-z0-9._-]{1,64}$/);
-const relativePath = z.string().min(1).max(300).refine(
-  (value) => !value.includes("\0") &&
-    !value.startsWith("/") &&
-    !/^[A-Za-z]:[\\/]/.test(value) &&
-    value.split(/[\\/]/).every((part) => part && part !== "." && part !== ".."),
-  "coverage path must stay relative to the recipe",
-);
-const Check = z.strictObject({
-  tool: z.enum(["vitest", "playwright"]),
-  config: relativePath,
-  file: relativePath,
-  tag: z.string().regex(/^COV-[a-z0-9-]{1,48}$/),
-  support: z.array(relativePath).max(1000),
-});
 export const coverageDefinitionHash = (
   check: RecipeCoverageCheck,
   configHash: string,
   fileHash: string,
   supportHashes: Readonly<Record<string, string>> = {},
 ): string => sha256(stableStringify({ ...check, configHash, fileHash, supportHashes }));
-const Mapping = z.strictObject({
-  id: ID,
-  obligation: z.string().regex(/^OB-[A-Za-z0-9._-]{1,64}$/),
-  mappingHash: HASH,
-  reviewHash: HASH,
-  reviewReservation: z.string().regex(/^[A-Za-z0-9._-]{1,120}$/),
-  reviewManifestHash: HASH,
-  primaryDefinitionHash: HASH,
-  alternativeDefinitionHash: HASH,
-  primary: Check,
-  alternative: Check,
-});
-const Binding = z.strictObject({
-  work: z.string().regex(/^W-\d+$/).max(32),
-  basisHash: HASH, mappingId: ID, mappingHash: HASH, reviewHash: HASH, boundAt: z.string().max(64),
-});
-const Flaky = z.strictObject({
-  work: z.string().regex(/^W-\d+$/).max(32),
-  obligation: z.string().regex(/^OB-[A-Za-z0-9._-]{1,64}$/),
-  basisHash: HASH,
-  checkInput: z.string().regex(/^[a-f0-9]{24}$/),
-  receipt: z.string().max(120), run: z.string().max(120),
-  publication: z.number().int().positive(), firstFailedAt: z.string().max(64), historyHash: HASH,
-});
-const Result = z.strictObject({
-  role: z.enum(["primary", "alternative"]), work: z.string().regex(/^W-\d+$/).max(32),
-  obligation: z.string().regex(/^OB-[A-Za-z0-9._-]{1,64}$/), basisHash: HASH,
-  checkInput: z.string().regex(/^[a-f0-9]{24}$/),
-  mappingHash: HASH, reviewHash: HASH, checkHash: HASH,
-  receipt: z.string().max(120), run: z.string().max(120),
-  attempt: z.number().int().min(1).max(3), publication: z.number().int().positive(),
-  startedAt: z.string().max(64), finishedAt: z.string().max(64),
-  status: z.enum(["pass", "fail", "skipped", "inconclusive"]), qualifier: z.enum(["none", "flaky"]),
-  historyHash: HASH,
-});
-const Records = <T extends z.ZodType>(schema: T) => z.record(z.string(), schema);
-export const CoverageState = z.strictObject({
-  version: z.literal(1),
-  recipe: z.strictObject({ mappings: Records(Mapping).superRefine((rows, ctx) => {
-    if (Object.keys(rows).length > 8) ctx.addIssue({ code: "custom", message: "at most 8 mappings" });
-  }) }),
-  bindings: Records(Binding).superRefine((rows, ctx) => {
-    if (Object.keys(rows).length > 32) ctx.addIssue({ code: "custom", message: "at most 32 basis bindings" });
-  }),
-  flaky: Records(Flaky).superRefine((rows, ctx) => {
-    if (Object.keys(rows).length > 32) ctx.addIssue({ code: "custom", message: "at most 32 flaky facts" });
-  }),
-  results: Records(Result).superRefine((rows, ctx) => {
-    if (Object.keys(rows).length > 32) ctx.addIssue({ code: "custom", message: "at most 32 coverage results" });
-  }),
-}).superRefine((state, ctx) => {
+interface ResultRecord {
+  role: "primary" | "alternative"; work: string; obligation: string; basisHash: string; checkInput: string;
+  mappingHash: string; reviewHash: string; checkHash: string; receipt: string; run: string; attempt: number;
+  publication: number; startedAt: string; finishedAt: string;
+  status: "pass" | "fail" | "skipped" | "inconclusive"; qualifier: "none" | "flaky"; historyHash: string;
+}
+
+interface RelationalState {
+  recipe: { mappings: Record<string, {
+    id: string; obligation: string; mappingHash: string; reviewHash: string;
+  }> };
+  bindings: Record<string, {
+    work: string; mappingId: string; mappingHash: string; reviewHash: string;
+  }>;
+  flaky: Record<string, {
+    work: string; obligation: string; basisHash: string; checkInput: string;
+  }>;
+  results: Record<string, ResultRecord>;
+}
+
+function validateCoverageState(state: RelationalState, ctx: z.RefinementCtx) {
   const invalid = (message: string) => ctx.addIssue({ code: "custom", message });
-  const obligations = Object.values(state.recipe.mappings).map((mapping) => mapping.obligation);
+  const obligations = Object.values(state.recipe.mappings).map((item) => item.obligation);
   const roles = [...obligations, ...obligations.map((obligation) => `${obligation}-alternative`)];
   if (new Set(roles).size !== roles.length) invalid("coverage primary and alternative roles collide");
-  for (const [key, mapping] of Object.entries(state.recipe.mappings)) {
-    if (key !== mapping.id) invalid(`coverage mapping key ${key} does not match its id`);
-  }
-  for (const [key, binding] of Object.entries(state.bindings)) {
-    const mapping = state.recipe.mappings[binding.mappingId];
-    if (key !== `${binding.work}\u001f${binding.mappingId}` || !mapping ||
-        mapping.mappingHash !== binding.mappingHash || mapping.reviewHash !== binding.reviewHash)
+  for (const [key, item] of Object.entries(state.recipe.mappings))
+    if (key !== item.id) invalid(`coverage mapping key ${key} does not match its id`);
+  for (const [key, item] of Object.entries(state.bindings)) {
+    const mapped = state.recipe.mappings[item.mappingId];
+    if (key !== `${item.work}\u001f${item.mappingId}` || !mapped ||
+        mapped.mappingHash !== item.mappingHash || mapped.reviewHash !== item.reviewHash)
       invalid(`coverage binding ${key} does not match its mapping`);
   }
   for (const [key, fact] of Object.entries(state.flaky)) {
-    const mapping = Object.values(state.recipe.mappings).find((item) => item.obligation === fact.obligation);
-    const binding = mapping && state.bindings[`${fact.work}\u001f${mapping.id}`];
-    if (key !== `${fact.work}\u001f${fact.obligation}\u001f${fact.basisHash}\u001f${fact.checkInput}` || !binding)
+    const mapped = Object.values(state.recipe.mappings).find((item) => item.obligation === fact.obligation);
+    const bound = mapped && state.bindings[`${fact.work}\u001f${mapped.id}`];
+    if (key !== `${fact.work}\u001f${fact.obligation}\u001f${fact.basisHash}\u001f${fact.checkInput}` || !bound)
       invalid(`flaky coverage key ${key} does not match its record`);
   }
-  for (const [key, result] of Object.entries(state.results)) {
-    const mapping = state.recipe.mappings[Object.keys(state.recipe.mappings).find(
-      (id) => state.recipe.mappings[id]!.obligation === result.obligation
+  for (const [key, item] of Object.entries(state.results)) {
+    const mapped = state.recipe.mappings[Object.keys(state.recipe.mappings).find(
+      (name) => state.recipe.mappings[name]!.obligation === item.obligation
     ) ?? ""];
-    const expected = `${result.work}\u001f${result.obligation}\u001f${result.checkInput}\u001f${result.role}`;
-    const binding = mapping && state.bindings[`${result.work}\u001f${mapping.id}`];
-    if (key !== expected || !mapping || !binding || mapping.mappingHash !== result.mappingHash ||
-        mapping.reviewHash !== result.reviewHash || binding.mappingHash !== result.mappingHash ||
-        binding.reviewHash !== result.reviewHash)
+    const expected = `${item.work}\u001f${item.obligation}\u001f${item.checkInput}\u001f${item.role}`;
+    const bound = mapped && state.bindings[`${item.work}\u001f${mapped.id}`];
+    if (key !== expected || !mapped || !bound || mapped.mappingHash !== item.mappingHash ||
+        mapped.reviewHash !== item.reviewHash || bound.mappingHash !== item.mappingHash ||
+        bound.reviewHash !== item.reviewHash)
       invalid(`coverage result ${key} does not match its role or mapping`);
   }
-});
-export type CoverageState = z.infer<typeof CoverageState>;
+}
+
+function buildCoverageState() {
+  const hash = z.string().regex(/^[a-f0-9]{64}$/);
+  const id = z.string().regex(/^[A-Za-z0-9._-]{1,64}$/);
+  const relativePath = z.string().min(1).max(300).refine(
+    (value) => !value.includes("\0") && !value.startsWith("/") && !/^[A-Za-z]:[\\/]/.test(value) &&
+      value.split(/[\\/]/).every((part) => part && part !== "." && part !== ".."),
+    "coverage path must stay relative to the recipe",
+  );
+  const check = z.strictObject({
+    tool: z.enum(["vitest", "playwright"]), config: relativePath, file: relativePath,
+    tag: z.string().regex(/^COV-[a-z0-9-]{1,48}$/), support: z.array(relativePath).max(1000),
+  });
+  const mapping = z.strictObject({
+    id, obligation: z.string().regex(/^OB-[A-Za-z0-9._-]{1,64}$/),
+    mappingHash: hash, reviewHash: hash,
+    reviewReservation: z.string().regex(/^[A-Za-z0-9._-]{1,120}$/),
+    reviewManifestHash: hash, primaryDefinitionHash: hash, alternativeDefinitionHash: hash,
+    primary: check, alternative: check,
+  });
+  const binding = z.strictObject({
+    work: z.string().regex(/^W-\d+$/).max(32),
+    basisHash: hash, mappingId: id, mappingHash: hash, reviewHash: hash, boundAt: z.string().max(64),
+  });
+  const flaky = z.strictObject({
+    work: z.string().regex(/^W-\d+$/).max(32),
+    obligation: z.string().regex(/^OB-[A-Za-z0-9._-]{1,64}$/),
+    basisHash: hash, checkInput: z.string().regex(/^[a-f0-9]{24}$/),
+    receipt: z.string().max(120), run: z.string().max(120),
+    publication: z.number().int().positive(), firstFailedAt: z.string().max(64), historyHash: hash,
+  });
+  const result = z.strictObject({
+    role: z.enum(["primary", "alternative"]), work: z.string().regex(/^W-\d+$/).max(32),
+    obligation: z.string().regex(/^OB-[A-Za-z0-9._-]{1,64}$/), basisHash: hash,
+    checkInput: z.string().regex(/^[a-f0-9]{24}$/), mappingHash: hash, reviewHash: hash, checkHash: hash,
+    receipt: z.string().max(120), run: z.string().max(120),
+    attempt: z.number().int().min(1).max(3), publication: z.number().int().positive(),
+    startedAt: z.string().max(64), finishedAt: z.string().max(64),
+    status: z.enum(["pass", "fail", "skipped", "inconclusive"]), qualifier: z.enum(["none", "flaky"]),
+    historyHash: hash,
+  });
+  const records = <T extends z.ZodType>(schema: T) => z.record(z.string(), schema);
+  return z.strictObject({
+    version: z.literal(1),
+    recipe: z.strictObject({ mappings: records(mapping).superRefine((rows, ctx) => {
+      if (Object.keys(rows).length > 8) ctx.addIssue({ code: "custom", message: "at most 8 mappings" });
+    }) }),
+    bindings: records(binding).superRefine((rows, ctx) => {
+      if (Object.keys(rows).length > 32) ctx.addIssue({ code: "custom", message: "at most 32 basis bindings" });
+    }),
+    flaky: records(flaky).superRefine((rows, ctx) => {
+      if (Object.keys(rows).length > 32) ctx.addIssue({ code: "custom", message: "at most 32 flaky facts" });
+    }),
+    results: records(result).superRefine((rows, ctx) => {
+      if (Object.keys(rows).length > 32) ctx.addIssue({ code: "custom", message: "at most 32 coverage results" });
+    }),
+  }).superRefine(validateCoverageState);
+}
+export const CoverageState = z.lazy(buildCoverageState);
+export type CoverageState = z.infer<ReturnType<typeof buildCoverageState>>;
 
 const emptyCoverage = (): CoverageState => ({
   version: 1, recipe: { mappings: {} }, bindings: {}, flaky: {}, results: {},
@@ -138,7 +150,11 @@ export function readCoverageState(state: State): CoverageState {
   const raw = state._ext?.[COVERAGE_EXT];
   if (raw === undefined) return emptyCoverage();
   const parsed = CoverageState.safeParse(raw);
-  if (!parsed.success) throw new KernelError("unsupported-record", "coverage state is invalid or unsupported", { exit: 4 });
+  if (!parsed.success) {
+    const errors = parsed.error.issues.slice(0, 3).map((issue) =>
+      `${issue.path.join(".")}: ${issue.message}`).join("; ");
+    throw new KernelError("unsupported-record", `coverage state is invalid or unsupported (${errors})`, { exit: 4 });
+  }
   return parsed.data;
 }
 
@@ -220,7 +236,6 @@ export function boundRecipeCoverage(state: State, work: string, basisHash: strin
   }) as RecipeCoverageRecord[];
 }
 
-type ResultRecord = z.infer<typeof Result>;
 
 function roleReceiptMatches(
   result: ResultRecord,
@@ -384,7 +399,7 @@ function coverageResult(
   basisHash: string,
   publication: number,
   finishedAt: string,
-): z.infer<typeof Result> {
+): ResultRecord {
   return {
     role: item.role, work: "", obligation: mapping.obligation, basisHash,
     checkInput: primary.checkInputId,
@@ -394,7 +409,7 @@ function coverageResult(
       checkInput: item.receipt.checkInputId, versions: item.receipt.versions,
     })),
     receipt: item.receipt.id, run: item.receipt.provenance.runId,
-    attempt: item.receipt.history?.length ?? 1, publication,
+    attempt: Math.max(1, item.receipt.history?.length ?? 1), publication,
     startedAt: item.receipt.provenance.startedAt, finishedAt,
     status: item.receipt.status,
     qualifier: item.receipt.qualifiers.includes("flaky") ? "flaky" : "none",

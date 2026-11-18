@@ -36,7 +36,7 @@ import { FsRecipes } from "../src/adapters/recipes-fs.ts";
 
 const hash = (char: string) => char.repeat(64);
 const checkInput = (char: string) => char.repeat(24);
-const STARTER_MODULES = join(
+const STARTER_MODULES = process.env.TENET_STARTER_NODE_MODULES ?? join(
   import.meta.dirname,
   "../../../plugin/skills/tenet-starter-ts-web-api/template/node_modules",
 );
@@ -66,6 +66,18 @@ describe("recipe coverage state [AC-27]", () => {
     const state = installRecipeCoverage(emptyState("workspace", "tag"), recipe.coverage ?? []);
     const stored = CoverageState.parse(JSON.parse(JSON.stringify(state._ext![COVERAGE_EXT])));
     assert.equal(stored.recipe.mappings["signed-out-session"]?.reviewReservation, recipe.coverage![0]!.review.reservation);
+  });
+
+  it("records an empty first-pass history as attempt one", () => {
+    const mapping = record("signed-out-session", "a");
+    const state = bindRecipeCoverage(
+      installRecipeCoverage(emptyState("workspace", "tag"), [mapping]),
+      "W-0001", hash("f"), "2026-11-18T00:00:00Z",
+    );
+    const recorded = recordCoverageReceipts(
+      state, "W-0001", hash("f"), [receipt(mapping.obligation, { history: [] })], 1, "2026-11-18T00:00:01Z",
+    );
+    assert.equal(Object.values(readCoverageState(recorded.state).results)[0]!.attempt, 1);
   });
 
   it("preserves unrelated extensions and binds exact mapping evidence to the accepted basis", () => {
