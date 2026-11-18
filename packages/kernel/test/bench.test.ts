@@ -7,8 +7,9 @@ import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { BUDGETS, MAX_INVALID_RUNS, STALL_THRESHOLD_MS, WARM_RUNS, attributeFsyncs, callKernel, classifyWarmRun, judgeLatency, judgeWarmRuns, measureFixture, measuredRows, parseTrace, percentile, render, runBench, startFsyncTracer } from "../../../tools/bench.ts";
-import type { Call, WarmRun } from "../../../tools/bench.ts";
+import type { Call, Report, WarmRun } from "../../../tools/bench.ts";
 import { FIXTURES, generateFixture } from "../../../tools/bench-fixtures.ts";
+import { mergeBenchReports } from "../../../tools/merge-bench-reports.ts";
 import { cleanup, tmp } from "./helpers.ts";
 
 const dirs: string[] = [];
@@ -152,6 +153,49 @@ function execFileSyncOk(cmd: string, args: string[]): boolean {
 }
 
 describe("benchmark budgets", () => {
+  it("merges five traced trials per fixture before applying the unchanged five-run judgment", () => {
+    const fixtures = Object.keys(FIXTURES);
+    const reports: Report[] = fixtures.flatMap((fixture) => Array.from({ length: WARM_RUNS }, (_, index) => {
+      const trial = index + 1;
+      const fixed = BUDGETS.filter((budget) => budget.fixed).map((budget) => ({
+        id: budget.id, prd: budget.prd, target: budget.target, ...budget.fixed!,
+      }));
+      return {
+        platform: "linux",
+        trial,
+        environment: { bundle: { sha256: "a".repeat(64) }, cpu: "reference" },
+        rows: [
+          ...fixed,
+          {
+            id: "bookkeeping-warm", prd: "Kernel bookkeeping call latency", target: "p95 <= 300 ms warm",
+            fixture, status: "pass", observed: "p95 100 ms", detail: "one trial", trace: "ok",
+            runs: [{ run: trial, class: "pass", trace: "ok", n: 43, p95Ms: 100, adjustedP95Ms: 100, maxMs: 110 }],
+          },
+          { id: "bookkeeping-cold", prd: "Kernel bookkeeping call latency", target: "p95 <= 1 s cold", fixture, status: "pass" as const, observed: "p95 100 ms", detail: "cold" },
+          { id: "tenet-storage", prd: "`.tenet/` storage", target: "<= 50 MB", fixture, status: "pass" as const, observed: "1 MB", detail: "storage" },
+          { id: "resume", prd: "Resume reconstruction", target: "<= 2 min", fixture, status: "pass" as const, observed: "1 ms", detail: "resume" },
+        ],
+        summary: { pass: 11, fail: 0, inconclusive: 0, "not-measurable": 4, unobservable: 0, delegated: 4 },
+        environmentInvalidRuns: 0,
+        fsyncTrace: "ok",
+        exit: 0,
+      };
+    }));
+    const merged = mergeBenchReports(reports);
+    for (const fixture of fixtures) {
+      const warm = merged.rows.find((row) => row.id === "bookkeeping-warm" && row.fixture === fixture)!;
+      assert.deepEqual(warm.runs!.map((run) => run.run), [1, 2, 3, 4, 5]);
+      assert.equal(warm.status, "pass");
+    }
+    reports[0] = {
+      ...reports[0]!,
+      rows: reports[0]!.rows.map((row) => row.id === "bookkeeping-warm"
+        ? { ...row, runs: [{ ...row.runs![0]!, class: "fail" as const, p95Ms: 301 }] }
+        : row),
+    };
+    assert.equal(mergeBenchReports(reports).exit, 1);
+  });
+
   it("accounts for every row of the PRD 4.4.3 table", () => {
     const prd = readFileSync(join(import.meta.dirname, "../../../specs/PRD.md"), "utf8");
     const table = prd.slice(prd.indexOf("#### 4.4.3 System budgets"), prd.indexOf("### 4.5 "));

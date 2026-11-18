@@ -6,7 +6,7 @@
 - Added `tools/test-runner.ts`, `tools/test-reporter.mjs`, `tools/test-inventory.json` and `tools/verify-execution.ts` to bind each lane to discovered files, exact protected leaves, run identity and passing structured results. Bundle-dependent assertions now have a separate post-build population and an absent bundle cannot silently skip them.
 - Added stable UAT scenario identities and a protected 157-observation baseline. Release admission now requires the successful `Tenet validation` job on the exact `main` commit.
 - Removed the repeated Alpha-catalog validation, duplicate standalone watcher run and repeated Node 24 full UAT. `verify:reproducible` now typechecks once before its two independent builds. Existing real Git, crash, browser, native SQLite and minimum-Node boundaries remain.
-- Split the retained source population into duration-balanced shards and the 157-observation built campaign into eight verified groups. Windows Node 24 and 22.12 checks and the three frozen performance fixtures now run independently; protected populations, five benchmark runs, fsync tracing and both minimum-Node paths remain required.
+- Split the retained source population into duration-balanced shards and the 157-observation built campaign into eight verified groups. Windows Node 24 and 22.12 checks and the 15 fixed fixture/trial benchmark jobs now run independently; the aggregate preserves the unchanged five-run judgment, fsync tracing and both minimum-Node paths.
 
 ## 2026-11-17 — Warn about Windows metadata links
 

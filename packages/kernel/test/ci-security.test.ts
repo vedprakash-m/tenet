@@ -72,12 +72,12 @@ describe("untrusted validation keeps its trust boundary [ENG-10]", () => {
   it("runs source once per POSIX OS with locked Chromium and complete structured evidence", () => {
     assert.deepEqual(untrusted.doc.jobs.source.strategy.matrix.os, ["ubuntu-latest", "macos-latest"]);
     assert.deepEqual(untrusted.doc.jobs.source.strategy.matrix.shard.map((item: { value: string }) => item.value),
-      ["1/8", "2/8", "3/8", "4/8", "5/8", "6/8", "7/8", "8/8"]);
+      ["1/4", "2/4", "3/4", "4/4"]);
     const runs = commands("source").join("\n");
-    assert.match(runs, /tools\/test-runner\.ts --lane source --concurrency=2 --shard/);
+    assert.match(runs, /tools\/test-runner\.ts --lane source --concurrency=4 --shard/);
     assert.match(runs, /tools\/verify-execution\.ts --partial --lane source/);
     assert.match(runs, /npm ci --prefix "\$browser_tools" --ignore-scripts --no-audit/);
-    assert.doesNotMatch(runs, /playwright\/test\/cli\.js" install --with-deps chromium/);
+    assert.match(runs, /playwright\/test\/cli\.js" install --with-deps chromium/);
     assert.doesNotMatch(runs, /\bnpx\b|npm exec\b/);
     assert.equal(commands("source").filter((command) => command.includes("test-runner.ts")).length, 1);
   });
@@ -137,7 +137,7 @@ describe("untrusted validation keeps its trust boundary [ENG-10]", () => {
 
   it("runs the minimum-Node Windows population concurrently", () => {
     const runs = commands("windows-minimum").join("\n");
-    assert.match(runs, /npm run build/);
+    assert.match(runs, /node --experimental-strip-types tools\/build\.ts/);
     assert.match(runs, /--lane windows-review/);
     assert.match(runs, /npm rebuild better-sqlite3/);
     assert.match(runs, /server\\test\\schema-history\.test\.ts/);

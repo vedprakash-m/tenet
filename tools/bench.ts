@@ -238,7 +238,11 @@ export function measuredRows(name: string, m: Measured, warmRuns?: WarmRun[]): R
 }
 
 /** `environmentInvalidRuns` counts warm runs across fixtures; it is not a row status, so it sits outside `summary`. */
-export interface Report { platform: string; environment: Record<string, unknown>; rows: Row[]; summary: Record<Status, number>; environmentInvalidRuns: number; fsyncTrace: string; exit: 0 | 1 | 3 }
+export interface Report {
+  platform: string; environment: Record<string, unknown>; rows: Row[]; summary: Record<Status, number>;
+  environmentInvalidRuns: number; fsyncTrace: string; exit: 0 | 1 | 3; trial?: number;
+  environments?: Record<string, unknown>[];
+}
 
 function bundleInfo(path: string): Record<string, unknown> {
   try { const b = readFileSync(path); return { path, bytes: b.length, sha256: createHash("sha256").update(b).digest("hex") }; }
@@ -254,8 +258,15 @@ const environment = (bundle: string): Record<string, unknown> => ({
 
 /** Every fixture is measured `runs` times (Tech Spec 14.1), each on a freshly generated fixture; only the warm row uses
  *  every run, the other rows come from run 1. With `trace`, bpftrace runs for the whole measurement. */
-export function runBench(opts: { bundle: string; fixtures: FixtureName[]; platform?: string; runs?: number; trace?: boolean; specs?: Partial<Record<FixtureName, FixtureSpec>> }): Report {
+export function runBench(opts: {
+  bundle: string; fixtures: FixtureName[]; platform?: string; runs?: number; trial?: number;
+  trace?: boolean; specs?: Partial<Record<FixtureName, FixtureSpec>>;
+}): Report {
   const platform = opts.platform ?? process.platform;
+  const trial = opts.trial ?? 1;
+  const runs = opts.runs ?? WARM_RUNS;
+  if (!Number.isInteger(trial) || trial < 1 || trial + runs - 1 > WARM_RUNS)
+    throw new Error(`benchmark trial range must fit ${WARM_RUNS} runs`);
   const rows: Row[] = [];
   const unobservable = platform === "win32";
   const scratch = unobservable ? "" : mkdtempSync(join(tmpdir(), "tenet-nfr01-"));
@@ -271,8 +282,8 @@ export function runBench(opts: { bundle: string; fixtures: FixtureName[]; platfo
       try {
         for (const name of opts.fixtures) {
           const list: Measured[] = [];
-          for (let i = 1; i <= (opts.runs ?? WARM_RUNS); i++) {
-            const dir = join(scratch, `${name}-run-${i}`);
+          for (let i = 0; i < runs; i++) {
+            const dir = join(scratch, `${name}-run-${trial + i}`);
             mkdirSync(dir);
             list.push(measureFixture(opts.bundle, name, opts.specs?.[name] ?? FIXTURES[name], dir));
             rmSync(dir, { recursive: true, force: true });
@@ -285,16 +296,17 @@ export function runBench(opts: { bundle: string; fixtures: FixtureName[]; platfo
       const events = tracer && !tracer.error ? tracer.events() : undefined;
       if (tracer) fsyncTrace = `${tracer.error ? `missing: ${tracer.error}` : "ok"}; ${tracer.diagnostics()}`;
       for (const [name, list] of measured) {
-        const runs = list.map((m, i) => classifyWarmRun(events ? attributeFsyncs(m.warm, events) : m.warm, Boolean(tracer), i + 1));
-        environmentInvalidRuns += runs.filter((r) => r.class === "environment-invalid").length;
-        rows.push(...measuredRows(name, list[0]!, runs));
+        const warmRuns = list.map((m, i) => classifyWarmRun(events ? attributeFsyncs(m.warm, events) : m.warm, Boolean(tracer), trial + i));
+        environmentInvalidRuns += warmRuns.filter((r) => r.class === "environment-invalid").length;
+        rows.push(...measuredRows(name, list[0]!, warmRuns));
       }
     }
   } finally { if (scratch) rmSync(scratch, { recursive: true, force: true }); }
   const summary = { pass: 0, fail: 0, inconclusive: 0, "not-measurable": 0, unobservable: 0, delegated: 0 } as Record<Status, number>;
   for (const r of rows) summary[r.status]++;
   const exit = unobservable ? 3 : summary.fail || summary.inconclusive ? 1 : 0;
-  return { platform, environment: environment(opts.bundle), rows, summary, environmentInvalidRuns, fsyncTrace, exit };
+  return { platform, environment: environment(opts.bundle), rows, summary, environmentInvalidRuns, fsyncTrace, exit,
+    ...(opts.trial !== undefined ? { trial: opts.trial } : {}) };
 }
 
 const runLine = (r: WarmRun): string => `${" ".repeat(15)}run ${r.run} ${r.class.padEnd(20)} p95 ${r.p95Ms.toFixed(0)} ms, adjusted ${r.adjustedP95Ms.toFixed(0)} ms, max ${r.maxMs.toFixed(0)} ms, n=${r.n}; `
@@ -309,7 +321,11 @@ export function render(report: Report): string {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  const { values, positionals } = parseArgs({ allowPositionals: true, options: { fixture: { type: "string", default: "all" }, bundle: { type: "string" }, json: { type: "boolean", default: false }, "fsync-trace": { type: "boolean", default: false } } });
+  const { values, positionals } = parseArgs({ allowPositionals: true, options: {
+    fixture: { type: "string", default: "all" }, bundle: { type: "string" }, runs: { type: "string" },
+    trial: { type: "string" }, partial: { type: "boolean", default: false },
+    json: { type: "boolean", default: false }, "fsync-trace": { type: "boolean", default: false },
+  } });
   const names = Object.keys(FIXTURES) as FixtureName[];
   if (positionals[0] === "fixture") {
     const name = positionals[1] as FixtureName, dir = positionals[2];
@@ -319,9 +335,18 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     const fixtures = values.fixture === "all" ? names : names.filter((n) => n === values.fixture);
     const bundle = values.bundle ?? process.env.TENET_TEST_BUNDLE ?? join(import.meta.dirname, "../plugin/kernel/tenet.mjs");
     if (!fixtures.length) { console.error(`unknown fixture "${values.fixture}"; use ${names.join(", ")} or all`); process.exit(2); }
+    const runs = values.runs === undefined ? undefined : Number(values.runs);
+    const trial = values.trial === undefined ? undefined : Number(values.trial);
+    if (values.partial && (runs !== 1 || trial === undefined)) {
+      console.error("--partial requires --runs=1 and --trial=<1..5>"); process.exit(2);
+    }
+    if (runs !== undefined && (!Number.isInteger(runs) || runs < 1 || runs > WARM_RUNS) ||
+      trial !== undefined && (!Number.isInteger(trial) || trial < 1 || trial > WARM_RUNS)) {
+      console.error("--runs and --trial must use the fixed five-run population"); process.exit(2);
+    }
     if (process.platform !== "win32" && bundleInfo(bundle).missing) { console.error(`no bundle at ${bundle}; run npm run build`); process.exit(2); }
-    const report = runBench({ bundle, fixtures, trace: values["fsync-trace"] });
+    const report = runBench({ bundle, fixtures, runs, trial, trace: values["fsync-trace"] });
     console.log(values.json ? JSON.stringify(report, null, 2) : render(report));
-    process.exit(report.exit);
+    process.exit(values.partial && report.exit === 1 ? 0 : report.exit);
   }
 }

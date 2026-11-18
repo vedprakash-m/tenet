@@ -54,21 +54,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         shard:
           - id: "1"
-            value: "1/8"
+            value: "1/4"
           - id: "2"
-            value: "2/8"
+            value: "2/4"
           - id: "3"
-            value: "3/8"
+            value: "3/4"
           - id: "4"
-            value: "4/8"
-          - id: "5"
-            value: "5/8"
-          - id: "6"
-            value: "6/8"
-          - id: "7"
-            value: "7/8"
-          - id: "8"
-            value: "8/8"
+            value: "4/4"
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -86,8 +78,9 @@ jobs:
           mkdir -p "$browser_tools"
           cp plugin/skills/tenet-starter-ts-web-api/template/package.json plugin/skills/tenet-starter-ts-web-api/template/package-lock.json "$browser_tools/"
           npm ci --prefix "$browser_tools" --ignore-scripts --no-audit
+          node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium
       - name: Source tests with structured evidence
-        run: TENET_STARTER_NODE_MODULES="$RUNNER_TEMP/tenet-browser-tools/node_modules" node --experimental-strip-types tools/test-runner.ts --lane source --concurrency=2 --shard "${{ matrix.shard.value }}" --report "$RUNNER_TEMP/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json"
+        run: TENET_STARTER_NODE_MODULES="$RUNNER_TEMP/tenet-browser-tools/node_modules" node --experimental-strip-types tools/test-runner.ts --lane source --concurrency=4 --shard "${{ matrix.shard.value }}" --report "$RUNNER_TEMP/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json"
       - name: Verify source shard population
         run: node --experimental-strip-types tools/verify-execution.ts --partial --lane source --reports "$RUNNER_TEMP/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json" --output "$RUNNER_TEMP/execution-source-${{ matrix.os }}-${{ matrix.shard.id }}.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -206,7 +199,7 @@ jobs:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: bundle-payload-${{ matrix.os }}
-          path: ${{ runner.temp }}/tenet-bundle
+          path: ${{ github.workspace }}/plugin/kernel
       - name: Install locked Chromium for the starter group
         if: matrix.group.id == 'starter'
         run: |
@@ -218,7 +211,7 @@ jobs:
       - name: Full minimum-Node UAT group
         env:
           ACTUAL_NODE: v22.12.0
-          TENET_TEST_BUNDLE: ${{ runner.temp }}/tenet-bundle/tenet.mjs
+          TENET_TEST_BUNDLE: ${{ github.workspace }}/plugin/kernel/tenet.mjs
         run: |
           if test "${{ matrix.group.id }}" = starter; then
             export TENET_STARTER_NODE_MODULES="$RUNNER_TEMP/tenet-browser-tools/node_modules"
@@ -227,7 +220,7 @@ jobs:
       - name: Verify minimum-Node UAT group
         env:
           ACTUAL_NODE: v22.12.0
-        run: node --experimental-strip-types tools/uat/verify.mjs "$RUNNER_TEMP/uat-${{ matrix.os }}-${{ matrix.group.id }}.json" "$RUNNER_TEMP/tenet-bundle/tenet.mjs" --group="${{ matrix.group.id }}"
+        run: node --experimental-strip-types tools/uat/verify.mjs "$RUNNER_TEMP/uat-${{ matrix.os }}-${{ matrix.group.id }}.json" plugin/kernel/tenet.mjs --group="${{ matrix.group.id }}"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
@@ -298,8 +291,8 @@ jobs:
         with:
           node-version: 22.12.0
       - run: npm ci --ignore-scripts --no-audit
-      - run: npm run build
-      - run: npm run verify:payload
+      - run: node --experimental-strip-types tools/build.ts
+      - run: node --experimental-strip-types tools/payload.ts
       - run: >-
           node --experimental-strip-types --test packages\eval\test\protocol.test.ts packages\eval\test\replay.test.ts packages\eval\test\report.test.ts packages\kernel\test\payload.test.ts packages\kernel\test\host-launch.test.ts packages\kernel\test\report-paths.test.ts packages\kernel\test\playwright-adapter.test.ts packages\kernel\test\receipts.test.ts
       - name: Windows review population on minimum Node
