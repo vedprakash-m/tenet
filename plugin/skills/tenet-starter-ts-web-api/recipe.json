@@ -20,8 +20,6 @@
         "file": "coverage/d13/vitest/signed-out-session.test.ts",
         "tag": "COV-signed-out-session",
         "support": [
-          "server/src",
-          "server/migrations",
           "server/test/support/admission.ts"
         ]
       },
@@ -31,13 +29,9 @@
         "file": "coverage/d13/playwright/signed-out-session.e2e.spec.ts",
         "tag": "COV-signed-out-session",
         "support": [
-          "server/src",
-          "server/migrations",
           "server/test/support/browser-identities.ts",
           "server/test/support/browser-server.ts",
-          "web",
-          "vite.config.ts",
-          "tsconfig.json"
+          "vite.config.ts"
         ]
       },
       "review": "coverage-reviews/signed-out-session.json"
