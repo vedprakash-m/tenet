@@ -29,9 +29,7 @@
         "file": "coverage/d13/playwright/signed-out-session.e2e.spec.ts",
         "tag": "COV-signed-out-session",
         "support": [
-          "server/test/support/browser-identities.ts",
-          "server/test/support/browser-server.ts",
-          "vite.config.ts"
+          "server/test/support/browser-identities.ts"
         ]
       },
       "review": "coverage-reviews/signed-out-session.json"
