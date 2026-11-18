@@ -9,7 +9,10 @@
         "packages/kernel/test/bundle.test.ts",
         "packages/kernel/test/bench.test.ts"
       ],
-      "serialFiles": ["packages/kernel/test/store.test.ts"],
+      "serialFiles": [
+        "packages/kernel/test/store.test.ts",
+        "packages/kernel/test/sealed-baseline.test.ts"
+      ],
       "allowedSkips": [
         "packages/kernel/test/git.test.ts :: git: probe and inventory :: refuses inverse-patch writes on Windows before creating the artifact [SEC-06]",
         "packages/kernel/test/host-cli.test.ts :: host CLI, live (SP-11 feasibility) [ENG-04]",
