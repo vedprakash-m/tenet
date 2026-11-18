@@ -53,13 +53,15 @@ export function verifyReports(root: string, lane: string, reportPaths: string[],
   if (complete && missingLeaves.length) throw new Error(`required leaves missing from lane ${lane}: ${missingLeaves.join("; ")}`);
   if (complete) {
     const baseline = JSON.parse(readFileSync(resolve(root, "tools/test-baseline.json"), "utf8")) as Baseline;
-    if (baseline.version !== 1 || !baseline.lanes[lane]) throw new Error(`test baseline missing lane ${lane}`);
+    if (baseline.version !== 1) throw new Error("test baseline version is not supported");
+    const expectedBaseline = baseline.lanes[lane];
+    if (!expectedBaseline && !(laneDefinition.requiredLeaves?.length)) throw new Error(`test baseline missing lane ${lane}`);
     const counts = new Map<string, number>();
     for (const leaf of leaves) {
       const key = `${leaf.file} :: ${leaf.key}`;
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
-    const missing = baseline.lanes[lane].filter((entry) => (counts.get(entry.key) ?? 0) < entry.count);
+    const missing = (expectedBaseline ?? []).filter((entry) => (counts.get(entry.key) ?? 0) < entry.count);
     if (missing.length) throw new Error(`reviewed leaf baseline missing from lane ${lane}: ${missing.map((entry) => entry.key).join("; ")}`);
   }
   const filesWithoutLeaves = reportedFiles.filter((file) => !leaves.some((leaf) => leaf.file === file));

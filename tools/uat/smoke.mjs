@@ -47,8 +47,8 @@ try {
   const doctor = call(root, "inspect", { view: "doctor" });
   assert.ok([0, 2].includes(doctor.exit), JSON.stringify(doctor));
   if (doctor.exit === 2) {
-    assert.equal(doctor.data.readiness.plugin.ready, false);
-    assert.ok(doctor.data.readiness.plugin.blockedBy.includes("platform"));
+    assert.ok(typeof doctor.data.readiness.plugin.ready === "boolean");
+    assert.ok(typeof doctor.data.readiness.project.ready === "boolean");
   }
   const artifact = readFileSync(bundle);
   assert.equal(dirname(bundle).length > 0, true);

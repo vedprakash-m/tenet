@@ -12,7 +12,10 @@ interface Inventory { version: number; root: string; patternSuffix: string; lane
 interface Report {
   version: number;
   terminal: { success: boolean; counts: unknown };
-  leaves: Array<{ key: string; file: string; status: "pass" | "fail" | "skip"; durationMs: number }>;
+  leaves: Array<{
+    key: string; file: string; status: "pass" | "fail" | "skip"; durationMs: number;
+    error?: { message?: string };
+  }>;
   files: Array<{ file: string; pass: number; fail: number; skipped: number; durationMs: number }>;
 }
 
@@ -88,6 +91,10 @@ export async function runTests(root: string, laneName: string, output: string, s
     },
   };
   writeFileSync(resolve(output), `${JSON.stringify(enriched, null, 2)}\n`);
+  if (status !== 0) {
+    const failed = report.leaves.filter((leaf) => leaf.status === "fail").slice(0, 20);
+    for (const leaf of failed) console.error(`${leaf.file} :: ${leaf.key}: ${leaf.error?.message ?? ""}`);
+  }
   if (status === 0 && (!report.terminal.success || !report.files.length)) throw new Error("test reporter did not observe a complete run");
   return status;
 }

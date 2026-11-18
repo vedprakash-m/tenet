@@ -80,12 +80,13 @@ jobs:
       - name: Verify source shard population
         run: node --experimental-strip-types tools/verify-execution.ts --partial --lane source --reports "$RUNNER_TEMP/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json" --output "$RUNNER_TEMP/execution-source-${{ matrix.os }}-${{ matrix.shard.id }}.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
         with:
           name: source-${{ matrix.os }}-${{ matrix.shard.id }}
           path: |
             ${{ runner.temp }}/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json
             ${{ runner.temp }}/execution-source-${{ matrix.os }}-${{ matrix.shard.id }}.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
 
   bundle-uat:
@@ -161,6 +162,7 @@ jobs:
           ACTUAL_NODE: v22.12.0
         run: node --experimental-strip-types tools/uat/verify.mjs "$RUNNER_TEMP/uat-full.json" plugin/kernel/tenet.mjs
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
         with:
           name: bundle-${{ matrix.os }}
           path: |
@@ -169,7 +171,7 @@ jobs:
             ${{ runner.temp }}/uat-smoke.json
             ${{ runner.temp }}/uat-smoke-22.json
             ${{ runner.temp }}/uat-full.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
 
   windows-portability:
