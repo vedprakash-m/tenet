@@ -54,9 +54,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         shard:
           - id: "1"
-            value: "1/2"
+            value: "1/4"
           - id: "2"
-            value: "2/2"
+            value: "2/4"
+          - id: "3"
+            value: "3/4"
+          - id: "4"
+            value: "4/4"
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -76,7 +80,7 @@ jobs:
           npm ci --prefix "$browser_tools" --ignore-scripts --no-audit
           node "$browser_tools/node_modules/@playwright/test/cli.js" install --with-deps chromium
       - name: Source tests with structured evidence
-        run: TENET_STARTER_NODE_MODULES="$RUNNER_TEMP/tenet-browser-tools/node_modules" node --experimental-strip-types tools/test-runner.ts --lane source --concurrency=4 --shard "${{ matrix.shard.value }}" --report "$RUNNER_TEMP/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json"
+        run: TENET_STARTER_NODE_MODULES="$RUNNER_TEMP/tenet-browser-tools/node_modules" node --experimental-strip-types tools/test-runner.ts --lane source --concurrency=2 --shard "${{ matrix.shard.value }}" --report "$RUNNER_TEMP/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json"
       - name: Verify source shard population
         run: node --experimental-strip-types tools/verify-execution.ts --partial --lane source --reports "$RUNNER_TEMP/test-source-${{ matrix.os }}-${{ matrix.shard.id }}.json" --output "$RUNNER_TEMP/execution-source-${{ matrix.os }}-${{ matrix.shard.id }}.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

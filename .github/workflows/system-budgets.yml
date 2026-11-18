@@ -69,9 +69,8 @@ jobs:
       fail-fast: false
       matrix:
         fixture: [small, large, long-history]
-        trial: [1, 2, 3, 4, 5]
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -89,37 +88,13 @@ jobs:
         env:
           TENET_FSYNC_TRACE_REQUIRED: "1"
         run: node --test --test-name-pattern "fsync tracing" packages/kernel/test/bench.test.ts
-      - name: Measure one fixed fixture trial against the unchanged PRD system budgets
-        run: node tools/bench.ts --fixture "${{ matrix.fixture }}" --runs=1 --trial="${{ matrix.trial }}" --partial --json --fsync-trace > "system-budgets-${{ matrix.fixture }}-${{ matrix.trial }}.json"
+      - name: Measure one frozen fixture against the unchanged PRD system budgets (5 runs, stalls traced)
+        run: node tools/bench.ts --fixture "${{ matrix.fixture }}" --json --fsync-trace > "system-budgets-${{ matrix.fixture }}.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: system-budgets-${{ matrix.fixture }}-${{ matrix.trial }}
-          path: system-budgets-${{ matrix.fixture }}-${{ matrix.trial }}.json
-          if-no-files-found: error
-          retention-days: 30
-  benchmark-aggregate:
-    needs: frozen-fixtures
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
-        with:
-          node-version: 24
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: system-budgets-*
-          merge-multiple: true
-          path: ${{ runner.temp }}/benchmark-reports
-      - name: Judge the exact five-run population after all fixed trials complete
-        run: node --experimental-strip-types tools/merge-bench-reports.ts "$RUNNER_TEMP/benchmark-reports" > system-budgets.json
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: system-budgets
-          path: system-budgets.json
+          name: system-budgets-${{ matrix.fixture }}
+          path: system-budgets-${{ matrix.fixture }}.json
           if-no-files-found: error
           retention-days: 30
   starter-memory:
