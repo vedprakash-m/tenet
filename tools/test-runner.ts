@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 interface Lane {
   include?: string[]; exclude?: string[]; requiresBundle?: boolean;
-  requiredLeaves?: string[]; allowedSkips?: string[]; namePattern?: string;
+  requiredLeaves?: string[]; allowedSkips?: string[]; namePattern?: string; serialFiles?: string[];
 }
 interface Inventory { version: number; root: string; patternSuffix: string; lanes: Record<string, Lane> }
 interface DurationInventory { version: number; files: Record<string, number> }
@@ -71,6 +71,11 @@ export function partitionFiles(files: string[], durations: Map<string, number>, 
   return buckets[selected]!.files.sort();
 }
 
+export function concurrencyForFiles(files: string[], requested: string, serialFiles: string[] = []): string {
+  const serial = new Set(serialFiles.map(normalize));
+  return files.some((file) => serial.has(file)) ? "1" : requested;
+}
+
 const durationWeights = (root: string): Map<string, number> => {
   const path = join(root, "tools/test-durations.json");
   if (!existsSync(path)) return new Map();
@@ -98,9 +103,10 @@ export async function runTests(root: string, laneName: string, output: string, s
   const runFiles = shard ? partitionFiles(files, durationWeights(root), shard) : files;
   if (!runFiles.length) throw new Error(`test lane ${laneName} shard ${shard} selected no files`);
   const reporter = `./${normalize(relative(root, join(root, "tools/test-reporter.mjs")))}`;
+  const effectiveConcurrency = concurrencyForFiles(runFiles, concurrency, lane.serialFiles);
   const args = [
     ...(process.versions.node.startsWith("22.") ? ["--experimental-strip-types"] : []),
-    "--test", `--test-concurrency=${concurrency}`, "--test-reporter", reporter,
+    "--test", `--test-concurrency=${effectiveConcurrency}`, "--test-reporter", reporter,
     ...((lane.namePattern) ? [`--test-name-pattern=${lane.namePattern}`] : []),
     ...runFiles,
   ];

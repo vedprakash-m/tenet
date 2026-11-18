@@ -4,7 +4,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { cleanup, tmp } from "./helpers.ts";
-import { partitionFiles, selectedFiles } from "../../../tools/test-runner.ts";
+import { concurrencyForFiles, partitionFiles, selectedFiles } from "../../../tools/test-runner.ts";
 import { verifyReports } from "../../../tools/verify-execution.ts";
 
 const inventory = {
@@ -67,6 +67,11 @@ describe("validation evidence population", () => {
     assert.equal(new Set(first.filter((file) => second.includes(file))).size, 0);
     assert.ok(Math.max(first.reduce((sum, file) => sum + durations.get(file)!, 0),
       second.reduce((sum, file) => sum + durations.get(file)!, 0)) <= 110);
+  });
+
+  it("serializes a shard that owns a real-process race", () => {
+    assert.equal(concurrencyForFiles(["store.test.ts", "browser.test.ts"], "2", ["store.test.ts"]), "1");
+    assert.equal(concurrencyForFiles(["browser.test.ts", "static.test.ts"], "2", ["store.test.ts"]), "2");
   });
 
   it("accepts a complete non-overlapping shard union", () => {
