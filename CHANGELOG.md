@@ -24,8 +24,10 @@
   control. Schema-3 provider identity and protected mixed-path
   recovery/retention integration remain blocked on their separate
   prerequisite implementations; this is not full P118/P119 qualification.
+- Updated built UAT matcher assertions and exact read-only Git trace
+  expectations for the declarative packet and terminal pathspec separators.
 - Local validation: typecheck and all lints passed; the focused population
-  passed 65/65 tests, including a real unmerged Git path and zero-open
+  passed 66/66 tests, including a real unmerged Git path and zero-open
   prohibited aliases. Built read-only review on a scratch repository
   preserved index bytes and HEAD and created no `.tenet`. Existing Windows
   mutation and bounded-read failures also reproduce on the untouched
