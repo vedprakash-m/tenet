@@ -14,6 +14,7 @@ import type { Months } from "../core/journal-reduce.ts";
 import { recoveredState } from "../core/state.ts";
 import { schemaStatus } from "../core/versions.ts";
 import { releasedStorage, reservedStorage } from "../core/storage-reservation.ts";
+import { protectedRunPaths } from "../core/storage-protection.ts";
 import type { Clock, EvictReport, Footprint, LogEntry, Quarantined, Store, Tx } from "../ports/types.ts";
 import { isAlive, procStart } from "./proc.ts";
 import { admissionRecord, MAX_RECORD, parseRecord, readJson, readRecord, readTerminal } from "./private-record-fs.ts";
@@ -880,19 +881,16 @@ export class FsStore implements Store {
       }
       states.push(previous.data);
     }
-    const protectedIds = new Set<string>(this.unresolved().map((entry) => entry.id));
-    const protectedPaths = new Set(keep);
+    const unresolved = this.unresolved();
+    const protectedIds = new Set<string>(unresolved.map((entry) => entry.id));
+    const protectedPaths = new Set([...keep, ...protectedRunPaths(null, unresolved)]);
     for (const state of states) {
-      const legacy = state.project.retention?.legacyTemp.path;
-      if (legacy) protectedPaths.add(legacy);
+      for (const path of protectedRunPaths(state, [])) protectedPaths.add(path);
       for (const work of Object.values(state.work)) {
         if (work.session.inCall?.runId) protectedIds.add(work.session.inCall.runId);
-        if (work.session.inCall?.runDir) protectedPaths.add(work.session.inCall.runDir);
         if (work.focusedReview?.id) protectedIds.add(work.focusedReview.id);
-        if (work.focusedReview?.manifest) protectedPaths.add(work.focusedReview.manifest);
         for (const reservation of work.budget.reservations) {
           protectedIds.add(reservation.id);
-          protectedPaths.add(reservation.manifest);
         }
       }
     }
