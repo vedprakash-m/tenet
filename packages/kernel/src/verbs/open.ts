@@ -22,6 +22,12 @@ import {
   uncertainReconstructionSurface,
 } from "../decisions/uncertain-reconstruction.ts";
 
+function withQuarantine(state: State, tx: Tx): State {
+  if (!tx.quarantined || state.quarantine) return state;
+  const next: State = { ...state, quarantine: { ...tx.quarantined, choice: "pending" } };
+  return { ...next, pending: [...next.pending, quarantineQuestion(next)] };
+}
+
 /** Admission and housekeeping every `open` goes through: quarantine, recovery, a suspended backup, temp cleanup, shared files. */
 async function begin(ports: Ports, before: State | null, input: OpenInput, tx: Tx): Promise<Ctx> {
   if (input.profile === "fix" && !input.findings) {
@@ -35,11 +41,7 @@ async function begin(ports: Ports, before: State | null, input: OpenInput, tx: T
     }
   }
   const ident = tx.ensure();
-  let state = before ?? emptyState(ident.workspaceId, ident.tag);
-  if (tx.quarantined && !state.quarantine) {
-    state = { ...state, quarantine: { ...tx.quarantined, choice: "pending" } };
-    state = { ...state, pending: [...state.pending, quarantineQuestion(state)] };
-  }
+  let state = withQuarantine(before ?? emptyState(ident.workspaceId, ident.tag), tx);
   if (state.recovered && state.recovered.accounting !== "verified" && isEditingProfile(input.profile)) {
     throw new KernelError(
       "state-recovered-from-backup",
@@ -171,7 +173,7 @@ export const open: Verb<OpenInput> = {
       const ident = tx.ensure();
       const recovery = await offerUncertainReconstruction(
         ports,
-        state0 ?? emptyState(ident.workspaceId, ident.tag),
+        withQuarantine(state0 ?? emptyState(ident.workspaceId, ident.tag), tx),
       );
       return {
         state: recovery.state,

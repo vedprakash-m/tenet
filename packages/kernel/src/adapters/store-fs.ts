@@ -351,9 +351,9 @@ export class FsStore implements Store {
     try {
       this.admit();
       const read = this.exists() ? this.read() : null;
-      const priorScope = existed ? null : this.retentionScope();
+      const priorScope = existed && !this.quarantined ? null : this.retentionScope();
       const history = read && existsSync(this.p("log")) ? "complete"
-        : !this.quarantined && (existed || directoryExisted || priorScope?.exists) ? "uncertain"
+        : priorScope?.exists || (!this.quarantined && (existed || directoryExisted)) ? "uncertain"
         : "newly-created";
       if (history !== "uncertain") {
         chmodSync(this.dir, 0o700);

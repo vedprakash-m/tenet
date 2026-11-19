@@ -13,6 +13,8 @@ import { emptyState } from "../src/core/state.ts";
 import { cleanup, tmp } from "./helpers.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
+import { open } from "../src/verbs/open.ts";
+import { createPorts } from "../src/wire.ts";
 import { reclaim } from "../src/verbs/common.ts";
 import { systemClock } from "../src/adapters/system.ts";
 import { contractFixture, project } from "./support/fixture.ts";
@@ -128,6 +130,27 @@ describe("storage publication regression controls (synthetic, not durability qua
       tx.publish({ ...emptyState(workspaceId, tag), quarantine: { ...tx.quarantined!, choice: "pending" } });
     });
     assert.equal(store.history(), "complete");
+  });
+
+  it("preserves uncertainty when completed quarantine has a temp root but no state [AC-17, P91]", async (t) => {
+    windowsFilesystem(t);
+    const { store, dir, root } = fixture();
+    rmSync(join(dir, "state")); rmSync(join(dir, "lock"));
+    store["quarantined"] = { path: "quarantine-2026-11-19-aaaaaaaaaaaa", nonce: "aaaaaaaaaaaa", entries: 1 };
+    await testIdentity(store).transaction("open", async (tx) => {
+      assert.ok(tx.quarantined);
+      assert.equal(tx.history, "uncertain");
+      assert.equal(tx.state, null);
+      const plan = await open.run(
+        { ...createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), store },
+        null, open.schema.parse({ profile: "investigate", request: "review interrupted quarantine" }), tx,
+      );
+      assert.equal(plan.state?.project.retention?.legacyTemp.pending, true);
+      assert.equal(plan.state?.quarantine?.choice, "pending");
+      assert.deepEqual(plan.state?.pending.map(q => q.id), ["quarantine-review", "reconstruction-review"]);
+      tx.publish(plan.state!);
+    });
+    assert.equal(store.read()!.state.quarantine?.choice, "pending");
   });
 
   it("finalizes an unchanged large state without charging unrelated growth to its job [AC-17, P106]", () => {

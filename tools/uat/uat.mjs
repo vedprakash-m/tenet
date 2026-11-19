@@ -291,11 +291,17 @@ try {
    assert.notEqual(refused.exit, 0, JSON.stringify(refused));
    assert.deepEqual(readFileSync(join(forgetting, '.tenet/state')), before);
    const log = readFileSync(join(forgetting, '.tenet/log'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
-   assert.deepEqual(log.filter(e => e.effect === 'forget').map(e => e.kind), ['intent']);
+   assert.deepEqual(log.filter(e => e.effect === 'forget').map(e => e.kind), failure === 'unreadable-directory' ? [] : ['intent']);
+   if (failure === 'unreadable-directory') assert.equal(refused.reasons[0]?.code, 'storage-accounting-unknown');
   } finally {
    chmodSync(manifests, 0o700); if (existsSync(packet)) { chmodSync(packet, 0o600); writeFileSync(packet, original); }
   }
   assert.equal(call(forgetting, 'decide', { h, kind: 'config', target: 'style', propose: { value: 'concise' } }).exit, 0);
+  if (failure === 'unreadable-directory') {
+   assert.equal(existsSync(packet), true);
+   assert.ok(JSON.parse(readFileSync(join(forgetting, '.tenet/state'), 'utf8')).lessons.some(lesson => lesson.id === id));
+   assert.equal(call(forgetting, 'decide', { h, kind: 'forget', target: id, answers: { 'forget-confirm': 'yes' } }).exit, 0);
+  }
   assert.equal(existsSync(packet), false);
   assert.equal(readFileSync(join(forgetting, '.tenet/state.prev'), 'utf8').includes(text), false);
   observations.push({ scenario: `built forget refuses ${failure}`, lessonRetainedUntilRepair: true, intentRecoversOnce: true });

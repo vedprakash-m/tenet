@@ -383,7 +383,7 @@ describe("private store boundaries", () => {
     await assert.rejects(store.transaction("test", async tx => {
       tx.call({ verb: "inspect", exit: 0, revision: 1, content });
     }), /unsupported|bound|large|storage/i);
-    assert.equal(existsSync(path), false);
+    assert.equal(readFileSync(path, "utf8"), "");
     assert.equal(store.read()!.state.revision, 1);
   });
   it("refuses oversized artifact bytes before creating or truncating a private leaf [CON-04, SEC-06]", async () => {

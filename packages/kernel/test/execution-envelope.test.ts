@@ -10,7 +10,7 @@ import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, SLOW_TEST, cli, isAlive, preconsentEnvelope, project, runCli, runningCheck, waitFor } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, SLOW_TEST, cli, cliEnv, isAlive, preconsentEnvelope, project, runCli, runningCheck, waitFor } from "./support/fixture.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -237,10 +237,7 @@ for (const cancellation of [false, true]) it(`requires fresh consent after an un
       await running.done;
       assert.ok(isAlive(orphan.pid));
     }
-    const ports = createPorts(p.root, {
-      PATH: process.env.PATH, HOME: process.env.HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
-      ...(process.platform === "darwin" ? { __CF_USER_TEXT_ENCODING: "test" } : {}),
-    });
+    const ports = createPorts(p.root, cliEnv());
     const plan = ports.runner.planEnvelope.bind(ports.runner);
     ports.runner.planEnvelope = input => {
       const envelope = plan(input);
