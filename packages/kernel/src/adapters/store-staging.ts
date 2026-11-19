@@ -21,6 +21,10 @@ export interface WriteContext {
   staged: StagedWrite[];
 }
 
+export function recentWithStaged(disk: LogEntry[], context: WriteContext): LogEntry[] {
+  return [...disk, ...context.staged.flatMap(entry => entry.kind === "log" ? [structuredClone(entry.value)] : [])];
+}
+
 export function stagedRunGrowth(context?: WriteContext, extra?: Extract<StagedWrite, { kind: "artifact" }>) {
   const sizes = new Map<string, number>();
   for (const entry of [...(context?.staged ?? []), ...(extra ? [extra] : [])]) {

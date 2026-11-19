@@ -14,6 +14,7 @@ import { git, initRepo, tmp, write } from "../helpers.ts";
 const REPO_NODE_MODULES = join(import.meta.dirname, "../../../../node_modules");
 const cliEnv = () => ({
   PATH: process.env.PATH, HOME: process.env.HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
+  TMPDIR: process.env.TMPDIR, TEMP: process.env.TEMP, TMP: process.env.TMP,
   ...(process.platform === "darwin" ? { __CF_USER_TEXT_ENCODING: "test" } : {}),
 });
 

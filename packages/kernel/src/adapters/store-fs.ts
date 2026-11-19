@@ -19,7 +19,7 @@ import { isAlive, procStart } from "./proc.ts";
 import { admissionRecord, MAX_RECORD, parseRecord, readJson, readRecord, readTerminal } from "./private-record-fs.ts";
 import { quarantine, QUARANTINE_JOURNAL } from "./quarantine-fs.ts";
 import { parsePrivate, readCompactionPending, readJournal, SummaryRecord } from "./store-records.ts";
-import { stagedRunGrowth } from "./store-staging.ts";
+import { recentWithStaged, stagedRunGrowth } from "./store-staging.ts";
 import type { LockInfo, StagedWrite, WriteContext } from "./store-staging.ts";
 
 interface Marker { workspaceId: string; tag: string; nonce: string; schema: number; dev: number; ino: number }
@@ -353,7 +353,7 @@ export class FsStore implements Store {
       const read = this.exists() ? this.read() : null;
       const priorScope = existed ? null : this.retentionScope();
       const history = read && existsSync(this.p("log")) ? "complete"
-        : existed || directoryExisted || priorScope?.exists ? "uncertain"
+        : !this.quarantined && (existed || directoryExisted || priorScope?.exists) ? "uncertain"
         : "newly-created";
       if (history !== "uncertain") {
         chmodSync(this.dir, 0o700);
@@ -394,7 +394,7 @@ export class FsStore implements Store {
         unresolved: () => store.unresolved(context),
         evict: (keep, apply = true) => store.inWrite(context, () => store.evictInLock(keep, apply)),
         recent: (n) => {
-          const log = store.recentWithStaged(context);
+          const log = recentWithStaged(store.readLog(), context);
           return n === undefined ? log : log.slice(-n);
         },
       };
@@ -432,14 +432,15 @@ export class FsStore implements Store {
     if (!created.exists || created.identity === "absent") {
       throw new KernelError("state-history-unknown", "the project temp root could not be durably identified");
     }
-    context.creationIdentity = created.identity;
+    context.creationIdentity = created.identity.split(":").slice(0, 2).join(":");
+    if (!existsSync(this.p("log"))) writeSynced(this.p("log"), "");
   }
 
   private statePublication(next: State, reservedJournalBytes: number) {
     const context = this.writes.getStore();
     if (context?.creationIdentity) {
       const scope = this.retentionScope();
-      if (context.creationIdentity !== scope.identity) {
+      if (!scope.identity.startsWith(`${context.creationIdentity}:`)) {
         throw new KernelError("state-history-unknown", "the project temp root changed during first-state publication");
       }
     }
@@ -475,7 +476,7 @@ export class FsStore implements Store {
     renameSync(tmp, this.p("state"));
     fsyncDir(this.dir);
     const creationIdentity = this.writes.getStore()?.creationIdentity;
-    if (creationIdentity && this.retentionScope().identity !== creationIdentity) {
+    if (creationIdentity && !this.retentionScope().identity.startsWith(`${creationIdentity}:`)) {
       throw new KernelError("state-history-unknown",
         "the project temp root changed during state publication; a restart remains uncertain");
     }
@@ -558,13 +559,6 @@ export class FsStore implements Store {
       context.staged.push({ kind: "log", value: serialized });
     });
   }
-  private recentWithStaged(context: WriteContext): LogEntry[] {
-    const disk = this.readLog();
-    return [
-      ...disk,
-      ...context.staged.flatMap((entry) => entry.kind === "log" ? [entry.value] : []),
-    ];
-  }
   private assertStagedGrowth(
     context: WriteContext,
     prospectiveState?: State,
@@ -627,6 +621,7 @@ export class FsStore implements Store {
     );
   }
   private commitStaged(context: WriteContext) {
+    if (!context.staged.length) return;
     this.inWrite(context, () => {
       this.assertStagedGrowth(context);
       this.assertArtifactCapacity(context);

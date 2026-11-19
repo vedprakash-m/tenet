@@ -1,6 +1,6 @@
 // Bounded storage (CON-08, AC-19; specs/storage-retention.md v2): journal reduction into summaries, run-file cap, ceiling.
 // Real store, real files; the clock is set per write so records can be given any age.
-import { after, describe, it } from "node:test";
+import { after, describe, it, type TestContext } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import fs, { appendFileSync, existsSync, fstatSync, lstatSync, mkdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
@@ -44,6 +44,19 @@ const lines = (path: string) => readFileSync(path, "utf8").split("\n").filter(Bo
 
 describe("storage publication regression controls (synthetic, not durability qualification)", () => {
   const MB = 1024 * 1024;
+  const windowsFilesystem = (t: TestContext) => {
+    if (process.platform !== "win32") return;
+    const fsync = fs.fsyncSync;
+    t.mock.method(fs, "fsyncSync", (fd: number) => {
+      if (!fstatSync(fd).isDirectory()) fsync(fd);
+    });
+    syncBuiltinESMExports();
+    t.after(() => { t.mock.restoreAll(); syncBuiltinESMExports(); });
+  };
+  const testIdentity = (store: FsStore) => {
+    if (process.platform === "win32") store.self = () => ({ pid: process.pid, procStart: "synthetic" });
+    return store;
+  };
   const context = () => ({
     lock: { pid: process.pid, procStart: "synthetic", nonce: "regression", verb: "test" },
     active: true, transactional: true, staged: [] as Parameters<FsStore["assertStagedGrowth"]>[0]["staged"],
@@ -78,6 +91,44 @@ describe("storage publication regression controls (synthetic, not durability qua
   });
   const storageRefusal = (code: string) => (error: unknown) =>
     error instanceof KernelError && error.reasons[0]?.code === code;
+
+  it("does not reserve writes for an empty transaction above the ceiling [AC-17, P106]", async (t) => {
+    windowsFilesystem(t);
+    const { dir, root } = fixture();
+    rmSync(join(dir, "lock"));
+    const store = testIdentity(new FsStore(root, clock, systemRandom, { ceilingBytes: 1 }));
+    await assert.doesNotReject(store.transaction("inspect-storage", async () => store.storageBytes()));
+  });
+
+  it("creates a complete empty journal and permits admitted artifacts before first state publication [AC-17, P91]", async (t) => {
+    windowsFilesystem(t);
+    const root = tmp("tenet-initial-storage-"); roots.push(root);
+    const store = testIdentity(new FsStore(root, clock, systemRandom));
+    await store.transaction("initialize", async (tx) => {
+      const { workspaceId, tag } = tx.ensure();
+      roots.push(join(tmpdir(), `tenet-${workspaceId}`));
+      store.writeArtifact(store.tempDir("run-initial"), "data", "first artifact");
+      tx.publish(emptyState(workspaceId, tag));
+    });
+    assert.equal(store.history(), "complete");
+    assert.equal(readFileSync(join(root, ".tenet", "log"), "utf8"), "");
+  });
+
+  it("distinguishes a completed quarantine from unexplained missing history [AC-17, P91]", async (t) => {
+    windowsFilesystem(t);
+    const root = tmp("tenet-quarantine-storage-"); roots.push(root);
+    mkdirSync(join(root, ".tenet"));
+    writeFileSync(join(root, ".tenet", "imported"), "preserve imported bytes");
+    const store = testIdentity(new FsStore(root, clock, systemRandom));
+    await store.transaction("open", async (tx) => {
+      assert.ok(tx.quarantined);
+      assert.equal(tx.history, "newly-created");
+      const { workspaceId, tag } = tx.ensure();
+      roots.push(join(tmpdir(), `tenet-${workspaceId}`));
+      tx.publish({ ...emptyState(workspaceId, tag), quarantine: { ...tx.quarantined!, choice: "pending" } });
+    });
+    assert.equal(store.history(), "complete");
+  });
 
   it("finalizes an unchanged large state without charging unrelated growth to its job [AC-17, P106]", () => {
     const { store } = fixture();
@@ -123,14 +174,7 @@ describe("storage publication regression controls (synthetic, not durability qua
   });
 
   it("replays interrupted compaction through transaction startup after the cutoff advances [AC-17, P106]", async (t) => {
-    if (process.platform === "win32") {
-      const fsync = fs.fsyncSync;
-      t.mock.method(fs, "fsyncSync", (fd: number) => {
-        if (!fstatSync(fd).isDirectory()) fsync(fd);
-      });
-      syncBuiltinESMExports();
-      t.after(() => { t.mock.restoreAll(); syncBuiltinESMExports(); });
-    }
+    windowsFilesystem(t);
     const { root, dir, store } = fixture({ compactAtBytes: 1, afterSummaries: () => { throw new Error("interrupted"); } });
     ago(0);
     const cutoff = now - 90 * DAY;
@@ -481,8 +525,9 @@ describe("run-file cap and ceiling [CON-08, AC-19]", () => {
   }
 
   it("reports protected data above the ceiling with its largest classes [AC-17, P106]", async () => {
-    const { store, root } = await fresh({ ceilingBytes: 1_500 });
+    const { root } = await fresh();
     new FsStore(root, clock, systemRandom, LOW).putBlob("x".repeat(3_000));
+    const store = new FsStore(root, clock, systemRandom, { ...LOW, ceilingBytes: 1_500 });
     const r = await evict(store);
     assert.equal(r.overCeiling, true, JSON.stringify(r));
     assert.equal(r.largest[0]!.name, "blobs");

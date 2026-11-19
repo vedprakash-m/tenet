@@ -21,11 +21,17 @@ function retainedLegacy(ports: Ports, state: State) {
 export function completeForget(ports: Ports, tx: Tx, state: State, id: string) {
   retainedLegacy(ports, state);
   const l = state.lessons.find(x => x.id === id);
-  const packetsRemoved = l ? ports.store.purge([l.statement, l.provenance.quote]) : 0;
   const next = withoutLesson(state, id);
+  tx.reservePublish?.(next, 4096);
+  tx.flush?.();
+  const packetsRemoved = l ? ports.store.purge([l.statement, l.provenance.quote]) : 0;
+  tx.flush?.();
   tx.publish(next);
+  tx.flush?.();
   tx.publish(next);
+  tx.flush?.();
   tx.result("forget", id, { completed: true });
+  tx.flush?.();
   return { state: next, packetsRemoved };
 }
 

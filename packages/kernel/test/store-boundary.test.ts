@@ -117,7 +117,7 @@ describe("private store boundaries", () => {
     const root = fresh(), store = await initState(root);
     await store.transaction("test", async tx => tx.publish(tx.state!));
     const path = join(root, ".tenet/state");
-    const future = JSON.stringify({ ...JSON.parse(readFileSync(path, "utf8")), schema: 2 });
+    const future = JSON.stringify({ ...JSON.parse(readFileSync(path, "utf8")), schema: 3 });
     const oversized = Buffer.from(future + " ".repeat(50 * 1024 * 1024));
     writeFileSync(path, oversized);
     const unsupported = (error: unknown) => error instanceof KernelError && error.reasons[0]?.code === "unsupported-record";
@@ -134,7 +134,7 @@ describe("private store boundaries", () => {
     const root = fresh(), store = await initState(root);
     await store.transaction("test", async tx => tx.publish(tx.state!));
     const path = join(root, ".tenet/state");
-    const future = JSON.stringify({ ...JSON.parse(readFileSync(path, "utf8")), schema: 2 });
+    const future = JSON.stringify({ ...JSON.parse(readFileSync(path, "utf8")), schema: 3 });
     writeFileSync(path, future);
     const script = `
       import fs from "node:fs";
@@ -209,7 +209,8 @@ describe("private store boundaries", () => {
           process.env.TMPDIR = root;
           try {
             const artifactDir = store.tempDir("run-expired");
-            const artifact = store.writeArtifact(artifactDir, "packet.json", "private-admission-canary");
+            const artifact = join(artifactDir, "packet.json");
+            writeFileSync(artifact, "private-admission-canary");
             writeFileSync(join(root, ".tenet/state.prev"), readFileSync(join(root, ".tenet/state")));
             writeFileSync(join(root, ".tenet/log"), '{"t":"t","kind":"intent","effect":"commit","id":"seed","op":{}}\n{"kind":');
             for (const name of ["lock", "lock.break"]) writeFileSync(join(root, ".tenet", name),
@@ -567,9 +568,10 @@ describe("private store boundaries", () => {
     mkdirSync(human);
     writeFileSync(join(human, "notes.txt"), "preserve human work");
     utimesSync(human, 1, 1);
+    rmSync(base, { recursive: true, force: true });
     symlinkSync(outside, base);
     try {
-      assert.equal(store.sweepTemp(1000, []), 0);
+      assert.throws(() => store.sweepTemp(1000, []), /link|directory/);
       assert.equal(readFileSync(join(human, "notes.txt"), "utf8"), "preserve human work");
     } finally { rmSync(base, { force: true }); }
   });
@@ -582,7 +584,7 @@ describe("private store boundaries", () => {
       utimesSync(human, 1, 1);
       symlinkSync(outside, join(base, group));
       try {
-        assert.equal(store.sweepTemp(1000, []), 0);
+        assert.throws(() => store.sweepTemp(1000, []), /link|directory/);
         assert.equal(readFileSync(human, "utf8"), "preserve human work");
       } finally { rmSync(base, { recursive: true, force: true }); }
     }

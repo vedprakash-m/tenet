@@ -45,7 +45,7 @@ export function bridgeUat({ create, call, bundle, source, env, observations }) {
   rmSync(join(dir, fence));
  }
  const state = readFileSync(join(dir, 'state'), 'utf8');
- writeFileSync(join(dir, 'state'), state.replace('"schema":1', '"schema":2'));
+ writeFileSync(join(dir, 'state'), JSON.stringify({ ...JSON.parse(state), schema: JSON.parse(state).schema + 1 }));
  const before = snapshot(dir);
  assert.ok(call(root, 'decide', config).reasons.some(reason => reason.code === 'unsupported-record'));
  assert.deepEqual(snapshot(dir), before);
