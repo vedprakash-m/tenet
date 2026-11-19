@@ -63,9 +63,12 @@ export const hardening: Decision = {
     }
     if (ports.project.hashes([FILE])[FILE] !== op.before) throw new KernelError("intent-edited-outside", FILE);
     const id = `h-${ports.rand.base32(6)}`;
+    const next = withWork(state, recordedHardening(work, op));
+    tx.reservePublish?.(next, 64 * 1024);
     tx.intent("hardening", id, op);
+    tx.flush?.();
     ports.project.write(FILE, projection.text);
     tx.result("hardening", id, { completed: true });
-    return { state: withWork(state, recordedHardening(work, op)), resp: { work: work.id, data: { file: FILE, block, changed: true } } };
+    return { state: next, resp: { work: work.id, data: { file: FILE, block, changed: true } } };
   },
 };

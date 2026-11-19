@@ -17,7 +17,7 @@ async function lineParses(marker: string, fn: () => Promise<unknown>): Promise<n
 }
 
 describe("store: journal parse reuse", { skip: NO_POSIX_PROCESSES }, () => {
-  it("parses each journal record once in a transaction that only reads it, and still sees records appended since", async () => {
+  it("reuses untouched journal reads and revalidates after records have been handed to a caller", async () => {
     const root = tmp();
     dirs.push(root);
     const store = await initState(root);
@@ -28,8 +28,8 @@ describe("store: journal parse reuse", { skip: NO_POSIX_PROCESSES }, () => {
       tx.call({ verb: "journal-probe", exit: 0, revision: 3 });
       recent = tx.recent();
     }));
-    // Three records read once at the transaction's start; the appended one checked before it is written, then read once.
-    assert.equal(parses, 5);
+    // Three initial records, one staged validation, three fresh admission records after recent(), one durable append.
+    assert.equal(parses, 8);
     assert.deepEqual(recent.filter((e) => (e as { verb?: string }).verb === "journal-probe").map((e) => (e as { revision: number }).revision), [0, 1, 2, 3]);
   });
 
@@ -44,7 +44,8 @@ describe("store: journal parse reuse", { skip: NO_POSIX_PROCESSES }, () => {
       first.length = 0;
       const again = tx.recent() as Array<{ verb?: string; exit?: number }>;
       assert.equal(again.find((e) => e.verb === "journal-probe")?.exit, 0);
-      assert.equal(store.readLog().find((e) => e.verb === "journal-probe")?.exit, 0);
+      assert.equal(store.readLog().find((e) => e.verb === "journal-probe"), undefined, "staged records are not durable yet");
     });
+    assert.equal(store.readLog().find((e) => e.verb === "journal-probe")?.exit, 0);
   });
 });

@@ -17,6 +17,27 @@ import type { Ports, Tx } from "./ports/types.ts";
 
 type Exit = 0 | 1 | 2 | 3 | 4 | 5;
 type Next = KernelResponse["next"][number];
+const STATE_HISTORY_REASON =
+  "Local Tenet history is incomplete. No cleanup or dependent work was started; the affected project files are preserved.";
+const uncertainStore = (ports: Ports) => ports.store.history?.() === "uncertain";
+const allowedUncertainInspection = (input: any) =>
+  ["help", "doctor", "status", "residue", "settings"].includes(input.view) && !input.h;
+function enforceReadHistory(ports: Ports, name: string, input: any, cls: OpClass) {
+  const blocked = cls === "stateless"
+    ? name === "review"
+    : cls === "read-only" && !allowedUncertainInspection(input);
+  if (!blocked || !uncertainStore(ports)) return;
+  throw new KernelError("state-history-unknown", STATE_HISTORY_REASON, {
+    exit: 3,
+    next: [{ action: "ask", why: "Run inspect status without changing the affected store.", required: true }],
+  });
+}
+function enforceRecoveryInspection(input: any, state: State | null) {
+  if (!state?.project.retention?.legacyTemp.pending || allowedUncertainInspection(input)) return;
+  throw new KernelError("state-history-unknown",
+    "Local Tenet history remains incomplete. Review the recovery question before dependent inspection.",
+    { exit: 3 });
+}
 
 /** A verb's contribution to the response; the pipeline adds verb, revision, handle, budget and kernel info. */
 export { KernelError };
@@ -76,8 +97,14 @@ function invalidInput(issues: readonly Issue[], raw: unknown): Reason {
 
 function fail(ports: Ports, verb: string, e: unknown, state: State | null): KernelResponse {
   if (e instanceof KernelError) {
-    const { exit, reasons, questions, next } = e;
-    return render(ports, verb, { exit, reasons, ...(questions ? { questions } : {}), ...(next ? { next } : {}) }, state);
+    const { exit, reasons, questions, next, effects } = e;
+    return render(ports, verb, {
+      exit,
+      reasons,
+      ...(effects ? { effects } : {}),
+      ...(questions ? { questions } : {}),
+      ...(next ? { next } : {}),
+    }, state);
   }
   if (e instanceof ZodError) return render(ports, verb, { exit: 1, reasons: [invalidInput(e.issues, undefined)] }, state);
   const message = e instanceof Error ? e.message : String(e);
@@ -110,6 +137,7 @@ async function executeVerb(ports: Ports, verbs: Record<string, Verb>, name: stri
   if (!input) return render(ports, name, { exit: 1, reasons: [{ code: "invalid-input",
     message: "Structured input contains likely secret material; replace it with placeholders." }] }, null);
   const cls = verb.class(input);
+  enforceReadHistory(ports, name, input, cls);
   if (cls === "mutating" && !mutationSupported(ports.platform)) {
     return render(ports, name, { exit: 2, reasons: [reason("capability-missing",
       `mutating work is unavailable on ${ports.platform}; read-only inspection and advisory review remain available`)] }, null);
@@ -122,6 +150,7 @@ async function executeVerb(ports: Ports, verbs: Record<string, Verb>, name: stri
     }
     if (cls === "read-only") {
       const read = ports.store.exists() ? ports.store.read() : null;
+      enforceRecoveryInspection(input, read?.state ?? null);
       configurePolicy(ports, read?.state ?? null);
       prepareCapabilities(ports, read?.state ?? null);
       const plan = await verb.run(ports, read?.state ?? null, input);

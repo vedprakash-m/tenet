@@ -36,6 +36,7 @@ function memoryStore(ports: Ports, scratch: string, initial: State) {
   const unused = (): never => { throw new Error("unexpected simulated-store operation"); };
   const overrides: Partial<Store> = {
     admit() {}, exists: () => true, read: () => ({ state, recovered: false }),
+    history: () => "complete", storageBytes: () => 0, sweepTemp: () => 0,
     alive: async () => false, self: () => ({ pid: 12345, procStart: "synthetic" }),
     tempDir(name) { const dir = join(scratch, name); mkdirSync(dir); return dir; },
     writeArtifact(dir, name, content) { const file = join(dir, name); writeFileSync(file, content); return file; },
@@ -44,7 +45,8 @@ function memoryStore(ports: Ports, scratch: string, initial: State) {
     async transaction<T>(_name: string, run: (tx: Tx) => Promise<T>): Promise<T> {
       let current = structuredClone(state);
       const tx: Tx = {
-        get state() { return current; }, recovered: false, ensure: unused, evict: unused,
+        get state() { return current; }, recovered: false, ensure: unused,
+        evict: () => ({ overCeiling: false, largest: [] }),
         recent: () => [], call() {},
         intent(effect, id, op) { intents.push({ effect, id, op: structuredClone(op) }); },
         result(effect, id, outcome) { results.push({ effect, id, outcome }); },

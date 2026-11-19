@@ -22,6 +22,6 @@ git.commit = async (plan) => {
   return out;
 };
 const realTx = ports.store.transaction.bind(ports.store);
-ports.store.transaction = (v, fn) => realTx(v, (tx) => fn({ ...tx, result: (e, i, o) => { tx.result(e, i, o); if (point === "after-result" && e === "commit") die(); } }));
+ports.store.transaction = (v, fn) => realTx(v, (tx) => fn({ ...tx, result: (e, i, o) => { tx.result(e, i, o); if (point === "after-result" && e === "commit") { tx.flush!(); die(); } } }));
 
 console.log(JSON.stringify(await runVerb(ports, VERBS, verb, JSON.parse(json))));

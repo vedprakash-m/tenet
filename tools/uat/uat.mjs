@@ -298,14 +298,20 @@ try {
    assert.notEqual(refused.exit, 0, JSON.stringify(refused));
    assert.deepEqual(readFileSync(join(forgetting, '.tenet/state')), before);
    const log = readFileSync(join(forgetting, '.tenet/log'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
-   assert.deepEqual(log.filter(e => e.effect === 'forget').map(e => e.kind), ['intent']);
+   assert.deepEqual(log.filter(e => e.effect === 'forget').map(e => e.kind), failure === 'unreadable-directory' ? [] : ['intent']);
+   if (failure === 'unreadable-directory') assert.equal(refused.reasons[0]?.code, 'storage-accounting-unknown');
   } finally {
    chmodSync(manifests, 0o700); if (existsSync(packet)) { chmodSync(packet, 0o600); writeFileSync(packet, original); }
   }
   assert.equal(call(forgetting, 'decide', { h, kind: 'config', target: 'style', propose: { value: 'concise' } }).exit, 0);
+  if (failure === 'unreadable-directory') {
+   assert.equal(existsSync(packet), true);
+   assert.ok(JSON.parse(readFileSync(join(forgetting, '.tenet/state'), 'utf8')).lessons.some(lesson => lesson.id === id));
+   assert.equal(call(forgetting, 'decide', { h, kind: 'forget', target: id, answers: { 'forget-confirm': 'yes' } }).exit, 0);
+  }
   assert.equal(existsSync(packet), false);
   assert.equal(readFileSync(join(forgetting, '.tenet/state.prev'), 'utf8').includes(text), false);
-  observations.push({ scenario: `built forget refuses ${failure}`, lessonRetainedUntilRepair: true, intentRecoversOnce: true });
+  observations.push({ scenario: `built forget refuses ${failure}`, lessonRetainedUntilRepair: true, intentRecoversOnce: failure !== 'unreadable-directory', explicitRetry: failure === 'unreadable-directory' });
  }
  {
   const uncertain = create(), h = call(uncertain, 'open', { profile: 'plan', request: 'recover before refusing' }).handle;
@@ -386,7 +392,8 @@ try {
   const log = join(compatibilityRoot, '.tenet/log');
   writeFileSync(log, `${readFileSync(log, 'utf8')}{torn`);
   const target = join(compatibilityRoot, '.tenet', blocker === 'oversized-state' ? 'state' : blocker);
-  const content = blocker.endsWith('.json') ? '{' : JSON.stringify({ ...JSON.parse(readFileSync(target, 'utf8')), schema: 2 });
+  const record = blocker.endsWith('.json') ? null : JSON.parse(readFileSync(target, 'utf8'));
+  const content = record ? JSON.stringify({ ...record, schema: record.schema + 1 }) : '{';
   writeFileSync(target, content + (blocker === 'oversized-state' ? ' '.repeat(50 * 1024 * 1024) : ''));
   chmodSync(join(compatibilityRoot, '.tenet'), 0o750);
   chmodSync(join(compatibilityRoot, '.tenet/state'), 0o640);
@@ -477,10 +484,12 @@ try {
   const base = join(tmpdir(), `tenet-${workspaceId}`), human = join(outside, 'run-human');
   mkdirSync(human); writeFileSync(join(human, 'notes.txt'), 'preserve human work'); utimesSync(human, 1, 1);
   if (group) mkdirSync(base, { recursive: true });
+  else rmSync(base, { recursive: true, force: true });
   symlinkSync(outside, group ? join(base, group) : base);
   try {
    const response = call(sweepRoot, 'open', { profile: 'investigate', request: 'preserve work outside cleanup storage' });
-   assert.equal(response.exit, 0, JSON.stringify(response));
+   assert.equal(response.exit, 2, JSON.stringify(response));
+   assert.ok(response.reasons.some(reason => reason.code === 'storage-accounting-unknown'));
    assert.equal(readFileSync(join(human, 'notes.txt'), 'utf8'), 'preserve human work');
   } finally { rmSync(base, { recursive: true, force: true }); }
  }

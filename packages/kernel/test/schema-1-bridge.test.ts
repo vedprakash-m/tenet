@@ -2,6 +2,7 @@ import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
+import { z } from "zod";
 import { chmodSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -10,7 +11,9 @@ import { emptyState } from "../src/core/state.ts";
 import { Terminal, matchTerminal } from "../src/core/migration-terminal.ts";
 import { FsStore } from "../src/adapters/store-fs.ts";
 import { systemClock, systemRandom } from "../src/adapters/system.ts";
+import { versionDrift } from "../src/core/versions.ts";
 import { cleanup, NO_POSIX_PROCESSES, tmp } from "./helpers.ts";
+import { contractFixture } from "./support/fixture.ts";
 
 const roots: string[] = [], temps: string[] = [];
 after(() => { roots.forEach(cleanup); temps.forEach(path => rmSync(path, { recursive: true, force: true })); });
@@ -23,7 +26,7 @@ function fixture() {
   roots.push(root); mkdirSync(dir);
   const { dev, ino } = lstatSync(dir), workspaceId = `ws_${systemRandom.base32(10)}`;
   writeFileSync(join(dir, "marker"), JSON.stringify({ workspaceId, tag: "test", nonce: "bridge", schema: 1, dev, ino }));
-  writeFileSync(join(dir, "state"), JSON.stringify(emptyState(workspaceId, "test")));
+  writeFileSync(join(dir, "state"), JSON.stringify({ ...emptyState(workspaceId, "test"), schema: 1 }));
   writeFileSync(join(dir, "state.prev"), readFileSync(join(dir, "state")));
   const base = join(tmpdir(), `tenet-${workspaceId}`);
   temps.push(base);
@@ -86,11 +89,22 @@ describe("schema-1 rollback bridge [LFC-04, CON-05]", () => {
       assert.equal(Terminal.safeParse(raw).success, false);
     }
   });
+  it("publishes schema 2 so an older schema-1 reader refuses the transition", { skip: NO_POSIX_PROCESSES }, async () => {
+    const { dir, store } = fixture();
+    await store.transaction("upgrade-p91", async (tx) => {
+      tx.publish({ ...tx.state!, revision: tx.state!.revision + 1 });
+    });
+    const raw = JSON.parse(readFileSync(join(dir, "state"), "utf8"));
+    const marker = JSON.parse(readFileSync(join(dir, "marker"), "utf8"));
+    assert.equal(raw.schema, 2);
+    assert.equal(marker.schema, 2);
+    assert.equal(z.object({ schema: z.literal(1) }).passthrough().safeParse(raw).success, false);
+  });
   it("admits a strict rolled-back fact without rewriting it or granting recovery", () => {
     const { dir, store } = fixture(), text = JSON.stringify(terminal());
     writeFileSync(join(dir, "migration-terminal.json"), text);
     const before = snapshot(dir);
-    assert.equal(store.read()!.state.schema, 1);
+    assert.equal(store.read()!.state.schema, 2, "schema-1 records are admitted through the current parser");
     assert.deepEqual(snapshot(dir), before);
     assert.equal(readFileSync(join(dir, "migration-terminal.json"), "utf8"), text);
     for (const fence of ["migration-transition.json", "migration-privacy.json"]) {
@@ -99,8 +113,41 @@ describe("schema-1 rollback bridge [LFC-04, CON-05]", () => {
       rmSync(join(dir, fence));
     }
   });
+  it("preserves schema-1 contract pins and pending questions during read projection [LFC-03, P91]", () => {
+    const { dir, store } = fixture();
+    const raw = JSON.parse(readFileSync(join(dir, "state"), "utf8"));
+    const work = contractFixture({ pinned: { tenet: "test", schema: 1, adapter: "test" } });
+    const pending = {
+      id: "dirty-overlap", header: "Your edits", question: "Keep existing edits?",
+      channel: "chat", bind: { factsHash: "unchanged" },
+    };
+    writeFileSync(join(dir, "state"), JSON.stringify({
+      ...raw, work: { [work.id]: work }, pending: [pending],
+    }));
+    const before = snapshot(dir);
+    const projected = store.read()!.state;
+    assert.deepEqual(projected.work[work.id]!.pinned, work.pinned);
+    assert.deepEqual(projected.pending, [pending]);
+    assert.deepEqual(versionDrift(projected.work[work.id]!.pinned, {
+      tenet: "test", schema: 2, adapter: "test",
+    }).map((drift) => drift.field), ["schema"]);
+    assert.deepEqual(snapshot(dir), before);
+  });
+  it("admits interrupted marker-1/state-2 publication without dropping retained protection [CON-05, P91]", () => {
+    const { dir, base, store } = fixture();
+    const raw = JSON.parse(readFileSync(join(dir, "state"), "utf8"));
+    const retention = {
+      legacyTemp: { path: base, identity: "absent", exists: false, at: systemClock.now(), pending: true },
+    };
+    writeFileSync(join(dir, "state"), JSON.stringify({
+      ...raw, schema: 2, project: { ...raw.project, retention },
+    }));
+    const before = snapshot(dir);
+    assert.deepEqual(store.read()!.state.project.retention, retention);
+    assert.deepEqual(snapshot(dir), before);
+  });
   for (const name of ["state", "state.prev"]) {
-    for (const schema of [2, 3, null, "1", undefined]) {
+    for (const schema of [3, null, "1", undefined]) {
       it(`refuses ${name} schema ${String(schema)} without old-state fallback`, () => {
         const { dir, store } = fixture();
         const raw = JSON.parse(readFileSync(join(dir, name), "utf8"));

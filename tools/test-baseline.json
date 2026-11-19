@@ -691,7 +691,7 @@
         "count": 1
       },
       {
-        "key": "packages/kernel/test/audit-regressions.test.ts :: audit: common mutation boundaries :: runs shared recovery once during repeated open, reserving the second unresolved scan for retention",
+        "key": "packages/kernel/test/audit-regressions.test.ts :: audit: common mutation boundaries :: runs shared recovery once with separate reservation, retention preview and cleanup scans",
         "count": 1
       },
       {
@@ -5903,7 +5903,7 @@
         "count": 1
       },
       {
-        "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: refuses state schema 2 without old-state fallback",
+        "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: refuses state schema 3 without old-state fallback",
         "count": 1
       },
       {
@@ -5923,7 +5923,7 @@
         "count": 1
       },
       {
-        "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: refuses state.prev schema 2 without old-state fallback",
+        "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: refuses state.prev schema 3 without old-state fallback",
         "count": 1
       },
       {
@@ -6455,7 +6455,7 @@
         "count": 1
       },
       {
-        "key": "packages/kernel/test/storage-eviction.test.ts :: run-file cap and ceiling [CON-08, AC-19] :: reports protected data above the ceiling with its largest classes, and refuses data-adding calls but not stop",
+        "key": "packages/kernel/test/storage-eviction.test.ts :: run-file cap and ceiling [CON-08, AC-19] :: reports protected data above the ceiling with its largest classes [AC-17, P106]",
         "count": 1
       },
       {
@@ -6471,7 +6471,7 @@
         "count": 1
       },
       {
-        "key": "packages/kernel/test/storage-eviction.test.ts :: the verbs at a storage boundary [CON-08, AC-19] :: open stops with storage-protected-full when protected data alone is over the ceiling, naming the largest class; stop and inspect still work",
+        "key": "packages/kernel/test/storage-eviction.test.ts :: the verbs at a storage boundary [CON-08, AC-19] :: refuses ordinary open and an unreserved stop above the hard ceiling while inspect stays available [AC-17, P106]",
         "count": 1
       },
       {

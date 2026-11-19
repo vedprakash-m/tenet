@@ -22,7 +22,7 @@ describe("store: transactions", () => {
     const root = fresh(), store = await initState(root);
     await store.transaction("test", async tx => tx.publish(tx.state!));
     const primary = join(root, ".tenet/state");
-    writeFileSync(primary, JSON.stringify({ ...JSON.parse(readFileSync(primary, "utf8")), schema: 2 }));
+    writeFileSync(primary, JSON.stringify({ ...JSON.parse(readFileSync(primary, "utf8")), schema: 3 }));
     chmodSync(join(root, ".tenet"), 0o750);
     chmodSync(primary, 0o640);
     const bytes = readFileSync(primary);
@@ -49,7 +49,7 @@ describe("store: transactions", () => {
         const pending = newStore(root).transaction("waiting", async () => assert.fail("incompatible writer entered"));
         const path = join(root, ".tenet", blocker);
         const changed = blocker.endsWith(".json") ? "{}" : JSON.stringify({
-          ...JSON.parse(readFileSync(path, "utf8")), schema: 2,
+          ...JSON.parse(readFileSync(path, "utf8")), schema: 3,
         });
         writeFileSync(path, changed);
         await assert.rejects(pending, error => error instanceof KernelError && error.reasons[0]?.code === "unsupported-record");
@@ -101,7 +101,8 @@ describe("store: transactions", () => {
       symlinkSync(join(outside, "missing"), join(root, ".tenet", file));
       if (file === "state") assert.throws(() => store.read(), /link/i);
       else if (file === "log") await assert.rejects(store.transaction("t", async () => 1), /link/i);
-      else assert.throws(() => store.putBlob("x"), /link/i);
+      else assert.throws(() => store.putBlob("x"), error =>
+        error instanceof KernelError && error.reasons[0]?.code === "storage-accounting-unknown");
       assert.equal(existsSync(join(outside, "missing")), false);
     }
   });
