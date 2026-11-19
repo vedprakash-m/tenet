@@ -157,6 +157,7 @@ async function executeVerb(ports: Ports, verbs: Record<string, Verb>, name: stri
       if (input.h && read) plan.resp.reasons = [...versionNote(ports, read.state, input.h), ...(plan.resp.reasons ?? [])];
       return render(ports, name, plan.resp, read?.state ?? null);
     }
+    ports.store.authorizeMutation?.(name, input);
     ports.store.admit();
     return await mutate(ports, verb, input);
   } catch (e) {

@@ -2,6 +2,7 @@
 import { capabilityKey, Descriptor, UNKNOWN } from "../core/capabilities.ts";
 import type { CapabilityCache } from "../core/capabilities.ts";
 import { hashOf } from "../core/ids.ts";
+import { KernelError } from "../core/errors.ts";
 import type { CapabilityContext, Host, Recipes } from "../ports/types.ts";
 
 export class PluginHost implements Host {
@@ -13,6 +14,14 @@ export class PluginHost implements Host {
     this.recipes = recipes;
     this.hostVersion = hostVersion && /^[a-zA-Z0-9._+ -]{1,120}$/.test(hostVersion) ? hostVersion : null;
   }
+
+  readonly markerBinding = {
+    status: () => ({ kind: "unknown", detail: "the host binding operation has not been qualified" } as const),
+    create: (_payload: readonly unknown[]): { keyId: string; authenticator: string } => {
+      throw new KernelError("marker-binding-unavailable", "the marker binding is unknown; no key was created");
+    },
+    verify: (_keyId: string, _payload: readonly unknown[], _authenticator: string) => "unavailable" as const,
+  };
 
   prepare(context: CapabilityContext, previous: CapabilityCache = {}): void {
     const descriptor = this.declaration();

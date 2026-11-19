@@ -62,6 +62,7 @@ export interface RetentionScope { path: string; identity: string; exists: boolea
 
 export interface Store {
   admit(): void;
+  authorizeMutation?(verb: string, input: unknown): void;
   exists(): boolean;
   /** Read-only classification; an existing marker without usable state is uncertain. */
   history(): "absent" | "complete" | "uncertain";
@@ -348,9 +349,21 @@ export interface CapabilityContext {
 }
 export interface Host {
   capabilities(): Descriptor;
+  markerBinding?: MarkerBindingPort;
   prepare?(context: CapabilityContext, cache?: CapabilityCache): void;
   cache?(): CapabilityCache;
   callTimings?(): HostTimings;
+}
+
+export type MarkerBindingStatus =
+  | { kind: "available"; capabilityHash: string }
+  | { kind: "absent"; capabilityHash: string }
+  | { kind: "unknown" | "unavailable"; detail: string };
+
+export interface MarkerBindingPort {
+  status(): MarkerBindingStatus;
+  create(payload: readonly unknown[]): { keyId: string; authenticator: string };
+  verify(keyId: string, payload: readonly unknown[], authenticator: string): "verified" | "missing" | "invalid" | "unavailable";
 }
 
 export interface Ports {

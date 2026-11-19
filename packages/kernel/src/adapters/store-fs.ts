@@ -21,6 +21,7 @@ import { quarantine, QUARANTINE_JOURNAL } from "./quarantine-fs.ts";
 import { parsePrivate, readCompactionPending, readJournal, SummaryRecord } from "./store-records.ts";
 import { recentWithStaged, stagedRunGrowth } from "./store-staging.ts";
 import type { LockInfo, StagedWrite, WriteContext } from "./store-staging.ts";
+import type { MigrationGuard } from "./marker-rollback.ts";
 
 interface Marker { workspaceId: string; tag: string; nonce: string; schema: number; dev: number; ino: number }
 interface Journal { text: string; entries: LogEntry[]; keep: number }
@@ -59,7 +60,7 @@ function newestMtime(path: string): number {
 /** Storage limits (PRD §4.4.3, TS §7.6); tests lower them, and `afterSummaries` is a crash seam for the reduction. */
 export interface StoreOptions {
   lockWaitMs?: number; compactAtBytes?: number; ceilingBytes?: number; reserveBytes?: number; runFileCapBytes?: number;
-  journalDays?: number; afterSummaries?: () => void;
+  journalDays?: number; afterSummaries?: () => void; migrationGuard?: MigrationGuard;
 }
 
 export class FsStore implements Store {
@@ -99,6 +100,9 @@ export class FsStore implements Store {
   }
 
   exists(): boolean { return existsSync(this.p("marker")); }
+  authorizeMutation(verb: string, input: unknown): void {
+    this.opts.migrationGuard?.authorize(verb, input);
+  }
   history(): "absent" | "complete" | "uncertain" {
     this.admit();
     if (!this.exists()) return "absent";
@@ -113,16 +117,19 @@ export class FsStore implements Store {
   }
 
   admit(): void {
+    const blocked = () => { throw new KernelError("unsupported-record", "owned state needs a compatible kernel; nothing was changed"); };
+    if (this.opts.migrationGuard) this.opts.migrationGuard.admit();
+    else {
+      const terminal = readTerminal(this.p("migration-terminal.json"));
+      if (terminal && terminal.outcome !== "rolled-back") blocked();
+    }
     const marker = admissionRecord(this.p("marker"), true) as Marker | null;
     const here = lstatSync(this.dir, { throwIfNoEntry: false });
     if (!marker || !here || marker.dev !== here.dev || marker.ino !== here.ino) return;
-    const blocked = () => { throw new KernelError("unsupported-record", "owned state needs a compatible kernel; nothing was changed"); };
     if (!(LEGACY_SCHEMA_VERSIONS as readonly number[]).includes(marker.schema) && marker.schema !== SCHEMA_VERSION) blocked();
     for (const name of ["migration-transition.json", "migration-privacy.json"]) {
       if (lstatSync(this.p(name), { throwIfNoEntry: false })) blocked();
     }
-    const terminal = readTerminal(this.p("migration-terminal.json"));
-    if (terminal && terminal.outcome !== "rolled-back") blocked();
     for (const name of ["state", "state.prev"]) {
       const id = this.fileId(name, true);
       if (id && this.admitted.get(name) === id) continue;
@@ -160,6 +167,7 @@ export class FsStore implements Store {
 
   private write<T>(fn: () => T): T {
     this.admit();
+    this.opts.migrationGuard?.assert();
     const active = this.writes.getStore();
     if (active) return this.inWrite(active, fn);
     const here = lstatSync(this.dir, { throwIfNoEntry: false });
@@ -228,7 +236,6 @@ export class FsStore implements Store {
     throw new KernelError("unsupported-record", "the state document cannot be read and no previous revision exists");
   }
 
-  // ------------------------------------------------------------ lock
   private async acquire(verb: string): Promise<LockInfo> {
     this.admit();
     this.p("marker"); // refuse even a dangling directory link before creating anything
@@ -342,14 +349,15 @@ export class FsStore implements Store {
     return h;
   }
 
-  // ------------------------------------------------------------ transaction
   async transaction<T>(verb: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+    this.opts.migrationGuard?.assert();
     const directoryExisted = !!lstatSync(this.p("."), { throwIfNoEntry: false });
     const existed = this.exists();
     const me = await this.acquire(verb);
     const context: WriteContext = { lock: me, active: true, staged: [], transactional: true };
     try {
       this.admit();
+      this.opts.migrationGuard?.accept();
       const read = this.exists() ? this.read() : null;
       const priorScope = existed && !this.quarantined ? null : this.retentionScope();
       const history = read && existsSync(this.p("log")) ? "complete"
@@ -405,6 +413,7 @@ export class FsStore implements Store {
       });
     } finally {
       context.active = false;
+      this.opts.migrationGuard?.release();
       this.release(me);
     }
   }
@@ -497,7 +506,6 @@ export class FsStore implements Store {
     fsyncDir(this.dir); this.quarantined = undefined;
   }
 
-  // ------------------------------------------------------------ log
   private repairLogTail() {
     const { text, keep } = this.journal(true);
     if (keep !== text.length) writeSynced(this.p("log"), text.slice(0, keep));
@@ -647,7 +655,6 @@ export class FsStore implements Store {
     });
   }
 
-  // ------------------------------------------------------------ blobs and temp
   putBlob(content: string): string {
     return this.write(() => {
       this.marker();
@@ -836,7 +843,6 @@ export class FsStore implements Store {
     for (const candidate of remove) rmSync(candidate.path, { recursive: true, force: true });
     return remove.length;
   }
-  // ------------------------------------------------------------ eviction (CON-08, specs/storage-retention.md v2)
   private replaceSynced(path: string, data: string) {
     this.admit();
     writeSynced(`${path}.tmp`, data);
