@@ -199,6 +199,20 @@ it("still reconciles permitted partial scaffolds and an already-applied undo [AC
   assert.equal(p.git("hash-object", path), blob);
 });
 
+it("reconciles a literal __proto__ scaffold path without losing its observed hash [AC-16, AC-25]", async t => {
+  const { p, store } = await fixture(t), ports = { ...p.ports(), store: store() };
+  p.write("__proto__", "partial\n");
+  await ports.store.transaction("recover-literal-path", async tx => {
+    tx.intent("scaffold", "literal", {
+      work: "W1", expected: Object.fromEntries([["__proto__", sha256("partial\n")], ["missing.txt", sha256("missing\n")]]),
+    });
+    configurePolicy(ports, tx.state);
+    assert.deepEqual((await recover(ports, tx, tx.state!)).uncertain, []);
+    assert.equal(tx.unresolved().length, 0);
+  });
+  assert.equal(existsSync(join(p.root, "__proto__")), false);
+});
+
 it("revalidates undo before opening its patch after inventory tightens policy [AC-16, AC-25]", async t => {
   const { p, store } = await fixture(t), ports = { ...p.ports(), store: store() };
   const path = "src/greet.ts", blob = p.git("hash-object", path), inventory = ports.git.inventory.bind(ports.git);

@@ -103,7 +103,7 @@ async function scaffold(r: Recovery, u: Unresolved) {
     r.uncertain.push("the scaffold has an unproved affected-path set; it remains unresolved");
     return;
   }
-  const now: Record<string, string | null> = {};
+  const now: Record<string, string | null> = Object.create(null);
   for (const path of paths) {
     if (!admitRecovery(r, u, paths, true)) return;
     try { Object.assign(now, r.ports.project.hashes([path])); }
@@ -158,7 +158,7 @@ async function dependency(r: Recovery, u: Unresolved) {
     const lock = lockFileOf(op.manager), paths = [MANIFEST, lock];
     if (!admitRecovery(r, u, paths)) return;
     let same = false;
-    const now: Record<string, string | null> = {};
+    const now: Record<string, string | null> = Object.create(null);
     try {
       for (const path of paths) {
         if (!admitRecovery(r, u, paths)) return;
