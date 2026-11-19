@@ -304,7 +304,7 @@ try {
   }
   assert.equal(existsSync(packet), false);
   assert.equal(readFileSync(join(forgetting, '.tenet/state.prev'), 'utf8').includes(text), false);
-  observations.push({ scenario: `built forget refuses ${failure}`, lessonRetainedUntilRepair: true, intentRecoversOnce: true });
+  observations.push({ scenario: `built forget refuses ${failure}`, lessonRetainedUntilRepair: true, intentRecoversOnce: failure !== 'unreadable-directory', explicitRetry: failure === 'unreadable-directory' });
  }
  {
   const uncertain = create(), h = call(uncertain, 'open', { profile: 'plan', request: 'recover before refusing' }).handle;
