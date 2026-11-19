@@ -15,7 +15,8 @@ function bundledProject() {
   const raw = async (verb: string, input: Record<string, unknown>): Promise<KernelResponse> => {
     const body = ["open", "decide", "findings"].includes(verb);
     const args = body ? [] : Object.entries(input).flatMap(([key, value]) => [
-      `--${key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`, typeof value === "object" ? JSON.stringify(value) : String(value),
+      `--${key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`,
+      Array.isArray(value) ? value.join(",") : typeof value === "object" ? JSON.stringify(value) : String(value),
     ]);
     const child = spawnSync(process.execPath, [bundle, verb, ...args], {
       cwd: p.root, encoding: "utf8", input: body ? JSON.stringify(input) : "",
@@ -36,7 +37,9 @@ async function ready() {
   const h = (await p.call("open", { profile: "feature", request: "bundle attribution", lane: "quick" })).handle!;
   await p.call("decide", { h, kind: "basis", propose: BASIS });
   p.write("src/greet.test.ts", GREET_TEST); await p.call("check", { h, stage: "baseline" });
-  p.write("src/greet.ts", GREET_IMPL); await p.call("check", { h, touched: ["src/greet.ts"] });
+  p.write("src/greet.ts", GREET_IMPL);
+  const checked = await p.call("check", { h, touched: ["src/greet.ts"] });
+  assert.equal(checked.exit, 0, JSON.stringify(checked));
   await focusFixture(p, h);
   return { p, h };
 }

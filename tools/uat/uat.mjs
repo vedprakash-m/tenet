@@ -1362,7 +1362,7 @@ try {
     if (mode === 'stop') { await done; assert.ok(JSON.parse(stdout).reasons.some(r => r.code === 'run-superseded')); }
     await waitUntil(() => { try { process.kill(record.pid, 0); return false; } catch { return true; } }, 'filter group stopped');
     const recovered = call(filtered, 'open', { profile: 'feature', request: 'guarded filter', resume: true });
-    assert.ok(recovered.effects.completed.some(e => /did not happen/.test(e)), JSON.stringify(recovered));
+    assert.ok(recovered.effects.completed.some(e => /complete unchanged ref\/reflog interval/.test(e)), JSON.stringify(recovered));
     assert.equal(git(filtered, 'rev-parse', 'HEAD'), head); assert.deepEqual(readFileSync(join(filtered, '.git/index')), index);
     assert.equal(readFileSync(marker, 'utf8').trim().split('\n').length, 1);
     assert.equal(readFileSync(join(filtered, 'human.txt'), 'utf8'), 'human staged\n');
