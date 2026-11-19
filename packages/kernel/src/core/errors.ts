@@ -12,12 +12,23 @@ export class KernelError extends Error {
   readonly exit: Exit;
   readonly questions?: Question[];
   readonly next?: Next;
-  constructor(code: ReasonCode, detail?: string, opts: { exit?: Exit; questions?: Question[]; next?: Next } = {}) {
+  readonly effects?: { completed: string[]; uncertain: string[] };
+  constructor(
+    code: ReasonCode,
+    detail?: string,
+    opts: {
+      exit?: Exit;
+      questions?: Question[];
+      next?: Next;
+      effects?: { completed: string[]; uncertain: string[] };
+    } = {},
+  ) {
     super(detail ?? code);
     this.reasons = [reason(code, detail)];
     this.exit = opts.exit ?? (exitFor(code) as Exit);
     if (opts.questions) this.questions = opts.questions;
     if (opts.next) this.next = opts.next;
+    if (opts.effects) this.effects = opts.effects;
   }
 }
 

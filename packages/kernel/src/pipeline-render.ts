@@ -7,11 +7,17 @@ import { KernelError } from "./core/errors.ts";
 import { redactDeep } from "./core/redact.ts";
 import { traceFields } from "./core/trace.ts";
 import type { KernelResponse, State, WorkContract } from "./core/schemas.ts";
-import type { Ports, Tx } from "./ports/types.ts";
+import type { LogEntry, Ports, Tx } from "./ports/types.ts";
 import type { Plan, Resp, Verb } from "./pipeline.ts";
 import { settingsFor } from "./verbs/reconcile.ts";
 
 export type Stamped = { res: KernelResponse; plan?: Plan };
+export interface PreparedStamp {
+  res: KernelResponse;
+  next: State;
+  call: Omit<LogEntry, "t" | "kind">;
+  callBytes: number;
+}
 
 export function workByHandle(state: State, h: string): WorkContract {
   const p = parseHandle(h);
@@ -94,6 +100,37 @@ function withActiveTime(ports: Ports, verb: string, next: State, resp: Resp, sta
  * the same publish. A job's provisional response is never cached: were the process to die mid-job, a retry would be
  * answered with a result nobody observed.
  */
+export function prepareStamp(
+  ports: Ports,
+  verb: Verb,
+  input: unknown,
+  world: unknown,
+  tx: Tx,
+  next: State,
+  resp: Resp,
+  final: boolean,
+  startedAt: string
+): PreparedStamp {
+  const revision = (tx.state?.revision ?? 0) + 1;
+  if (final && resp.work && next.work[resp.work]) next = withActiveTime(ports, verb.name, next, resp, startedAt);
+  const res = render(ports, verb.name, resp, { ...next, revision });
+  const w = resp.work ? next.work[resp.work] : undefined;
+  if (final && w && verb.name !== "open")
+    w.session = { ...w.session, last: { inputHash: inputHash(verb.name, input, world), response: res } };
+  const call = { verb: verb.name, exit: res.exit, revision, ...(res.timing ? { timing: res.timing } : {}), ...traceFields({
+    label: w?.label, intentRevision: next.project.intent.revision, startedAt, endedAt: ports.clock.now(), verb: verb.name,
+    exit: res.exit, reasons: res.reasons, receipts: (resp.data as { receipts?: { status: string }[] } | undefined)?.receipts, final,
+  }) };
+  const callBytes = Buffer.byteLength(JSON.stringify({ t: ports.clock.now(), kind: "call", ...call }), "utf8");
+  return { res, next, call, callBytes };
+}
+
+export function publishStamp(tx: Tx, prepared: PreparedStamp): KernelResponse {
+  tx.publish(prepared.next, prepared.callBytes);
+  tx.call(prepared.call);
+  return prepared.res;
+}
+
 export function stamp(
   ports: Ports,
   verb: Verb,
@@ -105,16 +142,5 @@ export function stamp(
   final: boolean,
   startedAt: string
 ): KernelResponse {
-  const revision = (tx.state?.revision ?? 0) + 1;
-  if (final && resp.work && next.work[resp.work]) next = withActiveTime(ports, verb.name, next, resp, startedAt);
-  const res = render(ports, verb.name, resp, { ...next, revision });
-  const w = resp.work ? next.work[resp.work] : undefined;
-  if (final && w && verb.name !== "open")
-    w.session = { ...w.session, last: { inputHash: inputHash(verb.name, input, world), response: res } };
-  tx.publish(next);
-  tx.call({ verb: verb.name, exit: res.exit, revision, ...(res.timing ? { timing: res.timing } : {}), ...traceFields({
-    label: w?.label, intentRevision: next.project.intent.revision, startedAt, endedAt: ports.clock.now(), verb: verb.name,
-    exit: res.exit, reasons: res.reasons, receipts: (resp.data as { receipts?: { status: string }[] } | undefined)?.receipts, final,
-  }) });
-  return res;
+  return publishStamp(tx, prepareStamp(ports, verb, input, world, tx, next, resp, final, startedAt));
 }

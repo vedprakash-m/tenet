@@ -107,8 +107,19 @@ describe("quarantine and a fresh start [CON-06, SEC-12]", () => {
     const prior = readFileSync(join(b.root, ".tenet/state"), "utf8");
     const child = spawn(process.execPath, [join(import.meta.dirname, "fixtures/crash-quarantine.ts"), b.root, point], { stdio: ["ignore", "ignore", "inherit"] });
     assert.equal(await new Promise(resolve => child.on("exit", (_code, signal) => resolve(signal))), "SIGKILL", point);
-    const resumed = await b.call("open", { profile: "investigate", request: "fresh" });
+    let resumed = await b.call("open", { profile: "investigate", request: "fresh" });
     assert.equal(resumed.exit, 3, JSON.stringify(resumed));
+    if (point === "before-state") {
+      const recovery = b.ports().store.read()!.state;
+      assert.equal(Object.keys(recovery.work).length, 0, "an ambiguous temp root cannot initialize ordinary work");
+      assert.equal(recovery.project.retention?.legacyTemp.pending, true);
+      assert.equal(resumed.questions?.[0]?.id, "reconstruction-review");
+      assert.equal(readFileSync(join(b.root, ".tenet", recovery.quarantine!.path, "state"), "utf8"), prior);
+      const accepted = await b.call("decide", { kind: "adopt", target: "reconstruction", answers: { "reconstruction-review": "fresh" } });
+      assert.equal(accepted.exit, 0, JSON.stringify(accepted));
+      resumed = await b.call("open", { profile: "investigate", request: "fresh" });
+      assert.equal(resumed.exit, 3, JSON.stringify(resumed));
+    }
     const state = b.ports().store.read()!.state;
     assert.equal(Object.values(state.work).length, 1);
     assert.equal(Object.values(state.work)[0]!.request, "fresh");

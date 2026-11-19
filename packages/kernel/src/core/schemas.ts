@@ -8,7 +8,9 @@ import { Policy } from "./policy.ts";
 import { CapabilityCache } from "./capabilities.ts";
 import { Timing } from "./timing.ts";
 
-export const SCHEMA_VERSION = 1 as const;
+export const SCHEMA_VERSION = 2 as const;
+export const LEGACY_SCHEMA_VERSION = 1 as const;
+export const LEGACY_SCHEMA_VERSIONS = [LEGACY_SCHEMA_VERSION] as const;
 
 /**
  * A string-keyed record that keeps every own key of the input. `z.record` drops a key named `__proto__`, which
@@ -392,6 +394,11 @@ export const State = z.strictObject({
     }),
     // Intent read back from INTENT.md after local records were lost (CON-07): which IDs, and what could not be recovered.
     reconstructed: z.object({ at: z.string(), elementIds: z.array(z.string()), notRecovered: z.array(z.string()) }).optional(),
+    retention: z.object({
+      legacyTemp: z.strictObject({
+        path: z.string(), identity: z.string(), exists: z.boolean(), at: z.string(), pending: z.boolean(),
+      }),
+    }).optional(),
   }),
   config: z.strictObject({ local: settingsSchema("project"), revision: z.number() }),
   consents: z.array(z.strictObject({ kind: z.enum(["hooks", "filters", "envelope", "remote-read"]), configHash: z.string(), at: z.string() })),
@@ -409,6 +416,16 @@ export const State = z.strictObject({
   _ext: ownRecord(z.unknown()).optional(),
 });
 export type State = z.infer<typeof State>;
+export function parseStateRecord(value: unknown) {
+  if (
+    value && typeof value === "object" &&
+    (value as { schema?: unknown }).schema === LEGACY_SCHEMA_VERSION
+  ) {
+    const migrated = { ...(value as Record<string, unknown>), schema: SCHEMA_VERSION };
+    return State.safeParse(migrated);
+  }
+  return State.safeParse(value);
+}
 
 // ---------------------------------------------------------------- review result (TS §5.4)
 
@@ -551,7 +568,13 @@ export type FinishInput = z.infer<typeof FinishInput>;
 export const CommitInput = z.object({ h: Handle, subject: z.string().min(1).max(200), again: z.boolean().optional() });
 export type CommitInput = z.infer<typeof CommitInput>;
 
-export const StopInput = z.object({ h: Handle, mode: z.enum(["pause", "cancel", "abandon"]), reason: z.string().optional(), answers: z.record(z.string(), z.string()).optional(), again: z.boolean().optional() });
+export const StopInput = z.object({
+  h: Handle.optional(),
+  mode: z.enum(["pause", "cancel", "abandon"]),
+  reason: z.string().optional(),
+  answers: z.record(z.string(), z.string()).optional(),
+  again: z.boolean().optional(),
+});
 export type StopInput = z.infer<typeof StopInput>;
 
 export const PacketInput = z.object({

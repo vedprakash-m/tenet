@@ -15,7 +15,7 @@ const fresh = () => { const p = project(); roots.push(p.root); return p; };
 after(() => roots.forEach(cleanup));
 
 describe("audit: common mutation boundaries", () => {
-  it("runs shared recovery once during repeated open, reserving the second unresolved scan for retention",
+  it("runs shared recovery once with separate reservation, retention preview and cleanup scans",
     { skip: process.platform === "win32" }, async () => {
     const p = fresh();
     const ports = { ...p.ports(), platform: "linux" as const };
@@ -35,7 +35,7 @@ describe("audit: common mutation boundaries", () => {
     });
     const response = await runVerb(ports, VERBS, "open", { profile: "investigate", request: "second" });
     assert.equal(response.exit, 0, JSON.stringify(response));
-    assert.equal(unresolved, 2, "pipeline recovery and retention each scan unresolved effects once");
+    assert.equal(unresolved, 4, "recovery, reserve admission, retention preview and cleanup each scan once");
   });
 
   it("binds check identity to the contract base without following later HEAD commits [EVD-01, EVD-03]", async () => {

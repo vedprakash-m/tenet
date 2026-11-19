@@ -6,6 +6,7 @@ import type { Readiness } from "../core/risk.ts";
 import type { Action, Question, State, WorkContract } from "../core/schemas.ts";
 import { handleOf, workByHandle } from "../pipeline.ts";
 import type { EvictReport, Ports, RepoProbe, Tx } from "../ports/types.ts";
+import { protectedRunPaths } from "../core/storage-protection.ts";
 
 export const nx = (action: Action, why: string, required = false) => ({ action, why, ...(required ? { required } : {}) });
 
@@ -44,14 +45,29 @@ export { handleOf };
 /** Housekeeping at a boundary (CON-08): day-old run files go, old journal records become counts, run files stay under their cap.
  *  Run folders a live run or reservation uses are never removed. Returns the one sentence to report, if anything changed. */
 export function reclaim(ports: Pick<Ports, "store">, tx: Tx, state: State): EvictReport {
-  const active = Object.values(state.work).flatMap((w) =>
-    [w.session.inCall?.runDir, w.focusedReview?.manifest, ...w.budget.reservations.map((r) => r.manifest)].filter((x): x is string => !!x)
-  );
-  const recovering = tx.unresolved().flatMap(({ op }) => {
-    if (typeof op !== "object" || op === null || !("runDir" in op) || typeof op.runDir !== "string" || !op.runDir) return [];
-    return [op.runDir];
+  const keep = protectedRunPaths(state, tx.unresolved());
+  const report = tx.evict(keep);
+  if (report.refusal) throw new KernelError(report.refusal.code, report.refusal.message, {
+    exit: 2,
+    effects: {
+      completed: report.message ? [report.message] : [],
+      uncertain: report.uncertain ?? [],
+    },
   });
-  const keep = [...active, ...recovering];
-  ports.store.sweepTemp(24 * 3600_000, keep);
-  return tx.evict(keep);
+  if (report.uncertain?.length) return report;
+  try {
+    const swept = ports.store.sweepTemp(24 * 3600_000, keep);
+    const age = swept ? `Removed ${swept} old run folder(s) past the age limit.` : undefined;
+    return { ...report, ...(age ? { message: [report.message, age].filter(Boolean).join(" ") } : {}) };
+  } catch {
+    throw new KernelError("storage-accounting-unknown",
+      "Age cleanup could not finish safely; dependent work was not published.",
+      {
+        exit: 2,
+        effects: {
+          completed: report.message ? [report.message] : [],
+          uncertain: ["Age cleanup stopped after an incomplete measurement or changed run scope."],
+        },
+      });
+  }
 }

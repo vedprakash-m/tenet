@@ -43,11 +43,19 @@ export function gitInitQuestion(ports: Ports): Question {
 
 /** Nothing is created in a folder with no Git until the user has chosen what to do about it. */
 export async function admitFolder(ports: Ports, input: OpenInput): Promise<void> {
+  if (["recipe-upgrade", "continue"].includes(input.profile)) {
+    throw new KernelError("capability-missing",
+      `the ${input.profile} workflow is not implemented; resume an existing contract with its original profile and --resume`,
+      { exit: 2 });
+  }
   if (input.noGit && input.profile !== "prototype") {
     const why = "only a prototype can be built without Git; open it with the prototype profile";
     throw new KernelError("capability-missing", why, { exit: 1 });
   }
-  if (!isEditingProfile(input.profile) || input.noGit || input.initGit || (await ports.git.probe()).isRepo) return;
+  if (!isEditingProfile(input.profile) || input.noGit) return;
+  const probe = await ports.git.probe();
+  if (probe.isRepo && probe.state === "readonly") throw new KernelError("repo-state-readonly", probe.why);
+  if (input.initGit || probe.isRepo) return;
   throw new KernelError("not-a-repository", "choose between starting Git here and a prototype", { questions: [gitInitQuestion(ports)] });
 }
 

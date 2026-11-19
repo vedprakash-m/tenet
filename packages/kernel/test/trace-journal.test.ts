@@ -118,7 +118,8 @@ describe("journal call records are ENG-09 trace events", () => {
     });
     assert.deepEqual(store.readLog().filter((e) => e.kind === "call").map((e) => "termination" in e), [false, true]);
     now = Date.parse("2026-11-03T12:00:00Z");
-    await store.transaction("later", async (tx) => { for (let i = 0; i < 100; i++) tx.call({ verb: "check", exit: 0, revision: 3 }); tx.evict([]); });
+    await store.transaction("later", async (tx) => { for (let i = 0; i < 100; i++) tx.call({ verb: "check", exit: 0, revision: 3 }); });
+    await store.transaction("reduce", async (tx) => tx.evict([]));
     const kept = store.readLog().filter((e) => e.kind === "call");
     assert.ok(kept.every((e) => e.verb === "check"), "the two old records left the journal");
     const month = JSON.parse(readFileSync(join(root, ".tenet", "summaries.json"), "utf8")).months["2026-05"];

@@ -85,23 +85,23 @@
       "scenario": "built output declaration removal invalidates red"
     },
     {
-      "id": "uat-018-a5fe7983cdab",
+      "id": "uat-018-2f82d5311a66",
       "scenario": "built forget refuses unreadable-file"
     },
     {
-      "id": "uat-019-648838a3e4d0",
+      "id": "uat-019-f9fbbd36df61",
       "scenario": "built forget refuses unreadable-directory"
     },
     {
-      "id": "uat-020-bc25f48feb10",
+      "id": "uat-020-78d3e9ad8657",
       "scenario": "built forget refuses unwritable-directory"
     },
     {
-      "id": "uat-021-e182157a5bea",
+      "id": "uat-021-0c9cf0526793",
       "scenario": "built forget refuses oversized-file"
     },
     {
-      "id": "uat-022-f07bdec4bc10",
+      "id": "uat-022-6c1c7b2afd88",
       "scenario": "built forget refuses invalid-utf8"
     },
     {

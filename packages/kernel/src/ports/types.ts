@@ -15,17 +15,36 @@ export interface Clock { now(): string; ms(): number }
 export interface LogEntry { t: string; kind: "intent" | "result" | "call" | "accounting"; effect?: string; id?: string; [k: string]: unknown }
 export interface Quarantined { path: string; nonce: string; entries: number }
 
-export interface EvictReport { message?: string; overCeiling: boolean; largest: Array<{ name: string; bytes: number }> }
+export interface EvictReport {
+  message?: string;
+  uncertain?: string[];
+  overCeiling: boolean;
+  largest: Array<{ name: string; bytes: number }>;
+  refusal?: {
+    code: "storage-accounting-unknown" | "storage-protected-full" | "storage-reserve-full" | "storage-run-cap-full";
+    message: string;
+  };
+}
+export type StoreHistory = "newly-created" | "complete" | "uncertain";
 
 export interface Tx {
   /** The current state, or null before the first mutating call created `.tenet/`. */
   readonly state: State | null;
   /** True when the document came from state.prev (grants are suspended until reconfirmed). */
   readonly recovered: boolean;
+  /** Whether the admitted store is new, complete, or an existing store whose history cannot be established. */
+  readonly history?: StoreHistory;
   readonly quarantined?: Quarantined;
+  /** Recovery and an admitted stop may consume the bounded reserve, never the absolute ceiling. */
+  allowReserve?(): void;
+  readonly reserveAllowed?: boolean;
+  /** Admits a final state/call projection without publishing either. */
+  reservePublish?(next: State, reservedJournalBytes?: number): void;
+  /** Durably publishes staged records before a source effect can run. */
+  flush?(): void;
   /** Creates `.tenet/` and the marker on first need and returns the identity every handle carries. */
   ensure(): { workspaceId: string; tag: string };
-  publish(next: State): void;
+  publish(next: State, reservedJournalBytes?: number): void;
   /** Appends a call record to the log inside the transaction, so the log never races a repair. */
   call(entry: Omit<LogEntry, "t" | "kind">): void;
   intent(effect: string, id: string, op: unknown): void;
@@ -33,16 +52,23 @@ export interface Tx {
   /** Unresolved effect intents, for reconciliation before anything else touches the resource. */
   unresolved(): Array<{ effect: string; id: string; op: unknown }>;
   /** Reduces old journal records into monthly counts and caps run files, inside the lock (CON-08); `keep` paths are never removed. */
-  evict(keep: readonly string[]): EvictReport;
+  evict(keep: readonly string[], apply?: boolean): EvictReport;
   /** The validated bounded journal, optionally limited to its most recent entries for diagnostic views. */
   recent(n?: number): LogEntry[];
 }
 
 export interface Footprint { path: string; files: number; bytes: number }
+export interface RetentionScope { path: string; identity: string; exists: boolean }
 
 export interface Store {
   admit(): void;
   exists(): boolean;
+  /** Read-only classification; an existing marker without usable state is uncertain. */
+  history(): "absent" | "complete" | "uncertain";
+  /** The marker-bound project temp root's admitted identity, without creating it. */
+  retentionScope(): RetentionScope;
+  /** Exact admitted bytes currently held under `.tenet/`; unknown identity fails closed. */
+  storageBytes(): number;
   read(): { state: State; recovered: boolean } | null;
   transaction<T>(verb: string, fn: (tx: Tx) => Promise<T>): Promise<T>;
   /** The one pre-lock maintenance step: remove a dead lock and its dead guard. */
