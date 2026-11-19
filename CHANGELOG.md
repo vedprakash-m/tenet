@@ -26,6 +26,8 @@
   prerequisite implementations; this is not full P118/P119 qualification.
 - Updated built UAT matcher assertions and exact read-only Git trace
   expectations for the declarative packet and terminal pathspec separators.
+  Refreshed the single protected rubric observation for its increase from
+  11 to 13 chunks; scenario population and exact verification are unchanged.
 - Local validation: typecheck and all lints passed; the focused population
   passed 66/66 tests, including a real unmerged Git path and zero-open
   prohibited aliases. Built read-only review on a scratch repository
