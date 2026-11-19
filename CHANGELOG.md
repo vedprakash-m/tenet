@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-18 — Isolate the P91/P106 schema-2 storage baseline
+
+- Added the marker-bound legacy-root retention record, schema-1 read projection and schema-2 publication in the kernel schemas and filesystem store. Existing schema-1 contract pins and pending questions remain intact; older kernels refuse published schema-2 state.
+- Updated storage admission, reconstruction, stop and pipeline publication to preserve uncertain history, stage private effects, protect referenced run files and reserve bounded final-state capacity before source effects. Kept the existing journal protocol's protective compaction support; segmented compaction and schema 3 are not included.
+- Repaired four independent review findings in the isolated baseline: full-snapshot finalization charges, restart cutoff drift, staged artifact cap/cleanup admission and no-op rewrite reservation. Added focused synthetic controls in `storage-eviction.test.ts`; extracted adapter staging accounting into `store-staging.ts` to preserve the existing store file budget.
+- Updated `schema-1-bridge.test.ts`, `storage-eviction.test.ts`, `store-boundary.test.ts` and `version-pin.test.ts`, plus the canonical storage mechanism and recovery wording. Windows-safe schema, cleanup and synthetic retention controls pass locally, as do typecheck, lint, coverage, bundle integrity, reproducibility and built-payload help/doctor smoke. Supported-POSIX mutation/crash cases and native-host qualification remain unverified; Windows directory `fsync` does not provide that evidence.
+
 ## 2026-11-18 — Reduce CI runtime without dropping required evidence
 
 - Reworked untrusted validation into preflight, source, bundle/UAT, Windows and aggregate lanes. Exact `main` pushes and pull requests now run a structured `Tenet validation` result; feature-branch pushes do not rerun the full graph. The complete Node 22.12 UAT remains required on supported POSIX, while Node 24 uses an extracted-payload smoke.
