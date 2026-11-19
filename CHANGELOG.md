@@ -1,5 +1,36 @@
 # Changelog
 
+## 2026-11-19 - Start the P118/P119 exclusion implementation
+
+- Added pinned Unicode 16.0 default case-fold data and normalized policy
+  admission in `core/exclusions.ts`, `core/policy-path.ts` and
+  `core/unicode-case-fold.ts`. Unavailable authenticated volume evidence uses
+  conservative folded matching, not an operating-system guess.
+- Added exact-path explicit read-use bindings and current-facts revalidation
+  to `FsProject` and the project port. Absolute `no-read` restrictions still
+  refuse; an explicit `no-routine-scan` kernel read grants no later model
+  send, edit or export.
+- Replaced regex-only packet policy with validated source-labeled matcher
+  data in `core/packet-exclusions.ts`. Review, analyst, stateless and handoff
+  consumers apply the same NFC/Unicode, exception and volume-provenance
+  rules. Protected instruction charters and dispatch projections are
+  omitted without weakening internal review coverage. Unsupported native
+  matching remains unavailable, not enforced by the host.
+- Added strict Git UTF-8/index path-plus-stage parsing in
+  `adapters/git-index-records.ts` and `adapters/git-cli.ts`, and refuse
+  restricted link identities before reading their targets.
+- Added exclusion-admission, packet-exclusions, git-index-records and
+  git-exclusion-admission regressions, including a real-process file-open
+  control. Schema-3 provider identity and protected mixed-path
+  recovery/retention integration remain blocked on their separate
+  prerequisite implementations; this is not full P118/P119 qualification.
+- Local validation: typecheck and all lints passed; the focused population
+  passed 65/65 tests, including a real unmerged Git path and zero-open
+  prohibited aliases. Built read-only review on a scratch repository
+  preserved index bytes and HEAD and created no `.tenet`. Existing Windows
+  mutation and bounded-read failures also reproduce on the untouched
+  baseline; supported-platform qualification remains separate.
+
 ## 2026-11-18 — Reduce CI runtime without dropping required evidence
 
 - Reworked untrusted validation into preflight, source, bundle/UAT, Windows and aggregate lanes. Exact `main` pushes and pull requests now run a structured `Tenet validation` result; feature-branch pushes do not rerun the full graph. The complete Node 22.12 UAT remains required on supported POSIX, while Node 24 uses an extracted-payload smoke.
