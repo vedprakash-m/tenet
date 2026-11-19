@@ -330,7 +330,7 @@
       "scenario": "built directory project package metadata is not treated as absent"
     },
     {
-      "id": "uat-079-eb5619bf6308",
+      "id": "uat-079-0894f621eadf",
       "scenario": "built reviewer packet is readable and exclusion-aware"
     },
     {
