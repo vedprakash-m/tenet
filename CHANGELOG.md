@@ -5,7 +5,8 @@
 - Added private `CommitProofV1` records paired with the commit effect result before publication, without changing the State schema. Legacy results still replay with their observed foreign-path attention, but never acquire ownership proof.
 - Intent-only commit recovery now requires two complete unchanged named-ref/reflog observations to report not-performed. Otherwise it remains uncertain. The explicit `leave-unrecorded` decision clears only the intent, retains recovery history, preserves Git and grants no undo authority.
 - Undo preview and confirmation require the same exact proof and complete selected history, including integrated merge-side history and same-label candidates. Production undo remains disabled pending its separate safety work.
-- Changed the Git/Store adapters, attribution contracts, commit/recovery/undo wiring and focused tests. Added exact-trailer/literal-label, bounded-ref-log, private-proof, legacy replay, crash-prefix, terminal-decision and integrated-ownership regressions. Supported-POSIX validation and feature UAT are pending; Windows observations do not qualify them.
+- Changed the Git/Store adapters, attribution contracts, commit/recovery/undo wiring and focused tests. Added exact-trailer/literal-label, bounded-ref-log, private-proof, legacy replay, crash-prefix, terminal-decision and integrated-ownership regressions. All 44 new source cases ran successfully on each of Ubuntu and macOS; Windows observations do not qualify supported mutations.
+- Added bundled scratch-repository proof/recovery checks and updated `tools/uat/uat.mjs` index/filter crash assertions for the new contract: intent-only commits stay uncertain until explicitly left unrecorded, while complete unchanged intervals prove not-performed.
 
 ## 2026-11-18 — Reduce CI runtime without dropping required evidence
 
