@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-11-19 - Protect mixed-path recovery on the published storage baseline
+
+- Integrated published P91/P106 schema-2 storage HEAD `dce2923` through Git
+  cherry-picks, preserving the existing exclusion changes. No unpublished
+  P95 implementation or schema-3 identity conversion is included.
+- Added complete affected-set recovery admission in `verbs/recover-admission.ts`.
+  Scaffold recovery checks current read/edit restrictions before each hash
+  and rollback; undo checks before inventory, patch reads and application.
+  Adopt, hardening and dependency reconciliation also admit their read sets.
+  Prohibited or malformed sets stay unresolved rather than becoming false
+  non-performance claims.
+- Reused `core/storage-protection.ts` inside `adapters/store-fs.ts` so unresolved
+  run directories and dependent journal pairs remain protected even when
+  cleanup callers supply no keep list.
+- Added `protected-recovery.test.ts`: mixed policy/path-order controls,
+  tightening between capabilities, malformed sets, permitted recovery and
+  restart/compaction/cap/age retention. The combined focused population
+  passed 77/77 locally, followed by three passing routine-scan variants.
+  Windows durability substitutions are synthetic;
+  supported-platform CI remains a separate gate.
+- Schema-3 GitIndexIdentity/provider integration and native-host/physical-volume
+  qualification remain held or unobserved, not complete.
+
 ## 2026-11-19 - Start the P118/P119 exclusion implementation
 
 - Added pinned Unicode 16.0 default case-fold data and normalized policy
@@ -34,6 +57,23 @@
   preserved index bytes and HEAD and created no `.tenet`. Existing Windows
   mutation and bounded-read failures also reproduce on the untouched
   baseline; supported-platform qualification remains separate.
+
+## 2026-11-19 — Repair schema-2 baseline recovery and legacy fixtures
+
+- Fixed `store-fs.ts` first publication to create a complete empty journal and bind the temp directory's stable filesystem identity. Completed quarantine stays distinct from unexplained missing history, and empty transactions no longer reserve nonexistent writes.
+- Restored staged journal read ownership in `store-staging.ts` and durable intent, purge, primary/backup publication and result boundaries in `decisions/forget.ts`. Moved existing unsupported-profile and readonly-repository open checks ahead of marker creation in `verbs/open-new.ts` and `open.ts`.
+- Aligned schema pin/future-schema, cap-setup, disk-compaction, linked-temp, journal reuse, simulated-store and crash fixtures with schema 2 and staged publication. Child CLI fixtures preserve the same temp namespace on macOS. Added the four existing storage/history reason codes to the canonical Appendix C; no reason semantics changed.
+- Follow-up CI exposed a before-state quarantine interruption with an existing temp root. It now offers uncertain-history reconstruction without dropping the separate quarantine-review question. Refused forgets with unknown run accounting create no intent; fixtures require an explicit retry after repair instead of inventing a recoverable effect. CLI fixtures omit undefined temp keys so in-process and spawned consent envelopes match.
+- Exact-SHA hosted source tests and all sixteen built UAT groups passed on the next candidate; the aggregate exposed five stale test names in `tools/test-baseline.json`. Updated only those identities, preserving every count, required file, verifier and UAT scenario. The complete downloaded source unions and 157-case/two-OS UAT union verify locally; a new exact-SHA aggregate run is still required.
+- Rebound five `tools/uat-inventory.json` observation hashes after the corrected retry/recovery evidence changed their hashed objects. Both hosts' actual reports pass all sixteen individual group verifiers and the complete union. All 157 scenarios, group counts, discriminator hash and verifier safeguards remain unchanged; independent review found no blockers. Exact-SHA hosted aggregate qualification remains the final gate.
+- Fourteen focused storage controls, registry parity, 24 simulated undo controls and 37 Windows-safe schema bridge controls pass locally (nine POSIX skips). Typecheck, lint, coverage, SemVer, bundle integrity and reproducibility pass. Exact-SHA POSIX source/crash and built UAT follow-up evidence is still pending; Windows substitutions do not qualify durability.
+
+## 2026-11-18 — Isolate the P91/P106 schema-2 storage baseline
+
+- Added the marker-bound legacy-root retention record, schema-1 read projection and schema-2 publication in the kernel schemas and filesystem store. Existing schema-1 contract pins and pending questions remain intact; older kernels refuse published schema-2 state.
+- Updated storage admission, reconstruction, stop and pipeline publication to preserve uncertain history, stage private effects, protect referenced run files and reserve bounded final-state capacity before source effects. Kept the existing journal protocol's protective compaction support; segmented compaction and schema 3 are not included.
+- Repaired four independent review findings in the isolated baseline: full-snapshot finalization charges, restart cutoff drift, staged artifact cap/cleanup admission and no-op rewrite reservation. Added focused synthetic controls in `storage-eviction.test.ts`; extracted adapter staging accounting into `store-staging.ts` to preserve the existing store file budget.
+- Updated `schema-1-bridge.test.ts`, `storage-eviction.test.ts`, `store-boundary.test.ts` and `version-pin.test.ts`, plus the canonical storage mechanism and recovery wording. Windows-safe schema, cleanup and synthetic retention controls pass locally, as do typecheck, lint, coverage, bundle integrity, reproducibility and built-payload help/doctor smoke. Supported-POSIX mutation/crash cases and native-host qualification remain unverified; Windows directory `fsync` does not provide that evidence.
 
 ## 2026-11-18 — Reduce CI runtime without dropping required evidence
 
