@@ -20,6 +20,10 @@
   passed 77/77 locally, followed by three passing routine-scan variants.
   Windows durability substitutions are synthetic;
   supported-platform CI remains a separate gate.
+- The first integrated CI exposed a dependency-recovery fixture whose
+  object spread omitted adapter prototype methods. Bound its policy read
+  and exclusion configuration to the real adapter; the unchanged required
+  Windows recovery population and verifier now pass all 11 leaves.
 - Schema-3 GitIndexIdentity/provider integration and native-host/physical-volume
   qualification remain held or unobserved, not complete.
 
