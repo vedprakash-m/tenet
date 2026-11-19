@@ -9,7 +9,7 @@ import type { KernelResponse } from "../src/core/schemas.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
-const bundle = join(import.meta.dirname, "../../../..", "plugin", "kernel", "tenet.mjs");
+const bundle = join(import.meta.dirname, "..", "..", "..", "plugin", "kernel", "tenet.mjs");
 function bundledProject() {
   const p = project(); roots.push(p.root);
   const raw = async (verb: string, input: Record<string, unknown>): Promise<KernelResponse> => {
@@ -21,7 +21,9 @@ function bundledProject() {
       cwd: p.root, encoding: "utf8", input: body ? JSON.stringify(input) : "",
       env: { PATH: process.env.PATH, HOME: process.env.HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" },
     });
+    assert.ifError(child.error);
     assert.equal(child.signal, null, child.stderr);
+    assert.ok(child.stdout.trim(), child.stderr);
     const response = JSON.parse(child.stdout) as KernelResponse;
     assert.equal(child.status, response.exit, child.stderr);
     return response;

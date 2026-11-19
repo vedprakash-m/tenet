@@ -183,7 +183,7 @@ describe("guarded Git filter preparation", () => {
       }
       await waitFor(() => !isAlive(group!.pid), 5000, "staging group stopped");
       const resumed = await p.call("open", { profile: "feature", request: "greeting", resume: true });
-      assert.ok(resumed.effects?.completed.some(e => /did not happen/.test(e)), JSON.stringify(resumed));
+      assert.ok(resumed.effects?.completed.some(e => /complete unchanged ref\/reflog interval/.test(e)), JSON.stringify(resumed));
       assert.equal(p.git("rev-parse", "HEAD"), parent);
       assert.deepEqual(readFileSync(join(p.root, ".git/index")), index);
       assert.equal(readFileSync(join(p.root, "src/greet.ts"), "utf8"), GREET_IMPL);
