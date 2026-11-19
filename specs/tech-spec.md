@@ -2510,6 +2510,7 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `marker-mismatch` | 3 | Copied, imported or marker-less state; quarantine decision |
 |  | `reconstructed-from-repository` | 0 | Local records were missing; what the repository still shows was read back, nothing else assumed |
 |  | `state-recovered-from-backup` | 3 | Fallback to state.prev; grants suspended until reconfirmed |
+|  | `state-history-unknown` | 3 | Existing local state history cannot be established; dependent work is fenced |
 |  | `effect-uncertain` | 3 | Intent without result that reconciliation could not resolve |
 |  | `lock-recovery-needed` | 2 | A lock breaker died mid-break; a confirmed repair is needed |
 |  | `migration-needs-approval` | 3 | A newer state schema needs a previewed migration |
@@ -2517,6 +2518,9 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `unsupported-record` | 4 | A private record is unsupported or cannot be read safely (an unknown field in a grant, restriction or consent, or a corrupt, oversized, too deep, duplicate-key or changed-while-read record; §7.6) |
 |  | `preload-present` | 4 | A preload flag reached the kernel by another launch path |
 |  | `storage-protected-full` | 2 | Protected data exceeds the ceiling |
+|  | `storage-accounting-unknown` | 2 | Storage size or candidate accounting is incomplete or changed |
+|  | `storage-reserve-full` | 2 | Ordinary growth would consume the bounded recovery reserve |
+|  | `storage-run-cap-full` | 2 | Protected project run files exceed the run-file budget |
 |  | `disk-full` | 2 | No space left |
 |  | `snapshot-too-large` | 2 | A prototype snapshot exceeds 20 MB |
 |  | `prototype-data-limit` | 3 | Declared sensitive-data assessment is High; prototypes do not inspect project data |

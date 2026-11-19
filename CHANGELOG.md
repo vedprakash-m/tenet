@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-19 — Repair schema-2 baseline recovery and legacy fixtures
+
+- Fixed `store-fs.ts` first publication to create a complete empty journal and bind the temp directory's stable filesystem identity. Completed quarantine stays distinct from unexplained missing history, and empty transactions no longer reserve nonexistent writes.
+- Restored staged journal read ownership in `store-staging.ts` and durable intent, purge, primary/backup publication and result boundaries in `decisions/forget.ts`. Moved existing unsupported-profile and readonly-repository open checks ahead of marker creation in `verbs/open-new.ts` and `open.ts`.
+- Aligned schema pin/future-schema, cap-setup, disk-compaction, linked-temp, journal reuse, simulated-store and crash fixtures with schema 2 and staged publication. Child CLI fixtures preserve the same temp namespace on macOS. Added the four existing storage/history reason codes to the canonical Appendix C; no reason semantics changed.
+- Thirteen focused storage controls, registry parity, 24 simulated undo controls and 37 Windows-safe schema bridge controls pass locally (nine POSIX skips). Typecheck, lint, coverage, SemVer, bundle integrity and reproducibility pass. Exact-SHA POSIX source/crash and built UAT follow-up evidence is still pending; Windows substitutions do not qualify durability.
+
 ## 2026-11-18 — Isolate the P91/P106 schema-2 storage baseline
 
 - Added the marker-bound legacy-root retention record, schema-1 read projection and schema-2 publication in the kernel schemas and filesystem store. Existing schema-1 contract pins and pending questions remain intact; older kernels refuse published schema-2 state.
