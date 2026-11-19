@@ -10,9 +10,44 @@ export type Months = Record<string, Month>;
 const DAY_MS = 86_400_000;
 export const KEEP_NEWEST = 100;
 const empty = (): Month => ({ calls: {}, exits: {}, intents: 0, results: 0, accounting: 0 });
+const resultComplete = (outcome: unknown) => {
+  if (!outcome || typeof outcome !== "object") return false;
+  const result = outcome as Record<string, unknown>;
+  return result.completed === true || result.status === "synced";
+};
+function completedResults(rows: Array<{ rec: Record<string, any> }>, key: (r: Record<string, any>) => string) {
+  const completion = new Map<string, boolean>();
+  for (const row of rows.filter((r) => r.rec.kind === "result")) {
+    const id = key(row.rec);
+    completion.set(id, completion.has(id) ? completion.get(id)! && resultComplete(row.rec.outcome) : resultComplete(row.rec.outcome));
+  }
+  return new Set([...completion].filter(([, complete]) => complete).map(([id]) => id));
+}
+function protectedResults(
+  rows: Array<{ rec: Record<string, any> }>,
+  key: (record: Record<string, any>) => string,
+  ids?: ReadonlySet<string>,
+  paths?: ReadonlySet<string>,
+) {
+  return new Set(rows.filter((row) => {
+    const id = String(row.rec.id);
+    if (ids?.has(id)) return true;
+    const op = row.rec.kind === "intent" ? row.rec.op : null;
+    return !!op && typeof op === "object" &&
+      typeof (op as { runDir?: unknown }).runDir === "string" &&
+      paths?.has((op as { runDir: string }).runDir);
+  }).map((row) => key(row.rec)));
+}
 
 export function reduceJournal(
-  text: string, o: { nowMs: number; days: number; protectFromRevision: number },
+  text: string,
+  o: {
+    nowMs: number;
+    days: number;
+    protectFromRevision: number;
+    protectedIds?: ReadonlySet<string>;
+    protectedPaths?: ReadonlySet<string>;
+  },
 ): { text: string; removed: number; months: Months } | null {
   const end = text.lastIndexOf("\n") + 1;
   const complete = text.slice(0, end), tail = text.slice(end);
@@ -28,7 +63,8 @@ export function reduceJournal(
   const cutoff = o.nowMs - o.days * DAY_MS;
   const spared = new Set(rows.slice(-KEEP_NEWEST));
   const key = (r: Record<string, any>) => JSON.stringify([r.effect, r.id]);
-  const done = new Set(rows.filter((r) => r.rec.kind === "result").map((r) => key(r.rec)));
+  const done = completedResults(rows, key);
+  const protectedPairs = protectedResults(rows, key, o.protectedIds, o.protectedPaths);
   const pairKind = (k: string) => k === "intent" || k === "result";
   const recentPair = new Set(rows.filter((r) => (r.ms >= cutoff || spared.has(r)) && pairKind(r.rec.kind)).map((r) => key(r.rec)));
   const months: Months = {};
@@ -39,7 +75,7 @@ export function reduceJournal(
     const m = String(rec.t).slice(0, 7);
     const drop = rec.kind === "call" ? ms < cutoff
       : rec.kind === "accounting" ? ms < cutoff && Number(rec.revision) < o.protectFromRevision
-      : done.has(key(rec)) && !recentPair.has(key(rec));
+      : done.has(key(rec)) && !recentPair.has(key(rec)) && !protectedPairs.has(key(rec));
     if (!drop) return true;
     const mo = (months[m] ??= empty());
     if (rec.kind === "call") {

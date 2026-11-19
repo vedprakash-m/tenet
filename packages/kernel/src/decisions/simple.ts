@@ -205,13 +205,17 @@ export const sharedMerge: Decision = {
 /** The one-step "sync my index" after a commit left the index untouched (TS §10.3 step 7): reruns only that step. */
 export const syncIndex: Decision = {
   kind: "sync-index",
-  async run({ ports, work, tx }) {
+  async run({ ports, work, tx, state }) {
     const last = work.git.commits.at(-1);
     if (!last) throw new KernelError("revision-conflict", "there is no commit of this work to sync the index for", { exit: 2 });
     const id = `index-${ports.rand.base32(10)}`;
+    tx.reservePublish?.(state, 64 * 1024);
     const result = await ports.git.syncIndex(work.git.committed, await ports.git.parentOf(last), {
       owner: ports.store.self(),
-      intent: async (sync) => { tx.intent("index-sync", id, { work: work.id, sync }); },
+      intent: async (sync) => {
+        tx.intent("index-sync", id, { work: work.id, sync });
+        tx.flush?.();
+      },
       result: async (status) => { tx.result("index-sync", id, { status }); },
     }, last);
     if (result === "untouched") {

@@ -16,7 +16,7 @@ import { continueRequired, headline, verdict } from "../core/verdict.ts";
 import type { Verdict } from "../core/verdict.ts";
 import type { Plan, Resp, Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
-import { isEditing, nx, reclaim, withWork, workOf } from "./common.ts";
+import { isEditing, nx, withWork, workOf } from "./common.ts";
 import { startCommit } from "./commit.ts";
 import { checkInputId, gather, verdictInput, worldDigest } from "./facts.ts";
 import type { Facts } from "./facts.ts";
@@ -186,13 +186,4 @@ const finishVerb: Verb<FinishInput> = {
 /** `finish` is also a storage boundary (CON-08): old journal records and run files are reduced, and the call says so once. */
 export const finish: Verb<FinishInput> = {
   ...finishVerb,
-  async run(ports, state, input, tx) {
-    const swept = tx && state ? reclaim(ports, tx, state) : undefined;
-    const plan = await finishVerb.run(ports, state, input, tx);
-    if (swept?.message) {
-      const had = plan.resp.effects;
-      plan.resp.effects = { completed: [...(had?.completed ?? []), swept.message], uncertain: had?.uncertain ?? [] };
-    }
-    return plan;
-  },
 };

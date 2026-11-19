@@ -20,6 +20,39 @@ const abandonFacts = (w: WorkContract) =>
   factsHash({ id: w.id, generation: w.session.generation, state: w.state, run: w.session.inCall?.runId ?? null });
 
 type Step<T> = { done: Plan } | { go: T };
+function unrecordedStop(
+  w: WorkContract,
+  error: KernelError,
+  proc: Step<{ state: State; effects: string[] }>,
+): Plan {
+  const completed = "done" in proc ? (proc.done.resp.effects?.completed ?? []) : proc.go.effects;
+  return {
+    resp: {
+      work: w.id,
+      exit: 2,
+      reasons: [...error.reasons, ...("done" in proc ? (proc.done.resp.reasons ?? []) : [])],
+      effects: {
+        completed,
+        uncertain: ["The stop was attempted, but its state and response could not be durably recorded."],
+      },
+    },
+  };
+}
+function reserveStopState(ports: Ports, input: StopInput, tx: Tx, state: State, work: WorkContract) {
+  const expected = stopped(ports, input, { state: recoverStoppedCall(state, work) }, work);
+  const bytes = Buffer.byteLength(JSON.stringify({
+    work: expected.next.id,
+    next: input.mode === "cancel" ? [nx("check", "Check again when ready.")] : [],
+    data: { handoff: expected.handoff },
+  }), "utf8");
+  try {
+    tx.reservePublish?.(expected.st, bytes * 2 + 1024);
+    return undefined;
+  } catch (error) {
+    if (error instanceof KernelError && error.reasons[0]?.code.startsWith("storage-")) return error;
+    throw error;
+  }
+}
 
 /** Abandoning is destructive: it previews in chat first, and the answer binds to the contract as it was shown. */
 function abandonGate(state: State, w: WorkContract, input: StopInput): Step<State> {
@@ -125,7 +158,32 @@ function stopped(
   };
 }
 
-export async function stopWork(ports: Ports, state0: State, input: StopInput, tx: Tx): Promise<Plan> {
+export async function stopWork(ports: Ports, state0: State | null, input: StopInput, tx: Tx): Promise<Plan> {
+  if (!state0) {
+    return {
+      resp: {
+        exit: 3,
+        reasons: [{
+          code: "state-history-unknown",
+          message: "No Tenet state or trusted process identity exists here; no process was signaled.",
+        }],
+      },
+    };
+  }
+  if (!input.h) {
+    if (state0.project.retention?.legacyTemp.pending) {
+      return {
+        resp: {
+          exit: 3,
+          reasons: [{
+            code: "state-history-unknown",
+            message: "Local Tenet history is incomplete; no trusted process record was available, so no process was signaled.",
+          }],
+        },
+      };
+    }
+    throw new KernelError("handle-required", "pass --h <handle>; open returns one", { exit: 1 });
+  }
   let state = state0;
   const w0 = workOf(state, input.h);
   if (input.mode === "abandon") {
@@ -133,7 +191,9 @@ export async function stopWork(ports: Ports, state0: State, input: StopInput, tx
     if ("done" in gate) return gate.done;
     state = gate.go;
   }
+  const publicationRefusal = reserveStopState(ports, input, tx, state, w0);
   const proc = await stopProcess(ports, state, w0);
+  if (publicationRefusal) return unrecordedStop(w0, publicationRefusal, proc);
   if ("done" in proc) return proc.done;
   const effects = proc.go.effects;
   const rec = await recover(ports, tx, proc.go.state, { effects: false });
@@ -171,5 +231,5 @@ export const stop: Verb<StopInput> = {
   name: "stop",
   schema: StopInput,
   class: () => "mutating",
-  run: (ports, state, input, tx) => stopWork(ports, state!, input, tx!),
+  run: (ports, state, input, tx) => stopWork(ports, state, input, tx!),
 };

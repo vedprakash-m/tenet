@@ -22,22 +22,28 @@ describe("automatic temp cleanup boundaries", () => {
     writeFileSync(join(dir, "marker"), JSON.stringify({
       workspaceId, tag: "test", nonce: "cleanup-fixture", schema: 1, dev, ino,
     }));
-    const store = new FsStore(root, systemClock, systemRandom, { runFileCapBytes: 0 });
+    const store = new FsStore(root, systemClock, systemRandom, { runFileCapBytes: 10_000_000 });
     // These filesystem-only controls never inspect or break a stale lock.
     if (process.platform === "win32") store.self = () => ({ pid: process.pid, procStart: "filesystem-fixture" });
     const base = join(store.tempDir("run-active"), "..");
-    return { store, base };
+    const zero = new FsStore(root, systemClock, systemRandom, { runFileCapBytes: 0 });
+    const limited = new FsStore(root, systemClock, systemRandom, { runFileCapBytes: 4 });
+    if (process.platform === "win32") {
+      zero.self = store.self;
+      limited.self = store.self;
+    }
+    return { store, zero, limited, base };
   };
 
   for (const group of ["manifests", "review"]) {
     it(`never evicts human files through a linked ${group} group [SEC-06, CON-04]`, () => {
-      const { store, base } = fixture(), outside = fresh();
+      const { zero, base } = fixture(), outside = fresh();
       try {
         const human = join(outside, "notes.txt");
         writeFileSync(human, "preserve human work");
         const before = readFileSync(human);
         symlinkSync(outside, join(base, group), process.platform === "win32" ? "junction" : "dir");
-        const result = store.evict([]);
+        const result = zero.evict([]);
         assert.equal(existsSync(human), true, "run-cap cleanup must not delete through a linked group");
         assert.deepEqual(readFileSync(human), before);
         assert.deepEqual(readdirSync(outside), ["notes.txt"]);
@@ -48,7 +54,7 @@ describe("automatic temp cleanup boundaries", () => {
   }
 
   it("still evicts owned artifacts while preserving live run and reservation paths [CON-04]", () => {
-    const { store, base } = fixture();
+    const { store, zero, limited, base } = fixture();
     try {
       const active = join(base, "run-active");
       const expired = store.tempDir("run-active-expired"), manifests = store.tempDir("manifests");
@@ -56,7 +62,12 @@ describe("automatic temp cleanup boundaries", () => {
       const oldPacket = store.writeArtifact(manifests, "expired.json", "{}");
       writeFileSync(join(active, "run.json"), "{}");
       writeFileSync(join(expired, "report.json"), "{}");
-      const result = store.evict([join(active, "run.json"), packet]);
+      const keep = [join(active, "run.json"), packet];
+      const refused = zero.evict(keep);
+      assert.equal(refused.refusal?.code, "storage-run-cap-full");
+      assert.equal(existsSync(expired), true, "a refusal must not partially remove eligible bytes");
+      assert.equal(readFileSync(oldPacket, "utf8"), "{}");
+      const result = limited.evict(keep);
       assert.equal(existsSync(expired), false);
       assert.equal(existsSync(oldPacket), false);
       assert.equal(readFileSync(join(active, "run.json"), "utf8"), "{}");
@@ -149,9 +160,9 @@ describe("private store boundaries", () => {
 
   describe("owned schema admission", () => {
     const blockers = [
-      { name: "future primary with valid previous", record: "state", schema: 2 },
-      { name: "future previous with valid primary", record: "state.prev", schema: 2 },
-      { name: "future marker", record: "marker", schema: 2 },
+      { name: "future primary with valid previous", record: "state", schema: 3 },
+      { name: "future previous with valid primary", record: "state.prev", schema: 3 },
+      { name: "future marker", record: "marker", schema: 3 },
       { name: "invalid declared schema", record: "state", schema: "1" },
       ...["migration-transition.json", "migration-privacy.json"].flatMap(record =>
         ["{}", "", "{ malformed"].map(content => ({ name: `${record} ${content === "{}" ? "present" : content === "" ? "empty" : "malformed"}`, record, content }))),

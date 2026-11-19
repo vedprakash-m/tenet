@@ -44,9 +44,13 @@ async function indexSync(r: Recovery, u: Unresolved) {
     return;
   }
   const workId = op.work;
+  r.tx.reservePublish?.(r.state, 4096);
   const status = await r.ports.git.recoverIndexSync(op.sync, {
     owner: r.ports.store.self(),
-    intent: async (sync) => { r.tx.intent("index-sync", id, { work: workId, sync }); },
+    intent: async (sync) => {
+      r.tx.intent("index-sync", id, { work: workId, sync });
+      r.tx.flush?.();
+    },
     result: async (s) => { r.tx.result("index-sync", id, { status: s }); },
   });
   if (status === "uncertain") {

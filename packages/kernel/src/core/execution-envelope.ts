@@ -31,6 +31,7 @@ export type EnvelopeCommand = ExecutionEnvelope["commands"][number];
 export const InFlightCall = z.object({
   runId: z.string(), pid: z.number().int().positive().optional(), procStart: z.string().optional(),
   verb: z.string(), since: z.string(), runDir: z.string().optional(), cancelled: z.boolean().optional(),
+  storageReservedBytes: z.number().int().positive().optional(),
   executionEnvelope: ExecutionEnvelope.optional(),
 });
 
