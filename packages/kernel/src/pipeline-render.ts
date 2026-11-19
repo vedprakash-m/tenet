@@ -1,6 +1,7 @@
 // How a response is built and recorded: handles, the rendered envelope, the call identity and the publish step.
 import { accrueTime, attachUsage, budgetProgress, nearLimit, summarize } from "./core/budget.ts";
 import { handoffText } from "./core/handoff.ts";
+import type { Exclusion } from "./core/exclusions.ts";
 import { reason } from "./core/reasons.ts";
 import { formatHandle, hashOf, parseHandle } from "./core/ids.ts";
 import { KernelError } from "./core/errors.ts";
@@ -85,7 +86,8 @@ function withActiveTime(ports: Ports, verb: string, next: State, resp: Resp, sta
   if (near && !resp.reasons?.some(r => r.code === "budget-warning"))
     resp.reasons = [...(resp.reasons ?? []), reason("budget-warning", "80% of a limit is used", { note: true })];
   const updated = { ...w, budget };
-  if (near || w.stopReason) updated.handoff = handoffText(next, updated);
+  if (near || w.stopReason)
+    updated.handoff = handoffText(next, updated, settingsFor(ports, next, updated).exclusions as Exclusion[]);
   return { ...next, work: { ...next.work, [w.id]: updated } };
 }
 

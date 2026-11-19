@@ -47,7 +47,7 @@ function plan(run: Run, w: WorkContract): { why: string } | { overlay: SealOverl
   const start = w.git.start;
   if (w.git.mode !== "git") return { why: "not-git" };
   if (!start.head) return { why: "no-start" };
-  const read = (p: string) => allowed("read", p, (run.exclusions ?? []) as Exclusion[]);
+  const read = (p: string) => allowed("read", p, (run.exclusions ?? []) as Exclusion[], { kind: "routine-inventory" });
   const overlay: SealOverlay = { copy: [], remove: [] };
   for (const d of start.dirty) {
     if (d.mode === "120000") return { why: "symlink" };
@@ -74,7 +74,7 @@ export async function sealedRun(run: Run, o: Executed, inputs: readonly string[]
   const decided = plan(run, w);
   if ("why" in decided) return { absent, unavailable: decided.why };
   if (await ports.git.filterGate()) return { absent, unavailable: "filters" };
-  const keep = (p: string) => allowed("read", p, (run.exclusions ?? []) as Exclusion[]);
+  const keep = (p: string) => allowed("read", p, (run.exclusions ?? []) as Exclusion[], { kind: "routine-inventory" });
   const sealed = await ports.git.materialize(w.git.start.head!, join(runDir, "sealed"), keep, decided.overlay);
   if ("problem" in sealed) return { absent, unavailable: sealed.problem };
   try {

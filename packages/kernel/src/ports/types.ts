@@ -4,7 +4,7 @@ import type { AttentionPattern, FileChange } from "../core/review.ts";
 import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
 import type { Random } from "../core/ids.ts";
 import type { IndexSyncRecord, Obligation, State } from "../core/schemas.ts";
-import type { Exclusion } from "../core/exclusions.ts";
+import type { Exclusion, ReadAdmission } from "../core/exclusions.ts";
 import type { CapabilityCache, Descriptor } from "../core/capabilities.ts";
 import type { HostTimings, Timing } from "../core/timing.ts";
 
@@ -303,11 +303,11 @@ export interface Project {
   /** Creates each file exclusively (never overwrites), making directories as needed. */
   writeNew(files: readonly RecipeFile[]): void;
   /** sha256 of each regular file's content; null only when absent. Linked/excluded/unreadable inputs throw. */
-  hashes(paths: readonly string[]): Record<string, string | null>;
+  hashes(paths: readonly string[], admission?: ReadAdmission): Record<string, string | null>;
   /** A regular file's text; null only when absent. Linked/excluded/unreadable inputs throw. */
-  read(path: string): string | null;
+  read(path: string, admission?: ReadAdmission): string | null;
   /** Strict UTF-8 source admission under a trusted byte limit; legacy read semantics stay unchanged. */
-  readBounded(path: string, maxBytes: number): ProjectReadResult;
+  readBounded(path: string, maxBytes: number, admission?: ReadAdmission): ProjectReadResult;
   /** Stat-only presence check; true includes links and non-regular leaves without following or opening them. */
   exists(path: string): boolean;
   /** Replaces one file atomically (a temporary file renamed over it), making directories as needed. */

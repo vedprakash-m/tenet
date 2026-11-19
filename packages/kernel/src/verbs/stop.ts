@@ -1,5 +1,7 @@
 // `stop`: pause at a safe boundary, cancel owned processes, or close the contract. Always allowed, even mid-check.
 import { handoffText } from "../core/handoff.ts";
+import { settingsFor } from "./reconcile.ts";
+import type { Exclusion } from "../core/exclusions.ts";
 import { INTERRUPTED_CHECK, recoverStoppedCall } from "../core/execution-envelope.ts";
 import { releaseItem } from "../core/plan.ts";
 import { StopInput } from "../core/schemas.ts";
@@ -112,7 +114,7 @@ function stopped(
     ...(input.mode === "pause" ? { lastValidPhase: w.state === "parked" ? w.lastValidPhase : w.state } : {}),
     state: input.mode === "pause" ? "parked" : input.mode === "abandon" ? "cancelled" : w.state,
   };
-  const handoff = next.handoff = handoffText(rec.state, next);
+  const handoff = next.handoff = handoffText(rec.state, next, settingsFor(ports, rec.state, next).exclusions as Exclusion[]);
   // Cancel keeps the contract open at its last valid phase; pause and abandon release source ownership.
   const parked = input.mode === "cancel" ? withWork(rec.state, next) : release(withWork(rec.state, next), next);
   if (input.mode !== "abandon") return { st: parked, next, handoff };

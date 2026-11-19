@@ -128,17 +128,18 @@ describe("budget", () => {
 describe("exclusions", () => {
   it("never allows content use of default secret files, but allows .env.example [SEC-14]", () => {
     for (const p of [".env", ".env.local", "config/.env.production", "certs/server.pem", "k.key", "id_rsa", "home/id_ed25519.pub"]) {
-      for (const op of ["scan", "read", "model-send", "edit", "export"] as const) assert.equal(allowed(op, p), false, `${op} ${p}`);
+      for (const op of ["scan", "read", "model-send", "edit", "export"] as const)
+        assert.equal(allowed(op, p, [], { kind: "routine-inventory" }), false, `${op} ${p}`);
     }
-    assert.equal(allowed("model-send", ".env.example"), true);
+    assert.equal(allowed("model-send", ".env.example", [], { kind: "routine-inventory" }), true);
     assert.equal(allowed("edit", ".tenet/state"), false);
   });
   it("applies each project exclusion kind to its own operations only", () => {
     const x = [{ pattern: "secrets/**", kinds: ["no-model-send" as const] }, { pattern: "vendor/**", kinds: ["no-edit" as const] }];
-    assert.equal(allowed("model-send", "secrets/a.txt", x), false);
-    assert.equal(allowed("read", "secrets/a.txt", x), true);
+    assert.equal(allowed("model-send", "secrets/a.txt", x, { kind: "routine-inventory" }), false);
+    assert.equal(allowed("read", "secrets/a.txt", x, { kind: "routine-inventory" }), true);
     assert.equal(allowed("edit", "vendor/lib.js", x), false);
-    assert.equal(allowed("model-send", "vendor/lib.js", x), true);
+    assert.equal(allowed("model-send", "vendor/lib.js", x, { kind: "routine-inventory" }), true);
   });
 });
 

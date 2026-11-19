@@ -83,7 +83,7 @@ export function withRequiredChecks(ports: Ports, state: State, w: WorkContract):
 /** Configure the same operation policy before an adapter reads project content. */
 export function configurePolicy(ports: Ports, state: State | null): void {
   const exclusions = settingsFor(ports, state).exclusions as Exclusion[];
-  if (!allowed("read", POLICY_FILE, exclusions)) throw new KernelError("capability-missing", "a policy that excludes reading its own governing file is unsupported; dependent work is blocked", { exit: 2 });
+  if (!allowed("read", POLICY_FILE, exclusions, { kind: "routine-inventory" })) throw new KernelError("capability-missing", "a policy that excludes reading its own governing file is unsupported; dependent work is blocked", { exit: 2 });
   ports.git.setExclusions(exclusions);
   ports.git.allowFilters((state?.consents ?? []).filter((c) => c.kind === "filters").map((c) => c.configHash));
   ports.project.setExclusions(exclusions);

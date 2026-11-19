@@ -5,6 +5,8 @@ import { controlsFor } from "../core/controls.ts";
 import { buildDemo } from "../core/demo.ts";
 import type { Demo } from "../core/demo.ts";
 import { handoffText } from "../core/handoff.ts";
+import { settingsFor } from "./reconcile.ts";
+import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
 import { executionDisclosures } from "../core/execution-envelope.ts";
 import { appendSeries, raisedIds } from "../core/fitness.ts";
@@ -120,7 +122,10 @@ function close(
 ): { state: State; resp: Resp } {
   const done: WorkContract = { ...nw, state: "finished" };
   const session = { generation: nw.session.generation, ...(nw.session.last ? { last: nw.session.last } : {}) };
-  const closed: WorkContract = { ...done, handoff: handoffText(st, done), updatedAt: ports.clock.now(), session };
+  const closed: WorkContract = {
+    ...done, handoff: handoffText(st, done, settingsFor(ports, st, done).exclusions as Exclusion[]),
+    updatedAt: ports.clock.now(), session,
+  };
   const { sourceOwner, ...rest } = withWork(st, closed);
   const out: State = sourceOwner && sourceOwner.work !== nw.id ? { ...rest, sourceOwner } : rest;
   const offer =

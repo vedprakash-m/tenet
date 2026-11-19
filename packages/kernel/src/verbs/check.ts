@@ -68,7 +68,7 @@ function admit(ports: Ports, cur: State, w: WorkContract, input: CheckInput, inp
       `execution of ${unavailable.slice(0, 3).join(", ")} is not implemented; no substitute check was run`
     );
   const exclusions = settingsFor(ports, cur, w).exclusions as Exclusion[];
-  const unreadable = inputs.filter((path) => !allowed("read", path, exclusions));
+  const unreadable = inputs.filter((path) => !allowed("read", path, exclusions, { kind: "routine-inventory" }));
   if (unreadable.length)
     refuse(
       "capability-missing",

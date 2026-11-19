@@ -10,6 +10,7 @@ import {
 import type { BasisElement, BudgetState, Reason, Reservation, State, WorkContract } from "../core/schemas.ts";
 import type { Ports } from "../ports/types.ts";
 import type { Exclusion } from "../core/exclusions.ts";
+import { modelPathFilter } from "../core/packet-exclusions.ts";
 import { activeLessons, lessonExcerpt } from "../core/lessons.ts";
 import { judgeReview } from "../core/verdict.ts";
 import { nx } from "./common.ts";
@@ -65,7 +66,7 @@ function dispatchNext(focused: boolean, mode: "full" | "recheck"): Array<ReturnT
 
 /** Reserve capacity for the issued manifest (or bind the Quick same-session slot) and shape the final response. */
 function reserveIssued(
-  nw: WorkContract, budget: BudgetState, m: Manifest, path: string, live: Reservation | undefined, retry: boolean, focused: boolean, files: Record<string, string>,
+  nw: WorkContract, budget: BudgetState, m: Manifest, path: string, live: Reservation | undefined, retry: boolean, focused: boolean, files: Record<string, string>, exclusions: readonly Exclusion[],
 ): Issued {
   const rv = { ...m.reservation, manifest: path, retries: live ? (live.retries ?? 0) + (retry ? 1 : 0) : 0 };
   // Retries replace the reservation, so a late result cannot settle the new attempt.
@@ -73,7 +74,7 @@ function reserveIssued(
   nb = addTokens(focused ? nb : reserve(nb, rv), m.tokens);
   return {
     work: { ...nw, budget: nb, ...(focused ? { focusedReview: rv } : {}) }, reasons: [], next: dispatchNext(focused, m.mode),
-    data: { review: { manifest: path, hash: m.hash, reservation: rv.id, attempt: rv.attempt, mode: m.mode, tokens: m.tokens, files: rv.requiredPaths ?? Object.keys(files), dispatchMode: focused ? "same-session" : "subagent-fresh" } },
+    data: { review: { manifest: path, hash: m.hash, reservation: rv.id, attempt: rv.attempt, mode: m.mode, tokens: m.tokens, files: (rv.requiredPaths ?? Object.keys(files)).filter(modelPathFilter(exclusions)), dispatchMode: focused ? "same-session" : "subagent-fresh" } },
   };
 }
 
@@ -89,10 +90,10 @@ export function deepPasses(w: WorkContract, candidate: string): Array<ReturnType
 }
 
 /** The project's charter from the first instruction file the host binding names that has one, else the default (QLT-09). */
-function charterOf(ports: Ports): string {
+function charterOf(ports: Ports, exclusions: readonly Exclusion[]): string {
   const text = (path: string) => { try { return ports.project.read(path); } catch { return null; } };
   const names = ports.host.capabilities().instructionFiles;
-  return projectCharter(names.source === "unknown" ? [] : names.value.split(",").map(text)) ?? DEFAULT_CHARTER;
+  return projectCharter(names.source === "unknown" ? [] : names.value.split(",").filter(modelPathFilter(exclusions)).map(text)) ?? DEFAULT_CHARTER;
 }
 
 export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Facts, changes: readonly FileChange[], retry = false): Issued {
@@ -120,15 +121,16 @@ export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Fac
     return { work: nw, next: [nx("finish", "No full review round remains; finish with the current evidence.", true)], reasons: [reason("budget-exhausted", "review rounds")] };
   }
   const shown = mode === "recheck" ? changes.filter((c) => deltaSince(lastFull, files).includes(c.path)) : changes;
+  const exclusions = settingsFor(ports, st, w).exclusions as Exclusion[];
   const m = buildManifest({
     work: nw, elements: st.project.intent.elements.filter((e) => basis.elementIds.includes(e.id)), changes: shown, candidate: facts.candidate, basisHash: basis.hash,
     attempt: nextAttempt(live, retry, focused, budget, nw.reviews.length), mode, ...(basedOn ? { basedOn } : {}),
-    recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused) + lessonExcerpt(activeLessons(st, nw, ports.clock.now())), id: nw.label, files, charter: charterOf(ports),
-    exclusions: settingsFor(ports, st, w).exclusions as Exclusion[],
+    recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused) + lessonExcerpt(activeLessons(st, nw, ports.clock.now())), id: nw.label, files, charter: charterOf(ports, exclusions),
+    exclusions,
   });
   if (!isManifest(m)) return { work: nw, next: [nx("ask", "The basis is too large to review in one pass; narrow the increment.", true)], reasons: [m] };
   const path = ports.store.writeArtifact(ports.store.tempDir("manifests"), `${m.hash}.json`, m.text);
-  return reserveIssued(nw, budget, m, path, live, retry, focused, files);
+  return reserveIssued(nw, budget, m, path, live, retry, focused, files, exclusions);
 }
 
 /** `packet analyst`: a researcher, architect or security assignment (AGT-03). No basis precondition, no "already

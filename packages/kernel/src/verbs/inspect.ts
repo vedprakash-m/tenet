@@ -7,6 +7,7 @@ import { KernelError } from "../core/errors.ts";
 import { nextItem } from "../core/plan.ts";
 import { controlsFor } from "../core/controls.ts";
 import { handoffText } from "../core/handoff.ts";
+import type { Exclusion } from "../core/exclusions.ts";
 import { verdict, headline } from "../core/verdict.ts";
 import { InspectInput } from "../core/schemas.ts";
 import type { State } from "../core/schemas.ts";
@@ -99,7 +100,7 @@ export const inspect: Verb<InspectInput> = {
       case "status": {
         if (input.h) {
           const w = workOf(state, input.h);
-          return { resp: { work: w.id, data: { ...statusOf(state), capabilities: ports.host.capabilities(), contract: { label: w.label, state: w.state, lane: w.lane, level: w.level, branch: w.git.branch, limits: LIMITS[w.lane] }, handoff: handoffText(state!, w) } } };
+          return { resp: { work: w.id, data: { ...statusOf(state), capabilities: ports.host.capabilities(), contract: { label: w.label, state: w.state, lane: w.lane, level: w.level, branch: w.git.branch, limits: LIMITS[w.lane] }, handoff: handoffText(state!, w, settingsFor(ports, state, w).exclusions as Exclusion[]) } } };
         }
         return { resp: { data: { ...statusOf(state), capabilities: ports.host.capabilities() } } };
       }

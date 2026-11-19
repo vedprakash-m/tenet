@@ -37,7 +37,7 @@ export const declaredOutputs = (obligations: readonly Pick<Obligation, "outputs"
   [...new Set(obligations.flatMap((o) => o.outputs ?? []))];
 
 export function outputMatcher(patterns: readonly string[]): (path: string) => boolean {
-  const res = patterns.map(glob);
+  const res = patterns.map(pattern => glob(pattern));
   return (path) => res.some((r) => r.test(path));
 }
 

@@ -2,12 +2,16 @@
 import { LIMITS } from "./budget.ts";
 import type { State, WorkContract } from "./schemas.ts";
 import { coverageEvidenceForReceipts, coveredCoverageEvidence } from "./alternative-check.ts";
+import { modelPathFilter } from "./packet-exclusions.ts";
+import type { Exclusion } from "./exclusions.ts";
 
-export function handoffText(st: State, w: WorkContract): string {
+export function handoffText(st: State, w: WorkContract, exclusions: readonly Exclusion[] = []): string {
+  const eligible = modelPathFilter(exclusions);
   const l = LIMITS[w.lane];
   const required = new Set(w.obligations.map((obligation) => obligation.id));
   const latest = new Map(w.receipts.filter((receipt) => required.has(receipt.obligation)).map((r) => [r.obligation, r]));
-  const open = w.findings.filter((f) => !["verified", "withdrawn", "risk-accepted", "deferred", "wont-fix"].includes(f.state));
+  const open = w.findings.filter((f) => eligible(f.location.path)
+    && !["verified", "withdrawn", "risk-accepted", "deferred", "wont-fix"].includes(f.state));
   const els = st.project.intent.elements.filter((e) => w.basis?.elementIds.includes(e.id));
   const coverageInput = coverageEvidenceForReceipts(st, w.id, w.basis?.hash ?? "", w.receipts);
   const recordedCoverage = coveredCoverageEvidence(
