@@ -18,6 +18,8 @@ import type { Clock, EvictReport, Footprint, LogEntry, Quarantined, Store, Tx } 
 import { isAlive, procStart } from "./proc.ts";
 import { admissionRecord, MAX_RECORD, parseRecord, readJson, readRecord, readTerminal } from "./private-record-fs.ts";
 import { quarantine, QUARANTINE_JOURNAL } from "./quarantine-fs.ts";
+import { readCommitProofs, writeCommitProof } from "./store-records.ts";
+import type { CommitProofV1 } from "../core/commit-proof.ts";
 
 interface Marker { workspaceId: string; tag: string; nonce: string; schema: number; dev: number; ino: number }
 interface LockInfo { pid: number; procStart: string; nonce: string; verb: string }
@@ -490,6 +492,13 @@ export class FsStore implements Store {
   }
 
   // ------------------------------------------------------------ blobs and temp
+  putCommitProof(proof: CommitProofV1): void {
+    this.write(() => writeCommitProof(name => this.p(name), proof, this.readLog(), this.marker()!.workspaceId));
+  }
+  commitProofs(): CommitProofV1[] {
+    this.admit();
+    return readCommitProofs(name => this.p(name), this.readLog(), this.marker()!.workspaceId);
+  }
   putBlob(content: string): string {
     return this.write(() => {
       this.marker();

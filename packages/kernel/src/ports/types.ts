@@ -7,6 +7,7 @@ import type { IndexSyncRecord, Obligation, State } from "../core/schemas.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import type { CapabilityCache, Descriptor } from "../core/capabilities.ts";
 import type { HostTimings, Timing } from "../core/timing.ts";
+import type { CommitIntentV1, CommitProofV1 } from "../core/commit-proof.ts";
 
 export type { Random };
 export interface Clock { now(): string; ms(): number }
@@ -48,6 +49,8 @@ export interface Store {
   /** The one pre-lock maintenance step: remove a dead lock and its dead guard. */
   repairLock(): Promise<{ removed: string[] }>;
   readLog(): LogEntry[];
+  putCommitProof(proof: CommitProofV1): void;
+  commitProofs(): CommitProofV1[];
   putBlob(content: string): string;
   readBlob(hash: string): string | null;
   /** A directory for this call's artifacts (run dirs, manifests), outside the project. */
@@ -114,13 +117,19 @@ export interface Git {
   /** Program-neutral tree of exactly these paths, logged before the guarded commit job for recovery. */
   expectedTree(plan: Pick<CommitPlan, "paths" | "deleted" | "parent">): Promise<string>;
   commit(plan: CommitPlan): Promise<CommitOutcome>;
+  commitContext(): Promise<Pick<CommitIntentV1, "ref" | "cursors">>;
+  observeCommit(intent: Pick<CommitIntentV1, "ref" | "parent">): Promise<{
+    commit: string | null; cursors: CommitIntentV1["cursors"]; stable: boolean;
+  }>;
+  commitUnmoved(intent: Pick<CommitIntentV1, "ref" | "cursors" | "parent">): Promise<boolean>;
+  verifyCommit(proof: CommitProofV1): Promise<boolean>;
   /** Postcondition for crash recovery: did a commit with this parent and tree land? */
   reconcileCommit(parent: string | null, expectedTree: string, tenetPaths: readonly string[], label?: string): Promise<{ completed: boolean; commit?: string }>;
   syncIndex(paths: readonly string[], oldHead: string | null, journal?: IndexJournal, head?: string): Promise<CommitOutcome["indexSync"]>;
   /** Reconcile a journalled lock of a dead process, then rerun only the exact recorded sync. */
   recoverIndexSync(record: unknown, journal: IndexJournal): Promise<CommitOutcome["indexSync"] | "uncertain">;
   /** Commits on the current history carrying `Tenet-Work: <label>`, newest first; `shallow` when history is cut short. */
-  workCommits(label: string): Promise<{ commits: string[]; shallow: boolean; merges: boolean }>;
+  workCommits(label: string, ref?: string): Promise<{ commits: string[]; shallow: boolean; merges: boolean }>;
   /** Read-only history after lost records (CON-07): commits per `Tenet-Work` label on all refs, and `tenet/` branches not in HEAD. */
   tenetHistory(): Promise<{ labels: Record<string, number>; unmerged: string[]; shallow: boolean }>;
   /** The inverse of these commits (newest first) applied to a temporary index from HEAD; never touches the real index or tree. */
@@ -146,7 +155,7 @@ export interface Git {
   /** The parent of a commit, or null for a root commit. */
   parentOf(commit: string): Promise<string | null>;
   /** Which of these commits are ancestors of HEAD (`git merge-base --is-ancestor`). */
-  ancestors(commits: readonly string[]): Promise<Set<string>>;
+  ancestors(commits: readonly string[], target?: string): Promise<Set<string>>;
   init(): Promise<void>;
   /** Creates the shadow repository for a folder with no Git (TS §10.9) and takes the first snapshot. */
   initShadow(): Promise<void>;

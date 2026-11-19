@@ -1,6 +1,6 @@
 // Commit protocol (TS §10.3), shared by `commit` (a checkpoint) and `finish` (the final commit): preconditions, the
 // effect intent with the expected tree, the commit as an external job, then verification and the result record.
-import { changedSinceCheck, recordCommit } from "../core/attribution.ts";
+import { changedSinceCheck } from "../core/attribution.ts";
 import { KernelError } from "../core/errors.ts";
 import { reason } from "../core/reasons.ts";
 import { checkpointEvidence } from "../core/verdict.ts";
@@ -13,6 +13,8 @@ import { filterQuestion, hookQuestion, unexplainedQuestion } from "./commit-ques
 import { checkInputId, gather, worldDigest } from "./facts.ts";
 import type { Facts } from "./facts.ts";
 import { coverageEvidenceForReceipts } from "../core/alternative-check.ts";
+import type { CommitIntentV1 } from "../core/commit-proof.ts";
+import { settleCommit } from "./commit-finalize.ts";
 
 export type Done = (
   st: State,
@@ -88,63 +90,6 @@ async function blockers(ports: Ports, st: State, w: WorkContract, facts: Facts):
   return "go";
 }
 
-interface Run {
-  w: WorkContract;
-  runId: string;
-  paths: readonly string[];
-}
-const KNOWN_FAILURES = [
-  "hook-failed", "signing-unavailable", "git-identity-missing", "git-locked", "capability-missing", "filter-consent-needed",
-];
-
-/** Settle an uncertain, failed or verified commit. */
-async function settle(run: Run, tx: Tx, st: State, result: unknown, done: Done): Promise<{ state: State; resp: Resp }> {
-  const { w, runId, paths } = run;
-  const cw = st.work[w.id]!;
-  const out = result as CommitOutcome | { error: string };
-  const base: WorkContract = { ...cw, session: { generation: cw.session.generation } };
-  if ("error" in out || (!out.ok && out.reason !== "nothing-to-commit")) {
-    const o = out as CommitOutcome & { error?: string };
-    if (o.error || o.reason === "effect-uncertain") {
-      return {
-        state: withWork(st, { ...base, state: "blocked" }),
-        resp: {
-          work: w.id,
-          exit: 2,
-          reasons: [reason("effect-uncertain", o.detail ?? o.error)],
-          effects: { completed: [], uncertain: [`commit ${runId}: outcome not verified`] },
-          data: { observedHead: o.commit ?? null },
-          next: [nx("stop", "Reconcile the commit before repeating it or releasing source ownership.", true)],
-        },
-      };
-    }
-    tx.result("commit", runId, { completed: false, reason: o.reason ?? "error" });
-    const code = (
-      KNOWN_FAILURES.includes(o.reason ?? "hook-failed") ? (o.reason ?? "hook-failed") : "hook-failed"
-    ) as "hook-failed";
-    return done(withWork(st, base), base, null, [reason(code, o.detail ?? o.error)]);
-  }
-  const o = out as CommitOutcome;
-  tx.result("commit", runId, { completed: true, commit: o.commit ?? null, tree: o.tree ?? null, foreign: o.foreign });
-  const reasons: Reason[] = [];
-  if (o.foreign.length) reasons.push(reason("hook-staged-foreign-path", o.foreign.join(", ")));
-  if (o.indexSync === "untouched" && o.syncPaths.length) {
-    reasons.push(reason("index-sync-needed", `${o.syncPaths.join(", ")}; run: decide sync-index`, { note: true }));
-  }
-  const nw = recordCommit(base, o, paths);
-  const locks = st.locks.map((l) =>
-    "provisional" in l.anchor && l.anchor.provisional === w.id && o.commit ? { ...l, anchor: { commit: o.commit } } : l
-  );
-  const state = { ...withWork(st, nw), locks };
-  if (o.foreign.length) return {
-    state,
-    resp: { work: nw.id, exit: 3, reasons,
-      next: [nx("review", "Review foreign paths, then decide disposition.", true)],
-      data: { commit: o.commit, foreign: o.foreign } },
-  };
-  return done(state, nw, o, reasons);
-}
-
 /** The index sync inside the commit is journalled under the same run, and refused if the commit was cancelled meanwhile. */
 function indexJournalFor(ports: Ports, w: WorkContract, runId: string): IndexJournal {
   return {
@@ -189,7 +134,12 @@ export async function startCommit(
     .filter((e) => e.kind === "requirement" && w.basis?.elementIds.includes(e.id))
     .map((e) => e.id);
   const message = `${subject}\n\nTenet-Work: ${w.label}${reqs.length ? `\nTenet-Req: ${reqs.join(", ")}` : ""}`;
-  tx.intent("commit", runId, { work: w.id, parent, expectedTree, paths, subject });
+  const context = await ports.git.commitContext();
+  const intent: CommitIntentV1 = {
+    version: 1, workspace: st.workspaceId, work: w.id, generation: w.session.generation,
+    run: runId, label: w.label, ...context, parent, expectedTree, paths, subject,
+  };
+  tx.intent("commit", runId, intent);
   const now = ports.clock.now();
   const inCall = { runId, ...ports.store.self(), verb: "commit", since: now, runDir };
   const prepared: WorkContract = { ...w, lastValidPhase: w.state, session: { ...w.session, inCall }, updatedAt: now };
@@ -197,7 +147,7 @@ export async function startCommit(
   const job: Job = {
     id: runId,
     execute: () => ports.git.commit({ paths, deleted: [], message, parent, expectedTree, timeoutMs: 120_000, runDir, indexJournal }),
-    finalize: async (tx2, st2, result) => settle({ w, runId, paths }, tx2, st2, result, done),
+    finalize: async (tx2, st2, result) => settleCommit(ports, { w, runId, paths, intent }, tx2, st2, result, done),
   };
   return { state: withWork(st, prepared), resp: { work: w.id }, job };
 }

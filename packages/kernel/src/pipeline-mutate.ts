@@ -142,7 +142,10 @@ function fencedByUncertainty(ports: Ports, verb: Verb, tx: Tx, current: State, r
   if (current !== tx.state) tx.publish(current);
   const effects = { completed: recovered.completed, uncertain: recovered.uncertain };
   const message = "An interrupted operation is still uncertain; dependent work is fenced until it is reconciled.";
-  return { res: render(ports, verb.name, { exit: 2, effects, reasons: [{ code: "effect-uncertain", message }] }, tx.state) };
+  return { res: render(ports, verb.name, {
+    exit: 2, effects, reasons: [{ code: "effect-uncertain", message }],
+    questions: current.pending.filter(q => q.id.startsWith("leave-unrecorded-")),
+  }, tx.state) };
 }
 
 /** What recovery and shared-file reconciliation found goes into the answer, ahead of the verb's own reasons and effects. */
@@ -159,13 +162,23 @@ function addRecovery(plan: Plan, reasons: Reason[], recovered: Recovered | null)
   };
 }
 
+function uncertaintyFences(verb: Verb, input: Input, recovered: Recovered | null): boolean {
+  return !!recovered?.uncertain.length && verb.name !== "stop" &&
+    !(verb.name === "decide" && input.kind === "leave-unrecorded");
+}
+function clearUnrecordedRecovery(verb: Verb, input: Input, tx: Tx, recovered: Recovered | null): void {
+  if (verb.name !== "decide" || input.kind !== "leave-unrecorded" || !recovered) return;
+  if (tx.unresolved().some(u => u.effect === "commit" && u.id === input.target)) return;
+  recovered.uncertain = recovered.uncertain.filter(why => !why.startsWith(`commit ${input.target}:`));
+}
+
 /** Everything that happens inside the first lock: recovery, envelope, the verb's own plan, and publishing its state. */
 async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: { world: unknown; startedAt: string }): Promise<Stamped> {
   if (verb.name !== "stop") configurePolicy(ports, tx.state);
   const recovered = tx.state ? await recover(ports, tx, tx.state, { effects: verb.name !== "stop" }) : null;
   let current = recovered?.state ?? tx.state;
-  if (current && recovered?.uncertain.length && verb.name !== "stop")
-    return fencedByUncertainty(ports, verb, tx, current, recovered);
+  if (current && uncertaintyFences(verb, input, recovered))
+    return fencedByUncertainty(ports, verb, tx, current, recovered!);
   const shared = current && !["open", "stop"].includes(verb.name) ? reconcileShared(ports, current) : null;
   if (shared) current = shared.state;
   if (verb.name !== "stop") {
@@ -182,6 +195,7 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
     current = gate.current;
   }
   const plan = await verb.run(ports, current, input, { ...tx, state: current });
+  clearUnrecordedRecovery(verb, input, tx, recovered);
   addRecovery(plan, shared?.reasons ?? [], recovered);
   if (!plan.state && current !== tx.state) plan.state = current ?? undefined;
   plan.state = capabilitiesState(ports, plan.state, verb.name);

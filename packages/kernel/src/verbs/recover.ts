@@ -5,6 +5,7 @@ import { INTERRUPTED_CHECK, recoverStoppedCall } from "../core/execution-envelop
 import { recordedResults } from "../core/state.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 import { PUBLISH, SETTLE, type Outcome, type Recovery } from "./recover-effects.ts";
+import { replayUnrecorded } from "../core/commit-proof.ts";
 
 export interface Recovered { state: State; completed: string[]; uncertain: string[] }
 
@@ -53,7 +54,12 @@ export async function recover(ports: Ports, tx: Tx, state: State, options: { eff
   await settleEffects(r);
   for (const res of recordedResults(tx.recent())) {
     const out = res.outcome as Outcome | undefined;
-    if (out?.completed && Object.hasOwn(PUBLISH, res.effect)) PUBLISH[res.effect]?.(r, res.op, out);
+    if (res.effect === "commit" && out?.disposition === "leave-unrecorded") {
+      const next = replayUnrecorded(r.state, res.id, res.op, out);
+      if (!next) r.uncertain.push(`commit ${res.id}: terminal disposition does not match its exact work and recovery question`);
+      else r.state = next;
+    }
+    if (out?.completed && Object.hasOwn(PUBLISH, res.effect)) await PUBLISH[res.effect]?.(r, res.op, out);
   }
   return { state: r.state, completed: r.completed, uncertain: r.uncertain };
 }

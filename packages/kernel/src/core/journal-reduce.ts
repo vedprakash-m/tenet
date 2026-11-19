@@ -31,10 +31,14 @@ export function reduceJournal(
   const done = new Set(rows.filter((r) => r.rec.kind === "result").map((r) => key(r.rec)));
   const pairKind = (k: string) => k === "intent" || k === "result";
   const recentPair = new Set(rows.filter((r) => (r.ms >= cutoff || spared.has(r)) && pairKind(r.rec.kind)).map((r) => key(r.rec)));
+  const witnesses = new Set(rows.filter(({ rec }) => rec.effect === "commit" &&
+    (rec.op?.version !== undefined || rec.outcome?.proof || rec.outcome?.disposition === "leave-unrecorded")).map(r => key(r.rec)));
   const months: Months = {};
   let removed = 0;
   const kept = rows.filter((row) => {
     const { rec, ms } = row;
+    // Keep the witness and every leave-unrecorded disposition; an orphan private proof is never authority.
+    if (pairKind(rec.kind) && witnesses.has(key(rec))) return true;
     if (spared.has(row)) return true;
     const m = String(rec.t).slice(0, 7);
     const drop = rec.kind === "call" ? ms < cutoff

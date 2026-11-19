@@ -49,6 +49,10 @@ import { IndexSyncRecord } from "../core/schemas.ts";
 import { ProcessRunner } from "./runner.ts";
 import { isAlive, procStart } from "./proc.ts";
 import { systemClock } from "./system.ts";
+import { exactWorkTrailer } from "../core/commit-proof.ts";
+import type { CommitIntentV1, CommitProofV1, ReflogCursorV1 } from "../core/commit-proof.ts";
+import { stableStringify } from "../core/ids.ts";
+import { reflogCursor } from "./git-attribution.ts";
 
 const MAX_UNTRACKED = 20_000;
 const MAX_SNAPSHOT_BYTES = 20 * 1024 * 1024;
@@ -736,7 +740,7 @@ export class GitCli {
     if ((await this.tryOut(["show", "-s", "--format=%P", head])) !== (parent ?? "")) {
       return { completed: false };
     }
-    if (label && !(await this.tryOut(["show", "-s", "--format=%B", head]))?.split("\n").includes(`Tenet-Work: ${label}`))
+    if (label && !exactWorkTrailer(await this.ok(["show", "-s", "--format=%B", head]), label))
       return { completed: false };
     const tree = await this.tryOut(["rev-parse", `${head}^{tree}`]);
     if (tree === expectedTree) return { completed: true, commit: head };
@@ -748,6 +752,48 @@ export class GitCli {
       .filter(Boolean)
       .every((p) => tenetPaths.includes(p));
     return only ? { completed: true, commit: head } : { completed: false };
+  }
+
+  private async cursor(ref: string): Promise<ReflogCursorV1> {
+    const path = await this.tryOut(["rev-parse", "--path-format=absolute", "--git-path", `logs/${ref}`]);
+    return path ? reflogCursor(path, ref) : { available: false, reason: "reflog path unavailable" };
+  }
+  async commitContext(): ReturnType<Git["commitContext"]> {
+    const ref = await this.tryOut(["symbolic-ref", "-q", "HEAD"]);
+    if (!ref?.startsWith("refs/heads/")) throw new KernelError("repo-state-readonly", "detached commit is not admitted");
+    const refs = await this.refCommit(ref) ? [ref] : [ref, "HEAD"];
+    return { ref, cursors: await Promise.all(refs.map(r => this.cursor(r))) };
+  }
+  async observeCommit(intent: Pick<CommitIntentV1, "ref" | "parent">): ReturnType<Git["observeCommit"]> {
+    const commit = await this.refCommit(intent.ref);
+    const refs = intent.parent ? [intent.ref] : [intent.ref, "HEAD"];
+    const cursors = await Promise.all(refs.map(ref => this.cursor(ref)));
+    return { commit, cursors, stable: commit === await this.refCommit(intent.ref) };
+  }
+  async commitUnmoved(intent: Pick<CommitIntentV1, "ref" | "parent" | "cursors">): Promise<boolean> {
+    const refs = intent.parent ? [intent.ref] : [intent.ref, "HEAD"];
+    if (intent.cursors.length !== refs.length ||
+      intent.cursors.some((c, i) => !c.available || c.ref !== refs[i])) return false;
+    for (let read = 0; read < 2; read++) {
+      const now = await this.observeCommit(intent);
+      if (!now.stable || now.commit !== intent.parent || stableStringify(now.cursors) !== stableStringify(intent.cursors))
+        return false;
+    }
+    return await this.refCommit(intent.ref) === intent.parent;
+  }
+  async verifyCommit(proof: CommitProofV1): Promise<boolean> {
+    const object = await this.run(["cat-file", "commit", proof.commit]);
+    if (object.code !== 0) return false;
+    const raw = object.stdout;
+    const boundary = raw.indexOf("\n\n"), headers = raw.slice(0, boundary).split("\n");
+    const parents = headers.filter(line => line.startsWith("parent ")).map(line => line.slice(7));
+    if (boundary < 0 || stableStringify(parents) !== stableStringify(proof.parents) ||
+      !exactWorkTrailer(raw.slice(boundary + 2), proof.label) || headers[0] !== `tree ${proof.observedTree}`) return false;
+    const diff = await this.tryOut(["diff-tree", "-r", "--name-only", "-z", proof.expectedTree, proof.observedTree]);
+    if (diff === null || diff.split("\0").filter(Boolean).some(p => !proof.paths.includes(p) && !proof.foreign.includes(p)))
+      return false;
+    const changed = await this.tryOut(["diff-tree", "--root", "--no-commit-id", "-r", "--name-only", "-z", proof.commit]);
+    return changed !== null && changed.split("\0").filter(Boolean).every(p => proof.paths.includes(p) || proof.foreign.includes(p));
   }
 
   /** Exact index sync under Git's own lock (GIT-03): only entries still equal to the old HEAD's are advanced. */
@@ -873,10 +919,14 @@ export class GitCli {
     return (await this.tryOut(["rev-parse", "--is-shallow-repository"])) === "true";
   }
 
-  async workCommits(label: string): Promise<{ commits: string[]; shallow: boolean; merges: boolean }> {
+  async workCommits(label: string, ref = "HEAD"): Promise<{ commits: string[]; shallow: boolean; merges: boolean }> {
     const shallow = await this.shallow();
-    const all = (await this.tryOut(["log", "--format=%H", "-E", `--grep=^Tenet-Work: ${label}$`, "HEAD"])) ?? "";
-    const commits = all.split("\n").filter(Boolean);
+    const all = await this.run(["log", "--format=%H", "--fixed-strings", `--grep=Tenet-Work`, ref, "--"]);
+    if (all.code !== 0) throw new KernelError("undo-conflict", "the discovery history cannot be read completely");
+    const commits: string[] = [];
+    for (const oid of all.stdout.trim().split("\n").filter(Boolean)) {
+      if (exactWorkTrailer(await this.ok(["show", "-s", "--format=%B", oid]), label)) commits.push(oid);
+    }
     const merges = (await Promise.all(commits.map((c) => this.tryOut(["rev-list", "--parents", "-n", "1", c])))).some(
       (l) => (l ?? "").split(" ").length > 2,
     );
@@ -1083,9 +1133,9 @@ export class GitCli {
     return this.tryOut(["rev-parse", "-q", "--verify", `${commit}^`]);
   }
 
-  async ancestors(commits: readonly string[]): Promise<Set<string>> {
+  async ancestors(commits: readonly string[], target = "HEAD"): Promise<Set<string>> {
     const out = new Set<string>();
-    for (const c of new Set(commits)) if ((await this.run(["merge-base", "--is-ancestor", c, "HEAD"])).code === 0) out.add(c);
+    for (const c of new Set(commits)) if ((await this.run(["merge-base", "--is-ancestor", c, target])).code === 0) out.add(c);
     return out;
   }
 

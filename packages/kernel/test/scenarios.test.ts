@@ -698,6 +698,14 @@ describe("injected failure 3: a crash anywhere in the commit effect (intent, act
     assert.equal(Number(p.git("rev-list", "--count", "HEAD")), before + (landed ? 1 : 0), `${point}: the commit ${landed ? "landed" : "had not run"}`);
 
     const f = await finishFixture(p, { h, subject: "greet" });
+    if (point === "after-act" || point === "after-proof") {
+      assert.equal(f.exit, 2, JSON.stringify(f));
+      assert.ok(f.reasons.some(r => r.code === "effect-uncertain"));
+      assert.equal(Number(p.git("rev-list", "--count", "HEAD")), before + 1);
+      assert.deepEqual(Object.values(p.ports().store.read()!.state.work)[0]!.git.commits, []);
+      assert.deepEqual(p.ports().store.commitProofs(), [], "an orphan private proof is not attribution");
+      return { f, p };
+    }
     assert.equal(f.exit, 0, `${point}: ${JSON.stringify(f)}`);
     assert.equal(Number(p.git("rev-list", "--count", "HEAD")), before + 1, `${point}: exactly one commit, never none and never two`);
     assert.equal(d(f).endpoint, "checked-local", `${point}: ${JSON.stringify(f.reasons)}`);
@@ -711,16 +719,19 @@ describe("injected failure 3: a crash anywhere in the commit effect (intent, act
   it("before the intent is written: nothing happened, the rerun commits once", async () => { await crashAt("before-intent", false); });
   it("after the intent, before the commit: reconciled as not performed, the rerun commits once", async () => {
     const { f } = await crashAt("before-act", false);
-    assert.ok(f.effects?.completed.some((e) => /did not happen/.test(e)), JSON.stringify(f.effects));
+    assert.ok(f.effects?.completed.some((e) => /not performed/.test(e)), JSON.stringify(f.effects));
   });
-  it("after the commit, before its result record: reconciled from the postcondition, no duplicate [CON-03]", async () => {
+  it("after the commit, before its result record: remains unowned and uncertain, no duplicate [CON-03]", async () => {
     const { f, p } = await crashAt("after-act", true);
-    assert.ok(f.effects?.completed.some((e) => /had landed/.test(e)), JSON.stringify(f.effects));
-    assert.ok(p.ports().store.readLog().some((e) => e.kind === "result" && e.effect === "commit"));
+    assert.ok(f.effects?.uncertain.length);
+    assert.equal(p.ports().store.readLog().some((e) => e.kind === "result" && e.effect === "commit"), false);
+  });
+  it("after the private proof, before its result: the orphan never becomes ownership [CON-12]", async () => {
+    await crashAt("after-proof", true);
   });
   it("after the result record, before the revision is published: the logged result is applied to state", async () => {
     const { f } = await crashAt("after-result", true);
-    assert.ok(f.effects?.completed.some((e) => /recorded as done/.test(e)), JSON.stringify(f.effects));
+    assert.ok(f.effects?.completed.some((e) => /durable result/.test(e)), JSON.stringify(f.effects));
   });
 });
 
