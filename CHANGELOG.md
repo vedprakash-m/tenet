@@ -24,6 +24,9 @@
   object spread omitted adapter prototype methods. Bound its policy read
   and exclusion configuration to the real adapter; the unchanged required
   Windows recovery population and verifier now pass all 11 leaves.
+- A further red-first permitted-recovery control found that the per-path
+  accumulator lost a literal `__proto__` filename. Null-prototype hash maps
+  preserve exact path keys; all 15 protected recovery controls pass.
 - Schema-3 GitIndexIdentity/provider integration and native-host/physical-volume
   qualification remain held or unobserved, not complete.
 
