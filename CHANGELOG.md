@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-19 — Require durable commit attribution
+
+- Added private `CommitProofV1` records paired with the commit effect result before publication, without changing the State schema. Legacy results still replay with their observed foreign-path attention, but never acquire ownership proof.
+- Intent-only commit recovery now requires two complete unchanged named-ref/reflog observations to report not-performed. Otherwise it remains uncertain. The explicit `leave-unrecorded` decision clears only the intent, retains recovery history, preserves Git and grants no undo authority.
+- Undo preview and confirmation require the same exact proof and complete selected history, including integrated merge-side history and same-label candidates. Production undo remains disabled pending its separate safety work.
+- Changed the Git/Store adapters, attribution contracts, commit/recovery/undo wiring and focused tests. Added exact-trailer/literal-label, bounded-ref-log, private-proof, legacy replay, crash-prefix, terminal-decision and integrated-ownership regressions. Supported-POSIX validation and feature UAT are pending; Windows observations do not qualify them.
+
 ## 2026-11-18 — Reduce CI runtime without dropping required evidence
 
 - Reworked untrusted validation into preflight, source, bundle/UAT, Windows and aggregate lanes. Exact `main` pushes and pull requests now run a structured `Tenet validation` result; feature-branch pushes do not rerun the full graph. The complete Node 22.12 UAT remains required on supported POSIX, while Node 24 uses an extracted-payload smoke.
