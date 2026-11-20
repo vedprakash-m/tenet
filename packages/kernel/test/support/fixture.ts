@@ -1,6 +1,7 @@
 // A throwaway Git project wired to the real kernel, so tests drive the same pipeline the CLI does.
 import { spawn } from "node:child_process";
-import { readdirSync, symlinkSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { KernelResponse } from "../../src/core/schemas.ts";
 import { handleOf, runVerb } from "../../src/pipeline.ts";
@@ -163,8 +164,40 @@ export const isAlive = (pid: number): boolean => { try { process.kill(pid, 0); r
 
 const observedRunDirectories = new WeakMap<Project, string>();
 
+function publishedRunningCheck(p: Project): { runDir: string; pid: number } | undefined {
+  const state = p.ports().store.read()?.state;
+  if (!state) return undefined;
+  const base = join(tmpdir(), `tenet-${state.workspaceId}`);
+  let entries: string[];
+  try { entries = readdirSync(base); }
+  catch { return undefined; }
+  const candidates = entries
+    .filter((entry) => entry.startsWith("run-"))
+    .map((entry) => {
+      const runDir = join(base, entry);
+      try {
+        const artifact = join(runDir, "run.json");
+        const record = JSON.parse(readFileSync(artifact, "utf8"));
+        return typeof record.pid === "number" && record.procStart
+          ? { runDir, pid: record.pid as number, at: statSync(artifact).mtimeMs }
+          : undefined;
+      } catch {
+        return undefined;
+      }
+    })
+    .filter((candidate): candidate is { runDir: string; pid: number; at: number } => !!candidate)
+    .sort((a, b) => b.at - a.at);
+  const candidate = candidates[0];
+  return candidate ? { runDir: candidate.runDir, pid: candidate.pid } : undefined;
+}
+
 /** The run directory of the check currently recorded in the state document, once its process has started. */
 export async function runningCheck(p: Project): Promise<{ runDir: string; pid: number } | undefined> {
+  const published = publishedRunningCheck(p);
+  if (published) {
+    observedRunDirectories.delete(p);
+    return published;
+  }
   let runDir = observedRunDirectories.get(p);
   if (!runDir) {
     try {
