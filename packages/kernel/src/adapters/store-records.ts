@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { KernelError } from "../core/errors.ts";
+import { sha256 } from "../core/ids.ts";
 import type { LogEntry } from "../ports/types.ts";
-import { parseRecord } from "./private-record-fs.ts";
+import { parseRecord, readRecord } from "./private-record-fs.ts";
 
 const LogBase = z.object({ t: z.string().min(1) });
 const LogRecord = z.discriminatedUnion("kind", [
@@ -30,9 +31,23 @@ export const CompactionPending = z.strictObject({
   inputHash: z.string(),
   inputIdentity: z.string(),
   outputHash: z.string(),
+  output: z.string(),
+  removed: z.number().int().positive(),
   summary: SummaryRecord,
 });
 export type CompactionPendingRecord = z.infer<typeof CompactionPending>;
+
+export function readCompactionPending(path: string): CompactionPendingRecord | null {
+  const text = readRecord(path);
+  if (text === null) return null;
+  const pending = parsePrivate(
+    CompactionPending, text, "the pending compaction is damaged; the journal was left untouched",
+  );
+  if (sha256(pending.output) !== pending.outputHash) {
+    throw new KernelError("storage-accounting-unknown", "the pending compaction output is damaged");
+  }
+  return pending;
+}
 
 export function parsePrivate<T>(schema: z.ZodType<T>, text: string, message: string): T {
   try {

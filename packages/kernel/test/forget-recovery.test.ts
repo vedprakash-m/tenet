@@ -176,7 +176,8 @@ describe("forget refuses an incomplete packet purge [CON-10, SEC-06]", () => {
         assert.notEqual(refused.exit, 0, "an unverified purge cannot acknowledge forgetting");
         assert.equal(state(p).lessons.some(l => l.id === id), true);
         assert.deepEqual(readFileSync(join(p.root, ".tenet/state")), before);
-        assert.deepEqual(effects(p).map(x => x.kind), ["intent"]);
+        assert.deepEqual(effects(p).map(x => x.kind), failure === "unreadable-directory" ? [] : ["intent"]);
+        if (failure === "unreadable-directory") assert.equal(refused.reasons[0]?.code, "storage-accounting-unknown");
         if (failure !== "unreadable-directory") assert.equal(existsSync(packet), true);
       } finally {
         chmodSync(manifests, 0o700);
@@ -185,6 +186,16 @@ describe("forget refuses an incomplete packet purge [CON-10, SEC-06]", () => {
       assert.equal(existsSync(packet), true, "packet still exists after restoring directory access");
       const done = await p.call("decide", { h, kind: "config", target: "style", propose: { value: "concise" } });
       assert.equal(done.exit, 0, JSON.stringify(done));
+      if (failure === "unreadable-directory") {
+        assert.equal(existsSync(packet), true, "unadmitted forgetting must not recover as an effect");
+        assert.equal(state(p).lessons.some(l => l.id === id), true);
+        assert.deepEqual(effects(p), []);
+        const retried = await p.call("decide", input);
+        assert.equal(retried.exit, 0, JSON.stringify(retried));
+        absent(p, base); revisions(p, retried);
+        assert.deepEqual(effects(p).map(x => x.kind), ["intent", "result"]);
+        return;
+      }
       absent(p, base); revisions(p, done);
       assert.ok(done.effects?.completed.includes("an interrupted forget was finished"));
       assert.deepEqual(effects(p).map(x => x.kind), ["intent", "result"]);
@@ -207,13 +218,18 @@ describe("forget checks the owned temp root [CON-10]", () => {
       const r = await p.call("decide", input);
       assert.notEqual(r.exit, 0, "failure to inspect the temp root is not proof of absence");
       assert.ok(state(p).lessons.some(l => l.id === input.target));
-      assert.deepEqual(effects(p).map(x => x.kind), ["intent"]);
+      assert.equal(r.reasons[0]?.code, "storage-accounting-unknown");
+      assert.deepEqual(effects(p), []);
     } finally {
       chmodSync(parent, 0o700);
       if (previous === undefined) delete process.env.TMPDIR; else process.env.TMPDIR = previous;
       renameSync(moved, base);
     }
     const done = await p.call("decide", { h, kind: "config", target: "style", propose: { value: "concise" } });
-    assert.equal(done.exit, 0, JSON.stringify(done)); absent(p, base); revisions(p, done);
+    assert.equal(done.exit, 0, JSON.stringify(done));
+    assert.ok(state(p).lessons.some(l => l.id === input.target));
+    assert.deepEqual(effects(p), []);
+    const retried = await p.call("decide", input);
+    assert.equal(retried.exit, 0, JSON.stringify(retried)); absent(p, base); revisions(p, retried);
   });
 });

@@ -359,9 +359,9 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
   const final = !plan.job;
   const draft = prepareStamp(ports, verb, input, held.world, tx, plan.state, plan.resp, final, held.startedAt);
   tx.reservePublish?.(draft.next, draft.callBytes + CLEANUP_RESPONSE_RESERVE);
-  addStorageReport(plan, enforceStorage(ports, verb, input, tx, stateAfterPlan(plan, current), true));
   const prepared = plan.job && ownerOf(plan.state, plan.job.id)?.session.inCall;
   if (prepared?.runDir) ports.store.writeArtifact(prepared.runDir, "run.json", JSON.stringify({ prepared: true }));
+  addStorageReport(plan, enforceStorage(ports, verb, input, tx, stateAfterPlan(plan, current), true));
   // A job's provisional response is never returned: only the finalized one leaves the process.
   return {
     res: publishStamp(

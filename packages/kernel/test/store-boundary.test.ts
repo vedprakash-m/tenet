@@ -27,7 +27,12 @@ describe("automatic temp cleanup boundaries", () => {
     if (process.platform === "win32") store.self = () => ({ pid: process.pid, procStart: "filesystem-fixture" });
     const base = join(store.tempDir("run-active"), "..");
     const zero = new FsStore(root, systemClock, systemRandom, { runFileCapBytes: 0 });
-    return { store, zero, base };
+    const limited = new FsStore(root, systemClock, systemRandom, { runFileCapBytes: 4 });
+    if (process.platform === "win32") {
+      zero.self = store.self;
+      limited.self = store.self;
+    }
+    return { store, zero, limited, base };
   };
 
   for (const group of ["manifests", "review"]) {
@@ -49,7 +54,7 @@ describe("automatic temp cleanup boundaries", () => {
   }
 
   it("still evicts owned artifacts while preserving live run and reservation paths [CON-04]", () => {
-    const { store, zero, base } = fixture();
+    const { store, zero, limited, base } = fixture();
     try {
       const active = join(base, "run-active");
       const expired = store.tempDir("run-active-expired"), manifests = store.tempDir("manifests");
@@ -57,7 +62,12 @@ describe("automatic temp cleanup boundaries", () => {
       const oldPacket = store.writeArtifact(manifests, "expired.json", "{}");
       writeFileSync(join(active, "run.json"), "{}");
       writeFileSync(join(expired, "report.json"), "{}");
-      const result = zero.evict([join(active, "run.json"), packet]);
+      const keep = [join(active, "run.json"), packet];
+      const refused = zero.evict(keep);
+      assert.equal(refused.refusal?.code, "storage-run-cap-full");
+      assert.equal(existsSync(expired), true, "a refusal must not partially remove eligible bytes");
+      assert.equal(readFileSync(oldPacket, "utf8"), "{}");
+      const result = limited.evict(keep);
       assert.equal(existsSync(expired), false);
       assert.equal(existsSync(oldPacket), false);
       assert.equal(readFileSync(join(active, "run.json"), "utf8"), "{}");
@@ -107,7 +117,7 @@ describe("private store boundaries", () => {
     const root = fresh(), store = await initState(root);
     await store.transaction("test", async tx => tx.publish(tx.state!));
     const path = join(root, ".tenet/state");
-    const future = JSON.stringify({ ...JSON.parse(readFileSync(path, "utf8")), schema: 2 });
+    const future = JSON.stringify({ ...JSON.parse(readFileSync(path, "utf8")), schema: 3 });
     const oversized = Buffer.from(future + " ".repeat(50 * 1024 * 1024));
     writeFileSync(path, oversized);
     const unsupported = (error: unknown) => error instanceof KernelError && error.reasons[0]?.code === "unsupported-record";
@@ -124,7 +134,7 @@ describe("private store boundaries", () => {
     const root = fresh(), store = await initState(root);
     await store.transaction("test", async tx => tx.publish(tx.state!));
     const path = join(root, ".tenet/state");
-    const future = JSON.stringify({ ...JSON.parse(readFileSync(path, "utf8")), schema: 2 });
+    const future = JSON.stringify({ ...JSON.parse(readFileSync(path, "utf8")), schema: 3 });
     writeFileSync(path, future);
     const script = `
       import fs from "node:fs";
@@ -199,7 +209,8 @@ describe("private store boundaries", () => {
           process.env.TMPDIR = root;
           try {
             const artifactDir = store.tempDir("run-expired");
-            const artifact = store.writeArtifact(artifactDir, "packet.json", "private-admission-canary");
+            const artifact = join(artifactDir, "packet.json");
+            writeFileSync(artifact, "private-admission-canary");
             writeFileSync(join(root, ".tenet/state.prev"), readFileSync(join(root, ".tenet/state")));
             writeFileSync(join(root, ".tenet/log"), '{"t":"t","kind":"intent","effect":"commit","id":"seed","op":{}}\n{"kind":');
             for (const name of ["lock", "lock.break"]) writeFileSync(join(root, ".tenet", name),
@@ -372,7 +383,7 @@ describe("private store boundaries", () => {
     await assert.rejects(store.transaction("test", async tx => {
       tx.call({ verb: "inspect", exit: 0, revision: 1, content });
     }), /unsupported|bound|large|storage/i);
-    assert.equal(existsSync(path), false);
+    assert.equal(readFileSync(path, "utf8"), "");
     assert.equal(store.read()!.state.revision, 1);
   });
   it("refuses oversized artifact bytes before creating or truncating a private leaf [CON-04, SEC-06]", async () => {
@@ -557,9 +568,10 @@ describe("private store boundaries", () => {
     mkdirSync(human);
     writeFileSync(join(human, "notes.txt"), "preserve human work");
     utimesSync(human, 1, 1);
+    rmSync(base, { recursive: true, force: true });
     symlinkSync(outside, base);
     try {
-      assert.equal(store.sweepTemp(1000, []), 0);
+      assert.throws(() => store.sweepTemp(1000, []), /link|directory/);
       assert.equal(readFileSync(join(human, "notes.txt"), "utf8"), "preserve human work");
     } finally { rmSync(base, { force: true }); }
   });
@@ -572,7 +584,7 @@ describe("private store boundaries", () => {
       utimesSync(human, 1, 1);
       symlinkSync(outside, join(base, group));
       try {
-        assert.equal(store.sweepTemp(1000, []), 0);
+        assert.throws(() => store.sweepTemp(1000, []), /link|directory/);
         assert.equal(readFileSync(human, "utf8"), "preserve human work");
       } finally { rmSync(base, { recursive: true, force: true }); }
     }

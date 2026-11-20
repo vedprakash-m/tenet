@@ -3,6 +3,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { versionDrift, kernelLine, schemaStatus } from "../src/core/versions.ts";
+import { SCHEMA_VERSION } from "../src/core/schemas.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { cleanup } from "./helpers.ts";
@@ -87,7 +88,7 @@ describe("a pinned contract pauses when Tenet changes [LFC-03]", () => {
   it("records kernel, schema and adapter on a new contract", async () => {
     const p = fresh();
     await open(p);
-    assert.deepEqual(work(p).pinned, { tenet: "0.1.0-m0", schema: 1, adapter: p.ports().stack.adapterVersion() });
+    assert.deepEqual(work(p).pinned, { tenet: "0.1.0-m0", schema: SCHEMA_VERSION, adapter: p.ports().stack.adapterVersion() });
   });
 
   it("a changed adapter pauses the next call with one question; inspect and stop still work", async () => {

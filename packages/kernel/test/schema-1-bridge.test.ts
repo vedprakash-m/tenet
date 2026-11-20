@@ -11,7 +11,9 @@ import { emptyState } from "../src/core/state.ts";
 import { Terminal, matchTerminal } from "../src/core/migration-terminal.ts";
 import { FsStore } from "../src/adapters/store-fs.ts";
 import { systemClock, systemRandom } from "../src/adapters/system.ts";
+import { versionDrift } from "../src/core/versions.ts";
 import { cleanup, NO_POSIX_PROCESSES, tmp } from "./helpers.ts";
+import { contractFixture } from "./support/fixture.ts";
 
 const roots: string[] = [], temps: string[] = [];
 after(() => { roots.forEach(cleanup); temps.forEach(path => rmSync(path, { recursive: true, force: true })); });
@@ -110,6 +112,39 @@ describe("schema-1 rollback bridge [LFC-04, CON-05]", () => {
       assert.throws(() => store.read(), unsupported);
       rmSync(join(dir, fence));
     }
+  });
+  it("preserves schema-1 contract pins and pending questions during read projection [LFC-03, P91]", () => {
+    const { dir, store } = fixture();
+    const raw = JSON.parse(readFileSync(join(dir, "state"), "utf8"));
+    const work = contractFixture({ pinned: { tenet: "test", schema: 1, adapter: "test" } });
+    const pending = {
+      id: "dirty-overlap", header: "Your edits", question: "Keep existing edits?",
+      channel: "chat", bind: { factsHash: "unchanged" },
+    };
+    writeFileSync(join(dir, "state"), JSON.stringify({
+      ...raw, work: { [work.id]: work }, pending: [pending],
+    }));
+    const before = snapshot(dir);
+    const projected = store.read()!.state;
+    assert.deepEqual(projected.work[work.id]!.pinned, work.pinned);
+    assert.deepEqual(projected.pending, [pending]);
+    assert.deepEqual(versionDrift(projected.work[work.id]!.pinned, {
+      tenet: "test", schema: 2, adapter: "test",
+    }).map((drift) => drift.field), ["schema"]);
+    assert.deepEqual(snapshot(dir), before);
+  });
+  it("admits interrupted marker-1/state-2 publication without dropping retained protection [CON-05, P91]", () => {
+    const { dir, base, store } = fixture();
+    const raw = JSON.parse(readFileSync(join(dir, "state"), "utf8"));
+    const retention = {
+      legacyTemp: { path: base, identity: "absent", exists: false, at: systemClock.now(), pending: true },
+    };
+    writeFileSync(join(dir, "state"), JSON.stringify({
+      ...raw, schema: 2, project: { ...raw.project, retention },
+    }));
+    const before = snapshot(dir);
+    assert.deepEqual(store.read()!.state.project.retention, retention);
+    assert.deepEqual(snapshot(dir), before);
   });
   for (const name of ["state", "state.prev"]) {
     for (const schema of [3, null, "1", undefined]) {

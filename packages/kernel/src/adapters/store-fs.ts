@@ -13,31 +13,17 @@ import { addMonths, reduceJournal } from "../core/journal-reduce.ts";
 import type { Months } from "../core/journal-reduce.ts";
 import { recoveredState } from "../core/state.ts";
 import { schemaStatus } from "../core/versions.ts";
+import { releasedStorage, reservedStorage } from "../core/storage-reservation.ts";
 import type { Clock, EvictReport, Footprint, LogEntry, Quarantined, Store, Tx } from "../ports/types.ts";
 import { isAlive, procStart } from "./proc.ts";
 import { admissionRecord, MAX_RECORD, parseRecord, readJson, readRecord, readTerminal } from "./private-record-fs.ts";
 import { quarantine, QUARANTINE_JOURNAL } from "./quarantine-fs.ts";
-import { CompactionPending, parsePrivate, readJournal, SummaryRecord } from "./store-records.ts";
-import type { CompactionPendingRecord } from "./store-records.ts";
+import { parsePrivate, readCompactionPending, readJournal, SummaryRecord } from "./store-records.ts";
+import { newestMtime, recentWithStaged, stagedRunGrowth } from "./store-staging.ts";
+import type { LockInfo, StagedWrite, WriteContext } from "./store-staging.ts";
+import type { MigrationGuard } from "./marker-rollback.ts";
 
 interface Marker { workspaceId: string; tag: string; nonce: string; schema: number; dev: number; ino: number }
-interface LockInfo { pid: number; procStart: string; nonce: string; verb: string }
-type StagedWrite =
-  | { kind: "state"; value: State }
-  | { kind: "log"; value: LogEntry }
-  | { kind: "blob"; hash: string; content: string }
-  | { kind: "directory"; path: string }
-  | { kind: "artifact"; path: string; content: string }
-  | { kind: "purge"; paths: string[] };
-interface WriteContext {
-  lock: LockInfo;
-  active: boolean;
-  creationIdentity?: string;
-  reserveAllowed?: boolean;
-  committing?: boolean;
-  transactional?: boolean;
-  staged: StagedWrite[];
-}
 interface Journal { text: string; entries: LogEntry[]; keep: number }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -57,24 +43,10 @@ function writeSynced(path: string, data: string) {
   } finally { closeSync(fd); }
 }
 
-/** The latest modification time anywhere under a folder, so a folder with recently used packets is never called stale. */
-function newestMtime(path: string): number {
-  let newest = 0;
-  const walk = (dir: string) => {
-    for (const n of readdirSync(dir)) {
-      const st = lstatSync(join(dir, n));
-      newest = Math.max(newest, st.mtimeMs);
-      if (st.isDirectory()) walk(join(dir, n));
-    }
-  };
-  try { newest = lstatSync(path).mtimeMs; walk(path); } catch { /* unreadable: the folder's own time stands */ }
-  return newest;
-}
-
 /** Storage limits (PRD §4.4.3, TS §7.6); tests lower them, and `afterSummaries` is a crash seam for the reduction. */
 export interface StoreOptions {
   lockWaitMs?: number; compactAtBytes?: number; ceilingBytes?: number; reserveBytes?: number; runFileCapBytes?: number;
-  journalDays?: number; afterSummaries?: () => void;
+  journalDays?: number; afterSummaries?: () => void; migrationGuard?: MigrationGuard;
 }
 
 export class FsStore implements Store {
@@ -114,6 +86,9 @@ export class FsStore implements Store {
   }
 
   exists(): boolean { return existsSync(this.p("marker")); }
+  authorizeMutation(verb: string, input: unknown): void {
+    this.opts.migrationGuard?.authorize(verb, input);
+  }
   history(): "absent" | "complete" | "uncertain" {
     this.admit();
     if (!this.exists()) return "absent";
@@ -128,16 +103,19 @@ export class FsStore implements Store {
   }
 
   admit(): void {
+    const blocked = () => { throw new KernelError("unsupported-record", "owned state needs a compatible kernel; nothing was changed"); };
+    if (this.opts.migrationGuard) this.opts.migrationGuard.admit();
+    else {
+      const terminal = readTerminal(this.p("migration-terminal.json"));
+      if (terminal && terminal.outcome !== "rolled-back") blocked();
+    }
     const marker = admissionRecord(this.p("marker"), true) as Marker | null;
     const here = lstatSync(this.dir, { throwIfNoEntry: false });
     if (!marker || !here || marker.dev !== here.dev || marker.ino !== here.ino) return;
-    const blocked = () => { throw new KernelError("unsupported-record", "owned state needs a compatible kernel; nothing was changed"); };
     if (!(LEGACY_SCHEMA_VERSIONS as readonly number[]).includes(marker.schema) && marker.schema !== SCHEMA_VERSION) blocked();
     for (const name of ["migration-transition.json", "migration-privacy.json"]) {
       if (lstatSync(this.p(name), { throwIfNoEntry: false })) blocked();
     }
-    const terminal = readTerminal(this.p("migration-terminal.json"));
-    if (terminal && terminal.outcome !== "rolled-back") blocked();
     for (const name of ["state", "state.prev"]) {
       const id = this.fileId(name, true);
       if (id && this.admitted.get(name) === id) continue;
@@ -175,6 +153,7 @@ export class FsStore implements Store {
 
   private write<T>(fn: () => T): T {
     this.admit();
+    this.opts.migrationGuard?.assert();
     const active = this.writes.getStore();
     if (active) return this.inWrite(active, fn);
     const here = lstatSync(this.dir, { throwIfNoEntry: false });
@@ -243,7 +222,6 @@ export class FsStore implements Store {
     throw new KernelError("unsupported-record", "the state document cannot be read and no previous revision exists");
   }
 
-  // ------------------------------------------------------------ lock
   private async acquire(verb: string): Promise<LockInfo> {
     this.admit();
     this.p("marker"); // refuse even a dangling directory link before creating anything
@@ -357,23 +335,25 @@ export class FsStore implements Store {
     return h;
   }
 
-  // ------------------------------------------------------------ transaction
   async transaction<T>(verb: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+    this.opts.migrationGuard?.assert();
     const directoryExisted = !!lstatSync(this.p("."), { throwIfNoEntry: false });
     const existed = this.exists();
     const me = await this.acquire(verb);
     const context: WriteContext = { lock: me, active: true, staged: [], transactional: true };
     try {
       this.admit();
+      this.opts.migrationGuard?.accept();
       const read = this.exists() ? this.read() : null;
-      const priorScope = existed ? null : this.retentionScope();
+      const priorScope = existed && !this.quarantined ? null : this.retentionScope();
       const history = read && existsSync(this.p("log")) ? "complete"
-        : existed || directoryExisted || priorScope?.exists ? "uncertain"
+        : priorScope?.exists || (!this.quarantined && (existed || directoryExisted)) ? "uncertain"
         : "newly-created";
       if (history !== "uncertain") {
         chmodSync(this.dir, 0o700);
         for (const name of ["marker", "state", "state.prev", "log"]) {
-          if (existsSync(this.p(name))) chmodSync(this.p(name), 0o600);
+          const path = this.p(name), mode = lstatSync(path, { throwIfNoEntry: false })?.mode;
+          if (mode !== undefined && (mode & 0o7777) !== 0o600) chmodSync(path, 0o600);
         }
         if (!existsSync(this.p(".gitignore"))) writeFileSync(this.p(".gitignore"), "*\n");
         this.repairLogTail();
@@ -408,7 +388,7 @@ export class FsStore implements Store {
         unresolved: () => store.unresolved(context),
         evict: (keep, apply = true) => store.inWrite(context, () => store.evictInLock(keep, apply)),
         recent: (n) => {
-          const log = store.recentWithStaged(context);
+          const log = recentWithStaged(store.readLog(), context);
           return n === undefined ? log : log.slice(-n);
         },
       };
@@ -419,6 +399,7 @@ export class FsStore implements Store {
       });
     } finally {
       context.active = false;
+      this.opts.migrationGuard?.release();
       this.release(me);
     }
   }
@@ -446,14 +427,15 @@ export class FsStore implements Store {
     if (!created.exists || created.identity === "absent") {
       throw new KernelError("state-history-unknown", "the project temp root could not be durably identified");
     }
-    context.creationIdentity = created.identity;
+    context.creationIdentity = created.identity.split(":").slice(0, 2).join(":");
+    if (!existsSync(this.p("log"))) writeSynced(this.p("log"), "");
   }
 
   private statePublication(next: State, reservedJournalBytes: number) {
     const context = this.writes.getStore();
     if (context?.creationIdentity) {
       const scope = this.retentionScope();
-      if (context.creationIdentity !== scope.identity) {
+      if (!scope.identity.startsWith(`${context.creationIdentity}:`)) {
         throw new KernelError("state-history-unknown", "the project temp root changed during first-state publication");
       }
     }
@@ -489,7 +471,7 @@ export class FsStore implements Store {
     renameSync(tmp, this.p("state"));
     fsyncDir(this.dir);
     const creationIdentity = this.writes.getStore()?.creationIdentity;
-    if (creationIdentity && this.retentionScope().identity !== creationIdentity) {
+    if (creationIdentity && !this.retentionScope().identity.startsWith(`${creationIdentity}:`)) {
       throw new KernelError("state-history-unknown",
         "the project temp root changed during state publication; a restart remains uncertain");
     }
@@ -510,7 +492,6 @@ export class FsStore implements Store {
     fsyncDir(this.dir); this.quarantined = undefined;
   }
 
-  // ------------------------------------------------------------ log
   private repairLogTail() {
     const { text, keep } = this.journal(true);
     if (keep !== text.length) writeSynced(this.p("log"), text.slice(0, keep));
@@ -572,13 +553,6 @@ export class FsStore implements Store {
       context.staged.push({ kind: "log", value: serialized });
     });
   }
-  private recentWithStaged(context: WriteContext): LogEntry[] {
-    const disk = this.readLog();
-    return [
-      ...disk,
-      ...context.staged.flatMap((entry) => entry.kind === "log" ? [entry.value] : []),
-    ];
-  }
   private assertStagedGrowth(
     context: WriteContext,
     prospectiveState?: State,
@@ -621,10 +595,10 @@ export class FsStore implements Store {
       }
       prospectiveStateValue = prospectiveState;
     }
-    const currentReserved = this.reservedStorage(this.read()?.state);
-    const prospectiveReserved = this.reservedStorage(prospectiveStateValue);
-    const stagedBytes = logBytes + blobBytes + stateBytes + checkpointBytes;
     const previous = this.read()?.state;
+    const currentReserved = reservedStorage(previous);
+    const prospectiveReserved = reservedStorage(prospectiveStateValue);
+    const stagedBytes = logBytes + blobBytes + stateBytes + checkpointBytes;
     for (const work of Object.values(previous?.work ?? {})) {
       const inCall = work.session.inCall;
       if (!inCall?.storageReservedBytes || inCall.storageBaselineBytes === undefined) continue;
@@ -637,6 +611,14 @@ export class FsStore implements Store {
           { exit: 2 });
       }
     }
+    const released = releasedStorage(previous, prospectiveStateValue);
+    const growth = logBytes + blobBytes + checkpointBytes +
+      Math.max(0, stateBytes - (previous ? Buffer.byteLength(JSON.stringify(previous), "utf8") : 0));
+    if (released && growth > released) {
+      throw new KernelError("storage-reserve-full",
+        "The external job's final state exceeds its admitted storage reservation; no result was published",
+        { exit: 2 });
+    }
     this.assertStoreGrowth(
       stagedBytes +
         Math.max(0, prospectiveReserved - currentReserved),
@@ -645,8 +627,10 @@ export class FsStore implements Store {
     );
   }
   private commitStaged(context: WriteContext) {
+    if (!context.staged.length) return;
     this.inWrite(context, () => {
       this.assertStagedGrowth(context);
+      this.assertArtifactCapacity(context);
       context.committing = true;
       try {
         const staged = [...context.staged];
@@ -669,7 +653,6 @@ export class FsStore implements Store {
     });
   }
 
-  // ------------------------------------------------------------ blobs and temp
   putBlob(content: string): string {
     return this.write(() => {
       this.marker();
@@ -744,18 +727,29 @@ export class FsStore implements Store {
     if (!start) throw new KernelError("capability-missing", "this process's start identity cannot be inspected; no transaction lock was acquired", { exit: 2 });
     return { pid: process.pid, procStart: start };
   }
+  private assertArtifactCapacity(context: WriteContext) {
+    const staged = stagedRunGrowth(context);
+    if (!staged.paths.length) return;
+    const protection = this.journalProtection(staged.paths);
+    const cap = this.capRunFiles([...protection.protectedPaths], staged.bytes);
+    if (cap.accounting !== "known") {
+      throw new KernelError("storage-accounting-unknown", "project run accounting changed before artifact publication");
+    }
+    if (cap.overCap || cap.remove.length) {
+      throw new KernelError("storage-run-cap-full",
+        "Project run files need admitted cleanup before artifact publication; no artifact was written");
+    }
+    this.assertRunScopeUnchanged(cap.scopes);
+  }
   writeArtifact(dir: string, name: string, content: string): string {
     return this.write(() => {
       const path = this.artifactPath(dir, name, false);
       const context = this.writes.getStore();
-      const stagedBytes = context?.transactional
-        ? context.staged
-          .filter((entry) => entry.kind === "artifact")
-          .reduce((total, entry) => total + Buffer.byteLength(entry.content, "utf8"), 0)
-        : 0;
+      const staged = stagedRunGrowth(context, { kind: "artifact", path, content });
+      const protection = this.journalProtection(staged.paths);
       const admission = this.capRunFiles(
-        [dir],
-        stagedBytes + Buffer.byteLength(content, "utf8"),
+        [...protection.protectedPaths],
+        staged.bytes,
       );
       if (admission.accounting !== "known") {
         throw new KernelError("storage-accounting-unknown",
@@ -798,7 +792,6 @@ export class FsStore implements Store {
     const id = this.exists() ? this.marker()!.workspaceId : "unbound";
     return join(this.tempPath(relative(join(tmpdir(), `tenet-${id}`), dir).split(sep).join("/"), create), name);
   }
-  /** Only owned run leaves under real group directories are cleanup candidates. */
   private runFiles(): string[] {
     const base = this.tempBase();
     if (!base) return [];
@@ -832,6 +825,7 @@ export class FsStore implements Store {
     return this.write(() => this.sweepTempInLock(maxAgeMs, keep));
   }
   private sweepTempInLock(maxAgeMs: number, keep: readonly string[]): number {
+    keep = [...this.journalProtection([...keep, ...stagedRunGrowth(this.writes.getStore()).paths]).protectedPaths];
     const remove: Array<{ path: string; identity: string }> = [];
     for (const path of this.runFiles()) {
       if (keep.some((k) => k === path || k.startsWith(`${path}${sep}`) || path.startsWith(`${k}${sep}`))) continue;
@@ -846,7 +840,6 @@ export class FsStore implements Store {
     for (const candidate of remove) rmSync(candidate.path, { recursive: true, force: true });
     return remove.length;
   }
-  // ------------------------------------------------------------ eviction (CON-08, specs/storage-retention.md v2)
   private replaceSynced(path: string, data: string) {
     this.admit();
     writeSynced(`${path}.tmp`, data);
@@ -873,6 +866,9 @@ export class FsStore implements Store {
     const states: State[] = [];
     const selected = this.read()?.state;
     if (selected) states.push(selected);
+    for (const entry of this.writes.getStore()?.staged ?? []) {
+      if (entry.kind === "state") states.push(entry.value);
+    }
     const previousText = readRecord(this.p("state.prev"));
     if (previousText !== null) {
       let raw: unknown;
@@ -910,7 +906,7 @@ export class FsStore implements Store {
     protection: { protectedIds: ReadonlySet<string>; protectedPaths: ReadonlySet<string> },
   ): { savings: number; transientBytes: number } {
     const text = readRecord(this.p("log"), true) ?? "";
-    const pending = this.pendingCompaction();
+    const pending = readCompactionPending(this.p("compaction.pending.json"));
     if (pending) {
       if (sha256(text) === pending.outputHash) {
         return {
@@ -921,11 +917,17 @@ export class FsStore implements Store {
       if (sha256(text) !== pending.inputHash || this.fileId("log", true) !== pending.inputIdentity) {
         throw new KernelError("storage-accounting-unknown", "the pending compaction no longer matches the journal");
       }
+      return {
+        savings: Math.max(0, Buffer.byteLength(text) - Buffer.byteLength(pending.output)),
+        transientBytes: Buffer.byteLength(JSON.stringify(pending.summary)) + Buffer.byteLength(pending.output),
+      };
     }
     if (Buffer.byteLength(text) < (this.opts.compactAtBytes ?? 5 * 1024 * 1024)) {
       return { savings: 0, transientBytes: 0 };
     }
     const reduced = this.reductionFor(text, nowMs, protection);
+    const output = reduced.text;
+    if (!reduced.removed) return { savings: 0, transientBytes: 0 };
     const summaryText = readRecord(this.p("summaries.json"));
     const prior = summaryText === null
       ? { version: 1 as const, from: "", months: {} as Months }
@@ -934,20 +936,14 @@ export class FsStore implements Store {
         summaryText,
         "the compaction summary is damaged or unsupported; the journal was left untouched",
       );
-    if (pending) {
-      return {
-        savings: Math.max(0, Buffer.byteLength(text) - Buffer.byteLength(reduced.text)),
-        transientBytes: Buffer.byteLength(JSON.stringify(pending)) +
-          Buffer.byteLength(JSON.stringify(pending.summary)) +
-          Buffer.byteLength(reduced.text),
-      };
-    }
     const provisional = {
       version: 1 as const,
       batchId: "projection00",
       inputHash: sha256(text),
       inputIdentity: this.fileId("log", true) ?? "",
-      outputHash: sha256(reduced.text),
+      outputHash: sha256(output),
+      output,
+      removed: reduced.removed,
       summary: {
         version: 1 as const,
         batchId: "projection00",
@@ -956,10 +952,10 @@ export class FsStore implements Store {
       },
     };
     return {
-      savings: Math.max(0, Buffer.byteLength(text) - Buffer.byteLength(reduced.text)),
+      savings: Math.max(0, Buffer.byteLength(text) - Buffer.byteLength(output)),
       transientBytes: Buffer.byteLength(JSON.stringify(provisional)) +
         Buffer.byteLength(JSON.stringify(provisional.summary)) +
-        Buffer.byteLength(reduced.text),
+        Buffer.byteLength(output),
     };
   }
 
@@ -969,7 +965,7 @@ export class FsStore implements Store {
   ): string | undefined {
     const text = readRecord(this.p("log"), true) ?? "";
     const pendingPath = this.p("compaction.pending.json");
-    let pending = this.pendingCompaction();
+    let pending = readCompactionPending(pendingPath);
     const inputHash = sha256(text);
     if (pending && inputHash === pending.outputHash) {
       this.replaceSynced(this.p("summaries.json"), JSON.stringify(pending.summary));
@@ -978,7 +974,6 @@ export class FsStore implements Store {
       return "Completed the interrupted journal reduction.";
     }
     if (Buffer.byteLength(text) < (this.opts.compactAtBytes ?? 5 * 1024 * 1024) && !pending) return undefined;
-    const reduced = this.reductionFor(text, nowMs, protection);
     const inputIdentity = this.fileId("log", true);
     if (!inputIdentity) {
       throw new KernelError("storage-accounting-unknown", "the journal changed before compaction; nothing was reduced");
@@ -986,9 +981,9 @@ export class FsStore implements Store {
     if (pending && (inputHash !== pending.inputHash || inputIdentity !== pending.inputIdentity)) {
       throw new KernelError("storage-accounting-unknown", "the pending compaction no longer matches the journal");
     }
-    if (!pending && !reduced.removed) return undefined;
-    const outputHash = sha256(reduced.text);
     if (!pending) {
+      const reduced = this.reductionFor(text, nowMs, protection);
+      if (!reduced.removed) return undefined;
       const summaryText = readRecord(this.p("summaries.json"));
       const prior = summaryText === null
         ? { version: 1 as const, from: "", months: {} as Months }
@@ -1002,7 +997,9 @@ export class FsStore implements Store {
         batchId: this.rand.base32(12),
         inputHash,
         inputIdentity,
-        outputHash,
+        outputHash: sha256(reduced.text),
+        output: reduced.text,
+        removed: reduced.removed,
         summary: {
           version: 1,
           batchId: this.rand.base32(12),
@@ -1013,24 +1010,13 @@ export class FsStore implements Store {
       pending.summary.batchId = pending.batchId;
       this.replaceSynced(pendingPath, JSON.stringify(pending));
     }
-    if (pending.outputHash !== outputHash) {
-      throw new KernelError("storage-accounting-unknown", "the pending compaction output changed; the journal was left untouched");
-    }
     this.replaceSynced(this.p("summaries.json"), JSON.stringify(pending.summary));
     this.opts.afterSummaries?.();
-    this.replaceSynced(this.p("log"), reduced.text);
+    this.replaceSynced(this.p("log"), pending.output);
     rmSync(pendingPath, { force: true });
     fsyncDir(this.dir);
-    return `Reduced the journal: ${reduced.removed} records older than 90 days are now monthly counts (summaries.json); `
+    return `Reduced the journal: ${pending.removed} records older than 90 days are now monthly counts (summaries.json); `
       + "unresolved effects and recent history are kept.";
-  }
-  private pendingCompaction(): CompactionPendingRecord | null {
-    const text = readRecord(this.p("compaction.pending.json"));
-    return text === null ? null : parsePrivate(
-      CompactionPending,
-      text,
-      "the pending compaction is damaged; the journal was left untouched",
-    );
   }
   private reductionFor(
     text: string,
@@ -1123,8 +1109,9 @@ export class FsStore implements Store {
     return { classes: classes.sort((a, b) => b.bytes - a.bytes), accounting };
   }
   private evictInLock(keep: readonly string[], apply = true): EvictReport {
-    const protection = this.journalProtection(keep);
-    const cap = this.capRunFiles([...protection.protectedPaths]);
+    const staged = stagedRunGrowth(this.writes.getStore());
+    const protection = this.journalProtection([...keep, ...staged.paths]);
+    const cap = this.capRunFiles([...protection.protectedPaths], staged.bytes);
     const projectedReduction = this.projectedReduction(Date.parse(this.clock.now()), protection);
     const { classes, accounting: classAccounting } = this.storeFootprint();
     const total = classes.reduce((n, c) => n + c.bytes, 0);
@@ -1276,12 +1263,6 @@ export class FsStore implements Store {
       }
     }
   }
-  private reservedStorage(state: State | undefined | null): number {
-    return Object.values(state?.work ?? {}).reduce(
-      (total, work) => total + (work.session.inCall?.storageReservedBytes ?? 0),
-      0,
-    );
-  }
   private assertStoreGrowth(additionalBytes: number, reserveAllowed: boolean, reservationCredit = 0) {
     const measured = this.measure(this.dir);
     if (measured.accounting !== "known") {
@@ -1291,7 +1272,7 @@ export class FsStore implements Store {
     }
     const logical = this.writes.getStore()?.committing
       ? 0
-      : Math.max(0, this.reservedStorage(this.read()?.state) - reservationCredit);
+      : Math.max(0, reservedStorage(this.read()?.state) - reservationCredit);
     const projected = measured.bytes + additionalBytes + logical;
     const ceiling = this.opts.ceilingBytes ?? 50 * 1024 * 1024;
     if (projected > ceiling) {

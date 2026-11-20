@@ -25,12 +25,11 @@ function checkDepth(value: unknown, depth: number): number {
 
 /** Admission must see declarations that JSON.parse discards. Each key in the text becomes one property of its object
  *  unless an earlier key of that object decodes to the same name, so the parsed value has fewer keys than the text
- *  declares exactly when some object repeats a key. Text the kernel wrote is the serialization of its parsed value,
- *  which never repeats a key, so that comparison settles the common case without scanning the text. */
+ *  declares exactly when some object repeats a key. Count declarations without reserializing unadmitted private text. */
 export function parseUniqueRecord(text: string): unknown {
   if (Buffer.byteLength(text, "utf8") > MAX_RECORD) throw new KernelError("unsupported-record", "a private record exceeds the 50 MB bound");
   const parsed: unknown = JSON.parse(text), keys = checkDepth(parsed, 0);
-  if (JSON.stringify(parsed) !== text && keys !== declaredKeys(text)) {
+  if (keys !== declaredKeys(text)) {
     throw new KernelError("unsupported-record", "a private record has duplicate keys");
   }
   return parsed;
@@ -73,10 +72,13 @@ function matchesRead(fd: number, content: Buffer, stamp: Stats): boolean {
   return offset === content.length && after.size === stamp.size && after.mtimeMs === stamp.mtimeMs && after.ctimeMs === stamp.ctimeMs;
 }
 
-export function readRecord(path: string, journal = false, corruptAsNull = false): string | null {
+export function readRecord(
+  path: string, journal = false, corruptAsNull = false, admitDescriptor?: (fd: number) => void,
+): string | null {
   let descriptor = -1;
   try {
     descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    admitDescriptor?.(descriptor);
     const info = fstatSync(descriptor);
     if (!info.isFile() || info.size > MAX_RECORD) {
       throw new KernelError("unsupported-record", "a private record is not a regular file within the 50 MB bound");

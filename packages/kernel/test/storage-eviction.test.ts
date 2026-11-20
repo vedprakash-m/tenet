@@ -1,20 +1,26 @@
 // Bounded storage (CON-08, AC-19; specs/storage-retention.md v2): journal reduction into summaries, run-file cap, ceiling.
 // Real store, real files; the clock is set per write so records can be given any age.
-import { after, describe, it } from "node:test";
+import { after, describe, it, type TestContext } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { appendFileSync, existsSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import fs, { appendFileSync, existsSync, fstatSync, lstatSync, mkdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { FsStore } from "../src/adapters/store-fs.ts";
 import { systemRandom } from "../src/adapters/system.ts";
 import { emptyState } from "../src/core/state.ts";
 import { cleanup, tmp } from "./helpers.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
+import { open } from "../src/verbs/open.ts";
+import { createPorts } from "../src/wire.ts";
 import { reclaim } from "../src/verbs/common.ts";
 import { systemClock } from "../src/adapters/system.ts";
 import { contractFixture, project } from "./support/fixture.ts";
 import type { Clock, Ports, Tx } from "../src/ports/types.ts";
+import type { State } from "../src/core/schemas.ts";
+import { KernelError } from "../src/core/errors.ts";
 
 const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
@@ -37,6 +43,254 @@ const calls = async (store: FsStore, n: number, verb = "open") => {
 };
 const evict = (store: FsStore, keep: string[] = []) => store.transaction("e", async (tx) => tx.evict(keep));
 const lines = (path: string) => readFileSync(path, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as Record<string, any>);
+
+describe("storage publication regression controls (synthetic, not durability qualification)", () => {
+  const MB = 1024 * 1024;
+  const windowsFilesystem = (t: TestContext) => {
+    if (process.platform !== "win32") return;
+    const fsync = fs.fsyncSync;
+    t.mock.method(fs, "fsyncSync", (fd: number) => {
+      if (!fstatSync(fd).isDirectory()) fsync(fd);
+    });
+    syncBuiltinESMExports();
+    t.after(() => { t.mock.restoreAll(); syncBuiltinESMExports(); });
+  };
+  const testIdentity = (store: FsStore) => {
+    if (process.platform === "win32") store.self = () => ({ pid: process.pid, procStart: "synthetic" });
+    return store;
+  };
+  const context = () => ({
+    lock: { pid: process.pid, procStart: "synthetic", nonce: "regression", verb: "test" },
+    active: true, transactional: true, staged: [] as Parameters<FsStore["assertStagedGrowth"]>[0]["staged"],
+  });
+  const fixture = (limits = {}) => {
+    const root = tmp("tenet-storage-regression-"), dir = join(root, ".tenet");
+    roots.push(root); mkdirSync(dir);
+    const { dev, ino } = lstatSync(dir), workspaceId = `ws_${systemRandom.base32(10)}`;
+    writeFileSync(join(dir, "marker"), JSON.stringify({
+      workspaceId, tag: "test", nonce: "regression", schema: 2, dev, ino,
+    }));
+    writeFileSync(join(dir, "state"), JSON.stringify(emptyState(workspaceId, "test")));
+    writeFileSync(join(dir, "log"), "");
+    writeFileSync(join(dir, "lock"), JSON.stringify(context().lock));
+    const base = join(tmpdir(), `tenet-${workspaceId}`);
+    mkdirSync(base); roots.push(base);
+    return { root, dir, base, store: new FsStore(root, clock, systemRandom, { ...LOW, ...limits }) };
+  };
+  const reserved = (state: State) => {
+    const work = contractFixture({});
+    work.session.inCall = {
+      runId: "job", verb: "check", since: clock.now(),
+      storageReservedBytes: MB,
+    };
+    return { ...state, work: { [work.id]: work }, _ext: { padding: "x".repeat(1.1 * MB) } };
+  };
+  const finalized = (state: State) => ({
+    ...state,
+    work: Object.fromEntries(Object.entries(state.work).map(([id, work]) => [
+      id, { ...work, session: { ...work.session, inCall: undefined } },
+    ])),
+  });
+  const storageRefusal = (code: string) => (error: unknown) =>
+    error instanceof KernelError && error.reasons[0]?.code === code;
+
+  it("does not reserve writes for an empty transaction above the ceiling [AC-17, P106]", async (t) => {
+    windowsFilesystem(t);
+    const { dir, root } = fixture();
+    rmSync(join(dir, "lock"));
+    const store = testIdentity(new FsStore(root, clock, systemRandom, { ceilingBytes: 1 }));
+    await assert.doesNotReject(store.transaction("inspect-storage", async () => store.storageBytes()));
+  });
+
+  it("creates a complete empty journal and permits admitted artifacts before first state publication [AC-17, P91]", async (t) => {
+    windowsFilesystem(t);
+    const root = tmp("tenet-initial-storage-"); roots.push(root);
+    const store = testIdentity(new FsStore(root, clock, systemRandom));
+    await store.transaction("initialize", async (tx) => {
+      const { workspaceId, tag } = tx.ensure();
+      roots.push(join(tmpdir(), `tenet-${workspaceId}`));
+      store.writeArtifact(store.tempDir("run-initial"), "data", "first artifact");
+      tx.publish(emptyState(workspaceId, tag));
+    });
+    assert.equal(store.history(), "complete");
+    assert.equal(readFileSync(join(root, ".tenet", "log"), "utf8"), "");
+  });
+
+  it("distinguishes a completed quarantine from unexplained missing history [AC-17, P91]", async (t) => {
+    windowsFilesystem(t);
+    const root = tmp("tenet-quarantine-storage-"); roots.push(root);
+    mkdirSync(join(root, ".tenet"));
+    writeFileSync(join(root, ".tenet", "imported"), "preserve imported bytes");
+    const store = testIdentity(new FsStore(root, clock, systemRandom));
+    await store.transaction("open", async (tx) => {
+      assert.ok(tx.quarantined);
+      assert.equal(tx.history, "newly-created");
+      const { workspaceId, tag } = tx.ensure();
+      roots.push(join(tmpdir(), `tenet-${workspaceId}`));
+      tx.publish({ ...emptyState(workspaceId, tag), quarantine: { ...tx.quarantined!, choice: "pending" } });
+    });
+    assert.equal(store.history(), "complete");
+  });
+
+  it("preserves uncertainty when completed quarantine has a temp root but no state [AC-17, P91]", async (t) => {
+    windowsFilesystem(t);
+    const { store, dir, root } = fixture();
+    rmSync(join(dir, "state")); rmSync(join(dir, "lock"));
+    store["quarantined"] = { path: "quarantine-2026-11-19-aaaaaaaaaaaa", nonce: "aaaaaaaaaaaa", entries: 1 };
+    await testIdentity(store).transaction("open", async (tx) => {
+      assert.ok(tx.quarantined);
+      assert.equal(tx.history, "uncertain");
+      assert.equal(tx.state, null);
+      const plan = await open.run(
+        { ...createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), store },
+        null, open.schema.parse({ profile: "investigate", request: "review interrupted quarantine" }), tx,
+      );
+      assert.equal(plan.state?.project.retention?.legacyTemp.pending, true);
+      assert.equal(plan.state?.quarantine?.choice, "pending");
+      assert.deepEqual(plan.state?.pending.map(q => q.id), ["quarantine-review", "reconstruction-review"]);
+      tx.publish(plan.state!);
+    });
+    assert.equal(store.read()!.state.quarantine?.choice, "pending");
+  });
+
+  it("finalizes an unchanged large state without charging unrelated growth to its job [AC-17, P106]", () => {
+    const { store } = fixture();
+    const state = reserved(store.read()!.state);
+    store.read = () => ({ state, recovered: false });
+    store.storageBytes = () => 4 * MB;
+    store["measure"] = () => ({
+      bytes: 4 * MB, at: 0, newestAt: 0, identity: "synthetic", accounting: "known",
+    });
+    assert.doesNotThrow(() => store["assertStagedGrowth"](context(), finalized(state)));
+  });
+
+  it("reserves the existing state rewrite against concurrent ordinary growth [AC-17, P106]", () => {
+    const { store } = fixture({ ceilingBytes: 6 * MB });
+    const state = reserved(store.read()!.state);
+    store.read = () => ({ state, recovered: false });
+    store["measure"] = () => ({
+      bytes: 3 * MB, at: 0, newestAt: 0, identity: "synthetic", accounting: "known",
+    });
+    assert.throws(() => store["assertStagedGrowth"](context(), state),
+      storageRefusal("storage-protected-full"));
+  });
+
+  it("refuses finalization growth beyond the admitted job allowance [AC-17, P106]", () => {
+    const { store } = fixture();
+    const state = reserved(store.read()!.state);
+    store.read = () => ({ state, recovered: false });
+    store.storageBytes = () => 3 * MB;
+    assert.throws(() => store["assertStagedGrowth"](context(), {
+      ...finalized(state), _ext: { padding: "x".repeat(2.2 * MB) },
+    }), storageRefusal("storage-reserve-full"));
+  });
+
+  it("does not reserve a journal rewrite when no record can be reduced [AC-17, P106]", () => {
+    const { dir, store } = fixture({ compactAtBytes: 1 });
+    ago(0);
+    writeFileSync(join(dir, "log"), Array.from({ length: 110 }, () => JSON.stringify({
+      t: clock.now(), kind: "call", verb: "check", exit: 0, revision: 1,
+    }) + "\n").join(""));
+    assert.deepEqual(store["projectedReduction"](now, {
+      protectedIds: new Set(), protectedPaths: new Set(),
+    }), { savings: 0, transientBytes: 0 });
+  });
+
+  it("replays interrupted compaction through transaction startup after the cutoff advances [AC-17, P106]", async (t) => {
+    windowsFilesystem(t);
+    const { root, dir, store } = fixture({ compactAtBytes: 1, afterSummaries: () => { throw new Error("interrupted"); } });
+    ago(0);
+    const cutoff = now - 90 * DAY;
+    const times = [cutoff - 1_000, cutoff + 1_000, ...Array.from({ length: 100 }, () => now)];
+    writeFileSync(join(dir, "log"), times.map((t) => JSON.stringify({
+      t: new Date(t).toISOString(), kind: "call", verb: "check", exit: 0, revision: 1,
+    }) + "\n").join(""));
+    rmSync(join(dir, "lock"));
+    if (process.platform === "win32") store.self = () => ({ pid: process.pid, procStart: "synthetic" });
+    await assert.rejects(store.transaction("compact", async (tx) => tx.evict([])), /interrupted/);
+    const summary = readFileSync(join(dir, "summaries.json"), "utf8");
+    now += 2_000;
+    const restarted = new FsStore(root, clock, systemRandom, { ...LOW, compactAtBytes: 1 });
+    if (process.platform === "win32") restarted.self = () => ({ pid: process.pid, procStart: "synthetic" });
+    await assert.doesNotReject(restarted.transaction("replay", async (tx) => tx.evict([])));
+    assert.deepEqual(JSON.parse(readFileSync(join(dir, "summaries.json"), "utf8")), JSON.parse(summary));
+    assert.equal(lines(join(dir, "log")).length, 101, "replay must use the original cutoff");
+    assert.equal(existsSync(join(dir, "compaction.pending.json")), false);
+    const again = new FsStore(root, clock, systemRandom, { ...LOW, compactAtBytes: 1 });
+    if (process.platform === "win32") again.self = () => ({ pid: process.pid, procStart: "synthetic" });
+    await again.transaction("later", async (tx) => tx.evict([]));
+    assert.equal(lines(join(dir, "log")).length, 100, "a later distinct batch may use the new cutoff");
+  });
+
+  it("refuses staged run growth without removing eligible bytes when protected bytes cannot fit [AC-17, P106]", () => {
+    const { base, dir, store } = fixture({ runFileCapBytes: 200 });
+    const live = join(base, "run-live"), old = join(base, "run-old"), target = join(base, "run-new");
+    for (const path of [live, old, target]) mkdirSync(path);
+    writeFileSync(join(live, "data"), "x".repeat(199));
+    writeFileSync(join(old, "data"), "eligible");
+    const state = store.read()!.state, work = contractFixture({});
+    work.session.inCall = { runId: "live", verb: "check", since: clock.now(), runDir: live };
+    writeFileSync(join(dir, "state"), JSON.stringify({ ...state, work: { [work.id]: work } }));
+    store["writes"].run(context(), () => {
+      assert.throws(() => store.writeArtifact(target, "new", "xx"), storageRefusal("storage-run-cap-full"));
+    });
+    assert.equal(readFileSync(join(old, "data"), "utf8"), "eligible");
+    assert.equal(existsSync(join(target, "new")), false);
+  });
+
+  it("includes staged bytes in cleanup and publishes only after eligible cleanup fits [AC-17, P106]", () => {
+    const { base, store } = fixture({ runFileCapBytes: 200 });
+    const old = join(base, "run-old"), target = join(base, "run-new");
+    mkdirSync(old); mkdirSync(target);
+    writeFileSync(join(old, "data"), "x".repeat(199));
+    const active = context();
+    store["writes"].run(active, () => {
+      store.writeArtifact(target, "new", "xx");
+      const report = store.evict([]);
+      assert.match(report.message ?? "", /Removed 1/);
+      store["commitStaged"](active);
+    });
+    assert.equal(existsSync(old), false);
+    assert.equal(readFileSync(join(target, "new"), "utf8"), "xx");
+  });
+
+  it("rechecks staged run capacity before any publication after concurrent growth [AC-17, P106]", () => {
+    const { base, store } = fixture({ runFileCapBytes: 200 });
+    const target = join(base, "run-new"); mkdirSync(target);
+    writeFileSync(join(target, "data"), "x".repeat(198));
+    const active = context();
+    store["writes"].run(active, () => {
+      store.writeArtifact(target, "new", "xx");
+      store.writeArtifact(target, "new", "xx");
+      store.writeArtifact(target, "data", "x".repeat(198));
+      writeFileSync(join(target, "data"), "x".repeat(199));
+      assert.throws(() => store["commitStaged"](active), storageRefusal("storage-run-cap-full"));
+    });
+    assert.equal(existsSync(join(target, "new")), false);
+  });
+
+  it("keeps staged artifact folders through the age sweep before publication [AC-17, P106]", () => {
+    const { base, store } = fixture({ runFileCapBytes: 200 });
+    const target = join(base, "run-staged"); mkdirSync(target);
+    utimesSync(target, new Date(0), new Date(0));
+    store["writes"].run(context(), () => {
+      store.writeArtifact(target, "new", "xx");
+      assert.equal(store.sweepTemp(DAY, []), 0);
+    });
+    assert.equal(existsSync(target), true);
+  });
+
+  it("keeps previous-state evidence through the age sweep before publication [AC-17, P106]", () => {
+    const { base, dir, store } = fixture();
+    const target = join(base, "run-backup"); mkdirSync(target);
+    utimesSync(target, new Date(0), new Date(0));
+    const state = store.read()!.state, work = contractFixture({});
+    work.session.inCall = { runId: "backup", verb: "check", since: clock.now(), runDir: target };
+    writeFileSync(join(dir, "state.prev"), JSON.stringify({ ...state, work: { [work.id]: work } }));
+    store["writes"].run(context(), () => assert.equal(store.sweepTemp(DAY, []), 0));
+    assert.equal(existsSync(target), true);
+  });
+});
 
 describe("journal reduction into summaries [CON-08, AC-19]", () => {
   it("removes calls and completed pairs older than 90 days into monthly counts, and keeps recent records and unresolved intents", async () => {
@@ -263,10 +517,10 @@ describe("run-file cap and ceiling [CON-08, AC-19]", () => {
 
   for (const { name, age, cap } of [
     { name: "age-based cleanup", age: 2, cap: 10_000_000 },
-    { name: "size-cap eviction", age: 0.5, cap: 500 },
+    { name: "size-cap eviction", age: 0.5, cap: 1_500 },
   ]) {
     it(`retains unresolved recovery files through ${name} and removes them after resolution [AC-17]`, async () => {
-      const { store } = await fresh({ runFileCapBytes: cap });
+      const { store, root } = await fresh({ runFileCapBytes: cap });
       ago(0);
       const pending = runDir(store, "run-pending", 1_000, age);
       const other = runDir(store, "run-other", 1_000, age);
@@ -282,17 +536,21 @@ describe("run-file cap and ceiling [CON-08, AC-19]", () => {
       assert.equal(readFileSync(join(pending, "run.json"), "utf8"), record);
       assert.equal(existsSync(other), false);
 
-      await store.transaction("reclaim-resolved", async (tx) => {
+      const resolved = name === "size-cap eviction"
+        ? new FsStore(root, clock, systemRandom, { ...LOW, runFileCapBytes: 500 })
+        : store;
+      await resolved.transaction("reclaim-resolved", async (tx) => {
         tx.result("undo", "pending", { ok: true });
-        reclaim(ports, tx, tx.state!);
+        reclaim({ store: resolved }, tx, tx.state!);
       });
       assert.equal(existsSync(pending), false);
     });
   }
 
-  it("reports protected data above the ceiling with its largest classes, and refuses data-adding calls but not stop", async () => {
-    const { store, root } = await fresh({ ceilingBytes: 1_500 });
-    store.putBlob("x".repeat(3_000));
+  it("reports protected data above the ceiling with its largest classes [AC-17, P106]", async () => {
+    const { root } = await fresh();
+    new FsStore(root, clock, systemRandom, LOW).putBlob("x".repeat(3_000));
+    const store = new FsStore(root, clock, systemRandom, { ...LOW, ceilingBytes: 1_500 });
     const r = await evict(store);
     assert.equal(r.overCeiling, true, JSON.stringify(r));
     assert.equal(r.largest[0]!.name, "blobs");
@@ -392,7 +650,7 @@ describe("the verbs at a storage boundary [CON-08, AC-19]", () => {
     assert.equal(Object.keys(state?.work ?? {}).length, 0, "recovery must not initialize ordinary work");
   });
 
-  it("open stops with storage-protected-full when protected data alone is over the ceiling, naming the largest class; stop and inspect still work", async () => {
+  it("refuses ordinary open and an unreserved stop above the hard ceiling while inspect stays available [AC-17, P106]", async () => {
     const p = project(); roots.push(p.root);
     const h = (await p.call("open", { profile: "plan", request: "first" })).handle!;
     p.ports().store.putBlob("x".repeat(20_000));
@@ -400,9 +658,11 @@ describe("the verbs at a storage boundary [CON-08, AC-19]", () => {
     const refused = await call(tight, "open", { profile: "plan", request: "second" });
     assert.equal(refused.exit, 2, JSON.stringify(refused));
     assert.equal(refused.reasons[0]!.code, "storage-protected-full");
-    assert.match(refused.reasons[0]!.message, /blobs/);
+    assert.match(refused.reasons[0]!.message, /50 MB ceiling/);
     assert.equal((await call(tight, "inspect", { view: "status" })).exit, 0);
-    assert.equal((await call(tight, "stop", { h, mode: "pause" })).exit, 0, "stop is served from the reserve");
+    const stopped = await call(tight, "stop", { h, mode: "pause" });
+    assert.equal(stopped.exit, 2, JSON.stringify(stopped));
+    assert.equal(stopped.reasons[0]!.code, "storage-protected-full");
   });
 
   it("open reports a journal reduction in its completed effects", async () => {

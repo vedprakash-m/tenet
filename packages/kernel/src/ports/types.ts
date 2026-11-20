@@ -7,6 +7,7 @@ import type { IndexSyncRecord, Obligation, State } from "../core/schemas.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import type { CapabilityCache, Descriptor } from "../core/capabilities.ts";
 import type { HostTimings, Timing } from "../core/timing.ts";
+import type { PrivateSnapshots } from "./private-snapshot.ts";
 
 export type { Random };
 export interface Clock { now(): string; ms(): number }
@@ -61,6 +62,7 @@ export interface Footprint { path: string; files: number; bytes: number }
 export interface RetentionScope { path: string; identity: string; exists: boolean }
 
 export interface Store {
+  readonly privateSnapshots?: PrivateSnapshots;
   admit(): void;
   exists(): boolean;
   /** Read-only classification; an existing marker without usable state is uncertain. */
@@ -353,9 +355,21 @@ export interface CapabilityContext {
 }
 export interface Host {
   capabilities(): Descriptor;
+  markerBinding?: MarkerBindingPort;
   prepare?(context: CapabilityContext, cache?: CapabilityCache): void;
   cache?(): CapabilityCache;
   callTimings?(): HostTimings;
+}
+
+export type MarkerBindingStatus =
+  | { kind: "available"; capabilityHash: string }
+  | { kind: "absent"; capabilityHash: string }
+  | { kind: "unknown" | "unavailable"; detail: string };
+
+export interface MarkerBindingPort {
+  status(): MarkerBindingStatus;
+  create(payload: readonly unknown[]): { keyId: string; authenticator: string };
+  verify(keyId: string, payload: readonly unknown[], authenticator: string): "verified" | "missing" | "invalid" | "unavailable";
 }
 
 export interface Ports {
@@ -364,4 +378,5 @@ export interface Ports {
   recipes: Recipes; project: Project; host: Host;
   /** Current invocation snapshot; absent outside the public pipeline. */
   timing?: () => Timing;
+  authorizeMutation?(verb: string, input: unknown): void;
 }

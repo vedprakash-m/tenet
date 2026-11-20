@@ -25,10 +25,14 @@ export function redactDeep<T>(v: T): T {
   if (Array.isArray(v)) return v.map(redactDeep) as T;
   if (v && typeof v === "object") {
     const out: Record<string, unknown> = {};
-    for (const [k, x] of Object.entries(v)) {
-      let key = redact(k);
-      for (let n = 2; key !== k && key in out; n++) key = `${redact(k)} (${n})`; // two redacted keys must not collapse into one
-      out[key] = redactDeep(x);
+    const entries = Object.entries(v), used = new Set<string>();
+    const reserved = new Set(entries.map(([key]) => key).filter(key => redact(key) === key));
+    for (const [k, x] of entries) {
+      const base = redact(k);
+      let key = base;
+      for (let n = 2; base !== k && (used.has(key) || reserved.has(key)); n++) key = `${base} (${n})`;
+      used.add(key);
+      Object.defineProperty(out, key, { value: redactDeep(x), enumerable: true, writable: true, configurable: true });
     }
     return out as T;
   }
