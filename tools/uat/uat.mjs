@@ -1413,8 +1413,7 @@ try {
  const doctorPolicy = create();
  write(doctorPolicy, 'tenet.policy.json', JSON.stringify({ exclusions: [{ pattern: 'package.json', kinds: ['no-read'] }] }));
  const doctorRefusal = call(doctorPolicy, 'inspect', { view: 'doctor' });
- assert.equal(doctorRefusal.exit, 2);
- assert.ok(doctorRefusal.data.readiness.project.unknown?.includes('dependencies installed'));
+ assert.equal(doctorRefusal.exit, 2); assert.ok(doctorRefusal.reasons.some(r => r.code === 'capability-missing'));
  assert.equal(existsSync(join(doctorPolicy, '.tenet')), false);
  write(doctorPolicy, 'tenet.policy.json', 'invalid'); assert.equal(call(doctorPolicy, 'inspect', { view: 'help' }).exit, 0);
  observations.push({ scenario: 'built stateless doctor honors metadata exclusions', exit: doctorRefusal.exit, metadataRefused: true, noStateWritten: true, helpIndependent: true });

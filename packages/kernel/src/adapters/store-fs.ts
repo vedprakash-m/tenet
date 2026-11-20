@@ -455,11 +455,6 @@ export class FsStore implements Store {
       rmSync(this.p("state.prev.tmp"), { force: true });
       linkSync(this.p(before?.recovered ? "state.prev" : "state"), this.p("state.prev.tmp"));
       renameSync(this.p("state.prev.tmp"), this.p("state.prev"));
-    } else if (this.writes.getStore()?.creationIdentity && !before) {
-      rmSync(this.p("state.prev.tmp"), { force: true });
-      writeSynced(this.p("state.prev.tmp"), serialized);
-      renameSync(this.p("state.prev.tmp"), this.p("state.prev"));
-      fsyncDir(this.dir);
     }
     const moved = this.fileId("state") !== seen;
     if (moved && (this.read()?.state.revision ?? 0) !== (current?.revision ?? 0)) throw new KernelError("revision-conflict");
