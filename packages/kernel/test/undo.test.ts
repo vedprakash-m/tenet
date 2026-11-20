@@ -287,7 +287,7 @@ describe("undo [GIT-04]", () => {
     const preview = await p.call("undo", { h });
     assert.equal(preview.questions?.[0]?.id, "undo-confirm", JSON.stringify(preview));
     const applied = await p.call("decide", { h, kind: "undo-confirm", answers: { "undo-confirm": "apply" } });
-    assert.equal(applied.exit, 0, JSON.stringify(applied));
+    if (applied.exit !== 0) throw new Error(`undo confirmation did not apply: ${JSON.stringify(applied)}`);
     assert.equal(readFileSync(join(p.root, "src/greet.ts"), "utf8"), STUB);
     const replacement = Object.values(p.ports().store.read()!.state.work)
       .filter((work) => work.profile === "fix")
