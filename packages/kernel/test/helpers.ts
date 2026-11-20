@@ -6,6 +6,7 @@ import { basename, dirname, join } from "node:path";
 import { systemClock, systemRandom } from "../src/adapters/system.ts";
 import { FsStore } from "../src/adapters/store-fs.ts";
 import { emptyState } from "../src/core/state.ts";
+import { repositoryFixtureMetadataEnv } from "../src/adapters/installed-metadata.ts";
 
 // Tests never depend on the developer's own Git configuration: identity is set per repository, nothing else is read.
 dropGitLocalVars(process.env);
@@ -13,6 +14,22 @@ process.env.GIT_CONFIG_GLOBAL = "/dev/null";
 process.env.GIT_CONFIG_NOSYSTEM = "1";
 
 export const tmp = (prefix = "tenet-t-"): string => realpathSync(mkdtempSync(join(tmpdir(), prefix)));
+export const TEST_WORKSPACE = realpathSync(join(import.meta.dirname, "../../.."));
+export const TEST_NODE_MODULES = join(TEST_WORKSPACE, "node_modules");
+
+/** Binds an explicitly checked test workspace; external fixtures must use its exact node_modules link. */
+export function fixtureEnv(
+  root: string,
+  env: Record<string, string | undefined> = process.env,
+): Record<string, string | undefined> {
+  let workspace = root;
+  try {
+    if (realpathSync(join(root, "node_modules")) === realpathSync(TEST_NODE_MODULES)) workspace = TEST_WORKSPACE;
+  } catch {
+    // Missing dependencies are an admitted fixture fact; a later install belongs to the fixture root itself.
+  }
+  return repositoryFixtureMetadataEnv(workspace, env);
+}
 
 const LEGACY_EFFECTS = new Set([
   "index-sync", "commit", "integration", "undo", "scaffold", "adopt", "dependency", "hardening", "branch", "forget",

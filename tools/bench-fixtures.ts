@@ -3,7 +3,9 @@
 // proposal until the owner freezes them (PRD Q-06); changing one changes what "frozen" means for every stored result.
 import { withoutGitLocalVars } from "../packages/kernel/src/adapters/git-env.ts";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, symlinkSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export interface FixtureSpec {
   /** Tracked source files under dN/fM.ts, 100 per directory. */
@@ -20,6 +22,10 @@ export const FIXTURES = {
   "long-history": { files: 1_000, commits: 5_000, contracts: 200 },
 } as const satisfies Record<string, FixtureSpec>;
 export type FixtureName = keyof typeof FIXTURES;
+const SOURCE_ROOT = fileURLToPath(new URL("../", import.meta.url));
+export const linkFixtureDependencies = (dir: string): void => {
+  if (!existsSync(join(dir, "node_modules"))) symlinkSync(join(SOURCE_ROOT, "node_modules"), join(dir, "node_modules"), "dir");
+};
 
 const PER_DIR = 100;
 const IDENT = "Tenet Bench <bench@example.test>";
@@ -71,5 +77,6 @@ export function generateFixture(spec: FixtureSpec, dir: string): { head: string;
   configureRepo(dir);
   git(["fast-import", "--quiet"], stream(spec));
   git(["reset", "-q", "--hard"]);
+  linkFixtureDependencies(dir);
   return { head: git(["rev-parse", "HEAD"]), files: git(["ls-files"]).split("\n").length, commits: Number(git(["rev-list", "--count", "HEAD"])) };
 }

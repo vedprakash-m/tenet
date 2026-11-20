@@ -6,9 +6,10 @@
 import { runVerb } from "../../src/pipeline.ts";
 import { VERBS } from "../../src/verbs/index.ts";
 import { createPorts } from "../../src/wire.ts";
+import { fixtureEnv } from "../helpers.ts";
 
 const [root, verb, json, point] = [process.argv[2]!, process.argv[3]!, process.argv[4]!, process.argv[5] ?? "after-act"];
-const ports = createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
+const ports = createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME }));
 const die = () => process.kill(process.pid, "SIGKILL");
 
 const git = ports.git;

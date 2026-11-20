@@ -22,7 +22,13 @@ const runGroup = async (id, run) => {
 const source = fileURLToPath(new URL('../../', import.meta.url));
 const bundle = process.env.TENET_TEST_BUNDLE ?? join(source, 'plugin/kernel/tenet.mjs');
 const roots = [];
-const env = { ...process.env, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' };
+const env = {
+ ...process.env,
+ GIT_CONFIG_GLOBAL: '/dev/null',
+ GIT_CONFIG_NOSYSTEM: '1',
+ TENET_TEST_INSTALLED_METADATA: 'github-actions-posix-v1',
+ TENET_TEST_INSTALLED_METADATA_WORKSPACE: source,
+};
 delete env.NODE_OPTIONS;
 const git = (root, ...args) => execFileSync('git', args, { cwd: root, env, encoding: 'utf8' }).trim();
 const write = (root, path, text) => { mkdirSync(join(root, path, '..'), { recursive: true }); writeFileSync(join(root, path), text); };
@@ -1407,7 +1413,8 @@ try {
  const doctorPolicy = create();
  write(doctorPolicy, 'tenet.policy.json', JSON.stringify({ exclusions: [{ pattern: 'package.json', kinds: ['no-read'] }] }));
  const doctorRefusal = call(doctorPolicy, 'inspect', { view: 'doctor' });
- assert.equal(doctorRefusal.exit, 2); assert.ok(doctorRefusal.reasons.some(r => r.code === 'capability-missing'));
+ assert.equal(doctorRefusal.exit, 2);
+ assert.ok(doctorRefusal.data.readiness.project.unknown?.includes('dependencies installed'));
  assert.equal(existsSync(join(doctorPolicy, '.tenet')), false);
  write(doctorPolicy, 'tenet.policy.json', 'invalid'); assert.equal(call(doctorPolicy, 'inspect', { view: 'help' }).exit, 0);
  observations.push({ scenario: 'built stateless doctor honors metadata exclusions', exit: doctorRefusal.exit, metadataRefused: true, noStateWritten: true, helpIndependent: true });

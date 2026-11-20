@@ -7,7 +7,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
+import { cleanup, fixtureEnv, git, initRepo, tmp, write } from "./helpers.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
@@ -55,13 +55,14 @@ describe("golden task: the loan desk feature [QLT-01, QLT-12]", { skip: process.
     // The same scratch journey can drive the shipped CLI during UAT; CI defaults to the source pipeline.
     const rawCall = async (v: string, i: Record<string, unknown>) => {
       const bundle = process.env.TENET_TEST_BUNDLE;
-      if (!bundle) return runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+      if (!bundle) return runVerb(
+        createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME })), VERBS, v, i);
       const readsBody = ["open", "decide", "findings"].includes(v);
       const args = readsBody ? [] : Object.entries(i).flatMap(([key, value]) => [
         `--${key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`, Array.isArray(value) ? value.join(",") : typeof value === "object" ? JSON.stringify(value) : String(value),
       ]);
       const result = spawnSync(process.execPath, [bundle, v, ...args], {
-        cwd: root, env: process.env, input: readsBody ? JSON.stringify(i) : "", encoding: "utf8", maxBuffer: 10 * 1024 * 1024,
+        cwd: root, env: fixtureEnv(root), input: readsBody ? JSON.stringify(i) : "", encoding: "utf8", maxBuffer: 10 * 1024 * 1024,
       });
       assert.equal(result.signal, null, result.stderr);
       const response = JSON.parse(result.stdout);

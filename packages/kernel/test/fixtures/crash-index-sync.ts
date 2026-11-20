@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
 import { createPorts } from "../../src/wire.ts";
+import { fixtureEnv } from "../helpers.ts";
 const [root, parent, point] = [process.argv[2]!, process.argv[3]!, process.argv[4]!];
 const link = fs.linkSync, rename = fs.renameSync, sync = fs.fsyncSync, lock = join(root, ".git/index.lock");
 let renamed = false;
@@ -24,7 +25,7 @@ fs.fsyncSync = fd => {
   sync(fd);
 };
 syncBuiltinESMExports();
-const ports = createPorts(root), work = Object.keys(ports.store.read()!.state.work)[0]!;
+const ports = createPorts(root, fixtureEnv(root)), work = Object.keys(ports.store.read()!.state.work)[0]!;
 try { await ports.git.syncIndex(["src/a.ts"], parent, {
   owner: ports.store.self(),
   intent: record => ports.store.transaction("sync-test", async tx => { tx.intent("index-sync", "crash-sync", { work, sync: record }); }),

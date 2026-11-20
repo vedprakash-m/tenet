@@ -28,6 +28,22 @@ export type InstalledMetadataAdmission = {
   read(request: InstalledMetadataRequest): InstalledMetadataResult;
 };
 
+export const TEST_METADATA_PROVIDER_ENV = "TENET_TEST_INSTALLED_METADATA";
+export const TEST_METADATA_WORKSPACE_ENV = "TENET_TEST_INSTALLED_METADATA_WORKSPACE";
+export const TEST_METADATA_PROVIDER = "github-actions-posix-v1";
+
+/** Explicit, test-only activation. Production callers do not set these values. */
+export function repositoryFixtureMetadataEnv(
+  workspace: string,
+  env: Record<string, string | undefined> = process.env,
+): Record<string, string | undefined> {
+  return {
+    ...env,
+    [TEST_METADATA_PROVIDER_ENV]: TEST_METADATA_PROVIDER,
+    [TEST_METADATA_WORKSPACE_ENV]: workspace,
+  };
+}
+
 /** The reviewed payload boundary. No binary is loaded and no platform path is active in this scaffold. */
 export const NAPI_METADATA_SCAFFOLD = {
   operation: "readInstalledMetadata",
@@ -203,7 +219,7 @@ function readGithubActionsMetadata(
     return unavailable("qualified-root-unavailable");
   }
   if (!namedRoot.isDirectory()) return unavailable("qualified-root-unavailable");
-  if (!within(workspace, root)) return unavailable("qualified-root-unavailable");
+  const rootInsideWorkspace = within(workspace, root);
   const parts = request.relativePath.split("/");
   const admitted: AdmittedObject[] = [{
     path: root, dev: namedRoot.dev, ino: namedRoot.ino, resolved: root,
@@ -213,7 +229,7 @@ function readGithubActionsMetadata(
     const previous = admitted.at(-1);
     if (previous && !pathStillAdmitted(previous))
       return unavailable("qualified-path-moved");
-    const step = admitObject(current, index, parts.length, workspace, true);
+    const step = admitObject(current, index, parts.length, workspace, rootInsideWorkspace);
     if ("result" in step) {
       if (step.result.status === "missing" && previous && !pathStillAdmitted(previous))
         return unavailable("qualified-path-moved");
@@ -225,23 +241,22 @@ function readGithubActionsMetadata(
   return readBounded(current, request.maxBytes, admitted.at(-1)!, admitted.at(-2)!);
 }
 
-/**
- * GitHub Actions' POSIX workspace is explicitly qualified for this JavaScript reader. Unknown hosts, linked package
- * ancestors and substitutions outside the checked runner checkout remain refused; this is not the native P107 path.
- */
+/** Explicit POSIX test activation. A fixture outside the checked workspace must link to that exact node_modules. */
 export function githubActionsPosixMetadata(
   env: Record<string, string | undefined>,
   platform = process.platform,
 ): InstalledMetadataAdmission {
   if (
-    env.GITHUB_ACTIONS !== "true" || !["linux", "darwin"].includes(platform) ||
-    !env.GITHUB_WORKSPACE || env.GITHUB_WORKSPACE.includes("\0") || !isAbsolute(env.GITHUB_WORKSPACE)
+    env[TEST_METADATA_PROVIDER_ENV] !== TEST_METADATA_PROVIDER ||
+    !["linux", "darwin"].includes(platform) ||
+    !env[TEST_METADATA_WORKSPACE_ENV] || env[TEST_METADATA_WORKSPACE_ENV]!.includes("\0") ||
+    !isAbsolute(env[TEST_METADATA_WORKSPACE_ENV]!)
   ) {
     return unavailableInstalledMetadata;
   }
   let workspace: string;
   try {
-    workspace = realpathSync(env.GITHUB_WORKSPACE);
+    workspace = realpathSync(env[TEST_METADATA_WORKSPACE_ENV]!);
   } catch {
     return unavailableInstalledMetadata;
   }

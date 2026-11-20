@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
-import { cleanup, initRepo, tmp, write } from "./helpers.ts";
+import { cleanup, fixtureEnv, initRepo, tmp, write } from "./helpers.ts";
 
 const roots: string[] = [];
 after(() => { for (const r of roots) cleanup(r); });
@@ -28,7 +28,7 @@ const repo = (): string => {
   return root;
 };
 const open = (root: string, input: Record<string, unknown> = {}) =>
-  runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, "open", { profile: "plan", request: "plan the work", ...input });
+  runVerb(createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME })), VERBS, "open", { profile: "plan", request: "plan the work", ...input });
 const layout = (r: { reasons: Array<{ code: string }> }) => r.reasons.map((x) => x.code).filter((c) => c.startsWith("repo-") && c !== "repo-state-readonly");
 
 describe("repository layouts are named, not guessed [GIT-13]", () => {

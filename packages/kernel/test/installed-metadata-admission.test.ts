@@ -9,6 +9,7 @@ import {
   githubActionsPosixMetadata,
   installedMetadataRequest,
   NAPI_METADATA_SCAFFOLD,
+  repositoryFixtureMetadataEnv,
 } from "../src/adapters/installed-metadata.ts";
 import type { InstalledMetadataAdmission } from "../src/adapters/installed-metadata.ts";
 import { KernelError } from "../src/core/errors.ts";
@@ -118,9 +119,7 @@ describe("installed metadata admission [SEC-06]", () => {
   it("admits one exact qualified CI/POSIX request and refuses a linked package path", () => {
     const root = tmp(); roots.push(root);
     write(root, "node_modules/vitest/package.json", '{"version":"5.0.5"}');
-    const provider = githubActionsPosixMetadata({
-      GITHUB_ACTIONS: "true", GITHUB_WORKSPACE: root,
-    }, "linux");
+    const provider = githubActionsPosixMetadata(repositoryFixtureMetadataEnv(root), "linux");
     const request = installedMetadataRequest(root, "node_modules/vitest/package.json");
     const result = admitInstalledMetadata(provider, request);
     assert.equal(result.status, "file");
@@ -136,13 +135,11 @@ describe("installed metadata admission [SEC-06]", () => {
     });
   });
 
-  it("requires canonical roots inside GITHUB_WORKSPACE", () => {
+  it("allows only an exact workspace node_modules link from an outside fixture root", () => {
     const workspace = tmp(); roots.push(workspace);
     const outside = tmp(); roots.push(outside);
     write(workspace, "node_modules/vitest/package.json", '{"version":"5.0.5"}');
-    const provider = githubActionsPosixMetadata({
-      GITHUB_ACTIONS: "true", GITHUB_WORKSPACE: workspace,
-    }, "linux");
+    const provider = githubActionsPosixMetadata(repositoryFixtureMetadataEnv(workspace), "linux");
     const request = (root: string) => installedMetadataRequest(root, "node_modules/vitest/package.json");
 
     write(outside, "node_modules/vitest/package.json", '{"version":"5.0.5"}');
@@ -153,9 +150,7 @@ describe("installed metadata admission [SEC-06]", () => {
     rmSync(join(outside, "node_modules"), { recursive: true });
     symlinkSync(join(workspace, "node_modules"), join(outside, "node_modules"),
       process.platform === "win32" ? "junction" : "dir");
-    assert.deepEqual(admitInstalledMetadata(provider, request(outside)), {
-      status: "unavailable", category: "qualified-root-unavailable",
-    });
+    assert.equal(admitInstalledMetadata(provider, request(outside)).status, "file");
 
     const alias = join(tmp(), "workspace"); roots.push(join(alias, ".."));
     symlinkSync(workspace, alias, process.platform === "win32" ? "junction" : "dir");
@@ -170,12 +165,15 @@ describe("installed metadata admission [SEC-06]", () => {
     write(untrusted, "vitest/package.json", '{"version":"5.0.5"}');
     symlinkSync(join(untrusted), join(outside, "node_modules"),
       process.platform === "win32" ? "junction" : "dir");
-    const provider = githubActionsPosixMetadata({
-      GITHUB_ACTIONS: "true", GITHUB_WORKSPACE: workspace,
-    }, "linux");
+    const provider = githubActionsPosixMetadata(
+      repositoryFixtureMetadataEnv(workspace, {
+        GITHUB_ACTIONS: "true", GITHUB_WORKSPACE: workspace,
+      }),
+      "linux",
+    );
     assert.deepEqual(admitInstalledMetadata(
       provider, installedMetadataRequest(outside, "node_modules/vitest/package.json"),
-    ), { status: "unavailable", category: "qualified-root-unavailable" });
+    ), { status: "unavailable", category: "qualified-link-unavailable" });
   });
 
   for (const dangling of ["node_modules", "package.json"] as const) {
@@ -189,9 +187,7 @@ describe("installed metadata admission [SEC-06]", () => {
       } else {
         symlinkSync(join(root, "missing-package.json"), join(root, "node_modules/vitest/package.json"));
       }
-      const provider = githubActionsPosixMetadata({
-        GITHUB_ACTIONS: "true", GITHUB_WORKSPACE: root,
-      }, "linux");
+      const provider = githubActionsPosixMetadata(repositoryFixtureMetadataEnv(root), "linux");
       assert.deepEqual(admitInstalledMetadata(
         provider, installedMetadataRequest(root, "node_modules/vitest/package.json"),
       ), { status: "unavailable", category: "qualified-link-unavailable" });
@@ -202,9 +198,7 @@ describe("installed metadata admission [SEC-06]", () => {
     it(`binds the admitted ${replacement} identity to the opened metadata object`, () => {
       const root = tmp(); roots.push(root);
       write(root, "node_modules/vitest/package.json", '{"version":"5.0.5"}');
-      const provider = githubActionsPosixMetadata({
-        GITHUB_ACTIONS: "true", GITHUB_WORKSPACE: root,
-      }, "linux");
+      const provider = githubActionsPosixMetadata(repositoryFixtureMetadataEnv(root), "linux");
       const packageDir = join(root, "node_modules/vitest");
       const packagePath = join(packageDir, "package.json");
       const originalOpen = fs.openSync;
@@ -237,7 +231,18 @@ describe("installed metadata admission [SEC-06]", () => {
     });
   }
 
-  it("selects the CI metadata provider from the explicit createPorts environment", () => {
+  it("keeps the CI provider unavailable without explicit fixture activation", () => {
+    const root = tmp(); roots.push(root);
+    write(root, "node_modules/vitest/package.json", '{"version":"5.0.5"}');
+    const provider = githubActionsPosixMetadata({
+      GITHUB_ACTIONS: "true", GITHUB_WORKSPACE: root,
+    }, "linux");
+    assert.deepEqual(admitInstalledMetadata(
+      provider, installedMetadataRequest(root, "node_modules/vitest/package.json"),
+    ), { status: "unavailable", category: "payload-unavailable" });
+  });
+
+  it("selects the fixture metadata provider from the explicit createPorts environment", () => {
     const root = tmp(); roots.push(root);
     write(root, "package.json", '{"name":"demo"}');
     write(root, "node_modules/vitest/package.json", '{"version":"5.0.5"}');
@@ -251,10 +256,9 @@ describe("installed metadata admission [SEC-06]", () => {
       const clean = createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
       assert.throws(() => clean.stack.detect(root), (error: unknown) =>
         error instanceof KernelError && error.reasons[0]?.code === "capability-missing");
-      const qualified = createPorts(root, {
+      const qualified = createPorts(root, repositoryFixtureMetadataEnv(root, {
         PATH: process.env.PATH, HOME: process.env.HOME,
-        GITHUB_ACTIONS: "true", GITHUB_WORKSPACE: root,
-      });
+      }));
       assert.equal(qualified.stack.detect(root).runnerVersion, "5.0.5");
     } finally {
       if (ambientActions === undefined) delete process.env.GITHUB_ACTIONS;

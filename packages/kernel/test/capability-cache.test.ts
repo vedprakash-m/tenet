@@ -13,7 +13,7 @@ import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
 import { project } from "./support/fixture.ts";
-import { cleanup } from "./helpers.ts";
+import { cleanup, fixtureEnv } from "./helpers.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -110,7 +110,9 @@ describe("capability cache [INS-05]", () => {
     const p = project();
     roots.push(p.root);
     const call = (verb: string, input: Record<string, unknown>) => runVerb(
-      createPorts(p.root, { PATH: process.env.PATH, HOME: process.env.HOME, TENET_HOST_VERSION: "host-1" }), VERBS, verb, input);
+      createPorts(p.root, fixtureEnv(p.root, {
+        PATH: process.env.PATH, HOME: process.env.HOME, TENET_HOST_VERSION: "host-1",
+      })), VERBS, verb, input);
     const opened = await call("open", { profile: "plan", request: "plan a greeting" });
     if (process.platform === "win32") {
       assert.equal(opened.exit, 2);

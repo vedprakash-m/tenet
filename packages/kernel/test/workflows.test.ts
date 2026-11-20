@@ -4,7 +4,7 @@ import { chmodSync, existsSync, readFileSync, rmSync, symlinkSync } from "node:f
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { captureLegacy, cleanup, git, tmp, write } from "./helpers.ts";
+import { captureLegacy, cleanup, fixtureEnv, git, tmp, write } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, callWithEnvelopeConsent, project, reviewResult, finishFixture, focusFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
@@ -39,7 +39,8 @@ describe("a new project", () => {
     write(root, "tsconfig.json", '{"compilerOptions":{"strict":true}}\n');
     write(root, ".gitignore", "node_modules\n");
     symlinkSync(join(import.meta.dirname, "../../../node_modules"), join(root, "node_modules"));
-    const rawCall = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    const rawCall = (v: string, i: Record<string, unknown>) => runVerb(
+      createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME })), VERBS, v, i);
     const call = (v: string, i: Record<string, unknown>) => callWithEnvelopeConsent(rawCall, v, i);
 
     const ask = await call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts"], lane: "quick" });
@@ -374,7 +375,8 @@ describe("things that must not trip it", () => {
   it("investigates and plans in a folder with no Git at all", async () => {
     const root = tmp("tenet-nogit-"); roots.push(root);
     write(root, "notes.md", "# notes\n");
-    const rawCall = (v: string, i: Record<string, unknown>) => runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, v, i);
+    const rawCall = (v: string, i: Record<string, unknown>) => runVerb(
+      createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME })), VERBS, v, i);
     const call = (v: string, i: Record<string, unknown>) => callWithEnvelopeConsent(rawCall, v, i);
     const o = await call("open", { profile: "investigate", request: "what is in here?" });
     assert.equal(o.exit, 0, JSON.stringify(o));

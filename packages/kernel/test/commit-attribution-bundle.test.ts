@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { cleanup, NO_POSIX_PROCESSES } from "./helpers.ts";
+import { cleanup, fixtureEnv, NO_POSIX_PROCESSES } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, callWithEnvelopeConsent, focusFixture, project } from "./support/fixture.ts";
 import type { KernelResponse } from "../src/core/schemas.ts";
 
@@ -20,11 +20,9 @@ function bundledProject() {
     ]);
     const child = spawnSync(process.execPath, [bundle, verb, ...args], {
       cwd: p.root, encoding: "utf8", input: body ? JSON.stringify(input) : "",
-      env: {
+      env: fixtureEnv(p.root, {
         PATH: process.env.PATH, HOME: process.env.HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
-        ...(process.env.GITHUB_ACTIONS === undefined ? {} : { GITHUB_ACTIONS: process.env.GITHUB_ACTIONS }),
-        ...(process.env.GITHUB_WORKSPACE === undefined ? {} : { GITHUB_WORKSPACE: process.env.GITHUB_WORKSPACE }),
-      },
+      }),
     });
     assert.ifError(child.error);
     assert.equal(child.signal, null, child.stderr);

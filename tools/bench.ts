@@ -15,8 +15,9 @@ import { cpus, platform as osPlatform, release, tmpdir, totalmem } from "node:os
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { FIXTURES, configureRepo, generateFixture, gitEnv } from "./bench-fixtures.ts";
+import { FIXTURES, configureRepo, generateFixture, gitEnv, linkFixtureDependencies } from "./bench-fixtures.ts";
 import type { FixtureName, FixtureSpec } from "./bench-fixtures.ts";
+import { repositoryFixtureMetadataEnv } from "../packages/kernel/src/adapters/installed-metadata.ts";
 
 export type Status = "pass" | "fail" | "inconclusive" | "not-measurable" | "unobservable" | "delegated";
 export interface Row { id: string; prd: string; target: string; status: Status; fixture?: string; observed?: string; detail: string; stallThresholdMs?: number; trace?: Trace; runs?: WarmRun[] }
@@ -58,7 +59,12 @@ export function judgeLatency(calls: Call[], expect: number[], limitMs: number, p
   return { status: value <= limitMs ? "pass" : "fail", observed: `p${percentileOf} ${value.toFixed(0)} ms, max ${Math.max(...calls.map((c) => c.ms)).toFixed(0)} ms, n=${calls.length}`, detail: "" };
 }
 
-const kernelEnv = (): NodeJS.ProcessEnv => { const env = gitEnv(); delete env.NODE_OPTIONS; return env; };
+const CHECKED_WORKSPACE = join(import.meta.dirname, "..");
+const kernelEnv = (): NodeJS.ProcessEnv => {
+  const env = repositoryFixtureMetadataEnv(CHECKED_WORKSPACE, gitEnv());
+  delete env.NODE_OPTIONS;
+  return env as NodeJS.ProcessEnv;
+};
 
 /** One kernel process, timed as the host would see it: spawn, Node start and the call itself. */
 export function callKernel(bundle: string, cwd: string, label: string, argv: string[], body?: object): Call & { response?: { handle?: string } } {
@@ -201,6 +207,7 @@ export function measureFixture(bundle: string, name: string, spec: FixtureSpec, 
     const clone = join(scratch, `${name}-cold-${i}`);
     execFileSync("git", ["clone", "-q", "--local", "--no-hardlinks", source, clone], { env: gitEnv(), stdio: "pipe" });
     configureRepo(clone);
+    linkFixtureDependencies(clone);
     cold.push(callKernel(bundle, clone, "open (first call)", ["open"], { profile: "investigate", request: "bench cold" }));
     rmSync(clone, { recursive: true, force: true });
   }

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { createPorts } from "../src/wire.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
-import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
+import { cleanup, fixtureEnv, git, initRepo, tmp, write } from "./helpers.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -17,7 +17,7 @@ async function fixture() {
   write(root, "src/a.ts", "export const a = 2;\n"); git(root, "add", "src/a.ts"); git(root, "commit", "-qm", "new HEAD");
   git(root, "read-tree", parent);
   write(root, "src/b.ts", "export const b = 'human staged';\n"); git(root, "add", "src/b.ts");
-  const ports = createPorts(root);
+  const ports = createPorts(root, fixtureEnv(root));
   await runVerb(ports, VERBS, "open", { profile: "investigate", request: "index recovery" });
   return { root, ports, parent, human: git(root, "diff", "--cached", "--", "src/b.ts") };
 }

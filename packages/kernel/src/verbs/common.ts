@@ -15,13 +15,40 @@ export const nodeOk = (): boolean => {
   return maj > 22 || (maj === 22 && min >= 12);
 };
 
-export function readinessOf(ports: Ports, probe: RepoProbe): Readiness {
+const UNKNOWN_DETECTION = {
+  language: "unknown" as const,
+  runner: undefined,
+  runnerVersion: "",
+  runnerSupported: null,
+  typescript: null,
+  depsInstalled: null,
+  experimental: null,
+  packageManager: "unknown" as const,
+  moduleRoot: ".",
+};
+
+export function toolchainForReadiness(
+  ports: Ports,
+  bestEffort = false,
+) {
+  if (!mutationSupported(ports.platform)) return UNKNOWN_DETECTION;
+  try {
+    return ports.stack.detect(ports.root);
+  } catch (error) {
+    if (bestEffort && error instanceof KernelError && error.reasons[0]?.code === "capability-missing") {
+      return UNKNOWN_DETECTION;
+    }
+    throw error;
+  }
+}
+
+export function readinessOf(
+  ports: Ports,
+  probe: RepoProbe,
+  bestEffortMetadata = false,
+  d = toolchainForReadiness(ports, bestEffortMetadata),
+): Readiness {
   const platformOk = mutationSupported(ports.platform);
-  const d = platformOk
-    ? ports.stack.detect(ports.root)
-    : {
-        language: "unknown" as const, runnerSupported: null, typescript: null, depsInstalled: null, experimental: null,
-      };
   return {
     nodeOk: nodeOk(), platformOk, stateWritable: ports.store.canWrite(), policyBlocks: false,
     gitState: probe.state, language: d.language, runnerSupported: d.runnerSupported, typescript: d.typescript,

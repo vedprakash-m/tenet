@@ -4,7 +4,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import { join, sep } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
+import { cleanup, fixtureEnv, git, initRepo, tmp, write } from "./helpers.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
@@ -127,7 +127,7 @@ describe("the ts-web-api recipe", () => {
     write(root, "node_modules/vitest/package.json", '{"version":"5.0.5"}\n');
     write(root, "node_modules/@playwright/test/package.json", '{"version":"1.64.1"}\n');
     write(root, "node_modules/@playwright/test/cli.js", "process.exit(0);\n");
-    const ports = createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
+    const ports = createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME }));
     const envelope = ports.runner.planEnvelope({
       projectId: "workspace", root,
       obligations: [], toExecute: [], stack,
@@ -206,7 +206,7 @@ describe("the ts-web-api recipe", () => {
     initRepo(root);
     let browserStarted = false;
     const rawCall = (v: string, i: Record<string, unknown>) => {
-      const ports = createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
+      const ports = createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME }));
       const run = ports.runner.run.bind(ports.runner);
       ports.runner.run = spec => {
         if (spec.report === join(spec.runDir, "playwright.json")) browserStarted = true;
@@ -285,7 +285,7 @@ describe("the ts-web-api recipe", () => {
       // Start the browser-readiness deadline after the suite and static checks finish.
       await waitFor(() => browserStarted, 60_000, "the held-browser check phase");
       const marker = await waitFor(() => {
-        const state = createPorts(root, {}).store.read()!.state;
+        const state = createPorts(root, fixtureEnv(root, {})).store.read()!.state;
         runDir = Object.values(state.work).find(w => w.session.inCall)?.session.inCall?.runDir;
         const path = runDir && join(runDir, "tmp/browser-held.json");
         return path && existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) as { pid: number } : undefined;
@@ -296,7 +296,7 @@ describe("the ts-web-api recipe", () => {
       await pending;
       await waitFor(() => procStart(marker.pid) !== started, 10_000, "Chromium exits after cancellation");
     } finally {
-      if (runDir) await createPorts(root, {}).runner.stopRun(runDir);
+      if (runDir) await createPorts(root, fixtureEnv(root, {})).runner.stopRun(runDir);
       await pending;
     }
 

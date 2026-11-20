@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { cleanup, git, tmp, write } from "./helpers.ts";
+import { cleanup, fixtureEnv, git, tmp, write } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, callWithEnvelopeConsent, reviewResult } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
@@ -22,7 +22,7 @@ function bare() {
   write(root, "src/greet.ts", "export const greet = (_n: string): string => '';\n");
   write(root, ".env", "TOKEN=hunter2hunter2\n"); // privacy-ok
   symlinkSync(join(import.meta.dirname, "../../../node_modules"), join(root, "node_modules"));
-  const ports = createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
+  const ports = createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME }));
   const rawCall = (v: string, i: Record<string, unknown>) => runVerb(ports, VERBS, v, i);
   const call = (v: string, i: Record<string, unknown>) => callWithEnvelopeConsent(rawCall, v, i);
   const shadow = (...a: string[]) => git(root, "--git-dir", join(root, ".tenet/git"), "--work-tree", root, ...a);

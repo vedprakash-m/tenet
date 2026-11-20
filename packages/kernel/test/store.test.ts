@@ -114,6 +114,7 @@ describe("store: transactions", () => {
   it("publishes revisions atomically and keeps state.prev [CON-04]", async () => {
     const root = fresh();
     const store = await initState(root);
+    assert.equal(JSON.parse(readFileSync(join(root, ".tenet/state.prev"), "utf8")).revision, 1);
     await store.transaction("t", async (tx) => tx.publish({ ...tx.state!, workSeq: 7 }));
     const read = store.read()!;
     assert.equal(read.state.revision, 2);

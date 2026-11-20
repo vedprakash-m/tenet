@@ -18,7 +18,7 @@ import {
   rollbackProbeRequest,
   runCandidatePostcondition,
 } from "../src/adapters/marker-postcondition.ts";
-import { cleanup } from "./helpers.ts";
+import { cleanup, fixtureEnv } from "./helpers.ts";
 import { project } from "./support/fixture.ts";
 import { FsStore } from "../src/adapters/store-fs.ts";
 import { systemClock, systemRandom } from "../src/adapters/system.ts";
@@ -27,7 +27,6 @@ const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 const operationId = "c".repeat(32);
 const bundle = join(import.meta.dirname, "../../../plugin/kernel/tenet.mjs");
-const workspace = join(import.meta.dirname, "../../..");
 const qualification = {
   platform: process.platform as "darwin" | "linux" | "win32",
   architecture: process.arch as "arm64" | "x64",
@@ -59,14 +58,12 @@ async function runBridge(root: string, request: string, digest?: string, expecte
     join(import.meta.dirname, "fixtures/bridge-open-plan.ts"), bundle, request,
   ], {
     cwd: root,
-    env: {
+    env: fixtureEnv(root, {
       ...process.env,
-      GITHUB_ACTIONS: "true",
-      GITHUB_WORKSPACE: workspace,
       TENET_ROLLBACK_BRIDGE_REQUEST: expectedRequest,
       TENET_HOST_VERSION: "schema2-bridge-fixture",
       ...(digest ? { TENET_ROLLBACK_BRIDGE_DIGEST: digest } : {}),
-    },
+    }),
     stdio: ["ignore", "pipe", "pipe"],
   });
   let stdout = "", stderr = "";
@@ -87,15 +84,13 @@ async function killAfterAccounting(root: string, request: string, digest: string
     join(import.meta.dirname, "fixtures/bridge-open-plan.ts"), bundle, request,
   ], {
     cwd: root,
-    env: {
+    env: fixtureEnv(root, {
       ...process.env,
-      GITHUB_ACTIONS: "true",
-      GITHUB_WORKSPACE: workspace,
       TENET_ROLLBACK_BRIDGE_DIGEST: digest,
       TENET_ROLLBACK_BRIDGE_REQUEST: request,
       TENET_HOST_VERSION: "schema2-bridge-fixture",
       TENET_BRIDGE_KILL: "after-accounting-before-state",
-    },
+    }),
     stdio: "ignore",
   });
   return new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {

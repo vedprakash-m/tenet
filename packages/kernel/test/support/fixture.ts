@@ -10,13 +10,15 @@ import { createPorts } from "../../src/wire.ts";
 import { createStack } from "./metadata-stack.ts";
 import { newContract } from "../../src/core/state.ts";
 import type { WorkContract } from "../../src/core/schemas.ts";
-import { git, initRepo, tmp, write } from "../helpers.ts";
+import { fixtureEnv, git, initRepo, TEST_WORKSPACE, tmp, write } from "../helpers.ts";
 
-const REPO_NODE_MODULES = join(import.meta.dirname, "../../../../node_modules");
+const REPO_NODE_MODULES = join(TEST_WORKSPACE, "node_modules");
 export const cliEnv = () => ({
-  PATH: process.env.PATH, HOME: process.env.HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
-  ...Object.fromEntries(["TMPDIR", "TEMP", "TMP"].flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]]])),
-  ...(process.platform === "darwin" ? { __CF_USER_TEXT_ENCODING: "test" } : {}),
+  ...fixtureEnv(TEST_WORKSPACE, {
+    PATH: process.env.PATH, HOME: process.env.HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
+    ...Object.fromEntries(["TMPDIR", "TEMP", "TMP"].flatMap(name => process.env[name] === undefined ? [] : [[name, process.env[name]]])),
+    ...(process.platform === "darwin" ? { __CF_USER_TEXT_ENCODING: "test" } : {}),
+  }),
 });
 
 export function project(files: Record<string, string> = {}, options: { autoConsentEnvelope?: boolean; autoContinueModel?: boolean } = {}) {
@@ -31,7 +33,7 @@ export function project(files: Record<string, string> = {}, options: { autoConse
   git(root, "add", "-A");
   git(root, "commit", "-qm", "initial");
   const ports = () => {
-    const bound = createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
+    const bound = createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME }));
     bound.stack = createStack();
     return bound;
   };
@@ -202,7 +204,7 @@ export const fakeRecipes = (recipe: Recipe = fakeRecipe()): Recipes => ({ load: 
 
 /** Ports for a folder, with the recipe source replaced. */
 export const portsWith = (root: string, recipes: Recipes): Ports => ({
-  ...createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }),
+  ...createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME })),
   recipes,
   stack: createStack(),
 });

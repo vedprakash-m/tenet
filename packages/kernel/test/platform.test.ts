@@ -12,6 +12,7 @@ import { createPorts } from "../src/wire.ts";
 import { cleanup, tmp } from "./helpers.ts";
 import { KERNEL_VERSION } from "../src/version.ts";
 import { createStack } from "./support/metadata-stack.ts";
+import { KernelError } from "../src/core/errors.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -120,6 +121,26 @@ describe("platform admission before mutation [INS-06, INS-12]", () => {
     assert.equal(runner?.ok, null);
     assert.match(runner?.detail ?? "", /unavailable.*platform/i);
     assert.doesNotMatch(runner?.detail ?? "", /dependencies are not installed/i);
+  });
+
+  it("keeps stateless doctor metadata best-effort while mutating readiness remains strict", async () => {
+    const root = scratch();
+    const base = createPorts(root);
+    const probe = await base.git.probe();
+    base.stack.detect = () => {
+      throw new KernelError("capability-missing", "installed tool metadata cannot be verified safely");
+    };
+    const doctor = await runVerb({ ...base, platform: "linux" }, VERBS, "inspect", { view: "doctor" });
+    assert.equal(doctor.exit, 2, JSON.stringify(doctor));
+    const data = doctor.data as {
+      checks: Array<{ name: string; detail: string; ok: boolean | null }>;
+      readiness: { project: { unknown?: string[] } };
+    };
+    assert.equal(data.checks.find((check) => check.name === "test runner")?.ok, null);
+    assert.match(data.checks.find((check) => check.name === "test runner")?.detail ?? "", /metadata is unknown/);
+    assert.ok(data.readiness.project.unknown?.includes("dependencies installed"));
+    assert.throws(() => readinessOf({ ...base, platform: "linux" }, probe),
+      /installed tool metadata cannot be verified safely/);
   });
 
   it("uses the same platform fact for admission and readiness", async () => {

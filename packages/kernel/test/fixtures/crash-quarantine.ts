@@ -5,6 +5,7 @@ import { basename, dirname, join } from "node:path";
 import { runVerb } from "../../src/pipeline.ts";
 import { createPorts } from "../../src/wire.ts";
 import { VERBS } from "../../src/verbs/index.ts";
+import { fixtureEnv } from "../helpers.ts";
 
 const [root, point] = [process.argv[2]!, process.argv[3]!];
 const die = () => process.kill(process.pid, "SIGKILL");
@@ -31,4 +32,7 @@ fs.renameSync = (from, to) => {
   if (point === "after-state" && dest === join(root, ".tenet/state")) die();
 };
 syncBuiltinESMExports();
-console.log(JSON.stringify(await runVerb(createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), VERBS, "open", { profile: "investigate", request: "fresh" })));
+console.log(JSON.stringify(await runVerb(
+  createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME })),
+  VERBS, "open", { profile: "investigate", request: "fresh" },
+)));

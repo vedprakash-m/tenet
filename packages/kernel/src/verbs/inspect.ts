@@ -14,7 +14,7 @@ import type { State } from "../core/schemas.ts";
 import { assistanceLevel, readinessReport } from "../core/risk.ts";
 import type { Plan, Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
-import { nodeOk, readinessOf, workOf } from "./common.ts";
+import { nodeOk, readinessOf, toolchainForReadiness, workOf } from "./common.ts";
 import { gather, verdictInput } from "./facts.ts";
 import { settingsFor, sharedPolicy, withRequiredChecks } from "./reconcile.ts";
 import { KERNEL_VERSION } from "../version.ts";
@@ -36,9 +36,9 @@ const VERBS = {
 };
 
 function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>) {
-  const r = readinessOf(ports, probe);
+  const d = toolchainForReadiness(ports, true);
+  const r = readinessOf(ports, probe, true, d);
   const writable = r.stateWritable;
-  const d = r.platformOk ? ports.stack.detect(ports.root) : null;
   const checks = [
     { name: "node", ok: nodeOk(), detail: process.version },
     { name: "git", ok: probe.version !== "git not found", detail: probe.version },
@@ -46,25 +46,21 @@ function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>)
     { name: "commit identity", ok: probe.identity, detail: probe.identity ? "configured" : "git user.name and user.email are not set" },
     { name: "project folder writable", ok: writable, detail: ports.root },
     {
-      name: "test runner", ok: d ? d.runnerSupported : null,
-      detail: !d
+      name: "test runner", ok: d.runnerSupported,
+      detail: !r.platformOk
         ? "unavailable on this platform"
         : d.runner
           ? `${d.runner} ${d.runnerVersion}${d.runnerSupported ? "" : " (unsupported version)"}`
-          : d.depsInstalled ? "none found" : "dependencies are not installed",
+          : d.runnerSupported === null ? "metadata is unknown"
+            : d.depsInstalled ? "none found" : "dependencies are not installed",
     },
     { name: "commit hooks", ok: true, detail: probe.hooks ? "present; commits need your consent once" : "none" },
   ];
   const { level, why } = assistanceLevel(r, "feature");
-  const detected = d
-    ? {
-        language: d.language, typescript: d.typescript, packageManager: d.packageManager,
-        runner: d.runner ?? null, depsInstalled: d.depsInstalled, hooks: !!probe.hooks, git: probe.isRepo,
-      }
-    : {
-        language: "unknown", typescript: "unknown", packageManager: "unknown", runner: null,
-        depsInstalled: "unknown", hooks: !!probe.hooks, git: probe.isRepo,
-      };
+  const detected = {
+    language: d.language, typescript: d.typescript ?? "unknown", packageManager: d.packageManager,
+    runner: d.runner ?? null, depsInstalled: d.depsInstalled ?? "unknown", hooks: !!probe.hooks, git: probe.isRepo,
+  };
   const readiness = readinessReport(r);
   return {
     checks, detected, capabilities: ports.host.capabilities(), level, ...(why ? { why } : {}),

@@ -2,8 +2,9 @@
 import { runVerb } from "../../src/pipeline.ts";
 import { VERBS } from "../../src/verbs/index.ts";
 import { createPorts } from "../../src/wire.ts";
+import { fixtureEnv } from "../helpers.ts";
 const [root, json, point] = process.argv.slice(2) as [string, string, string];
-const ports = createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
+const ports = createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME }));
 const die = () => process.kill(process.pid, "SIGKILL");
 let flush: (() => void) | undefined;
 const purge = ports.store.purge.bind(ports.store);

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { repositoryFixtureMetadataEnv } from "../packages/kernel/src/adapters/installed-metadata.ts";
 
 interface Lane {
   include?: string[]; exclude?: string[]; requiresBundle?: boolean;
@@ -115,7 +116,11 @@ export async function runTests(root: string, laneName: string, output: string, s
     ...((lane.namePattern) ? [`--test-name-pattern=${lane.namePattern}`] : []),
     ...runFiles,
   ];
-  const child = spawn(process.execPath, args, { cwd: root, env: process.env, stdio: ["ignore", "pipe", "inherit"] });
+  const child = spawn(process.execPath, args, {
+    cwd: root,
+    env: repositoryFixtureMetadataEnv(root, process.env),
+    stdio: ["ignore", "pipe", "inherit"],
+  });
   let stdout = "";
   child.stdout!.on("data", (chunk) => { stdout += chunk.toString(); });
   const status = await new Promise<number>((resolve, reject) => {

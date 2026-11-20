@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,7 +15,13 @@ if (!selected) cpSync(join(source, "plugin"), staged, {
 });
 const bundle = selected ?? join(staged, "kernel/tenet.mjs");
 const roots = [staged];
-const env = { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" };
+const env = {
+  ...process.env,
+  GIT_CONFIG_GLOBAL: "/dev/null",
+  GIT_CONFIG_NOSYSTEM: "1",
+  TENET_TEST_INSTALLED_METADATA: "github-actions-posix-v1",
+  TENET_TEST_INSTALLED_METADATA_WORKSPACE: source,
+};
 delete env.NODE_OPTIONS;
 const call = (root, verb, body = {}) => {
   const readsBody = ["open", "decide", "findings"].includes(verb);
@@ -40,6 +46,7 @@ try {
   writeFileSync(join(root, "package.json"), '{"name":"smoke","type":"module","private":true}\n');
   writeFileSync(join(root, "tsconfig.json"), '{"compilerOptions":{"strict":true}}\n');
   writeFileSync(join(root, ".gitignore"), "node_modules\n.tenet/\n");
+  symlinkSync(join(source, "node_modules"), join(root, "node_modules"));
   execFileSync("git", ["add", "-A"], { cwd: root, env });
   execFileSync("git", ["commit", "-qm", "initial"], { cwd: root, env });
   const help = call(root, "inspect", { view: "help" });
