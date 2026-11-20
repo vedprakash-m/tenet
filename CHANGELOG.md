@@ -71,6 +71,71 @@
 - Schema 3 remains inactive: these modules are not connected to the live pipeline. Forward/rollback private-copy writers, durable scan/output/summary/removal/report completion, later-mutator continuation and ambiguity integration remain held. This is not complete CT-1..59 or joint P92/P108 activation.
 - Copied local contracts, plans and review records remain ignored and are not part of the published product.
 
+## 2026-11-19 - Protect mixed-path recovery on the published storage baseline
+
+- Integrated published P91/P106 schema-2 storage HEAD `dce2923` through Git
+  cherry-picks, preserving the existing exclusion changes. No unpublished
+  P95 implementation or schema-3 identity conversion is included.
+- Added complete affected-set recovery admission in `verbs/recover-admission.ts`.
+  Scaffold recovery checks current read/edit restrictions before each hash
+  and rollback; undo checks before inventory, patch reads and application.
+  Adopt, hardening and dependency reconciliation also admit their read sets.
+  Prohibited or malformed sets stay unresolved rather than becoming false
+  non-performance claims.
+- Reused `core/storage-protection.ts` inside `adapters/store-fs.ts` so unresolved
+  run directories and dependent journal pairs remain protected even when
+  cleanup callers supply no keep list.
+- Added `protected-recovery.test.ts`: mixed policy/path-order controls,
+  tightening between capabilities, malformed sets, permitted recovery and
+  restart/compaction/cap/age retention. The combined focused population
+  passed 77/77 locally, followed by three passing routine-scan variants.
+  Windows durability substitutions are synthetic;
+  supported-platform CI remains a separate gate.
+- The first integrated CI exposed a dependency-recovery fixture whose
+  object spread omitted adapter prototype methods. Bound its policy read
+  and exclusion configuration to the real adapter; the unchanged required
+  Windows recovery population and verifier now pass all 11 leaves.
+- A further red-first permitted-recovery control found that the per-path
+  accumulator lost a literal `__proto__` filename. Null-prototype hash maps
+  preserve exact path keys; all 15 protected recovery controls pass.
+- Schema-3 GitIndexIdentity/provider integration and native-host/physical-volume
+  qualification remain held or unobserved, not complete.
+
+## 2026-11-19 - Start the P118/P119 exclusion implementation
+
+- Added pinned Unicode 16.0 default case-fold data and normalized policy
+  admission in `core/exclusions.ts`, `core/policy-path.ts` and
+  `core/unicode-case-fold.ts`. Unavailable authenticated volume evidence uses
+  conservative folded matching, not an operating-system guess.
+- Added exact-path explicit read-use bindings and current-facts revalidation
+  to `FsProject` and the project port. Absolute `no-read` restrictions still
+  refuse; an explicit `no-routine-scan` kernel read grants no later model
+  send, edit or export.
+- Replaced regex-only packet policy with validated source-labeled matcher
+  data in `core/packet-exclusions.ts`. Review, analyst, stateless and handoff
+  consumers apply the same NFC/Unicode, exception and volume-provenance
+  rules. Protected instruction charters and dispatch projections are
+  omitted without weakening internal review coverage. Unsupported native
+  matching remains unavailable, not enforced by the host.
+- Added strict Git UTF-8/index path-plus-stage parsing in
+  `adapters/git-index-records.ts` and `adapters/git-cli.ts`, and refuse
+  restricted link identities before reading their targets.
+- Added exclusion-admission, packet-exclusions, git-index-records and
+  git-exclusion-admission regressions, including a real-process file-open
+  control. Schema-3 provider identity and protected mixed-path
+  recovery/retention integration remain blocked on their separate
+  prerequisite implementations; this is not full P118/P119 qualification.
+- Updated built UAT matcher assertions and exact read-only Git trace
+  expectations for the declarative packet and terminal pathspec separators.
+  Refreshed the single protected rubric observation for its increase from
+  11 to 13 chunks; scenario population and exact verification are unchanged.
+- Local validation: typecheck and all lints passed; the focused population
+  passed 66/66 tests, including a real unmerged Git path and zero-open
+  prohibited aliases. Built read-only review on a scratch repository
+  preserved index bytes and HEAD and created no `.tenet`. Existing Windows
+  mutation and bounded-read failures also reproduce on the untouched
+  baseline; supported-platform qualification remains separate.
+
 ## 2026-11-19 — Repair schema-2 baseline recovery and legacy fixtures
 
 - Fixed `store-fs.ts` first publication to create a complete empty journal and bind the temp directory's stable filesystem identity. Completed quarantine stays distinct from unexplained missing history, and empty transactions no longer reserve nonexistent writes.

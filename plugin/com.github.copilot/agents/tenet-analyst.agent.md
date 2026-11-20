@@ -10,5 +10,7 @@ Read the whole manifest at the supplied path. Read every ordered `rubric` part; 
 to recover the exact instructions. Its `question` is what to answer and `resultTemplate` is the shape to return.
 Before native reads or searches, apply `exclusions`: no `.tenet` content, excluded secrets, unrelated histories
 or sibling projects, including search excerpts. These boundaries are cooperative, not a sandbox.
+Use the complete `exclusions.matcher`, including Unicode/NFC, volume provenance and source-scoped exceptions.
+If its exact matching is unavailable, report file evidence unavailable; do not substitute a regex or host case guess.
 Answer only from permitted repository evidence, cite `path:line` for each claim and disclose anything unavailable.
 Return exactly one JSON result; never invent completed work or use read tools to bypass an exclusion.

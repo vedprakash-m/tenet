@@ -5,7 +5,7 @@ import { closeSync, constants, fchmodSync, fstatSync, fsyncSync, linkSync, lstat
 import { dirname, join, relative, resolve, sep } from "node:path";
 import type { Project, ProjectReadCause, ProjectReadResult, RecipeFile } from "../ports/types.ts";
 import { allowed } from "../core/exclusions.ts";
-import type { Exclusion, Op } from "../core/exclusions.ts";
+import type { Exclusion, Op, ReadAdmission, ReadEpoch, ReadUse } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
 
 // Bounded project-file reads (TS §7.4, CON-03): a config file Tenet reads (policy, intent, manifest, lockfile) is
@@ -28,11 +28,12 @@ export class FsProject implements Project {
   setExclusions(exclusions: readonly Exclusion[]): void { this.exclusions = exclusions; }
 
   /** Normalize before policy checks; links are data, never aliases for a project file operation. */
-  private at(rel: string, op: Op): string {
+  private at(rel: string, op: Op, use: ReadUse = { kind: "routine-inventory" }, current?: ReadEpoch): string {
     const p = resolve(this.root, rel);
     if (!p.startsWith(this.root + sep)) throw new ProjectRefusal("outside", `path escapes the project: ${rel}`);
     const normalized = relative(this.root, p).split(sep).join("/");
-    if (!allowed(op, normalized, this.exclusions)) throw new ProjectRefusal("excluded", `the project policy forbids ${op} of ${normalized}`);
+    if (!allowed(op, normalized, this.exclusions, use, current))
+      throw new ProjectRefusal("excluded", `the project policy forbids ${op} of ${normalized}`);
     let part = this.root;
     const parts = normalized.split("/");
     for (const [i, name] of parts.entries()) {
@@ -50,17 +51,19 @@ export class FsProject implements Project {
     for (const f of files) this.publish(f.path, f.content, f.mode, true);
   }
 
-  hashes(paths: readonly string[]): Record<string, string | null> {
+  hashes(paths: readonly string[], admission?: ReadAdmission): Record<string, string | null> {
     return Object.fromEntries(paths.map((rel) => {
-      const content = this.content(rel);
+      const content = this.content(rel, MAX_READ_BYTES, false, admission);
       return [rel, content === null ? null : createHash("sha256").update(content).digest("hex")];
     }));
   }
 
-  private content(rel: string, maxBytes = MAX_READ_BYTES, bounded = false): Buffer | null {
+  private content(rel: string, maxBytes = MAX_READ_BYTES, bounded = false, admission?: ReadAdmission): Buffer | null {
     let fd = -1;
+    const admit = () => this.at(rel, "read", admission?.use, admission?.current?.());
     try {
-      fd = openSync(this.at(rel, "read"), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+      fd = openSync(admit(), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+      admit();
       const st = fstatSync(fd);
       if (!st.isFile()) throw new ProjectRefusal("not-regular", `${rel} is not a regular project file`);
       if (st.size > maxBytes) {
@@ -77,22 +80,23 @@ export class FsProject implements Project {
       const after = fstatSync(fd);
       if (count !== st.size || after.size !== st.size || after.mtimeMs !== st.mtimeMs || after.ctimeMs !== st.ctimeMs)
         throw new ProjectRefusal("moved", `${rel} changed during its bounded read; retry against stable input`);
+      admit();
       return bytes.subarray(0, count);
     } catch (e) { if ((e as NodeJS.ErrnoException).code === "ENOENT") return null; throw e; }
     finally { if (fd >= 0) closeSync(fd); }
   }
 
-  read(rel: string): string | null {
-    const bytes = this.content(rel);
+  read(rel: string, admission?: ReadAdmission): string | null {
+    const bytes = this.content(rel, MAX_READ_BYTES, false, admission);
     if (bytes === null) return null;
     if (!isUtf8(bytes)) throw new ProjectRefusal("invalid-utf8", `${rel} is not valid UTF-8; no replacement text was accepted`);
     return bytes.toString("utf8");
   }
 
-  readBounded(rel: string, maxBytes: number): ProjectReadResult {
+  readBounded(rel: string, maxBytes: number, admission?: ReadAdmission): ProjectReadResult {
     if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || maxBytes > MAX_READ_BYTES) throw new RangeError("invalid project read byte limit");
     try {
-      const bytes = this.content(rel, maxBytes, true);
+      const bytes = this.content(rel, maxBytes, true, admission);
       if (bytes === null) return { status: "unavailable", cause: "missing" };
       if (!isUtf8(bytes)) return { status: "unavailable", cause: "invalid-utf8" };
       return { status: "available", text: bytes.toString("utf8"), sha256: createHash("sha256").update(bytes).digest("hex") };

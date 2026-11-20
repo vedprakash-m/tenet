@@ -84,7 +84,7 @@ function metadata(root: string, exclusions: readonly Exclusion[]) {
   const project = new FsProject(root);
   project.setExclusions(exclusions);
   const permit = (path: string) => {
-    if (!allowed("read", path, exclusions))
+    if (!allowed("read", path, exclusions, { kind: "routine-inventory" }))
       throw new KernelError("capability-missing", `project policy excludes stack metadata ${path}; dependent checks cannot run`, {
         exit: 2,
       });

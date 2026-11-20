@@ -66,8 +66,15 @@ const focused = (root, h, response) => {
  assert.ok(manifest.rubric.every(part => typeof part === 'string' && JSON.stringify(part).length < 1500));
  assert.match(manifest.rubric.join(''), /Stage A|basis/);
  assert.equal(manifest.exclusions.mechanism, 'cooperative');
- assert.ok(new RegExp(manifest.exclusions.defaults.kernelOnly).test('.tenet/state'));
- assert.ok(manifest.exclusions.defaults.secretPatterns.some(pattern => new RegExp(pattern).test('.env.local')));
+ const matcher = manifest.exclusions.matcher;
+ assert.equal(matcher.version, 1);
+ assert.equal(matcher.normalization, 'NFC');
+ assert.equal(matcher.unicodeVersion, '16.0');
+ assert.equal(matcher.caseFold, 'unicode-16-default-case-fold');
+ assert.equal(matcher.globGrammar, 'tenet-exclusion-glob-v1');
+ assert.deepEqual(matcher.exceptions, [{ pattern: '.env.example', target: 'default-secret' }]);
+ assert.ok(matcher.rules.some(rule => rule.source === 'kernel-only' && rule.pattern === '/.tenet/**' && rule.kinds.includes('no-read')));
+ assert.ok(matcher.rules.some(rule => rule.source === 'default-secret' && rule.pattern === '.env.?*' && rule.kinds.includes('no-model-send')));
  assert.equal(typeof manifest.resultGuidance.sampledItem.semantic, 'boolean');
  assert.equal(typeof manifest.resultGuidance.sampledItem.callers, 'number');
  assert.match(manifest.resultGuidance.sampled, /empty|\[\]/i);

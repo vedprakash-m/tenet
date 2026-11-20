@@ -11,6 +11,7 @@ import type { State, WorkContract } from "../core/schemas.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 import { recoverUndo } from "./recover-undo.ts";
 import { publishCommit, settleCommit } from "./recover-commit.ts";
+import { admitRecovery, hasPostconditions } from "./recover-admission.ts";
 
 export interface IntegrationOp { work: string; base: string; baseBefore: string; workTip: string }
 export type Unresolved = ReturnType<Tx["unresolved"]>[number];
@@ -19,7 +20,6 @@ export type Outcome = {
   mode?: string; foreign?: unknown; proof?: unknown; disposition?: unknown;
 };
 export interface Recovery { ports: Ports; tx: Tx; state: State; completed: string[]; uncertain: string[] }
-
 const put = (r: Recovery, w: WorkContract) => { r.state = { ...r.state, work: { ...r.state.work, [w.id]: w } }; };
 const withGit = (r: Recovery, w: WorkContract, git: Partial<WorkContract["git"]>) => put(r, { ...w, git: { ...w.git, ...git } });
 const applyIntegration = (r: Recovery, w: WorkContract, op: IntegrationOp, commit: string, moved: boolean) =>
@@ -84,12 +84,20 @@ async function integration(r: Recovery, u: Unresolved) {
 
 async function scaffold(r: Recovery, u: Unresolved) {
   const op = u.op as ScaffoldOp;
-  const paths = Object.keys(op.expected);
-  let now: Record<string, string | null>;
-  try { now = r.ports.project.hashes(paths); }
-  catch {
-    r.uncertain.push("the scaffold postcondition cannot be read safely; no rollback was attempted");
+  const paths = op?.expected && typeof op.expected === "object" && !Array.isArray(op.expected)
+    ? Object.keys(op.expected) : [];
+  if (!paths.length || !hasPostconditions(op?.expected, paths) || Object.values(op.expected).some(hash => hash === null)) {
+    r.uncertain.push("the scaffold has an unproved affected-path set; it remains unresolved");
     return;
+  }
+  const now: Record<string, string | null> = Object.create(null);
+  for (const path of paths) {
+    if (!admitRecovery(r, u, paths, true)) return;
+    try { Object.assign(now, r.ports.project.hashes([path])); }
+    catch {
+      r.uncertain.push("the scaffold postcondition cannot be read safely; no rollback was attempted");
+      return;
+    }
   }
   const same = paths.filter((p) => now[p] === op.expected[p]);
   const modified = paths.filter((p) => now[p] !== null && now[p] !== op.expected[p]);
@@ -101,7 +109,10 @@ async function scaffold(r: Recovery, u: Unresolved) {
     r.tx.result("scaffold", u.id, { completed: true, files: paths.length });
     r.completed.push("the scaffold had been written before the result was recorded");
   } else {
-    r.ports.project.remove(same);
+    for (const path of same) {
+      if (!admitRecovery(r, u, paths, true)) return;
+      r.ports.project.remove([path]);
+    }
     r.tx.result("scaffold", u.id, { completed: false });
     r.completed.push(same.length ? "an interrupted scaffold was rolled back" : "an interrupted scaffold did not happen");
   }
@@ -109,6 +120,7 @@ async function scaffold(r: Recovery, u: Unresolved) {
 
 async function adopt(r: Recovery, u: Unresolved) {
   const op = u.op as AdoptOp;
+  if (!admitRecovery(r, u, [op?.file])) return;
   let here: string | null | undefined;
   try { here = r.ports.project.hashes([op.file])[op.file]; }
   catch {
@@ -130,9 +142,15 @@ async function adopt(r: Recovery, u: Unresolved) {
 async function dependency(r: Recovery, u: Unresolved) {
   const op = u.op as DependencyOp;
   if (op.phase === "resolve") {
+    const lock = lockFileOf(op.manager), paths = [MANIFEST, lock];
+    if (!admitRecovery(r, u, paths)) return;
     let same = false;
+    const now: Record<string, string | null> = Object.create(null);
     try {
-      const lock = lockFileOf(op.manager), now = r.ports.project.hashes([MANIFEST, lock]);
+      for (const path of paths) {
+        if (!admitRecovery(r, u, paths)) return;
+        Object.assign(now, r.ports.project.hashes([path]));
+      }
       same = !!op.before && now[MANIFEST] === op.before.manifest && now[lock] === op.before.lock;
     } catch { same = false; }
     if (same) {
@@ -148,6 +166,7 @@ async function dependency(r: Recovery, u: Unresolved) {
 }
 async function hardening(r: Recovery, u: Unresolved) {
   const op = u.op as HardeningOp;
+  if (!admitRecovery(r, u, [op?.file])) return;
   let now: string | null;
   try { now = r.ports.project.hashes([op.file])[op.file] ?? null; }
   catch { r.uncertain.push("the interrupted hardening write has an unreadable postcondition; it remains unresolved"); return; }

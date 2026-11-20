@@ -2,11 +2,11 @@ import type { State } from "./schemas.ts";
 
 /** Paths whose bytes cannot be evicted from the project temp scope before their records are reconciled. */
 export function protectedRunPaths(
-  state: State,
+  state: State | null,
   unresolved: ReadonlyArray<{ op: unknown }>,
 ): string[] {
-  const legacy = state.project.retention?.legacyTemp.path;
-  const active = Object.values(state.work).flatMap((work) =>
+  const legacy = state?.project.retention?.legacyTemp.path;
+  const active = Object.values(state?.work ?? {}).flatMap((work) =>
     [
       work.session.inCall?.runDir,
       work.focusedReview?.manifest,

@@ -155,10 +155,11 @@ describe("the review manifest is self-sufficient (SP-08, observed on Copilot CLI
     for (const path of [d(checked).review.manifest, d(analyst).analyst.manifest]) {
       const packet = JSON.parse(readFileSync(path, "utf8"));
       assert.equal(packet.exclusions.mechanism, "cooperative");
-      assert.ok(new RegExp(packet.exclusions.defaults.kernelOnly).test(".tenet/state"));
-      assert.ok(packet.exclusions.defaults.secretPatterns.some((pattern: string) => new RegExp(pattern).test(".env.local")));
-      assert.ok(new RegExp(packet.exclusions.defaults.secretException).test(".env.example"));
-      assert.deepEqual(packet.exclusions.effective, exclusions);
+      assert.equal(packet.exclusions.matcher.normalization, "NFC");
+      assert.equal(packet.exclusions.matcher.unicodeVersion, "16.0");
+      assert.deepEqual(packet.exclusions.matcher.exceptions, [{ pattern: ".env.example", target: "default-secret" }]);
+      assert.deepEqual(packet.exclusions.matcher.rules.filter((rule: { source: string }) => rule.source === "configured")
+        .map(({ pattern, kinds }: { pattern: string; kinds: string[] }) => ({ pattern, kinds })), exclusions);
       assert.match(packet.exclusions.guidance.join(" "), /before.*read|before.*search/i);
       assert.ok(Array.isArray(packet.rubric));
     }
@@ -170,7 +171,8 @@ describe("the review manifest is self-sufficient (SP-08, observed on Copilot CLI
     const response = await fixture.call("review", {});
     assert.equal(response.exit, 0, JSON.stringify(response));
     const packet = JSON.parse(readFileSync(d(response).manifest, "utf8"));
-    assert.deepEqual(packet.exclusions.effective, exclusions);
+    assert.deepEqual(packet.exclusions.matcher.rules.filter((rule: { source: string }) => rule.source === "configured")
+      .map(({ pattern, kinds }: { pattern: string; kinds: string[] }) => ({ pattern, kinds })), exclusions);
     assert.equal(fixture.ports().store.exists(), false);
   });
 

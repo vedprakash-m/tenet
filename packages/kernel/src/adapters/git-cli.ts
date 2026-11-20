@@ -53,6 +53,7 @@ import { exactWorkTrailer } from "../core/commit-proof.ts";
 import type { CommitIntentV1, CommitProofV1, ReflogCursorV1 } from "../core/commit-proof.ts";
 import { stableStringify } from "../core/ids.ts";
 import { reflogCursor } from "./git-attribution.ts";
+import { decodeGitOutput, parseIndexRecords } from "./git-index-records.ts";
 
 const MAX_UNTRACKED = 20_000;
 const MAX_SNAPSHOT_BYTES = 20 * 1024 * 1024;
@@ -196,7 +197,7 @@ export class GitCli {
 
   private async run(
     args: string[],
-    o: { env?: Record<string, string>; input?: string; inspect?: boolean; cwd?: string; filters?: boolean } = {},
+    o: { env?: Record<string, string>; input?: string; inspect?: boolean; cwd?: string; filters?: boolean; strict?: boolean } = {},
   ): Promise<Out> {
     // Inspection disables configured filter programs.
     const neutral = o.filters ? [] : await this.neutralArgs();
@@ -206,13 +207,18 @@ export class GitCli {
       ...(o.inspect === false ? {} : { GIT_OPTIONAL_LOCKS: "0" }),
       ...o.env,
     };
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const where = this.shadow ? ["--git-dir", this.shadowDir, "--work-tree", this.root] : [];
       const c = execFile(
         "git",
         [...where, ...neutral, ...INSPECT, ...args],
-        { cwd: o.cwd ?? this.root, env, maxBuffer: 256 * 1024 * 1024, encoding: "utf8" },
-        (err, stdout, stderr) => resolve({ code: err ? ((err as { code?: number }).code ?? 1) : 0, stdout, stderr }),
+        { cwd: o.cwd ?? this.root, env, maxBuffer: 256 * 1024 * 1024, encoding: "buffer" },
+        (err, stdout, stderr) => {
+          try {
+            resolve({ code: err ? ((err as { code?: number }).code ?? 1) : 0,
+              stdout: o.strict ? decodeGitOutput(stdout) : stdout.toString("utf8"), stderr: stderr.toString("utf8") });
+          } catch (error) { reject(error); }
+        },
       );
       if (o.input !== undefined) c.stdin?.end(o.input);
       else c.stdin?.end();
@@ -358,7 +364,9 @@ export class GitCli {
     // All but status at once (NFR-01); status needs the listings.
     const [, head, branch, staged, others, tagged] = await Promise.all([
       this.objectFormatSafe(), this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]), this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]),
-      this.ok(["ls-files", "-s", "-z"]), this.ok(["ls-files", "--others", "--exclude-standard", "-z"]), this.ok(["ls-files", "-v", "-z"]),
+      this.ok(["ls-files", "-s", "-z", "--"], { strict: true }),
+      this.ok(["ls-files", "--others", "--exclude-standard", "-z", "--"], { strict: true }),
+      this.ok(["ls-files", "-v", "-z", "--"], { strict: true }),
     ]);
     const skip = (p: string) => isKernelFile(p) || exclude.some((x) => p === x || p.startsWith(`${x}/`));
     const index = this.indexEntries(staged, skip);
@@ -373,14 +381,7 @@ export class GitCli {
 
   /** Stage-0 index entries, minus Tenet's own files and the caller's exclusions. */
   private indexEntries(listed: string, skip: (p: string) => boolean): Map<string, Entry> {
-    const index = new Map<string, Entry>();
-    for (const rec of listed.split("\0").filter(Boolean)) {
-      const tab = rec.indexOf("\t");
-      const [mode, blob, stage] = rec.slice(0, tab).split(" ");
-      const path = rec.slice(tab + 1);
-      if (stage === "0" && !skip(path)) index.set(path, { path, mode: mode!, blob: blob! });
-    }
-    return index;
+    return new Map([...parseIndexRecords(listed).entries].filter(([path]) => !skip(path)));
   }
 
   /** Git status, plus the untracked files whose content Tenet reads itself. Too many untracked files is a refusal. */
@@ -497,14 +498,19 @@ export class GitCli {
     if (!abs) return null;
     try {
       const st = lstatSync(abs);
-      if (st.isSymbolicLink()) return { mode: "120000", blob: gitBlob(Buffer.from(readlinkSync(abs))) };
+      if (st.isSymbolicLink()) {
+        if (!allowed("scan", rel, this.exclusions))
+          throw new KernelError("capability-missing", "a restricted link has no admitted working identity", { exit: 2 });
+        return { mode: "120000", blob: gitBlob(Buffer.from(readlinkSync(abs))) };
+      }
       if (!st.isFile()) return null;
       const mode = st.mode & 0o111 ? "100755" : "100644";
       return {
         mode,
         blob: allowed("scan", rel, this.exclusions) ? gitBlob(readFileSync(abs)) : sha256(this.stat(rel)).slice(0, 40),
       };
-    } catch {
+    } catch (error) {
+      if (error instanceof KernelError) throw error;
       return null;
     }
   }
@@ -519,7 +525,7 @@ export class GitCli {
         "--",
         ".",
         ...statOnly.map((p) => `:(exclude,literal)${p}`),
-      ])
+      ], { strict: true })
     ).split("\0");
     const out: StatusEntry[] = [];
     for (let i = 0; i < recs.length; i++) {
@@ -565,7 +571,7 @@ export class GitCli {
   ): Promise<FileChange[]> {
     await this.objectFormatSafe();
     const out: FileChange[] = [];
-    const wanted = paths.filter((p) => allowed("model-send", p, this.exclusions)); // excluded content never enters a manifest
+    const wanted = paths.filter((p) => allowed("model-send", p, this.exclusions, { kind: "routine-inventory" }));
     // One call tells which of the paths exist in the base; the rest are new files.
     const inBase = new Set(
       base && wanted.length

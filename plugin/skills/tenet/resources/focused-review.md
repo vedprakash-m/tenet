@@ -5,6 +5,8 @@ with usages (text search if unavailable). Inspect those and linked acceptance te
 Disclose the search fallback and unresolved dependencies; private-only changes require no interface claim.
 Read all ordered rubric parts; apply manifest exclusions before native reads/searches, including snippets.
 Never inspect .tenet, excluded secrets or unrelated histories. Field shapes come from resultGuidance.
+Apply the complete `exclusions.matcher`: Unicode/NFC, volume provenance and source-scoped exceptions.
+If unsupported, report file evidence unavailable; never substitute a regex or host case guess.
 List inspected paths and a cross-module interaction; keep anything unread or unresolved in coverage.uncovered
 or openDependencies. Give attention items a disposition. A same-session pass cannot accept its own markers or
 suppressions. Record findings with path:line evidence using the manifest's resultTemplate and

@@ -99,7 +99,6 @@ export function readJournal(text: string): { entries: LogEntry[]; keep: number }
   }
   return { entries, keep };
 }
-
 type PathOf = (name: string) => string;
 const COMMIT_PROOF_DIRECTORY = "git/commit-proofs-v1";
 

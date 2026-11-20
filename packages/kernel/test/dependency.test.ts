@@ -96,6 +96,8 @@ describe("interrupted resolution preserves unknown content [CON-03, SEC-05]", ()
     const r: Recovery = {
       ports: { ...base, project: {
         ...base.project,
+        read: base.project.read.bind(base.project),
+        setExclusions: base.project.setExclusions.bind(base.project),
         write: path => { mutations.push(path); forbidden(); },
         remove: paths => { mutations.push(...paths); forbidden(); },
         hashes: paths => { if (unreadable) throw new Error("unreadable postcondition"); return base.project.hashes(paths); },

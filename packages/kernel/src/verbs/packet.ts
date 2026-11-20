@@ -11,6 +11,9 @@ import { nx, withWork, workOf } from "./common.ts";
 import { checkInputId, gather, worldDigest } from "./facts.ts";
 import { issueAnalyst, issueReview } from "./manifest.ts";
 import { coverageEvidenceForReceipts } from "../core/alternative-check.ts";
+import { modelPathFilter, packetExclusions } from "../core/packet-exclusions.ts";
+import { settingsFor } from "./reconcile.ts";
+import type { Exclusion } from "../core/exclusions.ts";
 
 export const packet: Verb<PacketInput> = {
   name: "packet",
@@ -20,11 +23,15 @@ export const packet: Verb<PacketInput> = {
 
   async run(ports, state, input) {
     const w = workOf(state, input.h);
-    if (input.role === "handoff") return { resp: { work: w.id, data: { handoff: handoffText(state!, w) } } };
+    const exclusions = settingsFor(ports, state, w).exclusions as Exclusion[];
+    const handoff = () => ({ handoff: handoffText(state!, w, exclusions), exclusions: packetExclusions(exclusions) });
+    if (input.role === "handoff") return { resp: { work: w.id, data: handoff() } };
     const facts = await gather(ports, w);
     if (input.role === "resume") {
       const note = w.session.inCall ? `A ${w.session.inCall.verb} was in progress and will be reconciled on the next mutating call.` : "No call was in progress.";
-      return { resp: { work: w.id, data: { handoff: handoffText(state!, w), reconciliation: { changedNow: facts.att.changed.length, unexplained: facts.att.unexplained, note } } } };
+      return { resp: { work: w.id, data: { ...handoff(), reconciliation: { changedNow: facts.att.changed.length,
+        unexplained: facts.att.unexplained.filter(modelPathFilter(exclusions)),
+        note } } } };
     }
     if (input.role === "analyst") {
       if (!input.question || !input.analystRole) {
