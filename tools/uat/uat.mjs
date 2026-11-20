@@ -45,7 +45,9 @@ const create = () => {
 const call = (root, verb, body = {}, flags = [], consentEnvelope = true) => {
  const readsBody = ['open', 'decide', 'findings'].includes(verb);
  const args = readsBody ? flags : [...Object.entries(body).flatMap(([key, value]) => [`--${key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`, typeof value === 'object' ? JSON.stringify(value) : String(value)]), ...flags];
- const callEnv = { ...env, TENET_TEST_INSTALLED_METADATA_WORKSPACE: root };
+ const nodeModules = lstatSync(join(root, 'node_modules'), { throwIfNoEntry: false });
+ const metadataWorkspace = nodeModules?.isDirectory() ? root : source;
+ const callEnv = { ...env, TENET_TEST_INSTALLED_METADATA_WORKSPACE: metadataWorkspace };
  const result = spawnSync(process.execPath, [bundle, verb, ...args], { cwd: root, env: callEnv, input: readsBody ? JSON.stringify(body) : '', encoding: 'utf8' });
  assert.equal(result.signal, null, result.stderr);
     const response = JSON.parse(result.stdout); assert.equal(result.status, response.exit);
