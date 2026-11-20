@@ -411,6 +411,10 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/alternative-check.test.ts :: recipe coverage state [AC-27] :: accepts generated production work IDs in coverage bindings",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/alternative-check.test.ts :: recipe coverage state [AC-27] :: does not rerun an exit/report contradiction or launch its alternative",
         "count": 1
       },
@@ -419,7 +423,15 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/alternative-check.test.ts :: recipe coverage state [AC-27] :: normalizes the shipped recipe's reviewed mapping before persisting it",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/alternative-check.test.ts :: recipe coverage state [AC-27] :: preserves unrelated extensions and binds exact mapping evidence to the accepted basis",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/alternative-check.test.ts :: recipe coverage state [AC-27] :: records an empty first-pass history as attempt one",
         "count": 1
       },
       {
@@ -1031,11 +1043,23 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/ci-security.test.ts :: untrusted validation keeps its trust boundary [ENG-10] :: partitions the protected UAT population into exact independent groups",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/ci-security.test.ts :: untrusted validation keeps its trust boundary [ENG-10] :: pins workflow actions and the generated starter workflow",
         "count": 1
       },
       {
         "key": "packages/kernel/test/ci-security.test.ts :: untrusted validation keeps its trust boundary [ENG-10] :: runs source once per POSIX OS with locked Chromium and complete structured evidence",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/ci-security.test.ts :: untrusted validation keeps its trust boundary [ENG-10] :: runs the minimum-Node Windows population concurrently",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/ci-security.test.ts :: untrusted validation keeps its trust boundary [ENG-10] :: starts UAT from a checked shared payload while native builds prove identical bytes",
         "count": 1
       },
       {
@@ -1064,6 +1088,54 @@
       },
       {
         "key": "packages/kernel/test/cli-input.test.ts :: bounded command input [NFR-03] :: subcommand help is stateless and never opens work or waits for a body [CON-09]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: discovers literal W-.* with hostile trailer configuration [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: discovers literal W-[0001] with hostile trailer configuration [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: discovers literal W-0001 with hostile trailer configuration [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: physical verification rejects raw trailing \" \" in a work value [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: physical verification rejects raw trailing \"\\t\" in a work value [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: rejects non-exact work trailer \"Subject\\n\\nTenet-Work: W-0001\\n continuation\" [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: rejects non-exact work trailer \"Subject\\n\\nTenet-Work: W-0001\\n\\nNot a trailer\" [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: rejects non-exact work trailer \"Subject\\n\\nTenet-Work: W-0001\\nTenet-Work: W-0001\" [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: rejects non-exact work trailer \"Subject\\n\\nTenet-Work: W-0001\\nTENET-WORK: W-0001\" [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: rejects non-exact work trailer \"Subject\\n\\nTenet-Work: W-0001\\nTenet-Work: W-0002\" [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: rejects non-exact work trailer \"Subject\\nTenet-Work: W-0001\" [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution.test.ts :: rejects non-exact work trailer \"Tenet-Work: W-0001\" [GIT-03]",
         "count": 1
       },
       {
@@ -1128,6 +1200,146 @@
       },
       {
         "key": "packages/kernel/test/commit-green.test.ts :: checkpoint green-boundary admission [GIT-03] :: requires a fresh full acceptance result after targeted feedback despite a full suite pass",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-proof.test.ts :: normal finalization persists a paired proof before publishing ownership [GIT-03, CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-proof.test.ts :: refuses a rewritten commit even when its tree, patch and label match [GIT-04]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-proof.test.ts :: refuses corrupt proof before inverse planning without changing Git [GIT-04, CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-proof.test.ts :: refuses duplicate proof before inverse planning without changing Git [GIT-04, CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-proof.test.ts :: refuses mismatched-generation proof before inverse planning without changing Git [GIT-04, CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-proof.test.ts :: refuses mismatched-work proof before inverse planning without changing Git [GIT-04, CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-proof.test.ts :: refuses missing proof before inverse planning without changing Git [GIT-04, CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-proof.test.ts :: refuses orphan proof before inverse planning without changing Git [GIT-04, CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-proof.test.ts :: retains ownership on fast-forward base after deleting the origin ref [GIT-04]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-proof.test.ts :: retains ownership on merged base after deleting the origin ref [GIT-04]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-attribution.test.ts :: does not admit detached commits or invent unborn reflog evidence [GIT-03, CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-attribution.test.ts :: inspects the origin ref without switching the checkout [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-attribution.test.ts :: proves only a complete unchanged named-ref interval, never moved-and-returned [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-attribution.test.ts :: refuses a no-move conclusion after reflog expiry [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-attribution.test.ts :: refuses a reflog change between its two immediate observations [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-attribution.test.ts :: refuses bounded reflog history even at the original parent [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-attribution.test.ts :: refuses missing reflog history even at the original parent [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-attribution.test.ts :: refuses rewritten reflog history even at the original parent [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: after-act: public recovery never attributes; leave-unrecorded is terminal and byte-preserving [CON-12, GIT-03, GIT-04]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: after-proof: public recovery never attributes; leave-unrecorded is terminal and byte-preserving [CON-12, GIT-03, GIT-04]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: after-result: public recovery resolves only an unchanged interval or a durable result [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: before-act: public recovery resolves only an unchanged interval or a durable result [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: legacy publication preserves foreign=[\"human.txt\"] without deriving proof fields [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: legacy publication preserves foreign=[] without deriving proof fields [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: legacy publication preserves foreign=[1] without deriving proof fields [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: legacy publication preserves foreign=undefined without deriving proof fields [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: rebinds changed recovery facts instead of accepting an old leave-unrecorded answer [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: replays a durable leave-unrecorded disposition after death before State publication [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: replays the exact old nothing-to-commit result as an idempotent no-op [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: unpublished result with corrupt private proof stays uncertain [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: unpublished result with duplicate private proof stays uncertain [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-recovery-public.test.ts :: unpublished result with missing private proof stays uncertain [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/config-confirm.test.ts :: decide config asks before loosening [CFG-01] :: [CFG-01] a confirmation for a different change is not accepted",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/config-confirm.test.ts :: decide config asks before loosening [CFG-01] :: [CFG-01] a tightening saves at once with the interpreted read-back",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/config-confirm.test.ts :: decide config asks before loosening [CFG-01] :: [CFG-01] removing a protected path asks first and saves nothing; confirm saves; keep clears the question",
         "count": 1
       },
       {
@@ -1699,6 +1911,46 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/dependency-privacy.test.ts :: [SEC-05] [SEC-11] dependency privacy admits literal empty pnpm maps only within the closed map domain",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dependency-privacy.test.ts :: [SEC-05] [SEC-11] dependency privacy admits one closed npm pair and preserves exact CRLF bytes",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dependency-privacy.test.ts :: [SEC-05] dependency privacy admits ordinary pnpm v9 AST scalars and exact lock bytes",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dependency-privacy.test.ts :: [SEC-05] dependency restoration distinguishes complete pairs from interrupted partial restoration",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dependency-privacy.test.ts :: [SEC-11] dependency privacy admits exact byte and dependency count bounds and refuses one over",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dependency-privacy.test.ts :: [SEC-11] dependency privacy refuses every explicit YAML directive before hashing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dependency-privacy.test.ts :: [SEC-11] dependency privacy refuses other flow syntax and misplaced empty maps without hashing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dependency-privacy.test.ts :: [SEC-11] dependency privacy refuses unsupported metadata, duplicate keys and invalid bytes before hashing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dependency-privacy.test.ts :: [SEC-11] dependency privacy rejects pnpm comments, aliases, tags, flow and nonclosed scalar fields",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dependency-privacy.test.ts :: [SEC-11] dependency restoration refuses undeclared positions and never hashes legacy values",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/dependency.test.ts :: interrupted resolution preserves unknown content [CON-03, SEC-05] :: leaves unreadable postconditions unresolved without aborting the recovery pass",
         "count": 1
       },
@@ -1807,6 +2059,18 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/diagnostics-export.test.ts :: diagnostics export :: admits exactly the byte ceiling and removes a row one byte over [NFR-07] [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/diagnostics-export.test.ts :: diagnostics export :: counts only closed receipt kinds without exporting legacy details [NFR-07] [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/diagnostics-export.test.ts :: diagnostics export :: embeds the v2 disclosure and hashes the exact returned UTF-8 bytes [NFR-07] [SEC-11]",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/diagnostics-export.test.ts :: diagnostics export :: inspect --view export previews the bundle and writes nothing into the project",
         "count": 1
       },
@@ -1819,27 +2083,99 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/diagnostics-export.test.ts :: diagnostics export :: omits an unproven cookie-shaped label before serialization [NFR-07] [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/diagnostics-export.test.ts :: diagnostics export :: omits unregistered effect names and separates invalid from truncated calls [NFR-07] [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/diagnostics-export.test.ts :: diagnostics export :: refuses headers outside the closed version/platform domain [NFR-07] [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/diagnostics-export.test.ts :: diagnostics export :: removes oldest calls then work until serialized bytes fit, preserving JSON [NFR-07] [SEC-11]",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/diagnostics-export.test.ts :: diagnostics export :: stays within the size cap and reports what it left out",
         "count": 1
       },
       {
-        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: a dirty-overlap question the work no longer needs :: [GIT-10] closes without recording a decision when the scope no longer covers the files",
+        "key": "packages/kernel/test/diagnostics-export.test.ts :: preserves structured privacy and historical disclosures through response parsing [SEC-11]",
         "count": 1
       },
       {
-        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap answer binding :: [GIT-10] applies the answer to exactly the files shown",
+        "key": "packages/kernel/test/diagnostics-export.test.ts :: rejects altered or undeclared response disclosure fields [SEC-11]",
         "count": 1
       },
       {
-        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap answer binding :: [GIT-10] refuses an answer when a dirty file was added after the question",
+        "key": "packages/kernel/test/digest-key-fs.test.ts :: P87 coupled key file interface (not standalone epoch repair) :: never installs a key without the coupled atomic no-replace capability [SEC-11]",
         "count": 1
       },
       {
-        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap choices (UX J-03b) :: [GIT-10] a file the user committed while Tenet waited stops being human-dirty; a left-out file may not change",
+        "key": "packages/kernel/test/digest-key-fs.test.ts :: P87 coupled key file interface (not standalone epoch repair) :: never stages over an unproved temp or bypasses ownership admission [SEC-11]",
         "count": 1
       },
       {
-        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap choices (UX J-03b) :: [GIT-10] leave-out keeps the file out of the commit and out of Tenet's edits",
+        "key": "packages/kernel/test/digest-key-fs.test.ts :: P87 coupled key file interface (not standalone epoch repair) :: publishes only after a mandatory coupled-transaction admission and replays the exact inode [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/digest-key-fs.test.ts :: P87 coupled key file interface (not standalone epoch repair) :: refuses the key namespace in generic content-hashing file operations [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/digest-key-fs.test.ts :: P87 coupled key file interface (not standalone epoch repair) :: refuses unapproved publication, occupied key and malformed/substituted temp without replacement [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/digest-key-fs.test.ts :: P87 coupled key file interface (not standalone epoch repair) :: stages a private checked 84-byte record and exposes only its nonsecret descriptor [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/digest-key.test.ts :: P87 binary digest-key record :: refuses damage to every byte and every truncation without disclosing record data [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/digest-key.test.ts :: P87 binary digest-key record :: rejects wrong entropy lengths and does not derive the key ID from the key [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/digest-key.test.ts :: P87 binary digest-key record :: round-trips an independent ID and a checked 84-byte synthetic record [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-file-consent.test.ts :: dirty-file consent (P47) :: [GIT-10] a different Tenet path does not qualify a human-only overlapping path",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-file-consent.test.ts :: dirty-file consent (P47) :: [GIT-10] binds one choice to each displayed file through a question instance",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-file-consent.test.ts :: dirty-file consent (P47) :: [GIT-10] durable noCommit survives an explicit commit, restart and a fresh later finish",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-file-consent.test.ts :: dirty-file consent (P47) :: [GIT-10] wait and explicit commit never stage or commit a human-only file set",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-file-consent.test.ts :: dirty-file consent (P47) :: [GIT-12] declining signing consent records noCommit and a later explicit commit asks again",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap choices (UX J-03b) :: [GIT-10] a person committing while Tenet waits settles that file; restored dirty facts ask again",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap choices (UX J-03b) :: [GIT-10] don't commit grants edit-uncommitted authority only to every named item",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap choices (UX J-03b) :: [GIT-10] leave-out keeps later human edits outside the task",
         "count": 1
       },
       {
@@ -1847,11 +2183,27 @@
         "count": 1
       },
       {
-        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap choices (UX J-03b) :: [GIT-10] wait records no decision and closes the question, so the next check asks again",
+        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap choices (UX J-03b) :: [GIT-10] wait records a durable waiting decision and closes only that issuance",
         "count": 1
       },
       {
-        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap choices (UX J-03b) :: refuses an unknown answer and names the three choices",
+        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap question binding :: [GIT-10] applies a distinct answer to each displayed item",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap question binding :: [GIT-10] discloses a unique item token and relevant facts for every file",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap question binding :: [GIT-10] refuses an answer when a dirty file was added after the question",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap question binding :: [GIT-10] refuses changed working and index facts without applying authority",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/dirty-overlap-bind.test.ts :: dirty-overlap question binding :: [GIT-10] rejects missing, duplicate, undisclosed and wrong-instance answers",
         "count": 1
       },
       {
@@ -2323,6 +2675,50 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/exclusion-admission.test.ts :: conservative exclusion admission :: admits only a current exact-path explicit use of no-routine-scan [SEC-08, SEC-14]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/exclusion-admission.test.ts :: conservative exclusion admission :: keeps literal control characters distinct from glob syntax [SEC-08, SEC-14]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/exclusion-admission.test.ts :: conservative exclusion admission :: keeps local reads distinct from edit and destination restrictions [SEC-08]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/exclusion-admission.test.ts :: conservative exclusion admission :: normalizes lexical paths but rejects invalid paths before policy matching [SEC-06]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/exclusion-admission.test.ts :: conservative exclusion admission :: observes zero file opens for prohibited aliases in a real process [SEC-08, SEC-14]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/exclusion-admission.test.ts :: conservative exclusion admission :: refuses alias file reads, hashes and mutations without changing file bytes [SEC-06, SEC-14]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/exclusion-admission.test.ts :: conservative exclusion admission :: refuses default and configured case aliases before each capability [SEC-08, SEC-14]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/exclusion-admission.test.ts :: conservative exclusion admission :: revalidates explicit project reads against current policy and question facts [SEC-08, SEC-14]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/exclusion-admission.test.ts :: conservative exclusion admission :: uses NFC and default Unicode folding rather than locale or RegExp flags [SEC-08, SEC-14]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/executable-privacy.test.ts :: [GIT-12] executable privacy cannot turn enabled or indeterminate signing into absence",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/executable-privacy.test.ts :: [SEC-11] [GIT-12] executable privacy admits exact complete-domain limits and refuses each first overflow",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/execution-envelope.test.ts :: asks for unknown exposure before spawn and reuses consent for the same envelope",
         "count": 1
       },
@@ -2707,6 +3103,46 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/git-exclusion-admission.test.ts :: Git exclusion admission :: keeps a real unmerged path unresolved without retaining conflict-stage OIDs [GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/git-exclusion-admission.test.ts :: Git exclusion admission :: omits model-ineligible case aliases before generating whole-file or diff content [SEC-08]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/git-exclusion-admission.test.ts :: Git exclusion admission :: refuses a restricted link identity rather than reading or hashing its target [SEC-08, SEC-14]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/git-index-records.test.ts :: strict Git index records :: refuses malformed framing, mode, OID, stage and non-relative path records [SEC-06, GIT-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/git-index-records.test.ts :: strict Git index records :: strictly decodes UTF-8 without coalescing valid replacement characters [SEC-06, SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/git-index-records.test.ts :: strict Git index records :: uses exact path plus stage identity and keeps valid conflicts unresolved [GIT-03, SEC-06]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/git-privacy-identity.test.ts :: [SEC-11] [EVD-01] Git privacy sorts admitted paths and preserves distinct worktree versus index claims",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/git-privacy-identity.test.ts :: [SEC-11] [SEC-14] Git privacy candidate admission hashes only closed provider metadata, including symlink index continuity",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/git-privacy-identity.test.ts :: [SEC-11] Git privacy enforces exact inventory and worktree-row ceilings without partial digests",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/git-privacy-identity.test.ts :: [SEC-11] Git privacy refuses raw paths, stat fallbacks, malformed metadata and unknown rows without hashing",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/git-process-count.test.ts :: Git processes per call :: reads each location on its own when the combined rev-parse fails or does not give one line per value",
         "count": 1
       },
@@ -2807,6 +3243,10 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/git.test.ts :: git: probe and inventory :: delivers inverse patches only through bounded Runner stdin [SEC-06, P117]",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/git.test.ts :: git: probe and inventory :: hashes assume-unchanged files instead of trusting the index [EVD-03]",
         "count": 1
       },
@@ -2815,11 +3255,11 @@
         "count": 1
       },
       {
-        "key": "packages/kernel/test/git.test.ts :: git: probe and inventory :: never reads secret files, only their stat, and ignores .tenet [SEC-14]",
+        "key": "packages/kernel/test/git.test.ts :: git: probe and inventory :: ignores a linked inverse-patch artifact without changing its target [SEC-06]",
         "count": 1
       },
       {
-        "key": "packages/kernel/test/git.test.ts :: git: probe and inventory :: refuses a linked inverse-patch artifact without changing its target [SEC-06]",
+        "key": "packages/kernel/test/git.test.ts :: git: probe and inventory :: never reads secret files, only their stat, and ignores .tenet [SEC-14]",
         "count": 1
       },
       {
@@ -2912,6 +3352,10 @@
       },
       {
         "key": "packages/kernel/test/hooks.test.ts :: husky and lint-staged [GIT-03] :: run on the temporary index: the commit holds only Tenet's file, and the person's staged and unstaged edits are untouched",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/host-cli.test.ts :: host CLI, live (SP-11 feasibility) [ENG-04]",
         "count": 1
       },
       {
@@ -3115,6 +3559,10 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/host-sp08.test.ts :: SP-08 live on the Copilot CLI (one case: --test-name-pattern with its ID and a colon; see docs/audits/2026-10-24/sp08-cli.md)",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/impact.test.ts :: impact of changing intent [INT-08] :: a requirement reaches its examples, the plan items that carry it, their dependents, linked decisions and the tests",
         "count": 1
       },
@@ -3192,6 +3640,86 @@
       },
       {
         "key": "packages/kernel/test/index-recovery.test.ts :: index-sync crash recovery [GIT-03, CON-03, CON-04] :: retains newly staged content on a synced path after the crashed rename",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: admits one exact qualified CI/POSIX request and refuses a linked package path",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: allows only an exact workspace node_modules link from an outside fixture root",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: binds the admitted leaf identity to the opened metadata object",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: binds the admitted parent identity to the opened metadata object",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: fails closed before classifying a dangling installed metadata path as absent or supported",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: fails closed before classifying a hard-linked installed metadata path as absent or supported",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: fails closed before classifying a linked installed metadata path as absent or supported",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: fails closed before classifying a missing installed metadata path as absent or supported",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: fails closed before classifying a package-linked installed metadata path as absent or supported",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: fails closed before classifying a regular installed metadata path as absent or supported",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: keeps a dangling node_modules resolution unavailable rather than missing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: keeps a dangling package.json resolution unavailable rather than missing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: keeps the CI provider unavailable without explicit fixture activation",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: keeps unavailable fingerprints distinct from evidence and agreement [P107, EVD-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: pins every tool/record request to a closed provider and named path [P107, AC-16]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: refuses an unsupported provider identity before reading any bytes",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: refuses provider/path substitutions before native admission",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: rejects a fixture link that resolves outside the checked workspace",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: scaffolds the bounded N-API boundary without activating a payload [P107]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/installed-metadata-admission.test.ts :: installed metadata admission [SEC-06] :: selects the fixture metadata provider from the explicit createPorts environment",
         "count": 1
       },
       {
@@ -3327,6 +3855,82 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/journal-plan.test.ts :: schema-3 byte-preserving reduction planner (not durable compaction) :: keeps all publisherless, incomplete and unknown pairs even with an asserted publication [AC-19] CT-23",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/journal-plan.test.ts :: schema-3 byte-preserving reduction planner (not durable compaction) :: never deletes duplicate structured pairs or conflates effect/ID components across generations [AC-19] CT-7",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/journal-plan.test.ts :: schema-3 byte-preserving reduction planner (not durable compaction) :: never infers the age of an invalid accounting timestamp [AC-19] CT-6",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/journal-plan.test.ts :: schema-3 byte-preserving reduction planner (not durable compaction) :: protects accounting with unknown nested budget data rather than stripping it [AC-19] CT-6",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/journal-plan.test.ts :: schema-3 byte-preserving reduction planner (not durable compaction) :: protects the old member when its pair mate is recent or among the newest 100 [AC-19] CT-3",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/journal-plan.test.ts :: schema-3 byte-preserving reduction planner (not durable compaction) :: reduces 10,000 old reachable calls to exact fixture counts and newest 100 bytes [AC-19] CT-2",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/journal-plan.test.ts :: schema-3 byte-preserving reduction planner (not durable compaction) :: requires independently exact publication in both copies and protects pair references [AC-19] CT-3 CT-4 CT-5",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/journal-plan.test.ts :: schema-3 byte-preserving reduction planner (not durable compaction) :: retains a generation with unknown version/kind/shape and refuses a damaged complete line [AC-19] CT-6",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/journal-plan.test.ts :: schema-3 byte-preserving reduction planner (not durable compaction) :: uses the exact byte trigger, including the equality boundary [AC-19] CT-1",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/keyed-digest.test.ts :: P87 closed response bindings :: admits only complete tagged undo provider facts and preserves provider order [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/keyed-digest.test.ts :: P87 closed response bindings :: compares only full, well-formed current bindings [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/keyed-digest.test.ts :: P87 closed response bindings :: never MACs the three free-form domains, unknown kinds or inadmissible facts [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/keyed-digest.test.ts :: P87 closed response bindings :: re-admits forged known objects at the cryptographic boundary [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/keyed-digest.test.ts :: P87 closed response bindings :: uses the exact canonical projection and domain without a prehash [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/legacy-summary-ambiguity.test.ts :: legacy-summary explicit ambiguity boundary (pure; not request durability) :: accepts only exact instance-bound retain/decline and preserves the request [AC-19] CT-50",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/legacy-summary-ambiguity.test.ts :: legacy-summary explicit ambiguity boundary (pure; not request durability) :: cannot retain across changed marker/store/proof/work/session evidence [AC-19] CT-54",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/legacy-summary-ambiguity.test.ts :: legacy-summary explicit ambiguity boundary (pure; not request durability) :: never permits deletion, migration, new work or exact-accounting work [AC-19] CT-52",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/legacy-summary-ambiguity.test.ts :: legacy-summary explicit ambiguity boundary (pure; not request durability) :: publishes only the fixed non-exact disclosure, never evidence bytes or paths [AC-19] CT-53",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/legacy-summary-ambiguity.test.ts :: legacy-summary explicit ambiguity boundary (pure; not request durability) :: requests only normally admitted v2 ambiguity, never a malformed discriminator or null baseline [AC-19] CT-49",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/lessons.test.ts :: forgetting a lesson [CON-10, LRN-02] :: a response cached before the forget does not bring the text back",
         "count": 1
       },
@@ -3391,6 +3995,410 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/marker-activation.test.ts :: schema-3 activation hold [LFC-04] :: admits only the strict protocol-2 terminal in the candidate schema",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-activation.test.ts :: schema-3 activation hold [LFC-04] :: keeps the active schema at 2 and refuses a schema-3 marker without any store change",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-activation.test.ts :: schema-3 activation hold [LFC-04] :: keeps the pre-bridge schema-2 terminal reader from accepting protocol 2",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: binds an available host and immediately verifies the exact payload",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: directory identity admission [CON-02, CON-04] :: does not infer a qualified creation time from ctime or a nonzero wall-clock value",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: directory identity admission [CON-02, CON-04] :: reads and rechecks one exact bigint tuple",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: directory identity admission [CON-02, CON-04] :: refuses a changed second observation without a rounded fallback",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: directory identity admission [CON-02, CON-04] :: refuses an inadmissible directory observation birthNs",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: directory identity admission [CON-02, CON-04] :: refuses an inadmissible directory observation directory",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: directory identity admission [CON-02, CON-04] :: refuses an inadmissible directory observation ino",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: directory identity admission [CON-02, CON-04] :: refuses an inadmissible directory observation symbolicLink",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: does not publish a candidate when immediate verification fails",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: fails closed for unavailable binding",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: fails closed for unknown binding",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: maps create failure to marker-binding-unavailable without fallback",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: maps status failure to marker-binding-unavailable without fallback",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: maps verify failure to marker-binding-unavailable without fallback",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: candidate marker binding [CON-05, SEC-12] :: records verified absence but never strengthens or invents a binding",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: marker identity records [CON-02, SEC-12] :: keeps numeric shadows but never serializes them as authoritative identity",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: marker identity records [CON-02, SEC-12] :: preserves bigint inode distinctions that collapse to the same Number",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: marker identity records [CON-02, SEC-12] :: requires canonical lossless authoritative decimal identities",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: marker identity records [CON-02, SEC-12] :: requires every identity component to match exactly",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-identity.test.ts :: marker identity records [CON-02, SEC-12] :: strictly refuses unknown fields, duplicate JSON intent and malformed bindings",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-postcondition.test.ts :: ordinary repeated open plan postcondition [CON-03, LFC-04] :: deletes retained evidence only through the exact post-success prefix",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-postcondition.test.ts :: ordinary repeated open plan postcondition [CON-03, LFC-04] :: does not certify the legacy schema-1 CLI as usable prior schema",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-postcondition.test.ts :: ordinary repeated open plan postcondition [CON-03, LFC-04] :: keeps provisional evidence when the repeated result changes",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-postcondition.test.ts :: ordinary repeated open plan postcondition [CON-03, LFC-04] :: publishes only provisional after the first schema-2 bridge call, then promotes the exact repeat",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-postcondition.test.ts :: ordinary repeated open plan postcondition [CON-03, LFC-04] :: re-admits an exact provisional temp and completes only its repeated call",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-postcondition.test.ts :: ordinary repeated open plan postcondition [CON-03, LFC-04] :: recomputes the binding digest instead of trusting matching terminal/evidence fields",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-postcondition.test.ts :: ordinary repeated open plan postcondition [CON-03, LFC-04] :: recovers an accepted-only crash after the first probe changed state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-postcondition.test.ts :: ordinary repeated open plan postcondition [CON-03, LFC-04] :: refuses a non-prefix evidence subset and leaves remaining bytes unchanged",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-postcondition.test.ts :: ordinary repeated open plan postcondition [CON-03, LFC-04] :: refuses an external-effect intent added during the repeated probe",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-postcondition.test.ts :: ordinary repeated open plan postcondition [CON-03, LFC-04] :: restarts from provisional by rerunning only the repeated schema-2 bridge call",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: refuses a third target value after state-published instead of inventing a new baseline",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-evidence-rename forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-marker-file-sync forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-marker-installed forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-marker-rename forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-migration-evidence-installed forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-recovery-rename forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-recovery-temp-sync forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-state-file-sync forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-state-published forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-state-rename forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-target-rename forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate forward publication crash prefixes [CON-03, LFC-04] :: resumes the exact after-transition-removal forward prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate marker-last rollback [CON-03, LFC-04] :: preserves an unexpected terminal instead of replacing it after marker-last restoration",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate marker-last rollback [CON-03, LFC-04] :: refuses a changed or missing snapshot object before changing an ordinary path",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate marker-last rollback [CON-03, LFC-04] :: refuses a recovery record that names a different source graph",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate marker-last rollback [CON-03, LFC-04] :: refuses a snapshot object link even when its target has the expected bytes",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate marker-last rollback [CON-03, LFC-04] :: restores every source byte, mode and absence from the object snapshot with marker last",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate migration source snapshot [CON-03, CON-04, SEC-12] :: does not strengthen or invalidate a fixed unbound marker when host status later changes",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate migration source snapshot [CON-03, CON-04, SEC-12] :: publishes source manifest, prepared fence and the complete exact byte/object graph",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate migration source snapshot [CON-03, CON-04, SEC-12] :: re-admits the source and graph idempotently without recreating the source manifest",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate migration source snapshot [CON-03, CON-04, SEC-12] :: refuses a pre-existing migration terminal instead of dropping or replacing it",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate migration source snapshot [CON-03, CON-04, SEC-12] :: refuses a prospective marker with a different exact directory identity before publishing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate migration source snapshot [CON-03, CON-04, SEC-12] :: refuses partial direct-final manifests and changed source without overwriting bytes",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate migration source snapshot [CON-03, CON-04, SEC-12] :: requires explicit attested ownership before creating metadata",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate migration source snapshot [CON-03, CON-04, SEC-12] :: serializes candidate writes through the historical bootstrap and normal lock",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-marker-rename rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-previous-entry rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-recovery-removal rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-rollback-marker-restored rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-rollback-previous-restored rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-rollback-previous-staged rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-rollback-primary-restored rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-rollback-primary-staged rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-rollback-recovery-removed rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-rollback-terminal-published rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-stage-sync rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-state-rename rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-terminal-rename rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-transition-removal rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate rollback crash prefixes [CON-03, LFC-04] :: resumes the exact after-transition-rename rollback prefix twice",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: preserves and refuses a partial direct-final source manifest on two restarts",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: resumes the exact after-evidence-sync prefix twice without changing marker or state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: resumes the exact after-object-rename prefix twice without changing marker or state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: resumes the exact after-object-sync prefix twice without changing marker or state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: resumes the exact after-snapshot-rename prefix twice without changing marker or state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: resumes the exact after-snapshot-sync prefix twice without changing marker or state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: resumes the exact after-source-sync prefix twice without changing marker or state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: resumes the exact after-source-write prefix twice without changing marker or state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: resumes the exact after-transition-rename prefix twice without changing marker or state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: resumes the exact after-transition-sync prefix twice without changing marker or state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: resumes the exact before-source-create prefix twice without changing marker or state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-snapshot.test.ts :: candidate source snapshot crash prefixes [CON-03, CON-04] :: resumes the exact before-transition-rename prefix twice without changing marker or state",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: admits fresh and snapshot summary/index/key prefixes but no forward prepared publication [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: admits only ordered evidence prefixes and final recovery at remove [AC-19] CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: admits the published marker interfaces without activation or host authentication [AC-19] CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: bounds opaque handles only by the shared private-record ceiling and preserves exact bytes [SEC-11] CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: does not infer later phases or accept same inode with another object generation [AC-19] CT-33 CT-36",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: matches both signed path-free canonical hash vectors [AC-19] CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: never reads before tuples, journal, paths, temps or private snapshot data while hashing [SEC-11] CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: preserves and refuses v1, missing v2 fields, string magic and all old source fingerprints [SEC-11] CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: refuses cross-arm fields, missing existing sources and changed repair witnesses [AC-19] CT-36 CT-48",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: refuses untrusted observations before serializing any private bytes [SEC-11] CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: requires provider-private state/previous/log sources and refuses byte/hash/count extras [SEC-11] CT-29 CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: requires reserved prepared and complete later capture plus exact attestation/evidence bindings [AC-19] CT-29 CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: requires stable object generations including UTF8 bounds [AC-19] CT-33 CT-36",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: uses UTF8 canonical escaping and safe integers rather than the generic hash domain [AC-19] CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/migration-transition-v3.test.ts :: signed protocol/population-2 MigrationTransitionV3 privacy wire :: validates fixed ordered paths separately from hashes and exact key proof [AC-19] CT-33",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/model-qualification.test.ts :: model warning before Deep work [RSC-08] :: [RSC-08] asks only for Deep work on a model that is not qualified",
         "count": 1
       },
@@ -3400,6 +4408,14 @@
       },
       {
         "key": "packages/kernel/test/model-qualification.test.ts :: model warning before Deep work [RSC-08] :: [RSC-08] refuses an answer given for different facts, and any answer other than continue or pause",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/model-qualification.test.ts :: model warning through the public verbs [RSC-08] :: [RSC-08] open and check ask before Deep work; after continue the check runs and the model stays unknown",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/model-qualification.test.ts :: model warning through the public verbs [RSC-08] :: [RSC-08] pause parks the work and a standard-lane contract is never asked",
         "count": 1
       },
       {
@@ -3436,6 +4452,46 @@
       },
       {
         "key": "packages/kernel/test/own-record-keys.test.ts :: own keys in parsed records :: still rejects a wrong value type under any key",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/p47-review-findings.test.ts :: P47 review findings :: [GIT-10] finish --no-commit survives a failed finish before verdict planning",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/p47-review-findings.test.ts :: P47 review findings :: [GIT-10] interrupted commit settlement rejects missing or mismatched whole-file authority",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/p47-review-findings.test.ts :: P47 review findings :: [GIT-10] result replay rejects a recorded commit without matching whole-file authority",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/p47-review-findings.test.ts :: P47 review findings :: [GIT-12] signing consent is bound to one work, generation and question instance",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/packet-exclusions.test.ts :: declarative packet exclusion consumers :: enforces source-scoped exceptions, NFC and default folding in the actual consumer [SEC-08, SEC-14]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/packet-exclusions.test.ts :: declarative packet exclusion consumers :: filters model-ineligible changes and attention in stateful and stateless packets [SEC-08]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/packet-exclusions.test.ts :: declarative packet exclusion consumers :: keeps authenticated exact names distinct while applying NFC [SEC-08]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/packet-exclusions.test.ts :: declarative packet exclusion consumers :: omits protected basis test paths and historical finding content from analyst and handoff context [SEC-08]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/packet-exclusions.test.ts :: declarative packet exclusion consumers :: omits protected dispatch paths without weakening internal review coverage [SEC-08, REV-01]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/packet-exclusions.test.ts :: declarative packet exclusion consumers :: rejects incomplete or inconsistent descriptors rather than interpreting regex authority [SEC-08]",
         "count": 1
       },
       {
@@ -3616,6 +4672,14 @@
       },
       {
         "key": "packages/kernel/test/platform.test.ts :: platform admission before mutation [INS-06, INS-12] :: keeps stateless calls available on win32",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/platform.test.ts :: platform admission before mutation [INS-06, INS-12] :: keeps stateless doctor metadata best-effort while mutating readiness remains strict",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/platform.test.ts :: platform admission before mutation [INS-06, INS-12] :: keeps unsupported-platform project readiness unknown instead of reporting missing dependencies",
         "count": 1
       },
       {
@@ -3876,6 +4940,242 @@
       },
       {
         "key": "packages/kernel/test/prerequisite-guidance.test.ts :: resolves factual disagreements from evidence and presents normative choices with a recommendation [AGT-07]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [CON-03] privacy accounting recovery never decreases a monotone counter and exposes contradictory equal-attempt histories",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [CON-03] privacy accounting recovery selects the greatest attempt and never synthesizes a failure from its counter",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [CON-03] privacy failure budgets reject contradictory event order, attempts and undeclared fields",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [SEC-11] [CON-03] privacy accounting recovery normalizes legacy barriers before comparison without hashing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [SEC-11] [CON-03] privacy legacy plain and opaque signatures become ordered unknown barriers without hashing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [SEC-11] [CON-03] the shared budget normalizer admits only its declared source version without hashing legacy values",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [SEC-11] privacy accounting cannot promote another identity domain or an unadmitted slot into a known event",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [SEC-11] privacy failure admission refuses contradictory test and per-file failure evidence without hashing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [SEC-11] privacy identity refuses ambiguous, untagged and unsupported failures before any hashing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [SEC-11] unadmitted diagnosis bindings and budgets do not reach hashing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [WRK-09] [CON-03] equal-attempt checkpoint recovery cannot erase an accepted diagnosis",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [WRK-09] [SEC-11] privacy identity admits one generated failure slot without hashing its title or message",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [WRK-09] diagnosis choices preserve counters and only resume clears the unknown stop",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [WRK-09] failure diagnosis binds only generated work, generation and the unchanged latest unknown position",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [WRK-09] privacy candidate accounting records one first-failure event and leaves successful attempts event-free",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [WRK-09] privacy failure repetition compares known values and never crosses unknown barriers",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-identity.test.ts :: [WRK-09] privacy unknown stops require diagnosis, preserve barriers and yield to exhausted attempts",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: publishes all six after-image inodes in signed order and removes only the final fence [AC-19] CT-29 CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: recovers actual killed processes across all coupled population boundaries [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: refuses a later-phase target at prepared and preserves every file [AC-19] CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: refuses provider withdrawal or changed journal witness before publication [AC-19] CT-33",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: repairs key/state/marker as one population while preserving exact metadata and journal [SEC-11] CT-36",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: restarts twice from the exact digest.key population prefix [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: restarts twice from the exact journal-index.json population prefix [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: restarts twice from the exact key population prefix [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: restarts twice from the exact marker population prefix [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: restarts twice from the exact marker-phase population prefix [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: restarts twice from the exact previous population prefix [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: restarts twice from the exact remove population prefix [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: restarts twice from the exact state population prefix [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: restarts twice from the exact state-phase population prefix [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: restarts twice from the exact state.prev population prefix [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-population-fs.test.ts :: coupled privacy population writer (schema-3 activation held) :: restarts twice from the exact summaries.json population prefix [AC-19] CT-29",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-schema-migration.test.ts :: [CON-03] [CON-05] snapshot migration permits only the reviewed target prefix at every persisted phase without hashing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-schema-migration.test.ts :: [CON-03] [SEC-11] clean migration identities reproduce the amended canonical vectors independent of object key order",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-schema-migration.test.ts :: [CON-03] forward evidence and recovery prefixes complete before exact transition removal",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-schema-migration.test.ts :: [CON-03] schema-3 legacy receipt projection rejects malformed accounting and undeclared target fields",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-schema-migration.test.ts :: [CON-05] fresh and repair never inherit the forward snapshot or evidence phases",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-schema-migration.test.ts :: [CON-05] migration after identities bind the exact key epoch, target identity, bytes and operation",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-schema-migration.test.ts :: [SEC-11] migration identities reject legacy authority tuples and every source field before hashing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-schema-migration.test.ts :: [SEC-11] missing private equality, unrecorded temps and legacy source tuples never select a publication",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-schema-migration.test.ts :: [SEC-11] schema-3 legacy receipt projection retains closed history without hashing or copying unproven text",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-provider.test.ts :: [CON-03] comparison never accepts another allocation's opaque handle",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-provider.test.ts :: [CON-03] replayed complete reservations refuse changed private source equality",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-provider.test.ts :: [CON-03] same-inode changed bytes and different-inode equal bytes never compare exact",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-provider.test.ts :: [CON-08] capacity refusal and undeclared source paths allocate no private handle",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-provider.test.ts :: [SEC-11] invalid capture metadata refuses without disclosing foreign private fields",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-provider.test.ts :: [SEC-11] provider copies private bytes without any hash or legacy serialization and re-admits the same handle",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-writer.test.ts :: [CON-03] [SEC-11] durable snapshot preparation captures one opaque handle and publishes no target",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-writer.test.ts :: [CON-03] a missing attestation under a retained transition is refused rather than recreated",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-writer.test.ts :: [CON-03] an exact retained transition temp is synced again before publication",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-writer.test.ts :: [CON-03] attestation replay syncs the admitted file after an interrupted file sync",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-writer.test.ts :: [CON-03] copy-time capacity refusal retains prepared and resumes only the same handle",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-writer.test.ts :: [CON-03] directory creation replay repeats interrupted parent-entry syncs",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-writer.test.ts :: [CON-05] unknown publication temps and false before identities refuse before provider reserve",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-writer.test.ts :: [SEC-11] an unadmitted attestation body is refused without serializing the substituted legacy text",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-writer.test.ts :: [SEC-11] malformed or unapproved preparation creates no reservation, attestation or transition",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-writer.test.ts :: [SEC-11] private record admission never serializes legacy text and still rejects duplicate keys",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/privacy-snapshot-writer.test.ts :: [SEC-11] the final attestation proof never hashes substituted unadmitted bytes",
         "count": 1
       },
       {
@@ -4220,6 +5520,66 @@
       },
       {
         "key": "packages/kernel/test/promote.test.ts :: prototype promotion [WRK-07] :: proceeds (no longer refused), recommending Standard with no risk signals at all",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: keeps an unresolved run and its completed dependent pair without a caller keep list [AC-17, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: leaves a malformed affected set unresolved rather than proving an empty operation [AC-16, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: preflights every undo path before inventory, patch reads or effects (no-edit) [AC-16, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: preflights every undo path before inventory, patch reads or effects (no-read) [AC-16, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: preflights every undo path before inventory, patch reads or effects (no-routine-scan) [AC-16, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: preflights the entire mixed scaffold before reading or rolling back (no-edit, reversed=false) [AC-16, AC-17, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: preflights the entire mixed scaffold before reading or rolling back (no-edit, reversed=true) [AC-16, AC-17, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: preflights the entire mixed scaffold before reading or rolling back (no-read, reversed=false) [AC-16, AC-17, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: preflights the entire mixed scaffold before reading or rolling back (no-read, reversed=true) [AC-16, AC-17, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: preflights the entire mixed scaffold before reading or rolling back (no-routine-scan, reversed=false) [AC-16, AC-17, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: preflights the entire mixed scaffold before reading or rolling back (no-routine-scan, reversed=true) [AC-16, AC-17, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: reconciles a literal __proto__ scaffold path without losing its observed hash [AC-16, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: revalidates the whole scaffold before rollback after a policy change during observation [AC-16, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: revalidates undo before opening its patch after inventory tightens policy [AC-16, AC-25]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/protected-recovery.test.ts :: still reconciles permitted partial scaffolds and an already-applied undo [AC-16, AC-25]",
         "count": 1
       },
       {
@@ -4855,6 +6215,14 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/redact.test.ts :: redacting object keys [SEC-11] :: preserves literal replacement keys and suffixes in either input order",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/redact.test.ts :: redacting object keys [SEC-11] :: preserves own prototype-shaped data keys without changing the output prototype",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/redact.test.ts :: redacting object keys [SEC-11] :: redacts a token-shaped key and keeps two such keys apart",
         "count": 1
       },
@@ -5307,6 +6675,234 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/retention-original-action.test.ts :: retained original-action storage boundary :: admits only strict correlated P93 rows without normalizing retained input [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-original-action.test.ts :: retained original-action storage boundary :: binds the exact enclosing batch and generation before consulting privacy proofs [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-original-action.test.ts :: retained original-action storage boundary :: checks a present report hash against the exact admitted canonical row [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-original-action.test.ts :: retained original-action storage boundary :: does not accept an injected projection parser that strips excluded bytes [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-original-action.test.ts :: retained original-action storage boundary :: does not accept normalization of an injected token, effect or run reference [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-original-action.test.ts :: retained original-action storage boundary :: isolates admitted action from later caller and verifier alias mutations [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-original-action.test.ts :: retained original-action storage boundary :: prevents consumers from changing an admitted projection or its report binding [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-original-action.test.ts :: retained original-action storage boundary :: re-admits two serialized restarts without changing the retained action or next projection [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-original-action.test.ts :: retained original-action storage boundary :: refuses a verifier that changes the original row while proving it [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-original-action.test.ts :: retained original-action storage boundary :: requires the owning privacy interface to prove token, effect and reserved-run bindings [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-progress-fs.test.ts :: durable retention progress store (Windows is supplemental) :: does not replace an original action or an independently changed progress record [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-progress-fs.test.ts :: durable retention progress store (Windows is supplemental) :: never rolls back committed cursors, counts, outputs or a rotated seal gate [AC-19] CT-40 CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-progress-fs.test.ts :: durable retention progress store (Windows is supplemental) :: never upgrades a pre-amendment row or deletes progress without report admission [AC-19] CT-18 CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-progress-fs.test.ts :: durable retention progress store (Windows is supplemental) :: publishes strict canonical first-seal action and re-admits two independent restarts [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-progress-fs.test.ts :: durable retention progress store (Windows is supplemental) :: refuses a changed/occupied progress temporary without overwriting it [AC-19] CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-progress-fs.test.ts :: durable retention progress store (Windows is supplemental) :: refuses malformed or provider-unverified action before any progress publication [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: accepts report-pending only with exact original-action binding when a report is present [AC-19] CT-18 CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: admits first-seal originalAction only with its exact enclosing batch and generation [AC-19] CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: admits only the signed empty mounted reservation and refuses old token rows [AC-19] CT-25 CT-31 CT-56",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: binds completed outputs to ordered admitted source ranges and the committed cursor [AC-19] CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: binds output ordinals to committed chunks without reusing no-output gaps [AC-19] CT-40 CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: does not enter publication before scanning finishes or admit scan output during sealing [AC-19] CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: keeps origin at the old cursor and refuses publisherless exact-result assertions [AC-19] CT-23 CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: never declares an empty retained output or pending output origin [AC-19] CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: refuses a seal without the provider-bound rotation index temporary [AC-19] CT-57",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: refuses cross-bound source, rotation identity and cursor observations [AC-19] CT-31 CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: refuses every mutated duplicated index authorization leaf without re-binding the seal [AC-19] CT-57",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: refuses progress paths that alias another owned record or selected output [AC-19] CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: refuses unsupported fields and phases without stripping or synthesizing progress [AC-19] CT-6 CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: requires bound empty next-log proof at the rotated seal boundary [AC-19] CT-31 CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-records.test.ts :: retention progress wire admission (not durable continuation) :: requires the rotated gate before scans and an exact final state pair before removal [AC-19] CT-41 CT-42",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: does not truncate a token when the source changed or index is a third hash [AC-19] CT-30 CT-37",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: preserves every byte for an after-index-before-promotion or unexpected-active mixed prefix [AC-19] CT-30 CT-31",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: preserves unproved, replaced or missing index temp prefixes across two restarts [AC-19] CT-57",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: preserves wrong nonce, linked token and byte-identical substitute identity [AC-19] CT-31 CT-38",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: promotes the exact reserved empty inode then rotates journal/index once [AC-19] CT-31",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: re-admits the exact gate-rotated prefix across two restarts [AC-19] CT-30 CT-31",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: re-admits the exact index-published prefix across two restarts [AC-19] CT-30 CT-31",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: re-admits the exact next-renamed prefix across two restarts [AC-19] CT-30 CT-31",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: re-admits the exact reservation-verified prefix across two restarts [AC-19] CT-30 CT-31",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: re-admits the exact source-renamed prefix across two restarts [AC-19] CT-30 CT-31",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: re-syncs the admitted final seal before any source name change [AC-19] CT-56",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: recovers a real killed child at gate-rotated without resealing or changing originalAction [AC-19] CT-30 CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: recovers a real killed child at index-published without resealing or changing originalAction [AC-19] CT-30 CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: recovers a real killed child at next-renamed without resealing or changing originalAction [AC-19] CT-30 CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: recovers a real killed child at reservation-verified without resealing or changing originalAction [AC-19] CT-30 CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: recovers a real killed child at source-renamed without resealing or changing originalAction [AC-19] CT-30 CT-46",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-rotation-fs.test.ts :: bound journal rotation recovery (Windows is supplemental) :: refuses changed provider mount proof with every recorded tuple preserved [AC-19] CT-59",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-seal-fs.test.ts :: reservation-first seal (mount/root provider is injected; Windows supplemental) :: distinguishes real preseal orphan crashes from an exact final seal across two restarts [AC-19] CT-25 CT-56",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-seal-fs.test.ts :: reservation-first seal (mount/root provider is injected; Windows supplemental) :: fsyncs an empty held reservation before durable seal without publishing a source rename [AC-19] CT-25 CT-56",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-seal-fs.test.ts :: reservation-first seal (mount/root provider is injected; Windows supplemental) :: never adopts an orphan or a wrong provider-token/action binding [AC-19] CT-31 CT-46 CT-56",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-seal-fs.test.ts :: reservation-first seal (mount/root provider is injected; Windows supplemental) :: preserves an unadmitted mount/alias reservation or uncertainty after seal starts [AC-19] CT-31 CT-56",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-seal-fs.test.ts :: reservation-first seal (mount/root provider is injected; Windows supplemental) :: preserves both reservations on temp-proof failure and cleans only a verified live pair [AC-19] CT-56",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-seal-fs.test.ts :: reservation-first seal (mount/root provider is injected; Windows supplemental) :: preserves log.next when an index reservation pair has not been proved [AC-19] CT-56",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retention-seal-fs.test.ts :: reservation-first seal (mount/root provider is injected; Windows supplemental) :: refuses an unavailable promotion primitive before reserving or sealing [AC-19] CT-56",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retry-privacy.test.ts :: [SEC-11] retry privacy admits closed check input, normalizes defaults and omits again",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/retry-privacy.test.ts :: [SEC-11] retry privacy never hashes quotes, proposals, labels, subjects or paths even with again",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/review-admission.test.ts :: review admission [WRK-08, REV-05] :: accepts exactly the review-only token bound and refuses one character more [AGT-04]",
         "count": 1
       },
@@ -5535,6 +7131,18 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/runner-stdin.test.ts :: bounded Runner stdin [SEC-06, P117] :: delivers exact bytes once and reports complete delivery",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/runner-stdin.test.ts :: bounded Runner stdin [SEC-06, P117] :: marks a child that closes before delivery as incomplete",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/runner-stdin.test.ts :: bounded Runner stdin [SEC-06, P117] :: refuses a bound over the blob ceiling before spawn",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/scaffold.test.ts :: scaffold :: can decline the protected-path defaults, and refuses to run twice",
         "count": 1
       },
@@ -5607,6 +7215,10 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/scenarios.test.ts :: check observation helpers :: binds the run directory under the store lock, then polls publication without competing for launch admission",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/scenarios.test.ts :: check observation helpers :: uses the store transaction and propagates lock failure without an unlocked observation",
         "count": 1
       },
@@ -5672,6 +7284,10 @@
       },
       {
         "key": "packages/kernel/test/scenarios.test.ts :: injected failure 3: a crash anywhere in the commit effect (intent, act, result, publish) :: after the intent, before the commit: reconciled as not performed, the rerun commits once",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/scenarios.test.ts :: injected failure 3: a crash anywhere in the commit effect (intent, act, result, publish) :: after the private proof, before its result: the orphan never becomes ownership [CON-12]",
         "count": 1
       },
       {
@@ -5787,6 +7403,10 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: admits interrupted marker-1/state-2 publication without dropping retained protection [CON-05, P91]",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: diagnostic log/blob/residue reads remain fenced",
         "count": 1
       },
@@ -5811,7 +7431,15 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: preserves schema-1 contract pins and pending questions during read projection [LFC-03, P91]",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: preserves stateless unbound artifact writes without creating a store",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: publishes schema 2 so an older schema-1 reader refuses the transition",
         "count": 1
       },
       {
@@ -5907,10 +7535,6 @@
         "count": 1
       },
       {
-        "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: refuses state schema 3 without old-state fallback",
-        "count": 1
-      },
-      {
         "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: refuses state schema null without old-state fallback",
         "count": 1
       },
@@ -5920,10 +7544,6 @@
       },
       {
         "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: refuses state.prev schema 1 without old-state fallback",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/schema-1-bridge.test.ts :: schema-1 rollback bridge [LFC-04, CON-05] :: refuses state.prev schema 3 without old-state fallback",
         "count": 1
       },
       {
@@ -6044,6 +7664,10 @@
       },
       {
         "key": "packages/kernel/test/skill-experiment.test.ts :: skill compression proxy refuses changed floors and unbound or fabricated execution summaries [ENG-08]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/specialist-lifecycle.test.ts :: specialist lifecycle is the kernel's [AGT-10] :: [AGT-10] a review round is reserved, settled and summarized without the user managing it",
         "count": 1
       },
       {
@@ -6419,7 +8043,19 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: journal reduction into summaries [CON-08, AC-19] :: counts identical journal bytes as a distinct durable batch [AC-17, P103]",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/storage-eviction.test.ts :: journal reduction into summaries [CON-08, AC-19] :: does nothing under the size threshold",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: journal reduction into summaries [CON-08, AC-19] :: keeps an old intent/result pair until its result explicitly completes [AC-17, P101]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: journal reduction into summaries [CON-08, AC-19] :: keeps completed effect history referenced by active state or run paths [AC-17, P100]",
         "count": 1
       },
       {
@@ -6440,6 +8076,10 @@
       },
       {
         "key": "packages/kernel/test/storage-eviction.test.ts :: journal reduction into summaries [CON-08, AC-19] :: reports the reduction once and nothing when there is nothing to reduce",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: journal reduction into summaries [CON-08, AC-19] :: retains versioned commit witnesses and leave-unrecorded history across reduction [CON-08, CON-12]",
         "count": 1
       },
       {
@@ -6467,11 +8107,167 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: creates a complete empty journal and permits admitted artifacts before first state publication [AC-17, P91]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: distinguishes a completed quarantine from unexplained missing history [AC-17, P91]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: does not reserve a journal rewrite when no record can be reduced [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: does not reserve writes for an empty transaction above the ceiling [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: finalizes an unchanged large state without charging unrelated growth to its job [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: includes staged bytes in cleanup and publishes only after eligible cleanup fits [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: keeps previous-state evidence through the age sweep before publication [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: keeps staged artifact folders through the age sweep before publication [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: preserves uncertainty when completed quarantine has a temp root but no state [AC-17, P91]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: rechecks staged run capacity before any publication after concurrent growth [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: refuses finalization growth beyond the admitted job allowance [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: refuses staged run growth without removing eligible bytes when protected bytes cannot fit [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: replays interrupted compaction through transaction startup after the cutoff advances [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: storage publication regression controls (synthetic, not durability qualification) :: reserves the existing state rewrite against concurrent ordinary growth [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: the verbs at a storage boundary [CON-08, AC-19] :: does not sweep when a storage refusal is returned [AC-17, P91]",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/storage-eviction.test.ts :: the verbs at a storage boundary [CON-08, AC-19] :: open reports a journal reduction in its completed effects",
         "count": 1
       },
       {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: the verbs at a storage boundary [CON-08, AC-19] :: preserves an existing marker-only run scope and refuses to initialize ordinary work [AC-17, P91]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-eviction.test.ts :: the verbs at a storage boundary [CON-08, AC-19] :: publishes only a recovery question for uncertain history, then retains the legacy scope on start-fresh [AC-17, P91]",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/storage-eviction.test.ts :: the verbs at a storage boundary [CON-08, AC-19] :: refuses ordinary open and an unreserved stop above the hard ceiling while inspect stays available [AC-17, P106]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-records-v3.test.ts :: schema-3 storage record admission :: admits only selected, unique, canonical journal leaves and stable file identities [AC-19] CT-37 CT-38 CT-42",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-records-v3.test.ts :: schema-3 storage record admission :: preserves strict legacy provenance and null unproved high-water marks [AC-19] CT-13",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-records-v3.test.ts :: schema-3 storage record admission :: refuses malformed, future and contradictory summary shapes [AC-19] CT-13",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-records-v3.test.ts :: schema-3 storage record admission :: uses maxima for exact high-water marks and never upgrades unknown legacy floors [AC-19]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-fs.test.ts :: schema-3 settled-store byte admission (not host qualification) :: admits a checked key only in the matching epoch and never replaces an invalid key [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-fs.test.ts :: schema-3 settled-store byte admission (not host qualification) :: preserves old pending compaction, orphan next files and in-flight transitions [AC-19] CT-27 CT-31",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-fs.test.ts :: schema-3 settled-store byte admission (not host qualification) :: reads only selected sealed generations then the append-growing active journal [AC-19]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-fs.test.ts :: schema-3 settled-store byte admission (not host qualification) :: refuses a same-size middle-byte mutation before any parsing [AC-19] CT-37",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-fs.test.ts :: schema-3 settled-store byte admission (not host qualification) :: refuses byte-identical log replacement at another identity [AC-19] CT-38 CT-42",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-fs.test.ts :: schema-3 settled-store byte admission (not host qualification) :: refuses byte-identical sealed replacement at another identity [AC-19] CT-38 CT-42",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-fs.test.ts :: schema-3 settled-store byte admission (not host qualification) :: refuses missing, duplicate-key, contradictory and hash-changed summaries [AC-19] CT-13",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-fs.test.ts :: schema-3 settled-store byte admission (not host qualification) :: refuses multiple-link private records and a failed marker admission [SEC-11]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-write.test.ts :: schema-3 durable file writer (Windows is supplemental) :: does not bypass ownership admission or normalize unsafe paths [SEC-11] CT-42",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-write.test.ts :: schema-3 durable file writer (Windows is supplemental) :: exclusively creates and atomically replaces exact admitted private files [AC-19] CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-write.test.ts :: schema-3 durable file writer (Windows is supplemental) :: never falls back to replacement when the no-replace provider reports a target race [AC-19] CT-31",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-write.test.ts :: schema-3 durable file writer (Windows is supplemental) :: never overwrites an occupied or linked temporary [AC-19] CT-41",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-write.test.ts :: schema-3 durable file writer (Windows is supplemental) :: preserves a native tuple when the provider reports a fresh object generation [AC-19] CT-58",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-write.test.ts :: schema-3 durable file writer (Windows is supplemental) :: preserves a same-byte replacement inode and a same-size content edit [AC-19] CT-37 CT-42",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-write.test.ts :: schema-3 durable file writer (Windows is supplemental) :: refuses an unavailable atomic no-replace primitive before moving either name [AC-19] CT-31 CT-56",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-write.test.ts :: schema-3 durable file writer (Windows is supplemental) :: refuses missing provider object generation before creating a file [AC-19] CT-58",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-write.test.ts :: schema-3 durable file writer (Windows is supplemental) :: requires explicit absent targets and exact proofs for moves/removal [AC-19] CT-31 CT-42",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/storage-v3-write.test.ts :: schema-3 durable file writer (Windows is supplemental) :: surfaces directory-sync failure rather than reporting a durable write [AC-19]",
         "count": 1
       },
       {
@@ -6728,6 +8524,14 @@
       },
       {
         "key": "packages/kernel/test/store-boundary.test.ts :: private store boundaries :: verifies blob identities and distinguishes missing blobs from corrupt or non-file records [CON-04, SEC-06]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/store-journal-reuse.test.ts :: store: journal parse reuse :: never lets a caller's change to the records it was given reach another read",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/store-journal-reuse.test.ts :: store: journal parse reuse :: reuses untouched journal reads and revalidates after records have been handed to a caller",
         "count": 1
       },
       {
@@ -7119,6 +8923,10 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/trait-detect.test.ts :: traits decision [QLT-11] :: [QLT-11] records project traits, accepts a correction and refuses removing a security trait without the user's words",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/traits.test.ts :: candidate-diff hash :: an empty diff is a real value, distinct from the unassessed null",
         "count": 1
       },
@@ -7423,6 +9231,58 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: contains one handler failure and continues later effects without losing earlier completions [CON-03]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: contains process ownership probe failures and continues later intents",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: does not call a same-blob mode change all-post",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: does not close all-pre recovery when the provisional contract is missing",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: does not replay an all-pre cancellation twice in one recovery pass",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: finalizes first application from complete path postconditions: all-post despite a failing process result",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: finalizes first application from complete path postconditions: partial despite a successful process result",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: leaves partial multi-path postconditions unresolved without applying a subset",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: records all-post from postconditions without consulting an unavailable inverse mechanism",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: records exact all-pre as terminal cancellation and restores prior ownership without retry",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: replays a logged all-pre result after crash before state publication",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: replays completed:false records through the normal recovery pass",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/undo-recovery-effects.test.ts :: undo recovery [CON-03, P117] :: treats an older all-pre result as published after a replacement undo succeeds",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/undo.test.ts :: undo [GIT-04] :: allows a differently labeled empty commit after preview [GIT-04]",
         "count": 1
       },
@@ -7443,6 +9303,10 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/undo.test.ts :: undo [GIT-04] :: reconciles a crash between publishing the revert contract and applying the patch before a fresh confirmation",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/undo.test.ts :: undo [GIT-04] :: refuses a foreign commit with the same work label before previewing any inverse [CON-12, GIT-03]",
         "count": 1
       },
@@ -7456,10 +9320,6 @@
       },
       {
         "key": "packages/kernel/test/undo.test.ts :: undo [GIT-04] :: reverts on the base branch after integration",
-        "count": 1
-      },
-      {
-        "key": "packages/kernel/test/undo.test.ts :: undo [GIT-04] :: rolls forward after a crash between publishing the revert contract and applying the patch",
         "count": 1
       },
       {
@@ -7811,11 +9671,19 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/verify-execution.test.ts :: validation evidence population :: balances source shards by measured file duration without changing their union",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/verify-execution.test.ts :: validation evidence population :: refuses a candidate that removes an ordinary leaf while retaining its file",
         "count": 1
       },
       {
         "key": "packages/kernel/test/verify-execution.test.ts :: validation evidence population :: refuses file overlap, a missing leaf and a skipped required leaf",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/verify-execution.test.ts :: validation evidence population :: serializes a shard that owns a real-process race",
         "count": 1
       },
       {
@@ -8129,6 +9997,14 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/commit-attribution-bundle.test.ts :: built CLI keeps an interrupted commit unowned and leaves it unrecorded without changing Git [CON-12]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/commit-attribution-bundle.test.ts :: built CLI publishes the durable proof/result pair on a real scratch repository [GIT-03]",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/invariants.test.ts :: housekeeping (TS §7.6) :: removes day-old run directories and manifests at the next open, and keeps what a live run or reservation uses",
         "count": 1
       },
@@ -8146,6 +10022,10 @@
       },
       {
         "key": "packages/kernel/test/invariants.test.ts :: the shipped bundle (INS-07: no runtime beyond Node) :: is one self-contained file within its size budget, and runs with nothing but Node [INS-07]",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/marker-bridge-bundle.test.ts :: pinned schema-2 bridge ordinary-work postcondition :: runs the exact built schema-2 frontend twice and promotes only after the same-handle restart",
         "count": 1
       }
     ]
