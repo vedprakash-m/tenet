@@ -51,6 +51,8 @@ export class FsStore implements Store {
   private admitted = new Map<string, string>();
   // The record admission just parsed, handed once to the next read of that same file version so it is not parsed twice.
   private parsed = new Map<string, { id: string; value: unknown }>();
+  // Current private-state schema results. File replacement changes the bound identity and forces a fresh strict parse.
+  private parsedState = new Map<string, { id: string; value: State }>();
   private unseenJournal?: Journal;
   private writes = new AsyncLocalStorage<WriteContext>();
 
@@ -198,8 +200,15 @@ export class FsStore implements Store {
     const primaryMissing = !existsSync(this.p("state"));
     for (const [file, recovered] of [["state", false], ["state.prev", true]] as const) {
       const raw = this.takeParsed(file) ?? readJson<unknown>(this.p(file));
-      const parsed = raw ? parseStateRecord(raw) : null;
+      const id = this.fileId(file, true);
+      const cached = id ? this.parsedState.get(file) : undefined;
+      const parsed = raw
+        ? cached?.id === id
+          ? { success: true as const, data: cached.value }
+          : parseStateRecord(raw)
+        : null;
       if (parsed?.success) {
+        if (id) this.parsedState.set(file, { id, value: parsed.data });
         const m = this.marker()!;
         if (parsed.data.workspaceId !== m.workspaceId || parsed.data.tag !== m.tag) {
           throw new KernelError("marker-mismatch", "the state belongs to another workspace");
