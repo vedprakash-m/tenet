@@ -11,7 +11,9 @@ import type {
 } from "../../src/adapters/installed-metadata.ts";
 
 /** Controlled fixtures use this JavaScript reader; production always receives the unavailable payload admission. */
-const fixtureAdmission: InstalledMetadataAdmission = (request: InstalledMetadataRequest) => {
+const fixtureAdmission: InstalledMetadataAdmission = {
+  identity: "repository-fixture-v1",
+  read: (request: InstalledMetadataRequest) => {
   const path = join(request.root, "node_modules", request.relativePath);
   let descriptor = -1;
   try {
@@ -43,6 +45,7 @@ const fixtureAdmission: InstalledMetadataAdmission = (request: InstalledMetadata
   } finally {
     if (descriptor >= 0) fs.closeSync(descriptor);
   }
+  },
 };
 
 export const createStack = () => productionStack(fixtureAdmission);

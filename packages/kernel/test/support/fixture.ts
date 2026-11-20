@@ -66,7 +66,7 @@ export async function callWithEnvelopeConsent(
 export type Project = ReturnType<typeof project>;
 
 export async function preconsentEnvelope(p: Project, h: string, input: Record<string, unknown>): Promise<void> {
-  const ports = createPorts(p.root, cliEnv());
+  const ports = p.ports();
   const call = (verb: string, body: Record<string, unknown>) => runVerb(ports, VERBS, verb, body);
   const response = await call("check", { ...input, h });
   if (!response.questions?.some((question) => question.id === "envelope-consent")) {
@@ -116,7 +116,7 @@ export async function focusFixture(p: Project, h: string): Promise<KernelRespons
   const ports = p.ports(), state = ports.store.read()?.state;
   const w = state && Object.values(state.work).find(w => handleOf(state, w) === h);
   const rv = w?.focusedReview;
-  if (!state || !w || !rv || state.pending.length || w.state === "finished") return;
+  if (!state || !w || !rv || state.pending.length) return;
   configurePolicy(ports, state);
   if ((await ports.git.inventory([])).digest !== rv.candidate) return;
   return p.call("findings", { h, result: reviewResult({ review: { hash: rv.manifestHash, reservation: rv.id, attempt: rv.attempt, mode: rv.mode, files: rv.requiredPaths ?? Object.keys(rv.files), dispatchMode: "same-session" } }) });
@@ -127,7 +127,7 @@ export async function finishFixture(p: Project, input: Record<string, unknown>):
   return p.call("finish", input);
 }
 
-const MAIN = join(import.meta.dirname, "../../src/main.ts");
+const MAIN = join(import.meta.dirname, "../fixtures/cli.ts");
 export interface Cli { code: number | null; signal: NodeJS.Signals | null; stdout: string; json?: KernelResponse }
 
 /** Runs the real command-line entry in its own process, as an agent would. */
@@ -201,5 +201,9 @@ const realPlugin = new FsRecipes(join(import.meta.dirname, "../../../../plugin")
 export const fakeRecipes = (recipe: Recipe = fakeRecipe()): Recipes => ({ load: (id) => (id === recipe.id ? recipe : null), text: (rel) => realPlugin.text(rel) });
 
 /** Ports for a folder, with the recipe source replaced. */
-export const portsWith = (root: string, recipes: Recipes): Ports => ({ ...createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }), recipes });
+export const portsWith = (root: string, recipes: Recipes): Ports => ({
+  ...createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME }),
+  recipes,
+  stack: createStack(),
+});
 export const callWith = (root: string, recipes: Recipes) => (verb: string, input: Record<string, unknown> = {}): Promise<KernelResponse> => runVerb(portsWith(root, recipes), VERBS, verb, input);

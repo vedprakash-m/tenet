@@ -20,7 +20,11 @@ function bundledProject() {
     ]);
     const child = spawnSync(process.execPath, [bundle, verb, ...args], {
       cwd: p.root, encoding: "utf8", input: body ? JSON.stringify(input) : "",
-      env: { PATH: process.env.PATH, HOME: process.env.HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" },
+      env: {
+        PATH: process.env.PATH, HOME: process.env.HOME, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1",
+        ...(process.env.GITHUB_ACTIONS === undefined ? {} : { GITHUB_ACTIONS: process.env.GITHUB_ACTIONS }),
+        ...(process.env.GITHUB_WORKSPACE === undefined ? {} : { GITHUB_WORKSPACE: process.env.GITHUB_WORKSPACE }),
+      },
     });
     assert.ifError(child.error);
     assert.equal(child.signal, null, child.stderr);

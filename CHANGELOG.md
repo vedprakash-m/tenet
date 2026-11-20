@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-20 — Repair exact-SHA CI integration regressions
+
+- Added an explicit `github-actions-posix-v1` installed-metadata provider for the fixed package JSON population while retaining fail-closed admission for unknown providers and paths. Its canonical workspace boundary, dangling-link handling, and admitted leaf/parent identity are bound to the provider's explicit environment and opened descriptor. Repository fixtures now name their own provider, and unsupported Windows mutation remains unchanged while doctor preserves unknown project readiness.
+- Wired crash, CLI, doctor, dependency and bundle fixtures to the intended provider identity. Human-only waiting dirty files no longer become undecided commit blockers when no Tenet path is owned; bound schema-1 questions, P117 stdin-based inverse patches and read-only Git probes retain their exact post-merge behavior.
+- Added focused provider-identity and linked-path coverage and updated stale P47/P117/P91 fixtures. Local type, lint, coverage, build, payload, reproducibility and privacy gates pass; supported-POSIX crash/process re-execution remains host-observed only.
+
 ## 2026-11-19 — Require durable commit attribution
 
 - Added private `CommitProofV1` records paired with the commit effect result before publication, without changing the State schema. Legacy results still replay with their observed foreign-path attention, but never acquire ownership proof.

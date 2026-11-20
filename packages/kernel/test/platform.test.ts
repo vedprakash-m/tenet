@@ -11,6 +11,7 @@ import { VERBS } from "../src/verbs/index.ts";
 import { createPorts } from "../src/wire.ts";
 import { cleanup, tmp } from "./helpers.ts";
 import { KERNEL_VERSION } from "../src/version.ts";
+import { createStack } from "./support/metadata-stack.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -20,6 +21,7 @@ describe("platform admission before mutation [INS-06, INS-12]", () => {
   it("shared readiness observes writability without creating local records [INS-04]", async () => {
     const root = scratch();
     const ports = createPorts(root);
+    ports.stack = createStack();
     const probe = await ports.git.probe();
     for (const writable of [false, true]) {
       ports.store.canWrite = () => writable;
@@ -31,6 +33,7 @@ describe("platform admission before mutation [INS-06, INS-12]", () => {
   it("doctor reports unwritable state in readiness without creating local records [INS-04]", async () => {
     const root = scratch();
     const base = createPorts(root);
+    base.stack = createStack();
     const probe = await base.git.probe();
     const detected = base.stack.detect(root);
     base.git.probe = async () => ({
@@ -59,6 +62,7 @@ describe("platform admission before mutation [INS-06, INS-12]", () => {
     for (const platform of ["win32", "freebsd", "darwin", "linux"] as const) {
       const root = scratch();
       const base = createPorts(root);
+      base.stack = createStack();
       const probe = await base.git.probe();
       const detected = base.stack.detect(root);
       base.git.probe = async () => ({
@@ -83,9 +87,46 @@ describe("platform admission before mutation [INS-06, INS-12]", () => {
     }
   });
 
+  it("keeps unsupported-platform project readiness unknown instead of reporting missing dependencies", async () => {
+    const root = scratch();
+    const base = createPorts(root);
+    const probe = await base.git.probe();
+    base.git.probe = async () => ({
+      ...probe, isRepo: false, state: "none", identity: false, version: "git synthetic",
+    });
+    base.stack.detect = () => assert.fail("unsupported platforms must not inspect installed metadata");
+    const response = await runVerb(
+      { ...base, platform: "win32" }, VERBS, "inspect", { view: "doctor" },
+    );
+    const data = response.data as {
+      detected: { language: string; typescript: string; depsInstalled: string; packageManager: string };
+      checks: Array<{ name: string; ok: boolean | null; detail: string }>;
+      readiness: {
+        plugin: { ready: boolean; blockedBy?: string[] };
+        project: { ready: boolean; unknown?: string[]; blockedBy?: string[] };
+      };
+    };
+    assert.equal(response.exit, 2, JSON.stringify(response));
+    assert.deepEqual(data.detected, {
+      language: "unknown", typescript: "unknown", packageManager: "unknown", runner: null,
+      depsInstalled: "unknown", hooks: false, git: false,
+    }, JSON.stringify(response));
+    assert.deepEqual(data.readiness.plugin, { ready: false, blockedBy: ["platform"] });
+    assert.ok(data.readiness.project.unknown?.includes("dependencies installed"));
+    assert.ok(!data.readiness.project.blockedBy?.includes("dependencies installed"));
+    assert.ok(data.readiness.project.unknown?.includes("language"));
+    assert.ok(!data.readiness.project.blockedBy?.includes("language"));
+    const runner = data.checks.find((check) => check.name === "test runner");
+    assert.equal(runner?.ok, null);
+    assert.match(runner?.detail ?? "", /unavailable.*platform/i);
+    assert.doesNotMatch(runner?.detail ?? "", /dependencies are not installed/i);
+  });
+
   it("uses the same platform fact for admission and readiness", async () => {
     for (const platform of ["darwin", "linux", "win32", "freebsd"] as const) {
-      const ports = { ...createPorts(scratch()), platform };
+      const base = createPorts(scratch());
+      base.stack = createStack();
+      const ports = { ...base, platform };
       const supported = platform === "darwin" || platform === "linux";
       assert.equal(mutationSupported(platform), supported);
       assert.equal(readinessOf(ports, await ports.git.probe()).platformOk, supported);

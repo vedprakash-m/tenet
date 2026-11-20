@@ -84,6 +84,7 @@ const INSPECT_CONFIG = new Set(["core.fsmonitor=false", "diff.external=", "core.
 const FIXED_COMMANDS = [
   ["--version"],
   ["config", "--null", "--get-regexp", "^filter\\."],
+  ["config", "--bool", "commit.gpgsign"],
   ["config", "core.hooksPath"],
   ["diff", "--cached", "--name-only", "--diff-filter=U"],
   ["ls-files", "-s", "-z", "--"],

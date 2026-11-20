@@ -1,4 +1,4 @@
-import { chmodSync, existsSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, readFileSync, readlinkSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -43,13 +43,18 @@ describe("git: probe and inventory", () => {
     assert.equal(calls[0]!.argv.some(arg => arg.includes("inverse.patch")), false);
     g.probe();
   });
-  it("refuses a linked inverse-patch artifact without changing its target [SEC-06]", async () => {
+  it("ignores a linked inverse-patch artifact without changing its target [SEC-06]", {
+    skip: process.platform === "win32" && "bounded patch application has no supported Windows runtime",
+  }, async () => {
     const { g } = repo(), runDir = tmp(); dirs.push(runDir);
     const outside = tmp(); dirs.push(outside);
     const target = join(outside, "target"); writeFileSync(target, "preserve me");
     symlinkSync(target, join(runDir, "inverse.patch"));
-    await assert.rejects(g.applyPatch("not a patch", [], { runDir, timeoutMs: 1000 }));
+    const result = await g.applyPatch("not a patch", [], { runDir, timeoutMs: 1000 });
+    assert.equal(result.ok, false);
     assert.equal(readFileSync(target, "utf8"), "preserve me");
+    assert.equal(lstatSync(join(runDir, "inverse.patch")).isSymbolicLink(), true);
+    assert.equal(readlinkSync(join(runDir, "inverse.patch")), target);
   });
   it("refuses inverse-patch writes on Windows before creating the artifact [SEC-06]",
     { skip: process.platform !== "win32" }, async () => {

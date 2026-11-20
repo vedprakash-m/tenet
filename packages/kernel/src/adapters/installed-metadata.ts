@@ -1,3 +1,6 @@
+import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, realpathSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, sep } from "node:path";
+
 const MAX_BYTES = 20 * 1024 * 1024;
 const MAX_PATH_BYTES = 4_000;
 
@@ -14,8 +17,16 @@ export type InstalledMetadataResult =
   | { status: "missing" }
   | { status: "unavailable"; category: string };
 
-/** The single N-API operation P107 may call once the reviewed payload is present. */
-export type InstalledMetadataAdmission = (request: InstalledMetadataRequest) => InstalledMetadataResult;
+export type InstalledMetadataProvider =
+  | "payload-unavailable-v1"
+  | "repository-fixture-v1"
+  | "github-actions-posix-v1";
+
+/** The one explicit provider identity allowed to answer P107's fixed request population. */
+export type InstalledMetadataAdmission = {
+  identity: InstalledMetadataProvider;
+  read(request: InstalledMetadataRequest): InstalledMetadataResult;
+};
 
 /** The reviewed payload boundary. No binary is loaded and no platform path is active in this scaffold. */
 export const NAPI_METADATA_SCAFFOLD = {
@@ -50,9 +61,195 @@ const PATHS: ReadonlyMap<string, PathBinding> = new Map([
   ["node_modules/.package-lock.json", { provider: "npm", packageName: "installed-record", relativePath: ".package-lock.json" }],
 ]);
 
-/** Payload absence is deliberate: P107 remains capability-refused until the native binary is shipped. */
-export const unavailableInstalledMetadata: InstalledMetadataAdmission = () =>
-  ({ status: "unavailable", category: "payload-unavailable" });
+/** Payload absence is deliberate outside an explicitly qualified provider. */
+export const unavailableInstalledMetadata: InstalledMetadataAdmission = {
+  identity: "payload-unavailable-v1",
+  read: () => ({ status: "unavailable", category: "payload-unavailable" }),
+};
+
+const unavailable = (category: string) => ({ status: "unavailable", category } as const);
+type AdmittedObject = {
+  path: string;
+  dev: bigint;
+  ino: bigint;
+  resolved: string;
+};
+
+const identity = (stat: { dev: bigint; ino: bigint }) => `${stat.dev}:${stat.ino}`;
+const sameIdentity = (stat: { dev: bigint; ino: bigint }, admitted: AdmittedObject) =>
+  stat.dev === admitted.dev && stat.ino === admitted.ino;
+const within = (root: string, path: string) => {
+  const rel = relative(root, path);
+  return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
+};
+
+const readBounded = (
+  path: string,
+  maxBytes: number,
+  admittedLeaf: AdmittedObject,
+  admittedParent: AdmittedObject,
+): InstalledMetadataResult => {
+  let descriptor = -1;
+  try {
+    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    const before = fstatSync(descriptor, { bigint: true });
+    const named = lstatSync(path, { bigint: true });
+    const parent = lstatSync(dirname(path), { bigint: true });
+    if (
+      !before.isFile() || before.size > BigInt(maxBytes) ||
+      named.isSymbolicLink() || !sameIdentity(before, admittedLeaf) || !sameIdentity(named, admittedLeaf) ||
+      !sameIdentity(parent, admittedParent)
+    ) return unavailable("qualified-object-moved");
+    const size = Number(before.size);
+    const bytes = Buffer.alloc(size + 1);
+    let count = 0;
+    while (count < bytes.length) {
+      const size = readSync(descriptor, bytes, count, bytes.length - count, count);
+      if (!size) break;
+      count += size;
+    }
+    const after = fstatSync(descriptor, { bigint: true });
+    if (
+      count !== size || after.size !== before.size ||
+      after.mtimeMs !== before.mtimeMs || after.ctimeMs !== before.ctimeMs ||
+      after.dev !== before.dev || after.ino !== before.ino
+    ) return unavailable("qualified-object-moved");
+    return { status: "file", bytes: bytes.subarray(0, count), fileId: identity(after) };
+  } catch {
+    return unavailable("qualified-read-unavailable");
+  } finally {
+    if (descriptor >= 0) closeSync(descriptor);
+  }
+};
+
+type AdmissionStep =
+  | { admitted: AdmittedObject }
+  | { result: InstalledMetadataResult };
+
+const pathStillAdmitted = (previous: AdmittedObject): boolean => {
+  try {
+    const parent = lstatSync(previous.path, { bigint: true });
+    return sameIdentity(parent, previous) && realpathSync(previous.path) === previous.resolved;
+  } catch {
+    return false;
+  }
+};
+
+function admitLink(
+  path: string, index: number, workspace: string,
+  named: { dev: bigint; ino: bigint },
+): AdmissionStep {
+  if (index !== 0) return { result: unavailable("qualified-link-unavailable") };
+  let expected: string, resolved: string;
+  try {
+    expected = realpathSync(join(workspace, "node_modules"));
+    resolved = realpathSync(path);
+  } catch {
+    return { result: unavailable("qualified-link-unavailable") };
+  }
+  if (!within(workspace, expected) || resolved !== expected)
+    return { result: unavailable("qualified-link-unavailable") };
+  return { admitted: { path, dev: named.dev, ino: named.ino, resolved } };
+}
+
+function admitObject(
+  path: string, index: number, leafIndex: number, workspace: string, rootInsideWorkspace: boolean,
+): AdmissionStep {
+  let named: ReturnType<typeof lstatSync>;
+  try {
+    named = lstatSync(path, { bigint: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT")
+      return { result: unavailable("qualified-path-unavailable") };
+    try {
+      realpathSync(dirname(path));
+      return { result: { status: "missing" } };
+    } catch {
+      return { result: unavailable("qualified-path-unavailable") };
+    }
+  }
+  if (named.isSymbolicLink()) return admitLink(path, index, workspace, named);
+  if (
+    index < leafIndex && !named.isDirectory() ||
+    index === leafIndex && !named.isFile() ||
+    index === 0 && !rootInsideWorkspace
+  ) return { result: unavailable(index === 0 && !rootInsideWorkspace
+    ? "qualified-root-unavailable"
+    : "qualified-path-unavailable") };
+  try {
+    return { admitted: {
+      path, dev: named.dev, ino: named.ino, resolved: realpathSync(path),
+    } };
+  } catch {
+    return { result: unavailable("qualified-path-unavailable") };
+  }
+}
+
+function readGithubActionsMetadata(
+  workspace: string, request: InstalledMetadataRequest,
+): InstalledMetadataResult {
+  if (!isAbsolute(request.root) || request.root.includes("\0"))
+    return unavailable("qualified-root-unavailable");
+  let root: string;
+  try {
+    root = realpathSync(request.root);
+  } catch {
+    return unavailable("qualified-root-unavailable");
+  }
+  let namedRoot: ReturnType<typeof lstatSync>;
+  try {
+    namedRoot = lstatSync(root, { bigint: true });
+  } catch {
+    return unavailable("qualified-root-unavailable");
+  }
+  if (!namedRoot.isDirectory()) return unavailable("qualified-root-unavailable");
+  if (!within(workspace, root)) return unavailable("qualified-root-unavailable");
+  const parts = request.relativePath.split("/");
+  const admitted: AdmittedObject[] = [{
+    path: root, dev: namedRoot.dev, ino: namedRoot.ino, resolved: root,
+  }];
+  let current = join(root, "node_modules");
+  for (let index = 0; index <= parts.length; index++) {
+    const previous = admitted.at(-1);
+    if (previous && !pathStillAdmitted(previous))
+      return unavailable("qualified-path-moved");
+    const step = admitObject(current, index, parts.length, workspace, true);
+    if ("result" in step) {
+      if (step.result.status === "missing" && previous && !pathStillAdmitted(previous))
+        return unavailable("qualified-path-moved");
+      return step.result;
+    }
+    admitted.push(step.admitted);
+    if (index < parts.length) current = join(current, parts[index]!);
+  }
+  return readBounded(current, request.maxBytes, admitted.at(-1)!, admitted.at(-2)!);
+}
+
+/**
+ * GitHub Actions' POSIX workspace is explicitly qualified for this JavaScript reader. Unknown hosts, linked package
+ * ancestors and substitutions outside the checked runner checkout remain refused; this is not the native P107 path.
+ */
+export function githubActionsPosixMetadata(
+  env: Record<string, string | undefined>,
+  platform = process.platform,
+): InstalledMetadataAdmission {
+  if (
+    env.GITHUB_ACTIONS !== "true" || !["linux", "darwin"].includes(platform) ||
+    !env.GITHUB_WORKSPACE || env.GITHUB_WORKSPACE.includes("\0") || !isAbsolute(env.GITHUB_WORKSPACE)
+  ) {
+    return unavailableInstalledMetadata;
+  }
+  let workspace: string;
+  try {
+    workspace = realpathSync(env.GITHUB_WORKSPACE);
+  } catch {
+    return unavailableInstalledMetadata;
+  }
+  return {
+    identity: "github-actions-posix-v1",
+    read: (request) => readGithubActionsMetadata(workspace, request),
+  };
+}
 
 export function installedMetadataRequest(root: string, path: string): InstalledMetadataRequest {
   const binding = PATHS.get(path);
@@ -77,10 +274,11 @@ export function installedMetadataRequest(root: string, path: string): InstalledM
 export function admitInstalledMetadata(admission: InstalledMetadataAdmission, request: InstalledMetadataRequest): InstalledMetadataResult {
   const expected = PATHS.get(`node_modules/${request.relativePath}`);
   if (
+    !["payload-unavailable-v1", "repository-fixture-v1", "github-actions-posix-v1"].includes(admission.identity) ||
     !expected || request.provider !== expected.provider || request.packageName !== expected.packageName ||
     request.maxBytes !== MAX_BYTES || request.root.includes("\0")
   ) return { status: "unavailable", category: "request-binding-unavailable" };
-  const result = admission(request);
+  const result = admission.read(request);
   if (result.status === "file" && (
     !(result.bytes instanceof Buffer) || result.bytes.length > MAX_BYTES || !result.fileId || result.fileId.length > 256
   )) return { status: "unavailable", category: "payload-result-unavailable" };

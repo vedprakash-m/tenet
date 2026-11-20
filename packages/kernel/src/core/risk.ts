@@ -42,10 +42,10 @@ export function chooseLane(requested: Lane | undefined, floor: Lane, recommended
 export interface Readiness {
   nodeOk: boolean; platformOk: boolean; stateWritable: boolean; policyBlocks: boolean;
   gitState: "ok" | "none" | "readonly"; // readonly: rebase/merge/detached/conflicts
-  language: "ts-js" | "other";
-  runnerSupported: boolean; // a qualified runner (Vitest) was detected at a supported version
-  typescript: boolean; depsInstalled: boolean;
-  experimental: boolean; // JavaScript-only, monorepo or another experimental tuple dimension
+  language: "ts-js" | "other" | "unknown";
+  runnerSupported: boolean | null; // a qualified runner (Vitest) was detected at a supported version
+  typescript: boolean | null; depsInstalled: boolean | null;
+  experimental: boolean | null; // JavaScript-only, monorepo or another experimental tuple dimension
 }
 
 export const mutationSupported = (platform: string): boolean => platform === "darwin" || platform === "linux";
@@ -56,11 +56,15 @@ export function assistanceLevel(r: Readiness, profile: Profile): { level: Level;
   const editing = !["plan", "investigate"].includes(profile);
   if (editing && !r.stateWritable) return { level: "L0", why: "Tenet cannot write its local records here" };
   if (editing && !r.platformOk) return { level: "L0", why: "mutating work needs a supported platform" };
+  if (
+    r.language === "unknown" || r.depsInstalled === null || r.runnerSupported === null ||
+    r.typescript === null || r.experimental === null
+  ) return { level: "L1", why: "project readiness is unavailable on this platform" };
   if (r.language === "other") return { level: "L1", why: "this stack is outside the TypeScript and JavaScript profile" };
   if (profile === "plan") return { level: "L2", why: "planning only, as asked" };
-  if (!r.depsInstalled) return { level: "L2", why: "dependencies are not installed" };
-  if (!r.runnerSupported || r.experimental || !r.typescript) {
-    return { level: "L3", why: !r.runnerSupported ? "no supported test runner was found" : r.experimental ? "this setup is experimental" : "this is not a TypeScript project" };
+  if (r.depsInstalled === false) return { level: "L2", why: "dependencies are not installed" };
+  if (r.runnerSupported === false || r.experimental === true || r.typescript === false) {
+    return { level: "L3", why: r.runnerSupported === false ? "no supported test runner was found" : r.experimental === true ? "this setup is experimental" : "this is not a TypeScript project" };
   }
   return { level: "L4" };
 }
@@ -68,21 +72,27 @@ export function assistanceLevel(r: Readiness, profile: Profile): { level: Level;
 export const ceiling = (level: Level): "blocked" | "findings-only" | "implemented-unverified" | "checked-local" =>
   level === "L0" ? "blocked" : level === "L1" || level === "L2" ? "findings-only" : level === "L3" ? "implemented-unverified" : "checked-local";
 
-export interface ReadinessTier { ready: boolean; blockedBy?: string[] }
+export interface ReadinessTier { ready: boolean; blockedBy?: string[]; unknown?: string[] }
 
 /** Splits the readiness probes doctor already computes into the two tiers reportable before any task is open
  * (INS-04: plugin-ready, project-ready). `assistanceLevel`'s own gating is unchanged; this only labels its
  * root causes for display, so a user told "L2" also learns whether the cause is Tenet itself or this project. */
 export function readinessReport(r: Readiness): { plugin: ReadinessTier; project: ReadinessTier } {
-  const tier = (checks: Array<[boolean, string]>): ReadinessTier => {
-    const blockedBy = checks.filter(([ok]) => !ok).map(([, name]) => name);
-    return blockedBy.length ? { ready: false, blockedBy } : { ready: true };
+  const tier = (checks: Array<[boolean | null, string]>): ReadinessTier => {
+    const blockedBy = checks.filter(([ok]) => ok === false).map(([, name]) => name);
+    const unknown = checks.filter(([ok]) => ok === null).map(([, name]) => name);
+    return blockedBy.length || unknown.length
+      ? { ready: false, ...(blockedBy.length ? { blockedBy } : {}), ...(unknown.length ? { unknown } : {}) }
+      : { ready: true };
   };
   return {
     plugin: tier([[!r.policyBlocks, "policy"], [r.stateWritable, "state writable"], [r.platformOk, "platform"],
       [r.nodeOk, "node version"]]),
-    project: tier([[r.gitState === "ok", "git"], [r.language === "ts-js", "language"], [r.depsInstalled, "dependencies installed"],
-      [r.runnerSupported, "test runner"], [r.typescript, "typescript"], [!r.experimental, "not experimental"]]),
+    project: tier([[r.gitState === "ok", "git"],
+      [r.language === "unknown" ? null : r.language === "ts-js", "language"],
+      [r.depsInstalled, "dependencies installed"],
+      [r.runnerSupported, "test runner"], [r.typescript, "typescript"],
+      [r.experimental === null ? null : !r.experimental, "not experimental"]]),
   };
 }
 

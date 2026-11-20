@@ -58,7 +58,8 @@ export async function commitBlockers(
       },
     };
   }
-  const undecided = undecidedDirty(w, facts.inv);
+  const tenetPaths = new Set(facts.tenetPaths);
+  const undecided = undecidedDirty(w, facts.inv).filter((path) => tenetPaths.has(path));
   if (undecided.length)
     return dirtyBlocker(ports, st, w, facts, undecided, "Ask what happens to each overlapping file.");
   const editUncommitted = facts.editUncommitted ?? [];

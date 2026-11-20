@@ -15,6 +15,7 @@ import type { Ports } from "./ports/types.ts";
 import { KERNEL_VERSION } from "./version.ts";
 import { sha256 } from "./core/ids.ts";
 import { createMigrationGuard } from "./adapters/marker-rollback.ts";
+import { githubActionsPosixMetadata } from "./adapters/installed-metadata.ts";
 
 /** The workspace is the Git top level when there is one, so every subfolder shares one `.tenet/`. */
 function workspaceRoot(cwd: string): string {
@@ -52,6 +53,6 @@ export function createPorts(cwd: string, env: Record<string, string | undefined>
     recipes, host: new PluginHost(recipes, env.TENET_HOST_VERSION), project: new FsProject(root),
     store, authorizeMutation: (verb, input) => store.authorizeMutation(verb, input),
     git: new SealingGit(root, runner),
-    runner, stack: createStack(),
+    runner, stack: createStack(githubActionsPosixMetadata(env)),
   };
 }

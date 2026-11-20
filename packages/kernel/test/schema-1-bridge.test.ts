@@ -119,7 +119,7 @@ describe("schema-1 rollback bridge [LFC-04, CON-05]", () => {
     const work = contractFixture({ pinned: { tenet: "test", schema: 1, adapter: "test" } });
     const pending = {
       id: "dirty-overlap", header: "Your edits", question: "Keep existing edits?",
-      channel: "chat", bind: { factsHash: "unchanged" },
+      channel: "chat", bind: { factsHash: "unchanged", instanceId: "bound-legacy-question" },
     };
     writeFileSync(join(dir, "state"), JSON.stringify({
       ...raw, work: { [work.id]: work }, pending: [pending],

@@ -5,7 +5,7 @@ import { cleanup } from "./helpers.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
 import {
-  BASIS, GREET_IMPL, GREET_TEST, callWithEnvelopeConsent, finishFixture, project,
+  BASIS, GREET_IMPL, GREET_TEST, callWithEnvelopeConsent, finishFixture, focusFixture, project,
 } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
@@ -131,18 +131,7 @@ describe("dirty-file consent (P47)", {
     p.write("src/greet.ts", GREET_IMPL);
     const firstCheck = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(firstCheck.exit, 0, JSON.stringify(firstCheck));
-    await p.call("findings", { h, result: {
-      kind: "review",
-      manifest: (firstCheck.data as any).review.manifest,
-      reservation: (firstCheck.data as any).review.reservation,
-      attempt: (firstCheck.data as any).review.attempt,
-      mode: (firstCheck.data as any).review.mode,
-      status: "completed",
-      dispatchMode: "same-session",
-      axes: { behavior: "pass", structure: "pass" },
-      coverage: { inspected: ["src/greet.ts", "src/greet.test.ts"], uncovered: [], crossCutting: "none", sampled: [] },
-      attention: [], findings: [], basisGaps: [], openDependencies: [],
-    } });
+    assert.ok(await focusFixture(p, h));
     const uncommitted = await finishFixture(p, { h, noCommit: true });
     assert.equal((uncommitted.data as any).scope, "working-tree-uncommitted");
     const explicit = await p.call("commit", { h, subject: "one explicit commit" });
@@ -154,9 +143,9 @@ describe("dirty-file consent (P47)", {
     const later = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     assert.equal(later.exit, 0, JSON.stringify(later));
     const before = commitIntents(p).length;
-    const freshFinish = await p.call("finish", { h, subject: "must stay uncommitted" });
+    const freshFinish = await finishFixture(p, { h, subject: "must stay uncommitted" });
     assert.equal(freshFinish.historical, undefined);
-    assert.equal((freshFinish.data as any).scope, "working-tree-uncommitted");
+    assert.equal((freshFinish.data as any).noCommit, true);
     assert.equal(p.git("rev-parse", "HEAD"), c1);
     assert.equal(commitIntents(p).length, before);
     assert.match(readFileSync(`${p.root}/src/greet.ts`, "utf8"), /later candidate/);
@@ -177,6 +166,7 @@ describe("dirty-file consent (P47)", {
     p.write("src/greet.ts", GREET_IMPL);
     const checked = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     const head = p.git("rev-parse", "HEAD");
+    await focusFixture(p, h);
     const asked = await p.call("finish", { h });
     assert.equal(asked.questions?.[0]?.id, "signing-consent", JSON.stringify(asked));
     assert.equal((await p.call("decide", {

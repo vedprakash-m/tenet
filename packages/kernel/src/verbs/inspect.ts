@@ -38,18 +38,33 @@ const VERBS = {
 function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>) {
   const r = readinessOf(ports, probe);
   const writable = r.stateWritable;
-  const d = ports.stack.detect(ports.root);
+  const d = r.platformOk ? ports.stack.detect(ports.root) : null;
   const checks = [
     { name: "node", ok: nodeOk(), detail: process.version },
     { name: "git", ok: probe.version !== "git not found", detail: probe.version },
     { name: "repository", ok: probe.isRepo && probe.state === "ok", detail: probe.isRepo ? (probe.state === "ok" ? `branch ${probe.branch ?? "(detached)"}` : probe.why ?? "read-only") : "not a Git repository" },
     { name: "commit identity", ok: probe.identity, detail: probe.identity ? "configured" : "git user.name and user.email are not set" },
     { name: "project folder writable", ok: writable, detail: ports.root },
-    { name: "test runner", ok: d.runnerSupported, detail: d.runner ? `${d.runner} ${d.runnerVersion}${d.runnerSupported ? "" : " (unsupported version)"}` : d.depsInstalled ? "none found" : "dependencies are not installed" },
+    {
+      name: "test runner", ok: d ? d.runnerSupported : null,
+      detail: !d
+        ? "unavailable on this platform"
+        : d.runner
+          ? `${d.runner} ${d.runnerVersion}${d.runnerSupported ? "" : " (unsupported version)"}`
+          : d.depsInstalled ? "none found" : "dependencies are not installed",
+    },
     { name: "commit hooks", ok: true, detail: probe.hooks ? "present; commits need your consent once" : "none" },
   ];
   const { level, why } = assistanceLevel(r, "feature");
-  const detected = { language: d.language, typescript: d.typescript, packageManager: d.packageManager, runner: d.runner ?? null, depsInstalled: d.depsInstalled, hooks: !!probe.hooks, git: probe.isRepo };
+  const detected = d
+    ? {
+        language: d.language, typescript: d.typescript, packageManager: d.packageManager,
+        runner: d.runner ?? null, depsInstalled: d.depsInstalled, hooks: !!probe.hooks, git: probe.isRepo,
+      }
+    : {
+        language: "unknown", typescript: "unknown", packageManager: "unknown", runner: null,
+        depsInstalled: "unknown", hooks: !!probe.hooks, git: probe.isRepo,
+      };
   const readiness = readinessReport(r);
   return {
     checks, detected, capabilities: ports.host.capabilities(), level, ...(why ? { why } : {}),

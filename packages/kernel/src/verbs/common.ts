@@ -16,9 +16,14 @@ export const nodeOk = (): boolean => {
 };
 
 export function readinessOf(ports: Ports, probe: RepoProbe): Readiness {
-  const d = ports.stack.detect(ports.root);
+  const platformOk = mutationSupported(ports.platform);
+  const d = platformOk
+    ? ports.stack.detect(ports.root)
+    : {
+        language: "unknown" as const, runnerSupported: null, typescript: null, depsInstalled: null, experimental: null,
+      };
   return {
-    nodeOk: nodeOk(), platformOk: mutationSupported(ports.platform), stateWritable: ports.store.canWrite(), policyBlocks: false,
+    nodeOk: nodeOk(), platformOk, stateWritable: ports.store.canWrite(), policyBlocks: false,
     gitState: probe.state, language: d.language, runnerSupported: d.runnerSupported, typescript: d.typescript,
     depsInstalled: d.depsInstalled, experimental: d.experimental,
   };

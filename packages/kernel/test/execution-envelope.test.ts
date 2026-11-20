@@ -8,9 +8,8 @@ import type { Obligation, WorkContract } from "../src/core/schemas.ts";
 import { executionDisclosures, recoverStoppedCall } from "../src/core/execution-envelope.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
-import { createPorts } from "../src/wire.ts";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, SLOW_TEST, cli, cliEnv, isAlive, preconsentEnvelope, project, runCli, runningCheck, waitFor } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, SLOW_TEST, cli, isAlive, preconsentEnvelope, project, runCli, runningCheck, waitFor } from "./support/fixture.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -237,7 +236,7 @@ for (const cancellation of [false, true]) it(`requires fresh consent after an un
       await running.done;
       assert.ok(isAlive(orphan.pid));
     }
-    const ports = createPorts(p.root, cliEnv());
+    const ports = p.ports();
     const plan = ports.runner.planEnvelope.bind(ports.runner);
     ports.runner.planEnvelope = input => {
       const envelope = plan(input);
