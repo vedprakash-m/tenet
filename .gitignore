@@ -13,3 +13,4 @@ plugin/SHA256SUMS
 .env.*
 !.env.example
 .host-runs/
+.local-*
