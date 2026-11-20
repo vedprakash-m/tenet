@@ -255,19 +255,24 @@ function readStrict<T>(path: string, schema: { parse(value: unknown): T }): T {
   catch { return refuse(`invalid ${path}`); }
 }
 
-function replace(root: string, path: string, bytes: Buffer, tempSuffix: string): void {
+function replace(root: string, path: string, bytes: Buffer, tempSuffix: string, mode = 0o600): void {
   safePath(path);
   const final = join(root, path);
   mkdirSync(dirname(final), { recursive: true, mode: 0o700 });
   const temp = `${final}.tmp-${tempSuffix}`;
   if (existsSync(temp)) {
     if (!readFileSync(temp).equals(bytes)) refuse(`the replacement temporary for ${path} is partial`);
+    chmodSync(temp, mode);
     syncCandidateFile(temp);
   } else if (existsSync(final) && readFileSync(final).equals(bytes)) {
+    chmodSync(final, mode);
     syncCandidateFile(final);
     syncCandidateDirectory(dirname(final));
     return;
-  } else writeCandidateFile(temp, bytes, true);
+  } else {
+    writeCandidateFile(temp, bytes, true);
+    chmodSync(temp, mode);
+  }
   renameSync(temp, final);
   syncCandidateDirectory(dirname(final));
 }
@@ -807,6 +812,10 @@ function exactRestorePrefix(
   for (const path of paths) {
     const present = actual.get(path);
     const choices = [...source, ...targetEntries].filter((item) => item.entry.path === path).map((item) => item.entry);
+    if (!targetEntries.some((item) => item.entry.path === path) &&
+        source.some((item) => item.entry.path === path)) {
+      choices.push({ path, kind: "absent", sha256: null, mode: null, marker: "source" });
+    }
     if (!choices.some((choice) => matchesEntry(present, choice)) &&
         !(present === undefined && (
           targetEntries.some((item) => item.entry.path === path) && !source.some((item) => item.entry.path === path) ||
@@ -924,8 +933,7 @@ function restoreEntry(
   if (existsSync(final) && lstatSync(final).isFile() &&
       readFileSync(final).equals(readFileSync(bytes)) &&
       (lstatSync(final).mode & 0o7777) === Number.parseInt(entry.mode, 8)) return;
-  replace(root, entry.path, readFileSync(bytes), operationId);
-  chmodSync(final, Number.parseInt(entry.mode, 8));
+  replace(root, entry.path, readFileSync(bytes), operationId, Number.parseInt(entry.mode, 8));
   syncCandidateDirectory(dirname(final));
 }
 

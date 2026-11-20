@@ -2508,6 +2508,8 @@ Exit is the code produced when the reason decides the response; 0 means it appea
 |  | `takeover-check` | 3 | The previous generation may still be working |
 |  | `revision-conflict` | 2 | Expected revision differs |
 |  | `marker-mismatch` | 3 | Copied, imported or marker-less state; quarantine decision |
+|  | `marker-identity-unavailable` | 3 | A verified directory creation-time identity is unavailable |
+|  | `marker-binding-unavailable` | 3 | The marker's host-held binding cannot be read or created |
 |  | `reconstructed-from-repository` | 0 | Local records were missing; what the repository still shows was read back, nothing else assumed |
 |  | `state-recovered-from-backup` | 3 | Fallback to state.prev; grants suspended until reconfirmed |
 |  | `state-history-unknown` | 3 | Existing local state history cannot be established; dependent work is fenced |

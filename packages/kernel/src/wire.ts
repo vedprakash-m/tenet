@@ -41,15 +41,17 @@ export function createPorts(cwd: string, env: Record<string, string | undefined>
     !/^[a-f0-9]{64}$/.test(rollbackBridgeDigest) ||
     sha256(readFileSync(fileURLToPath(import.meta.url))) !== rollbackBridgeDigest
   );
+  const store = new FsStore(root, systemClock, systemRandom, {
+    migrationGuard: createMigrationGuard(
+      root, rollbackBridgeDigest, env.TENET_ROLLBACK_BRIDGE_REQUEST, rollbackBridgeInvalid,
+    ),
+  });
   return {
     platform: process.platform,
     root, version: KERNEL_VERSION, clock: systemClock, rand: systemRandom,
     recipes, host: new PluginHost(recipes, env.TENET_HOST_VERSION), project: new FsProject(root),
-    store: new FsStore(root, systemClock, systemRandom, {
-      migrationGuard: createMigrationGuard(
-        root, rollbackBridgeDigest, env.TENET_ROLLBACK_BRIDGE_REQUEST, rollbackBridgeInvalid,
-      ),
-    }), git: new SealingGit(root, runner),
+    store, authorizeMutation: (verb, input) => store.authorizeMutation(verb, input),
+    git: new SealingGit(root, runner),
     runner, stack: createStack(),
   };
 }

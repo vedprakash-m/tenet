@@ -62,7 +62,6 @@ export interface RetentionScope { path: string; identity: string; exists: boolea
 
 export interface Store {
   admit(): void;
-  authorizeMutation?(verb: string, input: unknown): void;
   exists(): boolean;
   /** Read-only classification; an existing marker without usable state is uncertain. */
   history(): "absent" | "complete" | "uncertain";
@@ -372,4 +371,5 @@ export interface Ports {
   recipes: Recipes; project: Project; host: Host;
   /** Current invocation snapshot; absent outside the public pipeline. */
   timing?: () => Timing;
+  authorizeMutation?(verb: string, input: unknown): void;
 }
