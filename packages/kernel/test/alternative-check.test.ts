@@ -21,7 +21,7 @@ import type { Run } from "../src/verbs/check-evidence.ts";
 import { receiptsOf } from "../src/verbs/check-evidence.ts";
 import { checkInputId } from "../src/verbs/facts.ts";
 import { gather } from "../src/verbs/facts.ts";
-import { createStack } from "../src/adapters/node-ts.ts";
+import { createStack } from "./support/metadata-stack.ts";
 import { hashOf, sha256 } from "../src/core/ids.ts";
 import { coverageDefinitionHash } from "../src/core/alternative-check.ts";
 import { admitCoverageDefinitions } from "../src/verbs/check.ts";

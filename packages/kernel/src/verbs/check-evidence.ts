@@ -11,7 +11,9 @@ import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
 import { TREND_PREFIX } from "../core/fitness.ts";
 import type { ParsedWorkload } from "../core/fitness.ts";
 import type { AttentionItem, Obligation, Receipt, State, WorkContract } from "../core/schemas.ts";
-import type { Normalized, Ports, RecipeCoverageCheck, RecipeCoverageRecord, StaticTool } from "../ports/types.ts";
+import type {
+  Normalized, Ports, RecipeCoverageCheck, RecipeCoverageRecord, StaticTool, ToolVersions,
+} from "../ports/types.ts";
 import type { Facts } from "./facts.ts";
 import type { SealedRun } from "./check-sealed.ts";
 import type { Exclusion } from "../core/exclusions.ts";
@@ -34,6 +36,7 @@ export interface Run {
   id: string;
   /** Fingerprint of the toolchain when the run was prepared; a different one after the run means an input moved (EVD-11). */
   toolchain?: string;
+  versions?: ToolVersions;
   /** The exclusion policy: paths it forbids reading stay out of the sealed starting copy (EVD-04). */
   exclusions?: Exclusion[];
   coverage?: RecipeCoverageRecord[];

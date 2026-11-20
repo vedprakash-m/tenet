@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { closeSync, existsSync, ftruncateSync, mkdirSync, openSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
-import { createStack, normalizeStatic } from "../src/adapters/node-ts.ts";
+import { createStack, normalizeStatic } from "./support/metadata-stack.ts";
 import { cleanup, tmp } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, finishFixture, project } from "./support/fixture.ts";
 

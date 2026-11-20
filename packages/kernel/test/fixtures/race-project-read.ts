@@ -3,7 +3,7 @@ import { syncBuiltinESMExports } from "node:module";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { FsProject } from "../../src/adapters/project-fs.ts";
-import { createStack } from "../../src/adapters/node-ts.ts";
+import { createStack } from "../support/metadata-stack.ts";
 import { FsStore } from "../../src/adapters/store-fs.ts";
 import { systemClock, systemRandom } from "../../src/adapters/system.ts";
 import { ProcessRunner } from "../../src/adapters/runner.ts";

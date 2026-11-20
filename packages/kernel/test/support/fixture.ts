@@ -7,6 +7,7 @@ import { handleOf, runVerb } from "../../src/pipeline.ts";
 import { configurePolicy } from "../../src/verbs/reconcile.ts";
 import { VERBS } from "../../src/verbs/index.ts";
 import { createPorts } from "../../src/wire.ts";
+import { createStack } from "./metadata-stack.ts";
 import { newContract } from "../../src/core/state.ts";
 import type { WorkContract } from "../../src/core/schemas.ts";
 import { git, initRepo, tmp, write } from "../helpers.ts";
@@ -28,7 +29,11 @@ export function project(files: Record<string, string> = {}, options: { autoConse
   symlinkSync(REPO_NODE_MODULES, join(root, "node_modules"));
   git(root, "add", "-A");
   git(root, "commit", "-qm", "initial");
-  const ports = () => createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
+  const ports = () => {
+    const bound = createPorts(root, { PATH: process.env.PATH, HOME: process.env.HOME });
+    bound.stack = createStack();
+    return bound;
+  };
   const rawCall = (verb: string, input: Record<string, unknown> = {}): Promise<KernelResponse> => runVerb(ports(), VERBS, verb, input);
   const call = (verb: string, input: Record<string, unknown> = {}): Promise<KernelResponse> =>
     options.autoConsentEnvelope === false ? rawCall(verb, input) : callWithEnvelopeConsent(rawCall, verb, input, options.autoContinueModel !== false);

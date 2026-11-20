@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { normalizePlaywright, playwrightArgv } from "../src/adapters/playwright.ts";
-import { createStack } from "../src/adapters/node-ts.ts";
+import { createStack } from "./support/metadata-stack.ts";
 
 const result = (status: string, errors: Array<{ message?: string }> = []) => ({ status, errors });
 const spec = (title: string, ok: boolean, results: Array<ReturnType<typeof result>>) => ({

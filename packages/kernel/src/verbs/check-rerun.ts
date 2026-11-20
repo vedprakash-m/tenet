@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { hashOf } from "../core/ids.ts";
 import { declaredOutputs, movedPaths } from "../core/outputs.ts";
 import type { RunFacts } from "../core/receipts.ts";
-import type { Ports, RunResult } from "../ports/types.ts";
+import type { Ports, RunResult, ToolVersions } from "../ports/types.ts";
 import { failedAmong, isSharedTest } from "./check-evidence.ts";
 import type { Rerun, Run } from "./check-evidence.ts";
 
@@ -12,9 +12,23 @@ const MAX_RERUNS = 2;
 const FIRST_RUN_LIMIT_MS = 120_000;
 const RERUN_TIMEOUT_MS = 10 * 60_000;
 
-/** A fingerprint of the toolchain, or a marker when it cannot be read: either way a change from the prepared one is a moved input. */
+export type ToolchainObservation =
+  | { available: true; hash: string; versions: ToolVersions }
+  | { available: false };
+
+export function observeToolchain(ports: Ports): ToolchainObservation {
+  try {
+    const versions = ports.stack.fingerprint(ports.root);
+    return { available: true, hash: hashOf(versions), versions };
+  } catch {
+    return { available: false };
+  }
+}
+
+/** Historical callers that need a comparable string; unavailable is never agreement in `digestAfter`. */
 export function toolchainOf(ports: Ports): string {
-  try { return hashOf(ports.stack.fingerprint(ports.root)); } catch { return "unreadable"; }
+  const observed = observeToolchain(ports);
+  return observed.available ? observed.hash : "unreadable";
 }
 
 /** The inventory digest after a run, tagged when the toolchain moved since the run was prepared, so the receipt rule sees an edit
@@ -22,7 +36,8 @@ export function toolchainOf(ports: Ports): string {
 export async function digestAfter(run: Run, inputs: readonly string[]): Promise<{ digest: string; moved: string[] }> {
   const inv = await run.ports.git.inventory([], inputs, declaredOutputs(run.w.obligations));
   const moved = movedPaths(run.facts.inv.entries, inv.entries);
-  const tool = toolchainOf(run.ports) === run.toolchain;
+  const observed = observeToolchain(run.ports);
+  const tool = observed.available && observed.hash === run.toolchain;
   return { digest: tool ? inv.digest : `${inv.digest}+toolchain`, moved: [...moved, ...(tool ? [] : ["the installed toolchain"])] };
 }
 

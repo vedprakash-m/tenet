@@ -13,7 +13,7 @@ import { FsRecipes } from "../src/adapters/recipes-fs.ts";
 import { callWithEnvelopeConsent, reviewResult, waitFor } from "./support/fixture.ts";
 import { contractFixture } from "./support/fixture.ts";
 import { scaffolded } from "../src/decisions/scaffold.ts";
-import { createStack } from "../src/adapters/node-ts.ts";
+import { createStack } from "./support/metadata-stack.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));

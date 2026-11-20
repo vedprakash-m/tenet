@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { after, describe, it } from "node:test";
 import { mkdirSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createStack } from "../src/adapters/node-ts.ts";
+import { createStack } from "./support/metadata-stack.ts";
 import { isSettingKey } from "../src/core/config.ts";
 import { supportOf } from "../src/core/obligations.ts";
 import { isReasonCode } from "../src/core/reasons.ts";

@@ -262,7 +262,10 @@ export async function mutate(ports: Ports, verb: Verb, input: Input): Promise<Ke
   try {
     result = await job.execute();
   } catch (e) {
-    result = { error: e instanceof Error ? e.message : String(e) };
+    result = {
+      error: e instanceof Error ? e.message : String(e),
+      ...(e instanceof KernelError ? { errorCode: e.reasons[0]?.code } : {}),
+    };
   }
   return publishResult(ports, verb, input, first, job, result, held.world, held.startedAt);
 }

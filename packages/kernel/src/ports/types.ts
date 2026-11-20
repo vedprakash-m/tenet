@@ -75,6 +75,7 @@ export interface Store {
 // ---------------------------------------------------------------- git
 export interface Entry { path: string; mode: string; blob: string; link?: string }
 export interface StatusEntry { path: string; xy: string; staged: boolean; untracked: boolean; mode: string; blob: string; indexBlob: string }
+export interface PathImage { mode: string; blob: string }
 export interface Inventory {
   head: string | null; branch: string | null; entries: Map<string, Entry>; status: StatusEntry[]; digest: string;
 }
@@ -129,6 +130,8 @@ export interface Git {
   applyPatch(patch: string, include?: readonly string[], options?: { runDir: string; timeoutMs: number }): Promise<{ ok: boolean; detail?: string; uncertain?: boolean }>;
   /** Blob ids of paths in a tree-ish (null when absent). */
   blobsAt(treeish: string, paths: readonly string[]): Promise<Record<string, string | null>>;
+  /** Mode and blob identity of exact paths in a tree-ish (null when absent). */
+  imagesAt(treeish: string, paths: readonly string[]): Promise<Record<string, PathImage | null>>;
   /** Commits after `since` on the current history that touch these paths. */
   laterCommits(since: string, paths: readonly string[]): Promise<string[]>;
   /** The commit a ref names, or null. */
@@ -161,6 +164,8 @@ export interface Git {
 // ---------------------------------------------------------------- runner
 export interface RunSpec {
   argv: string[]; cwd: string; runDir: string; timeoutMs: number;
+  /** One bounded byte stream for fixed kernel commands; stdin is otherwise closed. */
+  stdin?: { mode: "bound"; bytes: Buffer };
   /** Kernel-selected variables, never a user-supplied execution surface. */
   env?: Record<string, string>;
   /** A file the command writes its report to; the runner returns its content. */
@@ -168,6 +173,7 @@ export interface RunSpec {
 }
 export interface RunResult {
   outputTruncated?: boolean;
+  stdinDelivery?: "delivered" | "write-failed" | "spawn-failed";
   exit?: number; signal?: string; timedOut: boolean; durationMs: number; pid?: number; stdout: string; stderr: string; startedAt: string;
   report: string | null;
 }

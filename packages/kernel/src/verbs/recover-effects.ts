@@ -11,6 +11,7 @@ import { adoptionReplayNeeded } from "../core/state.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 import { recoverUndo } from "./recover-undo.ts";
+import { publishUndo } from "./recover-undo-state.ts";
 
 export interface IntegrationOp { work: string; base: string; baseBefore: string; workTip: string }
 export type Unresolved = ReturnType<Tx["unresolved"]>[number];
@@ -197,6 +198,7 @@ export const SETTLE: Record<string, (r: Recovery, u: Unresolved) => Promise<void
 
 /** A result that was logged but never published is applied to state, once (TS §7.4). */
 export const PUBLISH: Record<string, (r: Recovery, op: unknown, out: Outcome) => void> = {
+  undo: publishUndo,
   scaffold(r, o) {
     const op = o as ScaffoldOp, w = r.state.work[op.work];
     if (!w || Object.keys(op.expected).every(path => Object.hasOwn(w.vetted, path))) return;

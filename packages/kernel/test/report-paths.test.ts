@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { join, resolve } from "node:path";
 import { describe, it } from "node:test";
-import { createStack, normalize, normalizeStatic } from "../src/adapters/node-ts.ts";
+import { createStack, normalize, normalizeStatic } from "./support/metadata-stack.ts";
 import { normalizePlaywright } from "../src/adapters/playwright.ts";
 
 type Tool = "vitest" | "playwright" | "eslint" | "tsc";
