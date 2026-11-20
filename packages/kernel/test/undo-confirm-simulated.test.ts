@@ -13,6 +13,7 @@ import { decide } from "../src/verbs/decide.ts";
 import { enableUndoForTests, undo } from "../src/verbs/undo.ts";
 import { createPorts } from "../src/wire.ts";
 import type { CommitProofV1 } from "../src/core/commit-proof.ts";
+import { createStack } from "./support/metadata-stack.ts";
 
 enableUndoForTests();
 
@@ -145,15 +146,20 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
 
     const ports = createPorts(root);
     ports.platform = "linux";
+    ports.stack = createStack();
     let applyCount = 0;
     ports.runner.guardRun = () => {};
     ports.runner.run = async (spec) => {
       assert.equal(spec.argv[0], "git");
       applyCount++;
       const stdout = execFileSync(spec.argv[0], spec.argv.slice(1), {
-        cwd: spec.cwd, env: { ...process.env, ...spec.env }, encoding: "utf8",
+        cwd: spec.cwd, env: { ...process.env, ...spec.env }, encoding: "utf8", input: spec.stdin?.bytes,
       });
-      return { exit: 0, stdout, stderr: "", timedOut: false, durationMs: 0, startedAt: "2026-11-08T03:00:00.000Z", report: null };
+      return {
+        exit: 0, stdout, stderr: "", timedOut: false, durationMs: 0,
+        startedAt: "2026-11-08T03:00:00.000Z", report: null,
+        ...(spec.stdin ? { stdinDelivery: "delivered" as const } : {}),
+      };
     };
     const seed = newContract({
       id: "wk_synthetic", label: "W-0001", profile: "feature", request: "synthetic",
@@ -348,16 +354,18 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
     const shouldApply = scenario === "unchanged" || scenario === "different-label-empty" || multipleOwned;
     if (scenario === "inverse-unavailable" || (inverseUnavailable && shouldApply)) {
       assert.equal(confirmation.exit, 2, JSON.stringify(confirmation));
-      assert.equal(confirmation.reasons[0]?.code, "effect-uncertain");
+      assert.equal(confirmation.reasons[0]?.code, "capability-missing");
       assert.match(confirmation.reasons[0]!.message, /Safe inverse-patch application is unavailable/);
-      assert.deepEqual(confirmation.effects?.completed, []);
-      assert.deepEqual(confirmation.effects?.uncertain, ["undo postcondition is not established"]);
+      assert.equal(confirmation.effects, undefined);
       assert.equal(applyCount, 0);
       assert.equal(plans - previewPlans, 1);
       assert.equal(readFileSync(join(root, "src", "owned.txt"), "utf8"),
         multipleOwned ? "header\nsecond owned\nfooter\nlater human\n" : "owned change\n");
       assert.equal(memory.intents.length, 1);
-      assert.deepEqual(memory.results, []);
+      assert.deepEqual(memory.results.map(result => result.outcome), [{ completed: false }]);
+      assert.equal(memory.state().work[work.id]!.git.undoneBy, undefined);
+      assert.deepEqual(memory.state().sourceOwner, { work: work.id, generation: work.session.generation });
+      assert.equal(Object.values(memory.state().work).find(item => item.id !== work.id)!.state, "cancelled");
     } else if (shouldApply) {
       assert.equal(confirmation.exit, 0, JSON.stringify(confirmation));
       assert.equal(applyCount, 1);

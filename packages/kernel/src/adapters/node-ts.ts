@@ -1,6 +1,6 @@
 // Node/TypeScript adapter (TS §9.5): detection, the Vitest invocation, one pure normalization of its JSON report
 // and the attention-pattern table. Mostly data. The adapter normalizes; it never decides acceptance.
-import { closeSync, constants, existsSync, fstatSync, openSync, readSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import type { AttentionPattern, FileChange } from "../core/review.ts";
@@ -14,36 +14,38 @@ import { nestsTooDeep } from "./report-bounds.ts";
 import { shareDeps } from "./node-deps.ts";
 import { normalizePlaywright, playwrightArgv } from "./playwright.ts";
 import { unsupportedTsConfig } from "./static-config.ts";
+import {
+  admitInstalledMetadata,
+  installedMetadataRequest,
+  unavailableInstalledMetadata,
+  type InstalledMetadataAdmission,
+} from "./installed-metadata.ts";
 
-const ADAPTER = "node-ts@28"; // 28: report unsupported tsconfig.
-function installedMetadata(path: string, kind: "tool" | "dependency"): { record: Record<string, any>; digest: string } | null {
-  let descriptor = -1;
+const ADAPTER = "node-ts@29"; // 29: bounded installed-metadata admission contract.
+function installedMetadata(
+  root: string,
+  path: string,
+  kind: "tool" | "dependency",
+  admission: InstalledMetadataAdmission,
+): { record: Record<string, any>; digest: string } | null {
   try {
-    descriptor = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
-    const info = fstatSync(descriptor);
-    if (!info.isFile() || info.size > 20 * 1024 * 1024) throw new Error("unsafe or oversized metadata");
-    const bytes = Buffer.alloc(info.size + 1);
-    let count = 0;
-    while (count < bytes.length) {
-      const size = readSync(descriptor, bytes, count, bytes.length - count, count);
-      if (!size) break;
-      count += size;
-    }
-    const after = fstatSync(descriptor);
-    if (count !== info.size || after.size !== info.size || after.mtimeMs !== info.mtimeMs || after.ctimeMs !== info.ctimeMs)
-      throw new Error("metadata changed during read");
-    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes.subarray(0, count));
+    const result = admitInstalledMetadata(admission, installedMetadataRequest(root, path));
+    if (result.status === "missing") return null;
+    if (result.status === "unavailable")
+      throw new KernelError("capability-missing", `installed ${kind} metadata cannot be verified safely`, { exit: 2 });
+    const bytes = result.bytes;
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
     const record: unknown = JSON.parse(text);
     if (!record || typeof record !== "object" || Array.isArray(record) || nestsTooDeep(record)) throw new Error("invalid metadata");
-    return { record, digest: sha256(bytes.subarray(0, count)) };
+    return { record, digest: sha256(bytes) };
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    if (error instanceof KernelError) throw error;
     throw new KernelError("capability-missing", `installed ${kind} metadata cannot be verified safely`, { exit: 2 });
-  } finally { if (descriptor >= 0) closeSync(descriptor); }
+  }
 }
 
-function installedDependencies(path: string): string {
-  const metadata = installedMetadata(path, "dependency");
+function installedDependencies(root: string, path: string, admission: InstalledMetadataAdmission): string {
+  const metadata = installedMetadata(root, path, "dependency", admission);
   if (!metadata) return "absent";
   const lock = metadata.record;
   if (!Number.isSafeInteger(lock.lockfileVersion) || Number(lock.lockfileVersion) < 1 ||
@@ -80,7 +82,7 @@ export const classify = (path: string): FileChange["kind"] => {
   return "source";
 };
 
-function metadata(root: string, exclusions: readonly Exclusion[]) {
+function metadata(root: string, exclusions: readonly Exclusion[], admission: InstalledMetadataAdmission) {
   const project = new FsProject(root);
   project.setExclusions(exclusions);
   const permit = (path: string) => {
@@ -93,7 +95,7 @@ function metadata(root: string, exclusions: readonly Exclusion[]) {
     installed(): string {
       const path = "node_modules/.package-lock.json";
       permit(path);
-      return installedDependencies(join(root, path));
+      return installedDependencies(root, path, admission);
     },
     present(path: string): boolean {
       permit(path);
@@ -102,7 +104,7 @@ function metadata(root: string, exclusions: readonly Exclusion[]) {
     json(path: string): Record<string, any> | null {
       permit(path);
       // Installed tool metadata can live behind the package manager's node_modules link. Project inputs cannot.
-      if (path.startsWith("node_modules/")) return installedMetadata(join(root, path), "tool")?.record ?? null;
+      if (path.startsWith("node_modules/")) return installedMetadata(root, path, "tool", admission)?.record ?? null;
       const text = project.read(path);
       try {
         return JSON.parse(text ?? "null");
@@ -154,8 +156,8 @@ function configProblem(meta: ReturnType<typeof metadata>): string | undefined {
   return undefined;
 }
 
-function detect(root: string, exclusions: readonly Exclusion[]): Detection {
-  const meta = metadata(root, exclusions);
+function detect(root: string, exclusions: readonly Exclusion[], admission: InstalledMetadataAdmission): Detection {
+  const meta = metadata(root, exclusions, admission);
   const pkg = meta.json("package.json");
   const deps = { ...(pkg?.dependencies ?? {}), ...(pkg?.devDependencies ?? {}) };
   const typescript = meta.present("tsconfig.json") || "typescript" in deps;
@@ -435,8 +437,9 @@ function selectedCoverageArgv(
   check: RecipeCoverageCheck,
   report: string,
   exclusions: readonly Exclusion[],
+  admission: InstalledMetadataAdmission,
 ): string[] | null {
-  const meta = metadata(root, exclusions);
+  const meta = metadata(root, exclusions, admission);
   if (check.tool === "vitest") {
     const version = Number(String(meta.json("node_modules/vitest/package.json")?.version ?? "none").split(".")[0]);
     if (!SUPPORTED.includes(version)) return null;
@@ -451,15 +454,15 @@ function selectedCoverageArgv(
   return command ? [...command, `--config=${check.config}`, check.file] : null;
 }
 
-export function createStack(): Stack {
+export function createStack(admission: InstalledMetadataAdmission = unavailableInstalledMetadata): Stack {
   let exclusions: readonly Exclusion[] = [];
   return {
     setExclusions: (value) => {
       exclusions = value;
     },
-    detect: (root) => detect(root, exclusions),
+    detect: (root) => detect(root, exclusions, admission),
     assertSupportedConfiguration: (root) => {
-      const problem = configProblem(metadata(root, exclusions));
+      const problem = configProblem(metadata(root, exclusions, admission));
       if (problem) throw new KernelError("adapter-unsupported-config", `${problem}; no check was launched`, { exit: 2 });
     },
     argv: (files, report) => [
@@ -475,7 +478,7 @@ export function createStack(): Stack {
     ],
     normalize,
     staticArgv: (root, tool, report) => {
-      const meta = metadata(root, exclusions);
+      const meta = metadata(root, exclusions, admission);
       if (meta.json(`node_modules/${tool === "tsc" ? "typescript" : "eslint"}/package.json`)?.version !== STATIC_VERSION[tool]) return null;
       const script = join("node_modules", STATIC_SCRIPT[tool]);
       if (!existsSync(join(root, script))) return null;
@@ -492,13 +495,13 @@ export function createStack(): Stack {
     staticOutput: (tool, r) => (tool === "tsc" ? r.stdout : r.report),
     normalizeStatic,
     e2eArgv: (root, report) => playwrightArgv(root, report,
-      String(metadata(root, exclusions).json("node_modules/@playwright/test/package.json")?.version ?? "none")),
-    coverageArgv: (root, check, report) => selectedCoverageArgv(root, check, report, exclusions),
+      String(metadata(root, exclusions, admission).json("node_modules/@playwright/test/package.json")?.version ?? "none")),
+    coverageArgv: (root, check, report) => selectedCoverageArgv(root, check, report, exclusions, admission),
     normalizeE2e: (out, root) => normalizePlaywright(out.raw, root),
     adapterVersion: () => ADAPTER,
     shareDeps,
     fingerprint: (root): ToolVersions => {
-      const meta = metadata(root, exclusions);
+      const meta = metadata(root, exclusions, admission);
       return {
         node: process.version,
         tool: String(meta.json("node_modules/vitest/package.json")?.version ?? "none"),

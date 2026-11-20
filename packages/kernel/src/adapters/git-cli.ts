@@ -1022,24 +1022,22 @@ export class GitCli {
       throw new KernelError("capability-missing", "Safe inverse-patch application is unavailable on this runtime.");
     }
     const runDir = options?.runDir ?? mkdtempSync(join(tmpdir(), "tenet-patch-"));
-    const file = join(runDir, "inverse.patch");
-    const fd = openSync(file, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW, 0o600);
-    try {
-      writeFileSync(fd, patch);
-    } finally {
-      closeSync(fd);
-    }
     const env = gitConfigEnv();
     const r = await this.runner.run({
-      argv: ["git", ...INSPECT, "apply", "--whitespace=nowarn", ...include.map((p) => `--include=${p}`), "--", file],
+      argv: ["git", ...INSPECT, "apply", "--whitespace=nowarn", ...include.map((p) => `--include=${p}`), "--"],
       cwd: this.root,
       runDir,
       timeoutMs: options?.timeoutMs ?? 60_000,
       env,
+      stdin: { mode: "bound", bytes: Buffer.from(patch, "utf8") },
     });
-    return r.exit === 0 && !r.signal && !r.timedOut
+    return r.exit === 0 && !r.signal && !r.timedOut && r.stdinDelivery === "delivered"
       ? { ok: true }
-      : { ok: false, uncertain: r.timedOut || !!r.signal || r.exit === undefined, detail: r.stderr.trim().slice(0, 400) };
+      : {
+          ok: false,
+          uncertain: r.timedOut || !!r.signal || r.exit === undefined || r.stdinDelivery !== "delivered",
+          detail: r.stderr.trim().slice(0, 400) || "the inverse patch was not delivered completely",
+        };
   }
 
   async blobsAt(treeish: string, paths: readonly string[]): Promise<Record<string, string | null>> {
@@ -1050,6 +1048,19 @@ export class GitCli {
       .filter(Boolean)) {
       const t = rec.indexOf("\t");
       out[rec.slice(t + 1)] = rec.slice(0, t).split(" ")[2]!;
+    }
+    return out;
+  }
+
+  async imagesAt(treeish: string, paths: readonly string[]) {
+    const out: Record<string, { mode: string; blob: string } | null> =
+      Object.fromEntries(paths.map(path => [path, null]));
+    if (!paths.length) return out;
+    for (const rec of (await this.ok(["ls-tree", "-r", "-z", treeish, "--", ...paths.map(p => `:(literal)${p}`)]))
+      .split("\0")
+      .filter(Boolean)) {
+      const tab = rec.indexOf("\t"), fields = rec.slice(0, tab).split(" ");
+      out[rec.slice(tab + 1)] = { mode: fields[0]!, blob: fields[2]! };
     }
     return out;
   }

@@ -8,7 +8,7 @@ export function receiptContext(run: Run, argv: string[]): ReceiptContext {
   const { ports, facts, stage, scope, runId, runDir, executionEnvelope } = run;
   return {
     stage, scope, id: run.id, candidate: facts.candidate, runId, runDir, argv, before: facts.candidate,
-    versions: ports.stack.fingerprint(ports.root), executionEnvelope, missing: new Set<string>(),
+    versions: run.versions ?? ports.stack.fingerprint(ports.root), executionEnvelope, missing: new Set<string>(),
   };
 }
 

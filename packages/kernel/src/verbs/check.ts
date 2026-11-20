@@ -20,7 +20,7 @@ import type { Run } from "./check-evidence.ts";
 import { execute } from "./check-execute.ts";
 import { outputsProblem } from "./check-outputs.ts";
 import { nx, withWork, workOf } from "./common.ts";
-import { toolchainOf } from "./check-rerun.ts";
+import { observeToolchain } from "./check-rerun.ts";
 import {
   dirtyQuestion, leftOutChanged, observeDirtyTransitions, settleCleaned, undecidedDirty,
 } from "./dirty.ts";
@@ -34,6 +34,18 @@ const refuse = (code: "capability-missing" | "stale-session" | "continue-require
   throw new KernelError(code, why, { exit: 2 });
 };
 const safePath = (p: string) => !p.startsWith("/") && !p.split("/").includes("..");
+
+function admittedToolchain(ports: Ports) {
+  const observed = observeToolchain(ports);
+  if (!observed.available)
+    throw new KernelError("capability-missing", "the installed toolchain cannot be admitted; no check was launched", { exit: 2 });
+  return observed;
+}
+
+function admittedRun(ports: Ports, run: Omit<Run, "toolchain" | "versions">): Run {
+  const observed = admittedToolchain(ports);
+  return { ...run, toolchain: observed.hash, versions: observed.versions };
+}
 
 export function admitCoverageDefinitions(ports: Ports, coverage: ReturnType<typeof boundRecipeCoverage>): void {
   const paths = [...new Set(coverage.flatMap((mapping) => [
@@ -226,9 +238,9 @@ export const check: Verb<CheckInput> = {
     const now = ports.clock.now();
     const runId = `${w.label}-${ports.rand.base32(6)}`;
     const runDir = ports.store.tempDir(`run-${runId}`);
-    const run: Run = { ports, w, runId, runDir, stage: input.stage as Run["stage"], facts, ...shape, executionEnvelope };
+    const run = admittedRun(ports, {
+      ports, w, runId, runDir, stage: input.stage as Run["stage"], facts, ...shape, executionEnvelope });
     run.exclusions = settingsFor(ports, cur, w).exclusions as Exclusion[];
-    run.toolchain = toolchainOf(ports);
     // Prepare: record the run intent in the contract and release the lock (TS §7.3).
     const prepared: WorkContract = {
       ...w,

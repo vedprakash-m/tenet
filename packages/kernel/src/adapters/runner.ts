@@ -5,14 +5,17 @@ import { closeSync, constants, fchmodSync, fstatSync, fsyncSync, lstatSync, mkdi
 import { randomUUID } from "node:crypto";
 import { isUtf8 } from "node:buffer";
 import { createServer } from "node:net";
+import type { Writable } from "node:stream";
 import { delimiter, dirname, join, resolve, sep } from "node:path";
 import type { Clock, RunResult, RunSpec, Runner } from "../ports/types.ts";
 import type { EnvelopePlanInput } from "../ports/types.ts";
 import { makeExecutionEnvelope, type EnvelopeCommand } from "../core/execution-envelope.ts";
 import type { StaticTool } from "../ports/types.ts";
 import { procStart } from "./proc.ts";
+import { KernelError } from "../core/errors.ts";
 
 const MAX_OUTPUT = 10 * 1024 * 1024;
+const MAX_STDIN = 50 * 1024 * 1024;
 /** Only these variables reach a check; anything secret-shaped is absent by construction (never passed, TS §8.8). */
 const PASS = ["PATH", "HOME", "LANG", "LC_ALL", "USER", "SHELL"];
 
@@ -24,6 +27,94 @@ function checkEnv(from: Record<string, string | undefined>, runDir: string): Rec
 
 const killGroup = (pid: number, sig: NodeJS.Signals) => { try { process.kill(-pid, sig); } catch { /* group already gone */ } };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function writableEvent(stream: Writable, ready: "drain" | "finish"): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      stream.off(ready, onReady);
+      stream.off("error", onError);
+      stream.off("close", onClose);
+    };
+    const onReady = () => { cleanup(); resolve(); };
+    const onError = (error: Error) => { cleanup(); reject(error); };
+    const onClose = () => { cleanup(); reject(new Error("stdin closed before delivery")); };
+    stream.once(ready, onReady);
+    stream.once("error", onError);
+    stream.once("close", onClose);
+  });
+}
+
+async function deliverBoundedStdin(stream: Writable, bytes: Buffer, stopped: () => boolean): Promise<boolean> {
+  const chunkSize = 64 * 1024;
+  try {
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      if (stream.destroyed || stopped()) return false;
+      if (!stream.write(bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length))))
+        await writableEvent(stream, "drain");
+    }
+    const finished = writableEvent(stream, "finish");
+    stream.end();
+    await finished;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function captureOutput() {
+  const sizes = { stdout: 0, stderr: 0 };
+  const decoders = {
+    stdout: new TextDecoder("utf-8", { fatal: true }),
+    stderr: new TextDecoder("utf-8", { fatal: true }),
+  };
+  const current = { stdout: "", stderr: "" };
+  let truncated = false;
+  return {
+    append(stream: "stdout" | "stderr", chunk: Buffer) {
+      const left = Math.max(0, MAX_OUTPUT - sizes[stream]);
+      sizes[stream] += chunk.length;
+      if (chunk.length > left) truncated = true;
+      try {
+        current[stream] += decoders[stream].decode(chunk.subarray(0, left), { stream: true });
+      } catch {
+        truncated = true;
+      }
+    },
+    finish() {
+      try {
+        current.stdout += decoders.stdout.decode();
+        current.stderr += decoders.stderr.decode();
+      } catch {
+        truncated = true;
+      }
+      return { ...current, outputTruncated: truncated };
+    },
+  };
+}
+
+function terminationSignals(pid: number | undefined): () => void {
+  const onSignal = (signal: NodeJS.Signals) => {
+    if (pid) killGroup(pid, "SIGKILL");
+    process.exit(128 + (signal === "SIGINT" ? 2 : signal === "SIGHUP" ? 1 : 15));
+  };
+  const signals: NodeJS.Signals[] = ["SIGINT", "SIGTERM", "SIGHUP"];
+  for (const signal of signals) process.on(signal, onSignal);
+  return () => {
+    for (const signal of signals) process.off(signal, onSignal);
+  };
+}
+
+function optionalResult(
+  exit: number | null,
+  signal: NodeJS.Signals | null,
+  pid: number | undefined,
+): Partial<RunResult> {
+  return {
+    ...(exit !== null ? { exit } : {}),
+    ...(signal ? { signal } : {}),
+    ...(pid ? { pid } : {}),
+  };
+}
 
 function writeRecord(runDir: string, record: object): void {
   const target = join(runDir, "run.json");
@@ -148,6 +239,8 @@ export class ProcessRunner implements Runner {
   }
 
   private async execute(spec: RunSpec): Promise<RunResult> {
+    if (spec.stdin && spec.stdin.bytes.length > MAX_STDIN)
+      throw new KernelError("capability-missing", "bounded stdin exceeds the 50 MiB blob limit", { exit: 2 });
     mkdirSync(join(spec.runDir, "tmp"), { recursive: true, mode: 0o700 });
     const env = { ...checkEnv(this.env, spec.runDir), ...spec.env };
     env.PATH = [...new Set([dirname(process.execPath), join(spec.cwd, "node_modules", ".bin"),
@@ -158,44 +251,53 @@ export class ProcessRunner implements Runner {
     writeRecord(spec.runDir, { starting: true });
     return new Promise<RunResult>((resolve) => {
       const [cmd, ...args] = spec.argv;
-      const child = spawn(cmd!, args, { cwd: spec.cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"] });
-      let stdout = "", stderr = "", timedOut = false, done = false;
-      const sizes = { stdout: 0, stderr: 0 };
-      const decoders = { stdout: new TextDecoder("utf-8", { fatal: true }), stderr: new TextDecoder("utf-8", { fatal: true }) };
-      let outputTruncated = false;
-      const cap = (cur: string, chunk: Buffer, stream: keyof typeof sizes) => {
-        const left = Math.max(0, MAX_OUTPUT - sizes[stream]);
-        sizes[stream] += chunk.length;
-        if (chunk.length > left) outputTruncated = true;
-        try { return cur + decoders[stream].decode(chunk.subarray(0, left), { stream: true }); }
-        catch { outputTruncated = true; return cur; }
-      };
-      child.stdout.on("data", (c: Buffer) => { stdout = cap(stdout, c, "stdout"); });
-      child.stderr.on("data", (c: Buffer) => { stderr = cap(stderr, c, "stderr"); });
-      // Told to stop (the host cancelled, the terminal closed): take the check's whole process group down first.
-      const onSignal = (sig: NodeJS.Signals) => { if (child.pid) killGroup(child.pid, "SIGKILL"); process.exit(128 + (sig === "SIGINT" ? 2 : sig === "SIGHUP" ? 1 : 15)); };
-      const signals: NodeJS.Signals[] = ["SIGINT", "SIGTERM", "SIGHUP"];
-      for (const sig of signals) process.on(sig, onSignal);
+      const child = spawn(cmd!, args, {
+        cwd: spec.cwd,
+        env,
+        detached: true,
+        stdio: [spec.stdin ? "pipe" : "ignore", "pipe", "pipe"],
+      });
+      let stderr = "", timedOut = false, done = false;
+      let stdinDelivery: RunResult["stdinDelivery"];
+      let stdinSpawnFailed = false;
+      const stream = child.stdin;
+      const input = spec.stdin;
+      const sending = input && stream
+        ? deliverBoundedStdin(stream, input.bytes, () => timedOut || done).then(delivered => {
+          stdinDelivery = delivered ? "delivered" : stdinSpawnFailed ? "spawn-failed" : "write-failed";
+        })
+        : Promise.resolve();
+      if (input && !stream) stdinDelivery = "spawn-failed";
+      const output = captureOutput();
+      child.stdout!.on("data", (chunk: Buffer) => output.append("stdout", chunk));
+      child.stderr!.on("data", (chunk: Buffer) => output.append("stderr", chunk));
+      const removeSignals = terminationSignals(child.pid);
       const timer = setTimeout(async () => {
         timedOut = true;
         if (child.pid) { killGroup(child.pid, "SIGTERM"); await sleep(1500); if (!done) killGroup(child.pid, "SIGKILL"); }
       }, spec.timeoutMs);
-      const finish = (exit: number | null, signal: NodeJS.Signals | null) => {
+      const finish = async (exit: number | null, signal: NodeJS.Signals | null) => {
         if (done) return;
         done = true;
         clearTimeout(timer);
-        for (const sig of signals) process.off(sig, onSignal);
+        await sending;
+        removeSignals();
         if (child.pid) killGroup(child.pid, "SIGKILL"); // the whole tree dies with the check, not just the leader
-        let report: string | null = null;
-        if (spec.report) report = reportFrom(spec.report, spec.runDir, started);
-        try { stdout += decoders.stdout.decode(); stderr += decoders.stderr.decode(); } catch { outputTruncated = true; }
-        const r: RunResult = { timedOut, outputTruncated, durationMs: this.clock.ms() - started, stdout, stderr, startedAt, report };
-        if (exit !== null) r.exit = exit;
-        if (signal) r.signal = signal;
-        if (child.pid) r.pid = child.pid;
+        const captured = output.finish();
+        const r: RunResult = {
+          timedOut,
+          outputTruncated: captured.outputTruncated,
+          durationMs: this.clock.ms() - started,
+          stdout: captured.stdout,
+          stderr: captured.stderr + stderr,
+          startedAt,
+          report: spec.report ? reportFrom(spec.report, spec.runDir, started) : null,
+          ...optionalResult(exit, signal, child.pid),
+          ...(stdinDelivery ? { stdinDelivery } : {}),
+        };
         resolve(r);
       };
-      child.on("error", (e) => { stderr += String(e); finish(null, null); });
+      child.on("error", (e) => { stdinSpawnFailed = true; stdinDelivery = spec.stdin ? "spawn-failed" : undefined; stderr += String(e); finish(null, null); });
       child.on("close", finish);
       if (child.pid) {
         try { writeRecord(spec.runDir, { pid: child.pid, procStart: procStart(child.pid), startedAt }); }

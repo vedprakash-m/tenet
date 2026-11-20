@@ -10,7 +10,7 @@ import { receiptsFrom, settleReruns } from "../src/core/receipts.ts";
 import type { ReceiptContext, RunFacts } from "../src/core/receipts.ts";
 import type { Obligation, Receipt, WorkContract } from "../src/core/schemas.ts";
 import type { RecipeCoverageRecord } from "../src/ports/types.ts";
-import { createStack, normalize } from "../src/adapters/node-ts.ts";
+import { createStack, normalize } from "./support/metadata-stack.ts";
 import { normalizePlaywright } from "../src/adapters/playwright.ts";
 import { matchBaseline, receiptsOf } from "../src/verbs/check-evidence.ts";
 import type { Run } from "../src/verbs/check-evidence.ts";

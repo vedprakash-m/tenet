@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { GitCli, gitBlob } from "../src/adapters/git-cli.ts";
 import { KernelError } from "../src/core/errors.ts";
+import type { RunSpec, Runner } from "../src/ports/types.ts";
 import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
 
 const dirs: string[] = [];
@@ -23,6 +24,25 @@ after(() => dirs.forEach(cleanup));
 const kind = (p: string) => (p.endsWith(".test.ts") ? "test" as const : "source" as const);
 
 describe("git: probe and inventory", () => {
+  it("delivers inverse patches only through bounded Runner stdin [SEC-06, P117]", { skip: process.platform === "win32" }, async () => {
+    const { g, root } = repo();
+    const calls: RunSpec[] = [];
+    const runner = {
+      run: async (spec: RunSpec) => {
+        calls.push(spec);
+        return { exit: 1, timedOut: false, durationMs: 1, stdout: "", stderr: "patch failed", startedAt: "now", report: null };
+      },
+    } as unknown as Runner;
+    const adapter = new GitCli(root, runner);
+    const patch = "diff --git a/src/a.ts b/src/a.ts\nnot a valid patch";
+    const result = await adapter.applyPatch(patch, [], { runDir: tmp(), timeoutMs: 1000 });
+    assert.equal(result.ok, false);
+    assert.deepEqual(calls.map(call => call.argv.slice(-1)), [["--"]]);
+    assert.equal(calls[0]!.stdin?.mode, "bound");
+    assert.deepEqual(calls[0]!.stdin?.bytes, Buffer.from(patch));
+    assert.equal(calls[0]!.argv.some(arg => arg.includes("inverse.patch")), false);
+    g.probe();
+  });
   it("refuses a linked inverse-patch artifact without changing its target [SEC-06]", async () => {
     const { g } = repo(), runDir = tmp(); dirs.push(runDir);
     const outside = tmp(); dirs.push(outside);
