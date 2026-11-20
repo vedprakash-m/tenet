@@ -195,6 +195,7 @@ export class FsStore implements Store {
     this.admit();
     if (!this.exists()) return null;
     this.marker();
+    const primaryMissing = !existsSync(this.p("state"));
     for (const [file, recovered] of [["state", false], ["state.prev", true]] as const) {
       const raw = this.takeParsed(file) ?? readJson<unknown>(this.p(file));
       const parsed = raw ? parseStateRecord(raw) : null;
@@ -204,8 +205,11 @@ export class FsStore implements Store {
           throw new KernelError("marker-mismatch", "the state belongs to another workspace");
         }
         const records = this.journal(true).entries; // only reduced into the state below, never handed out
-        const state = recovered ? recoveredState(parsed.data, this.clock.now(), records) : recoverAccounting(parsed.data, records).state;
-        return { state, recovered };
+        const initialMirror = recovered && primaryMissing && parsed.data.revision === 1;
+        const state = recovered && !initialMirror
+          ? recoveredState(parsed.data, this.clock.now(), records)
+          : recoverAccounting(parsed.data, records).state;
+        return { state, recovered: recovered && !initialMirror };
       }
     }
     if (!existsSync(this.p("state"))) return null; // marker written, first state not yet published
@@ -455,6 +459,11 @@ export class FsStore implements Store {
       rmSync(this.p("state.prev.tmp"), { force: true });
       linkSync(this.p(before?.recovered ? "state.prev" : "state"), this.p("state.prev.tmp"));
       renameSync(this.p("state.prev.tmp"), this.p("state.prev"));
+    } else if (this.writes.getStore()?.creationIdentity && !before) {
+      rmSync(this.p("state.prev.tmp"), { force: true });
+      writeSynced(this.p("state.prev.tmp"), serialized);
+      renameSync(this.p("state.prev.tmp"), this.p("state.prev"));
+      fsyncDir(this.dir);
     }
     const moved = this.fileId("state") !== seen;
     if (moved && (this.read()?.state.revision ?? 0) !== (current?.revision ?? 0)) throw new KernelError("revision-conflict");
