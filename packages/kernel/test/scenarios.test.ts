@@ -1,12 +1,12 @@
 // Composition scenarios and the three injected failures of the walking skeleton (plan §6.9), on real repositories,
 // real processes and real signals.
 import { spawn } from "node:child_process";
-import { chmodSync, cpSync, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
-import { BASIS, GREET_IMPL, GREET_TEST, SLOW_TEST, cli, isAlive, listFiles, preconsentEnvelope, project, reviewResult, runCli, runningCheck, waitFor, finishFixture } from "./support/fixture.ts";
+import { BASIS, GREET_IMPL, GREET_TEST, SLOW_TEST, cli, contractFixture, isAlive, listFiles, preconsentEnvelope, project, reviewResult, runCli, runningCheck, waitFor, finishFixture } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
 
 const roots: string[] = [];
@@ -36,6 +36,36 @@ describe("check observation helpers", () => {
     };
     p.ports = () => ports;
     await assert.rejects(async () => runningCheck(p), /locked observation/);
+    assert.equal(observations, 1);
+  });
+
+  it("binds the run directory under the store lock, then polls publication without competing for launch admission", async () => {
+    const p = fresh(), ports = p.ports();
+    const runDir = ports.store.tempDir("observed-run");
+    const w = contractFixture();
+    const observedState = {
+      work: {
+        [w.id]: {
+          ...w,
+          session: {
+            ...w.session,
+            inCall: { runId: "observed", verb: "check", since: ports.clock.now(), runDir },
+          },
+        },
+      },
+    };
+    writeFileSync(join(runDir, "run.json"), JSON.stringify({ prepared: true }));
+    let observations = 0;
+    ports.store.transaction = async (...args) => {
+      observations++;
+      return args[1]({ state: observedState } as never);
+    };
+    ports.store.readArtifact = () => readFileSync(join(runDir, "run.json"), "utf8");
+    p.ports = () => ports;
+
+    assert.equal(await runningCheck(p), undefined);
+    writeFileSync(join(runDir, "run.json"), JSON.stringify({ pid: 43210, procStart: "started" }));
+    assert.deepEqual(await runningCheck(p), { runDir, pid: 43210 });
     assert.equal(observations, 1);
   });
 });

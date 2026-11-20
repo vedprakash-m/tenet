@@ -306,6 +306,43 @@ function fencedByUncertainty(ports: Ports, verb: Verb, tx: Tx, current: State, r
   }, tx.state) };
 }
 
+/** A settled recovery must not be lost when the same call's handle or ownership gate refuses its requested next work. */
+function settledRecoveryRefusal(
+  ports: Ports, verb: Verb, tx: Tx, recovered: Recovered | null, error: unknown,
+): Stamped | undefined {
+  if (!(error instanceof KernelError) || !recovered) return;
+  const settled = recovered.state !== tx.state || recovered.completed.length || recovered.uncertain.length;
+  if (!settled) return;
+  if (recovered.state !== tx.state) tx.publish(recovered.state);
+  return {
+    res: render(ports, verb.name, {
+      exit: error.exit,
+      reasons: error.reasons,
+      ...(error.questions ? { questions: error.questions } : {}),
+      ...(error.next ? { next: error.next } : {}),
+      effects: {
+        completed: [...recovered.completed, ...(error.effects?.completed ?? [])],
+        uncertain: [...recovered.uncertain, ...(error.effects?.uncertain ?? [])],
+      },
+    }, tx.state),
+  };
+}
+
+async function admittedEnvelope(
+  ports: Ports, verb: Verb, input: Input, current: State, world: unknown, tx: Tx, recovered: Recovered | null,
+): Promise<{ current: State } | Stamped> {
+  try {
+    const gate = await envelope(ports, verb, input, current, world);
+    if (!gate.historical) return { current: gate.current };
+    if (recovered && recovered.state !== tx.state) tx.publish(recovered.state);
+    return { res: gate.historical };
+  } catch (error) {
+    const refused = settledRecoveryRefusal(ports, verb, tx, recovered, error);
+    if (refused) return refused;
+    throw error;
+  }
+}
+
 /** What recovery and shared-file reconciliation found goes into the answer, ahead of the verb's own reasons and effects. */
 function addRecovery(plan: Plan, reasons: Reason[], recovered: Recovered | null) {
   if (reasons.length) plan.resp.reasons = [...reasons, ...(plan.resp.reasons ?? [])];
@@ -353,11 +390,8 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
   }
   held.world = capabilityIdentity(ports, verb.identity ? await verb.identity(ports, input, current) : null);
   if (input.h && current) {
-    const gate = await envelope(ports, verb, input, current, held.world);
-    if (gate.historical) {
-      if (recovered && recovered.state !== tx.state) tx.publish(recovered.state);
-      return { res: gate.historical };
-    }
+    const gate = await admittedEnvelope(ports, verb, input, current, held.world, tx, recovered);
+    if ("res" in gate) return gate;
     current = gate.current;
   }
   const plan = await verb.run(ports, current, input, { ...tx, state: current });

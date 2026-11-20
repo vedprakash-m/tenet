@@ -32,6 +32,18 @@ const env = {
 delete env.NODE_OPTIONS;
 const git = (root, ...args) => execFileSync('git', args, { cwd: root, env, encoding: 'utf8' }).trim();
 const write = (root, path, text) => { mkdirSync(join(root, path, '..'), { recursive: true }); writeFileSync(join(root, path), text); };
+const metadataEnv = (root) => {
+ const nodeModules = lstatSync(join(root, 'node_modules'), { throwIfNoEntry: false });
+ return { ...env, TENET_TEST_INSTALLED_METADATA_WORKSPACE: nodeModules?.isSymbolicLink() ? source : root };
+};
+const proxyTool = (root, name, entries = []) => {
+ const target = join(source, 'node_modules', name);
+ write(root, `node_modules/${name}/package.json`, readFileSync(join(target, 'package.json'), 'utf8'));
+ for (const entry of entries) {
+  mkdirSync(join(root, 'node_modules', name, entry, '..'), { recursive: true });
+  symlinkSync(join(target, entry), join(root, 'node_modules', name, entry));
+ }
+};
 const create = () => {
  const root = mkdtempSync(join(tmpdir(), 'tenet-c0-uat-')); roots.push(root);
  git(root, 'init', '-q', '-b', 'main');
@@ -45,12 +57,13 @@ const create = () => {
 const call = (root, verb, body = {}, flags = [], consentEnvelope = true) => {
  const readsBody = ['open', 'decide', 'findings'].includes(verb);
  const args = readsBody ? flags : [...Object.entries(body).flatMap(([key, value]) => [`--${key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`, typeof value === 'object' ? JSON.stringify(value) : String(value)]), ...flags];
- const nodeModules = lstatSync(join(root, 'node_modules'), { throwIfNoEntry: false });
- const metadataWorkspace = nodeModules?.isDirectory() ? root : source;
- const callEnv = { ...env, TENET_TEST_INSTALLED_METADATA_WORKSPACE: metadataWorkspace };
- const result = spawnSync(process.execPath, [bundle, verb, ...args], { cwd: root, env: callEnv, input: readsBody ? JSON.stringify(body) : '', encoding: 'utf8' });
+ const result = spawnSync(process.execPath, [bundle, verb, ...args], { cwd: root, env: metadataEnv(root), input: readsBody ? JSON.stringify(body) : '', encoding: 'utf8' });
  assert.equal(result.signal, null, result.stderr);
-    const response = JSON.parse(result.stdout); assert.equal(result.status, response.exit);
+    const response = (() => {
+     try { return JSON.parse(result.stdout); }
+     catch (error) { throw new Error(JSON.stringify({ verb, args, status: result.status, signal: result.signal, stdout: result.stdout, stderr: result.stderr, error: error.message })); }
+    })();
+    assert.equal(result.status, response.exit, JSON.stringify(response));
     assert.equal(response.timing.scope, 'kernel-call', '[NFR-05] built response timing scope');
     for (const field of ['active', 'tool']) {
         assert.equal(response.timing[field].source, 'kernel');
@@ -100,11 +113,15 @@ const basis = { outcome: 'Return a greeting', scopePaths: ['src/'], elements: [
 ] };
 const observations = [];
 const staticCandidate = (root, request) => {
- const h = call(root, 'open', { profile: 'feature', request, lane: 'quick' }).handle;
- assert.equal(call(root, 'decide', { h, kind: 'basis', propose: basis }).exit, 0);
+ const opened = call(root, 'open', { profile: 'feature', request, lane: 'quick' });
+ assert.equal(opened.exit, 0, JSON.stringify(opened));
+ const h = opened.handle;
+ assert.equal(typeof h, 'string', JSON.stringify(opened));
+ const basisResponse = call(root, 'decide', { h, kind: 'basis', propose: basis });
+ assert.equal(basisResponse.exit, 0, JSON.stringify(basisResponse));
  write(root, 'src/greet.test.ts', 'import { expect, it } from "vitest"; import { greet } from "./greet.ts"; it("greets", () => expect(greet("Ada")).toBe("Hello, Ada!"));\n');
  const baseline = call(root, 'check', { h, stage: 'baseline' });
- assert.equal(baseline.data.receipts[0].status, 'fail');
+ assert.equal(baseline.data?.receipts[0]?.status, 'fail', JSON.stringify(baseline));
  assert.ok(baseline.timing.tool.ms > 0, '[NFR-05] real failed checks consume measured tool time');
  assert.ok(baseline.timing.active.ms > 0, '[NFR-05] real calls consume measured kernel time');
  write(root, 'src/greet.ts', 'export const greet = (name: string): string => `Hello, ${name}!`;\n');
@@ -244,7 +261,7 @@ try {
    assert.equal(readFileSync(join(dir, '.gitignore'), 'utf8'), '*\n');
    for (const name of ['marker', 'state', 'state.prev', 'log']) assert.equal(statSync(join(dir, name)).mode & 0o777, 0o600);
   } else {
-   const killed = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-forget.mjs'), bundle, point, 'decide'], { cwd: forgetting, env, input: JSON.stringify(input), encoding: 'utf8' });
+   const killed = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-forget.mjs'), bundle, point, 'decide'], { cwd: forgetting, env: metadataEnv(forgetting), input: JSON.stringify(input), encoding: 'utf8' });
    assert.equal(killed.signal, 'SIGKILL', killed.stderr + killed.stdout);
   }
   const result = call(forgetting, 'decide', { h, kind: 'config', target: 'style', propose: { value: 'concise' } });
@@ -325,7 +342,7 @@ try {
  {
   const uncertain = create(), h = call(uncertain, 'open', { profile: 'plan', request: 'recover before refusing' }).handle;
   const id = call(uncertain, 'decide', { h, kind: 'lesson', quote: 'UAT-ASTER-quote-19452', propose: { statement: 'UAT-ASTER-lesson-83194' } }).data.id;
-  const killed = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-forget.mjs'), bundle, 'after-intent', 'decide'], { cwd: uncertain, env, input: JSON.stringify({ h, kind: 'forget', target: id, answers: { 'forget-confirm': 'yes' } }), encoding: 'utf8' });
+  const killed = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-forget.mjs'), bundle, 'after-intent', 'decide'], { cwd: uncertain, env: metadataEnv(uncertain), input: JSON.stringify({ h, kind: 'forget', target: id, answers: { 'forget-confirm': 'yes' } }), encoding: 'utf8' });
   assert.equal(killed.signal, 'SIGKILL', killed.stderr + killed.stdout);
   const state = JSON.parse(readFileSync(join(uncertain, '.tenet/state'), 'utf8'));
   writeFileSync(join(uncertain, '.tenet/log'), JSON.stringify({ t: new Date().toISOString(), kind: 'intent', effect: 'unrecognized-effect', id: 'uncertain-one', op: { work: Object.keys(state.work)[0] } }) + '\n', { flag: 'a' });
@@ -371,7 +388,7 @@ try {
  observations.push({ scenario: 'built secret-bearing proposal refuses before state, backup or journal writes' });
  const playwrightInputs = create();
  rmSync(join(playwrightInputs, 'node_modules')); mkdirSync(join(playwrightInputs, 'node_modules'));
- symlinkSync(join(source, 'node_modules/vitest'), join(playwrightInputs, 'node_modules/vitest'));
+ proxyTool(playwrightInputs, 'vitest', ['vitest.mjs']);
  write(playwrightInputs, 'node_modules/@playwright/test/package.json', '{"version":"1.64.1"}');
  write(playwrightInputs, '.gitignore', 'node_modules\n.tenet/\nplaywright.config.*\n');
  const pwCandidate = staticCandidate(playwrightInputs, 'retain exact Playwright evidence inputs');
@@ -563,7 +580,7 @@ try {
   assert.equal(exposure.questions[0].id, 'envelope-consent');
   assert.equal(call(interrupted, 'decide', { h: ih, kind: 'envelope-consent', answers: { 'envelope-consent': 'allow-envelope' } }).exit, 0);
   const killed = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle, 'kill-prepared-call', '<unused>',
-   'check', '--h', ih, '--stage', 'baseline'], { cwd: interrupted, env, encoding: 'utf8', timeout: 10000 });
+   'check', '--h', ih, '--stage', 'baseline'], { cwd: interrupted, env: metadataEnv(interrupted), encoding: 'utf8', timeout: 10000 });
   assert.equal(killed.error, undefined, killed.error?.message); assert.equal(killed.signal, 'SIGKILL', killed.stderr);
   const before = JSON.parse(readFileSync(join(interrupted, '.tenet/state'), 'utf8'));
   const work = Object.values(before.work)[0], record = join(work.session.inCall.runDir, 'run.json');
@@ -574,7 +591,7 @@ try {
   const recovered = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle,
    mode === 'fifo' ? '<none>' : `read-${mode}`, record,
    ...(mode === 'short' ? ['stop', '--h', ih, '--mode', 'pause'] : ['check', '--h', ih, '--stage', 'baseline'])],
-   { cwd: interrupted, env, encoding: 'utf8', timeout: 10000 });
+   { cwd: interrupted, env: metadataEnv(interrupted), encoding: 'utf8', timeout: 10000 });
   assert.equal(recovered.error, undefined, recovered.error?.message); assert.equal(recovered.signal, null, recovered.stderr);
   const response = JSON.parse(recovered.stdout), after = JSON.parse(readFileSync(join(interrupted, '.tenet/state'), 'utf8'));
   const live = after.work[work.id];
@@ -604,7 +621,7 @@ try {
   assert.equal(exposure.questions[0].id, 'envelope-consent');
   const envelopeHash = exposure.questions[0].bind.factsHash;
   assert.equal(call(interrupted, 'decide', { h: ih, kind: 'envelope-consent', answers: { 'envelope-consent': 'allow-envelope' } }).exit, 0);
-  const child = spawn(process.execPath, [bundle, 'check', '--h', ih, '--stage', 'baseline'], { cwd: interrupted, env, stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawn(process.execPath, [bundle, 'check', '--h', ih, '--stage', 'baseline'], { cwd: interrupted, env: metadataEnv(interrupted), stdio: ['ignore', 'pipe', 'pipe'] });
   child.stdout.resume(); child.stderr.resume();
   const done = new Promise(resolve => child.once('exit', (code, signal) => resolve({ code, signal })));
   let orphan;
@@ -653,7 +670,7 @@ try {
   const point = metadata === 'complete-long-history' ? 'after-long-history-commit-result'
    : metadata === 'complete' ? 'after-commit-result' : `after-${metadata}-commit-result`;
   const killed = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-index.mjs'), bundle, point,
-   'finish', '--h', candidate.h], { cwd: replayed, env, encoding: 'utf8' });
+   'finish', '--h', candidate.h], { cwd: replayed, env: metadataEnv(replayed), encoding: 'utf8' });
   assert.equal(killed.signal, 'SIGKILL', killed.stderr + killed.stdout);
   const landed = git(replayed, 'rev-parse', 'HEAD');
   assert.equal(Number(git(replayed, 'rev-list', '--count', 'HEAD')), count + 1);
@@ -709,7 +726,10 @@ try {
  git(scaffoldReplay, 'config', 'user.name', 'Test'); git(scaffoldReplay, 'config', 'user.email', 'test@example.com');
  git(scaffoldReplay, 'config', 'commit.gpgsign', 'false');
  write(scaffoldReplay, 'NOTES.txt', 'preserve human notes\n'); git(scaffoldReplay, 'add', '-A'); git(scaffoldReplay, 'commit', '-qm', 'initial');
- const scaffoldHandle = call(scaffoldReplay, 'open', { profile: 'feature', request: 'scaffold once and retain its attribution', lane: 'quick' }).handle;
+ const scaffoldOpen = call(scaffoldReplay, 'open', { profile: 'feature', request: 'scaffold once and retain its attribution', lane: 'quick' });
+ assert.equal(scaffoldOpen.exit, 0, JSON.stringify(scaffoldOpen));
+ const scaffoldHandle = scaffoldOpen.handle;
+ assert.equal(typeof scaffoldHandle, 'string', JSON.stringify(scaffoldOpen));
  assert.equal(call(scaffoldReplay, 'decide', { h: scaffoldHandle, kind: 'basis', propose: {
   outcome: 'The starter platform is in place and its own tests pass', elements: [
    { ref: 'r', kind: 'requirement', origin: 'request', text: 'the platform tests pass' },
@@ -717,7 +737,8 @@ try {
     testFile: 'server/test/platform.test.ts', test: 'preservation', expect: 'pass' },
   ],
  } }).exit, 0);
- assert.equal(call(scaffoldReplay, 'decide', { h: scaffoldHandle, kind: 'scaffold', propose: { name: 'stable-scaffold' } }).exit, 0);
+ const scaffoldResponse = call(scaffoldReplay, 'decide', { h: scaffoldHandle, kind: 'scaffold', propose: { name: 'stable-scaffold' } });
+ assert.equal(scaffoldResponse.exit, 0, JSON.stringify(scaffoldResponse));
  assert.equal(readFileSync(join(scaffoldReplay, 'LICENSE'), 'utf8'), readFileSync(join(source, 'LICENSE'), 'utf8'));
  observations.push({ scenario: 'built starter carries the selected MIT license', licenseCopied: true });
  const scaffoldCheck = call(scaffoldReplay, 'check', { h: scaffoldHandle, stage: 'candidate' });
@@ -765,7 +786,8 @@ try {
  await runGroup('metadata', async () => {
  const dependencyIdentity = create();
  rmSync(join(dependencyIdentity, 'node_modules')); mkdirSync(join(dependencyIdentity, 'node_modules'));
- for (const name of ['vitest', 'typescript']) symlinkSync(join(source, 'node_modules', name), join(dependencyIdentity, 'node_modules', name));
+ proxyTool(dependencyIdentity, 'vitest', ['vitest.mjs']);
+ proxyTool(dependencyIdentity, 'typescript', ['bin/tsc']);
  write(dependencyIdentity, 'node_modules/.package-lock.json', '{"lockfileVersion":3,"packages":{},"generation":1}');
  write(dependencyIdentity, 'tsconfig.json', JSON.stringify({ compilerOptions: {
   strict: true, module: 'NodeNext', skipLibCheck: true, types: [],
@@ -862,7 +884,7 @@ try {
   const path = `.tenet/${record}`, original = readFileSync(join(privateRace, path), 'utf8');
   const state = readFileSync(join(privateRace, '.tenet/state'), 'utf8');
   const result = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle,
-   'read-store-overwrite', path, 'inspect', `--h=${privateHandle}`], { cwd: privateRace, env, encoding: 'utf8' });
+   'read-store-overwrite', path, 'inspect', `--h=${privateHandle}`], { cwd: privateRace, env: metadataEnv(privateRace), encoding: 'utf8' });
   assert.equal(result.signal, null, result.stderr);
   const response = JSON.parse(result.stdout);
   assert.notEqual(result.status, 0, JSON.stringify(response));
@@ -888,7 +910,7 @@ try {
   const path = kind === 'tool' ? 'node_modules/vitest/package.json' : 'node_modules/.package-lock.json';
   const original = readFileSync(join(metadataRace, path), 'utf8');
   const result = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle,
-   'read-overwrite-json', path, 'check', `--h=${metadataHandle}`, '--stage=candidate'], { cwd: metadataRace, env, encoding: 'utf8' });
+   'read-overwrite-json', path, 'check', `--h=${metadataHandle}`, '--stage=candidate'], { cwd: metadataRace, env: metadataEnv(metadataRace), encoding: 'utf8' });
   assert.equal(result.signal, null, result.stderr);
   assert.equal(result.status, 2, result.stdout + result.stderr);
   const response = JSON.parse(result.stdout);
@@ -904,7 +926,7 @@ try {
   assert.equal(call(raced, 'decide', { h: readHandle, kind: 'basis', propose: basis }).exit, 0);
   const before = readFileSync(join(raced, '.tenet/state'), 'utf8');
   const result = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle,
-   `read-${mode}`, 'package.json', 'check', `--h=${readHandle}`], { cwd: raced, env, encoding: 'utf8' });
+   `read-${mode}`, 'package.json', 'check', `--h=${readHandle}`], { cwd: raced, env: metadataEnv(raced), encoding: 'utf8' });
   assert.equal(result.signal, null, result.stderr);
   assert.equal(result.status, 2, result.stdout + result.stderr);
   const response = JSON.parse(result.stdout);
@@ -984,8 +1006,10 @@ try {
  call(changedRunner, 'decide', { h: rh, kind: 'basis', propose: basis });
  rmSync(join(changedRunner, 'node_modules')); write(changedRunner, 'node_modules/vitest/package.json', '{"version":"99.0.0"}');
  write(changedRunner, 'node_modules/vitest/vitest.mjs', 'import fs from "node:fs"; fs.writeFileSync("unexpected-spawn", "bad");');
- const runnerRefusal = call(changedRunner, 'check', { h: rh, stage: 'baseline' }); assert.equal(runnerRefusal.exit, 2);
- assert.equal(runnerRefusal.reasons[0].code, 'adapter-unsupported-version'); assert.equal(existsSync(join(changedRunner, 'unexpected-spawn')), false);
+ const runnerRefusal = call(changedRunner, 'check', { h: rh, stage: 'baseline' });
+ assert.equal(runnerRefusal.exit, 2, JSON.stringify(runnerRefusal));
+ assert.equal(runnerRefusal.reasons[0]?.code, 'adapter-unsupported-version', JSON.stringify(runnerRefusal));
+ assert.equal(existsSync(join(changedRunner, 'unexpected-spawn')), false);
  observations.push({ scenario: 'built readiness reprobe after runner version change', exit: runnerRefusal.exit, reason: runnerRefusal.reasons[0].code, childLaunched: false });
  const ignored = create(); write(ignored, '.gitignore', 'node_modules\n.tenet/\nsrc/greet.test.ts\nvitest.config.ts\n');
  const ih = call(ignored, 'open', { profile: 'feature', request: 'ignored inputs', lane: 'quick' }).handle;
@@ -1075,8 +1099,10 @@ try {
  await runGroup('accounting', async () => {
  for (const completed of ['commit', 'commit:extra', 'both']) {
   const pendingRoot = create();
-  const handle = call(pendingRoot, 'open', { profile: 'feature', request: `pending effect pair ${completed}`, lane: 'quick' }).handle;
-  assert.equal(typeof handle, 'string');
+  const opened = call(pendingRoot, 'open', { profile: 'feature', request: `pending effect pair ${completed}`, lane: 'quick' });
+  assert.equal(opened.exit, 0, JSON.stringify(opened));
+  const handle = opened.handle;
+  assert.equal(typeof handle, 'string', JSON.stringify(opened));
   const before = JSON.parse(readFileSync(join(pendingRoot, '.tenet/state'), 'utf8')), work = Object.values(before.work)[0];
   assert.equal(before.sourceOwner.work, work.id);
   const pairs = [{ effect: 'commit', id: 'extra:shared' }, { effect: 'commit:extra', id: 'shared' }];
@@ -1112,8 +1138,10 @@ try {
  for (const effect of ['toString', 'constructor', '__proto__', 'hasOwnProperty', '__defineGetter__', 'future-effect']) {
   for (const completed of [false, true]) {
    const recoveryRoot = create(), id = `dispatch-${completed ? 'completed' : 'pending'}`;
-   const handle = call(recoveryRoot, 'open', { profile: 'feature', request: 'preserve unknown effect ownership', lane: 'quick' }).handle;
-   assert.equal(typeof handle, 'string');
+   const opened = call(recoveryRoot, 'open', { profile: 'feature', request: 'preserve unknown effect ownership', lane: 'quick' });
+   assert.equal(opened.exit, 0, JSON.stringify(opened));
+   const handle = opened.handle;
+   assert.equal(typeof handle, 'string', JSON.stringify(opened));
    const before = JSON.parse(readFileSync(join(recoveryRoot, '.tenet/state'), 'utf8')), work = Object.values(before.work)[0];
    const records = [{ t: new Date().toISOString(), kind: 'intent', effect, id, op: { work: work.id } },
     ...(completed ? [{ t: new Date().toISOString(), kind: 'result', effect, id, outcome: { completed: true } }] : [])];
@@ -1166,6 +1194,7 @@ try {
   assert.equal(diagnostic.exit, 3, JSON.stringify(diagnostic));
   const accounting = conflict === 'identical' || advancing ? 'verified' : 'unknown';
   assert.ok(diagnostic.reasons.some(reason => reason.code === 'state-recovered-from-backup' && reason.message.includes(accounting)));
+  assert.equal(typeof diagnostic.budget?.attempts, 'string', JSON.stringify(diagnostic));
   assert.match(diagnostic.budget.attempts, new RegExp(`^${conflict.startsWith('budget') ? 2 : 1}/`));
   if (accounting === 'unknown') {
    const denied = call(checkpointRoot, 'open', { profile: 'feature', request: 'cannot bypass conflicting accounting' });
@@ -1188,7 +1217,7 @@ try {
   assert.equal(call(adoption, 'decide', { h: ah, kind: 'basis', propose: basis }).exit, 0);
   assert.equal(call(adoption, 'decide', { h: ah, kind: 'adopt', target: 'intent' }).questions[0].id, 'adopt-confirm');
   const confirm = { h: ah, kind: 'adopt', target: 'intent', answers: { 'adopt-confirm': 'confirm' } };
-  const action = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle, point === 'unreadable-recovery' ? 'after-temp-fsync' : point, join(outside, 'private'), 'decide'], { cwd: adoption, env, input: JSON.stringify(confirm), encoding: 'utf8' });
+  const action = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle, point === 'unreadable-recovery' ? 'after-temp-fsync' : point, join(outside, 'private'), 'decide'], { cwd: adoption, env: metadataEnv(adoption), input: JSON.stringify(confirm), encoding: 'utf8' });
   if (point === 'predictable-temp-link') { assert.equal(action.signal, null); assert.equal(action.status, 0, action.stderr + action.stdout); }
   else assert.equal(action.signal, 'SIGKILL', action.stderr + action.stdout);
   assert.equal(readFileSync(join(outside, 'private'), 'utf8'), 'PRIVATE_PROJECT_WRITE_CANARY');
@@ -1228,7 +1257,7 @@ try {
   assert.equal(call(scaffoldStop, 'decide', { h: ssh, kind: 'adopt', target: 'policy' }).exit, 3);
   assert.equal(call(scaffoldStop, 'decide', { h: ssh, kind: 'adopt', target: 'policy', answers: { 'adopt-confirm': 'confirm' } }).exit, 0);
  }
- const killedScaffold = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle, 'after-first-link', '-', 'decide'], { cwd: scaffoldStop, env, input: JSON.stringify({ h: ssh, kind: 'scaffold' }), encoding: 'utf8' });
+ const killedScaffold = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle, 'after-first-link', '-', 'decide'], { cwd: scaffoldStop, env: metadataEnv(scaffoldStop), input: JSON.stringify({ h: ssh, kind: 'scaffold' }), encoding: 'utf8' });
  assert.equal(killedScaffold.signal, 'SIGKILL', killedScaffold.stderr + killedScaffold.stdout);
  const intent = readFileSync(join(scaffoldStop, '.tenet/log'), 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)).find(e => e.kind === 'intent' && e.effect === 'scaffold');
  const first = Object.keys(intent.op.expected).find(path => existsSync(join(scaffoldStop, path))); assert.ok(first);
@@ -1243,12 +1272,13 @@ try {
  }
  const hostileLint = create();
  rmSync(join(hostileLint, 'node_modules')); mkdirSync(join(hostileLint, 'node_modules'));
- symlinkSync(join(source, 'node_modules/vitest'), join(hostileLint, 'node_modules/vitest'));
+ proxyTool(hostileLint, 'vitest', ['vitest.mjs']);
  write(hostileLint, 'node_modules/eslint/package.json', '{"type":"module","version":"9.39.1"}');
  write(hostileLint, 'node_modules/eslint/bin/eslint.js', 'import fs from "node:fs"; const report=process.argv[process.argv.indexOf("--output-file")+1]; fs.writeFileSync(report,JSON.stringify([{filePath:"src/greet.ts",errorCount:1,messages:[]}])); process.exitCode=1;\n');
  write(hostileLint, 'tenet.policy.json', JSON.stringify({ required_checks: [{ id: 'lint', tool: 'eslint', property: 'no lint errors' }] }));
  const lh = call(hostileLint, 'open', { profile: 'feature', request: 'lint report integrity', lane: 'quick' }).handle;
- assert.equal(call(hostileLint, 'decide', { h: lh, kind: 'basis', propose: basis }).exit, 0);
+ const hostileBasis = call(hostileLint, 'decide', { h: lh, kind: 'basis', propose: basis });
+ assert.equal(hostileBasis.exit, 0, JSON.stringify(hostileBasis));
  write(hostileLint, 'src/greet.test.ts', 'import { expect, it } from "vitest"; import { greet } from "./greet.ts"; it("greets", () => expect(greet("Ada")).toBe("Hello, Ada!"));\n');
  write(hostileLint, 'src/greet.ts', 'export const greet = (name: string): string => `Hello, ${name}!`;\n');
  const checkedLint = call(hostileLint, 'check', {}, [`--h=${lh}`, '--touched=src/greet.ts']);
@@ -1311,7 +1341,7 @@ try {
    rmSync(join(interrupted, '.git/index.lock'));
    args = ['decide']; input = JSON.stringify({ h: ch, kind: 'sync-index' });
   }
-  const killed = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-index.mjs'), bundle, point === 'manual-after-lock' ? 'after-lock' : point, ...args], { cwd: interrupted, env, input, encoding: 'utf8' });
+  const killed = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-index.mjs'), bundle, point === 'manual-after-lock' ? 'after-lock' : point, ...args], { cwd: interrupted, env: metadataEnv(interrupted), input, encoding: 'utf8' });
   if (point === 'failed-directory-sync') {
    assert.equal(killed.signal, null); assert.equal(killed.status, 2, killed.stderr + killed.stdout);
    assert.ok(JSON.parse(killed.stdout).reasons.some(r => r.code === 'effect-uncertain'));
@@ -1370,7 +1400,7 @@ try {
   assert.equal(call(filtered, 'decide', { h: fh, kind: 'filter-consent', answers: { 'filter-consent': 'allow-filters' } }).exit, 0);
   const head = git(filtered, 'rev-parse', 'HEAD'), index = readFileSync(join(filtered, '.git/index'));
   if (['stop', 'killed'].includes(mode)) {
-   const child = spawn(process.execPath, [bundle, 'finish', `--h=${fh}`], { cwd: filtered, env, stdio: ['ignore', 'pipe', 'pipe'] });
+   const child = spawn(process.execPath, [bundle, 'finish', `--h=${fh}`], { cwd: filtered, env: metadataEnv(filtered), stdio: ['ignore', 'pipe', 'pipe'] });
    let stdout = ''; child.stdout.on('data', b => { stdout += b; }); child.stderr.resume();
    const done = new Promise(resolve => child.on('close', (code, signal) => resolve({ code, signal })));
    let record;
@@ -1458,7 +1488,7 @@ try {
  }
  for (const version of ['99.0.0', '5.9.3']) {
   const fakeTypes = create(); rmSync(join(fakeTypes, 'node_modules'));
-  mkdirSync(join(fakeTypes, 'node_modules')); symlinkSync(join(source, 'node_modules/vitest'), join(fakeTypes, 'node_modules/vitest'));
+  mkdirSync(join(fakeTypes, 'node_modules')); proxyTool(fakeTypes, 'vitest', ['vitest.mjs']);
   write(fakeTypes, 'node_modules/typescript/package.json', JSON.stringify({ version }));
   write(fakeTypes, 'node_modules/typescript/bin/tsc', "require('fs').writeFileSync('node_modules/compiler-invoked','yes');process.stdout.write(process.cwd()+'/src/greet.ts\\n'+' '.repeat(11*1024*1024));");
   write(fakeTypes, 'tenet.policy.json', JSON.stringify({ required_checks: [required] }));
@@ -1484,7 +1514,7 @@ try {
   const index = git(artifactInput, 'ls-files', '--stage'), head = git(artifactInput, 'rev-parse', 'HEAD'), branch = git(artifactInput, 'branch', '--show-current');
   const trace = join(traceRoot, 'path');
   const result = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle,
-   `artifact-${mode}`, trace, 'check', `--h=${handle}`, '--stage=baseline'], { cwd: artifactInput, env, encoding: 'utf8', timeout: 10000 });
+   `artifact-${mode}`, trace, 'check', `--h=${handle}`, '--stage=baseline'], { cwd: artifactInput, env: metadataEnv(artifactInput), encoding: 'utf8', timeout: 10000 });
   assert.equal(result.error, undefined, result.error?.message); assert.equal(result.signal, null, result.stderr);
   const response = JSON.parse(result.stdout); assert.equal(result.status, response.exit, result.stderr);
   const artifactPath = readFileSync(trace, 'utf8'); roots.push(join(artifactPath, '..'));
@@ -1532,7 +1562,7 @@ try {
    assert.equal(call(reportInput, 'decide', { h: reportHandle, kind: 'envelope-consent', answers: { 'envelope-consent': 'allow-envelope' } }).exit, 0);
    const result = spawnSync(process.execPath, [join(source, 'tools/uat/crash-bundle-project.mjs'), bundle,
     mode === 'overwrite-json' ? 'read-overwrite-json' : mode, '<vitest-report>', 'check', `--h=${reportHandle}`, '--stage=baseline'],
-    { cwd: reportInput, env, encoding: 'utf8', timeout: 10000 });
+    { cwd: reportInput, env: metadataEnv(reportInput), encoding: 'utf8', timeout: 10000 });
      assert.equal(result.error, undefined, result.error?.message);
    assert.equal(result.signal, null, result.stderr);
    response = JSON.parse(result.stdout);

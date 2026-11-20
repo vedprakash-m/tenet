@@ -1,6 +1,6 @@
 // A throwaway Git project wired to the real kernel, so tests drive the same pipeline the CLI does.
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, symlinkSync } from "node:fs";
+import { readdirSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import type { KernelResponse } from "../../src/core/schemas.ts";
 import { handleOf, runVerb } from "../../src/pipeline.ts";
@@ -161,14 +161,35 @@ export async function waitFor<T>(fn: () => T | undefined | false | Promise<T | u
 
 export const isAlive = (pid: number): boolean => { try { process.kill(pid, 0); return true; } catch { return false; } };
 
+const observedRunDirectories = new WeakMap<Project, string>();
+
 /** The run directory of the check currently recorded in the state document, once its process has started. */
 export async function runningCheck(p: Project): Promise<{ runDir: string; pid: number } | undefined> {
-  return p.ports().store.transaction("observe", async (tx) => {
-    const c = Object.values(tx.state?.work ?? {}).map((w) => w.session.inCall).find(Boolean);
-    if (!c?.runDir || !existsSync(join(c.runDir, "run.json"))) return undefined;
-    const record = JSON.parse(readFileSync(join(c.runDir, "run.json"), "utf8"));
-    return typeof record.pid === "number" && record.procStart ? { runDir: c.runDir, pid: record.pid } : undefined;
-  });
+  let runDir = observedRunDirectories.get(p);
+  if (!runDir) {
+    runDir = await p.ports().store.transaction("observe", async (tx) => {
+      const c = Object.values(tx.state?.work ?? {}).map((w) => w.session.inCall).find(Boolean);
+      return c?.runDir;
+    });
+    if (!runDir) return undefined;
+    observedRunDirectories.set(p, runDir);
+  }
+  try {
+    const raw = p.ports().store.readArtifact(runDir, "run.json");
+    if (!raw) {
+      const current = Object.values(p.ports().store.read()?.state.work ?? {})
+        .map((w) => w.session.inCall)
+        .find(Boolean);
+      if (current?.runDir && current.runDir !== runDir) observedRunDirectories.set(p, current.runDir);
+      return undefined;
+    }
+    const record = JSON.parse(raw);
+    if (typeof record.pid !== "number" || !record.procStart) return undefined;
+    observedRunDirectories.delete(p);
+    return { runDir, pid: record.pid };
+  } catch {
+    return undefined;
+  }
 }
 
 export const listFiles = (root: string): string[] => readdirSync(root).sort();

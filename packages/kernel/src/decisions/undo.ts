@@ -37,8 +37,9 @@ export interface UndoOp {
 }
 
 async function undoIntentOp(
-  ports: Ports, work: WorkContract, provisional: WorkContract, rest: State,
+  ports: Ports, work: WorkContract, provisional: WorkContract,
   plan: UndoPlan, runDir: string, intentElement: BasisElement,
+  priorSourceOwner: { work: string; generation: number } | null,
 ): Promise<UndoOp> {
   return {
     work: provisional.id,
@@ -46,7 +47,7 @@ async function undoIntentOp(
     provisionalLabel: provisional.label,
     originalGeneration: work.session.generation,
     provisionalGeneration: provisional.session.generation,
-    priorSourceOwner: rest.sourceOwner ?? null,
+    priorSourceOwner,
     intentElementId: intentElement.id,
     intentElementHash: hashOf(intentElement),
     tree: plan.tree,
@@ -97,8 +98,9 @@ async function revertContract(ports: Ports, tx: Tx, rest: State, work: WorkContr
     branch: probe.branch,
     start: snapshotOf(inv),
   });
-  const op = await undoIntentOp(ports, work, base, rest, plan, runDir, el);
-  tx.intent("undo", id, op); // logged with the patch, so a crash after the state is published rolls forward instead of leaving a half-undo
+  const priorSourceOwner = rest.sourceOwner?.work === work.id && isLive(work) ? rest.sourceOwner : null;
+  const op = await undoIntentOp(ports, work, base, plan, runDir, el, priorSourceOwner);
+  tx.intent("undo", id, op); // The patch and exact path images let recovery settle a crash without guessing what happened.
   const nw: WorkContract = {
     ...base,
     state: "executing",
