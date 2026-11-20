@@ -2,6 +2,7 @@ import { chmodSync, existsSync, lstatSync, readFileSync, readlinkSync, rmSync, s
 import { join } from "node:path";
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { snapshotOf } from "../src/core/attribution.ts";
 import { execFileSync } from "node:child_process";
 import { GitCli, gitBlob } from "../src/adapters/git-cli.ts";
 import { KernelError } from "../src/core/errors.ts";
@@ -24,6 +25,24 @@ after(() => dirs.forEach(cleanup));
 const kind = (p: string) => (p.endsWith(".test.ts") ? "test" as const : "source" as const);
 
 describe("git: probe and inventory", () => {
+  it("returns the same start snapshot without materializing the clean index", async () => {
+    const { g, root } = repo();
+    assert.deepEqual(snapshotOf(await g.openInventory()), snapshotOf(await g.inventory([])));
+    write(root, "src/a.ts", "export const a = 7;\n");
+    write(root, "src/new.ts", "export const n = 1;\n");
+    const full = await g.inventory([]);
+    const light = await g.openInventory();
+    assert.deepEqual(snapshotOf(light), snapshotOf(full));
+    assert.deepEqual(light.status.map((item) => item.path).sort(), ["src/a.ts", "src/new.ts"]);
+  });
+
+  it("falls back to full inventory for hidden index entries", async () => {
+    const { g, root } = repo();
+    git(root, "update-index", "--assume-unchanged", "src/a.ts");
+    write(root, "src/a.ts", "export const a = 9;\n");
+    assert.deepEqual(snapshotOf(await g.openInventory()), snapshotOf(await g.inventory([])));
+  });
+
   it("delivers inverse patches only through bounded Runner stdin [SEC-06, P117]", { skip: process.platform === "win32" }, async () => {
     const { g, root } = repo();
     const calls: RunSpec[] = [];

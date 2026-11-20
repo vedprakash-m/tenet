@@ -146,6 +146,8 @@ export interface Git {
   probe(): Promise<RepoProbe>;
   /** `volatile` are declared output patterns (EVD-09): untracked paths that match them are omitted, as `exclude` omits paths. */
   inventory(exclude: readonly string[], declaredInputs?: readonly string[], volatile?: readonly string[]): Promise<Inventory>;
+  /** The exact starting status needed by `open`, without materializing the full clean index. */
+  openInventory?(): Promise<Inventory>;
   /** Working-tree changes of `paths` against `base` as hunks of added and removed lines. */
   changes(base: string | null, paths: readonly string[], classify: (p: string) => FileChange["kind"]): Promise<FileChange[]>;
   /** Program-neutral tree of exactly these paths, logged before the guarded commit job for recovery. */

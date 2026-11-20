@@ -356,6 +356,26 @@ export class GitCli {
   }
 
   // ------------------------------------------------------------ inventory
+  async openInventory(): Promise<Inventory> {
+    const skip = (path: string) => isKernelFile(path);
+    const [, head, branch, tagged, status] = await Promise.all([
+      this.objectFormatSafe(),
+      this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]),
+      this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]),
+      this.ok(["ls-files", "-v", "-z", "--"], { strict: true }),
+      this.parseStatus(skip, []),
+    ]);
+    if (tagged.split("\0").some((record) => record && record[0] !== "H")) {
+      return this.inventory([]);
+    }
+    const entries = new Map(status.map((entry) => [entry.path, {
+      path: entry.path,
+      mode: entry.mode,
+      blob: entry.blob,
+    }]));
+    return { head, branch, entries, status, digest: this.digestOf(entries) };
+  }
+
   async inventory(
     exclude: readonly string[] = [],
     declaredInputs: readonly string[] = [],
