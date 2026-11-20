@@ -325,6 +325,23 @@ describe("journal reduction into summaries [CON-08, AC-19]", () => {
     assert.equal((await evict(store)).message, undefined);
   });
 
+  it("retains versioned commit witnesses and leave-unrecorded history across reduction [CON-08, CON-12]", async () => {
+    const { store, log } = await fresh();
+    ago(200);
+    await store.transaction("proofs", async tx => {
+      tx.intent("commit", "proven", { version: 1 });
+      tx.result("commit", "proven", { completed: true, proof: { version: 1 } });
+      tx.intent("commit", "unrecorded", { work: "legacy" });
+      tx.result("commit", "unrecorded", { disposition: "leave-unrecorded" });
+    });
+    await calls(store, 300);
+    ago(0); await evict(store);
+    const retained = lines(log()).filter(row => row.effect === "commit");
+    assert.deepEqual(retained.map(row => [row.kind, row.id]), [
+      ["intent", "proven"], ["result", "proven"], ["intent", "unrecorded"], ["result", "unrecorded"],
+    ]);
+  });
+
   it("does nothing under the size threshold", async () => {
     const { store, log } = await fresh({ compactAtBytes: 10_000_000 });
     ago(200); await calls(store, 20); ago(0);

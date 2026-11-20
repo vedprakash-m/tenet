@@ -1,6 +1,6 @@
 // The filesystem Store (TS §7): one state document replaced atomically, a transaction lock with guarded stale-break,
 // an append-only log with torn-write repair, hash-named blobs and the workspace marker.
-import { accessSync, chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, ftruncateSync, readdirSync, linkSync, lstatSync, mkdirSync, openSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
+import { accessSync, chmodSync, closeSync, constants, existsSync, fstatSync, fsyncSync, readdirSync, linkSync, lstatSync, mkdirSync, openSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { dirname, isAbsolute, join, relative, sep } from "node:path";
@@ -18,30 +18,19 @@ import type { Clock, EvictReport, Footprint, LogEntry, Quarantined, Store, Tx } 
 import { isAlive, procStart } from "./proc.ts";
 import { admissionRecord, MAX_RECORD, parseRecord, readJson, readRecord, readTerminal } from "./private-record-fs.ts";
 import { quarantine, QUARANTINE_JOURNAL } from "./quarantine-fs.ts";
-import { parsePrivate, readCompactionPending, readJournal, SummaryRecord } from "./store-records.ts";
+import {
+  fsyncDirectory as fsyncDir, parsePrivate, readCommitProofs, readCompactionPending, readJournal, SummaryRecord,
+  writeCommitProof, writeSyncedRecord as writeSynced,
+} from "./store-records.ts";
 import { newestMtime, recentWithStaged, stagedRunGrowth } from "./store-staging.ts";
 import type { LockInfo, StagedWrite, WriteContext } from "./store-staging.ts";
 import type { MigrationGuard } from "./marker-rollback.ts";
+import type { CommitProofV1 } from "../core/commit-proof.ts";
 
 interface Marker { workspaceId: string; tag: string; nonce: string; schema: number; dev: number; ino: number }
 interface Journal { text: string; entries: LogEntry[]; keep: number }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-function fsyncDir(dir: string) {
-  const fd = openSync(dir, "r");
-  try { fsyncSync(fd); } finally { closeSync(fd); }
-}
-function writeSynced(path: string, data: string) {
-  if (Buffer.byteLength(data, "utf8") > MAX_RECORD) {
-    throw new KernelError("unsupported-record", "a private record exceeds the 50 MB bound");
-  }
-  const fd = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK, 0o600);
-  try {
-    if (!fstatSync(fd).isFile()) throw new KernelError("unsupported-record", "private writes require a regular file");
-    fchmodSync(fd, 0o600); ftruncateSync(fd, 0); writeFileSync(fd, data); fsyncSync(fd);
-  } finally { closeSync(fd); }
-}
 
 /** Storage limits (PRD §4.4.3, TS §7.6); tests lower them, and `afterSummaries` is a crash seam for the reduction. */
 export interface StoreOptions {
@@ -653,6 +642,19 @@ export class FsStore implements Store {
     });
   }
 
+  putCommitProof(proof: CommitProofV1): void {
+    this.write(() => writeCommitProof(
+      name => this.p(name),
+      proof,
+      this.readLog(),
+      this.marker()!.workspaceId,
+      bytes => this.assertStoreGrowth(bytes, this.writes.getStore()?.reserveAllowed ?? false),
+    ));
+  }
+  commitProofs(): CommitProofV1[] {
+    this.admit();
+    return readCommitProofs(name => this.p(name), this.readLog(), this.marker()!.workspaceId);
+  }
   putBlob(content: string): string {
     return this.write(() => {
       this.marker();

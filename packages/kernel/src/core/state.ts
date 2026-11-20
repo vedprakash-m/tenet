@@ -13,7 +13,7 @@ export function adoptionReplayNeeded(
   return op.previousTrust === undefined ? !current : (current ? hashOf(current) : null) === op.previousTrust;
 }
 
-export function recordedResults(log: readonly LogEntry[]): Array<{ effect: string; op: unknown; outcome: unknown }> {
+export function recordedResults(log: readonly LogEntry[]): Array<{ effect: string; id: string; op: unknown; outcome: unknown }> {
   const intents = new Map<string, LogEntry>();
   for (const entry of log) {
     if (entry.kind !== "intent") continue;
@@ -23,7 +23,7 @@ export function recordedResults(log: readonly LogEntry[]): Array<{ effect: strin
   return log.flatMap(entry => {
     if (entry.kind !== "result" || !entry.effect) return [];
     const intent = intents.get(JSON.stringify([entry.effect, entry.id]));
-    return intent ? [{ effect: entry.effect, op: intent.op, outcome: entry.outcome }] : [];
+    return intent ? [{ effect: entry.effect, id: entry.id!, op: intent.op, outcome: entry.outcome }] : [];
   });
 }
 

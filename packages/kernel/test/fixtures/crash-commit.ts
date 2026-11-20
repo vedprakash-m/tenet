@@ -22,6 +22,14 @@ git.commit = async (plan) => {
   return out;
 };
 const realTx = ports.store.transaction.bind(ports.store);
-ports.store.transaction = (v, fn) => realTx(v, (tx) => fn({ ...tx, result: (e, i, o) => { tx.result(e, i, o); if (point === "after-result" && e === "commit") { tx.flush!(); die(); } } }));
+const realProof = ports.store.putCommitProof.bind(ports.store);
+ports.store.putCommitProof = proof => { realProof(proof); if (point === "after-proof") die(); };
+ports.store.transaction = (v, fn) => realTx(v, (tx) => fn({ ...tx, result: (e, i, o) => {
+  tx.result(e, i, o);
+  if ((point === "after-result" || point === "after-unrecorded-result") && e === "commit") {
+    tx.flush!();
+    die();
+  }
+} }));
 
 console.log(JSON.stringify(await runVerb(ports, VERBS, verb, JSON.parse(json))));

@@ -5667,7 +5667,7 @@
         "count": 1
       },
       {
-        "key": "packages/kernel/test/scenarios.test.ts :: injected failure 3: a crash anywhere in the commit effect (intent, act, result, publish) :: after the commit, before its result record: reconciled from the postcondition, no duplicate [CON-03]",
+        "key": "packages/kernel/test/scenarios.test.ts :: injected failure 3: a crash anywhere in the commit effect (intent, act, result, publish) :: after the commit, before its result record: remains unowned and uncertain, no duplicate [CON-03]",
         "count": 1
       },
       {

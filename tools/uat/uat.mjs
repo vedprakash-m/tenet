@@ -1303,7 +1303,20 @@ try {
   const head = git(interrupted, 'rev-parse', 'HEAD');
   assert.ok(readFileSync(join(interrupted, '.tenet/log'), 'utf8').split('\n').filter(Boolean).map(line => JSON.parse(line)).some(e => e.kind === 'intent' && e.effect === 'index-sync'));
   const recovered = call(interrupted, 'open', { profile: 'investigate', request: 'recover interrupted index sync' });
-  assert.equal(recovered.exit, 0, JSON.stringify(recovered));
+  if (point === 'manual-after-lock') assert.equal(recovered.exit, 0, JSON.stringify(recovered));
+  else {
+   assert.equal(recovered.exit, 2, JSON.stringify(recovered));
+   const question = recovered.questions.find(q => q.id.startsWith('leave-unrecorded-'));
+   assert.ok(question, JSON.stringify(recovered));
+   const beforeDecision = readFileSync(join(interrupted, '.git/index'));
+   const cleared = call(interrupted, 'decide', { h: ch, kind: 'leave-unrecorded',
+    target: question.id.slice('leave-unrecorded-'.length), answers: { [question.id]: 'leave-unrecorded' } });
+   assert.equal(cleared.exit, 0, JSON.stringify(cleared));
+   assert.deepEqual(readFileSync(join(interrupted, '.git/index')), beforeDecision);
+   const work = Object.values(JSON.parse(readFileSync(join(interrupted, '.tenet/state'), 'utf8')).work)[0];
+   assert.deepEqual(work.git.commits, []); assert.deepEqual(work.git.committed, []);
+   assert.equal(call(interrupted, 'open', { profile: 'investigate', request: 'confirmed unrecorded index recovery' }).exit, 0);
+  }
   assert.equal(git(interrupted, 'rev-parse', 'HEAD'), head); assert.equal(git(interrupted, 'rev-list', '--count', 'HEAD'), '2');
   assert.equal(git(interrupted, 'diff', '--cached', '--', 'human.txt'), human);
   assert.equal(git(interrupted, 'diff', '--cached', '--', 'src/'), '');
@@ -1358,7 +1371,7 @@ try {
     if (mode === 'stop') { await done; assert.ok(JSON.parse(stdout).reasons.some(r => r.code === 'run-superseded')); }
     await waitUntil(() => { try { process.kill(record.pid, 0); return false; } catch { return true; } }, 'filter group stopped');
     const recovered = call(filtered, 'open', { profile: 'feature', request: 'guarded filter', resume: true });
-    assert.ok(recovered.effects.completed.some(e => /did not happen/.test(e)), JSON.stringify(recovered));
+    assert.ok(recovered.effects.completed.some(e => /complete unchanged ref\/reflog interval/.test(e)), JSON.stringify(recovered));
     assert.equal(git(filtered, 'rev-parse', 'HEAD'), head); assert.deepEqual(readFileSync(join(filtered, '.git/index')), index);
     assert.equal(readFileSync(marker, 'utf8').trim().split('\n').length, 1);
     assert.equal(readFileSync(join(filtered, 'human.txt'), 'utf8'), 'human staged\n');

@@ -9,6 +9,7 @@ import type { Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
 import { factsHash, nx, question, workOf } from "./common.ts";
 import { gather, worldDigest } from "./facts.ts";
+import { undoOwnership } from "./undo-ownership.ts";
 
 export interface UndoPlan {
   commits: string[];
@@ -33,28 +34,19 @@ export async function planUndo(ports: Ports, st: State, w: WorkContract): Promis
   }
   if (w.git.mode !== "git") throw new KernelError("capability-missing", "undo needs the work to be committed in a Git repository", { exit: 2 });
   if (w.git.undoneBy) throw new KernelError("undo-conflict", `this work was already reverted by ${w.git.undoneBy}`, { exit: 2 });
-  const found = await ports.git.workCommits(w.label);
-  if (found.shallow) throw new KernelError("undo-conflict", "this is a shallow clone, so the work's history may be incomplete");
-  if (found.merges) throw new KernelError("undo-conflict", "a commit of this work is a merge commit; undoing it needs a person");
-  if (found.commits.some((commit) => !w.git.commits.includes(commit)))
-    throw new KernelError(
-      "undo-conflict", "another commit uses this work's label; its ownership cannot be established, so nothing was reverted"
-    );
-  if (!found.commits.length || w.git.commits.some((c) => !found.commits.includes(c))) {
-    throw new KernelError("capability-missing", "the work's commits are not all on the current branch; switch to the branch they are on", { exit: 2 });
-  }
-  const plan = await ports.git.planUndo(found.commits);
+  const commits = await undoOwnership(ports, st, w);
+  const plan = await ports.git.planUndo(commits);
   if (!plan.ok) throw new KernelError("undo-conflict", `a later change overlaps: ${plan.conflict.join(", ") || plan.detail}`);
   const facts = await gather(ports, w, st.locks);
   const mine = facts.inv.status.map((s) => s.path).filter((p) => plan.paths.includes(p));
   if (mine.length) throw new KernelError("undo-conflict", `you have uncommitted changes in ${mine.slice(0, 4).join(", ")}; commit or set them aside first`);
   return {
-    commits: found.commits,
+    commits,
     tree: plan.tree,
     patch: plan.patch,
     paths: plan.paths,
     stat: plan.stat,
-    later: await ports.git.laterCommits(found.commits[0]!, plan.paths),
+    later: await ports.git.laterCommits(commits[0]!, plan.paths),
   };
 }
 

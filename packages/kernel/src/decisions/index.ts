@@ -16,6 +16,7 @@ import { overview } from "./overview.ts";
 import { plan } from "./plan.ts";
 import { basis } from "./basis.ts";
 import { undoConfirm } from "./undo.ts";
+import { leaveUnrecorded } from "./leave-unrecorded.ts";
 import { scaffold } from "./scaffold.ts";
 import { modelLimit } from "./model-limit.ts";
 import { baselineFailures } from "./baseline.ts";
@@ -28,5 +29,5 @@ export const DECISIONS: Record<string, Decision> = Object.fromEntries([
   basis, scaffold, dirtyOverlap, acceptance, disposition, repairLock, unexplained, extend,
   hookConsent, filterConsent, signingConsent, envelopeConsent,
   syncIndex, branchSwitch, sharedMerge, config, undoConfirm, adopt, overview, plan, grant, decisionRecord, dependency,
-  abandon, takeover, decline, lesson, forget, cleanup, versionReconcile, hardening, modelLimit, traits, baselineFailures,
+  abandon, takeover, decline, lesson, forget, cleanup, versionReconcile, hardening, modelLimit, traits, baselineFailures, leaveUnrecorded,
 ].map((d) => [d.kind, d]));

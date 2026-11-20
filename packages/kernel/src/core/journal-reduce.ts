@@ -30,6 +30,7 @@ function protectedResults(
   paths?: ReadonlySet<string>,
 ) {
   return new Set(rows.filter((row) => {
+    if (commitWitness(row.rec)) return true;
     const id = String(row.rec.id);
     if (ids?.has(id)) return true;
     const op = row.rec.kind === "intent" ? row.rec.op : null;
@@ -37,6 +38,10 @@ function protectedResults(
       typeof (op as { runDir?: unknown }).runDir === "string" &&
       paths?.has((op as { runDir: string }).runDir);
   }).map((row) => key(row.rec)));
+}
+function commitWitness(rec: Record<string, any>): boolean {
+  return rec.effect === "commit" &&
+    (rec.op?.version !== undefined || rec.outcome?.proof || rec.outcome?.disposition === "leave-unrecorded");
 }
 
 export function reduceJournal(

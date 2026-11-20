@@ -5,6 +5,7 @@
   "lanes": {
     "source": {
       "exclude": [
+        "packages/kernel/test/commit-attribution-bundle.test.ts",
         "packages/kernel/test/invariants.test.ts",
         "packages/kernel/test/bundle.test.ts",
         "packages/kernel/test/bench.test.ts",
@@ -24,6 +25,7 @@
     },
     "postbuild": {
       "include": [
+        "packages/kernel/test/commit-attribution-bundle.test.ts",
         "packages/kernel/test/invariants.test.ts",
         "packages/kernel/test/bundle.test.ts",
         "packages/kernel/test/bench.test.ts",

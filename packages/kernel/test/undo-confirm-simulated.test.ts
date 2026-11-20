@@ -12,6 +12,7 @@ import type { Ports, Store, Tx } from "../src/ports/types.ts";
 import { decide } from "../src/verbs/decide.ts";
 import { enableUndoForTests, undo } from "../src/verbs/undo.ts";
 import { createPorts } from "../src/wire.ts";
+import type { CommitProofV1 } from "../src/core/commit-proof.ts";
 
 enableUndoForTests();
 
@@ -28,7 +29,7 @@ type Scenario =
 
 const isGitEnv = (key: string) => key.toUpperCase().startsWith("GIT_");
 
-function memoryStore(ports: Ports, scratch: string, initial: State) {
+function memoryStore(ports: Ports, scratch: string, initial: State, proofs: CommitProofV1[]) {
   let state = initial;
   const blobs = new Map<string, string>();
   const intents: Array<{ effect: string; id: string; op: unknown }> = [];
@@ -37,6 +38,7 @@ function memoryStore(ports: Ports, scratch: string, initial: State) {
   const overrides: Partial<Store> = {
     admit() {}, exists: () => true, read: () => ({ state, recovered: false }),
     history: () => "complete", storageBytes: () => 0, sweepTemp: () => 0,
+    commitProofs: () => structuredClone(proofs),
     alive: async () => false, self: () => ({ pid: 12345, procStart: "synthetic" }),
     tempDir(name) { const dir = join(scratch, name); mkdirSync(dir); return dir; },
     writeArtifact(dir, name, content) { const file = join(dir, name); writeFileSync(file, content); return file; },
@@ -172,7 +174,20 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
     const state = State.parse({
       ...emptyState("synthetic", "abcd"), generationSeq: 1, workSeq: 1, work: { [work.id]: work },
     });
-    const memory = memoryStore(ports, scratch, state);
+    // This port double preserves downstream inverse regressions; it is not evidence of P65 attribution.
+    // Real kernel/Store provenance and refusal tests live in commit-proof.test.ts.
+    const proofFixtures: CommitProofV1[] = owned.flatMap(commit => {
+      const parents = git("cat-file", "commit", commit).split("\n\n")[0]!.split("\n")
+        .filter(line => line.startsWith("parent ")).map(line => line.slice(7));
+      if (parents.length > 1) return [];
+      const tree = git("rev-parse", `${commit}^{tree}`);
+      return [{
+        version: 1, workspace: state.workspaceId, work: work.id, generation: work.session.generation,
+        run: `fixture-${commit}`, label: work.label, ref: "refs/heads/main", parent: parents[0] ?? null, parents,
+        commit, expectedTree: tree, observedTree: tree, paths: ["src/owned.txt", "src/second.txt"], foreign: [],
+      }];
+    });
+    const memory = memoryStore(ports, scratch, state, proofFixtures);
     ports.store = memory.store;
     const verbs = { undo, decide };
     if (scenario === "same-label" || scenario === "same-label-at-preview" || scenario === "same-label-merged") {
@@ -228,11 +243,10 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
     const preview = await runVerb(ports, verbs, "undo", { h: "W1.1.abcd" });
     if (scenario === "same-label-at-preview" || scenario === "recorded-merge" || scenario === "recorded-unreachable" || scenario === "shallow" ||
         scenario === "overlap" || scenario === "dirty-owned" || scenario === "untracked-affected-at-preview") {
-      assert.equal(preview.reasons[0]?.code, scenario === "recorded-unreachable" ? "capability-missing" : "undo-conflict",
-        JSON.stringify(preview));
+      assert.equal(preview.reasons[0]?.code, "undo-conflict", JSON.stringify(preview));
       assert.match(preview.reasons[0]!.message, scenario === "same-label-at-preview" ? /ownership cannot be established/ :
-        scenario === "recorded-merge" ? /a commit of this work is a merge commit/ :
-          scenario === "recorded-unreachable" ? /work's commits are not all on the current branch/ :
+        scenario === "recorded-merge" ? /ownership cannot be established/ :
+          scenario === "recorded-unreachable" ? /owned commit moved out/ :
             scenario === "shallow" ? /shallow clone/ :
               scenario === "overlap" ? /a later change overlaps/ : /uncommitted changes/);
       assert.equal(preview.questions?.length ?? 0, 0);
@@ -393,11 +407,11 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
       assert.deepEqual(memory.state().work[work.id], beforeWork);
       assert.equal(Object.keys(memory.state().work).length, 1);
       assert.equal(memory.state().pending.find((question) => question.id === "undo-confirm")?.bind.factsHash, pendingHash);
-      assert.equal(confirmation.reasons[0]?.code, partiallyReachable ? "capability-missing" :
+      assert.equal(confirmation.reasons[0]?.code,
         relevantAfterPreview ? "revision-conflict" : "undo-conflict", JSON.stringify(confirmation));
       if (scenario === "same-label" || scenario === "same-label-merged" || scenario === "same-label-empty" || partiallyReachable) {
         assert.match(confirmation.reasons[0]!.message, partiallyReachable ?
-          /work's commits are not all on the current branch/ : /ownership cannot be established/);
+          /owned commit moved out/ : /ownership cannot be established/);
         assert.equal(plans - previewPlans, 0);
       } else {
         assert.equal(plans - previewPlans, 1);

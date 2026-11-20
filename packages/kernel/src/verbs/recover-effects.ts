@@ -6,17 +6,18 @@ import { MANIFEST, lockFileOf, type DependencyOp } from "../core/dependency-admi
 import { scaffolded, type ScaffoldOp } from "../decisions/scaffold.ts";
 import { bindRecipeCoverage, installRecipeCoverage } from "../core/alternative-check.ts";
 import { recordedHardening, type HardeningOp } from "../decisions/hardening.ts";
-import { replayCommit } from "../core/attribution.ts";
 import { adoptionReplayNeeded } from "../core/state.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 import { recoverUndo } from "./recover-undo.ts";
-import { recoverCommit } from "./recover-commit.ts";
-import { hasDurableCommitAuthority } from "./dirty.ts";
+import { publishCommit, settleCommit } from "./recover-commit.ts";
 
 export interface IntegrationOp { work: string; base: string; baseBefore: string; workTip: string }
 export type Unresolved = ReturnType<Tx["unresolved"]>[number];
-export type Outcome = { completed?: boolean; commit?: string; mode?: string; foreign?: unknown };
+export type Outcome = {
+  completed?: boolean; commit?: string | null; tree?: string | null;
+  mode?: string; foreign?: unknown; proof?: unknown; disposition?: unknown;
+};
 export interface Recovery { ports: Ports; tx: Tx; state: State; completed: string[]; uncertain: string[] }
 
 const put = (r: Recovery, w: WorkContract) => { r.state = { ...r.state, work: { ...r.state.work, [w.id]: w } }; };
@@ -178,7 +179,7 @@ async function branch(r: Recovery, u: Unresolved) {
 }
 
 export const SETTLE: Record<string, (r: Recovery, u: Unresolved) => Promise<void>> = {
-  "index-sync": indexSync, commit: recoverCommit, integration, undo: recoverUndo, scaffold, adopt, dependency, hardening, branch,
+  "index-sync": indexSync, commit: settleCommit, integration, undo: recoverUndo, scaffold, adopt, dependency, hardening, branch,
   async forget(r, u) {
     r.state = completeForget(r.ports, r.tx, r.state, (u.op as { lesson: string }).lesson).state;
     r.completed.push("an interrupted forget was finished");
@@ -186,7 +187,7 @@ export const SETTLE: Record<string, (r: Recovery, u: Unresolved) => Promise<void
 };
 
 /** A result that was logged but never published is applied to state, once (TS §7.4). */
-export const PUBLISH: Record<string, (r: Recovery, op: unknown, out: Outcome) => void> = {
+export const PUBLISH: Record<string, (r: Recovery, op: unknown, out: Outcome) => void | Promise<void>> = {
   scaffold(r, o) {
     const op = o as ScaffoldOp, w = r.state.work[op.work];
     if (!w || Object.keys(op.expected).every(path => Object.hasOwn(w.vetted, path))) return;
@@ -218,22 +219,5 @@ export const PUBLISH: Record<string, (r: Recovery, op: unknown, out: Outcome) =>
     applyIntegration(r, w, op, out.commit, out.mode === "merge");
     r.completed.push("the integration was recorded as done but not yet in the contract; it is now");
   },
-  commit(r, o, out) {
-    const op = o as { work: string; paths: string[]; dirtyDecisions?: unknown }, w = r.state.work[op.work];
-    if (!w) {
-      r.uncertain.push("recorded commit lacks a work with durable whole-file inclusion authority");
-      return;
-    }
-    if (!out.commit || w.git.commits.includes(out.commit)) return;
-    if (!Array.isArray(op.paths) || !hasDurableCommitAuthority(w, op.paths, op.dirtyDecisions)) {
-      r.uncertain.push("recorded commit lacks matching durable whole-file inclusion authority");
-      return;
-    }
-    const next = replayCommit(w, out, op.paths);
-    if (!next) r.uncertain.push("recorded commit lacks foreign-path proof; inspect its effects");
-    else if (next !== w) {
-      put(r, next);
-      r.completed.push(`commit ${out.commit!.slice(0, 8)} was recorded as done but not yet in the contract; it is now`);
-    }
-  },
+  commit: publishCommit,
 };

@@ -1,8 +1,28 @@
+import {
+  closeSync, constants, fchmodSync, fstatSync, fsyncSync, ftruncateSync,
+  mkdirSync, openSync, readdirSync, writeFileSync,
+} from "node:fs";
 import { z } from "zod";
+import { CommitIntentV1, CommitProofV1, proofKey, proofMatchesIntent } from "../core/commit-proof.ts";
 import { KernelError } from "../core/errors.ts";
-import { sha256 } from "../core/ids.ts";
+import { sha256, stableStringify } from "../core/ids.ts";
 import type { LogEntry } from "../ports/types.ts";
-import { parseRecord, readRecord } from "./private-record-fs.ts";
+import { MAX_RECORD, parseRecord, parseUniqueRecord, readRecord } from "./private-record-fs.ts";
+
+export function fsyncDirectory(dir: string) {
+  const fd = openSync(dir, "r");
+  try { fsyncSync(fd); } finally { closeSync(fd); }
+}
+export function writeSyncedRecord(path: string, data: string) {
+  if (Buffer.byteLength(data, "utf8") > MAX_RECORD) {
+    throw new KernelError("unsupported-record", "a private record exceeds the 50 MB bound");
+  }
+  const fd = openSync(path, constants.O_WRONLY | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK, 0o600);
+  try {
+    if (!fstatSync(fd).isFile()) throw new KernelError("unsupported-record", "private writes require a regular file");
+    fchmodSync(fd, 0o600); ftruncateSync(fd, 0); writeFileSync(fd, data); fsyncSync(fd);
+  } finally { closeSync(fd); }
+}
 
 const LogBase = z.object({ t: z.string().min(1) });
 const LogRecord = z.discriminatedUnion("kind", [
@@ -78,4 +98,71 @@ export function readJournal(text: string): { entries: LogEntry[]; keep: number }
     keep += line.length + 1;
   }
   return { entries, keep };
+}
+
+type PathOf = (name: string) => string;
+const COMMIT_PROOF_DIRECTORY = "git/commit-proofs-v1";
+
+function commitProofIntentFor(log: readonly LogEntry[], proof: CommitProofV1): boolean {
+  const entries = log.filter(e => e.kind === "intent" && e.effect === "commit" && e.id === proof.run);
+  if (entries.length !== 1) return false;
+  const intent = CommitIntentV1.safeParse(entries[0]!.op);
+  return intent.success && proofMatchesIntent(proof, intent.data);
+}
+function commitProofResultFor(log: readonly LogEntry[], proof: CommitProofV1): boolean {
+  const entries = log.filter(e => e.kind === "result" && e.effect === "commit" && e.id === proof.run);
+  if (entries.length !== 1) return false;
+  const out = entries[0]!.outcome as { completed?: unknown; commit?: unknown; tree?: unknown; foreign?: unknown; proof?: unknown };
+  return out?.completed === true && out.commit === proof.commit && out.tree === proof.observedTree &&
+    stableStringify(out.foreign) === stableStringify(proof.foreign) &&
+    stableStringify(out.proof) === stableStringify(proof);
+}
+export function writeCommitProof(
+  p: PathOf,
+  value: CommitProofV1,
+  log: readonly LogEntry[],
+  workspace: string,
+  beforeWrite?: (bytes: number) => void,
+): void {
+  const proof = CommitProofV1.parse(value);
+  if (proof.workspace !== workspace || !commitProofIntentFor(log, proof))
+    throw new KernelError("effect-uncertain", "commit proof does not match exactly one captured intent");
+  const file = p(`${COMMIT_PROOF_DIRECTORY}/${proofKey(proof)}`), text = stableStringify(proof), prior = readRecord(file);
+  if (prior !== null) {
+    if (stableStringify(parseUniqueRecord(prior)) !== text)
+      throw new KernelError("effect-uncertain", "conflicting private commit proof");
+    return;
+  }
+  beforeWrite?.(Buffer.byteLength(text, "utf8"));
+  mkdirSync(p("git"), { recursive: true, mode: 0o700 });
+  mkdirSync(p(COMMIT_PROOF_DIRECTORY), { mode: 0o700, recursive: true });
+  const fd = openSync(file, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+  try {
+    if (!fstatSync(fd).isFile()) throw new KernelError("effect-uncertain", "commit proof is not a regular record");
+    writeFileSync(fd, text); fsyncSync(fd);
+  } finally { closeSync(fd); }
+  for (const dir of [p(COMMIT_PROOF_DIRECTORY), p("git"), p("")]) {
+    const handle = openSync(dir, "r");
+    try { fsyncSync(handle); } finally { closeSync(handle); }
+  }
+}
+export function readCommitProofs(p: PathOf, log: readonly LogEntry[], workspace: string): CommitProofV1[] {
+  let names: string[];
+  try { names = readdirSync(p(COMMIT_PROOF_DIRECTORY)); }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  if (names.length > 20_000) throw new KernelError("undo-conflict", "commit proof inventory exceeds its bound");
+  const proofs: CommitProofV1[] = [];
+  for (const name of names) {
+    if (!/^[a-f0-9]{64}$/.test(name)) throw new KernelError("undo-conflict", "unexpected private commit proof record");
+    const text = readRecord(p(`${COMMIT_PROOF_DIRECTORY}/${name}`));
+    if (!text || Buffer.byteLength(text) > 1_048_576) throw new KernelError("undo-conflict", "missing or oversized commit proof");
+    const proof = CommitProofV1.parse(parseUniqueRecord(text));
+    if (name !== proofKey(proof) || proof.workspace !== workspace)
+      throw new KernelError("undo-conflict", "private commit proof identity mismatch");
+    if (commitProofIntentFor(log, proof) && commitProofResultFor(log, proof)) proofs.push(proof);
+  }
+  return proofs;
 }
