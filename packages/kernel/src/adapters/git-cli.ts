@@ -173,6 +173,7 @@ export class GitCli {
   private gate?: Promise<FilterGate | null>;
   private format?: Promise<string | null>;
   private consented: ReadonlySet<string> = new Set();
+  private signingConsented: ReadonlySet<string> = new Set();
   constructor(root: string, runner: Runner = new ProcessRunner(systemClock, process.env)) {
     this.root = root;
     this.runner = runner;
@@ -240,13 +241,15 @@ export class GitCli {
         identity: false,
         remotes: [],
         hooks: null,
+        signing: null,
         layout: { shallow: false, submodules: [], lfs: false, linkedWorktree: false },
       };
     const { top, gitDir } = located;
     const layoutP = repoLayout((args) => this.tryOut(args), located);
-    const [head, branch, cf, idO, rmO, hooksPath] = await Promise.all([
+    const [head, branch, cf, idO, rmO, hooksPath, signing] = await Promise.all([
       t("rev-parse", "--verify", "-q", "HEAD"), t("symbolic-ref", "-q", "--short", "HEAD"),
       t("diff", "--cached", "--name-only", "--diff-filter=U"), t("var", "GIT_COMMITTER_IDENT"), t("remote"), t("config", "core.hooksPath"),
+      this.signingGate(),
     ]);
     const busy = ["rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"].find((f) =>
       existsSync(join(gitDir, f)),
@@ -262,7 +265,9 @@ export class GitCli {
     const hooksDir = hooksPath ?? join(gitDir, "hooks");
     const hooks = hookInventory([hooksDir.startsWith("/") ? hooksDir : join(top, hooksDir), join(top, ".husky")]);
     const layout = await layoutP;
-    const probe: RepoProbe = { isRepo: true, shadow: this.shadow, version, top, head, branch, state, identity, remotes, hooks, layout };
+    const probe: RepoProbe = {
+      isRepo: true, shadow: this.shadow, version, top, head, branch, state, identity, remotes, hooks, signing, layout,
+    };
     if (why) probe.why = why;
     return probe;
   }
@@ -313,6 +318,20 @@ export class GitCli {
 
   allowFilters(hashes: readonly string[]): void {
     this.consented = new Set(hashes);
+  }
+
+  /** Current commit signing configuration, read without invoking a signing program. */
+  private async signingGate(): Promise<string | null> {
+    if ((await this.tryOut(["config", "--bool", "commit.gpgsign"])) !== "true") return null;
+    const configured = await this.tryOut([
+      "config", "--null", "--get-regexp",
+      "^(commit\\.gpgsign|user\\.signingkey|gpg\\.|gpgformat$)",
+    ]);
+    return sha256(configured ?? "commit.gpgsign=true");
+  }
+
+  allowSigning(hashes: readonly string[]): void {
+    this.signingConsented = new Set(hashes);
   }
 
   /** Programs only run for something Tenet is about to do, and only on the user's word; undo and integration have no consent path yet. */
@@ -369,7 +388,9 @@ export class GitCli {
     const status = await this.parseStatus(skip, statOnly);
     for (const path of others.filter((p) => statOnly.includes(p))) {
       const content = this.workBlob(path);
-      if (content) status.push({ path, xy: "??", staged: false, untracked: true, ...content, indexBlob: "" });
+      if (content) status.push({
+        path, xy: "??", staged: false, untracked: true, ...content, indexBlob: "", indexMode: "",
+      });
     }
     const untracked = status.filter((s) => s.untracked).length;
     if (untracked > MAX_UNTRACKED)
@@ -393,7 +414,10 @@ export class GitCli {
       if (!content) throw new KernelError("stale", path, { exit: 2 });
       entries.set(path, { path, ...content });
       if (content.blob !== index.get(path)!.blob && !status.some((s) => s.path === path))
-        status.push({ path, xy: ".M", staged: false, untracked: false, ...content, indexBlob: index.get(path)!.blob });
+        status.push({
+          path, xy: ".M", staged: false, untracked: false, ...content,
+          indexBlob: index.get(path)!.blob, indexMode: index.get(path)!.mode,
+        });
     }
   }
 
@@ -417,7 +441,9 @@ export class GitCli {
       }
       entries.set(path, { path, ...content });
       if (!index.has(path) && !status.some((s) => s.path === path))
-        status.push({ path, xy: "??", staged: false, untracked: true, ...content, indexBlob: "" });
+        status.push({
+          path, xy: "??", staged: false, untracked: true, ...content, indexBlob: "", indexMode: "",
+        });
     }
   }
 
@@ -499,7 +525,10 @@ export class GitCli {
       if (kind === "?") {
         const path = r.slice(2);
         const w = skip(path) ? null : this.workBlob(path);
-        if (w) out.push({ path, xy: "??", staged: false, untracked: true, mode: w.mode, blob: w.blob, indexBlob: "" });
+        if (w) out.push({
+          path, xy: "??", staged: false, untracked: true, mode: w.mode, blob: w.blob,
+          indexBlob: "", indexMode: "",
+        });
       } else if (kind === "1" || kind === "2" || kind === "u") {
         const f = r.split(" ");
         const n = kind === "1" ? 8 : kind === "2" ? 9 : 10;
@@ -517,6 +546,7 @@ export class GitCli {
           mode: w?.mode ?? f[3]!,
           blob: w?.blob ?? "",
           indexBlob,
+          indexMode: kind === "u" ? "" : f[3]!,
         });
       }
     }
@@ -665,10 +695,11 @@ export class GitCli {
     let expectedTree: string | undefined,
       launched = false;
     try {
-      if ((await this.tryOut(["config", "--bool", "commit.gpgsign"])) === "true")
+      const signing = await this.signingGate();
+      if (signing && !this.signingConsented.has(signing))
         return fail(
           "signing-unavailable",
-          "configured signing programs require consent that is not implemented; the commit was not attempted",
+          "configured signing changed or lacks consent; the commit was not attempted",
         );
       const before = await this.inventory([]);
       const excludedBefore = new Map(

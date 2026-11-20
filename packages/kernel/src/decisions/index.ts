@@ -1,4 +1,4 @@
-import { envelopeConsent, filterConsent, hookConsent } from "./consent.ts";
+import { envelopeConsent, filterConsent, hookConsent, signingConsent } from "./consent.ts";
 import { decline } from "./decline.ts";
 import { extend } from "./extend.ts";
 import { adopt } from "./adopt.ts";
@@ -25,7 +25,8 @@ import { acceptance, branchSwitch, dirtyOverlap, disposition, repairLock, shared
 import type { Decision } from "./types.ts";
 
 export const DECISIONS: Record<string, Decision> = Object.fromEntries([
-  basis, scaffold, dirtyOverlap, acceptance, disposition, repairLock, unexplained, extend, hookConsent, filterConsent, envelopeConsent,
+  basis, scaffold, dirtyOverlap, acceptance, disposition, repairLock, unexplained, extend,
+  hookConsent, filterConsent, signingConsent, envelopeConsent,
   syncIndex, branchSwitch, sharedMerge, config, undoConfirm, adopt, overview, plan, grant, decisionRecord, dependency,
   abandon, takeover, decline, lesson, forget, cleanup, versionReconcile, hardening, modelLimit, traits, baselineFailures,
 ].map((d) => [d.kind, d]));

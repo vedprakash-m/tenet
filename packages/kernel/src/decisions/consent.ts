@@ -8,7 +8,7 @@ import type { Decision } from "./types.ts";
 
 interface Consent {
   kind: string;
-  recorded: "hooks" | "filters" | "envelope";
+  recorded: "hooks" | "filters" | "signing" | "envelope";
   yes: string;
   no?: string;
   noun: string;
@@ -17,15 +17,57 @@ interface Consent {
   updateWork?(work: WorkContract): WorkContract;
   yesNext?: string;
   noNext?: string;
+  boundAnswer?: boolean;
+}
+
+function consentAnswer(raw: unknown, bound: boolean): { answer: unknown; instanceId?: string } {
+  if (!bound) return { answer: raw };
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new KernelError(
+      "revision-conflict",
+      "the consent answer must name the signing question instance",
+      { exit: 1 },
+    );
+  }
+  const input = raw as { instanceId?: unknown; answer?: unknown; choice?: unknown };
+  if (typeof input.instanceId !== "string" || !input.instanceId) {
+    throw new KernelError("revision-conflict", "the consent answer is missing its question instance", { exit: 1 });
+  }
+  return {
+    instanceId: input.instanceId,
+    answer: input.answer === undefined ? input.choice : input.answer,
+  };
 }
 
 function consentDecision(c: Consent): Decision {
   return {
     kind: c.kind,
     async run({ ports, state, work, input }) {
-      const answer = input.answers?.[c.kind];
+      const supplied = consentAnswer(input.answers?.[c.kind], c.boundAnswer === true);
+      const answer = supplied.answer;
       const q = state.pending.find((p) => p.id === c.kind);
       if (!q) throw new KernelError("revision-conflict", `there is no open question about ${c.noun}`, { exit: 2 });
+      if (c.boundAnswer) {
+        if (
+          !q.bind.instanceId || !q.bind.workId || q.bind.sessionGeneration === undefined
+        ) {
+          throw new KernelError("revision-conflict", `the ${c.noun} question has stale authority`, { exit: 2 });
+        }
+        if (q.bind.workId !== work.id || q.bind.sessionGeneration !== work.session.generation) {
+          throw new KernelError(
+            "revision-conflict",
+            `the ${c.noun} question belongs to another work generation`,
+            { exit: 2 },
+          );
+        }
+        if (supplied.instanceId !== q.bind.instanceId) {
+          throw new KernelError(
+            "revision-conflict",
+            `the answer belongs to a replaced ${c.noun} question`,
+            { exit: 2 },
+          );
+        }
+      }
       const no = c.no ?? "keep-uncommitted";
       if (answer !== c.yes && answer !== no) {
         throw new KernelError("revision-conflict", `answer "${c.yes}" or "${no}"`, { exit: 1 });
@@ -69,6 +111,16 @@ export const filterConsent = consentDecision({
   yes: "allow-filters",
   noun: "Git filters",
   current: async (ports) => (await ports.git.filterGate())?.hash,
+});
+
+/** Consent to run the currently configured commit signer. P47 only owns the durable decline transition. */
+export const signingConsent = consentDecision({
+  kind: "signing-consent",
+  recorded: "signing",
+  yes: "commit-with-signing",
+  noun: "commit signer",
+  boundAnswer: true,
+  current: async (ports) => (await ports.git.probe()).signing,
 });
 
 /** Consent to execute a check with this exact project-command envelope. */

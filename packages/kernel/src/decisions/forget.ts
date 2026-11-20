@@ -1,14 +1,25 @@
 // `decide forget`: remove a lesson from every copy Tenet controls, after a preview (CON-10, TS §7.7). Published twice,
 // so `state.prev` lacks the text; packets holding it are deleted. The host model's own copies are out of reach (OUTSIDE).
 import { reason } from "../core/reasons.ts";
+import { KernelError } from "../core/errors.ts";
 import { forgetPreview, OUTSIDE, withoutLesson } from "../core/lessons.ts";
 import { withWork } from "../verbs/common.ts";
 import type { Decision } from "./types.ts";
 import type { State } from "../core/schemas.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 
+function retainedLegacy(ports: Ports, state: State) {
+  const retained = state.project.retention?.legacyTemp;
+  if (!retained) return;
+  ports.store.retentionScope();
+  throw new KernelError("state-history-unknown",
+    "The retained legacy run scope includes packet storage; nothing was forgotten or deleted.",
+    { exit: 2 });
+}
+
 /** Purge before removing the lookup text; two publications also clear the backup. Safe to repeat after a crash. */
 export function completeForget(ports: Ports, tx: Tx, state: State, id: string) {
+  retainedLegacy(ports, state);
   const l = state.lessons.find(x => x.id === id);
   const packetsRemoved = l ? ports.store.purge([l.statement, l.provenance.quote]) : 0;
   const next = withoutLesson(state, id);
@@ -21,6 +32,7 @@ export function completeForget(ports: Ports, tx: Tx, state: State, id: string) {
 export const forget: Decision = {
   kind: "forget",
   run({ ports, tx, state, work, input }) {
+    retainedLegacy(ports, state);
     const l = state.lessons.find((x) => x.id === input.target);
     if (!l) return { resp: { work: work.id, exit: 2, reasons: [
       reason("restriction-key-unknown", `there is no lesson "${input.target ?? ""}" to forget`) ] } };

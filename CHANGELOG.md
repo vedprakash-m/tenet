@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-18 — Fence uncertain storage and stage private effects
+
+- Added a schema-2 P91/P106 retention record for marker-bound legacy run roots. Existing marker-only stores no longer initialize ordinary work or cleanup: recovery is explicit, missing/changed accounting is unknown, and supported read-only, trusted stop and reconstruction paths stay available.
+- Staged state, journal, blob, artifact, directory and purge effects in each private-store transaction. Capacity admission now reserves the exact state/checkpoint/call projection plus bounded publication/report headroom before cleanup; in-flight jobs carry a 1 MiB final-state reservation and direct source-effect intents are flushed before writes.
+- Added 45/50 MB `.tenet/` and 200 MB project-run refusal reasons, exact response wording and schema-1 read/schema-2 fail-compatible publication. Compaction now uses durable batch identities, protects primary/backup run references and rejects damaged summaries.
+- Added focused P91/P100/P101/P103 controls and schema/publication tests. Local typecheck, architecture/skill/quality lint, M0 coverage and focused synthetic publication controls pass on Windows. Real-store crash, supported-POSIX process and native-host qualification remain unexecuted.
+
 ## 2026-11-18 — Reduce CI runtime without dropping required evidence
 
 - Reworked untrusted validation into preflight, source, bundle/UAT, Windows and aggregate lanes. Exact `main` pushes and pull requests now run a structured `Tenet validation` result; feature-branch pushes do not rerun the full graph. The complete Node 22.12 UAT remains required on supported POSIX, while Node 24 uses an extracted-payload smoke.

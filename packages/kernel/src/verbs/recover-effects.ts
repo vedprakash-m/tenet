@@ -6,11 +6,13 @@ import { MANIFEST, lockFileOf, type DependencyOp } from "../core/dependency-admi
 import { scaffolded, type ScaffoldOp } from "../decisions/scaffold.ts";
 import { bindRecipeCoverage, installRecipeCoverage } from "../core/alternative-check.ts";
 import { recordedHardening, type HardeningOp } from "../decisions/hardening.ts";
-import { recordCommit, replayCommit } from "../core/attribution.ts";
+import { replayCommit } from "../core/attribution.ts";
 import { adoptionReplayNeeded } from "../core/state.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 import { recoverUndo } from "./recover-undo.ts";
+import { recoverCommit } from "./recover-commit.ts";
+import { hasDurableCommitAuthority } from "./dirty.ts";
 
 export interface IntegrationOp { work: string; base: string; baseBefore: string; workTip: string }
 export type Unresolved = ReturnType<Tx["unresolved"]>[number];
@@ -44,9 +46,13 @@ async function indexSync(r: Recovery, u: Unresolved) {
     return;
   }
   const workId = op.work;
+  r.tx.reservePublish?.(r.state, 4096);
   const status = await r.ports.git.recoverIndexSync(op.sync, {
     owner: r.ports.store.self(),
-    intent: async (sync) => { r.tx.intent("index-sync", id, { work: workId, sync }); },
+    intent: async (sync) => {
+      r.tx.intent("index-sync", id, { work: workId, sync });
+      r.tx.flush?.();
+    },
     result: async (s) => { r.tx.result("index-sync", id, { status: s }); },
   });
   if (status === "uncertain") {
@@ -57,22 +63,6 @@ async function indexSync(r: Recovery, u: Unresolved) {
   r.completed.push(status === "untouched"
     ? "index recovery left the current index untouched; review the current commit/lock and retry decide sync-index"
     : "the interrupted index sync was reconciled without changing human staging");
-}
-
-async function commit(r: Recovery, u: Unresolved) {
-  const op = u.op as { work: string; parent: string | null; expectedTree: string; paths: string[]; subject: string };
-  const w = r.state.work[op.work];
-  const res = await r.ports.git.reconcileCommit(op.parent, op.expectedTree, op.paths, w?.label);
-  if (res.completed && res.commit) {
-    if (w) put(r, recordCommit(w, { commit: res.commit, foreign: [] }, op.paths));
-    r.tx.result("commit", u.id, { completed: true, commit: res.commit, foreign: [] });
-    r.completed.push(`commit ${res.commit.slice(0, 8)} had landed before the result was recorded`);
-  } else if ((await r.ports.git.refCommit("HEAD")) !== op.parent) {
-    r.uncertain.push("an interrupted commit cannot be reconciled against the current HEAD");
-  } else {
-    r.tx.result("commit", u.id, { completed: false });
-    r.completed.push("an interrupted commit did not happen");
-  }
 }
 
 async function integration(r: Recovery, u: Unresolved) {
@@ -188,7 +178,7 @@ async function branch(r: Recovery, u: Unresolved) {
 }
 
 export const SETTLE: Record<string, (r: Recovery, u: Unresolved) => Promise<void>> = {
-  "index-sync": indexSync, commit, integration, undo: recoverUndo, scaffold, adopt, dependency, hardening, branch,
+  "index-sync": indexSync, commit: recoverCommit, integration, undo: recoverUndo, scaffold, adopt, dependency, hardening, branch,
   async forget(r, u) {
     r.state = completeForget(r.ports, r.tx, r.state, (u.op as { lesson: string }).lesson).state;
     r.completed.push("an interrupted forget was finished");
@@ -229,8 +219,16 @@ export const PUBLISH: Record<string, (r: Recovery, op: unknown, out: Outcome) =>
     r.completed.push("the integration was recorded as done but not yet in the contract; it is now");
   },
   commit(r, o, out) {
-    const op = o as { work: string; paths: string[] }, w = r.state.work[op.work];
-    if (!w) return;
+    const op = o as { work: string; paths: string[]; dirtyDecisions?: unknown }, w = r.state.work[op.work];
+    if (!w) {
+      r.uncertain.push("recorded commit lacks a work with durable whole-file inclusion authority");
+      return;
+    }
+    if (!out.commit || w.git.commits.includes(out.commit)) return;
+    if (!Array.isArray(op.paths) || !hasDurableCommitAuthority(w, op.paths, op.dirtyDecisions)) {
+      r.uncertain.push("recorded commit lacks matching durable whole-file inclusion authority");
+      return;
+    }
     const next = replayCommit(w, out, op.paths);
     if (!next) r.uncertain.push("recorded commit lacks foreign-path proof; inspect its effects");
     else if (next !== w) {

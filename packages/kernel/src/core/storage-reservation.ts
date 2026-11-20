@@ -1,0 +1,1 @@
+export const JOB_FINAL_STATE_RESERVE = 1024 * 1024;

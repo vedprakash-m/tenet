@@ -138,13 +138,16 @@ async function moveToWorkBranch(
   state: State,
   work: WorkContract,
   w: WorkContract,
-  outcome: string
+  outcome: string,
+  prospective: (branch: string) => State,
 ): Promise<WorkContract> {
   if (!isEditingProfile(w.profile) || w.git.mode !== "git" || work.basis || settingsFor(ports, state, w).branching !== "per-work")
     return w;
   const name = `tenet/${w.label.toLowerCase()}-${slug(outcome)}`;
   const id = `b-${ports.rand.base32(6)}`;
+  tx.reservePublish?.(prospective(name), 64 * 1024);
   tx.intent("branch", id, { work: w.id, from: w.git.branch, to: name });
+  tx.flush?.();
   try {
     await ports.git.createBranch(name);
   } catch (e) {
@@ -183,9 +186,13 @@ export const basis: Decision = {
       }
     }
     const d = draftBasis(ports, state, work, input, proposal, facts, needsConfirm);
-    const w = await moveToWorkBranch(ports, tx, state, work, d.w, proposal.outcome);
+    const bound = bindRecipeCoverage(state, work.id, d.hash, ports.clock.now());
+    const prospective = (branch: string) => {
+      const branched = { ...d.w, git: { ...d.w.git, branch } };
+      return withWork({ ...bound, project: { ...bound.project, intent: d.intent } }, branched);
+    };
+    const w = await moveToWorkBranch(ports, tx, state, work, d.w, proposal.outcome, prospective);
     const stacked = w.git.start.branch?.startsWith("tenet/") && w.git.branch !== w.git.start.branch;
-    const bound = bindRecipeCoverage(state, w.id, d.hash, ports.clock.now());
     const bare = w.lane === "quick" ? [] : withoutBoundary(d.intent.elements.filter((e) => w.basis?.elementIds.includes(e.id)));
     return {
       state: withWork({ ...bound, project: { ...bound.project, intent: d.intent } }, w),

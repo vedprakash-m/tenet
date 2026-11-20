@@ -3,7 +3,7 @@
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { appendFileSync, existsSync, readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { FsStore } from "../src/adapters/store-fs.ts";
 import { systemRandom } from "../src/adapters/system.ts";
@@ -43,7 +43,7 @@ describe("journal reduction into summaries [CON-08, AC-19]", () => {
     const { store, log, sums } = await fresh();
     ago(200);
     await store.transaction("old", async (tx) => {
-      tx.intent("commit", "c1", { a: 1 }); tx.result("commit", "c1", { ok: true }); tx.intent("undo", "u-open", { b: 1 });
+      tx.intent("commit", "c1", { a: 1 }); tx.result("commit", "c1", { completed: true }); tx.intent("undo", "u-open", { b: 1 });
       for (let i = 0; i < 300; i++) tx.call({ verb: "check", exit: i % 2, revision: 1 });
     });
     ago(5);
@@ -138,6 +138,58 @@ describe("journal reduction into summaries [CON-08, AC-19]", () => {
     assert.equal(reduceJournal(`${old}not json\n`, { nowMs: Date.now(), days: 90, protectFromRevision: 0 }), null);
   });
 
+  it("keeps an old intent/result pair until its result explicitly completes [AC-17, P101]", async () => {
+    const { reduceJournal } = await import("../src/core/journal-reduce.ts");
+    const old = "2020-01-01T00:00:00.000Z";
+    const rows = [
+      { t: old, kind: "intent", effect: "undo", id: "u1", op: { runDir: "run-u1" } },
+      { t: old, kind: "result", effect: "undo", id: "u1", outcome: { completed: false } },
+      ...Array.from({ length: 101 }, () => ({ t: old, kind: "call", verb: "check", exit: 0, revision: 1 })),
+    ];
+    const reduced = reduceJournal(`${rows.map((r) => JSON.stringify(r)).join("\n")}\n`, {
+      nowMs: Date.now(), days: 90, protectFromRevision: 0,
+    });
+    assert.ok(reduced);
+    const remaining = reduced.text.split("\n").filter(Boolean).map((line) => JSON.parse(line));
+    assert.ok(remaining.some((r) => r.kind === "intent" && r.id === "u1"));
+    assert.ok(remaining.some((r) => r.kind === "result" && r.id === "u1"));
+  });
+
+  it("keeps completed effect history referenced by active state or run paths [AC-17, P100]", async () => {
+    const { reduceJournal } = await import("../src/core/journal-reduce.ts");
+    const old = "2020-01-01T00:00:00.000Z";
+    const intent = { t: old, kind: "intent", effect: "undo", id: "u1", op: { runDir: "live-run" } };
+    const result = { t: old, kind: "result", effect: "undo", id: "u1", outcome: { completed: true } };
+    const rows = [intent, result, ...Array.from(
+      { length: 101 }, () => ({ t: old, kind: "call", verb: "check", exit: 0, revision: 1 }),
+    )];
+    const reduced = reduceJournal(`${rows.map((r) => JSON.stringify(r)).join("\n")}\n`, {
+      nowMs: Date.now(),
+      days: 90,
+      protectFromRevision: 0,
+      protectedPaths: new Set(["live-run"]),
+    });
+    assert.ok(reduced?.text.includes('"effect":"undo","id":"u1","op"'));
+    assert.ok(reduced?.text.includes('"effect":"undo","id":"u1","outcome"'));
+  });
+
+  it("counts identical journal bytes as a distinct durable batch [AC-17, P103]", async () => {
+    const { store, log, sums } = await fresh();
+    ago(200);
+    await calls(store, 300);
+    const original = readFileSync(log(), "utf8");
+    ago(0);
+    await evict(store);
+    const first = JSON.parse(readFileSync(sums(), "utf8"));
+    writeFileSync(log(), original);
+    await evict(store);
+    const second = JSON.parse(readFileSync(sums(), "utf8"));
+    const total = (summary: any) => Object.values(summary.months as Record<string, any>)
+      .reduce((n: number, month: any) => n + Number(month.calls.open ?? 0), 0);
+    assert.notEqual(second.batchId, first.batchId);
+    assert.ok(total(second) > total(first));
+  });
+
   it("reduces a 10,000-record journal inside the 300 ms bound", async () => {
     const { store, log } = await fresh({ compactAtBytes: 1_000_000 });
     ago(200);
@@ -146,7 +198,7 @@ describe("journal reduction into summaries [CON-08, AC-19]", () => {
     ago(0);
     const t0 = performance.now();
     await evict(store);
-    assert.ok(performance.now() - t0 < 500, `took ${performance.now() - t0} ms`);
+    assert.ok(performance.now() - t0 < 300, `took ${performance.now() - t0} ms`);
   });
 });
 
@@ -253,6 +305,92 @@ describe("the verbs at a storage boundary [CON-08, AC-19]", () => {
     ({ ...p.ports(), store: new FsStore(p.root, systemClock, systemRandom, limits) });
   const call = (ports: ReturnType<typeof p0>, verb: string, input: Record<string, unknown>) => runVerb(ports, VERBS, verb, input);
   const p0 = () => withLimits(project(), {});
+
+  it("publishes only a recovery question for uncertain history, then retains the legacy scope on start-fresh [AC-17, P91]", async () => {
+    const scope = { path: "/tmp/tenet-ws_legacy", identity: "1:2:3", exists: true };
+    const ports = {
+      clock,
+      host: { capabilities: () => ({}) },
+      store: { retentionScope: () => scope, history: () => "complete" },
+      project: { readBounded: () => ({ status: "missing" }) },
+      git: {
+        probe: async () => ({ isRepo: false, shadow: false }),
+        tenetHistory: async () => null,
+      },
+    } as unknown as Ports;
+    const tx = {
+      history: "uncertain",
+      ensure: () => ({ workspaceId: "ws_aaaaaaaaaa", tag: "abcd" }),
+    } as unknown as Tx;
+    const recovery = await VERBS.open!.run(ports, null, { profile: "plan", request: "second" }, tx);
+
+    assert.equal(recovery.resp.exit, 3, JSON.stringify(recovery));
+    assert.equal(recovery.resp.reasons?.[0]?.code, "state-history-unknown");
+    assert.equal(Object.keys(recovery.state?.work ?? {}).length, 0);
+    assert.deepEqual(recovery.state?.project.retention?.legacyTemp, {
+      ...scope, at: clock.now(), pending: true,
+    });
+    const stopped = await VERBS.stop!.run(ports, recovery.state!, { mode: "pause" }, tx);
+    assert.equal(stopped.resp.reasons?.[0]?.code, "state-history-unknown");
+    assert.match(stopped.resp.reasons?.[0]?.message ?? "", /no process was signaled/);
+    const status = await VERBS.inspect!.run(ports, recovery.state!, { view: "status" });
+    assert.equal((status.resp.data as { history: string }).history, "uncertain");
+
+    const answer = await VERBS.decide!.run(ports, recovery.state!, {
+      kind: "adopt",
+      target: "reconstruction",
+      answers: { "reconstruction-review": "fresh" },
+    }, { ...tx, state: recovery.state! });
+
+    assert.equal(answer.resp.exit, 0, JSON.stringify(answer));
+    assert.equal(answer.state?.project.retention?.legacyTemp.pending, false);
+    assert.equal(Object.keys(answer.state?.work ?? {}).length, 0);
+  });
+
+  it("does not sweep when a storage refusal is returned [AC-17, P91]", () => {
+    for (const code of [
+      "storage-accounting-unknown",
+      "storage-protected-full",
+      "storage-reserve-full",
+      "storage-run-cap-full",
+    ] as const) {
+      let swept = false;
+      const ports = {
+        store: { sweepTemp: () => { swept = true; return 0; } },
+      } as unknown as Ports;
+      const tx = {
+        unresolved: () => [],
+        evict: () => ({ overCeiling: true, largest: [], refusal: { code, message: code } }),
+      } as unknown as Tx;
+      assert.throws(() => reclaim(ports, tx, emptyState("workspace", "tag")), (error: unknown) => {
+        assert.equal((error as { reasons?: Array<{ code: string }> }).reasons?.[0]?.code, code);
+        return true;
+      });
+      assert.equal(swept, false, code);
+    }
+  });
+
+  it("preserves an existing marker-only run scope and refuses to initialize ordinary work [AC-17, P91]", {
+    skip: process.platform === "win32" ? "mutating real-store qualification requires directory fsync on supported POSIX" : false,
+  }, async () => {
+    const p = project(); roots.push(p.root);
+    await p.call("open", { profile: "plan", request: "first" });
+    const oldRun = p.ports().store.tempDir("run-ambiguous");
+    writeFileSync(join(oldRun, "artifact"), "keep");
+    const old = new Date(Date.now() - 2 * DAY);
+    utimesSync(oldRun, old, old);
+    rmSync(join(p.root, ".tenet", "state"), { force: true });
+    rmSync(join(p.root, ".tenet", "state.prev"), { force: true });
+
+    const response = await p.call("open", { profile: "plan", request: "second" });
+
+    assert.equal(response.exit, 3, JSON.stringify(response));
+    assert.equal(response.reasons[0]?.code, "state-history-unknown", JSON.stringify(response));
+    assert.equal(response.handle, undefined, JSON.stringify(response));
+    assert.equal(existsSync(oldRun), true, "ambiguous project run bytes must be preserved");
+    const state = p.ports().store.read()?.state;
+    assert.equal(Object.keys(state?.work ?? {}).length, 0, "recovery must not initialize ordinary work");
+  });
 
   it("open stops with storage-protected-full when protected data alone is over the ceiling, naming the largest class; stop and inspect still work", async () => {
     const p = project(); roots.push(p.root);

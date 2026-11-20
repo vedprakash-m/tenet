@@ -2,7 +2,6 @@
 import { KernelError } from "../core/errors.ts";
 import { reason } from "../core/reasons.ts";
 import type { BasisElement, Finding, State, WorkContract } from "../core/schemas.ts";
-import { undecidedDirty } from "../verbs/dirty.ts";
 import { factsHash, nx, withWork } from "../verbs/common.ts";
 import { gather } from "../verbs/facts.ts";
 import { integrationSetting, startIntegrate, switchFacts } from "../verbs/integrate.ts";
@@ -10,37 +9,7 @@ import type { Decision } from "./types.ts";
 import type { Plan } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
 
-/** Answers the dirty-overlap question: the question's facts must still be the current facts. */
-export const dirtyOverlap: Decision = {
-  kind: "dirty-overlap",
-  run({ state, work, input }) {
-    const q = state.pending.find((p) => p.id === "dirty-overlap");
-    const paths = undecidedDirty(work);
-    const answer = input.answers?.["dirty-overlap"];
-    if (!q) throw new KernelError("revision-conflict", "there is no open question about your edits", { exit: 2 });
-    if (!paths.length) {
-      // The work no longer needs any of those files (its scope changed): the question is closed, nothing is recorded.
-      const rest = state.pending.filter((p) => p.id !== "dirty-overlap");
-      return { state: { ...state, pending: rest }, resp: { work: work.id, next: [nx("check", "Continue.", true)], data: { decided: [] } } };
-    }
-    if (answer !== "wait" && answer !== "include" && answer !== "leave-out" && answer !== "keep-out") {
-      throw new KernelError("revision-conflict", 'answer "wait", "include" or "leave-out"', { exit: 1 });
-    }
-    if (factsHash([...paths].sort()) !== q.bind.factsHash) {
-      throw new KernelError("revision-conflict", "the files with your edits changed since the question was asked; run check to be asked again", { exit: 2 });
-    }
-    const rest = state.pending.filter((p) => p.id !== "dirty-overlap");
-    if (answer === "wait") {
-      // Nothing is recorded: the next check asks again about any file that is still dirty.
-      const next = [nx("ask", "Wait for the user to commit or set aside their edits and say continue; then run check.", true)];
-      return { state: { ...state, pending: rest }, resp: { work: work.id, next, data: { waiting: paths, answer } } };
-    }
-    const w = answer === "include"
-      ? { ...work, includeDirty: [...work.includeDirty, ...paths] }
-      : { ...work, keepOut: [...work.keepOut, ...paths], ...(answer === "leave-out" ? { leaveOut: [...(work.leaveOut ?? []), ...paths] } : {}) };
-    return { state: withWork({ ...state, pending: rest }, w), resp: { work: w.id, next: [nx(w.basis ? "check" : "basis", "Continue.", true)], data: { decided: paths, answer } } };
-  },
-};
+export { dirtyOverlap } from "./dirty-overlap.ts";
 
 const ACCEPT = ["accepted", "rejected", "accepted-with-residual-risk"] as const;
 /** Owner acceptance is recorded as what it is and never removes a blocking reason (EVD-06). */
@@ -205,13 +174,17 @@ export const sharedMerge: Decision = {
 /** The one-step "sync my index" after a commit left the index untouched (TS §10.3 step 7): reruns only that step. */
 export const syncIndex: Decision = {
   kind: "sync-index",
-  async run({ ports, work, tx }) {
+  async run({ ports, work, tx, state }) {
     const last = work.git.commits.at(-1);
     if (!last) throw new KernelError("revision-conflict", "there is no commit of this work to sync the index for", { exit: 2 });
     const id = `index-${ports.rand.base32(10)}`;
+    tx.reservePublish?.(state, 64 * 1024);
     const result = await ports.git.syncIndex(work.git.committed, await ports.git.parentOf(last), {
       owner: ports.store.self(),
-      intent: async (sync) => { tx.intent("index-sync", id, { work: work.id, sync }); },
+      intent: async (sync) => {
+        tx.intent("index-sync", id, { work: work.id, sync });
+        tx.flush?.();
+      },
       result: async (status) => { tx.result("index-sync", id, { status }); },
     }, last);
     if (result === "untouched") {

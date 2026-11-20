@@ -158,11 +158,14 @@ export const adopt: Decision = {
       "Save the purpose, plan and decisions in the project so the next change starts with them.",
       () => {
         const id = `a-${ports.rand.base32(6)}`;
+        const next = adopted({ ...state, pending: asked(state) }, op);
+        tx.reservePublish?.(next, 64 * 1024);
         tx.intent("adopt", id, op);
+        tx.flush?.();
         ports.project.write(INTENT_FILE, pr.text);
         tx.result("adopt", id, { completed: true });
         return {
-          state: adopted({ ...state, pending: asked(state) }, op),
+          state: next,
           resp: { work: work.id, data: { file: INTENT_FILE, adopted: true, blocks: pr.changed, committed: false } },
         };
       },

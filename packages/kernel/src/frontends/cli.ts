@@ -32,7 +32,11 @@ export function parseArgs(argv: readonly string[]): { verb: string; input: Recor
     if (key === "answer") { // --answer <id>=<choice>, repeatable: one question, one answer
       const eq = next.indexOf("=");
       if (eq < 1) throw new Error(`--answer needs <id>=<choice>, got "${next}"`);
-      input.answers = { ...(input.answers as object), [next.slice(0, eq)]: next.slice(eq + 1) };
+      const value = next.slice(eq + 1);
+      input.answers = {
+        ...(input.answers as object),
+        [next.slice(0, eq)]: /^[{[]/.test(value) ? JSON.parse(value) : value,
+      };
       continue;
     }
     input[key] = LISTS.has(key) ? next.split(",").filter(Boolean) : /^[{[]/.test(next) ? JSON.parse(next) : next;

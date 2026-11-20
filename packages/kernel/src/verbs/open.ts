@@ -5,10 +5,11 @@ import { isEditingProfile } from "../core/risk.ts";
 import { OpenInput } from "../core/schemas.ts";
 import type { Question, State, WorkContract } from "../core/schemas.ts";
 import { emptyState, isLive } from "../core/state.ts";
+import { reason } from "../core/reasons.ts";
 import type { Plan, Verb } from "../pipeline.ts";
 import type { Ports, Tx } from "../ports/types.ts";
 import { resumeAsk } from "../pipeline-version.ts";
-import { nx, question, reclaim, withWork } from "./common.ts";
+import { nx, question, withWork } from "./common.ts";
 import { describe, surface } from "./open-context.ts";
 import type { Ctx } from "./open-context.ts";
 import { admitFolder, created } from "./open-new.ts";
@@ -16,6 +17,10 @@ import { reconcileShared } from "./reconcile.ts";
 import { takeoverFacts } from "../decisions/takeover.ts";
 import { quarantineQuestion, quarantineSurface } from "../decisions/quarantine.ts";
 import { offerReconstruction } from "../decisions/reconstruction.ts";
+import {
+  offerUncertainReconstruction,
+  uncertainReconstructionSurface,
+} from "../decisions/uncertain-reconstruction.ts";
 
 /** Admission and housekeeping every `open` goes through: quarantine, recovery, a suspended backup, temp cleanup, shared files. */
 async function begin(ports: Ports, before: State | null, input: OpenInput, tx: Tx): Promise<Ctx> {
@@ -49,13 +54,7 @@ async function begin(ports: Ports, before: State | null, input: OpenInput, tx: T
       { exit: 3 }
     );
   }
-  const kept = reclaim(ports, tx, state);
-  if (kept.overCeiling) {
-    const big = kept.largest.map((c) => `${c.name} ${Math.round(c.bytes / 1024)} KB`).join(", ");
-    const why = `.tenet/ holds protected data past its ceiling (${big}); stop or finish work, or clean up, before adding more`;
-    throw new KernelError("storage-protected-full", why, { exit: 2 });
-  }
-  const effects = kept.message ? { completed: [kept.message], uncertain: [] } : undefined;
+  const effects = undefined;
   // No state document at all (lost, or a fresh clone): read back what the repository still shows (CON-07).
   const rebuilt = before ? undefined : await offerReconstruction(ports, state);
   if (rebuilt) state = rebuilt.state;
@@ -175,6 +174,46 @@ export const open: Verb<OpenInput> = {
   preLock: admitFolder,
 
   async run(ports, state0, input, tx): Promise<Plan> {
+    if (tx?.history === "uncertain") {
+      const ident = tx.ensure();
+      const recovery = await offerUncertainReconstruction(
+        ports,
+        state0 ?? emptyState(ident.workspaceId, ident.tag),
+      );
+      return {
+        state: recovery.state,
+        resp: {
+          exit: 3,
+          reasons: [recovery.reason],
+          questions: [recovery.question],
+          next: [nx("ask", "Review the preserved local-history question before starting new work.", true)],
+        },
+      };
+    }
+    const pendingRecovery = state0 && uncertainReconstructionSurface(state0);
+    if (pendingRecovery) {
+      return {
+        state: state0,
+        resp: {
+          exit: 3,
+          reasons: [reason("state-history-unknown", "The affected local history remains uncertain and preserved.")],
+          questions: [pendingRecovery],
+          next: [nx("ask", "Answer the local-history recovery question before starting new work.", true)],
+        },
+      };
+    }
+    if (state0?.project.retention?.legacyTemp.pending) {
+      const recovery = await offerUncertainReconstruction(ports, state0);
+      return {
+        state: recovery.state,
+        resp: {
+          exit: 3,
+          reasons: [recovery.reason],
+          questions: [recovery.question],
+          next: [nx("ask", "Review the preserved local-history question before starting new work.", true)],
+        },
+      };
+    }
     const c = await begin(ports, state0, input, tx!);
     return repeated(c) ?? resumed(c) ?? (await created(c));
   },

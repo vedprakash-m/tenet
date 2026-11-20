@@ -15,6 +15,7 @@ import { assistanceLevel } from "../core/risk.ts";
 import { bindRecipeCoverage, installRecipeCoverage } from "../core/alternative-check.ts";
 import { nx, readinessOf, withWork } from "../verbs/common.ts";
 import type { Decision } from "./types.ts";
+import { JOB_FINAL_STATE_RESERVE } from "../core/storage-reservation.ts";
 
 const Request = z.object({
   recipe: z.string().default("ts-web-api"),
@@ -104,7 +105,8 @@ function writeFiles(
   tx: Tx,
   state: State,
   work: WorkContract,
-  p: ReturnType<typeof prepare>
+  p: ReturnType<typeof prepare>,
+  inCall: NonNullable<WorkContract["session"]["inCall"]>,
 ): { state: State; w: WorkContract } {
   const prior = state.project.recipe;
   const here = ports.project.hashes(p.paths);
@@ -126,14 +128,23 @@ function writeFiles(
     expected: p.expected,
     protect: p.protect,
   };
+  const recipe = { id: p.recipe.id, version: p.recipe.version, installed: false, checks: p.recipe.checks ?? [] };
+  const next = {
+    state: { ...admitted, project: { ...admitted.project, recipe } },
+    w: {
+      ...scaffolded(work, p.expected, p.protect, p.recipe.checks ?? [], coverage),
+      session: {
+        ...scaffolded(work, p.expected, p.protect, p.recipe.checks ?? [], coverage).session,
+        inCall,
+      },
+    },
+  };
+  tx.reservePublish?.(withWork(next.state, next.w), 64 * 1024);
   tx.intent("scaffold", id, op);
+  tx.flush?.();
   ports.project.writeNew(p.files); // exclusive create: a file that appeared meanwhile makes this throw, not overwrite
   tx.result("scaffold", id, { completed: true, files: p.paths.length });
-  const recipe = { id: p.recipe.id, version: p.recipe.version, installed: false, checks: p.recipe.checks ?? [] };
-  return {
-    state: { ...admitted, project: { ...admitted.project, recipe } },
-    w: scaffolded(work, p.expected, p.protect, p.recipe.checks ?? [], coverage),
-  };
+  return next;
 }
 
 async function install(ports: Ports, recipe: Recipe, runDir: string) {
@@ -183,11 +194,19 @@ export const scaffold: Decision = {
     if (!work.basis) throw new KernelError("continue-required", "record a basis with decide before scaffolding", { exit: 2 });
     if (work.session.inCall) throw new KernelError("work-busy", `a ${work.session.inCall.verb} is running`);
     const p = prepare(ports, req);
-    const wrote = writeFiles(ports, tx, state, work, p);
     const runId = `${work.label}-i${ports.rand.base32(5)}`;
     const runDir = ports.store.tempDir(`run-${runId}`);
     const now = ports.clock.now();
-    const inCall = { runId, ...ports.store.self(), verb: "scaffold", since: now, runDir };
+    const inCall = {
+      runId,
+      ...ports.store.self(),
+      verb: "scaffold",
+      since: now,
+      runDir,
+      storageReservedBytes: JOB_FINAL_STATE_RESERVE,
+      storageBaselineBytes: ports.store.storageBytes(),
+    };
+    const wrote = writeFiles(ports, tx, state, work, p, inCall);
     const w = { ...wrote.w, updatedAt: now, session: { ...wrote.w.session, inCall } };
     const job: Job = {
       id: runId,

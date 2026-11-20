@@ -15,6 +15,7 @@ import { isEditingProfile } from "../core/risk.ts";
 import { declaredInputs } from "../core/obligations.ts";
 import { declaredOutputs } from "../core/outputs.ts";
 import { coverageEvidenceForReceipts, stickyCoverageReceipts } from "../core/alternative-check.ts";
+import { currentDirtyDecision } from "./dirty.ts";
 
 export interface Facts {
   inv: Inventory;
@@ -22,6 +23,10 @@ export interface Facts {
   candidate: string;
   /** Files Tenet owns: declared or kernel-written; minus the user's keep-out files. */
   tenetPaths: string[];
+  /** Start-dirty paths eligible for this commit because they have current same-file Tenet edits and include authority. */
+  includedHuman?: string[];
+  /** Start-dirty paths Tenet may edit but the user has not granted commit authority for. */
+  editUncommitted?: string[];
   /** Everything Tenet changed in this contract, committed or not: what a review and the attention scan must see. */
   reviewPaths: string[];
   /** Anchor commits of the project's acceptance-test locks that are ancestors of HEAD, so a branch that never had a test is unaffected. */
@@ -39,17 +44,30 @@ export async function worldDigest(ports: Ports, _input?: unknown, state?: State 
 }
 
 export async function gather(ports: Ports, w: WorkContract, locks: State["locks"] = []): Promise<Facts> {
-  if (w.git.mode === "none") return { inv: NO_GIT, att: attribute(w, NO_GIT, () => false), candidate: NO_GIT.digest, tenetPaths: [], reviewPaths: [], lockAnchors: new Set() };
+  if (w.git.mode === "none") return {
+    inv: NO_GIT, att: attribute(w, NO_GIT, () => false), candidate: NO_GIT.digest,
+    tenetPaths: [], includedHuman: [], editUncommitted: [], reviewPaths: [], lockAnchors: new Set(),
+  };
   const tests = new Set(w.obligations.map((o) => o.testFile).filter((p): p is string => !!p));
   const explained = (p: string) => tests.has(p) || Object.hasOwn(w.vetted, p);
   const inv = await ports.git.inventory([], declaredInputs(w.obligations), declaredOutputs(w.obligations));
   const att = attribute(w, inv, explained);
-  const keep = new Set(w.keepOut), changed = new Set(att.changed), included = new Set(w.includeDirty);
-  const tenetPaths = [...new Set([...att.tenet, ...att.mixed.filter((p) => included.has(p)), ...included])]
-    .filter((p) => !keep.has(p) && changed.has(p));
+  const keep = new Set(w.keepOut), changed = new Set(att.changed);
+  const mixed = new Map(att.mixed.map((path) => [path, currentDirtyDecision(w, inv, path)]));
+  const includedHuman = att.mixed.filter((path) =>
+    mixed.get(path)?.choice === "include" && !keep.has(path) && changed.has(path)
+  );
+  const editUncommitted = att.mixed.filter((path) =>
+    mixed.get(path)?.choice === "edit-uncommitted" && !keep.has(path) && changed.has(path)
+  );
+  const tenetPaths = [...new Set([...att.tenet, ...includedHuman])]
+    .filter((path) => !keep.has(path) && changed.has(path));
   const anchors = locks.flatMap((l) => ("commit" in l.anchor ? [l.anchor.commit] : []));
-  const reviewPaths = [...new Set([...tenetPaths, ...w.git.committed])];
-  return { inv, att, candidate: inv.digest, tenetPaths, reviewPaths, lockAnchors: anchors.length ? await ports.git.ancestors(anchors) : new Set() };
+  const reviewPaths = [...new Set([...tenetPaths, ...editUncommitted, ...w.git.committed])];
+  return {
+    inv, att, candidate: inv.digest, tenetPaths, includedHuman, editUncommitted, reviewPaths,
+    lockAnchors: anchors.length ? await ports.git.ancestors(anchors) : new Set(),
+  };
 }
 
 /** Edits in protected paths that Tenet made (or declared) and no grant covers. Declaring is cooperative; an unexplained change is not Tenet's to ask about (TS §9.7). */
@@ -114,7 +132,8 @@ export function verdictInput(ports: Ports, st: State, w: WorkContract, facts: Fa
   const i: VerdictInput = {
     profile: w.profile, level: w.level, lane: w.lane,
     authorityAvailable: !isEditingProfile(w.profile) || routineAuthorized(w.grants, ports.clock.now()),
-    implementationExists: commitExists || facts.tenetPaths.some((p) => ports.stack.classify(p) !== "test"),
+    implementationExists: commitExists ||
+      [...facts.tenetPaths, ...(facts.editUncommitted ?? [])].some((p) => ports.stack.classify(p) !== "test"),
     prototypeRequested: w.profile === "prototype",
     behavioralChange: !["refactor", "plan", "investigate"].includes(w.profile) && !recipeOnly && !w.reverting,
     reviewRequired: isEditingProfile(w.profile),

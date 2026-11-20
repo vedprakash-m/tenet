@@ -1,5 +1,5 @@
 // The questions a commit can raise before it runs: who made an unexplained change, and consent to run the commit hooks or Git filters.
-import type { Question } from "../core/schemas.ts";
+import type { Question, WorkContract } from "../core/schemas.ts";
 import type { FilterGate } from "../ports/types.ts";
 import { factsHash, question } from "./common.ts";
 
@@ -45,5 +45,22 @@ export const filterQuestion = (gate: FilterGate): Question =>
     options: [
       { label: "Commit with filters", description: "The filters run as Git would run them; I told you which ones.", recommended: true },
       { label: "Keep the work uncommitted", description: "Nothing is committed; you can commit it yourself." },
+    ],
+  });
+
+export const signingQuestion = (work: WorkContract, hash: string, instanceId: string): Question =>
+  question({
+    id: "signing-consent",
+    header: "Commit signing",
+    bind: { factsHash: hash, instanceId, workId: work.id, sessionGeneration: work.session.generation },
+    question:
+      "Commit signing is configured. Git will run the configured signer when I commit. Allow this signer configuration?",
+    options: [
+      {
+        label: "Commit with signing",
+        description: "Allow only this signer configuration; a change asks again.",
+        recommended: true,
+      },
+      { label: "Keep the work uncommitted", description: "Nothing is committed and signing is not run." },
     ],
   });

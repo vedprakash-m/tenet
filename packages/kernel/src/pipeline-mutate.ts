@@ -6,19 +6,177 @@ import { allowed, matches } from "./core/exclusions.ts";
 import type { Exclusion } from "./core/exclusions.ts";
 import { isEditingProfile, laneFloor, maxLane, raise } from "./core/risk.ts";
 import type { KernelResponse, Reason, State, WorkContract } from "./core/schemas.ts";
-import { inputHash, render, stamp, workByHandle } from "./pipeline-render.ts";
+import { handleOf, inputHash, prepareStamp, publishStamp, render, stamp, workByHandle } from "./pipeline-render.ts";
 import type { Stamped } from "./pipeline-render.ts";
 import type { Job, Plan, Verb } from "./pipeline.ts";
-import type { Ports, Tx } from "./ports/types.ts";
+import type { EvictReport, Ports, Tx } from "./ports/types.ts";
 import { versionGate } from "./pipeline-version.ts";
 import { recover } from "./verbs/recover.ts";
 import type { Recovered } from "./verbs/recover.ts";
 import { configurePolicy, reconcileShared, settingsFor, withRequiredChecks } from "./verbs/reconcile.ts";
 import { capabilitiesState, capabilityIdentity, prepareCapabilities } from "./pipeline-capabilities.ts";
+import { protectedRunPaths } from "./core/storage-protection.ts";
+import { JOB_FINAL_STATE_RESERVE } from "./core/storage-reservation.ts";
 
 type Input = Record<string, any>;
 const EFFECT_DECISIONS = ["scaffold", "dependency", "sync-index", "undo-confirm"];
 const SOURCE_VERBS = ["commit", "integrate", "undo"];
+const CLEANUP_RESPONSE_RESERVE = 2048;
+const RECOVERY_STATE_RESERVE = 1024 * 1024;
+
+function enforceStoreHistory(verb: Verb, input: Input, tx: Tx) {
+  const uncertainRecovery =
+    verb.name === "open" ||
+    (verb.name === "decide" && input.kind === "adopt" && input.target === "reconstruction");
+  if (tx.history === "uncertain" && !uncertainRecovery && verb.name !== "stop") {
+    const why = verb.name === "stop"
+      ? "Local Tenet history is incomplete; no trusted process record was available, so no process was signaled."
+      : "Local Tenet history is incomplete. No cleanup or dependent work was started; the affected project files are preserved.";
+    throw new KernelError("state-history-unknown", why, {
+      exit: 3,
+      next: [{ action: "ask", why: "Run inspect status without changing the affected store.", required: true }],
+    });
+  }
+  if (tx.state?.project.retention?.legacyTemp.pending &&
+      !(uncertainRecovery || verb.name === "stop" || verb.name === "inspect" ||
+        (verb.name === "decide" && input.kind === "repair-lock"))) {
+    throw new KernelError("state-history-unknown",
+      "Local Tenet history remains incomplete. Review the recovery question before dependent work.",
+      { exit: 3 });
+  }
+  const reserveRecovery =
+    (verb.name === "open" && tx.history === "uncertain") ||
+    (verb.name === "decide" && input.kind === "adopt" && input.target === "reconstruction");
+  if (reserveRecovery) tx.allowReserve?.();
+}
+async function allowAdmittedStopReserve(ports: Ports, verb: Verb, input: Input, tx: Tx) {
+  if (verb.name !== "stop" || !input.h || !tx.state) return false;
+  const work = Object.values(tx.state.work).find((candidate) => handleOf(tx.state!, candidate) === input.h);
+  const runDir = work?.session.inCall?.runDir;
+  if (!runDir) return false;
+  const raw = ports.store.readArtifact(runDir, "run.json");
+  if (!raw) return false;
+  let record: unknown;
+  try { record = JSON.parse(raw); } catch { return false; }
+  if (!record || typeof record !== "object") return false;
+  const { pid, procStart } = record as { pid?: unknown; procStart?: unknown };
+  if (!Number.isSafeInteger(pid) || Number(pid) <= 1 || typeof procStart !== "string" || !procStart) return false;
+  if (!await ports.store.alive(Number(pid), procStart)) return false;
+  tx.allowReserve?.();
+  return true;
+}
+async function enforceUncertainStop(ports: Ports, verb: Verb, input: Input, tx: Tx) {
+  const admitted = await allowAdmittedStopReserve(ports, verb, input, tx);
+  if (verb.name === "stop" && tx.history === "uncertain" && !admitted) {
+    throw new KernelError("state-history-unknown",
+      "Local Tenet history is incomplete; no trusted live process record was available, so no process was signaled.",
+      { exit: 3 });
+  }
+}
+function enforceStorage(
+  ports: Ports,
+  verb: Verb,
+  input: Input,
+  tx: Tx,
+  state: State | null,
+  apply = false,
+): EvictReport | undefined {
+  const recovery =
+    (verb.name === "decide" &&
+      (input.kind === "repair-lock" ||
+        (input.kind === "adopt" && input.target === "reconstruction"))) ||
+    (verb.name === "open" &&
+      (tx.history === "uncertain" || !!state?.project.retention?.legacyTemp.pending)) ||
+    (state?.project.retention?.legacyTemp.pending &&
+      ["stop"].includes(verb.name));
+  if (!state || recovery) return undefined;
+  const keep = protectedRunPaths(state, tx.unresolved());
+  const report = tx.evict(keep, apply);
+  if (report.refusal) {
+    if (verb.name === "stop" && tx.reserveAllowed) return report;
+    throw new KernelError(report.refusal.code, report.refusal.message, {
+      exit: 2,
+      effects: {
+        completed: report.message ? [report.message] : [],
+        uncertain: report.uncertain ?? [],
+      },
+    });
+  }
+  if (apply && !report.uncertain?.length) {
+    try {
+      const swept = ports.store.sweepTemp(24 * 3600_000, keep);
+      if (swept) {
+        const message = `Removed ${swept} old run folder(s) past the age limit.`;
+        return { ...report, message: [report.message, message].filter(Boolean).join(" ") };
+      }
+    } catch {
+      throw new KernelError("storage-accounting-unknown",
+        "Age cleanup could not finish safely; dependent work was not published.",
+        {
+          exit: 2,
+          effects: {
+            completed: report.message ? [report.message] : [],
+            uncertain: ["Age cleanup stopped after an incomplete measurement or changed run scope."],
+          },
+        });
+    }
+  }
+  return report;
+}
+function addStorageReport(plan: Plan, report: EvictReport | undefined) {
+  if (!report || (!report.message && !report.uncertain?.length)) return;
+  const had = plan.resp.effects;
+  plan.resp.effects = {
+    completed: [...(had?.completed ?? []), ...(report.message ? [report.message] : [])],
+    uncertain: [...(had?.uncertain ?? []), ...(report.uncertain ?? [])],
+  };
+}
+const stateAfterPlan = (plan: Plan, current: State | null) => plan.state || current;
+function reserveJobFinalState(ports: Ports, plan: Plan) {
+  if (!plan.job || !plan.state) return;
+  const owner = Object.values(plan.state.work).find((work) =>
+    work.session.inCall?.runId === plan.job?.id
+  );
+  if (!owner?.session.inCall) return;
+  plan.state = {
+    ...plan.state,
+    work: {
+      ...plan.state.work,
+      [owner.id]: {
+        ...owner,
+        session: {
+          ...owner.session,
+          inCall: {
+            ...owner.session.inCall,
+            storageReservedBytes: owner.session.inCall.storageReservedBytes ?? JOB_FINAL_STATE_RESERVE,
+            storageBaselineBytes: owner.session.inCall.storageBaselineBytes ?? ports.store.storageBytes(),
+          },
+        },
+      },
+    },
+  };
+}
+function reserveRecovery(tx: Tx, verb: Verb) {
+  if (verb.name !== "stop" &&
+      tx.state && !tx.state.project.retention?.legacyTemp.pending && tx.unresolved().length) {
+    tx.reservePublish?.(tx.state, RECOVERY_STATE_RESERVE);
+  }
+}
+
+/** A public no-commit request is durable even when the finish it accompanies later fails or is fenced. */
+function persistFinishNoCommit(ports: Ports, verb: Verb, input: Input, tx: Tx) {
+  if (verb.name !== "finish" || input.noCommit !== true || !input.h || !tx.state) return;
+  let work: WorkContract;
+  try { work = workByHandle(tx.state, input.h); } catch { return; }
+  if (work.git.noCommit === true) return;
+  const next: WorkContract = {
+    ...work,
+    git: { ...work.git, noCommit: true },
+    updatedAt: ports.clock.now(),
+  };
+  tx.publish({ ...tx.state, work: { ...tx.state.work, [next.id]: next } });
+  tx.flush?.();
+}
 
 /** The contract that owns a prepared job, as the first transaction recorded it. */
 const ownerOf = (state: State | undefined, jobId: string) =>
@@ -161,11 +319,19 @@ function addRecovery(plan: Plan, reasons: Reason[], recovered: Recovered | null)
 
 /** Everything that happens inside the first lock: recovery, envelope, the verb's own plan, and publishing its state. */
 async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: { world: unknown; startedAt: string }): Promise<Stamped> {
+  persistFinishNoCommit(ports, verb, input, tx);
+  enforceStoreHistory(verb, input, tx);
+  await enforceUncertainStop(ports, verb, input, tx);
+  reserveRecovery(tx, verb);
   if (verb.name !== "stop") configurePolicy(ports, tx.state);
-  const recovered = tx.state ? await recover(ports, tx, tx.state, { effects: verb.name !== "stop" }) : null;
+  const recoveryPending = !!tx.state?.project.retention?.legacyTemp.pending;
+  const recovered = tx.state && !recoveryPending
+    ? await recover(ports, tx, tx.state, { effects: verb.name !== "stop" })
+    : null;
   let current = recovered?.state ?? tx.state;
   if (current && recovered?.uncertain.length && verb.name !== "stop")
     return fencedByUncertainty(ports, verb, tx, current, recovered);
+  enforceStorage(ports, verb, input, tx, current);
   const shared = current && !["open", "stop"].includes(verb.name) ? reconcileShared(ports, current) : null;
   if (shared) current = shared.state;
   if (verb.name !== "stop") {
@@ -185,11 +351,25 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
   addRecovery(plan, shared?.reasons ?? [], recovered);
   if (!plan.state && current !== tx.state) plan.state = current ?? undefined;
   plan.state = capabilitiesState(ports, plan.state, verb.name);
-  if (!plan.state) return { res: render(ports, verb.name, plan.resp, tx.state), plan };
+  if (!plan.state) {
+    addStorageReport(plan, enforceStorage(ports, verb, input, tx, current, true));
+    return { res: render(ports, verb.name, plan.resp, tx.state), plan };
+  }
+  reserveJobFinalState(ports, plan);
+  const final = !plan.job;
+  const draft = prepareStamp(ports, verb, input, held.world, tx, plan.state, plan.resp, final, held.startedAt);
+  tx.reservePublish?.(draft.next, draft.callBytes + CLEANUP_RESPONSE_RESERVE);
+  addStorageReport(plan, enforceStorage(ports, verb, input, tx, stateAfterPlan(plan, current), true));
   const prepared = plan.job && ownerOf(plan.state, plan.job.id)?.session.inCall;
   if (prepared?.runDir) ports.store.writeArtifact(prepared.runDir, "run.json", JSON.stringify({ prepared: true }));
   // A job's provisional response is never returned: only the finalized one leaves the process.
-  return { res: stamp(ports, verb, input, held.world, tx, plan.state, plan.resp, !plan.job, held.startedAt), plan };
+  return {
+    res: publishStamp(
+      tx,
+      prepareStamp(ports, verb, input, held.world, tx, plan.state, plan.resp, final, held.startedAt),
+    ),
+    plan,
+  };
 }
 
 /** A job still wanted: the contract exists at the same generation, runs this job, and was not cancelled. */

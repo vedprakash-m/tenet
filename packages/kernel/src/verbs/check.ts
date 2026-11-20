@@ -21,7 +21,9 @@ import { execute } from "./check-execute.ts";
 import { outputsProblem } from "./check-outputs.ts";
 import { nx, withWork, workOf } from "./common.ts";
 import { toolchainOf } from "./check-rerun.ts";
-import { dirtyQuestion, leftOutChanged, settleCleaned, undecidedDirty } from "./dirty.ts";
+import {
+  dirtyQuestion, leftOutChanged, observeDirtyTransitions, settleCleaned, undecidedDirty,
+} from "./dirty.ts";
 import { modelQuestion, needsModelAnswer } from "./model-limit.ts";
 import { checkInputId, gather, unauthorizedEdits, worldDigest } from "./facts.ts";
 import { boundRecipeCoverage } from "../core/alternative-check.ts";
@@ -86,7 +88,11 @@ function admit(ports: Ports, cur: State, w: WorkContract, input: CheckInput, inp
     refuse("capability-missing", "a supported installed test runner is required; no check was launched");
   }
   // Finished work can still be rechecked on the integrated tree; nothing else reopens it.
-  if (["finished", "cancelled", "superseded"].includes(w.state) && !(w.state === "finished" && input.stage === "integrated"))
+  if (
+    ["finished", "cancelled", "superseded"].includes(w.state) &&
+    !(w.state === "finished" &&
+      (input.stage === "integrated" || (w.git.noCommit && input.stage === "candidate")))
+  )
     refuse("stale-session", `this work is ${w.state}`);
   if (input.stage === "candidate" && !input.targeted && (!attemptsLeft(w.budget, w.lane) || w.stopReason)) {
     throw new KernelError(
@@ -172,19 +178,20 @@ export const check: Verb<CheckInput> = {
 
     const declared = declare(w0, input);
     let facts = await gather(ports, declared);
-    const w = settleCleaned(declared, new Set(facts.att.changed));
+    const settled = settleCleaned(declared, new Set(facts.att.changed));
+    const w = observeDirtyTransitions(settled, facts.inv, input.touched ?? [], ports.clock.now());
     if (w !== declared) facts = await gather(ports, w);
     const leftOut = leftOutChanged(w, (p) => facts.inv.entries.get(p)?.blob);
     if (leftOut.length) {
       const why = `${leftOut.join(", ")} changed, but the user asked to leave it out; restore it or ask the user`;
       throw new KernelError("attribution-mixed-file", why, { exit: 2 });
     }
-    const undecided = undecidedDirty(w);
+    const undecided = undecidedDirty(w, facts.inv);
     if (undecided.length)
       return ask(
         cur,
         w,
-        dirtyQuestion(undecided),
+        dirtyQuestion(w, facts.inv, ports.rand.base32(12), undecided),
         [reason("attribution-mixed-file", undecided.join(", "))],
         "Ask the user what happens to their edits."
       );

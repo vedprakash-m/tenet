@@ -9,7 +9,11 @@ export function snapshotOf(inv: Inventory): StartSnapshot {
   return {
     head: inv.head, branch: inv.branch,
     staged: inv.status.filter((s) => s.staged).map((s) => ({ path: s.path, mode: s.mode, blob: s.indexBlob })),
-    dirty: inv.status.map((s) => ({ path: s.path, status: s.xy, mode: s.mode, blob: s.blob })),
+    dirty: inv.status.map((s) => ({
+      path: s.path, status: s.xy, mode: s.mode, blob: s.blob,
+      indexMode: s.indexMode ?? (s.untracked ? "" : s.mode),
+      indexBlob: s.indexBlob,
+    })),
   };
 }
 

@@ -396,9 +396,13 @@ If the fix truly needs a shortcut, one chat question at the end asks to accept i
 
    > loans/service.ts has your uncommitted edits, and I need to change it too.
    > 1. Wait while you commit or set aside your edits yourself, then say "continue" (recommended: keeps your work and mine separate)
-   > 2. Include your edits in this work (they'll be committed together)
+   > 2. Include your edits in this work. I will commit this file only alongside my change to the same file after your explicit approval.
    > 3. Leave that file out (the change may be incomplete)
    > (Say "don't commit" instead, at any point, to have me edit alongside your changes without committing either set.)
+
+Tenet may draft the command for option 1, but never stages or commits a
+human-only file set. If the file contains no Tenet-authored change, option 2
+is unavailable and option 1 or 3 is the safe next step.
 
 3. Preservation tests capture current behavior ("current invoice totals are captured in 4 tests"), then the kickoff and build.
 4. **Pre-existing failures** get an honest line: "Fails before and after my change: dates.test.ts (pre-existing, excluded)", or "Couldn't tell (your starting edits changed since)".
@@ -446,7 +450,7 @@ A basis change after checks passed says exactly what is out of date ("the review
 - **Integrate:** Tenet predicts conflicts before anything moves; the integration question itself says "this switches your editor to main". On "integrate" it merges, rechecks the combined result when main moved, and reports where the work now is. Branch cleanup is an offer, never a prompt.
 - **PR brief:** problem and outcome, important choices, validation, compatibility or data effects, open findings and limits; no chat transcript, private intent or credentials. **Pushing or opening a PR is the user's step in R1.** Tenet runs no remote Git command (cut by owner blanket direction 2026-11-03, per decision-packet decision 9B; Tech Spec §10.6), so the brief is shown in chat and the reply says so: "Tenet doesn't push or open pull requests. Copy this brief into your PR." A PR is not a deployment; remote merges stay with the user.
 - **Undo** follows §7.2: a preview of the inverse against current state, naming later edits it would touch and saying databases and external effects are not undone, then confirm, apply, check and report. An overlap stops with the conflict shown; there is no partial undo.
-- **"Don't commit"** (UX-D4) is honored for the task: the headline says uncommitted, undo is limited to the diff and editor checkpoints, and "commit it" commits later.
+- **"Don't commit"** (UX-D4) is honored for the task: the headline says uncommitted, undo is limited to the diff and editor checkpoints, and a later explicit "commit it" makes one commit only. That one-off commit does not enable later automatic commits, and the task remains no-commit across restart/recovery. A fresh `finish` after restart stays uncommitted. A signing-consent decline has the same no-commit consequence.
 
 ### J-07 Update or leave
 
@@ -611,6 +615,11 @@ All use the Recovery report (§5.4): name the file, command or policy, never "an
 | Shared policy changed (`policy-change-needs-acceptance`) | "A pulled change loosens protected_paths in tenet.policy.json." | Accept the change · keep the previous rules (tightening alone applies with a one-line note) |
 | Intent markers damaged (`intent-markers-invalid`) | "INTENT.md has an unbalanced tenet:begin/end marker around REQ-012-q7k at line 41, so I can't tell what's mine to update." | Show the exact lines · restore the marker boundary (previewed) · treat the section as the user's own text from here |
 | Local records missing (CON-07) | "Tenet's local records aren't here (fresh clone or deleted). I recovered the plan, requirements and 6 locked test paths from the repository; no old approvals or results are assumed." | Review and re-adopt · start fresh |
+| Local history incomplete (`state-history-unknown`) | "Local Tenet history is incomplete. No cleanup or dependent work was started; the affected project files are preserved." | Review the recovered records · only inspect · stop an admitted live process |
+| Storage cannot be measured (`storage-accounting-unknown`) | "Tenet could not measure storage safely. No ordinary change was made; inspect or recover the affected path." | Inspect status · repair the admitted evidence |
+| Recovery reserve full (`storage-reserve-full`) | "This change would consume Tenet's recovery reserve. No ordinary change was made; stop existing work or inspect residue before trying again." | Stop admitted work · inspect residue |
+| Protected project storage full (`storage-protected-full`) | "Tenet's protected and recovery storage reached its 50 MB ceiling. No write was made; preserve current data and reduce eligible storage before trying again." | Stop admitted work · inspect residue |
+| Protected run files full (`storage-run-cap-full`) | "Protected project run files use the full 200 MB budget. No ordinary change was made; stop existing work or explicitly recover retained files before trying again." | Stop admitted work · inspect residue · recover retained files |
 | Copied or untrusted `.tenet/` | "I found Tenet records I didn't create; I've set them aside and started fresh." | Review them · keep the fresh start |
 | Damaged records | "My records were damaged; I restored the previous version. Permissions are suspended until needed." | Each permission is asked again only for a concrete action |
 | Index left alone (`index-sync-needed`) | "Committed. Another tool was using Git's index, so I left it alone: 3 files still show their old version as staged." | "sync my index" (rechecks first) |
@@ -776,7 +785,13 @@ Product use never implies research consent, and raw recordings are never publish
 | A12 | `Result`'s `integration` field and next-action line read the `integration` setting (`offer` / `auto-on-accept` / `never`, GIT-11) so the result never asks a question "accept" can't answer, and a silent branch switch never follows acceptance | TS §8.3, TS §10.4 | Adopted in v1.0 |
 | A13 | Rejected: do not classify a boundary or negative case as `origin: request` unless the user's own words state it. The kernel does not interpret the sketch (§8.7); a "direct logical complement" classifier would be exactly that interpretation, and is how a seeded misreading would ship silently. The one-word "ok" stop (UX-D1) is the mitigation, not a gap to close — see §14.1 and §5.1 | — | Rejected |
 
-Not adopted, to keep complexity down: committing the user's own dirty edits as a separate commit on their behalf (PRD Section 5.12 permits it, but it needs a new commit path; "wait while you commit" covers it); an auto-integrate offer after repeated integrations (integrating in one word already removes the turn).
+Rejected by option A/P47: Tenet never stages or commits a human-only file set
+on the user's behalf. The person commits or sets aside their own edits outside
+Tenet; "wait while you commit" covers that route. Included overlap is eligible
+only when the same file also contains a Tenet-authored change, with explicit
+authorization. Also not adopted, to keep complexity down: an auto-integrate
+offer after repeated integrations (integrating in one word already removes the
+turn).
 
 ---
 

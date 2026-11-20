@@ -13,6 +13,10 @@ const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 const fresh = (files?: Record<string, string>): Project => { const p = project(files); roots.push(p.root); return p; };
 const d = (r: { data?: unknown }) => r.data as Record<string, any>;
+const dirtyAnswer = (q: NonNullable<Awaited<ReturnType<Project["call"]>>["questions"]>[number], choice: string) => ({
+  instanceId: q.bind.instanceId,
+  items: Object.fromEntries((q.bind.items ?? []).map((item) => [item.token, choice])),
+});
 
 describe("check observation helpers", () => {
   it("awaits an asynchronous observation instead of treating its promise as a ready condition", async () => {
@@ -544,7 +548,10 @@ describe("injected failure 1: a human's edits on the files Tenet needs", () => {
     assert.equal(blocked.exit, 0, "the basis itself does not edit anything");
     const stopped = await p.call("check", { h, stage: "baseline" });
     assert.equal(stopped.exit, 3, "checks wait for the answer");
-    const a = await p.call("decide", { h, kind: "dirty-overlap", answers: { "dirty-overlap": "include" } });
+    const a = await p.call("decide", {
+      h, kind: "dirty-overlap",
+      answers: { "dirty-overlap": dirtyAnswer(o.questions![0]!, "include") },
+    });
     assert.equal(a.exit, 0, JSON.stringify(a));
 
     p.write("src/greet.test.ts", GREET_TEST);
@@ -564,7 +571,10 @@ describe("injected failure 1: a human's edits on the files Tenet needs", () => {
     assert.equal(o.questions![0]!.id, "dirty-overlap");
     const h = o.handle!;
     await p.call("decide", { h, kind: "basis", propose: BASIS });
-    const waited = await p.call("decide", { h, kind: "dirty-overlap", answers: { "dirty-overlap": "wait" } });
+    const waited = await p.call("decide", {
+      h, kind: "dirty-overlap",
+      answers: { "dirty-overlap": dirtyAnswer(o.questions![0]!, "wait") },
+    });
     assert.equal(waited.exit, 0, JSON.stringify(waited));
     p.git("add", "src/greet.ts");
     p.git("commit", "-qm", "my own work");
@@ -587,7 +597,10 @@ describe("injected failure 1: a human's edits on the files Tenet needs", () => {
     const o = await p.call("open", { profile: "feature", request: "greeting", scopePaths: ["src/greet.ts", "src/note.ts"], lane: "standard" });
     assert.equal(o.questions![0]!.id, "dirty-overlap");
     const h = o.handle!;
-    const left = await p.call("decide", { h, kind: "dirty-overlap", answers: { "dirty-overlap": "leave-out" } });
+    const left = await p.call("decide", {
+      h, kind: "dirty-overlap",
+      answers: { "dirty-overlap": dirtyAnswer(o.questions![0]!, "leave-out") },
+    });
     assert.equal(left.exit, 0, JSON.stringify(left));
     await p.call("decide", { h, kind: "basis", propose: BASIS });
     p.write("src/greet.test.ts", GREET_TEST);

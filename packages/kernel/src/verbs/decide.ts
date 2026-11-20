@@ -4,6 +4,7 @@ import { DecideInput } from "../core/schemas.ts";
 import { DECISIONS } from "../decisions/index.ts";
 import type { Verb } from "../pipeline.ts";
 import { workOf } from "./common.ts";
+import { reviewUncertainReconstruction } from "../decisions/uncertain-reconstruction.ts";
 
 export const decide: Verb<DecideInput> = {
   name: "decide",
@@ -17,6 +18,9 @@ export const decide: Verb<DecideInput> = {
     const kind = Object.hasOwn(DECISIONS, input.kind) && DECISIONS[input.kind];
     if (!kind) {
       throw new KernelError("restriction-key-unknown", `no decision kind "${input.kind}"; known: ${Object.keys(DECISIONS).join(", ")}`, { exit: 1 });
+    }
+    if (!input.h && input.kind === "adopt" && input.target === "reconstruction") {
+      return reviewUncertainReconstruction(ports, state!, input);
     }
     const work = workOf(state, input.h);
     return kind.run({ ports, tx: tx!, state: state!, work, input });

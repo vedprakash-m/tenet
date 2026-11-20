@@ -3,12 +3,11 @@
 import { accessSync, chmodSync, closeSync, constants, existsSync, fchmodSync, fstatSync, fsyncSync, ftruncateSync, readdirSync, linkSync, lstatSync, mkdirSync, openSync, renameSync, rmSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { isAbsolute, join, relative, sep } from "node:path";
-import { z } from "zod";
+import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
 import type { Random } from "../core/ids.ts";
-import { SCHEMA_VERSION, State } from "../core/schemas.ts";
+import { LEGACY_SCHEMA_VERSIONS, parseStateRecord, SCHEMA_VERSION, State } from "../core/schemas.ts";
 import { accountingCheckpoint, recoverAccounting } from "../core/budget.ts";
 import { addMonths, reduceJournal } from "../core/journal-reduce.ts";
 import type { Months } from "../core/journal-reduce.ts";
@@ -18,44 +17,30 @@ import type { Clock, EvictReport, Footprint, LogEntry, Quarantined, Store, Tx } 
 import { isAlive, procStart } from "./proc.ts";
 import { admissionRecord, MAX_RECORD, parseRecord, readJson, readRecord, readTerminal } from "./private-record-fs.ts";
 import { quarantine, QUARANTINE_JOURNAL } from "./quarantine-fs.ts";
+import { CompactionPending, parsePrivate, readJournal, SummaryRecord } from "./store-records.ts";
+import type { CompactionPendingRecord } from "./store-records.ts";
 
 interface Marker { workspaceId: string; tag: string; nonce: string; schema: number; dev: number; ino: number }
 interface LockInfo { pid: number; procStart: string; nonce: string; verb: string }
-interface WriteContext { lock: LockInfo; active: boolean }
+type StagedWrite =
+  | { kind: "state"; value: State }
+  | { kind: "log"; value: LogEntry }
+  | { kind: "blob"; hash: string; content: string }
+  | { kind: "directory"; path: string }
+  | { kind: "artifact"; path: string; content: string }
+  | { kind: "purge"; paths: string[] };
+interface WriteContext {
+  lock: LockInfo;
+  active: boolean;
+  creationIdentity?: string;
+  reserveAllowed?: boolean;
+  committing?: boolean;
+  transactional?: boolean;
+  staged: StagedWrite[];
+}
 interface Journal { text: string; entries: LogEntry[]; keep: number }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const LogBase = z.object({ t: z.string().min(1) });
-const LogRecord = z.discriminatedUnion("kind", [
-  LogBase.extend({ kind: z.literal("intent"), effect: z.string().min(1), id: z.string().min(1), op: z.unknown() }).passthrough(),
-  LogBase.extend({ kind: z.literal("result"), effect: z.string().min(1), id: z.string().min(1), outcome: z.unknown() }).passthrough(),
-  LogBase.extend({ kind: z.literal("call"), verb: z.string().min(1), exit: z.number().int().min(0).max(5),
-    revision: z.number().int().nonnegative() }).passthrough(),
-  LogBase.extend({ kind: z.literal("accounting") }).passthrough(),
-]);
-
-function readJournal(text: string): { entries: LogEntry[]; keep: number } {
-  const lines = text.split("\n"), entries: LogEntry[] = [];
-  let keep = 0;
-  for (let index = 0; index < lines.length - 1; index++) {
-    const line = lines[index]!;
-    if (!line) { keep++; continue; }
-    let record: unknown;
-    try { record = parseRecord(line); }
-    catch (error) {
-      if (error instanceof SyntaxError && index === lines.length - 2) return { entries, keep };
-      throw new KernelError("unsupported-record", "the journal contains a corrupt complete record");
-    }
-    const parsed = LogRecord.safeParse(record);
-    if (!parsed.success || (parsed.data.kind === "intent" && !Object.hasOwn(record!, "op")) ||
-      (parsed.data.kind === "result" && !Object.hasOwn(record!, "outcome"))) {
-      throw new KernelError("unsupported-record", "the journal contains an unsupported record");
-    }
-    entries.push(parsed.data);
-    keep += line.length + 1;
-  }
-  return { entries, keep };
-}
 
 function fsyncDir(dir: string) {
   const fd = openSync(dir, "r");
@@ -129,13 +114,25 @@ export class FsStore implements Store {
   }
 
   exists(): boolean { return existsSync(this.p("marker")); }
+  history(): "absent" | "complete" | "uncertain" {
+    this.admit();
+    if (!this.exists()) return "absent";
+    return this.read() && existsSync(this.p("log")) ? "complete" : "uncertain";
+  }
+  storageBytes(): number {
+    const measured = this.measure(this.dir);
+    if (measured.accounting !== "known") {
+      throw new KernelError("storage-accounting-unknown", "Tenet storage cannot be measured safely");
+    }
+    return measured.bytes;
+  }
 
   admit(): void {
     const marker = admissionRecord(this.p("marker"), true) as Marker | null;
     const here = lstatSync(this.dir, { throwIfNoEntry: false });
     if (!marker || !here || marker.dev !== here.dev || marker.ino !== here.ino) return;
     const blocked = () => { throw new KernelError("unsupported-record", "owned state needs a compatible kernel; nothing was changed"); };
-    if (marker.schema !== SCHEMA_VERSION) blocked();
+    if (!(LEGACY_SCHEMA_VERSIONS as readonly number[]).includes(marker.schema) && marker.schema !== SCHEMA_VERSION) blocked();
     for (const name of ["migration-transition.json", "migration-privacy.json"]) {
       if (lstatSync(this.p(name), { throwIfNoEntry: false })) blocked();
     }
@@ -145,7 +142,11 @@ export class FsStore implements Store {
       const id = this.fileId(name, true);
       if (id && this.admitted.get(name) === id) continue;
       const record = admissionRecord(this.p(name));
-      if (record !== null && schemaStatus(record, SCHEMA_VERSION) !== "supported") blocked();
+      const schema = record && typeof record === "object" && "schema" in record
+        ? (record as { schema: unknown }).schema
+        : undefined;
+      if (record !== null && schemaStatus(record, SCHEMA_VERSION) !== "supported" &&
+        !(LEGACY_SCHEMA_VERSIONS as readonly number[]).includes(schema as number)) blocked();
       if (id) this.admitted.set(name, id); else this.admitted.delete(name);
       if (id && record !== null) this.parsed.set(name, { id, value: record }); else this.parsed.delete(name);
     }
@@ -188,7 +189,7 @@ export class FsStore implements Store {
         if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
         throw new KernelError("kernel-busy", "a direct writer needs the exclusive transaction lock");
       }
-      const context = { lock: me, active: true };
+      const context = { lock: me, active: true, staged: [] as StagedWrite[], transactional: false };
       try { return this.writes.run(context, () => this.inWrite(context, fn)); }
       finally { context.active = false; this.release(me); }
     } finally { rmSync(tmp, { force: true }); }
@@ -209,7 +210,8 @@ export class FsStore implements Store {
 
   private marker(): Marker | null {
     const m = readJson<Marker>(this.p("marker"));
-    if (!m || !/^ws_[a-z2-7]{10}$/.test(m.workspaceId) || !/^[a-z0-9]{4}$/.test(m.tag) || m.schema !== SCHEMA_VERSION || !m.nonce) {
+    if (!m || !/^ws_[a-z2-7]{10}$/.test(m.workspaceId) || !/^[a-z0-9]{4}$/.test(m.tag) ||
+      (!(LEGACY_SCHEMA_VERSIONS as readonly number[]).includes(m.schema) && m.schema !== SCHEMA_VERSION) || !m.nonce) {
       throw new KernelError("marker-mismatch", "the ownership marker is invalid");
     }
     const st = statSync(this.dir);
@@ -226,7 +228,7 @@ export class FsStore implements Store {
     this.marker();
     for (const [file, recovered] of [["state", false], ["state.prev", true]] as const) {
       const raw = this.takeParsed(file) ?? readJson<unknown>(this.p(file));
-      const parsed = raw ? State.safeParse(raw) : null;
+      const parsed = raw ? parseStateRecord(raw) : null;
       if (parsed?.success) {
         const m = this.marker()!;
         if (parsed.data.workspaceId !== m.workspaceId || parsed.data.tag !== m.tag) {
@@ -357,34 +359,64 @@ export class FsStore implements Store {
 
   // ------------------------------------------------------------ transaction
   async transaction<T>(verb: string, fn: (tx: Tx) => Promise<T>): Promise<T> {
+    const directoryExisted = !!lstatSync(this.p("."), { throwIfNoEntry: false });
+    const existed = this.exists();
     const me = await this.acquire(verb);
-    const context: WriteContext = { lock: me, active: true };
+    const context: WriteContext = { lock: me, active: true, staged: [], transactional: true };
     try {
       this.admit();
-      chmodSync(this.dir, 0o700);
-      for (const name of ["marker", "state", "state.prev", "log"]) {
-        if (existsSync(this.p(name))) chmodSync(this.p(name), 0o600);
-      }
-      if (!existsSync(this.p(".gitignore"))) writeFileSync(this.p(".gitignore"), "*\n");
-      this.repairLogTail();
       const read = this.exists() ? this.read() : null;
+      const priorScope = existed ? null : this.retentionScope();
+      const history = read && existsSync(this.p("log")) ? "complete"
+        : existed || directoryExisted || priorScope?.exists ? "uncertain"
+        : "newly-created";
+      if (history !== "uncertain") {
+        chmodSync(this.dir, 0o700);
+        for (const name of ["marker", "state", "state.prev", "log"]) {
+          if (existsSync(this.p(name))) chmodSync(this.p(name), 0o600);
+        }
+        if (!existsSync(this.p(".gitignore"))) writeFileSync(this.p(".gitignore"), "*\n");
+        this.repairLogTail();
+      }
       if (this.quarantined && read?.state.quarantine?.nonce === this.quarantined.nonce) this.finishQuarantine();
       const store = this;
       let published = read?.state ?? null;
       const tx: Tx = {
         get state() { return published; },
         recovered: read?.recovered ?? false,
+        history,
         ...(this.quarantined ? { quarantined: this.quarantined } : {}),
-        ensure: () => store.inWrite(context, () => store.ensureMarker()),
-        publish: (next) => store.inWrite(context, () => { published = store.publishState(next); }),
-        call: (entry) => store.inWrite(context, () => store.append({ kind: "call", ...entry })),
-        intent: (effect, id, op) => store.inWrite(context, () => store.append({ kind: "intent", effect, id, op })),
-        result: (effect, id, outcome) => store.inWrite(context, () => store.append({ kind: "result", effect, id, outcome })),
-        unresolved: () => store.unresolved(),
-        evict: (keep) => store.inWrite(context, () => store.evict(keep)),
-        recent: (n) => { const log = store.readLog(); return n === undefined ? log : log.slice(-n); },
+        allowReserve: () => { context.reserveAllowed = true; },
+        get reserveAllowed() { return context.reserveAllowed ?? false; },
+        ensure: () => store.inWrite(context, () => {
+          const marker = store.ensureMarker();
+          if (history === "newly-created") store.ensureCreationRoot(context);
+          return marker;
+        }),
+        publish: (next) => store.inWrite(context, () => {
+          const staged = State.parse({ ...next, revision: (published?.revision ?? 0) + 1 });
+          context.staged.push({ kind: "state", value: staged });
+          published = staged;
+        }),
+        reservePublish: (next, reservedJournalBytes = 0) => store.inWrite(context, () => {
+          store.assertStagedGrowth(context, next, reservedJournalBytes);
+        }),
+        flush: () => store.commitStaged(context),
+        call: (entry) => store.stageLog(context, { kind: "call", ...entry }),
+        intent: (effect, id, op) => store.stageLog(context, { kind: "intent", effect, id, op }),
+        result: (effect, id, outcome) => store.stageLog(context, { kind: "result", effect, id, outcome }),
+        unresolved: () => store.unresolved(context),
+        evict: (keep, apply = true) => store.inWrite(context, () => store.evictInLock(keep, apply)),
+        recent: (n) => {
+          const log = store.recentWithStaged(context);
+          return n === undefined ? log : log.slice(-n);
+        },
       };
-      return await this.writes.run(context, () => fn(tx));
+      return await this.writes.run(context, async () => {
+        const result = await fn(tx);
+        this.commitStaged(context);
+        return result;
+      });
     } finally {
       context.active = false;
       this.release(me);
@@ -402,17 +434,51 @@ export class FsStore implements Store {
     fsyncDir(this.dir);
     return m;
   }
+  private ensureCreationRoot(context: WriteContext) {
+    if (context.creationIdentity) return;
+    const scope = this.retentionScope();
+    if (scope.exists) {
+      throw new KernelError("state-history-unknown", "the project temp root existed before first-state creation");
+    }
+    mkdirSync(scope.path, { mode: 0o700 });
+    fsyncDir(tmpdir());
+    const created = this.retentionScope();
+    if (!created.exists || created.identity === "absent") {
+      throw new KernelError("state-history-unknown", "the project temp root could not be durably identified");
+    }
+    context.creationIdentity = created.identity;
+  }
 
-  private publishState(next: State) {
-    // One full read: the state file's identity (without ctime, which linking state.prev changes) shows whether
-    // another writer replaced or edited it since; only then is it read again for the revision-conflict check.
-    const seen = this.fileId("state");
+  private statePublication(next: State, reservedJournalBytes: number) {
+    const context = this.writes.getStore();
+    if (context?.creationIdentity) {
+      const scope = this.retentionScope();
+      if (context.creationIdentity !== scope.identity) {
+        throw new KernelError("state-history-unknown", "the project temp root changed during first-state publication");
+      }
+    }
     const before = this.exists() ? this.read() : null;
     const current = before?.state;
     const doc = State.parse({ ...next, revision: (current?.revision ?? 0) + 1 });
-    if (doc.workSeq || doc.generationSeq) this.append(accountingCheckpoint(doc, current));
+    const serialized = JSON.stringify(doc);
+    const checkpoint = doc.workSeq || doc.generationSeq ? accountingCheckpoint(doc, current) : null;
+    const checkpointBytes = checkpoint
+      ? Buffer.byteLength(JSON.stringify({ t: this.clock.now(), ...checkpoint }), "utf8")
+      : 0;
+    this.assertStoreGrowth(
+      Buffer.byteLength(serialized, "utf8") + checkpointBytes + reservedJournalBytes,
+      context?.reserveAllowed ?? false,
+    );
+    return { before, current, doc, serialized, checkpoint };
+  }
+
+  private publishState(next: State, reservedJournalBytes = 0) {
+    const { before, current, doc, serialized, checkpoint } =
+      this.statePublication(next, reservedJournalBytes);
+    const seen = this.fileId("state");
+    if (checkpoint) this.append(checkpoint);
     const tmp = this.p("state.tmp");
-    writeSynced(tmp, JSON.stringify(doc));
+    writeSynced(tmp, serialized);
     if (existsSync(this.p("state"))) {
       rmSync(this.p("state.prev.tmp"), { force: true });
       linkSync(this.p(before?.recovered ? "state.prev" : "state"), this.p("state.prev.tmp"));
@@ -422,8 +488,15 @@ export class FsStore implements Store {
     if (moved && (this.read()?.state.revision ?? 0) !== (current?.revision ?? 0)) throw new KernelError("revision-conflict");
     renameSync(tmp, this.p("state"));
     fsyncDir(this.dir);
-    // Both files were admitted before this write: state is the document just validated, state.prev a link to one
-    // admitted earlier in this transaction. Record them so the next admission does not parse them again.
+    const creationIdentity = this.writes.getStore()?.creationIdentity;
+    if (creationIdentity && this.retentionScope().identity !== creationIdentity) {
+      throw new KernelError("state-history-unknown",
+        "the project temp root changed during state publication; a restart remains uncertain");
+    }
+    const marker = this.marker();
+    if (marker && (LEGACY_SCHEMA_VERSIONS as readonly number[]).includes(marker.schema)) {
+      this.replaceSynced(this.p("marker"), JSON.stringify({ ...marker, schema: SCHEMA_VERSION }));
+    }
     for (const name of ["state", "state.prev"]) {
       const id = this.fileId(name, true);
       if (id) this.admitted.set(name, id);
@@ -447,6 +520,7 @@ export class FsStore implements Store {
     this.admit();
     const serialized = `${JSON.stringify({ t: this.clock.now(), ...entry })}\n`;
     const bytes = Buffer.byteLength(serialized, "utf8");
+    this.assertStoreGrowth(bytes, this.writes.getStore()?.reserveAllowed ?? false);
     if (bytes > MAX_RECORD) throw new KernelError("unsupported-record", "a journal entry exceeds the 50 MB record bound");
     readJournal(serialized);
     const flags = constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW | constants.O_NONBLOCK;
@@ -480,13 +554,119 @@ export class FsStore implements Store {
     return read;
   }
 
-  private unresolved() {
+  private unresolved(context = this.writes.getStore()) {
     const read = this.journal(), log = read.entries;
-    const done = new Set(log.filter((e) => e.kind === "result").map((e) => JSON.stringify([e.effect, e.id])));
-    const open = log.filter((e) => e.kind === "intent" && !done.has(JSON.stringify([e.effect, e.id])))
+    const staged = (context?.staged ?? [])
+      .flatMap((entry) => entry.kind === "log" ? [entry.value] : []);
+    const complete = [...log, ...staged];
+    const done = new Set(complete.filter((e) => e.kind === "result").map((e) => JSON.stringify([e.effect, e.id])));
+    const open = complete.filter((e) => e.kind === "intent" && !done.has(JSON.stringify([e.effect, e.id])))
       .map((e) => ({ effect: e.effect!, id: e.id!, op: e.op }));
     if (!open.length) this.unseenJournal = read; // no record of this parse was handed out
     return open;
+  }
+  private stageLog(context: WriteContext, entry: Omit<LogEntry, "t"> & { kind: LogEntry["kind"] }) {
+    this.inWrite(context, () => {
+      const serialized: LogEntry = { t: this.clock.now(), ...entry };
+      readJournal(JSON.stringify(serialized) + "\n");
+      context.staged.push({ kind: "log", value: serialized });
+    });
+  }
+  private recentWithStaged(context: WriteContext): LogEntry[] {
+    const disk = this.readLog();
+    return [
+      ...disk,
+      ...context.staged.flatMap((entry) => entry.kind === "log" ? [entry.value] : []),
+    ];
+  }
+  private assertStagedGrowth(
+    context: WriteContext,
+    prospectiveState?: State,
+    reservedJournalBytes = 0,
+  ) {
+    let logBytes = reservedJournalBytes;
+    let stateBytes = 0;
+    let blobBytes = 0;
+    let checkpointBytes = 0;
+    let priorState = this.read()?.state;
+    let prospectiveStateValue = prospectiveState ?? priorState;
+    for (const entry of context.staged) {
+      if (entry.kind === "log") logBytes += Buffer.byteLength(JSON.stringify(entry.value), "utf8") + 1;
+      if (entry.kind === "blob") blobBytes += Buffer.byteLength(entry.content, "utf8");
+      if (entry.kind === "state") {
+        stateBytes = Math.max(stateBytes, Buffer.byteLength(JSON.stringify(entry.value), "utf8"));
+        const checkpoint = entry.value.workSeq || entry.value.generationSeq
+          ? accountingCheckpoint(entry.value, priorState)
+          : null;
+        if (checkpoint) {
+          checkpointBytes += Buffer.byteLength(
+            JSON.stringify({ t: this.clock.now(), ...checkpoint }),
+            "utf8",
+          );
+        }
+        priorState = entry.value;
+        prospectiveStateValue = entry.value;
+      }
+    }
+    if (prospectiveState) {
+      stateBytes = Math.max(stateBytes, Buffer.byteLength(JSON.stringify(prospectiveState), "utf8"));
+      const checkpoint = prospectiveState.workSeq || prospectiveState.generationSeq
+        ? accountingCheckpoint(prospectiveState, priorState)
+        : null;
+      if (checkpoint) {
+        checkpointBytes += Buffer.byteLength(
+          JSON.stringify({ t: this.clock.now(), ...checkpoint }),
+          "utf8",
+        );
+      }
+      prospectiveStateValue = prospectiveState;
+    }
+    const currentReserved = this.reservedStorage(this.read()?.state);
+    const prospectiveReserved = this.reservedStorage(prospectiveStateValue);
+    const stagedBytes = logBytes + blobBytes + stateBytes + checkpointBytes;
+    const previous = this.read()?.state;
+    for (const work of Object.values(previous?.work ?? {})) {
+      const inCall = work.session.inCall;
+      if (!inCall?.storageReservedBytes || inCall.storageBaselineBytes === undefined) continue;
+      const stillReserved = Object.values(prospectiveStateValue?.work ?? {})
+        .some((candidate) => candidate.session.inCall?.runId === inCall.runId);
+      if (!stillReserved && this.storageBytes() + stagedBytes >
+          inCall.storageBaselineBytes + inCall.storageReservedBytes) {
+        throw new KernelError("storage-reserve-full",
+          "The external job's final state exceeds its admitted storage reservation; no result was published",
+          { exit: 2 });
+      }
+    }
+    this.assertStoreGrowth(
+      stagedBytes +
+        Math.max(0, prospectiveReserved - currentReserved),
+      context.reserveAllowed ?? false,
+      Math.max(0, currentReserved - prospectiveReserved),
+    );
+  }
+  private commitStaged(context: WriteContext) {
+    this.inWrite(context, () => {
+      this.assertStagedGrowth(context);
+      context.committing = true;
+      try {
+        const staged = [...context.staged];
+        for (const entry of staged) {
+          if (entry.kind === "state") this.publishState(entry.value);
+          if (entry.kind === "log") this.append(entry.value);
+          if (entry.kind === "blob") {
+            mkdirSync(this.p("blobs"), { recursive: true, mode: 0o700 });
+            if (this.readBlob(entry.hash) === null) writeSynced(this.p(`blobs/${entry.hash}`), entry.content);
+          }
+          if (entry.kind === "directory") mkdirSync(entry.path, { recursive: true, mode: 0o700 });
+          if (entry.kind === "artifact") {
+            mkdirSync(dirname(entry.path), { recursive: true, mode: 0o700 });
+            writeSynced(entry.path, entry.content);
+          }
+          if (entry.kind === "purge") for (const path of entry.paths) rmSync(path, { force: true });
+        }
+        context.staged = [];
+      } finally { context.committing = false; }
+    });
   }
 
   // ------------------------------------------------------------ blobs and temp
@@ -496,7 +676,15 @@ export class FsStore implements Store {
       if (Buffer.byteLength(content, "utf8") > MAX_RECORD) {
         throw new KernelError("unsupported-record", "a blob exceeds the 50 MB record bound");
       }
+      this.assertStoreGrowth(Buffer.byteLength(content, "utf8"), this.writes.getStore()?.reserveAllowed ?? false);
       const h = sha256(content);
+      const context = this.writes.getStore();
+      if (context?.transactional && !context.committing) {
+        if (!context.staged.some((entry) => entry.kind === "blob" && entry.hash === h)) {
+          context.staged.push({ kind: "blob", hash: h, content });
+        }
+        return h;
+      }
       mkdirSync(this.p("blobs"), { recursive: true, mode: 0o700 });
       if (this.readBlob(h) === null) writeSynced(this.p(`blobs/${h}`), content);
       return h;
@@ -506,12 +694,27 @@ export class FsStore implements Store {
     this.admit();
     if (!/^[a-f0-9]{64}$/.test(hash)) throw new KernelError("unsupported-record", "invalid blob hash");
     const content = readRecord(this.p(`blobs/${hash}`));
+    const context = this.writes.getStore();
+    if (content === null && context?.transactional && !context.committing) {
+      const staged = context.staged.find((entry) => entry.kind === "blob" && entry.hash === hash);
+      if (staged?.kind === "blob") return staged.content;
+    }
     if (content !== null && sha256(content) !== hash) throw new KernelError("unsupported-record", "blob hash mismatch");
     return content;
   }
 
   tempDir(name: string): string {
-    return this.write(() => this.tempPath(name, true));
+    return this.write(() => {
+      const context = this.writes.getStore();
+      if (context?.transactional && !context.committing) {
+        const path = this.tempPath(name, false);
+        if (!context.staged.some((entry) => entry.kind === "directory" && entry.path === path)) {
+          context.staged.push({ kind: "directory", path });
+        }
+        return path;
+      }
+      return this.tempPath(name, true);
+    });
   }
   private tempPath(name: string, create: boolean): string {
     this.admit();
@@ -543,12 +746,50 @@ export class FsStore implements Store {
   }
   writeArtifact(dir: string, name: string, content: string): string {
     return this.write(() => {
-      const path = this.artifactPath(dir, name, true);
+      const path = this.artifactPath(dir, name, false);
+      const context = this.writes.getStore();
+      const stagedBytes = context?.transactional
+        ? context.staged
+          .filter((entry) => entry.kind === "artifact")
+          .reduce((total, entry) => total + Buffer.byteLength(entry.content, "utf8"), 0)
+        : 0;
+      const admission = this.capRunFiles(
+        [dir],
+        stagedBytes + Buffer.byteLength(content, "utf8"),
+      );
+      if (admission.accounting !== "known") {
+        throw new KernelError("storage-accounting-unknown",
+          "Tenet could not measure project run files safely; no artifact was written", { exit: 2 });
+      }
+      if (admission.overCap) {
+        throw new KernelError("storage-run-cap-full",
+          "Protected project run files use the full 200 MB budget. No ordinary change was made; " +
+            "stop existing work or explicitly recover retained files before trying again.",
+          { exit: 2 });
+      }
+      this.assertRunScopeUnchanged(admission.scopes);
+      if (admission.remove.length && !(context?.transactional && !context.committing)) {
+        throw new KernelError("storage-run-cap-full",
+          "Eligible run-file cleanup is needed before this artifact can be written; no artifact was written",
+          { exit: 2 });
+      }
+      if (context?.transactional && !context.committing) {
+        context.staged.push({ kind: "artifact", path, content });
+        return path;
+      }
+      this.artifactPath(dir, name, true);
       writeSynced(path, content);
       return path;
     });
   }
-  readArtifact(dir: string, name: string): string | null { return readRecord(this.artifactPath(dir, name)); }
+  readArtifact(dir: string, name: string): string | null {
+    const path = this.artifactPath(dir, name);
+    const context = this.writes.getStore();
+    const staged = context?.transactional && !context.committing
+      ? context.staged.findLast((entry) => entry.kind === "artifact" && entry.path === path)
+      : undefined;
+    return staged?.kind === "artifact" ? staged.content : readRecord(path);
+  }
   private artifactPath(dir: string, name: string, create = false): string {
     this.admit();
     if (!name || /[/\\]/.test(name) || name === "." || name === "..") {
@@ -563,23 +804,47 @@ export class FsStore implements Store {
     if (!base) return [];
     return ["", "manifests", "review"].flatMap((group) => {
       const dir = group ? join(base, group) : base;
-      try {
-        if (!lstatSync(dir).isDirectory()) return [];
-        return readdirSync(dir).filter((name) => group || name.startsWith("run-")).map((name) => join(dir, name));
-      } catch { return []; }
+      const stat = lstatSync(dir, { throwIfNoEntry: false });
+      if (!stat) return [];
+      if (stat.isSymbolicLink() || !stat.isDirectory()) throw new Error("temp group is a link or non-directory");
+      return readdirSync(dir).filter((name) => group || name.startsWith("run-")).map((name) => join(dir, name));
     });
+  }
+  private runScopeSnapshot(): Array<{ path: string; identity: string }> {
+    const base = this.tempBase();
+    if (!base) return [];
+    const measured = this.measure(base);
+    if (measured.accounting !== "known") {
+      throw new KernelError("storage-accounting-unknown",
+        "the project run scope could not be measured safely; no cleanup was started");
+    }
+    return [{ path: base, identity: measured.identity }];
+  }
+  private assertRunScopeUnchanged(scopes: ReadonlyArray<{ path: string; identity: string }>) {
+    const now = this.runScopeSnapshot();
+    if (scopes.length !== now.length || scopes.some((scope, index) =>
+      scope.path !== now[index]?.path || scope.identity !== now[index]?.identity)) {
+      throw new KernelError("storage-accounting-unknown",
+        "the project run scope changed after accounting; no cleanup candidate was removed");
+    }
   }
   sweepTemp(maxAgeMs: number, keep: readonly string[]): number {
     return this.write(() => this.sweepTempInLock(maxAgeMs, keep));
   }
   private sweepTempInLock(maxAgeMs: number, keep: readonly string[]): number {
-    let removed = 0;
-    const old = (p: string) => { try { return Date.now() - lstatSync(p).mtimeMs > maxAgeMs; } catch { return false; } };
+    const remove: Array<{ path: string; identity: string }> = [];
     for (const path of this.runFiles()) {
-      if (keep.some((k) => k === path || k.startsWith(`${path}${sep}`))) continue;
-      if (old(path)) { rmSync(path, { recursive: true, force: true }); removed++; }
+      if (keep.some((k) => k === path || k.startsWith(`${path}${sep}`) || path.startsWith(`${k}${sep}`))) continue;
+      const measured = this.measure(path);
+      if (measured.accounting !== "known") {
+        throw new KernelError("storage-accounting-unknown",
+          "run-file age could not be measured safely; no old folder was removed");
+      }
+      if (Date.now() - measured.at > maxAgeMs) remove.push({ path, identity: measured.identity });
     }
-    return removed;
+    this.assertCandidatesUnchanged(remove);
+    for (const candidate of remove) rmSync(candidate.path, { recursive: true, force: true });
+    return remove.length;
   }
   // ------------------------------------------------------------ eviction (CON-08, specs/storage-retention.md v2)
   private replaceSynced(path: string, data: string) {
@@ -589,57 +854,459 @@ export class FsStore implements Store {
     fsyncDir(this.dir);
   }
   private prevRevision(): number | null {
-    try { return State.parse(JSON.parse(readRecord(this.p("state.prev")) ?? "null")).revision; } catch { return null; }
+    const text = readRecord(this.p("state.prev"));
+    if (text === null) return null;
+    let raw: unknown;
+    try { raw = parseRecord(text); } catch {
+      throw new KernelError("storage-accounting-unknown",
+        "the previous state cannot be read safely; journal reduction was not started");
+    }
+    const previous = parseStateRecord(raw);
+    if (!previous.success) {
+      throw new KernelError("storage-accounting-unknown",
+        "the previous state cannot be read safely; journal reduction was not started");
+    }
+    return previous.data.revision;
   }
   /** Old journal records become monthly counts in summaries.json, written first and keyed by the journal they came from. */
-  private reduceLog(nowMs: number): string | undefined {
+  private journalProtection(keep: readonly string[]) {
+    const states: State[] = [];
+    const selected = this.read()?.state;
+    if (selected) states.push(selected);
+    const previousText = readRecord(this.p("state.prev"));
+    if (previousText !== null) {
+      let raw: unknown;
+      try { raw = parseRecord(previousText); } catch {
+        throw new KernelError("storage-accounting-unknown",
+          "the previous state cannot be read safely; journal reduction was not started");
+      }
+      const previous = parseStateRecord(raw);
+      if (!previous.success) {
+        throw new KernelError("storage-accounting-unknown",
+          "the previous state cannot be read safely; journal reduction was not started");
+      }
+      states.push(previous.data);
+    }
+    const protectedIds = new Set<string>(this.unresolved().map((entry) => entry.id));
+    const protectedPaths = new Set(keep);
+    for (const state of states) {
+      const legacy = state.project.retention?.legacyTemp.path;
+      if (legacy) protectedPaths.add(legacy);
+      for (const work of Object.values(state.work)) {
+        if (work.session.inCall?.runId) protectedIds.add(work.session.inCall.runId);
+        if (work.session.inCall?.runDir) protectedPaths.add(work.session.inCall.runDir);
+        if (work.focusedReview?.id) protectedIds.add(work.focusedReview.id);
+        if (work.focusedReview?.manifest) protectedPaths.add(work.focusedReview.manifest);
+        for (const reservation of work.budget.reservations) {
+          protectedIds.add(reservation.id);
+          protectedPaths.add(reservation.manifest);
+        }
+      }
+    }
+    return { protectedIds, protectedPaths };
+  }
+  private projectedReduction(
+    nowMs: number,
+    protection: { protectedIds: ReadonlySet<string>; protectedPaths: ReadonlySet<string> },
+  ): { savings: number; transientBytes: number } {
     const text = readRecord(this.p("log"), true) ?? "";
-    if (Buffer.byteLength(text) < (this.opts.compactAtBytes ?? 5 * 1024 * 1024)) return undefined;
-    const revision = this.read()?.state.revision ?? 0;
-    const protectFromRevision = Math.min(revision, this.prevRevision() ?? revision);
-    const reduced = (() => {
-      try { readJournal(text); return reduceJournal(text, { nowMs, days: this.opts.journalDays ?? 90, protectFromRevision }); } catch { return null; }
-    })();
-    if (!reduced) return "The journal was left untouched: it holds a record this kernel does not recognize.";
-    if (!reduced.removed) return undefined;
-    const from = sha256(text);
-    let prior: { from?: string; months?: Months } = {};
-    try { prior = JSON.parse(readRecord(this.p("summaries.json")) ?? "{}"); } catch { /* a damaged file is rebuilt from this reduction */ }
-    const months = prior.from === from ? (prior.months ?? {}) : addMonths(prior.months ?? {}, reduced.months);
-    this.replaceSynced(this.p("summaries.json"), JSON.stringify({ version: 1, from, months }));
+    const pending = this.pendingCompaction();
+    if (pending) {
+      if (sha256(text) === pending.outputHash) {
+        return {
+          savings: 0,
+          transientBytes: Buffer.byteLength(JSON.stringify(pending.summary)),
+        };
+      }
+      if (sha256(text) !== pending.inputHash || this.fileId("log", true) !== pending.inputIdentity) {
+        throw new KernelError("storage-accounting-unknown", "the pending compaction no longer matches the journal");
+      }
+    }
+    if (Buffer.byteLength(text) < (this.opts.compactAtBytes ?? 5 * 1024 * 1024)) {
+      return { savings: 0, transientBytes: 0 };
+    }
+    const reduced = this.reductionFor(text, nowMs, protection);
+    const summaryText = readRecord(this.p("summaries.json"));
+    const prior = summaryText === null
+      ? { version: 1 as const, from: "", months: {} as Months }
+      : parsePrivate(
+        SummaryRecord,
+        summaryText,
+        "the compaction summary is damaged or unsupported; the journal was left untouched",
+      );
+    if (pending) {
+      return {
+        savings: Math.max(0, Buffer.byteLength(text) - Buffer.byteLength(reduced.text)),
+        transientBytes: Buffer.byteLength(JSON.stringify(pending)) +
+          Buffer.byteLength(JSON.stringify(pending.summary)) +
+          Buffer.byteLength(reduced.text),
+      };
+    }
+    const provisional = {
+      version: 1 as const,
+      batchId: "projection00",
+      inputHash: sha256(text),
+      inputIdentity: this.fileId("log", true) ?? "",
+      outputHash: sha256(reduced.text),
+      summary: {
+        version: 1 as const,
+        batchId: "projection00",
+        from: sha256(text),
+        months: addMonths(prior.months as Months, reduced.months),
+      },
+    };
+    return {
+      savings: Math.max(0, Buffer.byteLength(text) - Buffer.byteLength(reduced.text)),
+      transientBytes: Buffer.byteLength(JSON.stringify(provisional)) +
+        Buffer.byteLength(JSON.stringify(provisional.summary)) +
+        Buffer.byteLength(reduced.text),
+    };
+  }
+
+  private reduceLog(
+    nowMs: number,
+    protection: { protectedIds: ReadonlySet<string>; protectedPaths: ReadonlySet<string> },
+  ): string | undefined {
+    const text = readRecord(this.p("log"), true) ?? "";
+    const pendingPath = this.p("compaction.pending.json");
+    let pending = this.pendingCompaction();
+    const inputHash = sha256(text);
+    if (pending && inputHash === pending.outputHash) {
+      this.replaceSynced(this.p("summaries.json"), JSON.stringify(pending.summary));
+      rmSync(pendingPath, { force: true });
+      fsyncDir(this.dir);
+      return "Completed the interrupted journal reduction.";
+    }
+    if (Buffer.byteLength(text) < (this.opts.compactAtBytes ?? 5 * 1024 * 1024) && !pending) return undefined;
+    const reduced = this.reductionFor(text, nowMs, protection);
+    const inputIdentity = this.fileId("log", true);
+    if (!inputIdentity) {
+      throw new KernelError("storage-accounting-unknown", "the journal changed before compaction; nothing was reduced");
+    }
+    if (pending && (inputHash !== pending.inputHash || inputIdentity !== pending.inputIdentity)) {
+      throw new KernelError("storage-accounting-unknown", "the pending compaction no longer matches the journal");
+    }
+    if (!pending && !reduced.removed) return undefined;
+    const outputHash = sha256(reduced.text);
+    if (!pending) {
+      const summaryText = readRecord(this.p("summaries.json"));
+      const prior = summaryText === null
+        ? { version: 1 as const, from: "", months: {} as Months }
+        : parsePrivate(
+          SummaryRecord,
+          summaryText,
+          "the compaction summary is damaged or unsupported; the journal was left untouched",
+        );
+      pending = {
+        version: 1,
+        batchId: this.rand.base32(12),
+        inputHash,
+        inputIdentity,
+        outputHash,
+        summary: {
+          version: 1,
+          batchId: this.rand.base32(12),
+          from: inputHash,
+          months: addMonths(prior.months as Months, reduced.months),
+        },
+      };
+      pending.summary.batchId = pending.batchId;
+      this.replaceSynced(pendingPath, JSON.stringify(pending));
+    }
+    if (pending.outputHash !== outputHash) {
+      throw new KernelError("storage-accounting-unknown", "the pending compaction output changed; the journal was left untouched");
+    }
+    this.replaceSynced(this.p("summaries.json"), JSON.stringify(pending.summary));
     this.opts.afterSummaries?.();
     this.replaceSynced(this.p("log"), reduced.text);
+    rmSync(pendingPath, { force: true });
+    fsyncDir(this.dir);
     return `Reduced the journal: ${reduced.removed} records older than 90 days are now monthly counts (summaries.json); `
       + "unresolved effects and recent history are kept.";
   }
-  /** Oldest run folders first, by newest file time, until the cap holds; folders in `keep` stay. */
-  private capRunFiles(keep: readonly string[]): string | undefined {
-    const entries = this.runFiles().map((path) => ({ path, bytes: this.sizeOf(path), at: newestMtime(path) })).sort((a, b) => a.at - b.at);
-    let total = entries.reduce((n, e) => n + e.bytes, 0), removed = 0;
+  private pendingCompaction(): CompactionPendingRecord | null {
+    const text = readRecord(this.p("compaction.pending.json"));
+    return text === null ? null : parsePrivate(
+      CompactionPending,
+      text,
+      "the pending compaction is damaged; the journal was left untouched",
+    );
+  }
+  private reductionFor(
+    text: string,
+    nowMs: number,
+    protection: { protectedIds: ReadonlySet<string>; protectedPaths: ReadonlySet<string> },
+  ) {
+    const revision = this.read()?.state.revision ?? 0;
+    try {
+      readJournal(text);
+      const reduced = reduceJournal(text, {
+        nowMs,
+        days: this.opts.journalDays ?? 90,
+        protectFromRevision: Math.min(revision, this.prevRevision() ?? revision),
+        ...protection,
+      });
+      if (reduced) return reduced;
+    } catch { /* mapped to the accounting refusal below */ }
+    throw new KernelError("storage-accounting-unknown",
+      "the journal holds a record this kernel cannot account for; it was left untouched");
+  }
+  /** Oldest eligible run folders first, but never a partial cleanup before a still-over-cap refusal. */
+  private capRunFiles(keep: readonly string[], additionalBytes = 0): {
+    message?: string; overCap: boolean; largest: number;
+    remove: Array<{ path: string; identity: string }>;
+    scopes: Array<{ path: string; identity: string }>;
+    accounting: "known" | "unknown" | "changed";
+  } {
+    let scopes: Array<{ path: string; identity: string }>;
+    try { scopes = this.runScopeSnapshot(); }
+    catch { return { overCap: false, largest: 0, remove: [], scopes: [], accounting: "unknown" }; }
+    let paths: string[];
+    try { paths = this.runFiles(); } catch {
+      return { overCap: false, largest: 0, remove: [], scopes, accounting: "unknown" };
+    }
+    try { this.assertRunScopeUnchanged(scopes); } catch {
+      return { overCap: false, largest: 0, remove: [], scopes, accounting: "changed" };
+    }
+    const measured = paths.map((path) => ({ path, ...this.measure(path) }));
+    const incomplete = measured.find((entry) => entry.accounting !== "known");
+    if (incomplete) {
+      return {
+        overCap: false, largest: incomplete.bytes, remove: [], scopes, accounting: incomplete.accounting,
+      };
+    }
+    const entries = measured.map((entry) => ({
+      path: entry.path, bytes: entry.bytes, identity: entry.identity, at: entry.newestAt,
+    })).sort((a, b) => a.at - b.at);
+    let total = entries.reduce((n, e) => n + e.bytes, 0) + additionalBytes;
     const cap = this.opts.runFileCapBytes ?? 200 * 1024 * 1024;
+    const protectedPath = (path: string) => keep.some((k) =>
+      k === path || k.startsWith(`${path}${sep}`) || path.startsWith(`${k}${sep}`)
+    );
+    const remove: typeof entries = [];
     for (const e of entries) {
       if (total <= cap) break;
-      if (keep.some((k) => k === e.path || k.startsWith(`${e.path}${sep}`))) continue;
-      rmSync(e.path, { recursive: true, force: true }); total -= e.bytes; removed++;
+      if (protectedPath(e.path)) continue;
+      remove.push(e); total -= e.bytes;
     }
-    return removed ? `Removed ${removed} old run folder(s): run files were over their cap.` : undefined;
+    if (total > cap) return {
+      overCap: true,
+      largest: entries.reduce((n, e) => Math.max(n, e.bytes), 0),
+      remove: [],
+      scopes,
+      accounting: "known",
+    };
+    return {
+      ...(remove.length ? {
+        message: `Removed ${remove.length} old run folder(s): run files were over their cap.`,
+      } : {}),
+      overCap: false,
+      largest: entries.reduce((n, e) => Math.max(n, e.bytes), 0),
+      remove: remove.map((e) => ({ path: e.path, identity: e.identity })),
+      scopes,
+      accounting: "known",
+    };
   }
-  evict(keep: readonly string[]): EvictReport {
-    return this.write(() => this.evictInLock(keep));
+  evict(keep: readonly string[], apply = true): EvictReport {
+    return this.write(() => this.evictInLock(keep, apply));
   }
-  private evictInLock(keep: readonly string[]): EvictReport {
-    const notes = [this.reduceLog(Date.parse(this.clock.now())), this.capRunFiles(keep)].filter((x): x is string => !!x);
-    let classes: Array<{ name: string; bytes: number }> = [];
-    try { classes = readdirSync(this.dir).map((name) => ({ name, bytes: this.sizeOf(join(this.dir, name)) })).sort((a, b) => b.bytes - a.bytes); } catch { /* no store yet */ }
+  private storeFootprint() {
+    const classes: Array<{ name: string; bytes: number }> = [];
+    let accounting: "known" | "unknown" | "changed" = "known";
+    try {
+      for (const name of readdirSync(this.dir)) {
+        const measured = this.measure(join(this.dir, name));
+        if (measured.accounting !== "known") accounting = measured.accounting;
+        classes.push({ name, bytes: measured.bytes });
+      }
+    } catch { accounting = "unknown"; }
+    return { classes: classes.sort((a, b) => b.bytes - a.bytes), accounting };
+  }
+  private evictInLock(keep: readonly string[], apply = true): EvictReport {
+    const protection = this.journalProtection(keep);
+    const cap = this.capRunFiles([...protection.protectedPaths]);
+    const projectedReduction = this.projectedReduction(Date.parse(this.clock.now()), protection);
+    const { classes, accounting: classAccounting } = this.storeFootprint();
     const total = classes.reduce((n, c) => n + c.bytes, 0);
-    const overCeiling = total > (this.opts.ceilingBytes ?? 50 * 1024 * 1024) - (this.opts.reserveBytes ?? 5 * 1024 * 1024);
+    const projected = Math.max(0, total - projectedReduction.savings);
+    const peak = total + projectedReduction.transientBytes;
+    const ceiling = this.opts.ceilingBytes ?? 50 * 1024 * 1024;
+    if (projected > ceiling || peak > ceiling) {
+      return {
+        overCeiling: true,
+        largest: classes.slice(0, 3),
+        refusal: {
+          code: "storage-protected-full",
+          message: "Tenet's protected and recovery storage reached its 50 MB ceiling. No write was made; " +
+            "preserve current data and reduce eligible storage before trying again.",
+        },
+      };
+    }
+    if (classAccounting !== "known" || cap.accounting !== "known") {
+      return {
+        overCeiling: false,
+        largest: classes.slice(0, 3),
+        refusal: {
+          code: "storage-accounting-unknown",
+          message: "Tenet could not measure storage safely. No ordinary change was made; " +
+            "inspect or recover the affected path.",
+        },
+      };
+    }
+    const reserve = this.opts.reserveBytes ?? 5 * 1024 * 1024;
+    const overCeiling = projected > ceiling - reserve || peak > ceiling - reserve;
+    if (overCeiling) {
+      return {
+        overCeiling,
+        largest: classes.slice(0, 3),
+        refusal: {
+          code: "storage-reserve-full",
+          message: "This change would consume Tenet's recovery reserve. No ordinary change was made; " +
+            "stop existing work or inspect residue before trying again.",
+        },
+      };
+    }
+    if (cap.overCap) {
+      return {
+        overCeiling: false,
+        largest: cap.largest ? [{ name: "protected run files", bytes: cap.largest }] : [],
+        refusal: {
+          code: "storage-run-cap-full",
+          message: "Protected project run files use the full 200 MB budget. No ordinary change was made; " +
+            "stop existing work or explicitly recover retained files before trying again.",
+        },
+      };
+    }
+    for (const planned of cap.remove) {
+      const now = this.measure(planned.path);
+      if (now.accounting !== "known" || now.identity !== planned.identity) {
+        return {
+          overCeiling: false,
+          largest: classes.slice(0, 3),
+          refusal: {
+            code: "storage-accounting-unknown",
+            message: "Tenet could not measure storage safely. No ordinary change was made; " +
+              "inspect or recover the affected path.",
+          },
+        };
+      }
+    }
+    this.assertRunScopeUnchanged(cap.scopes);
+    if (!apply) return { overCeiling, largest: classes.slice(0, 3) };
+    const reduction = this.reduceLog(Date.parse(this.clock.now()), protection);
+    const changed = this.changedRunCleanup(cap, reduction, overCeiling, classes);
+    if (changed) return changed;
+    for (const planned of cap.remove) rmSync(planned.path, { recursive: true, force: true });
+    const notes = [reduction, cap.message].filter((x): x is string => !!x);
     return { ...(notes.length ? { message: notes.join(" ") } : {}), overCeiling, largest: classes.slice(0, 3) };
   }
-  private sizeOf(path: string): number {
+  private changedRunCleanup(
+    cap: ReturnType<FsStore["capRunFiles"]>,
+    reduction: string | undefined,
+    overCeiling: boolean,
+    classes: Array<{ name: string; bytes: number }>,
+  ): EvictReport | undefined {
     try {
-      const st = lstatSync(path);
-      return st.isDirectory() ? readdirSync(path).reduce((n, f) => n + this.sizeOf(join(path, f)), 0) : st.size;
-    } catch { return 0; }
+      this.assertRunScopeUnchanged(cap.scopes);
+      this.assertCandidatesUnchanged(cap.remove);
+      return undefined;
+    } catch (error) {
+      if (!(error instanceof KernelError && error.reasons[0]?.code === "storage-accounting-unknown")) throw error;
+      return {
+        ...(reduction ? { message: reduction } : {}),
+        uncertain: ["Journal reduction completed; project run scope changed, so no run folder was removed."],
+        refusal: {
+          code: "storage-accounting-unknown",
+          message: "Run-file accounting changed during cleanup; dependent work was not published.",
+        },
+        overCeiling,
+        largest: classes.slice(0, 3),
+      };
+    }
+  }
+  private measure(path: string): {
+    bytes: number; at: number; newestAt: number; identity: string; accounting: "known" | "unknown" | "changed";
+  } {
+    let st;
+    try {
+      st = lstatSync(path, { bigint: true });
+    } catch (error) {
+      return {
+        bytes: 0,
+        at: 0,
+        newestAt: 0,
+        identity: "",
+        accounting: (error as NodeJS.ErrnoException).code === "ENOENT" ? "changed" : "unknown",
+      };
+    }
+    const identity = `${st.dev}:${st.ino}:${st.size}:${st.mtimeNs}:${st.ctimeNs}:${st.nlink}`;
+    if (st.isSymbolicLink() || (!st.isDirectory() && !st.isFile())) {
+      const at = Number(st.mtimeNs / 1_000_000n);
+      return { bytes: 0, at, newestAt: at, identity, accounting: "changed" };
+    }
+    if (!st.isDirectory()) {
+      const at = Number(st.mtimeNs / 1_000_000n);
+      return { bytes: Number(st.size), at, newestAt: at, identity, accounting: "known" };
+    }
+    let names: string[];
+    try { names = readdirSync(path); } catch {
+      const at = Number(st.mtimeNs / 1_000_000n);
+      return { bytes: 0, at, newestAt: at, identity, accounting: "unknown" };
+    }
+    let bytes = 0;
+    const at = Number(st.mtimeNs / 1_000_000n);
+    let newestAt = at;
+    let accounting: "known" | "unknown" | "changed" = "known";
+    const children: string[] = [];
+    for (const name of names) {
+      const child = this.measure(join(path, name));
+      bytes += child.bytes;
+      newestAt = Math.max(newestAt, child.newestAt);
+      children.push(`${name}:${child.identity}`);
+      if (child.accounting !== "known") accounting = child.accounting;
+    }
+    return { bytes, at, newestAt, identity: `${identity}[${children.join("|")}]`, accounting };
+  }
+  private assertCandidatesUnchanged(candidates: ReadonlyArray<{ path: string; identity: string }>) {
+    for (const candidate of candidates) {
+      const now = this.measure(candidate.path);
+      if (now.accounting !== "known" || now.identity !== candidate.identity) {
+        throw new KernelError("storage-accounting-unknown",
+          "a cleanup candidate changed after measurement; no candidate was removed");
+      }
+    }
+  }
+  private reservedStorage(state: State | undefined | null): number {
+    return Object.values(state?.work ?? {}).reduce(
+      (total, work) => total + (work.session.inCall?.storageReservedBytes ?? 0),
+      0,
+    );
+  }
+  private assertStoreGrowth(additionalBytes: number, reserveAllowed: boolean, reservationCredit = 0) {
+    const measured = this.measure(this.dir);
+    if (measured.accounting !== "known") {
+      throw new KernelError("storage-accounting-unknown",
+        "Tenet could not measure storage safely. No ordinary change was made; inspect or recover the affected path.",
+        { exit: 2 });
+    }
+    const logical = this.writes.getStore()?.committing
+      ? 0
+      : Math.max(0, this.reservedStorage(this.read()?.state) - reservationCredit);
+    const projected = measured.bytes + additionalBytes + logical;
+    const ceiling = this.opts.ceilingBytes ?? 50 * 1024 * 1024;
+    if (projected > ceiling) {
+      throw new KernelError("storage-protected-full",
+        "Tenet's protected and recovery storage reached its 50 MB ceiling. No write was made; " +
+          "preserve current data and reduce eligible storage before trying again.",
+        { exit: 2 });
+    }
+    const ordinary = ceiling - (this.opts.reserveBytes ?? 5 * 1024 * 1024);
+    if (projected > ordinary && !reserveAllowed) {
+      throw new KernelError("storage-reserve-full",
+        "This change would consume Tenet's recovery reserve. No ordinary change was made; " +
+          "stop existing work or inspect residue before trying again.",
+        { exit: 2 });
+    }
   }
   residue(): { tenet: Footprint | null; temp: Footprint | null } {
     this.admit();
@@ -687,7 +1354,7 @@ export class FsStore implements Store {
     const base = this.tempBase();
     const needles = texts.filter((t) => t.length > 0);
     if (!base || !needles.length) return 0;
-    let removed = 0;
+    const remove: string[] = [];
     const visit = (dir: string) => {
       let names: string[] = [];
       try { names = readdirSync(dir); }
@@ -700,8 +1367,7 @@ export class FsStore implements Store {
           else if (st.isFile()) {
             const text = readRecord(p);
             if (text && needles.some((t) => text.includes(t))) {
-              rmSync(p, { force: true });
-              removed++;
+              remove.push(p);
             }
           }
         } catch (e) { if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e; }
@@ -709,15 +1375,41 @@ export class FsStore implements Store {
     };
     const manifests = join(base, "manifests");
     if (lstatSync(manifests, { throwIfNoEntry: false })?.isDirectory()) visit(manifests);
-    return removed;
+    const context = this.writes.getStore();
+    if (context?.transactional && !context.committing) {
+      context.staged.push({ kind: "purge", paths: remove });
+    } else {
+      for (const path of remove) rmSync(path, { force: true });
+    }
+    return remove.length;
   }
   private tempBase(): string | null {
     this.admit();
-    try {
-      if (!this.exists()) return null;
-      const base = join(tmpdir(), `tenet-${this.marker()!.workspaceId}`);
-      return lstatSync(base).isDirectory() ? base : null;
-    } catch (e) { if ((e as NodeJS.ErrnoException).code === "ENOENT") return null; throw e; }
+    if (!this.exists()) return null;
+    const base = join(tmpdir(), `tenet-${this.marker()!.workspaceId}`);
+    const stat = lstatSync(base, { throwIfNoEntry: false });
+    if (!stat) return null;
+    if (stat.isSymbolicLink() || !stat.isDirectory()) {
+      throw new KernelError("storage-accounting-unknown",
+        "the marker-bound project temp root is linked or is not a directory");
+    }
+    return base;
+  }
+  retentionScope() {
+    this.admit();
+    const marker = this.marker();
+    if (!marker) throw new KernelError("marker-mismatch", "the ownership marker is missing");
+    const path = join(tmpdir(), `tenet-${marker.workspaceId}`);
+    const st = lstatSync(path, { bigint: true, throwIfNoEntry: false });
+    if (!st) return { path, identity: "absent", exists: false };
+    if (!st.isDirectory() || st.isSymbolicLink()) {
+      throw new KernelError("run-dir-unavailable", "the project temp scope is a link or non-directory");
+    }
+    return {
+      path,
+      identity: `${st.dev}:${st.ino}:${st.size}:${st.mtimeNs}:${st.ctimeNs}:${st.nlink}`,
+      exists: true,
+    };
   }
   canWrite(): boolean { try { accessSync(this.root, constants.W_OK); return true; } catch { return false; } }
 }

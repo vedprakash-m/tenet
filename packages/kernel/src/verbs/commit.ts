@@ -1,18 +1,17 @@
 // Commit protocol (TS §10.3), shared by `commit` (a checkpoint) and `finish` (the final commit): preconditions, the
 // effect intent with the expected tree, the commit as an external job, then verification and the result record.
-import { changedSinceCheck, recordCommit } from "../core/attribution.ts";
+import { recordCommit } from "../core/attribution.ts";
 import { KernelError } from "../core/errors.ts";
 import { reason } from "../core/reasons.ts";
-import { checkpointEvidence } from "../core/verdict.ts";
 import { CommitInput } from "../core/schemas.ts";
 import type { Reason, State, WorkContract } from "../core/schemas.ts";
 import type { Job, Plan, Resp, Verb } from "../pipeline.ts";
 import type { CommitOutcome, IndexJournal, Ports, Tx } from "../ports/types.ts";
 import { nx, withWork, workOf } from "./common.ts";
-import { filterQuestion, hookQuestion, unexplainedQuestion } from "./commit-questions.ts";
-import { checkInputId, gather, worldDigest } from "./facts.ts";
+import { gather, worldDigest } from "./facts.ts";
 import type { Facts } from "./facts.ts";
-import { coverageEvidenceForReceipts } from "../core/alternative-check.ts";
+import { dirtyDecisionRefs, hasDurableCommitAuthority } from "./dirty.ts";
+import { commitBlockers } from "./commit-blockers.ts";
 
 export type Done = (
   st: State,
@@ -20,73 +19,6 @@ export type Done = (
   out: CommitOutcome | null,
   reasons: Reason[]
 ) => Promise<{ state: State; resp: Resp }>;
-
-/** Everything that stops a commit before any effect: a refusal, a question, nothing to commit, or `"go"`. */
-async function blockers(ports: Ports, st: State, w: WorkContract, facts: Facts): Promise<Plan | null | "go"> {
-  const probe = await ports.git.probe();
-  if (w.git.mode !== "git") return null;
-  if (probe.state !== "ok") throw new KernelError("repo-state-readonly", probe.why);
-  if (!probe.identity) {
-    return {
-      resp: {
-        work: w.id,
-        reasons: [reason("git-identity-missing")],
-        next: [nx("commit", "Set a Git name and email, then commit again.")],
-      },
-    };
-  }
-  if (facts.att.unexplained.length) {
-    const q = unexplainedQuestion(facts.att.unexplained);
-    return {
-      state: { ...st, pending: [...st.pending.filter((p) => p.id !== q.id), q] },
-      resp: {
-        work: w.id,
-        exit: 3,
-        questions: [q],
-        reasons: [reason("attribution-unexplained-change", facts.att.unexplained.join(", "))],
-        next: [nx("ask", "Ask the user about the unexplained changes.", true)],
-      },
-    };
-  }
-  if (!facts.tenetPaths.length) return null;
-  // Last-check rule: a Tenet file edited after the last successful check cannot be committed as checked.
-  const inputId = checkInputId(ports, w, facts.candidate);
-  const coverage = coverageEvidenceForReceipts(st, w.id, w.basis?.hash ?? "", w.receipts, inputId);
-  if (!checkpointEvidence(
-    w, facts.candidate, inputId, coverage.approval, coverage.evidence,
-  ) ||
-      changedSinceCheck(w, facts.inv, facts.tenetPaths).length) {
-    throw new KernelError("stale", "run a full successful check before committing", { exit: 2 });
-  }
-  if (probe.hooks && !st.consents.some((c) => c.kind === "hooks" && c.configHash === probe.hooks)) {
-    const q = hookQuestion(probe.hooks);
-    return {
-      state: { ...st, pending: [...st.pending.filter((p) => p.id !== q.id), q] },
-      resp: {
-        work: w.id,
-        exit: 3,
-        questions: [q],
-        reasons: [reason("hook-consent-needed", "commit hooks need consent")],
-        next: [nx("ask", "Ask the user about commit hooks.", true)],
-      },
-    };
-  }
-  const filters = await ports.git.filterGate();
-  if (filters && !st.consents.some((c) => c.kind === "filters" && c.configHash === filters.hash)) {
-    const q = filterQuestion(filters);
-    return {
-      state: { ...st, pending: [...st.pending.filter((p) => p.id !== q.id), q] },
-      resp: {
-        work: w.id,
-        exit: 3,
-        questions: [q],
-        reasons: [reason("filter-consent-needed", `Git filters ${filters.names.join(", ")} would run on this commit`)],
-        next: [nx("ask", "Ask the user about the Git filters.", true)],
-      },
-    };
-  }
-  return "go";
-}
 
 interface Run {
   w: WorkContract;
@@ -178,18 +110,36 @@ export async function startCommit(
   subject: string,
   done: Done
 ): Promise<Plan | null> {
-  const blocked = await blockers(ports, st, w, facts);
+  const blocked = await commitBlockers(ports, st, w, facts);
   if (blocked !== "go") return blocked;
   const runId = `${w.label}-c${ports.rand.base32(5)}`;
   const runDir = ports.store.tempDir(`run-${runId}`);
   const parent = facts.inv.head;
   const paths = facts.tenetPaths;
+  const dirtyDecisions = dirtyDecisionRefs(w, facts.includedHuman ?? []).map((decision) => ({
+    path: decision.path,
+    questionInstance: decision.questionInstance,
+    itemToken: decision.itemToken,
+    relevantFacts: decision.relevantFacts,
+    scopeHash: decision.scopeHash,
+    choice: decision.choice,
+  }));
+  if (!hasDurableCommitAuthority(w, paths, dirtyDecisions)) {
+    throw new KernelError(
+      "revision-conflict",
+      "the commit lacks matching durable whole-file inclusion authority",
+      { exit: 2 },
+    );
+  }
   const expectedTree = await ports.git.expectedTree({ paths, deleted: [], parent });
   const reqs = st.project.intent.elements
     .filter((e) => e.kind === "requirement" && w.basis?.elementIds.includes(e.id))
     .map((e) => e.id);
   const message = `${subject}\n\nTenet-Work: ${w.label}${reqs.length ? `\nTenet-Req: ${reqs.join(", ")}` : ""}`;
-  tx.intent("commit", runId, { work: w.id, parent, expectedTree, paths, subject });
+  tx.intent("commit", runId, {
+    work: w.id, parent, expectedTree, paths, subject,
+    dirtyDecisions,
+  });
   const now = ports.clock.now();
   const inCall = { runId, ...ports.store.self(), verb: "commit", since: now, runDir };
   const prepared: WorkContract = { ...w, lastValidPhase: w.state, session: { ...w.session, inCall }, updatedAt: now };
@@ -245,7 +195,12 @@ export const commit: Verb<CommitInput> = {
         resp: {
           work: w.id,
           next: [nx("finish", "There is nothing of mine to commit.")],
-          data: { committed: false },
+          data: {
+            committed: false,
+            guidance:
+              "Tenet did not stage or commit a human-only file set. " +
+              "The person can commit or set aside their own overlapping edits outside Tenet, then continue.",
+          },
         },
       }
     );

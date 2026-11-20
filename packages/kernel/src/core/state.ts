@@ -60,7 +60,8 @@ export const newContract = (n: NewContract): WorkContract => ({
   scope: { paths: n.scopePaths, protected: n.protectedPaths },
   grants: [], obligations: [], receipts: [], attention: [], findings: [], reviews: [], analyses: [], declined: [],
   git: { mode: n.gitMode, base: n.base, branch: n.branch, start: n.start, commits: [], committed: [] },
-  touched: [], vetted: {}, includeDirty: [], keepOut: [], budget: newBudget(), acceptance: "pending", assessment: n.assessment,
+  touched: [], vetted: {}, includeDirty: [], keepOut: [], dirtyFileDecisions: [],
+  budget: newBudget(), acceptance: "pending", assessment: n.assessment,
   pinned: { tenet: n.version, schema: SCHEMA_VERSION, ...(n.adapter ? { adapter: n.adapter } : {}) }, createdAt: n.now, updatedAt: n.now,
   model: modelRecord(n.model), ...(n.planItem ? { planItem: n.planItem } : {}),
 });

@@ -8,7 +8,9 @@ import { Policy } from "./policy.ts";
 import { CapabilityCache } from "./capabilities.ts";
 import { Timing } from "./timing.ts";
 
-export const SCHEMA_VERSION = 1 as const;
+export const SCHEMA_VERSION = 3 as const;
+export const LEGACY_SCHEMA_VERSION = 2 as const;
+export const LEGACY_SCHEMA_VERSIONS = [1, 2] as const;
 
 /**
  * A string-keyed record that keeps every own key of the input. `z.record` drops a key named `__proto__`, which
@@ -264,16 +266,54 @@ export const AccountingCheckpoint = z.strictObject({
 export const StartSnapshot = z.object({
   head: z.string().nullable(), branch: z.string().nullable(),
   staged: z.array(z.object({ path: z.string(), mode: z.string(), blob: z.string() })),
-  dirty: z.array(z.object({ path: z.string(), status: z.string(), mode: z.string(), blob: z.string().optional() })),
+  dirty: z.array(z.object({
+    path: z.string(), status: z.string(), mode: z.string(), blob: z.string().optional(),
+    indexMode: z.string().optional(), indexBlob: z.string().optional(),
+  })),
 });
 export type StartSnapshot = z.infer<typeof StartSnapshot>;
+
+export const DirtyFileFacts = z.strictObject({
+  path: z.string(),
+  status: z.string(),
+  exists: z.boolean(),
+  workMode: z.string().nullable(),
+  workBlob: z.string().nullable(),
+  indexMode: z.string().nullable(),
+  indexBlob: z.string().nullable(),
+  startRef: z.string(),
+});
+export type DirtyFileFacts = z.infer<typeof DirtyFileFacts>;
+
+export const DirtyFileDecision = z.strictObject({
+  workId: z.string(),
+  sessionGeneration: z.number(),
+  questionInstance: z.string(),
+  itemToken: z.string(),
+  path: z.string(),
+  choice: z.enum(["include", "leave-out", "edit-uncommitted", "waiting"]),
+  relevantFacts: DirtyFileFacts,
+  scopeHash: z.string(),
+  recordedAt: z.string(),
+  captureClass: z.literal("elicited"),
+});
+export type DirtyFileDecision = z.infer<typeof DirtyFileDecision>;
 
 export const Question = z.strictObject({
   id: z.string(), header: z.string(), question: z.string(),
   options: z.array(z.object({ label: z.string(), description: z.string(), recommended: z.boolean().optional() })).optional(),
   multiSelect: z.boolean().optional(), allowFreeform: z.boolean().optional(),
   channel: z.enum(["native", "chat"]),
-  bind: z.strictObject({ factsHash: z.string() }),
+  bind: z.strictObject({
+    factsHash: z.string(),
+    instanceId: z.string().optional(),
+    workId: z.string().optional(),
+    sessionGeneration: z.number().optional(),
+    scopeHash: z.string().optional(),
+    items: z.array(z.strictObject({
+      token: z.string(), path: z.string(), relevantFacts: DirtyFileFacts,
+    })).optional(),
+  }),
 });
 export type Question = z.infer<typeof Question>;
 
@@ -328,6 +368,7 @@ export const WorkContract = z.object({
   includeDirty: z.array(z.string()), // human-dirty files the user chose to include in Tenet's commit
   keepOut: z.array(z.string()), // human-dirty files Tenet never commits
   leaveOut: z.array(z.string()).optional(), // human-dirty files the user told Tenet not to edit at all (also in keepOut)
+  dirtyFileDecisions: z.array(DirtyFileDecision).default([]),
   modelAck: z.string().optional(), // the model facts the user chose to continue Deep work with (RSC-08)
   changeTraits: TraitResults.optional(), // QLT-11, detected at the last check
   budget: BudgetState,
@@ -392,9 +433,14 @@ export const State = z.strictObject({
     }),
     // Intent read back from INTENT.md after local records were lost (CON-07): which IDs, and what could not be recovered.
     reconstructed: z.object({ at: z.string(), elementIds: z.array(z.string()), notRecovered: z.array(z.string()) }).optional(),
+    retention: z.object({
+      legacyTemp: z.strictObject({
+        path: z.string(), identity: z.string(), exists: z.boolean(), at: z.string(), pending: z.boolean(),
+      }),
+    }).optional(),
   }),
   config: z.strictObject({ local: settingsSchema("project"), revision: z.number() }),
-  consents: z.array(z.strictObject({ kind: z.enum(["hooks", "filters", "envelope", "remote-read"]), configHash: z.string(), at: z.string() })),
+  consents: z.array(z.strictObject({ kind: z.enum(["hooks", "filters", "signing", "envelope", "remote-read"]), configHash: z.string(), at: z.string() })),
   // Shared files adopted by hash, with what was accepted from each (TS §7.2): block hashes for INTENT.md, the policy itself for tenet.policy.json.
   trust: z.array(z.discriminatedUnion("file", [
     z.strictObject({ file: z.literal("tenet.policy.json"), hash: z.string(), adoptedAt: z.string(), restrictions: Policy }),
@@ -409,6 +455,25 @@ export const State = z.strictObject({
   _ext: ownRecord(z.unknown()).optional(),
 });
 export type State = z.infer<typeof State>;
+export function parseStateRecord(value: unknown) {
+  if (
+    value && typeof value === "object" &&
+    LEGACY_SCHEMA_VERSIONS.includes((value as { schema?: number }).schema as 1 | 2)
+  ) {
+    const migrated = { ...(value as Record<string, unknown>), schema: SCHEMA_VERSION };
+    const parsed = State.safeParse(migrated);
+    if (parsed.success) {
+      return State.safeParse({
+        ...parsed.data,
+        pending: parsed.data.pending.filter((q) =>
+          q.id !== "dirty-overlap" || !!q.bind.instanceId
+        ),
+      });
+    }
+    return parsed;
+  }
+  return State.safeParse(value);
+}
 
 // ---------------------------------------------------------------- review result (TS §5.4)
 
@@ -518,7 +583,7 @@ export const DecideInput = z.object({
   kind: z.string(), // decision kind (registry key)
   propose: z.unknown().optional(), // content for propose-form kinds
   gaps: z.array(z.string()).optional(),
-  answers: z.record(z.string(), z.string()).optional(),
+  answers: z.record(z.string(), z.any()).optional(),
   target: z.string().optional(),
   quote: z.string().optional(),
   again: z.boolean().optional(),
@@ -551,7 +616,13 @@ export type FinishInput = z.infer<typeof FinishInput>;
 export const CommitInput = z.object({ h: Handle, subject: z.string().min(1).max(200), again: z.boolean().optional() });
 export type CommitInput = z.infer<typeof CommitInput>;
 
-export const StopInput = z.object({ h: Handle, mode: z.enum(["pause", "cancel", "abandon"]), reason: z.string().optional(), answers: z.record(z.string(), z.string()).optional(), again: z.boolean().optional() });
+export const StopInput = z.object({
+  h: Handle.optional(),
+  mode: z.enum(["pause", "cancel", "abandon"]),
+  reason: z.string().optional(),
+  answers: z.record(z.string(), z.string()).optional(),
+  again: z.boolean().optional(),
+});
 export type StopInput = z.infer<typeof StopInput>;
 
 export const PacketInput = z.object({

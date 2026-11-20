@@ -7,7 +7,7 @@ import { planBlock } from "../core/plan.ts";
 import { reason } from "../core/reasons.ts";
 import { assistanceLevel, chooseLane, isEditingProfile, laneFloor, maxLane, raise } from "../core/risk.ts";
 import type { OpenInput } from "../core/schemas.ts";
-import type { Lane, Level, Question, State } from "../core/schemas.ts";
+import type { Lane, Level, Question, State, WorkContract } from "../core/schemas.ts";
 import { isLive, newContract } from "../core/state.ts";
 import type { Plan } from "../pipeline.ts";
 import type { Ports, RepoProbe } from "../ports/types.ts";
@@ -144,7 +144,7 @@ async function draft(c: Ctx, probe: RepoProbe, level: Level) {
       bind: { factsHash: factsHash(scope) },
     });
   }
-  return { w, floor, clamped };
+  return { w, floor, clamped, inv };
 }
 
 /** The plan item this contract works on is in progress from now on (INT-12). */
@@ -168,6 +168,20 @@ function layoutNotes(probe: RepoProbe) {
     ...(l.lfs ? [reason("repo-lfs", undefined, { note: true })] : []),
     ...(l.linkedWorktree ? [reason("repo-linked-worktree", undefined, { note: true })] : []),
   ];
+}
+
+function dirtyPending(
+  ports: Ports, state: State, w: WorkContract, inv: Awaited<ReturnType<Ports["git"]["inventory"]>> | null,
+): State {
+  const paths = undecidedDirty(w, inv ?? undefined);
+  if (!paths.length) return state;
+  return {
+    ...state,
+    pending: [
+      ...state.pending.filter((q) => q.id !== "dirty-overlap"),
+      dirtyQuestion(w, inv!, ports.rand.base32(12), paths),
+    ],
+  };
 }
 
 export async function created(c: Ctx): Promise<Plan> {
@@ -201,14 +215,10 @@ export async function created(c: Ctx): Promise<Plan> {
   const { level, why } = assistanceLevel(readinessOf(ports, probe), input.profile);
   if (level === "L0") throw new KernelError("capability-missing", why);
   const item = admitNew(c, editing);
-  const { w, floor, clamped } = await draft(c, probe, level);
+  const { w, floor, clamped, inv } = await draft(c, probe, level);
 
   // Tenet may only edit a human-dirty file after the user decides what happens to it (PRD 5.12).
-  let state = c.state;
-  const dirtyScope = undecidedDirty(w);
-  if (dirtyScope.length) {
-    state = { ...state, pending: [...state.pending.filter((q) => q.id !== "dirty-overlap"), dirtyQuestion(dirtyScope)] };
-  }
+  let state = dirtyPending(ports, c.state, w, inv);
   // Deep work on a model nobody qualified for it: the user chooses to continue or pause before Deep work starts (RSC-08).
   if (needsModelAnswer(w)) state = { ...state, pending: [...state.pending.filter((q) => q.id !== MODEL_LIMIT), modelQuestion(w)] };
   const gen = state.generationSeq + 1;

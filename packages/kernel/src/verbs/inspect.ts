@@ -56,12 +56,17 @@ function doctor(ports: Ports, probe: Awaited<ReturnType<Ports["git"]["probe"]>>)
   };
 }
 
-const statusOf = (st: State | null) => ({
+const statusOf = (st: State | null, history = st ? "complete" : "absent") => ({
+  history,
   initialized: !!st, revision: st?.revision ?? 0,
   work: Object.values(st?.work ?? {}).map((w) => ({ label: w.label, profile: w.profile, state: w.state, lane: w.lane, ...(w.model ? { model: w.model } : {}), outcome: w.outcome.slice(0, 80), budget: summarize(w.budget, w.lane) })),
   pending: (st?.pending ?? []).map((q) => q.id), sourceOwner: st?.sourceOwner?.work ?? null,
   plan: { items: (st?.project.intent.plan ?? []).map((i) => ({ id: i.id, outcome: i.outcome, state: i.state, dependsOn: i.dependsOn })), next: nextItem(st?.project.intent.plan ?? [])?.id ?? null },
 });
+const storageHistory = (ports: Ports, state: State | null) =>
+  state?.project.retention?.legacyTemp.pending ? "uncertain" : ports.store.history();
+const uncertainHistoryData = (history: string) =>
+  history === "uncertain" ? { history, task: "unavailable" } : {};
 
 function changedIds(topic = ""): string[] {
   const ids = topic.split(",").map((x) => x.trim()).filter(Boolean);
@@ -101,7 +106,10 @@ export const inspect: Verb<InspectInput> = {
           const w = workOf(state, input.h);
           return { resp: { work: w.id, data: { ...statusOf(state), capabilities: ports.host.capabilities(), contract: { label: w.label, state: w.state, lane: w.lane, level: w.level, branch: w.git.branch, limits: LIMITS[w.lane] }, handoff: handoffText(state!, w) } } };
         }
-        return { resp: { data: { ...statusOf(state), capabilities: ports.host.capabilities() } } };
+        return { resp: { data: {
+          ...statusOf(state, storageHistory(ports, state)),
+          capabilities: ports.host.capabilities(),
+        } } };
       }
       case "why": {
         const w = withRequiredChecks(ports, state!, workOf(state, input.h));
@@ -125,14 +133,21 @@ export const inspect: Verb<InspectInput> = {
       case "settings": {
         const w = input.h ? workOf(state, input.h) : undefined;
         const revision = state?.config.revision ?? 0;
-        if (!input.topic) return { resp: { data: { settings: settingsFor(ports, state, w), revision } } };
+        const history = storageHistory(ports, state);
+        if (!input.topic) return {
+          resp: { data: { settings: settingsFor(ports, state, w), revision, ...uncertainHistoryData(history) } },
+        };
         if (!isSettingKey(input.topic)) throw new KernelError("restriction-key-unknown", `"${input.topic}" is not a setting`, { exit: 2 });
-        return { resp: { data: { setting: resolveSetting(input.topic, layersOf(state, w, sharedPolicy(ports, state))), revision } } };
+        return { resp: { data: {
+          setting: resolveSetting(input.topic, layersOf(state, w, sharedPolicy(ports, state))), revision,
+          ...uncertainHistoryData(history),
+        } } };
       }
       case "impact": return { resp: { data: { impact: impact(state!, changedIds(input.topic)) } } };
       case "residue": {
         const present = Object.fromEntries(ADOPTED_FILES.map((f) => [f, ports.project.hashes([f])[f] !== null]));
-        return { resp: { data: { residue: residueView(ports.store.residue(), present) } } };
+        const history = storageHistory(ports, state);
+        return { resp: { data: { residue: residueView(ports.store.residue(), present), history } } };
       }
       case "export": return { resp: { data: exportView(ports, state, input.topic) } };
       case "lessons": return { resp: { data: { lessons: state?.lessons ?? [] } } };

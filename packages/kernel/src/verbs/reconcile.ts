@@ -86,6 +86,7 @@ export function configurePolicy(ports: Ports, state: State | null): void {
   if (!allowed("read", POLICY_FILE, exclusions)) throw new KernelError("capability-missing", "a policy that excludes reading its own governing file is unsupported; dependent work is blocked", { exit: 2 });
   ports.git.setExclusions(exclusions);
   ports.git.allowFilters((state?.consents ?? []).filter((c) => c.kind === "filters").map((c) => c.configHash));
+  ports.git.allowSigning((state?.consents ?? []).filter((c) => c.kind === "signing").map((c) => c.configHash));
   ports.project.setExclusions(exclusions);
   ports.stack.setExclusions(exclusions);
 }

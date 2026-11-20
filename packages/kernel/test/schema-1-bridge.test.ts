@@ -2,6 +2,7 @@ import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
+import { z } from "zod";
 import { chmodSync, existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -23,7 +24,7 @@ function fixture() {
   roots.push(root); mkdirSync(dir);
   const { dev, ino } = lstatSync(dir), workspaceId = `ws_${systemRandom.base32(10)}`;
   writeFileSync(join(dir, "marker"), JSON.stringify({ workspaceId, tag: "test", nonce: "bridge", schema: 1, dev, ino }));
-  writeFileSync(join(dir, "state"), JSON.stringify(emptyState(workspaceId, "test")));
+  writeFileSync(join(dir, "state"), JSON.stringify({ ...emptyState(workspaceId, "test"), schema: 1 }));
   writeFileSync(join(dir, "state.prev"), readFileSync(join(dir, "state")));
   const base = join(tmpdir(), `tenet-${workspaceId}`);
   temps.push(base);
@@ -86,11 +87,22 @@ describe("schema-1 rollback bridge [LFC-04, CON-05]", () => {
       assert.equal(Terminal.safeParse(raw).success, false);
     }
   });
+  it("publishes schema 2 so an older schema-1 reader refuses the transition", { skip: NO_POSIX_PROCESSES }, async () => {
+    const { dir, store } = fixture();
+    await store.transaction("upgrade-p91", async (tx) => {
+      tx.publish({ ...tx.state!, revision: tx.state!.revision + 1 });
+    });
+    const raw = JSON.parse(readFileSync(join(dir, "state"), "utf8"));
+    const marker = JSON.parse(readFileSync(join(dir, "marker"), "utf8"));
+    assert.equal(raw.schema, 2);
+    assert.equal(marker.schema, 2);
+    assert.equal(z.object({ schema: z.literal(1) }).passthrough().safeParse(raw).success, false);
+  });
   it("admits a strict rolled-back fact without rewriting it or granting recovery", () => {
     const { dir, store } = fixture(), text = JSON.stringify(terminal());
     writeFileSync(join(dir, "migration-terminal.json"), text);
     const before = snapshot(dir);
-    assert.equal(store.read()!.state.schema, 1);
+    assert.equal(store.read()!.state.schema, 2, "schema-1 records are admitted through the current parser");
     assert.deepEqual(snapshot(dir), before);
     assert.equal(readFileSync(join(dir, "migration-terminal.json"), "utf8"), text);
     for (const fence of ["migration-transition.json", "migration-privacy.json"]) {
@@ -100,7 +112,7 @@ describe("schema-1 rollback bridge [LFC-04, CON-05]", () => {
     }
   });
   for (const name of ["state", "state.prev"]) {
-    for (const schema of [2, 3, null, "1", undefined]) {
+    for (const schema of [3, null, "1", undefined]) {
       it(`refuses ${name} schema ${String(schema)} without old-state fallback`, () => {
         const { dir, store } = fixture();
         const raw = JSON.parse(readFileSync(join(dir, name), "utf8"));

@@ -872,7 +872,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 | GIT-07 | The starter recipe shall include a CI workflow running the same check obligations. | Should | R1 | AC-20, AC-25 |
 | GIT-08 | Tenet shall include uncommitted human edits in the candidate it checks, and shall never stage, commit, stash, reset or discard them without explicit consent. | Must | M0 | AC-17, AC-25 |
 | GIT-09 | When Tenet's shared files conflict on integration, Tenet shall reconcile by ID, detect same-ID different-content collisions, and propose the merged content for user confirmation. | Must | B | AC-17 |
-| GIT-10 | When work starts on a dirty working tree, Tenet shall record the starting HEAD, index and dirty paths and ask whether to commit the user's changes separately, include named files in scope, or leave them untouched. | Must | M0 | AC-17, AC-25 |
+| GIT-10 | When work starts on a dirty working tree, Tenet shall record the starting HEAD, index and dirty paths. Tenet may explain the choices and draft commands, but shall never stage or commit a human-only file set; the user commits or sets aside those edits outside Tenet. Tenet may commit an overlapping file with its own work only when that file contains a Tenet-authored change, the user explicitly authorizes that inclusion and the ordinary preview/postcondition safeguards pass. | Must | M0 | AC-17, AC-25 |
 | GIT-11 | When the user accepts a result, Tenet shall offer to integrate the work branch into its base branch locally, following the `integration` setting, as a reversible step distinct from push or publication. | Must | A | AC-25 |
 | GIT-12 | Tenet shall treat Git hooks, signing and configured Git programs as executable effects: inspect them before the first commit, run them under native consent, never bypass them, and rerun affected checks when hooks modify files. | Must | A | AC-16, AC-25 |
 | GIT-13 | Tenet shall report a specific readiness outcome for detached HEAD, rebase or merge in progress, unresolved conflicts, shallow clones, submodules, LFS and linked worktrees before implementing. | Must | B | AC-25 |
@@ -1543,6 +1543,14 @@ Before public GitHub publication, review the source tree and reachable history s
 - **Tenet state is kernel-only:** a default no-edit exclusion covers `.tenet/`, so agents change Tenet state only through kernel verbs; where a machine key is available the kernel authenticates its state and reports any out-of-band change as an integrity finding; without one, detection is advisory and the exclusion is the control.
 - Redact likely secrets and sensitive paths before display, trace and export, and state that detection is incomplete.
 - Never hash secret values into fingerprints.
+- Narrow P95 exception: for scan-allowed dirty, untracked or declared-ignored
+  inputs, Tenet may use an exact Git-owned mode/OID identity returned by the
+  reviewed provider protocol without receiving the file bytes or computing a
+  content digest itself. The protocol must prove no configured clean helper
+  or filter ran, bind the exact path/mode/provider invocation and refuse when
+  the provider identity is unavailable, stale or changed. Excluded-content
+  paths remain unknown and this exception never authorizes reading, model
+  sending or export.
 - No production data in starter examples, evaluations or diagnostic bundles. Agent-created fixtures and `.env` examples contain placeholders only.
 
 #### 5.10.3 Context exclusions
@@ -1587,14 +1595,25 @@ A nested `.gitignore` keeps `.tenet/` out of Git, not out of backups, file sync,
 - the staged, unstaged and untracked paths.
 
 On a dirty tree it asks the user (GIT-10) to:
-- commit their changes separately, as their own commit, only with consent;
+- commit or set aside their own changes outside Tenet; Tenet may explain the choice and draft a command, but never stages or commits a human-only set;
 - include named files in scope;
 - leave them untouched (the default when Tenet's scope does not overlap them).
 
+An included overlapping file may enter Tenet's commit only when that same file
+contains a Tenet-authored change, the user explicitly authorizes its whole-file
+inclusion and the ordinary preview and postcondition safeguards pass. A
+one-off explicit commit does not revoke a task-level `--no-commit` instruction;
+recovery and restart preserve that state, so a later fresh `finish` remains
+uncommitted. Declining signing consent has the same per-task no-commit
+consequence.
+
 **Staging and commits:**
-- Tenet preserves the user's index (for example by staging through a temporary index) and stages only paths and hunks it authored in scope, plus whole files the user expressly named for inclusion in answer to the GIT-10 question; it never uses broad staging as a substitute for attribution.
+- Tenet preserves the user's index (for example by staging through a temporary index) and stages only paths and hunks it authored in scope, plus whole human-dirty files the user expressly named for inclusion in answer to the GIT-10 question **only when that same file also contains a Tenet-authored change**; it never stages or commits a human-only file set and never uses broad staging as a substitute for attribution.
 - **Touched set:** the coordinator declares the files it edited; the kernel cross-checks content changes since its last boundary, and changes that no declared edit explains are treated as possible human edits that need a decision.
-- If a file contains both human and Tenet hunks, Tenet stops and asks.
+- If a file contains both human and Tenet hunks, Tenet stops and asks only when
+  current whole-file inclusion authority is absent or stale. A current,
+  unexpired explicit inclusion for that same file proceeds through the ordinary
+  preview and postcondition safeguards.
 - After committing, Tenet updates the user's real index only for committed paths whose index entry still matched the previous HEAD; any other overlap stops for a decision.
 - Commits follow the project's detected message convention; the trailer names are fixed in R1.
 - Commit-time hooks that modify files trigger re-running affected checks before any claim.

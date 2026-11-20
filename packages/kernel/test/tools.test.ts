@@ -128,7 +128,18 @@ describe("lint-skills [ENG-03]", () => {
 
   it("parses command lines the way the command line will", () => {
     assert.deepEqual(parseCommand("tenet check --h <handle> --stage baseline|candidate [--targeted]"), { verb: "check", input: { h: "W1.1.abcd", stage: "baseline" } });
-    assert.deepEqual(parseCommand("tenet decide dirty-overlap --h <handle> --answer dirty-overlap=include").input, { kind: "dirty-overlap", h: "W1.1.abcd", answers: { "dirty-overlap": "include" } });
+    assert.deepEqual(
+      parseCommand(
+        'tenet decide dirty-overlap --h <handle> --answer dirty-overlap={"instanceId":"DQ-1","items":{"1":"include","2":"leave-out"}}',
+      ).input,
+      {
+        kind: "dirty-overlap",
+        h: "W1.1.abcd",
+        answers: {
+          "dirty-overlap": { instanceId: "DQ-1", items: { "1": "include", "2": "leave-out" } },
+        },
+      },
+    );
   });
 });
 

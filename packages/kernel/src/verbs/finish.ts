@@ -16,7 +16,7 @@ import { continueRequired, headline, verdict } from "../core/verdict.ts";
 import type { Verdict } from "../core/verdict.ts";
 import type { Plan, Resp, Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
-import { isEditing, nx, reclaim, withWork, workOf } from "./common.ts";
+import { isEditing, nx, withWork, workOf } from "./common.ts";
 import { startCommit } from "./commit.ts";
 import { checkInputId, gather, verdictInput, worldDigest } from "./facts.ts";
 import type { Facts } from "./facts.ts";
@@ -34,6 +34,18 @@ function demoFor(ports: Ports, st: State, w: WorkContract, proposal: FinishInput
   return buildDemo(proposal, context, (path, max) => ports.project.readBounded(path, max));
 }
 
+function shownReasons(v: Verdict, w: WorkContract, extra: Reason[]) {
+  const missingHardening = w.profile === "prototype" && !w.hardening;
+  const missingReason = missingHardening
+    ? reason("hardening-gaps-missing", undefined, { note: true })
+    : undefined;
+  const reasons = [...v.reasons.filter((item) => !item.note), ...v.reasons.filter((item) => item.note),
+    ...(missingReason ? [missingReason] : []), ...extra];
+  const shown = reasons.slice(0, MAX_REASONS);
+  if (missingReason && !shown.includes(missingReason)) shown[MAX_REASONS - 1] = missingReason;
+  return { missingHardening, shown, omitted: Math.max(0, reasons.length - shown.length) };
+}
+
 /** The result the user reads: outcome first, then checks, limits and the next action (RES-01). */
 function result(
   ports: Ports, st: State, w: WorkContract, v: Verdict, facts: Facts, extra: Reason[], setting: IntegrationSetting, offer = false,
@@ -42,12 +54,7 @@ function result(
   const demo = demoFor(ports, st, w, proposal);
   const humanFiles = facts.att.human.length + facts.att.concurrent.length + facts.att.unexplained.length;
   const label = headline(v, { profile: w.profile, branch: w.git.branch, humanFiles });
-  const missingHardening = w.profile === "prototype" && !w.hardening;
-  const missingReason = missingHardening ? reason("hardening-gaps-missing", undefined, { note: true }) : undefined;
-  const reasons = [...v.reasons.filter((r) => !r.note), ...v.reasons.filter((r) => r.note),
-    ...(missingReason ? [missingReason] : []), ...extra];
-  const shown = reasons.slice(0, MAX_REASONS);
-  if (missingReason && !shown.includes(missingReason)) shown[MAX_REASONS - 1] = missingReason;
+  const { missingHardening, shown, omitted } = shownReasons(v, w, extra);
   const required = new Set(w.obligations.map((obligation) => obligation.id));
   const latestByOb = new Map(w.receipts
     .filter((r) => r.stage !== "baseline" && required.has(r.obligation))
@@ -95,9 +102,15 @@ function result(
       review,
       commits: w.git.commits,
       branch: w.git.branch,
+      files: {
+        tenet: facts.tenetPaths,
+        includedHuman: facts.includedHuman ?? [],
+        leftOut: [...new Set(w.leaveOut ?? [])],
+      },
+      noCommit: w.git.noCommit === true,
       integration,
       handoff: w.handoff ?? null,
-      omitted: Math.max(0, reasons.length - shown.length),
+      omitted,
       ...(demo ? { demo } : {}),
     },
   };
@@ -141,19 +154,30 @@ const finishVerb: Verb<FinishInput> = {
   editing: () => true,
 
   async run(ports, state, input, tx): Promise<Plan> {
-    const cur = state!;
-    const w = workOf(cur, input.h);
+    let cur = state!;
+    let w = workOf(cur, input.h);
+    const persistedNoCommit = !!input.noCommit && !w.git.noCommit;
+    if (persistedNoCommit) {
+      w = { ...w, git: { ...w.git, noCommit: true }, updatedAt: ports.clock.now() };
+      cur = withWork(cur, w);
+    }
     if (!w.basis && isEditing(w)) throw new KernelError("continue-required", "record a basis before finishing", { exit: 2 });
     /** Answers that need no commit and no verdict work: a finished contract's current result, or an open question first. */
     if (w.state !== "finished" && cur.pending.length)
-      return { resp: { work: w.id, exit: 3, questions: cur.pending, next: [nx("ask", "Answer the open question first.", true)] } };
+      return {
+        ...(persistedNoCommit ? { state: cur } : {}),
+        resp: { work: w.id, exit: 3, questions: cur.pending, next: [nx("ask", "Answer the open question first.", true)] },
+      };
 
     const facts = await gather(ports, w, cur.locks);
     const vi = verdictInput(ports, cur, w, facts);
     const v0 = verdict(vi);
     // Already closed: report the verdict as it stands now, change nothing, commit nothing.
     if (w.state === "finished")
-      return { resp: result(ports, cur, w, v0, facts, [], integrationSetting(ports, cur, w), false, input.demo) };
+      return {
+        ...(persistedNoCommit ? { state: cur } : {}),
+        resp: result(ports, cur, w, v0, facts, [], integrationSetting(ports, cur, w), false, input.demo),
+      };
     if (continueRequired(v0, { attemptsLeft: vi.attemptsLeft, stopReason: w.stopReason })) {
       const reasons = [
         reason("continue-required", "an introduced failure remains and attempts are left"),
@@ -169,7 +193,7 @@ const finishVerb: Verb<FinishInput> = {
       };
     }
     const wantsCommit =
-      v0.endpoint === "checked-local" && !input.noCommit && !w.git.noCommit && w.git.mode === "git" && isEditing(w);
+      v0.endpoint === "checked-local" && !w.git.noCommit && w.git.mode === "git" && isEditing(w);
     if (wantsCommit) {
       const subject = input.subject ?? `${w.outcome.slice(0, 72)}`;
       const plan = await startCommit(ports, tx!, cur, w, facts, subject, async (st, nw, _out, reasons) => {
@@ -186,13 +210,4 @@ const finishVerb: Verb<FinishInput> = {
 /** `finish` is also a storage boundary (CON-08): old journal records and run files are reduced, and the call says so once. */
 export const finish: Verb<FinishInput> = {
   ...finishVerb,
-  async run(ports, state, input, tx) {
-    const swept = tx && state ? reclaim(ports, tx, state) : undefined;
-    const plan = await finishVerb.run(ports, state, input, tx);
-    if (swept?.message) {
-      const had = plan.resp.effects;
-      plan.resp.effects = { completed: [...(had?.completed ?? []), swept.message], uncertain: had?.uncertain ?? [] };
-    }
-    return plan;
-  },
 };
