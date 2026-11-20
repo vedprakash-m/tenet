@@ -20,9 +20,9 @@ Three tracked specs say what Tenet is, and a local-only plan sequences the work:
 | [specs/PRD.md](specs/PRD.md) | Meaning: what Tenet must do and why |
 | [specs/tech-spec.md](specs/tech-spec.md) | Mechanism: how |
 | [specs/ux-spec.md](specs/ux-spec.md) | Wording: what the user reads |
-| `specs/plan.md` (local-only) | Sequence and the progress record |
+| `specs/re-plan.md` (local-only) | Sequence and the progress record |
 
-If code, plan and a spec disagree, the spec wins. Fix the plan or the code. A defect in a spec is logged in plan section 12.3 and not routed around.
+If code, plan and a spec disagree, the spec wins. Fix the plan or the code. A defect in a spec is logged in the re-plan defect list and not routed around.
 
 Only `specs/PRD.md`, `specs/tech-spec.md` and `specs/ux-spec.md` are tracked under `specs/`. All other specs, reviews and the plan, plus the entire `.archive/` directory, stay local and git-ignored. Do not force-add them. Create local planning records when needed in a fresh checkout; build, coverage and CI do not require these records. The candidate release-notes draft tool requires a local `specs/plan.md` to report open gates; it is not part of CI.
 
