@@ -9,6 +9,7 @@ import type { Ports, Tx } from "../src/ports/types.ts";
 import { recover } from "../src/verbs/recover.ts";
 import { PUBLISH, SETTLE, type Recovery } from "../src/verbs/recover-effects.ts";
 import { recoverUndo } from "../src/verbs/recover-undo.ts";
+import { cancelUnappliedUndoState } from "../src/verbs/recover-undo-state.ts";
 import { cleanup } from "./helpers.ts";
 import { contractFixture } from "./support/fixture.ts";
 
@@ -256,6 +257,29 @@ describe("undo recovery [CON-03, P117]", () => {
     assert.deepEqual(f.recovery.state.sourceOwner, undefined);
     assert.deepEqual(f.recovery.state.project.intent.elements, []);
     f.recovery.state = { ...f.recovery.state, sourceOwner: { work: "original", generation: 1 } };
+    PUBLISH.undo!(f.recovery, f.op, { completed: false });
+    assert.deepEqual(f.recovery.uncertain, []);
+  });
+
+  it("treats an older all-pre result as published after a replacement undo succeeds", () => {
+    const f = undoRecovery({ a: "pre-a", b: "pre-b" });
+    const cancelled = cancelUnappliedUndoState(f.recovery.state, f.op)!;
+    const replacement = contractFixture({
+      id: "replacement", label: "W-0003", profile: "fix",
+      state: "executing", session: { generation: 3 }, reverting: ["a.ts", "b.ts"],
+    });
+    f.recovery.state = {
+      ...cancelled,
+      sourceOwner: { work: replacement.id, generation: 3 },
+      work: {
+        ...cancelled.work,
+        [replacement.id]: replacement,
+        original: {
+          ...cancelled.work.original!,
+          git: { ...cancelled.work.original!.git, undoneBy: replacement.label },
+        },
+      },
+    };
     PUBLISH.undo!(f.recovery, f.op, { completed: false });
     assert.deepEqual(f.recovery.uncertain, []);
   });

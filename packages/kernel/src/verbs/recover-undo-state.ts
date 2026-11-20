@@ -7,9 +7,17 @@ export function isCancelledUndoState(state: State, op: UndoOp): boolean {
   const original = state.work[op.original], provisional = state.work[op.work];
   const expectedOwner = op.priorSourceOwner;
   const owner = state.sourceOwner;
+  const replacement = owner && state.work[owner.work];
+  const supersededByCurrentUndo = !expectedOwner &&
+    !!replacement &&
+    replacement.id !== provisional?.id &&
+    replacement.profile === "fix" &&
+    replacement.session.generation === owner!.generation &&
+    replacement.reverting?.join("\0") === op.paths.join("\0") &&
+    original?.git.undoneBy === replacement.label;
   return !!original && !!provisional &&
     original.session.generation === op.originalGeneration &&
-    original.git.undoneBy === undefined &&
+    (original.git.undoneBy === undefined || supersededByCurrentUndo) &&
     provisional.label === op.provisionalLabel &&
     provisional.session.generation === op.provisionalGeneration &&
     provisional.state === "cancelled" &&
@@ -18,7 +26,8 @@ export function isCancelledUndoState(state: State, op: UndoOp): boolean {
     (expectedOwner
       ? owner?.work === expectedOwner.work && owner.generation === expectedOwner.generation
       : owner === undefined ||
-        owner?.work === original.id && owner.generation === op.originalGeneration) &&
+        owner?.work === original.id && owner.generation === op.originalGeneration ||
+        supersededByCurrentUndo) &&
     !state.project.intent.elements.some(element => element.id === op.intentElementId);
 }
 
