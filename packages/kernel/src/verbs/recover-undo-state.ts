@@ -17,7 +17,8 @@ export function isCancelledUndoState(state: State, op: UndoOp): boolean {
     provisional.session.inCall === undefined &&
     (expectedOwner
       ? owner?.work === expectedOwner.work && owner.generation === expectedOwner.generation
-      : owner === undefined) &&
+      : owner === undefined ||
+        owner?.work === original.id && owner.generation === op.originalGeneration) &&
     !state.project.intent.elements.some(element => element.id === op.intentElementId);
 }
 

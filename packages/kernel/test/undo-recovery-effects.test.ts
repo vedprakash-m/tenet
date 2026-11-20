@@ -255,6 +255,9 @@ describe("undo recovery [CON-03, P117]", () => {
     assert.equal(f.recovery.state.work.original!.git.undoneBy, undefined);
     assert.deepEqual(f.recovery.state.sourceOwner, undefined);
     assert.deepEqual(f.recovery.state.project.intent.elements, []);
+    f.recovery.state = { ...f.recovery.state, sourceOwner: { work: "original", generation: 1 } };
+    PUBLISH.undo!(f.recovery, f.op, { completed: false });
+    assert.deepEqual(f.recovery.uncertain, []);
   });
 
   it("replays completed:false records through the normal recovery pass", async () => {
