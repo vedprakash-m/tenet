@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-19 — Add held P87 and schema-3 storage interfaces
+
+- Added strict key/HMAC, segmented storage, migration-v2, original-action and retention-progress modules under `packages/kernel/src/core`, plus isolated readers and durable key, fresh/repair population, progress and rotation writers under `src/adapters`. The migration vectors use NUL magic bytes and path-free canonical v2 preimages; legacy private source tuples contain no byte fingerprint.
+- Rotation precreates empty `log.next` and the after-index temporary, then seals their complete operation, action, identity and mount proofs before promotion. Restart accepts only exact proved before/after objects. Missing provider generation, mount verification or atomic no-replace capability refuses; no native provider fallback is supplied.
+- Added focused synthetic, real-file and killed-child controls under `packages/kernel/test`. Test providers are supplemental and do not qualify durable object generations, mount admission, atomic no-replace or supported-host timing.
+- Schema 3 remains inactive: these modules are not connected to the live pipeline. Forward/rollback private-copy writers, durable scan/output/summary/removal/report completion, later-mutator continuation and ambiguity integration remain held. This is not complete CT-1..59 or joint P92/P108 activation.
+- Copied local contracts, plans and review records remain ignored and are not part of the published product.
+
 ## 2026-11-19 — Repair schema-2 baseline recovery and legacy fixtures
 
 - Fixed `store-fs.ts` first publication to create a complete empty journal and bind the temp directory's stable filesystem identity. Completed quarantine stays distinct from unexplained missing history, and empty transactions no longer reserve nonexistent writes.
