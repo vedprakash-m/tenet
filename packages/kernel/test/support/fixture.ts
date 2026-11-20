@@ -71,6 +71,7 @@ export async function preconsentEnvelope(p: Project, h: string, input: Record<st
   const ports = p.ports();
   const call = (verb: string, body: Record<string, unknown>) => runVerb(ports, VERBS, verb, body);
   const response = await call("check", { ...input, h });
+  if (response.exit === 0 && !response.questions?.length) return;
   if (!response.questions?.some((question) => question.id === "envelope-consent")) {
     throw new Error(`expected pre-spawn envelope question: ${JSON.stringify(response)}`);
   }

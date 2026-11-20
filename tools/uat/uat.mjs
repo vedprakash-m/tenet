@@ -45,7 +45,8 @@ const create = () => {
 const call = (root, verb, body = {}, flags = [], consentEnvelope = true) => {
  const readsBody = ['open', 'decide', 'findings'].includes(verb);
  const args = readsBody ? flags : [...Object.entries(body).flatMap(([key, value]) => [`--${key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`, typeof value === 'object' ? JSON.stringify(value) : String(value)]), ...flags];
- const result = spawnSync(process.execPath, [bundle, verb, ...args], { cwd: root, env, input: readsBody ? JSON.stringify(body) : '', encoding: 'utf8' });
+ const callEnv = { ...env, TENET_TEST_INSTALLED_METADATA_WORKSPACE: root };
+ const result = spawnSync(process.execPath, [bundle, verb, ...args], { cwd: root, env: callEnv, input: readsBody ? JSON.stringify(body) : '', encoding: 'utf8' });
  assert.equal(result.signal, null, result.stderr);
     const response = JSON.parse(result.stdout); assert.equal(result.status, response.exit);
     assert.equal(response.timing.scope, 'kernel-call', '[NFR-05] built response timing scope');
