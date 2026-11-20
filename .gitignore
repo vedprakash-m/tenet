@@ -1,4 +1,5 @@
 /.archive/
+/reviews/
 /specs/*
 !/specs/PRD.md
 !/specs/tech-spec.md
