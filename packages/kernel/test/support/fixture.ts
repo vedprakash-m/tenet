@@ -165,9 +165,15 @@ export const isAlive = (pid: number): boolean => { try { process.kill(pid, 0); r
 const observedRunDirectories = new WeakMap<Project, string>();
 
 function publishedRunningCheck(p: Project): { runDir: string; pid: number } | undefined {
-  const state = p.ports().store.read()?.state;
-  if (!state) return undefined;
-  const base = join(tmpdir(), `tenet-${state.workspaceId}`);
+  let workspaceId: string;
+  try {
+    const marker = JSON.parse(readFileSync(join(p.root, ".tenet", "marker"), "utf8"));
+    if (typeof marker.workspaceId !== "string") return undefined;
+    workspaceId = marker.workspaceId;
+  } catch {
+    return undefined;
+  }
+  const base = join(tmpdir(), `tenet-${workspaceId}`);
   let entries: string[];
   try { entries = readdirSync(base); }
   catch { return undefined; }
