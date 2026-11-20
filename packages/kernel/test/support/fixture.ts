@@ -35,7 +35,7 @@ export function project(files: Record<string, string> = {}, options: { autoConse
   git(root, "add", "-A");
   git(root, "commit", "-qm", "initial");
   const ports = () => {
-    const bound = createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME }));
+    const bound = createPorts(root, fixtureEnv(root, cliEnv()));
     bound.stack = createStack();
     return bound;
   };
@@ -301,7 +301,7 @@ export const fakeRecipes = (recipe: Recipe = fakeRecipe()): Recipes => ({ load: 
 
 /** Ports for a folder, with the recipe source replaced. */
 export const portsWith = (root: string, recipes: Recipes): Ports => ({
-  ...createPorts(root, fixtureEnv(root, { PATH: process.env.PATH, HOME: process.env.HOME })),
+  ...createPorts(root, fixtureEnv(root, cliEnv())),
   recipes,
   stack: createStack(),
 });
