@@ -188,7 +188,7 @@ function admitObject(
   if (
     index < leafIndex && !named.isDirectory() ||
     index === leafIndex && !named.isFile() ||
-    index === 0 && !rootInsideWorkspace
+    index === 0 && !rootInsideWorkspace && !named.isSymbolicLink()
   ) return { result: unavailable(index === 0 && !rootInsideWorkspace
     ? "qualified-root-unavailable"
     : "qualified-path-unavailable") };

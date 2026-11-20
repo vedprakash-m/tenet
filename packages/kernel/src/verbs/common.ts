@@ -35,7 +35,11 @@ export function toolchainForReadiness(
   try {
     return ports.stack.detect(ports.root);
   } catch (error) {
-    if (bestEffort && error instanceof KernelError && error.reasons[0]?.code === "capability-missing") {
+    const reason = error instanceof KernelError ? error.reasons[0] : undefined;
+    if (
+      bestEffort && reason?.code === "capability-missing" &&
+      /installed (?:tool|dependency) metadata cannot be verified safely/.test(reason.message)
+    ) {
       return UNKNOWN_DETECTION;
     }
     throw error;
