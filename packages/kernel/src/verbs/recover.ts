@@ -102,6 +102,7 @@ async function settleEffects(r: Recovery) {
 /** Recovery before anything touches a resource. `effects: false` (stop) handles processes only and defers project effects. */
 export async function recover(ports: Ports, tx: Tx, state: State, options: { effects?: boolean } = {}): Promise<Recovered> {
   const r: Recovery = { ports, tx, state, completed: [], uncertain: [] };
+  const priorResults = recordedResults(tx.recent());
   await discardDeadRuns(r, state);
   if (options.effects === false) {
     const why = "postcondition reconciliation is deferred until a policy-aware call";
@@ -109,7 +110,7 @@ export async function recover(ports: Ports, tx: Tx, state: State, options: { eff
     return { state: r.state, completed: r.completed, uncertain: r.uncertain };
   }
   await settleEffects(r);
-  for (const res of recordedResults(tx.recent())) {
+  for (const res of priorResults) {
     const out = res.outcome as Outcome | undefined;
     if (res.effect === "commit" && out?.disposition === "leave-unrecorded") {
       const next = replayUnrecorded(r.state, res.id, res.op, out);

@@ -9,6 +9,7 @@ import { configurePolicy } from "../../src/verbs/reconcile.ts";
 import { VERBS } from "../../src/verbs/index.ts";
 import { createPorts } from "../../src/wire.ts";
 import { createStack } from "./metadata-stack.ts";
+import { isAlive as sameProcess } from "../../src/adapters/proc.ts";
 import { newContract } from "../../src/core/state.ts";
 import type { WorkContract } from "../../src/core/schemas.ts";
 import { fixtureEnv, git, initRepo, TEST_WORKSPACE, tmp, write } from "../helpers.ts";
@@ -184,7 +185,9 @@ function publishedRunningCheck(p: Project): { runDir: string; pid: number } | un
       try {
         const artifact = join(runDir, "run.json");
         const record = JSON.parse(readFileSync(artifact, "utf8"));
-        return typeof record.pid === "number" && record.procStart
+        return typeof record.pid === "number" &&
+          typeof record.procStart === "string" &&
+          sameProcess(record.pid, record.procStart)
           ? { runDir, pid: record.pid as number, at: statSync(artifact).mtimeMs }
           : undefined;
       } catch {
