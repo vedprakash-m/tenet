@@ -291,7 +291,10 @@ async function envelope(ports: Ports, verb: Verb, input: Input, current0: State,
   ({ w, state: current } = versionGate(ports, verb.name, input, w, current));
   if (changesSource(verb, input, current, w)) ({ w, current } = await claimSource(ports, verb, input, current, w));
   const last = w.session.last;
-  const historical = last && !input.again && last.inputHash === inputHash(verb.name, input, world);
+  const historical = last &&
+    !input.again &&
+    last.inputHash === inputHash(verb.name, input, world) &&
+    !(last.response as KernelResponse).questions?.length;
   return { current, historical: historical ? { ...(last.response as KernelResponse), historical: true as const } : undefined };
 }
 
