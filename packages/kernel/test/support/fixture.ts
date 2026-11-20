@@ -166,11 +166,34 @@ export const isAlive = (pid: number): boolean => { try { process.kill(pid, 0); r
 const observedRunDirectories = new WeakMap<Project, string>();
 
 function publishedRunningCheck(p: Project): { runDir: string; pid: number } | undefined {
+  let currentRunDir: string | undefined;
+  let currentWorkspace: string | undefined;
+  try {
+    const state = JSON.parse(readFileSync(join(p.root, ".tenet", "state"), "utf8"));
+    currentWorkspace = state.workspaceId;
+    currentRunDir = Object.values(state.work ?? {})
+      .map((work: any) => work.session?.inCall?.runDir)
+      .find((runDir: unknown) => typeof runDir === "string");
+  } catch {
+    return undefined;
+  }
+  if (currentRunDir) {
+    try {
+      const artifact = join(currentRunDir, "run.json");
+      const record = JSON.parse(readFileSync(artifact, "utf8"));
+      if (
+        typeof record.pid === "number" && typeof record.procStart === "string" &&
+        sameProcess(record.pid, record.procStart)
+      ) return { runDir: currentRunDir, pid: record.pid };
+    } catch {
+      // The runner publishes the exact record in a separate rename; poll it on the next pass.
+    }
+  }
   let workspaceId: string;
   try {
     const marker = JSON.parse(readFileSync(join(p.root, ".tenet", "marker"), "utf8"));
-    if (typeof marker.workspaceId !== "string") return undefined;
-    workspaceId = marker.workspaceId;
+    workspaceId = typeof marker.workspaceId === "string" ? marker.workspaceId : currentWorkspace ?? "";
+    if (!workspaceId) return undefined;
   } catch {
     return undefined;
   }
