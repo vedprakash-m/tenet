@@ -167,10 +167,20 @@ const observedRunDirectories = new WeakMap<Project, string>();
 export async function runningCheck(p: Project): Promise<{ runDir: string; pid: number } | undefined> {
   let runDir = observedRunDirectories.get(p);
   if (!runDir) {
-    runDir = await p.ports().store.transaction("observe", async (tx) => {
-      const c = Object.values(tx.state?.work ?? {}).map((w) => w.session.inCall).find(Boolean);
-      return c?.runDir;
-    });
+    try {
+      const c = Object.values(p.ports().store.read()?.state.work ?? {})
+        .map((w) => w.session.inCall)
+        .find(Boolean);
+      runDir = c?.runDir;
+    } catch {
+      // Some store doubles deliberately refuse an unlocked read; preserve the locked fallback below.
+    }
+    if (!runDir) {
+      runDir = await p.ports().store.transaction("observe", async (tx) => {
+        const c = Object.values(tx.state?.work ?? {}).map((w) => w.session.inCall).find(Boolean);
+        return c?.runDir;
+      });
+    }
     if (!runDir) return undefined;
     observedRunDirectories.set(p, runDir);
   }
