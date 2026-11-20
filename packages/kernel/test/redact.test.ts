@@ -92,6 +92,26 @@ describe("what a check prints never reaches the response or the record unredacte
 });
 
 describe("redacting object keys [SEC-11]", () => {
+  it("preserves literal replacement keys and suffixes in either input order", () => {
+    const secret = ["ghp_", "f".repeat(36)].join("");
+    const entries: [string, number][] = [[secret, 1], ["[redacted]", 2], ["[redacted] (2)", 3]];
+    for (const ordered of [entries, [...entries].reverse()]) {
+      const out = redactDeep(Object.fromEntries(ordered));
+      assert.deepEqual(Object.values(out).sort(), [1, 2, 3]);
+      assert.equal(out["[redacted]"], 2);
+      assert.equal(out["[redacted] (2)"], 3);
+      assert.equal(JSON.stringify(out).includes(secret), false);
+      assert.deepEqual(redactDeep(out), out);
+    }
+  });
+  it("preserves own prototype-shaped data keys without changing the output prototype", () => {
+    const input = JSON.parse('{"__proto__":{"kept":1},"constructor":2,"toString":3}');
+    const out = redactDeep(input);
+    assert.equal(Object.getPrototypeOf(out), Object.prototype);
+    assert.deepEqual(Object.keys(out), ["__proto__", "constructor", "toString"]);
+    assert.deepEqual(out["__proto__"], { kept: 1 });
+    assert.equal(JSON.stringify(out), JSON.stringify(input));
+  });
   it("redacts a token-shaped key and keeps two such keys apart", () => {
     const a = "ghp_" + "d".repeat(36), b = "ghp_" + "e".repeat(36); // privacy-ok: fake tokens
     const out = redactDeep({ commands: { [a]: 1, [b]: 2, test: 3 } });

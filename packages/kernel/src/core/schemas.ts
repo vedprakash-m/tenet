@@ -7,6 +7,9 @@ import { ExecutionEnvelope, InFlightCall } from "./execution-envelope.ts";
 import { Policy } from "./policy.ts";
 import { CapabilityCache } from "./capabilities.ts";
 import { Timing } from "./timing.ts";
+import { FailureEvent, FailureDiagnosis, PrivacyDisclosure, HISTORICAL_NOTICE } from "./privacy-types.ts";
+
+export { DirectoryIdentity, MarkerBinding, MarkerV3 } from "./marker-identity.ts";
 
 export const SCHEMA_VERSION = 2 as const;
 export const LEGACY_SCHEMA_VERSION = 1 as const;
@@ -53,7 +56,9 @@ export const Profile = z.enum([
   "feature", "bug", "refactor", "investigate", "prototype", "plan", "continue", "fix", "promote", "recipe-upgrade",
 ]);
 export const Severity = z.enum(["blocker", "major", "minor", "note"]);
-export const StopReason = z.enum(["repeated-failure", "budget-exhausted", "host-limit", "user-stop", "declined"]);
+export const StopReasonV2 = z.enum(["repeated-failure", "budget-exhausted", "host-limit", "user-stop", "declined"]);
+export const StopReasonV3 = z.enum([...StopReasonV2.options, "failure-identity-unknown"]);
+export const StopReason = StopReasonV2;
 export const WorkState = z.enum([
   "proposed", "authorized", "executing", "checking", "finished", "blocked", "parked", "cancelled", "superseded",
 ]);
@@ -150,7 +155,7 @@ export { ExecutionEnvelope };
 
 const ReceiptStatus = z.enum(["pass", "fail", "inconclusive", "skipped"]);
 
-export const Receipt = z.object({
+export const ReceiptV2 = z.object({
   id: z.string(), obligation: z.string(), kind: z.string(),
   stage: z.enum(["baseline", "candidate", "integrated", "sealed", "committed"]),
   source: z.enum(["kernel-run", "manual", "ci-external"]),
@@ -178,7 +183,9 @@ export const Receipt = z.object({
   // QLT-05: the trended fitness values a workload report gave, its sample count and its series tag (project-reported)
   workload: z.strictObject({ env: z.string(), samples: z.number(), measures: ownRecord(z.number()) }).optional(),
 });
-export type Receipt = z.infer<typeof Receipt>;
+export type ReceiptV2 = z.infer<typeof ReceiptV2>;
+export const Receipt = ReceiptV2;
+export type Receipt = ReceiptV2;
 
 export const AttentionItem = z.object({
   id: z.string(), path: z.string(), line: z.number(), pattern: z.string(), marker: z.boolean(),
@@ -248,14 +255,32 @@ export const Reservation = z.object({
 });
 export type Reservation = z.infer<typeof Reservation>;
 
-export const BudgetState = z.object({
+export const BudgetStateV2 = z.object({
   attempts: z.number().int().nonnegative(), reviewRounds: z.number().int().nonnegative(), rechecks: z.number().int().nonnegative(),
   reservations: z.array(Reservation), delegations: z.number().int().nonnegative(), checksLaunched: z.number().int().nonnegative(), tenetTokens: z.number().int().nonnegative(),
   signatures: z.array(z.string()), // recent failure signatures, newest last
   activeMinutesSinceCheckIn: z.number().nonnegative().default(0), activeMinutesTotal: z.number().nonnegative().default(0),
   lastCall: z.object({ at: z.string(), exit: z.number() }).optional(), // when the last call ended and how (active time)
 });
-export type BudgetState = z.infer<typeof BudgetState>;
+export type BudgetStateV2 = z.infer<typeof BudgetStateV2>;
+export const BudgetState = BudgetStateV2;
+export type BudgetState = BudgetStateV2;
+
+export const BudgetStateV3 = BudgetStateV2.omit({ signatures: true }).extend({
+  failureEvents: z.array(FailureEvent).max(8), failureDiagnosis: FailureDiagnosis.optional(),
+}).strict().refine(budget => {
+  let previous = 0;
+  for (const event of budget.failureEvents) {
+    if (event.attempt === null) continue;
+    if (event.attempt <= previous || event.attempt > budget.attempts) return false;
+    previous = event.attempt;
+  }
+  const diagnosis = budget.failureDiagnosis, latest = budget.failureEvents.at(-1);
+  return diagnosis === undefined || latest?.kind === "unknown" &&
+    diagnosis.unknownEventIndex === budget.failureEvents.length - 1 && diagnosis.throughAttempt <= budget.attempts &&
+    (latest.attempt === null || diagnosis.throughAttempt >= latest.attempt);
+});
+export type BudgetStateV3 = z.infer<typeof BudgetStateV3>;
 
 export const AccountingCheckpoint = z.strictObject({
   kind: z.literal("accounting"), t: z.string(), workspaceId: z.string(), revision: z.number().int().positive(),
@@ -282,10 +307,10 @@ export type Question = z.infer<typeof Question>;
 export const Reason = z.object({ code: z.string(), message: z.string(), refs: z.array(z.string()).optional(), note: z.boolean().optional() });
 export type Reason = z.infer<typeof Reason>;
 
-export const WorkContract = z.object({
+export const WorkContractV2 = z.object({
   id: z.string(), label: z.string(), profile: Profile, request: z.string(),
   lane: Lane, floor: Lane, level: Level, state: WorkState, model: ModelRecord.optional(),
-  lastValidPhase: WorkState.optional(), stopReason: StopReason.optional(),
+  lastValidPhase: WorkState.optional(), stopReason: StopReasonV2.optional(),
   pendingEnvelope: ExecutionEnvelope.optional(),
   session: z.object({
     generation: z.number(),
@@ -300,7 +325,7 @@ export const WorkContract = z.object({
     hash: z.string(), traits: z.array(z.string()),
     confirmedAssumptions: z.array(z.string()).optional(),
   }).optional(),
-  grants: z.array(Grant), obligations: z.array(Obligation), receipts: z.array(Receipt),
+  grants: z.array(Grant), obligations: z.array(Obligation), receipts: z.array(ReceiptV2),
   focusedReview: Reservation.optional(), // same-session binding, not a native delegation reservation
   attention: z.array(AttentionItem), findings: z.array(Finding), reviews: z.array(ReviewLink), analyses: z.array(AnalystLink).default([]),
   declined: z.array(z.string()),
@@ -332,7 +357,7 @@ export const WorkContract = z.object({
   leaveOut: z.array(z.string()).optional(), // human-dirty files the user told Tenet not to edit at all (also in keepOut)
   modelAck: z.string().optional(), // the model facts the user chose to continue Deep work with (RSC-08)
   changeTraits: TraitResults.optional(), // QLT-11, detected at the last check
-  budget: BudgetState,
+  budget: BudgetStateV2,
   acceptance: z.enum(["pending", "accepted", "rejected", "accepted-with-residual-risk"]),
   assessment: ownRecord(z.enum(["low", "high"])),
   lastCheck: z.object({ candidate: z.string(), at: z.string(), stage: z.string() }).optional(),
@@ -352,7 +377,9 @@ export const WorkContract = z.object({
   pinned: z.object({ tenet: z.string(), schema: z.number(), adapter: z.string().optional() }),
   createdAt: z.string(), updatedAt: z.string(),
 });
-export type WorkContract = z.infer<typeof WorkContract>;
+export type WorkContractV2 = z.infer<typeof WorkContractV2>;
+export const WorkContract = WorkContractV2;
+export type WorkContract = WorkContractV2;
 
 export const Lock = z.object({
   path: z.string(), hash: z.string(), obligation: z.string(),
@@ -362,8 +389,8 @@ export const Lock = z.object({
 });
 export type Lock = z.infer<typeof Lock>;
 
-export const State = z.strictObject({
-  schema: z.literal(SCHEMA_VERSION), revision: z.number(), workspaceId: z.string(), tag: z.string(),
+export const StateV2 = z.strictObject({
+  schema: z.literal(2), revision: z.number(), workspaceId: z.string(), tag: z.string(),
   generationSeq: z.number(), workSeq: z.number(),
   sourceOwner: z.strictObject({ work: z.string(), generation: z.number() }).optional(),
   capabilityCache: CapabilityCache.optional(),
@@ -409,13 +436,15 @@ export const State = z.strictObject({
   ])).default([]),
   locks: z.array(Lock), pending: z.array(Question),
   lessons: z.array(Lesson).default([]), // advice for packets, never authority (TS §8.9)
-  work: ownRecord(WorkContract),
+  work: ownRecord(WorkContractV2),
   archive: z.array(z.object({ id: z.string(), label: z.string(), endpoint: Endpoint, blob: z.string(), finishedAt: z.string() })),
   recovered: z.object({ from: z.literal("state.prev"), at: z.string(), accounting: z.enum(["verified", "unknown"]).optional() }).optional(),
   quarantine: z.strictObject({ path: z.string().regex(/^quarantine-\d{4}-\d{2}-\d{2}-[a-z2-7]{12}$/), nonce: z.string().regex(/^[a-z2-7]{12}$/), entries: z.number().int().nonnegative(), choice: z.enum(["pending", "fresh", "review-requested"]) }).optional(),
   _ext: ownRecord(z.unknown()).optional(),
 });
-export type State = z.infer<typeof State>;
+export type StateV2 = z.infer<typeof StateV2>;
+export const State = StateV2;
+export type State = StateV2;
 export function parseStateRecord(value: unknown) {
   if (
     value && typeof value === "object" &&
@@ -476,6 +505,8 @@ export const KernelResponse = z.object({
   effects: z.object({ completed: z.array(z.string()), uncertain: z.array(z.string()), recovery: z.string().optional() }).optional(),
   data: z.unknown().optional(),
   historical: z.literal(true).optional(),
+  historicalNotice: z.literal(HISTORICAL_NOTICE).optional(),
+  privacy: PrivacyDisclosure.optional(),
   timing: Timing.optional(),
   kernel: z.object({ version: z.string(), schemaVersion: z.literal(1) }).optional(),
 });

@@ -7,6 +7,7 @@ import type { IndexSyncRecord, Obligation, State } from "../core/schemas.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import type { CapabilityCache, Descriptor } from "../core/capabilities.ts";
 import type { HostTimings, Timing } from "../core/timing.ts";
+import type { PrivateSnapshots } from "./private-snapshot.ts";
 
 export type { Random };
 export interface Clock { now(): string; ms(): number }
@@ -61,6 +62,7 @@ export interface Footprint { path: string; files: number; bytes: number }
 export interface RetentionScope { path: string; identity: string; exists: boolean }
 
 export interface Store {
+  readonly privateSnapshots?: PrivateSnapshots;
   admit(): void;
   exists(): boolean;
   /** Read-only classification; an existing marker without usable state is uncertain. */

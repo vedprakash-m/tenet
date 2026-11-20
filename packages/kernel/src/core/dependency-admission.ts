@@ -19,6 +19,30 @@ const DependencyBody = z.object({
 });
 
 export type Files = { manifest: string | null; lock: string | null };
+export type DependencyRestoreStep =
+  | { kind: "complete" }
+  | { kind: "prepare" }
+  | { kind: "replace"; target: "manifest" | "lock" }
+  | { kind: "refuse"; code: "revision-conflict" | "effect-uncertain" };
+
+const RestorePosition = z.enum(["before", "after", "unchanged", "unavailable"]);
+const RestoreObservation = z.strictObject({
+  phase: z.enum(["admit", "prepared"]), manifest: RestorePosition, lock: RestorePosition,
+});
+
+/** Positions require re-admitted v1 images; unchanged includes proven absence in both. This does not admit identities. */
+export function dependencyRestoreStep(observation: unknown): DependencyRestoreStep {
+  const parsed = RestoreObservation.safeParse(observation);
+  if (!parsed.success) return { kind: "refuse", code: "effect-uncertain" };
+  const { phase, manifest, lock } = parsed.data;
+  const refused = { kind: "refuse", code: phase === "admit" ? "revision-conflict" : "effect-uncertain" } as const;
+  if (manifest === "unavailable" || lock === "unavailable") return refused;
+  if (manifest !== "after" && lock !== "after") return { kind: "complete" };
+  if (phase === "admit")
+    return manifest !== "before" && lock !== "before" ? { kind: "prepare" } : refused;
+  return { kind: "replace", target: manifest === "after" ? "manifest" : "lock" };
+}
+
 /** The effect intent a dependency job records before it runs, read again by recovery. */
 export interface DependencyOp {
   work: string;

@@ -28,8 +28,8 @@ Before the first project check, the kernel may ask `envelope-consent`. Review th
 | `tenet inspect status` | Read-only: `status` (cache provenance), `why`, `doctor`, `help` |
 | `tenet review` | Review-only manifest; nothing is written to the project |
 
-**Exits.** 0 proceed. 1 usage error: fix the call. 2 blocked: explain, offer `next`. 3 a decision is due: ask `questions`, then `tenet decide`. 4 integrity: stop and report. 5 internal: stop and report.
-`historical` reuses prior results; rerun after edits.
+**Exits.** 0 proceed. 1 usage: fix call. 2 blocked: explain, offer `next`. 3 decision: ask `questions`, then `tenet decide`. 4 integrity/5 internal: stop and report.
+Show returned `privacy.notice`, then `historicalNotice`, verbatim once between headline and body. Historical results are not fresh; rerun after edits.
 
 ## What `next` means
 Follow the kernel's `required` action or an allowed alternative.
@@ -50,9 +50,9 @@ Follow the kernel's `required` action or an allowed alternative.
 | `stop` | Run the stop mode named |
 
 ## The four shapes
-Messages: kickoff, question, check-in or report. Lead line first; Markdown except copyable commands. Number choices with "(recommended)"; one table maximum.
+Kickoff, question, check-in or report. Headline first. Markdown; commands copyable. Number choices with "(recommended)"; at most one table.
 
-**Truth rules.** State evidence-backed claims with their scope and limits. Use literal language, no filler. Never write "production-ready", "secure", "100%" or "fully tested" <!-- lint-ok -->. Resolve factual disagreements by comparing evidence; present normative product or risk choices as options with a recommendation.
+**Truth rules.** Give evidence, scope and limits plainly; no filler. Never write "production-ready", "secure", "100%" or "fully tested" <!-- lint-ok -->. Resolve factual disagreements by comparing evidence; present normative product or risk choices as options with a recommendation.
 
 **Why.** 10 lines max: effective value, source, overrides, limits, how to change. For `inspect why`, quote `data.assurance`, name `data.scope`, and ground `controls[]` (`control`, `class`, `note`). Never upgrade assurance or imply more than these fields.
 

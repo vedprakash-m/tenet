@@ -1,7 +1,64 @@
 // Counters, reservations, warnings, stops and failure signatures (TS §8.6). The only module that changes a counter.
-import { AccountingCheckpoint } from "./schemas.ts";
+import { AccountingCheckpoint, BudgetStateV2, BudgetStateV3 as PrivacyBudget } from "./schemas.ts";
 import type { BudgetState, Lane, Reservation, State, StopReason } from "./schemas.ts";
-import { sha256 } from "./ids.ts";
+import { sha256, stableStringify } from "./ids.ts";
+import type { BudgetStateV3, FailureEvent } from "./privacy-identity.ts";
+import { FailureSlot, legacyFailureEvents, PrivacyIdentity } from "./privacy-identity.ts";
+import { KernelError } from "./errors.ts";
+
+export function normalizePrivacyBudget(value: unknown, schema: 2 | 3): {
+  budget: BudgetStateV3; mapping: "verified" | "unavailable";
+} {
+  if (schema === 3) {
+    const parsed = PrivacyBudget.safeParse(value);
+    if (!parsed.success) throw new KernelError("unsupported-record", "Privacy failure accounting is malformed.");
+    return {
+      budget: parsed.data,
+      mapping: parsed.data.failureEvents.some(event => event.attempt === null) ? "unavailable" : "verified",
+    };
+  }
+  if (schema !== 2) throw new KernelError("unsupported-record", "The failure accounting version is unsupported.");
+  const parsed = BudgetStateV2.strict().safeParse(value);
+  if (!parsed.success) throw new KernelError("unsupported-record", "Legacy failure accounting is malformed.");
+  const { signatures, ...counters } = parsed.data;
+  const { events, mapping } = legacyFailureEvents(signatures, counters.attempts);
+  return { budget: PrivacyBudget.parse({ ...counters, failureEvents: events }), mapping };
+}
+
+export function recordPrivacyAttempt(
+  budget: BudgetStateV3,
+  failure?: { identity: unknown; slot?: unknown }
+): BudgetStateV3 {
+  const current = normalizePrivacyBudget(budget, 3).budget;
+  const attempts = current.attempts + 1;
+  if (!failure) return PrivacyBudget.parse({ ...current, attempts });
+  const identity = PrivacyIdentity.safeParse(failure.identity), slot = FailureSlot.safeParse(failure.slot);
+  const event: FailureEvent = identity.success && identity.data.status === "known" &&
+      identity.data.domain === "failure-slot-v1" && slot.success
+    ? { kind: "known", domain: "failure-slot-v1", value: identity.data.value, slot: slot.data, attempt: attempts }
+    : { kind: "unknown", attempt: attempts, cause: "outside-closed-domain" };
+  const { failureDiagnosis: _diagnosis, ...rest } = current;
+  return PrivacyBudget.parse({ ...rest, attempts, failureEvents: [...current.failureEvents, event].slice(-8) });
+}
+
+export function mergePrivacyBudgets(current: BudgetStateV3, observed: unknown, schema: 2 | 3): {
+  budget: BudgetStateV3; verified: boolean;
+} {
+  const before = normalizePrivacyBudget(current, 3), after = normalizePrivacyBudget(observed, schema);
+  const b = before.budget, o = after.budget;
+  const conflict = b.attempts === o.attempts && stableStringify(b.failureEvents) !== stableStringify(o.failureEvents);
+  const chosen = o.attempts >= b.attempts && !conflict ? o : b;
+  const diagnosis = b.attempts === o.attempts && !conflict
+    ? b.failureDiagnosis ?? o.failureDiagnosis : chosen.failureDiagnosis;
+  return {
+    budget: PrivacyBudget.parse({
+      ...chosen, ...(diagnosis === undefined ? {} : { failureDiagnosis: diagnosis }),
+      ...Object.fromEntries(MONOTONE_COUNTERS.map(key => [key, Math.max(b[key], o[key])])),
+    }),
+    verified: before.mapping === "verified" && after.mapping === "verified" && !conflict &&
+      !MONOTONE_COUNTERS.some(key => o[key] < b[key]),
+  };
+}
 
 export const LIMITS: Record<Lane, { attempts: number; rounds: number; delegations: number; retries: number; minutes: number }> = {
   quick: { attempts: 3, rounds: 1, delegations: 2, retries: 2, minutes: 15 },
@@ -95,17 +152,35 @@ export function settleReservation(b: BudgetState, id: string, opts: { countRound
 }
 
 /** Same signature twice in a row, or an A-B-A-B oscillation (WRK-09). */
-export function repeatedFailure(signatures: readonly string[]): boolean {
+export function repeatedFailure(signatures: readonly string[] | readonly FailureEvent[]): boolean {
   const s = signatures;
   const n = s.length;
-  if (n >= 2 && s[n - 1] === s[n - 2]) return true;
-  return n >= 4 && s[n - 1] === s[n - 3] && s[n - 2] === s[n - 4] && s[n - 1] !== s[n - 2];
+  const same = (a: string | FailureEvent | undefined, b: string | FailureEvent | undefined): boolean => {
+    if (typeof a === "string" || typeof b === "string") return typeof a === "string" && a === b;
+    return a?.kind === "known" && b?.kind === "known" && a.domain === b.domain && a.value === b.value;
+  };
+  if (n >= 2 && same(s[n - 1], s[n - 2])) return true;
+  return n >= 4 && same(s[n - 1], s[n - 3]) && same(s[n - 2], s[n - 4]) && !same(s[n - 1], s[n - 2]);
 }
 
 export const withSignature = (b: BudgetState, sig: string): BudgetState => ({ ...b, signatures: [...b.signatures, sig].slice(-8) });
 
 /** The stop reason a counter state implies, if any; the verdict handles it honestly (WRK-09). */
-export function stopFor(b: BudgetState, lane: Lane): StopReason | undefined {
+export function stopFor(b: BudgetState, lane: Lane): StopReason | undefined;
+export function stopFor(b: BudgetStateV3, lane: Lane): StopReason | "failure-identity-unknown" | undefined;
+export function stopFor(b: BudgetState | BudgetStateV3, lane: Lane): StopReason | "failure-identity-unknown" | undefined {
+  if ("failureEvents" in b) {
+    const latest = b.failureEvents.at(-1), diagnosis = b.failureDiagnosis;
+    const currentFailure = latest && (latest.attempt === null || latest.attempt === b.attempts);
+    if (currentFailure && b.attempts >= LIMITS[lane].attempts) return "budget-exhausted";
+    if (currentFailure && repeatedFailure(b.failureEvents)) return "repeated-failure";
+    if (latest?.kind === "unknown" &&
+        !(diagnosis && diagnosis.throughAttempt <= b.attempts &&
+          (latest.attempt === null || diagnosis.throughAttempt >= latest.attempt) &&
+          diagnosis.unknownEventIndex === b.failureEvents.length - 1))
+      return "failure-identity-unknown";
+    return undefined;
+  }
   if (repeatedFailure(b.signatures)) return "repeated-failure";
   if (b.attempts >= LIMITS[lane].attempts && b.signatures.length > 0) return "budget-exhausted";
   return undefined;
