@@ -30,6 +30,7 @@ import type { LockInfo, StagedWrite, WriteContext } from "./store-staging.ts";
 import type { MigrationGuard } from "./marker-rollback.ts";
 import type { CommitProofV1 } from "../core/commit-proof.ts";
 import { addExpiredEvidence, readExpiredEvidence } from "./history-expiry-fs.ts";
+import { runScopeSnapshot } from "./run-scope.ts";
 
 const COMPACTION_MARKER = "compaction.ever.json";
 const EXPIRED_EVIDENCE = "history-expired.json";
@@ -826,14 +827,7 @@ export class FsStore implements Store {
     });
   }
   private runScopeSnapshot(): Array<{ path: string; identity: string }> {
-    const base = this.tempBase();
-    if (!base) return [];
-    const measured = this.measure(base);
-    if (measured.accounting !== "known") {
-      throw new KernelError("storage-accounting-unknown",
-        "the project run scope could not be measured safely; no cleanup was started");
-    }
-    return [{ path: base, identity: measured.identity }];
+    return runScopeSnapshot(this.tempBase());
   }
   private assertRunScopeUnchanged(scopes: ReadonlyArray<{ path: string; identity: string }>) {
     const now = this.runScopeSnapshot();
