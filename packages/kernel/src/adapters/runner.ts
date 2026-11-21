@@ -136,7 +136,11 @@ async function stopOwnedGroup(record: RunIdentity): Promise<"stopped" | "gone" |
   if (now !== null && now !== record.procStart) return "gone";
   const before = groupAlive(record.pid);
   if (before !== "alive") return before === "gone" ? "gone" : "unknown";
-  const term = killGroup(record.pid, "SIGTERM");
+  let term = killGroup(record.pid, "SIGTERM");
+  if (term === "unknown") {
+    await sleep(50);
+    term = killGroup(record.pid, "SIGTERM");
+  }
   if (term !== "signalled") return term === "gone" ? "gone" : "unknown";
   const graceful = await waitForGroup(record.pid, 5000);
   if (graceful !== "alive") return graceful === "gone" ? "stopped" : "unknown";
