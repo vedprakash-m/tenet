@@ -145,6 +145,7 @@ export function buildManifest(i: ManifestInput): Manifest | Reason {
   const evidence = i.work.receipts.slice(-12).map((r: Receipt) => ({
     obligation: r.obligation, stage: r.stage, status: r.status, scope: r.scope, counts: r.counts,
     qualifiers: r.qualifiers, limitations: r.limitations,
+    ...(r.workload ? { workload: r.workload } : {}),
   }));
   const changes = i.changes.filter(c => eligible(c.path)).map((c) => ({ path: c.path, kind: c.kind, added: c.added, removed: c.removed }));
   const attention = i.work.attention.filter(a => eligible(a.path))

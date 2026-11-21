@@ -194,6 +194,11 @@ describe("diagnostics export", () => {
     assert.match(data.bundleHash, /^[0-9a-f]{64}$/);
     assert.equal(data.note, NOTE);
     assert.deepEqual(readdirSync(p.root).sort(), before);
+    const feedback = await p.call("inspect", { view: "export", topic: "feedback" });
+    assert.equal(feedback.exit, 0);
+    assert.deepEqual(JSON.parse((feedback.data as { text: string }).text).format, {
+      name: "tenet.diagnostics", version: 2,
+    });
     const other = await p.call("inspect", { view: "export", topic: "evidence" });
     assert.equal(other.exit, 1);
   });

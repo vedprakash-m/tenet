@@ -5,7 +5,7 @@
 // test controls; it measures nothing.
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { SCOPE } from "../src/core/fitness.ts";
 import { emptyState } from "../src/core/state.ts";
@@ -35,6 +35,20 @@ const ok = p95 <= 200;
 console.log(JSON.stringify({ mode: "reference", referencePass: ok, reasons: ok ? [] : ["list-p95-over-200ms"],
   operations: { list: { successful: { samples: 50, p95 } } },
   environment: { node: process.version, platform: process.platform, arch: process.arch } }));
+process.exit(ok ? 0 : 1);
+`;
+}
+
+function fileHarness(valueFile: string): string {
+  return `import { readFileSync, writeFileSync } from "node:fs";
+const p95 = Number(readFileSync(${JSON.stringify(valueFile)}, "utf8"));
+const ok = p95 <= 200;
+writeFileSync(process.env.TENET_WORKLOAD_REPORT, JSON.stringify({
+  mode: "reference", referencePass: ok, reasons: ok ? [] : ["list-p95-over-200ms"],
+  operations: { list: { successful: { samples: 50, p95 } } },
+  database: { duplicates: 0 },
+  environment: { node: process.version, platform: process.platform, arch: process.arch }
+}));
 process.exit(ok ? 0 : 1);
 `;
 }
@@ -89,7 +103,7 @@ describe("workload obligation [QLT-05]", () => {
   it("runs the declared workload in a Deep contract and judges its report against the declared target", skip, async () => {
     const { p, value } = await workloadProject();
     value(100);
-    const { green } = await contract(p, 1);
+    const { h, green } = await contract(p, 1);
     const r = workloadReceipt(green);
     assert.equal(r?.status, "pass", JSON.stringify(d(green).receipts));
     assert.equal(d(green).workload.scope, SCOPE);
@@ -97,6 +111,33 @@ describe("workload obligation [QLT-05]", () => {
     const stored = Object.values(state(p).work)[0]!.receipts.find((x) => x.obligation === "OB-workload")!;
     assert.deepEqual(stored.workload?.measures, { "list-p95-ms": 100 });
     assert.equal(stored.kind, "workload");
+    const why = await p.call("inspect", { h, view: "why" });
+    assert.deepEqual(d(why).workload.current.measures, { "list-p95-ms": 100 });
+    const packet = await p.call("packet", { h, role: "reviewer" });
+    const manifest = JSON.parse(readFileSync(d(packet).review.manifest, "utf8"));
+    assert.deepEqual(
+      manifest.evidence.find((item: { obligation: string }) => item.obligation === "OB-workload").workload.measures,
+      { "list-p95-ms": 100 },
+    );
+  });
+
+  it("accepts a run-bound workload report file without reading stdout", skip, async () => {
+    const declaration = { ...DECLARATION, report: { kind: "file", path: "workload-report.json" } };
+    const dir = tmp("tenet-wl-file-");
+    roots.push(dir);
+    const valueFile = join(dir, "p95");
+    const p = project({ "workload.json": JSON.stringify(declaration), "workload/run.mjs": fileHarness(valueFile) });
+    roots.push(p.root);
+    await p.ports().store.transaction("fixture-file-report", async (tx) => {
+      const ids = tx.state ? undefined : tx.ensure();
+      const st = tx.state ?? emptyState(ids!.workspaceId, ids!.tag);
+      tx.publish({ ...st, project: { ...st.project, recipe: { id: "fixture", version: "1.0.0", installed: true, checks: ["workload"] } } });
+    });
+    writeFileSync(valueFile, "100");
+    const receipt = workloadReceipt((await contract(p, 1)).green);
+    assert.equal(receipt?.status, "pass", JSON.stringify(receipt));
+    const stored = Object.values(state(p).work)[0]!.receipts.find((x) => x.obligation === "OB-workload")!;
+    assert.deepEqual(stored.workload?.measures, { "list-p95-ms": 100 });
   });
 
   it("fails a missed target, and owes nothing in a Standard contract or without the recipe listing it", skip, async () => {
@@ -125,6 +166,32 @@ describe("workload obligation [QLT-05]", () => {
     assert.notEqual(d(why).endpoint, "checked-local");
   });
 
+  it("reports build-not-fresh when a declared workload build fails before the run", skip, async () => {
+    const declaration = {
+      ...DECLARATION,
+      build: ["node", "workload/build.mjs"],
+    };
+    const dir = tmp("tenet-wl-build-");
+    roots.push(dir);
+    const valueFile = join(dir, "p95");
+    const p = project({
+      "workload.json": JSON.stringify(declaration),
+      "workload/run.mjs": harness(valueFile),
+      "workload/build.mjs": "process.exit(1);\n",
+    });
+    roots.push(p.root);
+    await p.ports().store.transaction("fixture-build", async (tx) => {
+      const ids = tx.state ? undefined : tx.ensure();
+      const st = tx.state ?? emptyState(ids!.workspaceId, ids!.tag);
+      tx.publish({ ...st, project: { ...st.project, recipe: { id: "fixture", version: "1.0.0", installed: true, checks: ["workload"] } } });
+    });
+    writeFileSync(valueFile, "100");
+    const { green } = await contract(p, 1);
+    const receipt = workloadReceipt(green);
+    assert.equal(receipt?.status, "inconclusive", JSON.stringify(receipt));
+    assert.deepEqual(receipt?.reasons, ["build-not-fresh"]);
+  });
+
   it("raises an attention item when the trend degrades over three consecutive Deep contracts", skip, async () => {
     const { p, value } = await workloadProject();
     for (const [n, v] of [[1, 100], [2, 110]] as const) {
@@ -149,7 +216,9 @@ describe("workload obligation [QLT-05]", () => {
     await p.call("decide", { h, kind: "disposition", target: item!.id, propose: { outcome: "accepted", reason: "known cost of the new index" } });
     const after = await p.call("inspect", { h, view: "why" });
     assert.ok(!after.reasons.some((r) => r.code === "fitness-trend-degraded"), JSON.stringify(after.reasons));
-    await p.call("finish", { h, subject: "g3" });
+    const finished = await p.call("finish", { h, subject: "g3" });
+    assert.deepEqual(d(finished).workload.current.measures, { "list-p95-ms": 121 });
+    assert.equal(d(finished).workload.series["list-p95-ms"].points.length, 3);
     const series = state(p).project.fitness!["list-p95-ms"]!;
     assert.equal(series.points.length, 3);
     assert.equal(series.raised, series.points.at(-1)!.receipt, "the next window starts at the newest run");

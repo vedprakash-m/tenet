@@ -7,6 +7,7 @@ import { isUtf8 } from "node:buffer";
 import { createServer } from "node:net";
 import type { Writable } from "node:stream";
 import { delimiter, dirname, join, resolve, sep } from "node:path";
+import { arch, platform, totalmem } from "node:os";
 import type { Clock, RunResult, RunSpec, Runner } from "../ports/types.ts";
 import type { EnvelopePlanInput } from "../ports/types.ts";
 import { makeExecutionEnvelope, type EnvelopeCommand } from "../core/execution-envelope.ts";
@@ -267,6 +268,9 @@ export class ProcessRunner implements Runner {
   private env: Record<string, string | undefined>;
   private admissions = new Map<string, (spawn: () => Promise<RunResult>) => Promise<RunResult>>();
   constructor(clock: Clock, env: Record<string, string | undefined>) { this.clock = clock; this.env = env; }
+  workloadEnvironment() {
+    return { platform: platform(), arch: arch(), totalMemoryBytes: totalmem(), node: process.version };
+  }
   guardRun(runDir: string, admit: (spawn: () => Promise<RunResult>) => Promise<RunResult>): void { this.admissions.set(resolve(runDir), admit); }
 
   environmentNames(extra: Record<string, string> = {}): { passed: string[]; dropped: string[] } {

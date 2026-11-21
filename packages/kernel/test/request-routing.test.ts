@@ -29,6 +29,13 @@ it("keeps explanations and questions in chat without a contract or .tenet/ [INS-
   assert.match(loopStart, /if checks are needed, offer an investigation/i);
 });
 
+it("routes feedback to a redacted stateless preview without opening work [OSS-06]", () => {
+  for (const text of [command, loopStart]) {
+    assert.match(text, /feedback[^\n]*tenet inspect --view export --topic feedback/i);
+    assert.match(text, /nothing is sent or saved/i);
+  }
+});
+
 it("leaves status, why and help unchanged and opens a contract for every other request [INS-09]", () => {
   assert.match(command, /For status, why or help, answer from `tenet inspect` and do\s+not start work/);
   assert.match(loopStart, /run `tenet inspect status`, answer, and end the turn/);

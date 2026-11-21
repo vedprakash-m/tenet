@@ -98,6 +98,18 @@ describe("Tenet's marks in Git history [CON-07]", () => {
     assert.deepEqual(h.unmerged, ["tenet/w-0007-returns"]);
     assert.equal(h.shallow, false);
   });
+
+  it("bounds Tenet-Work history to the latest 500 reachable commits [CON-07]", async () => {
+    const root = tmp("tenet-rc7-bound-"); roots.push(root);
+    initRepo(root);
+    git(root, "commit", "--allow-empty", "-qm", "Old\n\nTenet-Work: W-0001");
+    git(root, "commit", "--allow-empty", "-qm", "Boundary\n\nTenet-Work: W-0002");
+    for (let i = 0; i < 499; i++)
+      git(root, "commit", "--allow-empty", "-qm", `filler ${i}`);
+
+    const h = await new GitCli(root).tenetHistory();
+    assert.deepEqual(h.labels, { "W-0002": 1 });
+  });
 });
 
 /** A repository that holds Tenet's marks but no `.tenet/`: as after `rm -r .tenet`, or in a fresh clone. */
@@ -162,6 +174,96 @@ describe("open after local records are lost [CON-07]", () => {
     assert.equal(s.pending.some((q) => q.id === "reconstruction-review"), false);
     assert.equal(s.project.reconstructed, undefined);
     assert.equal((await p.call("decide", { h: r.handle!, kind: "basis", propose: BASIS })).exit, 0, "the fence is gone");
+  });
+
+  it("recovers decision and test-tag IDs as inert reservations and confirms proposed locks separately [CON-07]", posixOnly, async () => {
+    const p = lostRecords();
+    p.write("docs/decisions/0400-dec.md", "---\nid: DEC-0400-abc\n---\n# Existing decision\n");
+    p.write("src/lock.test.ts", "// @tenet EX-0401-def.1\nimport { it } from \"node:test\";\nit(\"keeps the lock\", () => {});\n");
+    p.git("add", "-A");
+    p.git("commit", "-qm", "Recover shared ids");
+    const opened = await p.call("open", { profile: "feature", request: "continue work", scopePaths: ["src/next.ts"] });
+    assert.equal(opened.exit, 3, JSON.stringify(opened));
+    assert.match(opened.questions![0]!.question, /2 recovered repository IDs/i);
+    const used = await p.call("decide", {
+      h: opened.handle!, kind: "adopt", target: "reconstruction",
+      answers: { "reconstruction-review": "use" },
+    });
+    assert.equal(used.exit, 3, JSON.stringify(used));
+    assert.equal(used.questions?.[0]?.id, "reconstruction-lock");
+    const before = stored(p);
+    assert.deepEqual(before.locks, []);
+    assert.ok(before.project.reconstructed?.elementIds.includes("DEC-0400-abc"));
+    assert.ok(before.project.reconstructed?.elementIds.includes("EX-0401-def.1"));
+    assert.equal(before.project.adoption.policy, "undecided");
+    assert.equal(before.project.adoption.charter, "undecided");
+
+    const confirmed = await p.call("decide", {
+      h: opened.handle!, kind: "adopt", target: "reconstruction",
+      answers: { "reconstruction-lock": "confirm" },
+    });
+    assert.equal(confirmed.exit, 0, JSON.stringify(confirmed));
+    const after = stored(p);
+    assert.equal(after.locks.length, 1);
+    assert.equal(after.locks[0]?.path, "src/lock.test.ts");
+    assert.equal(after.locks[0]?.obligation, "OB-EX-0401-def.1");
+    assert.ok(after.locks[0]?.anchor && "commit" in after.locks[0]!.anchor);
+    const basis = await p.call("decide", {
+      h: opened.handle!, kind: "basis", propose: {
+        outcome: "next requirement", scopePaths: ["src/next.ts"],
+        elements: [{ ref: "next", kind: "requirement", origin: "request", text: "the next requirement" }],
+      },
+    });
+    assert.equal(basis.exit, 0, JSON.stringify(basis));
+    assert.ok(stored(p).project.intent.elements.some((item) => item.id.startsWith("REQ-402-")));
+    p.write("src/lock.test.ts", readFileSync(join(p.root, "src/lock.test.ts"), "utf8") + "\n// changed\n");
+    const why = await p.call("inspect", { h: opened.handle!, view: "why" });
+    assert.ok(why.reasons.some((item) => item.code === "locked-test-changed"), JSON.stringify(why));
+  });
+
+  it("rebuilds a changed lock preview and excludes staged or untracked tags [CON-07]", posixOnly, async () => {
+    const p = lostRecords();
+    p.write("src/committed.test.ts", "// @tenet EX-010-abc.1\n");
+    p.git("add", "-A");
+    p.git("commit", "-qm", "Committed tag");
+    p.write("src/committed.test.ts", "// @tenet EX-011-abc.1\n");
+    p.git("add", "src/committed.test.ts");
+    p.write("src/untracked.test.ts", "// @tenet EX-999-xyz.1\n");
+    const opened = await p.call("open", { profile: "feature", request: "continue work" });
+    assert.match(opened.questions![0]!.question, /1 recovered repository ID/i);
+    assert.doesNotMatch(opened.questions![0]!.question, /999/);
+    const used = await p.call("decide", {
+      h: opened.handle!, kind: "adopt", target: "reconstruction",
+      answers: { "reconstruction-review": "use" },
+    });
+    assert.equal(used.exit, 3, JSON.stringify(used));
+    p.write("src/committed.test.ts", "// @tenet EX-012-abc.1\n");
+    p.git("add", "src/committed.test.ts");
+    p.git("commit", "-qm", "Change committed tag");
+    const refreshed = await p.call("decide", {
+      h: opened.handle!, kind: "adopt", target: "reconstruction",
+      answers: { "reconstruction-lock": "confirm" },
+    });
+    assert.equal(refreshed.exit, 3, JSON.stringify(refreshed));
+    assert.equal(refreshed.questions?.[0]?.id, "reconstruction-lock");
+    assert.deepEqual(stored(p).locks, [], "a changed preview is declined rather than restoring the wrong lock");
+    const declined = await p.call("decide", {
+      h: opened.handle!, kind: "adopt", target: "reconstruction",
+      answers: { "reconstruction-lock": "decline" },
+    });
+    assert.equal(declined.exit, 0, JSON.stringify(declined));
+  });
+
+  it("keeps recovered committed IDs even when the user starts fresh [CON-07]", posixOnly, async () => {
+    const p = lostRecords();
+    p.write("docs/decisions/0900-dec.md", "---\nid: DEC-0900-abc\n---\n");
+    p.git("add", "-A");
+    p.git("commit", "-qm", "Committed decision id");
+    const r = await opened(p);
+    const fresh = await answer(p, r.handle!, "fresh");
+    assert.equal(fresh.exit, 0, JSON.stringify(fresh));
+    assert.ok(stored(p).project.reconstructed?.elementIds.includes("DEC-0900-abc"));
+    assert.deepEqual(stored(p).project.intent.elements, []);
   });
 
   it("asks again, recovering nothing, when INTENT.md changed after the question [CON-07]", posixOnly, async () => {

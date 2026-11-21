@@ -9,7 +9,7 @@ import { settingsFor } from "./reconcile.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import { KernelError } from "../core/errors.ts";
 import { executionDisclosures } from "../core/execution-envelope.ts";
-import { appendSeries, raisedIds } from "../core/fitness.ts";
+import { appendSeries, raisedIds, workloadSummary } from "../core/fitness.ts";
 import { releaseItem } from "../core/plan.ts";
 import { reason } from "../core/reasons.ts";
 import { FinishInput } from "../core/schemas.ts";
@@ -94,6 +94,7 @@ function result(
     setting,
     ...(canIntegrate ? { next: "integrate" } : {}),
   };
+  const workload = workloadSummary(w.receipts, st.project.fitness ?? {});
   return {
     work: w.id,
     reasons: shown,
@@ -126,6 +127,7 @@ function result(
       integration,
       handoff: w.handoff ?? null,
       omitted,
+      ...(workload ? { workload } : {}),
       ...(demo ? { demo } : {}),
     },
   };
@@ -156,12 +158,13 @@ function close(
   const out: State = sourceOwner && sourceOwner.work !== nw.id ? { ...rest, sourceOwner } : rest;
   const offer =
     v.endpoint === "checked-local" && isEditing(nw) && st.project.adoption.intent === "undecided" && !st.project.adoption.offered;
-  const resp = result(ports, st, closed, v, f, extra, integrationSetting(ports, st, closed), offer, proposal);
   // The plan item this contract worked on is done when it reached checked-local, otherwise available again (INT-12).
   const plan = releaseItem(out.project.intent.plan, nw.id, v.endpoint === "checked-local");
   const settled: State = withSeries(ports, { ...out, project: { ...out.project, intent: { ...out.project.intent, plan } } }, nw, f);
   const adoption = { ...settled.project.adoption, offered: true };
-  return { state: offer ? { ...settled, project: { ...settled.project, adoption } } : settled, resp };
+  const final = offer ? { ...settled, project: { ...settled.project, adoption } } : settled;
+  const resp = result(ports, final, closed, v, f, extra, integrationSetting(ports, st, closed), offer, proposal);
+  return { state: final, resp };
 }
 
 const finishVerb: Verb<FinishInput> = {

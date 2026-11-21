@@ -210,9 +210,11 @@ export const ReviewCoverage = z.strictObject({
 });
 
 // The model an assignment ran on, as reported; what is not known stays unknown (RSC-02, TS §4.8).
+export const ModelQualification = z.enum(["qualified", "unqualified", "not-evaluated", "unknown"]);
+export type ModelQualification = z.infer<typeof ModelQualification>;
 export const ModelRecord = z.strictObject({
   requested: z.string(), resolved: z.string().optional(), source: z.enum(["reported", "observed", "unknown"]),
-  qualification: z.enum(["qualified", "unqualified", "not-evaluated", "unknown"]),
+  qualification: ModelQualification,
 });
 export type ModelRecord = z.infer<typeof ModelRecord>;
 
@@ -459,7 +461,12 @@ export const StateV2 = z.strictObject({
       offered: z.boolean().optional(), // the one-time offer to adopt shared files has been made (CON-01)
     }),
     // Intent read back from INTENT.md after local records were lost (CON-07): which IDs, and what could not be recovered.
-    reconstructed: z.object({ at: z.string(), elementIds: z.array(z.string()), notRecovered: z.array(z.string()) }).optional(),
+    reconstructed: z.object({
+      at: z.string(), elementIds: z.array(z.string()), notRecovered: z.array(z.string()),
+      lockProposal: z.array(z.object({
+        id: z.string(), path: z.string(), hash: z.string(), commit: z.string(),
+      })).optional(),
+    }).optional(),
     retention: z.object({
       legacyTemp: z.strictObject({
         path: z.string(), identity: z.string(), exists: z.boolean(), at: z.string(), pending: z.boolean(),

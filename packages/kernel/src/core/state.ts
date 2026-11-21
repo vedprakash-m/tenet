@@ -1,7 +1,7 @@
 // Constructors for the state document and a contract (TS §7.2). Pure: ids and time arrive as arguments.
 import { newBudget, recoverAccounting } from "./budget.ts";
 import { SCHEMA_VERSION } from "./schemas.ts";
-import type { Lane, Level, ModelRecord, Profile, StartSnapshot, State, WorkContract } from "./schemas.ts";
+import type { Lane, Level, ModelQualification, ModelRecord, Profile, StartSnapshot, State, WorkContract } from "./schemas.ts";
 import type { LogEntry } from "../ports/types.ts";
 import { hashOf } from "./ids.ts";
 
@@ -42,9 +42,9 @@ export function recoveredState(state: State, at: string, records: readonly unkno
 }
 
 /** The model as the coordinator reported it, or unknown: it is never inferred (RSC-02). */
-export const modelRecord = (requested?: string): ModelRecord =>
+export const modelRecord = (requested?: string, qualification: ModelQualification = "unknown"): ModelRecord =>
   requested
-    ? { requested, source: "reported", qualification: "unknown" }
+    ? { requested, source: "reported", qualification }
     : { requested: "inherited", source: "unknown", qualification: "unknown" };
 
 export interface NewContract {
@@ -52,6 +52,7 @@ export interface NewContract {
   generation: number; now: string; version: string; adapter?: string; assessment: Record<string, "low" | "high">;
   scopePaths: string[]; protectedPaths: string[]; gitMode: "git" | "shadow" | "none";
   base: string | null; branch: string | null; start: StartSnapshot; planItem?: string; model?: string;
+  modelQualification?: ModelQualification;
 }
 
 export const newContract = (n: NewContract): WorkContract => ({
@@ -63,7 +64,7 @@ export const newContract = (n: NewContract): WorkContract => ({
   touched: [], vetted: {}, includeDirty: [], keepOut: [], dirtyFileDecisions: [],
   budget: newBudget(), acceptance: "pending", assessment: n.assessment,
   pinned: { tenet: n.version, schema: SCHEMA_VERSION, ...(n.adapter ? { adapter: n.adapter } : {}) }, createdAt: n.now, updatedAt: n.now,
-  model: modelRecord(n.model), ...(n.planItem ? { planItem: n.planItem } : {}),
+  model: modelRecord(n.model, n.modelQualification), ...(n.planItem ? { planItem: n.planItem } : {}),
 });
 
 /** Contracts that still hold their place: not finished, cancelled or superseded. */

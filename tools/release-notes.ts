@@ -42,22 +42,51 @@ export const changedPaths = (root: string, base: string): string[] => git(root, 
 
 const section = (plan: string, heading: string): string => {
   const from = plan.indexOf(`\n${heading}`);
-  return from < 0 ? "" : plan.slice(from + 1).split(/\n#{2,3} /)[0] ?? "";
+  return from < 0 ? (plan.startsWith(heading) ? plan.split(/\n#{2,3} /)[0] ?? "" : "")
+    : plan.slice(from + 1).split(/\n#{2,3} /)[0] ?? "";
 };
-const openBoxes = (plan: string, heading: string): string[] =>
-  section(plan, heading).split("\n").filter((l) => l.startsWith("- [ ]")).map((l) => (l.length > 150 ? `${l.slice(0, 147)}...` : l).replace(/^- \[ \] /, ""));
+const short = (line: string): string => line.length > 150 ? `${line.slice(0, 147)}...` : line;
+const openHostGates = (plan: string): string[] =>
+  section(plan, "## 6. Host track").split("\n").flatMap((line) => {
+    const gate = /^\*\*(H\d+) ◐ (.*?)\*\*/.exec(line);
+    return gate ? [`${gate[1]} ${gate[2]}`] : [];
+  });
+const openOwnerGates = (plan: string): string[] =>
+  section(plan, "## 7. Questions for the owner and backlog").split("\n").flatMap((line) => {
+    if (!line.startsWith("|") || /^\|\s*-{3}/.test(line)) return [];
+    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+    if (cells.length !== 5 || cells[0] === "Date" || cells[4]) return [];
+    return [short(`${cells[1]} - ${cells[2]}`)];
+  });
+const openSignoffGates = (plan: string): string[] =>
+  section(plan, "## 2. Owner sign-off").split("\n").flatMap((line) => {
+    if (!line.startsWith("|") || /^\|\s*-{3}/.test(line)) return [];
+    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+    if (cells.length !== 4 || cells[0] === "#") return [];
+    return !cells[3] || /pending|unsigned/i.test(cells[3]) ? [short(`${cells[0]} - ${cells[1]}`)] : [];
+  });
+const openSourceGates = (plan: string): string[] => {
+  const heading = plan.split("\n").find((line) => line.startsWith("### 9.1 "));
+  if (!heading) return [];
+  return section(plan, heading).split("\n").flatMap((line) => {
+    if (!line.startsWith("|") || /^\|\s*-{3}/.test(line)) return [];
+    const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+    if (cells.length !== 3 || cells[0] === "Area" || !/[◐⛔]/u.test(cells[1] ?? "")) return [];
+    return [short(`${cells[0]} - ${cells[2]}`)];
+  });
+};
 
 export function facts(root: string): string[] {
-  const plan = readFileSync(join(root, "specs/plan.md"), "utf8");
+  const plan = readFileSync(join(root, "specs/re-plan.md"), "utf8");
   const r = report(root, "R1");
   const audit = releaseAuditReport(r);
   const total = r.covered.length + r.disabled.length + r.hostOnly.length + r.unreachable.length + r.unmapped.length;
   const off = r.disabled.length ? ` / ${r.disabled.length} capability disabled` : "";
   const live = `${r.covered.length} mapped${off} / ${r.hostOnly.length} host-only / ${r.unmapped.length} unmapped of ${total} Musts`;
-  const stated = /\*\*(\d+ mapped \/ \d+ host-only \/ \d+ unmapped of \d+ Musts), (\d+) qualified\*\*/.exec(plan);
+  const stated = /\*\*Current R1 structural mapping: (\d+ mapped \/ \d+ host-only \/ \d+ unmapped of \d+ Musts), (\d+) qualified\.\*\*/.exec(plan);
   const qualified = r.evidence.filter((e) => e.qualification === "qualified").length;
   const limits = /These controls do not[^.]*\./.exec(readFileSync(join(root, "specs/tech-spec.md"), "utf8"))?.[0];
-  const gates = [...openBoxes(plan, "### 9.5 Release chain"), ...openBoxes(plan, "### 4.5 Owner-gate items")];
+  const gates = [...openSignoffGates(plan), ...openHostGates(plan), ...openOwnerGates(plan), ...openSourceGates(plan)];
   return [
     `- R1 structural mapping now (tools/coverage.ts): ${live}; ${qualified} qualified; ${audit.blockedRequirements.length} Musts block a release audit.`,
     `- Plan dashboard states: ${stated ? `${stated[1]}, ${stated[2]} qualified` : "no figure found"}${stated?.[1] === live ? " (matches)" : " (DIFFERS or absent: update the plan or this draft)"}.`,

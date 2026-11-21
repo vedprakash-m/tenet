@@ -50,7 +50,7 @@ export function build(
 ): { elements: BasisElement[]; ids: Record<string, string> } {
   const own = new Set(w.basis?.elementIds ?? []);
   const all = state.project.intent.elements;
-  let seq = highestSeq(all);
+  let seq = highestSeq([...all, ...(state.project.reconstructed?.elementIds ?? []).map((id) => ({ id }))]);
   const ids = new Map<string, string>();
   const idOf = (ref: string | undefined) => (ref ? (ids.get(ref) ?? (all.some((e) => e.id === ref) ? ref : undefined)) : undefined);
   const exampleCount = exampleCounts(all, own);

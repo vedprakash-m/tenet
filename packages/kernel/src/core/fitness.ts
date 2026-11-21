@@ -28,7 +28,14 @@ const Fitness = z.strictObject({
 }).refine((f) => f.trend === false || f.degradation, "a trended function needs a degradation threshold");
 
 export const WorkloadDeclaration = z.strictObject({
-  version: z.literal(1), build: Argv.optional(), run: Argv, report: z.literal("stdout"),
+  version: z.literal(1), build: Argv.optional(), run: Argv,
+  report: z.union([
+    z.literal("stdout"),
+    z.strictObject({
+      kind: z.literal("file"),
+      path: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,119}\.json$/),
+    }),
+  ]),
   timeoutMs: z.number().int().min(1000).max(3_600_000), minimumSamples: z.number().int().nonnegative(),
   samples: z.array(DottedPath).max(32), fitness: z.array(Fitness).min(1).max(32),
 }).refine((d) => new Set(d.fitness.map((f) => f.id)).size === d.fitness.length, "fitness ids must be unique");
@@ -55,6 +62,9 @@ const reading = (v: unknown): number | undefined => (typeof v === "number" && Nu
 const short = (n: number) => Number(n.toPrecision(6));
 
 export interface WorkloadMeasures { env: string; samples: number; measures: Record<string, number> }
+export interface WorkloadEnvironment {
+  platform: string; arch: string; totalMemoryBytes: number; node: string;
+}
 export interface Judged {
   status: "pass" | "fail" | "inconclusive";
   reasons: string[];
@@ -64,8 +74,12 @@ export interface Judged {
 }
 
 /** The series a point belongs to: the project-reported platform, architecture and node major, and the trended definitions. */
-function envTag(decl: WorkloadDeclaration, report: Record<string, unknown>): string {
-  const env = isObject(report.environment) ? report.environment : {};
+function envTag(
+  decl: WorkloadDeclaration,
+  report: Record<string, unknown>,
+  observed?: WorkloadEnvironment,
+): string {
+  const env = observed ?? (isObject(report.environment) ? report.environment : {});
   const node = typeof env.node === "string" ? /^v?(\d+)/.exec(env.node)?.[1] ?? null : null;
   const defs = decl.fitness.filter((f) => f.trend !== false).map((f) => [f.id, f.measure, f.better]);
   return hashOf([env.platform ?? null, env.arch ?? null, env.totalMemoryBytes ?? null, node, defs]).slice(0, 16);
@@ -85,7 +99,12 @@ function missed(f: FitnessFunction, v: number): boolean {
 }
 
 /** The kernel's own reading of a completed run's report against the declared targets (WR-4). */
-export function judgeReport(decl: WorkloadDeclaration, exit: number, raw: string | null): Judged {
+export function judgeReport(
+  decl: WorkloadDeclaration,
+  exit: number,
+  raw: string | null,
+  observed?: WorkloadEnvironment,
+): Judged {
   const no = (code: string, why: string, extra: string[] = [UNAVAILABLE]): Judged =>
     ({ status: "inconclusive", reasons: [code], limitations: [why, ...extra, SCOPE], failures: [] });
   if (raw === null || !raw.trim()) return no("report-missing", "the workload printed no report");
@@ -114,7 +133,7 @@ export function judgeReport(decl: WorkloadDeclaration, exit: number, raw: string
   const harness = (reasons as string[]).filter((r) => !POPULATION.includes(r));
   if (reasons.length && !harness.length) return no("population-mismatch", `the harness reported ${reasons.join(", ")}`, said);
   const workload: WorkloadMeasures = {
-    env: envTag(decl, report), samples,
+    env: envTag(decl, report, observed), samples,
     measures: Object.fromEntries(decl.fitness.flatMap((f, i) => (f.trend === false ? [] : [[f.id, values[i]!]]))),
   };
   const failures = [
@@ -132,6 +151,19 @@ export function judgeReport(decl: WorkloadDeclaration, exit: number, raw: string
 export interface Point { value: number; receipt: string; at: string; env: string }
 export interface Series { points: Point[]; raised?: string }
 export type FitnessSeries = Record<string, Series>;
+
+export function workloadSummary(
+  receipts: readonly { id: string; kind: string; workload?: WorkloadMeasures; provenance: { startedAt: string } }[],
+  series: FitnessSeries,
+) {
+  const current = [...receipts].reverse().find((receipt) => receipt.kind === "workload" && receipt.workload);
+  if (!current?.workload) return undefined;
+  return {
+    scope: SCOPE,
+    current: { receipt: current.id, at: current.provenance.startedAt, ...current.workload },
+    series,
+  };
+}
 
 /** Over the last n points each is worse than the one before, and the last is worse than the first by more than the
  * larger of `percent` of the first and `floor`. No division, so a zero base uses the floor. */

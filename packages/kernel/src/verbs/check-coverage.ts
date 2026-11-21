@@ -9,6 +9,7 @@ export function receiptContext(run: Run, argv: string[]): ReceiptContext {
   return {
     stage, scope, id: run.id, candidate: facts.candidate, runId, runDir, argv, before: facts.candidate,
     versions: run.versions ?? ports.stack.fingerprint(ports.root), executionEnvelope, missing: new Set<string>(),
+    workloadEnvironment: ports.runner?.workloadEnvironment?.(),
   };
 }
 

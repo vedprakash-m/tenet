@@ -6,15 +6,28 @@ import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
 import { checkNotes, draft, ITEMS, notesPath, PLACEHOLDER } from "../../../tools/release-notes.ts";
 
 const PLAN = [
-  "## 1. Dashboard", "", "**R1 structural mapping is **1 mapped / 0 host-only / 0 unmapped of 1 Musts, 0 qualified**.", "",
-  "### 4.5 Owner-gate items", "", "- [ ] Project name finalized", "- [x] License chosen", "",
-  "### 9.5 Release chain", "", "- [ ] Signed tag and provenance attestation", "- [x] Payload inventory", "", "### 9.6 Definition of done", "", "- [ ] Not a release-chain gate", "",
+  "## 2. Owner sign-off", "",
+  "| # | Decision | Recommendation | Owner answer |",
+  "|---|---|---|---|",
+  "| S2 | Approve the change procedure. | approve | |",
+  "## 1. Dashboard", "", "**Current R1 structural mapping: 1 mapped / 0 host-only / 0 unmapped of 1 Musts, 0 qualified.**", "",
+  "## 6. Host track", "", "**H1 ◐ SP-08 evidence — owner run required.**", "",
+  "## 7. Questions for the owner and backlog", "",
+  "| Date | Item | Question and options | Recommendation | Owner answer |",
+  "|---|---|---|---|---|",
+  "| 2026-11-21 | Project name | Finalize the project name. | Approve. | |",
+  "| 2026-11-20 | License | Choose the license. | MIT. | MIT selected. |",
+  "## 9. Target C work", "", "### 9.1 Source status", "",
+  "| Area | Status | What remains |",
+  "|---|---|---|",
+  "| Traits | ⛔ | Owner semantics and implementation. |",
+  "## 8. Progress log", "",
 ].join("\n");
 
 function repo(root: string) {
   write(root, "specs/PRD.md", "| TST-01 | Example | Must | M0 | AC-01 |\n");
   write(root, "specs/tech-spec.md", "| AC-01 | T1 | Suite |\nThese controls do not implement signing.\n");
-  write(root, "specs/plan.md", PLAN);
+  write(root, "specs/re-plan.md", PLAN);
   write(root, "packages/kernel/test/example.test.ts", `it("maps [TST-01]", () => {});\n`);
   write(root, "packages/kernel/src/verbs/example.ts", "");
   write(root, "packages/kernel/src/decisions/example.ts", "");
@@ -63,13 +76,15 @@ describe("release notes enumerate the disclosure items", () => {
 
       assert.match(notes, /1 mapped \/ 0 host-only \/ 0 unmapped of 1 Musts; 0 qualified; 1 Musts block a release audit/);
       assert.match(notes, /Plan dashboard states: 1 mapped .* \(matches\)/);
-      assert.match(notes, /- Open gate: Signed tag and provenance attestation/);
-      assert.match(notes, /- Open gate: Project name finalized/);
-      assert.doesNotMatch(notes, /Payload inventory|Not a release-chain gate|License chosen/);
+      assert.match(notes, /- Open gate: H1 SP-08 evidence — owner run required/);
+      assert.match(notes, /- Open gate: Project name - Finalize the project name/);
+      assert.match(notes, /- Open gate: S2 - Approve the change procedure/);
+      assert.match(notes, /- Open gate: Traits - Owner semantics and implementation/);
+      assert.doesNotMatch(notes, /License - Choose the license/);
       assert.match(notes, /Known limit: These controls do not implement signing\./);
       assert.match(notes, /Changed paths: not computed \(no base\)/);
 
-      write(root, "specs/plan.md", PLAN.replace("1 mapped / 0 host-only", "2 mapped / 0 host-only"));
+      write(root, "specs/re-plan.md", PLAN.replace("1 mapped / 0 host-only", "2 mapped / 0 host-only"));
       assert.match(draft(root, null), /DIFFERS or absent/);
     } finally {
       cleanup(root);

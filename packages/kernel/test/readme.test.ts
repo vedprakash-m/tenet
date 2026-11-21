@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 const readme = readFileSync(new URL("../../../README.md", import.meta.url), "utf8");
 const pluginReadme = readFileSync(new URL("../../../plugin/README.md", import.meta.url), "utf8");
 const removalGuide = readFileSync(new URL("../../../docs/user/install-and-remove.md", import.meta.url), "utf8");
+const contributing = readFileSync(new URL("../../../CONTRIBUTING.md", import.meta.url), "utf8");
 
 describe("installation README [INS-02]", () => {
   it("states publisher and source-verification limits without draft placeholders", () => {
@@ -34,7 +35,8 @@ describe("installation README [INS-02]", () => {
   it("gives safe preview removal guidance before the plugin is removed", () => {
     for (const [name, text] of [["root README", readme], ["plugin README", pluginReadme], ["removal guide", removalGuide]] as const) {
       assert.match(text, /help uninstall[\s\S]*remov(?:e|ing) the plugin/i, name);
-      assert.match(text, /cleanup removal is disabled/i, name);
+      assert.match(text, /cleanup (?:is bound to a preview|preview)/i, name);
+      assert.doesNotMatch(text, /cleanup removal is disabled/i, name);
       assert.match(text, /residue (?:list|listing) is incomplete/i, name);
       assert.match(text, /(?:optionally|optional)[^.]*\.tenet\//i, name);
     }
@@ -55,5 +57,17 @@ describe("policy-blocked install [INS-08]", () => {
     assert.match(beforeInstall, /ask whoever manages your Copilot organization settings/);
     assert.match(beforeInstall, /Tenet cannot see the policy/);
     assert.match(beforeInstall, /unobserved/);
+  });
+});
+
+describe("extension contribution process [OSS-03]", () => {
+  it("defines the RFC inputs and the three certification levels", () => {
+    assert.match(contributing, /## Extension RFC process/);
+    assert.match(contributing, /experimental/i);
+    assert.match(contributing, /community/i);
+    assert.match(contributing, /official/i);
+    assert.match(contributing, /compatibility contract/i);
+    assert.match(contributing, /security and privacy/i);
+    assert.match(contributing, /acceptance tests/i);
   });
 });

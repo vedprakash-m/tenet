@@ -212,6 +212,7 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
       writeFileSync(join(root, "docs", "staged.txt"), "human staged\nhuman unstaged\n");
       writeFileSync(join(root, "docs", "dirty.txt"), "human dirty\n");
       writeFileSync(join(root, "docs", "untracked.bin"), untrackedBytes);
+      mkdirSync(join(root, ".git", "info"), { recursive: true });
       writeFileSync(join(root, ".git", "info", "exclude"), "docs/ignored.bin\n");
       writeFileSync(join(root, "docs", "ignored.bin"), ignoredBytes);
       assert.equal(git("status", "--short", "--", "docs/staged.txt"), "MM docs/staged.txt");

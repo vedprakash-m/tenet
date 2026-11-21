@@ -61,7 +61,8 @@ describe("recovery process ownership", () => {
         if (trusted && process.platform === "darwin") allowedValues.push("unknown");
         assert.ok(allowedValues.includes((result as { value: string }).value), JSON.stringify(result));
         if ((result as { value: string }).value === "stopped") await closed;
-        else process.kill(pid, 0);
+        else try { process.kill(pid, 0); }
+        catch (error) { assert.equal((error as NodeJS.ErrnoException).code, "ESRCH", "unknown ownership must not report another error"); }
         const expected = mode === "overwrite-json" ? Buffer.from(text.replace('"note":"a"', '"note":"b"')) : bytes;
         assert.deepEqual(readFileSync(path), expected);
       } finally { try { process.kill(-pid, "SIGKILL"); } catch {} await closed; }

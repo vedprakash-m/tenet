@@ -66,6 +66,37 @@ describe("verdict table [RES-02, EVD-01]", () => {
     assert.ok(v.reasons.some(r => r.code === "review-missing" && /architecture/.test(r.message)));
     assert.ok(v.reasons.some(r => r.code === "review-missing" && /security/.test(r.message)));
   });
+  it("names a missing declared alternative receipt separately from flaky evidence [AC-27]", () => {
+    const i = base();
+    i.obligations = [{ ...suite, coverageHash: "a".repeat(64) }];
+    i.receipts = [rc("OB-EX-1"), rc("OB-suite", { qualifiers: ["flaky"] })];
+    assert.ok(verdict(i).reasons.some(r => r.code === "alternative-check-missing" && r.refs?.includes("OB-suite")));
+    const approval = {
+      mappingHash: "b".repeat(64), reviewHash: "c".repeat(64), obligation: "OB-suite",
+      checkInputId: CHECK, alternativeCheckInputId: `${CHECK}-alternative`,
+    };
+    assert.ok(verdict({ ...i, coverageApproval: [approval] })
+      .reasons.some(r => r.code === "alternative-check-missing"), "approval metadata alone is not a receipt");
+    const alternative = rc("OB-suite-alternative", { checkInputId: `${CHECK}-alternative` });
+    assert.ok(!verdict({
+      ...i,
+      receipts: [...i.receipts, alternative],
+      coverageApproval: [approval],
+      coverageEvidence: [{
+        ...approval,
+        primaryReceipt: "RC-OB-suite", alternativeReceipt: alternative.id,
+      }],
+    }).reasons.some(r => r.code === "alternative-check-missing"));
+  });
+  it("keeps imported CI external until protected-verification facts exist [EVD-14]", () => {
+    const i = base();
+    i.receipts = [rc("OB-EX-1"), rc("OB-suite", { source: "ci-external" })];
+    const v = verdict(i);
+    assert.notEqual(v.endpoint, "checked-local");
+    assert.ok(v.reasons.some(r =>
+      r.code === "evidence-inconclusive" && /external CI|external.*CI/i.test(r.message)
+    ));
+  });
   it("reaches checked-local in Deep once native architect and security passes cover the current candidate [WRK-04]", () => {
     const deep = { ...base(), lane: "deep" as const, analyses: [pass("architect"), pass("security")] };
     assert.equal(verdict(deep).endpoint, "checked-local", JSON.stringify(verdict(deep).reasons));

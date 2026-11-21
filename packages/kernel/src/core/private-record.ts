@@ -33,17 +33,15 @@ export function parseUniqueRecord(text: string): unknown {
 
 /** Keys declared in valid JSON text: outside strings, a colon appears only between a key and its value. */
 function declaredKeys(text: string): number {
-  let count = 0, colon = text.indexOf(":"), slash = text.indexOf("\\");
-  for (let i = 0; ;) {
-    const open = text.indexOf('"', i), stop = open === -1 ? text.length : open;
-    // `colon` and `slash` only move forward, so the whole scan stays linear in the text.
-    for (; colon !== -1 && colon < stop; colon = text.indexOf(":", colon + 1)) if (colon >= i) count++;
-    if (open === -1) return count;
-    let close = text.indexOf('"', open + 1);
-    if (slash !== -1 && slash <= open) slash = text.indexOf("\\", open + 1);
-    if (slash !== -1 && slash < close) { // an escape before that quote: walk the string to its real end
-      for (close = open + 1; text.charCodeAt(close) !== 34; close += text.charCodeAt(close) === 92 ? 2 : 1);
-    }
-    i = close + 1;
+  let count = 0, inString = false, escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charCodeAt(i);
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === 92) escaped = true;
+      else if (ch === 34) inString = false;
+    } else if (ch === 34) inString = true;
+    else if (ch === 58) count++;
   }
+  return count;
 }

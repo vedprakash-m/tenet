@@ -4,6 +4,7 @@ import type { CapabilityCache } from "../core/capabilities.ts";
 import { hashOf } from "../core/ids.ts";
 import { KernelError } from "../core/errors.ts";
 import type { CapabilityContext, Host, Recipes } from "../ports/types.ts";
+import { ModelQualificationTable, qualificationForModel } from "../core/model-qualification.ts";
 
 export class PluginHost implements Host {
   private recipes: Recipes;
@@ -53,6 +54,14 @@ export class PluginHost implements Host {
   }
 
   cache(): CapabilityCache { return this.records; }
+
+  modelQualification(model: string) {
+    let found: unknown = null;
+    try { found = JSON.parse(this.recipes.text("com.github.copilot/model-qualification.json") ?? "null"); }
+    catch { return "unknown" as const; }
+    const parsed = ModelQualificationTable.safeParse(found);
+    return parsed.success ? qualificationForModel(parsed.data, model) : "unknown";
+  }
 
   private declaration(): Descriptor {
     let found: unknown = null;

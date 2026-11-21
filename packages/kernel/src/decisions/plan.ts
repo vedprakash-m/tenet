@@ -21,7 +21,10 @@ export const plan: Decision = {
     const r = Proposal.safeParse(input.propose);
     if (!r.success) throw new KernelError("plan-invalid", `${r.error.issues[0]!.path.join(".") || "body"}: ${r.error.issues[0]!.message}`, { exit: 2 });
     const intent = state.project.intent;
-    const built = buildPlan(intent.plan, r.data.items, highestSeq([...intent.elements, ...intent.plan]), () => ports.rand.base32(3));
+    const reserved = (state.project.reconstructed?.elementIds ?? []).map((id) => ({ id }));
+    const built = buildPlan(
+      intent.plan, r.data.items, highestSeq([...intent.elements, ...intent.plan, ...reserved]), () => ports.rand.base32(3),
+    );
     if (!built.ok) throw new KernelError("plan-invalid", built.message, { exit: 2 });
     if (!built.changed.length) return { resp: { work: work.id, data: { changed: false } } };
 

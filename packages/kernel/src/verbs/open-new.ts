@@ -118,7 +118,7 @@ async function draft(c: Ctx, probe: RepoProbe, level: Level) {
     label: workLabel(state.workSeq + 1),
     profile: input.profile,
     request: input.request,
-    ...(input.model ? { model: input.model } : {}),
+    ...(input.model ? { model: input.model, modelQualification: ports.host.modelQualification?.(input.model) ?? "unknown" } : {}),
     lane,
     floor,
     level,

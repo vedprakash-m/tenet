@@ -26,7 +26,8 @@ async function recordAnalyst(ports: Ports, state: State, w: WorkContract, r: Ana
   const applied = applyAnalystResult(r, chk.reservation, currentCandidate);
   const settled = { countRound: false, recheck: false, native: r.dispatchMode === "subagent-fresh" };
   const budget = settleReservation(w.budget, chk.reservation.id, settled);
-  const nw = { ...w, analyses: [...w.analyses, { ...applied.link, model: modelRecord(model) }], budget, updatedAt: now };
+  const qualification = model ? ports.host.modelQualification?.(model) ?? "unknown" : "unknown";
+  const nw = { ...w, analyses: [...w.analyses, { ...applied.link, model: modelRecord(model, qualification) }], budget, updatedAt: now };
   // Partial output never counts as a completed answer (AGT-05): dispatch again, never proceed as if settled.
   const next = r.status !== "completed"
     ? [nx("analyst", `Analyst result: ${r.status}; retry with packet analyst.`, true)]
@@ -73,7 +74,11 @@ function recordReview(ports: Ports, state: State, w: WorkContract, r: ReviewResu
   const settled = { countRound: applied.countRound, recheck: r.mode === "recheck", native: r.dispatchMode === "subagent-fresh" };
   const budget = settleReservation(w.budget, chk.reservation.id, settled);
   const nw = {
-    ...w, findings: all, attention: applied.attention, reviews: [...w.reviews, { ...applied.link, model: modelRecord(model) }], budget,
+    ...w, findings: all, attention: applied.attention,
+    reviews: [...w.reviews, {
+      ...applied.link,
+      model: modelRecord(model, model ? ports.host.modelQualification?.(model) ?? "unknown" : "unknown"),
+    }], budget,
     focusedReview: undefined, updatedAt: now,
   };
   const blocking = all.filter(f => f.severity === "blocker" ? !["verified", "withdrawn"].includes(f.state)

@@ -21,6 +21,7 @@ describe("parseUniqueRecord", () => {
     assert.deepEqual(parseUniqueRecord('{"a":"a","b":["a","a"],"c":"q\\":"}'), { a: "a", b: ["a", "a"], c: 'q":' });
     assert.deepEqual(parseUniqueRecord('{"a" :"b:" , "b":1}'), { a: "b:", b: 1 });
     assert.deepEqual(parseUniqueRecord('{"a":"{[\\\\","b":"]}"}'), { a: "{[\\", b: "]}" });
+    assert.deepEqual(parseUniqueRecord('{"b":null,"\\"":[],"\\\\":null}'), { b: null, '"': [], "\\": null });
   });
 
   it("[CON-03] compares keys after decoding escapes", () => {

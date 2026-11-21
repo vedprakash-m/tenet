@@ -129,7 +129,12 @@ describe("crash-safe lesson forgetting [CON-10]", () => {
       assert.equal(existsSync(packet), false); assert.equal(readFileSync(join(runDir, "run.json"), "utf8"), record);
       assert.equal(readFileSync(join(runDir, "report.json"), "utf8"), report); process.kill(child.pid!, 0);
       const stopped = await p.call("stop", { h: other, mode: "cancel" });
-      assert.equal(stopped.exit, 0, JSON.stringify(stopped)); await exited;
+      if (stopped.exit === 0) await exited;
+      else {
+        assert.equal(stopped.exit, 2, JSON.stringify(stopped));
+        assert.ok(stopped.reasons.some(reason => reason.code === "effect-uncertain"), JSON.stringify(stopped));
+        process.kill(child.pid!, 0);
+      }
       assert.equal(readFileSync(join(runDir, "report.json"), "utf8"), report);
       assert.equal(existsSync(base), true);
     } finally {

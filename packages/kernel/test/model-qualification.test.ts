@@ -7,6 +7,10 @@ import { modelLimit } from "../src/decisions/model-limit.ts";
 import { MODEL_LIMIT, modelQuestion, needsModelAnswer } from "../src/verbs/model-limit.ts";
 import type { DecisionCtx } from "../src/decisions/types.ts";
 import type { WorkContract } from "../src/core/schemas.ts";
+import { ModelQualificationTable, qualificationForModel } from "../src/core/model-qualification.ts";
+import { modelRecord } from "../src/core/state.ts";
+import { runVerb } from "../src/pipeline.ts";
+import { VERBS } from "../src/verbs/index.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -17,6 +21,23 @@ const decide = (w: WorkContract, shown: WorkContract, value: string) =>
   modelLimit.run({ state: { pending: [modelQuestion(shown)], work: { W1: w } }, work: w, input: { answers: { [MODEL_LIMIT]: value } } } as unknown as DecisionCtx);
 
 describe("model warning before Deep work [RSC-08]", () => {
+  it("[RSC-08] reads only admitted, exact-model campaign records and defaults every other model to unknown", () => {
+    const table = ModelQualificationTable.parse({
+      schemaVersion: 1,
+      records: [{
+        model: "model-x", qualification: "qualified",
+        campaignId: "m0-2026-11-21", campaignPath: "docs/audits/2026-11-21/m0-model.json",
+        campaignSha256: "a".repeat(64),
+      }],
+    });
+    assert.equal(qualificationForModel(table, "model-x"), "qualified");
+    assert.equal(qualificationForModel(table, "model-y"), "unknown");
+    assert.equal(modelRecord("model-x", qualificationForModel(table, "model-x")).qualification, "qualified");
+    assert.throws(() => ModelQualificationTable.parse({
+      schemaVersion: 1, records: [table.records[0], { ...table.records[0] }],
+    }), /duplicate model/i);
+  });
+
   it("[RSC-08] asks only for Deep work on a model that is not qualified", () => {
     assert.equal(needsModelAnswer(work()), true);
     assert.equal(needsModelAnswer(work({ model: { ...unknown, qualification: "unqualified" } })), true);
@@ -78,5 +99,21 @@ describe("model warning through the public verbs [RSC-08]", { skip: !posix && "m
     roots.push(q.root);
     const s = await q.call("open", { profile: "feature", request: "add a greeting", scopePaths: ["src/greet.ts"], lane: "standard" });
     assert.ok(!s.questions?.some((x) => x.id === MODEL_LIMIT));
+  });
+
+  it("[RSC-08] a table-backed qualified reported model avoids the Deep warning without changing the model facts", async () => {
+    const p = project({}, { autoContinueModel: false });
+    roots.push(p.root);
+    const ports = p.ports();
+    ports.host.modelQualification = (model) => model === "qualified-model" ? "qualified" : "unknown";
+    const r = await runVerb(ports, VERBS, "open", {
+      profile: "feature", request: "add a greeting", scopePaths: ["src/greet.ts"], lane: "deep",
+      model: "qualified-model",
+    });
+    assert.equal(r.questions?.some((question) => question.id === MODEL_LIMIT) ?? false, false, JSON.stringify(r));
+    const w = Object.values(p.ports().store.read()!.state.work)[0]!;
+    assert.equal(w.model?.requested, "qualified-model");
+    assert.equal(w.model?.source, "reported");
+    assert.equal(w.model?.qualification, "qualified");
   });
 });

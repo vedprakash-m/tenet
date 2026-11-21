@@ -2,7 +2,7 @@
 // normalized the report; this decides what it proves. A receipt that cannot prove anything is inconclusive, never a pass.
 import { failureIdsOf, MAX_IDS } from "./baseline.ts";
 import { judgeReport, SCOPE, UNAVAILABLE, WORKLOAD_FILE } from "./fitness.ts";
-import type { ParsedWorkload } from "./fitness.ts";
+import type { ParsedWorkload, WorkloadEnvironment } from "./fitness.ts";
 import { redact } from "./redact.ts";
 import { reason } from "./reasons.ts";
 import type { ExecutionEnvelope, Obligation, Reason, Receipt } from "./schemas.ts";
@@ -21,6 +21,7 @@ export interface RunFacts {
   after: string;
   ran: boolean; // `after` is the inventory digest once the run ended
   unsupportedConfig?: string;
+  workloadBuildFresh?: boolean;
 }
 
 export const notRunFacts = (startedAt: string, unsupportedConfig?: string): Omit<RunFacts, "after"> => ({
@@ -41,6 +42,7 @@ export interface ReceiptContext {
   executionEnvelope?: ExecutionEnvelope;
   missing: ReadonlySet<string>;
   population?: ReadonlyMap<string, { mode: string; blob: string }>;
+  workloadEnvironment?: WorkloadEnvironment;
 }
 
 type FileCounts = NonNullable<ReturnType<Normalized["files"]["get"]>>;
@@ -228,7 +230,10 @@ export function workloadReceipt(
   const early = runProblem(o, c);
   if (early === "timeout") return stop(early, "The workload timed out; its output does not establish a completed workload result.");
   if (early) return stop(early);
-  const j = judgeReport(parsed.decl, o.exit!, o.raw);
+  if (parsed.decl.build && o.workloadBuildFresh === false) {
+    return stop("build-not-fresh", "The declared build did not complete in this workload run.");
+  }
+  const j = judgeReport(parsed.decl, o.exit!, o.raw, c.workloadEnvironment);
   rec.status = j.status;
   rec.reasons.push(...j.reasons);
   rec.limitations.push(...j.limitations);

@@ -101,6 +101,13 @@ function judgeObligation(ob: Obligation, i: VerdictInput): Reason[] {
   if (coveredObligationIds(i.receipts, i.coverageApproval, i.coverageEvidence).has(ob.id)) return [];
   const rc = fresh(i.receipts, ob.id, i.checkInputId);
   if (!rc) return [i.receipts.some((r) => r.obligation === ob.id && r.stage !== "baseline") ? reason("stale", ob.id, { refs: [ob.id] }) : reason("evidence-missing", ob.id, { refs: [ob.id] })];
+  if (rc.source === "ci-external") {
+    return [reason(
+      "evidence-inconclusive",
+      `${ob.id}: external CI evidence lacks the protected-run verification record`,
+      { refs: [ob.id] },
+    )];
+  }
   if (rc.status === "skipped" || rc.status === "inconclusive") {
     return [reason("evidence-inconclusive", `${ob.id}: ${rc.reasons.join(", ") || rc.status}`, { refs: [ob.id] })];
   }
@@ -127,6 +134,28 @@ function judgeElement(el: BasisElement, i: VerdictInput): Reason[] {
   const ok = v.length > 0 && v.every((m) => (m.method === "obligation" ? passed(i, m.ref) : m.method === "review" ? reviewOk(i) : el.kind === "assumption" && !!i.confirmedAssumptions?.includes(el.id)));
   if (el.kind === "assumption" && !ok) return [reason("assumption-unresolved", el.id, { refs: [el.id] })];
   return ok ? [] : [reason("basis-element-unverified", el.id, { refs: [el.id] })];
+}
+
+function judgeAlternativeCheck(i: VerdictInput): Reason[] {
+  return i.obligations.flatMap((obligation) => {
+    if (!obligation.coverageHash) return [];
+    const receipt = fresh(i.receipts, obligation.id, i.checkInputId);
+    if (!receipt?.qualifiers.includes("flaky")) return [];
+    const covered = i.coverageEvidence?.some((evidence) =>
+      evidence.obligation === obligation.id &&
+      evidence.checkInputId === receipt.checkInputId &&
+      i.receipts.some((candidate) =>
+        candidate.id === evidence.alternativeReceipt &&
+        candidate.obligation === `${obligation.id}-alternative` &&
+        candidate.checkInputId === evidence.alternativeCheckInputId
+      )
+    );
+    return covered ? [] : [reason(
+      "alternative-check-missing",
+      `the flaky ${obligation.id} check has no admitted alternative receipt`,
+      { refs: [obligation.id] },
+    )];
+  });
 }
 
 /** A behavioral change needs a distinguishing red on the baseline; the red must still apply to the test that went green. */
@@ -258,6 +287,7 @@ function reasonsOf(i: VerdictInput): Reason[] {
   if (i.authorityAvailable === false) r.push(reason("authority-needed", "this contract's routine authority is suspended or expired"));
   for (const check of i.unsupportedChecks ?? []) r.push(reason("evidence-missing", `${check}: its execution consumer is unavailable`));
   for (const ob of i.obligations) r.push(...judgeObligation(ob, i));
+  r.push(...judgeAlternativeCheck(i));
   for (const el of i.elements) r.push(...judgeElement(el, i));
   for (const p of i.changedLocks) r.push(reason("locked-test-changed", p));
   if (i.unauthorized.length) {

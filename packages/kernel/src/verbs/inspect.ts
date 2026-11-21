@@ -10,7 +10,7 @@ import { handoffText } from "../core/handoff.ts";
 import type { Exclusion } from "../core/exclusions.ts";
 import { verdict, headline } from "../core/verdict.ts";
 import { InspectInput } from "../core/schemas.ts";
-import type { State } from "../core/schemas.ts";
+import type { State, WorkContract } from "../core/schemas.ts";
 import { assistanceLevel, readinessReport } from "../core/risk.ts";
 import type { Plan, Verb } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
@@ -19,6 +19,7 @@ import { gather, verdictInput } from "./facts.ts";
 import { settingsFor, sharedPolicy, withRequiredChecks } from "./reconcile.ts";
 import { KERNEL_VERSION } from "../version.ts";
 import { diagnosticsExport } from "../core/diagnostics.ts";
+import { workloadSummary } from "../core/fitness.ts";
 
 const VERBS = {
   open: "open --profile <feature|bug|refactor|investigate|plan|…> --request <text>   start or resume a contract",
@@ -75,6 +76,10 @@ const statusOf = (st: State | null, history = st ? "complete" : "absent") => ({
   pending: (st?.pending ?? []).map((q) => q.id), sourceOwner: st?.sourceOwner?.work ?? null,
   plan: { items: (st?.project.intent.plan ?? []).map((i) => ({ id: i.id, outcome: i.outcome, state: i.state, dependsOn: i.dependsOn })), next: nextItem(st?.project.intent.plan ?? [])?.id ?? null },
 });
+const workloadView = (w: WorkContract, state: State) => {
+  const workload = workloadSummary(w.receipts, state.project.fitness ?? {});
+  return workload ? { workload } : {};
+};
 const storageHistory = (ports: Ports, state: State | null) =>
   state?.project.retention?.legacyTemp.pending ? "uncertain" : ports.store.history();
 const uncertainHistoryData = (history: string) =>
@@ -88,7 +93,9 @@ function changedIds(topic = ""): string[] {
 
 /** NFR-07: a preview only. The user saves the text where they choose; the kernel writes nothing. */
 function exportView(ports: Ports, state: State | null, topic = "diagnostics") {
-  if (topic !== "diagnostics") throw new KernelError("capability-missing", "the evidence and feedback bundles arrive later", { exit: 1 });
+  if (!["diagnostics", "feedback"].includes(topic)) {
+    throw new KernelError("capability-missing", "the evidence export bundle is not available", { exit: 1 });
+  }
   const log = state ? ports.store.readLog() : [];
   return diagnosticsExport({
     version: KERNEL_VERSION, platform: ports.platform, node: process.version, state, log, verbs: Object.keys(VERBS),
@@ -138,7 +145,12 @@ export const inspect: Verb<InspectInput> = {
         return {
           resp: {
             work: w.id, reasons: v.reasons,
-            data: { endpoint: v.endpoint, scope: v.scope ?? null, label: headline(v, { profile: w.profile, branch: w.git.branch }), readiness, ...controlsFor(w, v.endpoint, ports.host.capabilities()) },
+            data: {
+              endpoint: v.endpoint, scope: v.scope ?? null,
+              label: headline(v, { profile: w.profile, branch: w.git.branch }), readiness,
+              ...workloadView(w, state!),
+              ...controlsFor(w, v.endpoint, ports.host.capabilities()),
+            },
           },
         };
       }

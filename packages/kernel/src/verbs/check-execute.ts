@@ -211,22 +211,22 @@ export function coverageStatus(run: Run, attempt: CoverageAttempt): CoverageStat
     }
   return out;
 }
-/** The declared workload (QLT-05): its build, then its run, in this run directory under one declared timeout; no shell.
- * The report is what the run prints. A failed build leaves no report, so the receipt cannot pass. */
+/** The declared workload (QLT-05): build then run in one bounded, shell-free run directory; failure cannot supply a report. */
 async function runWorkload(run: Run): Promise<Omit<RunFacts, "after">> {
-  const { ports, runDir } = run;
-  if (!run.workload?.ok) return notRunFacts(ports.clock.now());
-  const { build, run: argv, timeoutMs } = run.workload.decl;
+  const { ports, runDir } = run, declaration = run.workload?.ok ? run.workload.decl : null;
+  if (!declaration) return notRunFacts(ports.clock.now());
+  const { build, run: argv, report, timeoutMs } = declaration;
   let left = timeoutMs;
   if (build) {
     const b = await ports.runner.run({ argv: build, cwd: ports.root, runDir, timeoutMs: left });
-    if (b.exit !== 0 || b.timedOut || b.signal) return observed(b, null);
+    if (b.exit !== 0 || b.timedOut || b.signal) return { ...observed(b, null), workloadBuildFresh: false };
     left = Math.max(1000, left - b.durationMs);
   }
-  const r = await ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: left });
-  return observed(r, r.stdout);
+  const file = report === "stdout" ? null : join(runDir, report.path);
+  const r = await ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: left,
+    ...(file ? { report: file, env: { TENET_WORKLOAD_REPORT: file } } : {}) });
+  return { ...observed(r, file ? r.report : r.stdout), ...(build ? { workloadBuildFresh: true } : {}) };
 }
-
 const settledPass = (f: Omit<RunFacts, "after">): boolean => f.ran && f.exit === 0 && !f.timedOut && !f.signal && !f.outputTruncated;
 /** Runs the named test files (or everything) once, outside the lock, then each static check, and reports what the processes did. */
 export async function execute(run: Run, inputs: readonly string[]): Promise<Executed> {

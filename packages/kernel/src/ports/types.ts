@@ -4,13 +4,14 @@ import type { AttentionPattern, FileChange } from "../core/review.ts";
 import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
 import type { Random } from "../core/ids.ts";
 import type { TempWalk } from "../core/residue.ts";
-import type { IndexSyncRecord, Obligation, State } from "../core/schemas.ts";
+import type { IndexSyncRecord, ModelQualification, Obligation, State } from "../core/schemas.ts";
 import type { Exclusion, ReadAdmission } from "../core/exclusions.ts";
 import type { CapabilityCache, Descriptor } from "../core/capabilities.ts";
 import type { HostTimings, Timing } from "../core/timing.ts";
 import type { PrivateSnapshots } from "./private-snapshot.ts";
 import type { CommitIntentV1, CommitProofV1 } from "../core/commit-proof.ts";
 import type { Policy } from "../core/policy.ts";
+import type { WorkloadEnvironment } from "../core/fitness.ts";
 
 export type { Random };
 export interface Clock { now(): string; ms(): number }
@@ -202,6 +203,8 @@ export interface Git {
   applyUndo(input: UndoApply): Promise<{ ok: boolean; detail?: string; uncertain?: boolean; errorCode?: string }>;
   /** Blob ids of paths in a tree-ish (null when absent). */
   blobsAt(treeish: string, paths: readonly string[]): Promise<Record<string, string | null>>;
+  /** Exact committed paths, modes and blob identities in a tree-ish. */
+  treeAt(treeish: string): Promise<Array<PathImage & { path: string }>>;
   /** Mode and blob identity of exact paths in a tree-ish (null when absent). */
   imagesAt(treeish: string, paths: readonly string[]): Promise<Record<string, PathImage | null>>;
   /** Non-owned commits between the oldest owned commit and the pinned HEAD that touch these paths. */
@@ -214,6 +217,8 @@ export interface Git {
   mergeBase(a: string, b: string): Promise<string | null>;
   /** A file's bytes at a commit, as text; null when absent. */
   showAt(treeish: string, path: string): Promise<string | null>;
+  /** A file's bytes at a commit after exact size admission; null when absent or oversized. */
+  showAtBounded(treeish: string, path: string, maxBytes: number): Promise<string | null>;
   /** Paths that differ between two commits (renames as delete plus add). */
   changedSince(from: string, to: string): Promise<string[]>;
   /** Which of these paths at a commit contain any of these literal strings (`git grep -F`). */
@@ -270,6 +275,8 @@ export interface Runner {
   stopRun(runDir: string): Promise<"stopped" | "gone" | "unknown">;
   /** A free loopback port: bind 0 on 127.0.0.1, read the assigned port, release it (EVD-13, TS §9.3 Servers). */
   allocatePort(): Promise<number>;
+  /** Kernel-observed machine tuple used for workload series identity (QLT-05). */
+  workloadEnvironment?(): WorkloadEnvironment;
 }
 
 // ---------------------------------------------------------------- stack (Node/TypeScript adapter)
@@ -410,6 +417,7 @@ export interface CapabilityContext {
 }
 export interface Host {
   capabilities(): Descriptor;
+  modelQualification?(model: string): ModelQualification;
   markerBinding?: MarkerBindingPort;
   prepare?(context: CapabilityContext, cache?: CapabilityCache): void;
   cache?(): CapabilityCache;

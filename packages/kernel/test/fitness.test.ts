@@ -37,6 +37,13 @@ describe("workload declaration [QLT-05]", () => {
     assert.match(bad({ run: "node workload/run.mjs" }), /run/);
     assert.match(bad({ run: ["npx", "tsx", "run.ts"] }), /launcher/);
     assert.match(bad({ run: ["/bin/sh", "-c", "node run.mjs"] }), /launcher/);
+    const fileReport = parseWorkload(JSON.stringify({
+      ...DECL, report: { kind: "file", path: "workload-report.json" },
+    }));
+    assert.equal(fileReport.ok, true);
+    assert.equal(parseWorkload(JSON.stringify({
+      ...DECL, report: { kind: "file", path: "../outside.json" },
+    })).ok, false);
     const fn = DECL.fitness[0]!;
     assert.match(bad({ fitness: [{ ...fn, id: "__proto__" }] }), /fitness\.0\.id/);
     assert.match(bad({ fitness: [fn, fn] }), /unique/);
@@ -73,6 +80,17 @@ describe("workload report judgement [QLT-05]", () => {
     assert.ok(j.failures.some((f) => f.test === "list-p95-ms" && /250 ms against the declared target 200/.test(f.message)));
     const harnessSaysPass = judgeReport(d, 0, report({}, 250));
     assert.equal(harnessSaysPass.status, "fail", "the harness's own verdict does not override a declared target");
+  });
+
+  it("forms the series identity from the kernel observation, not the project's environment claim", () => {
+    const observed = { platform: "linux", arch: "x64", totalMemoryBytes: 16_000_000_000, node: "v24.1.0" };
+    const first = judgeReport(
+      d, 0, report({ environment: { ...observed, platform: "darwin" } }), observed,
+    );
+    const second = judgeReport(
+      d, 0, report({ environment: { ...observed, platform: "win32" } }), observed,
+    );
+    assert.equal(first.workload?.env, second.workload?.env);
   });
 
   it("fails on a harness reason the declaration does not cover", () => {

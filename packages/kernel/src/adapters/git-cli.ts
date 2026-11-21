@@ -1003,8 +1003,8 @@ export class GitCli {
   async tenetHistory() {
     const w = async (...a: string[]) => (await this.tryOut(a))?.match(/\S+/g) ?? [];
     const labels: Record<string, number> = {};
-    for (const l of await w("log", "--all", "-E", "--grep=^Tenet-Work: W-[0-9]{4,5}$", "--format=%(trailers:key=Tenet-Work,valueonly)"))
-      labels[l] = (labels[l] ?? 0) + 1;
+    for (const l of await w("log", "--all", "--max-count=500", "--format=%(trailers:key=Tenet-Work,valueonly)"))
+      if (/^W-[0-9]{4,5}$/.test(l)) labels[l] = (labels[l] ?? 0) + 1;
     return {
       labels, unmerged: await w("for-each-ref", "--no-merged=HEAD", "--format=%(refname:short)", "refs/heads/tenet/"),
       shallow: await this.shallow(),
@@ -1033,6 +1033,14 @@ export class GitCli {
       out[rec.slice(t + 1)] = rec.slice(0, t).split(" ")[2]!;
     }
     return out;
+  }
+
+  async treeAt(treeish: string): Promise<Array<{ path: string; mode: string; blob: string }>> {
+    return (await this.ok(["ls-tree", "-r", "-z", treeish])).split("\0").filter(Boolean).flatMap((record) => {
+      const tab = record.indexOf("\t"), fields = record.slice(0, tab).split(" ");
+      const path = record.slice(tab + 1), mode = fields[0], blob = fields[2];
+      return tab < 0 || !path || !mode || !blob ? [] : [{ path, mode, blob }];
+    });
   }
 
   async imagesAt(treeish: string, paths: readonly string[]) {
@@ -1072,6 +1080,12 @@ export class GitCli {
   async showAt(treeish: string, path: string): Promise<string | null> {
     const r = await this.run(["cat-file", "blob", `${treeish}:${path}`]);
     return r.code === 0 ? r.stdout : null;
+  }
+
+  async showAtBounded(treeish: string, path: string, maxBytes: number): Promise<string | null> {
+    const size = await this.tryOut(["cat-file", "-s", `${treeish}:${path}`]);
+    if (!size || !/^\d+$/.test(size) || Number(size) > maxBytes) return null;
+    return this.showAt(treeish, path);
   }
 
   async changedSince(from: string, to: string): Promise<string[]> {

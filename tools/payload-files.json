@@ -8,6 +8,7 @@
   "com.github.copilot/commands/tenet-review.md",
   "com.github.copilot/commands/tenet.md",
   "com.github.copilot/descriptor.json",
+  "com.github.copilot/model-qualification.json",
   "kernel/tenet.mjs",
   "plugin.json",
   "schemas/review-result.schema.json",
