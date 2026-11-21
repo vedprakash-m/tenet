@@ -32,7 +32,8 @@ const clip = (s: string | null) => (s === null ? null : s.length > 2048 ? `${s.s
 const fileName = (p: string) => p.slice(p.lastIndexOf("/") + 1);
 
 function readable(c: Ctx, p: string) {
-  if (!allowed("read", p, c.exclusions)) throw refuse(`${p} is excluded from Tenet's reads, so Tenet cannot merge it by ID`);
+  if (!allowed("read", p, c.exclusions, { kind: "routine-inventory" }))
+    throw refuse(`${p} is excluded from Tenet's reads, so Tenet cannot merge it by ID`);
 }
 async function read(ports: Ports, tree: string, p: string): Promise<string | null> {
   const t = await ports.git.showAt(tree, p);
@@ -72,7 +73,9 @@ async function followRenames(ports: Ports, c: Ctx, plan: Planned) {
     for (const p of await ports.git.grepAt(tree, cores, shared))
       if (r.mentions((await read(ports, tree, p)) ?? "")) throw refuse(`${p}, changed on both branches, mentions ${ids.join(", ")}`);
     for (const lock of c.st.locks) {
-      const t = allowed("read", lock.path, c.exclusions) ? await read(ports, tree, lock.path) : null;
+      const t = allowed("read", lock.path, c.exclusions, { kind: "routine-inventory" })
+        ? await read(ports, tree, lock.path)
+        : null;
       if (t && r.mentions(t)) throw refuse(`${lock.path} is a locked acceptance test that mentions ${ids.join(", ")}`);
     }
   }

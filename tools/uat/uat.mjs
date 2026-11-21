@@ -991,7 +991,7 @@ try {
  const foreignCommit = git(root, 'rev-parse', 'HEAD');
  const foreignIndex = readFileSync(join(root, '.git/index'));
  const foreignUndo = call(root, 'undo', { h });
- assert.equal(foreignUndo.exit, 2, JSON.stringify(foreignUndo));
+ assert.equal(foreignUndo.exit, 3, JSON.stringify(foreignUndo));
  assert.ok(foreignUndo.reasons.some(reason => reason.code === 'undo-conflict'), JSON.stringify(foreignUndo));
  assert.equal(foreignUndo.questions?.length ?? 0, 0);
  const refusedConfirm = call(root, 'decide', { h, kind: 'undo-confirm', answers: { 'undo-confirm': 'apply' } });

@@ -5,7 +5,7 @@ import {
   closeSync, constants, lstatSync, mkdtempSync, openSync, readlinkSync, realpathSync, rmSync, writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { Runner } from "../ports/types.ts";
 
 interface Out { code: number; stdout: string; stderr: string }
@@ -34,10 +34,13 @@ async function out(g: UndoGit, args: string[], o?: Parameters<UndoGit["run"]>[1]
   return r.stdout;
 }
 
-/** HEAD as a commit ID and the full name of the checked-out branch, read once. */
+const shortBranch = (branch: string | null): string | null =>
+  branch?.startsWith("refs/heads/") ? branch.slice("refs/heads/".length) : branch;
+
+/** HEAD as a commit ID and the display name of the checked-out branch, read once. */
 export async function pinHead(g: UndoGit): Promise<{ head: string; branch: string | null }> {
   const head = (await out(g, ["rev-parse", "--verify", "-q", "HEAD^{commit}"])).trim();
-  const ref = await g.run(["symbolic-ref", "-q", "HEAD"]);
+  const ref = await g.run(["symbolic-ref", "-q", "--short", "HEAD"]);
   return { head, branch: ref.code === 0 ? ref.stdout.trim() : null };
 }
 
@@ -158,7 +161,7 @@ async function treeEntries(g: UndoGit, head: string, paths: readonly string[]): 
 /** Whether HEAD, branch and affected index entries still match the pinned commit. */
 export async function undoState(g: UndoGit, head: string, branch: string | null, paths: readonly string[]) {
   const now = await pinHead(g).catch(() => null);
-  const headOk = !!now && now.head === head && now.branch === branch;
+  const headOk = !!now && now.head === head && shortBranch(now.branch) === shortBranch(branch);
   const [index, tree] = await Promise.all([indexEntries(g, paths), treeEntries(g, head, paths)]);
   const indexOk = paths.every((p) => index[p] === tree[p]);
   return { headOk, indexOk, index: JSON.stringify(index) };
@@ -227,6 +230,28 @@ const atAll = (
   paths: readonly string[],
 ) => paths.every((p) => (now[p] ?? null) === (want[p] ?? null));
 
+function admittedRunDirectory(path: string): boolean {
+  const absolute = resolve(path);
+  let boundary = absolute;
+  while (dirname(boundary) !== boundary && !/^tenet-(?:ws_|unbound|[a-z0-9])/.test(basename(boundary)))
+    boundary = dirname(boundary);
+  if (dirname(boundary) === boundary) return false;
+  try {
+    let current = absolute;
+    for (;;) {
+      const st = lstatSync(current);
+      if (st.isSymbolicLink() || !st.isDirectory()) return false;
+      if (current === boundary) break;
+      current = dirname(current);
+    }
+    const root = realpathSync(boundary), canonical = realpathSync(absolute);
+    const rel = relative(root, canonical);
+    return !isAbsolute(rel) && rel !== ".." && !rel.startsWith(`..${sep}`);
+  } catch {
+    return false;
+  }
+}
+
 /** Applies the inverse only between the checks required by §7.4. */
 export async function applyUndo(g: UndoGit, a: UndoApply): Promise<Applied> {
   let before: string;
@@ -241,8 +266,7 @@ export async function applyUndo(g: UndoGit, a: UndoApply): Promise<Applied> {
   }
   const file = join(a.runDir, "inverse.patch");
   try {
-    if (!lstatSync(a.runDir).isDirectory() || lstatSync(a.runDir).isSymbolicLink() ||
-        realpathSync(a.runDir) !== resolve(a.runDir)) {
+    if (!admittedRunDirectory(a.runDir)) {
       return { ok: false, detail: "the undo run folder is linked or does not have an admitted directory identity" };
     }
     const fd = openSync(file, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | constants.O_NOFOLLOW, 0o600);

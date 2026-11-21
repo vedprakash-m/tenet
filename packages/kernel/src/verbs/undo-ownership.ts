@@ -5,6 +5,8 @@ import type { State, WorkContract } from "../core/schemas.ts";
 import type { Ports } from "../ports/types.ts";
 
 const refuse = (why: string): never => { throw new KernelError("undo-conflict", why); };
+const shortBranch = (branch: string | null): string | null =>
+  branch?.startsWith("refs/heads/") ? branch.slice("refs/heads/".length) : branch;
 async function selectedRef(ports: Ports): Promise<string> {
   try { return (await ports.git.commitContext()).ref; }
   catch (error) {
@@ -31,7 +33,7 @@ export async function undoOwnership(
   const origins = new Set(proofs.map(p => p.ref));
   if (!integration && origins.size !== 1) return refuse("owned commits do not share an exact origin ref");
   const target = integration ? `refs/heads/${integration.into}` : proofs[0]!.ref;
-  if (pinned?.branch !== undefined && pinned.branch !== target) {
+  if (pinned?.branch !== undefined && shortBranch(pinned.branch) !== shortBranch(target)) {
     return refuse("the exact undo target ref must be checked out; no branch was switched");
   }
   if (await selectedRef(ports) !== target || !await ports.git.refCommit(target))

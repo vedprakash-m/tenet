@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { consumePacketExclusions, packetExclusions } from "../src/core/packet-exclusions.ts";
-import { buildAnalystManifest, buildManifest, isManifest, reviewOnlyManifest } from "../src/core/review.ts";
+import { buildAnalystManifest, buildManifest, DEFAULT_CHARTER, isManifest, reviewOnlyManifest } from "../src/core/review.ts";
 import { contractFixture, project } from "./support/fixture.ts";
 import { KernelError } from "../src/core/errors.ts";
 import { handoffText } from "../src/core/handoff.ts";
@@ -35,7 +35,7 @@ describe("declarative packet exclusion consumers", () => {
     assert.deepEqual(issued.work.budget.reservations[0]!.requiredPaths, paths);
     assert.deepEqual(Object.keys(issued.work.budget.reservations[0]!.files), paths);
     const manifest = (issued.data?.review as { manifest: string }).manifest;
-    assert.equal(JSON.parse(readFileSync(manifest, "utf8")).charter, "permitted charter");
+    assert.equal(JSON.parse(readFileSync(manifest, "utf8")).charter, DEFAULT_CHARTER);
   });
 
   it("enforces source-scoped exceptions, NFC and default folding in the actual consumer [SEC-08, SEC-14]", () => {

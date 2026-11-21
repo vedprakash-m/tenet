@@ -17,12 +17,16 @@ export function handoffText(st: State, w: WorkContract, exclusions: readonly Exc
   const recordedCoverage = coveredCoverageEvidence(
     w.receipts, coverageInput.approval, coverageInput.evidence,
   );
+  const expired = w.receipts.filter((receipt) => receipt.qualifiers.includes("history-unavailable"));
   return [
     `${w.label} · ${w.profile} · ${w.lane} lane · ${w.level} · ${w.state}${w.stopReason ? ` (stopped: ${w.stopReason})` : ""}`,
     `Outcome: ${w.outcome || w.request.slice(0, 200)}`,
     els.length ? `Basis: ${els.map((e) => `${e.id} ${e.kind}`).join(", ")}` : "Basis: not recorded yet",
     latest.size ? `Checks: ${[...latest.values()].map((r) =>
       `${r.obligation} ${r.status}${r.qualifiers.length ? ` (${r.qualifiers.join(", ")})` : ""}${r.scope === "targeted" ? " (targeted)" : ""}`).join("; ")}` : "Checks: none run yet",
+    ...(expired.length ? [
+      `Evidence history: ${[...new Set(expired.map((receipt) => receipt.obligation))].join(", ")} history-unavailable`,
+    ] : []),
     ...(recordedCoverage.length ? [
       `Recorded coverage: ${recordedCoverage.map((item) =>
         `${item.obligation} ${item.primaryReceipt} by ${item.alternativeReceipt}`).join("; ")}`,

@@ -11,6 +11,21 @@ import { cleanup, NO_POSIX_PROCESSES, tmp } from "./helpers.ts";
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 
+function processObservation(root: string, mode: string): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [join(import.meta.dirname, "fixtures/race-project-read.ts"), root, mode, "process"],
+      { stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "", stderr = "";
+    child.stdout!.on("data", (chunk: Buffer) => { stdout += chunk; });
+    child.stderr!.on("data", (chunk: Buffer) => { stderr += chunk; });
+    child.on("error", reject);
+    child.on("close", (code, signal) => {
+      if (code === 0 && signal === null) resolve(JSON.parse(stdout));
+      else reject(new Error(`process observation exited ${code ?? signal}: ${stderr}`));
+    });
+  });
+}
+
 describe("recovery process ownership", () => {
   it("refuses a FIFO process record without waiting for a writer [CON-03, NFR-04]", () => {
     const root = tmp(); roots.push(root);
@@ -40,8 +55,7 @@ describe("recovery process ownership", () => {
       if (mode === "invalid-utf8") bytes[bytes.indexOf('"note":"') + '"note":"'.length] = 0xff;
       writeFileSync(path, bytes);
       try {
-        const result = JSON.parse(execFileSync(process.execPath,
-          [join(import.meta.dirname, "fixtures/race-project-read.ts"), root, mode, "process"], { encoding: "utf8", timeout: 10000 }));
+        const result = await processObservation(root, mode);
         const trusted = mode === "short" || mode === "unicode";
         assert.deepEqual(result, { value: trusted ? "stopped" : "unknown" });
         if (trusted) await closed;

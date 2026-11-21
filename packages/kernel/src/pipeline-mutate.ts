@@ -85,7 +85,8 @@ function enforceStorage(
   const recovery =
     (verb.name === "decide" &&
       (input.kind === "repair-lock" ||
-        (input.kind === "adopt" && input.target === "reconstruction"))) ||
+        (input.kind === "adopt" && input.target === "reconstruction") ||
+        input.kind === "cleanup")) ||
     (verb.name === "open" &&
       (tx.history === "uncertain" || !!state?.project.retention?.legacyTemp.pending)) ||
     (state?.project.retention?.legacyTemp.pending &&
@@ -238,7 +239,9 @@ function fence(current: State, verb: Verb, input: Input, w: WorkContract) {
       questions: [takeover],
     });
   }
-  if (verb.name !== "stop" && !(verb.name === "decide" && input.kind === "abandon-confirm") && w.session.inCall) {
+  const cleanupFencesRun = verb.name === "decide" && input.kind === "cleanup";
+  if (verb.name !== "stop" && !(verb.name === "decide" && input.kind === "abandon-confirm") &&
+      !cleanupFencesRun && w.session.inCall) {
     throw new KernelError("work-busy", `a ${w.session.inCall.verb} is running`);
   }
 }
@@ -437,7 +440,6 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
   let current = recovered?.state ?? tx.state;
   if (current && uncertaintyFences(verb, input, recovered))
     return fencedByUncertainty(ports, verb, tx, current, recovered!);
-  enforceStorage(ports, verb, input, tx, current);
   const shared = current && !["open", "stop"].includes(verb.name) ? reconcileShared(ports, current) : null;
   if (shared) current = shared.state;
   if (verb.name !== "stop") {

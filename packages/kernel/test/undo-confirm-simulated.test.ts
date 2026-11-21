@@ -37,6 +37,8 @@ function memoryStore(ports: Ports, scratch: string, initial: State, proofs: Comm
   const overrides: Partial<Store> = {
     admit() {}, exists: () => true, read: () => ({ state, recovered: false }),
     history: () => "complete", storageBytes: () => 0, sweepTemp: () => 0,
+    sweepTempDetailed: () => ({ count: 0, paths: [] }),
+    expiredEvidence: () => [],
     commitProofs: () => structuredClone(proofs),
     alive: async () => false, self: () => ({ pid: 12345, procStart: "synthetic" }),
     tempDir(name) { const dir = join(scratch, name); mkdirSync(dir); return dir; },

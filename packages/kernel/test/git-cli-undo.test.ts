@@ -22,7 +22,7 @@ function repo(files: Record<string, string>, change: (root: string) => void) {
   initRepo(root);
   for (const [path, content] of Object.entries(files)) write(root, path, content);
   git(root, "add", "-A");
-  git(root, "commit", "-qm", "base");
+  git(root, "commit", "--allow-empty", "-qm", "base");
   change(root);
   git(root, "add", "-A");
   git(root, "commit", "-qm", "work\n\nTenet-Work: W-0001");

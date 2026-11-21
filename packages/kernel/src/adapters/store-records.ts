@@ -11,7 +11,12 @@ import { MAX_RECORD, parseRecord, parseUniqueRecord, readRecord } from "./privat
 
 export function fsyncDirectory(dir: string) {
   const fd = openSync(dir, "r");
-  try { fsyncSync(fd); } finally { closeSync(fd); }
+  try {
+    try { fsyncSync(fd); } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (process.platform !== "win32" || (code !== "EPERM" && code !== "EINVAL")) throw error;
+    }
+  } finally { closeSync(fd); }
 }
 export function writeSyncedRecord(path: string, data: string) {
   if (Buffer.byteLength(data, "utf8") > MAX_RECORD) {
