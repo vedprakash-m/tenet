@@ -16,9 +16,13 @@ Capability observations are keyed by host version, shipped plugin version, gover
 
 The kernel's helper is found by the plugin's own path, not through your `PATH`. It does run the `node` that your `PATH` resolves; that is a documented residual risk.
 
+## Install (from the v0.1.0 release tarball)
+
+The quickest route is the plugin tarball on the [v0.1.0 pre-release](https://github.com/vedprakash-m/tenet/releases/tag/v0.1.0): download it and its `.sha256` file, check the hash, extract it into a folder of its own, then set `"chat.plugins.enabled": true` and add that folder to `chat.pluginLocations` (a map of full folder path to `true`) in your user `settings.json`. The README quick start has the exact commands. The release is hand-published and unsigned, so the hash shows your download matches the build, not who made it. A zero-JSON install is still not available; that requirement is open.
+
 ## Install (preview route, from source)
 
-There is no public install path yet. A release install with no cloning, building or JSON editing is a requirement that is not met.
+The route below clones and builds.
 
 1. Clone the source repository: `git clone https://github.com/vedprakash-m/tenet.git`.
 2. In the repository:

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-21 — Rewrite the README around a five-minute quick start
+
+- `README.md` now opens with what Tenet does, a preview warning, and a quick start that installs the v0.1.0 tarball (download, checksum, unpack, two VS Code settings, `/tenet help`), then the three starter requests, what to expect and a troubleshooting list. The safety, permission, policy, support-matrix and removal sections are kept below. Stale statements that no release or checksum exists were corrected; `docs/user/install-and-remove.md` gained the tarball route. The `chat.plugins.enabled` and `chat.pluginLocations` settings were read from a real VS Code configuration, not from a recorded install test.
+
 ## 2026-11-21 — Publish the v0.1.0 unqualified developer preview
 
 - Published GitHub pre-release `v0.1.0` from `e52c2ec` with a 103-file plugin tarball and SHA-256 file. Notes state that it is unqualified, unsigned and hand-published, and disclose the failing `system-budgets` long-history warm row (300.7 ms vs 300 ms). Deleted the stale draft releases preview.1–3. Enabled Dependabot security updates and set repository topics.
