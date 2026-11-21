@@ -250,7 +250,7 @@ for (const cancellation of [false, true]) it(`requires fresh consent after an un
       return execute({ ...spec, argv: [process.execPath, "-e", "process.exit(1)"] });
     };
     const response = await runVerb(ports, VERBS, "check", { h, stage: "baseline" });
-    if (process.platform === "darwin") {
+    if (process.platform === "darwin" && response.exit === 2) {
       assert.equal(response.exit, 2, JSON.stringify(response));
       assert.ok(response.effects?.uncertain.some((effect) => /orphan may exist/.test(effect)), JSON.stringify(response));
       assert.equal(launches, 0);

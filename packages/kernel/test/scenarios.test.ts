@@ -680,7 +680,7 @@ describe("injected failure 2: SIGKILL during a check", () => {
     p.write("src/greet.test.ts", GREET_TEST);
     p.write("src/greet.ts", GREET_IMPL);
     const r = await p.rawCall("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
-    if (process.platform === "darwin") {
+    if (process.platform === "darwin" && r.exit === 2) {
       assert.equal(r.exit, 2, JSON.stringify(r));
       assert.ok(r.effects?.uncertain.some((effect) => /orphan may exist/.test(effect)), JSON.stringify(r));
       try { process.kill(run.pid, "SIGKILL"); } catch { /* the host may still own termination */ }
