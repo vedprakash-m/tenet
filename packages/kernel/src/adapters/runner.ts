@@ -1,7 +1,7 @@
 // Runs one command in its own process group with a minimal environment (TS §9.3). Never uses a shell or npx.
 // The group id and start time are written to run.json at once so a crashed kernel's orphan can be found and stopped.
 import { execFileSync, spawn } from "node:child_process";
-import { closeSync, constants, fchmodSync, fstatSync, fsyncSync, lstatSync, mkdirSync, openSync, readSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, constants, fchmodSync, fstatSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { isUtf8 } from "node:buffer";
 import { createServer } from "node:net";
@@ -39,20 +39,43 @@ const leaderState = (pid: number): string | null | undefined => {
     return undefined;
   }
 };
+function processGroupStates(pid: number): string[] | null {
+  if (process.platform === "linux") {
+    try {
+      const states: string[] = [];
+      for (const name of readdirSync("/proc")) {
+        if (!/^\d+$/.test(name)) continue;
+        try {
+          const text = readFileSync(`/proc/${name}/stat`, "utf8");
+          const fields = text.slice(text.lastIndexOf(")") + 2).split(" ");
+          if (Number(fields[2]) === pid) states.push(fields[0]!);
+        } catch {
+          // Processes can exit between directory enumeration and the stat read.
+        }
+      }
+      return states;
+    } catch {
+      return null;
+    }
+  }
+  try {
+    const rows = execFileSync("ps", ["-A", "-o", "pgid=,stat="],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n");
+    return rows.map((row) => row.trim().match(/^(\d+)\s+(\S+)/))
+      .filter((match): match is RegExpMatchArray => !!match && Number(match[1]) === pid)
+      .map((match) => match[2]!);
+  } catch {
+    return null;
+  }
+}
 const groupAlive = (pid: number): "alive" | "gone" | "unknown" => {
   try {
     process.kill(-pid, 0);
     const state = leaderState(pid);
     if (state !== undefined && state !== null && !state.startsWith("Z")) return "alive";
-    try {
-      const rows = execFileSync("ps", ["-A", "-o", "pgid=,stat="],
-        { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n");
-      const members = rows.map((row) => row.trim().match(/^(\d+)\s+(\S+)/))
-        .filter((match): match is RegExpMatchArray => !!match && Number(match[1]) === pid);
-      return members.length && members.some((match) => !match[2]!.startsWith("Z")) ? "alive" : "gone";
-    } catch {
-      return "unknown";
-    }
+    const members = processGroupStates(pid);
+    if (!members) return "unknown";
+    return members.some((member) => !member.startsWith("Z")) ? "alive" : "gone";
   }
   catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ESRCH") return "unknown";
