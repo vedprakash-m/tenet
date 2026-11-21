@@ -39,7 +39,6 @@ export function gitInitQuestion(ports: Ports): Question {
     bind: { factsHash: factsHash(ports.root) },
   });
 }
-
 /** Nothing is created in a folder with no Git until the user has chosen what to do about it. */
 export async function admitFolder(ports: Ports, input: OpenInput): Promise<void> {
   if (["recipe-upgrade", "continue"].includes(input.profile)) {
@@ -57,10 +56,11 @@ export async function admitFolder(ports: Ports, input: OpenInput): Promise<void>
   if (input.initGit || probe.isRepo) return;
   throw new KernelError("not-a-repository", "choose between starting Git here and a prototype", { questions: [gitInitQuestion(ports)] });
 }
-
 /** The repository the contract will use; the folder was admitted before anything was written. */
 async function repository(ports: Ports, input: OpenInput, editing: boolean): Promise<RepoProbe> {
-  let probe = await (editing ? ports.git.probe() : ports.git.readOnlyProbe?.() ?? ports.git.probe());
+  let probe = await (editing
+    ? ports.git.openProbe?.() ?? ports.git.probe()
+    : ports.git.readOnlyProbe?.() ?? ports.git.probe());
   if (editing && !probe.isRepo) {
     if (input.noGit) await ports.git.initShadow();
     else await ports.git.init();

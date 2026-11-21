@@ -1,5 +1,5 @@
 // Read-only open fast path for an ordinary repository; linked/shadow layouts fall back to the bounded Git probe.
-import { lstatSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
 import type { RepoProbe } from "../ports/types.ts";
 
@@ -42,6 +42,46 @@ export function fastReadOnlyProbe(root: string): RepoProbe | null {
       lfs: /filter=lfs/.test(bounded(join(root, ".gitattributes")) ?? ""),
       linkedWorktree,
     },
+  };
+  const busy = ["rebase-merge", "rebase-apply", "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"]
+    .find((name) => existsSync(join(gitDir, name)));
+  if (busy) {
+    probe.state = "readonly";
+    probe.why = `a ${busy.replace(/_HEAD$/, "").toLowerCase()} is in progress`;
+  }
+  if (probe.state === "readonly" && !probe.why) probe.why = "HEAD is detached";
+  return probe;
+}
+
+export async function fastOpenProbe(root: string, conflicts: () => Promise<string | null>): Promise<RepoProbe | null> {
+  const probe = fastReadOnlyProbe(root);
+  if (!probe || probe.state === "readonly") return probe;
+  if (await conflicts()) probe.state = "readonly", probe.why = "there are unresolved conflicts";
+  return probe;
+}
+
+export async function admittedReadOnlyProbe(
+  root: string,
+  tryOut: (args: string[]) => Promise<string | null>,
+): Promise<RepoProbe> {
+  const fast = fastReadOnlyProbe(root);
+  if (fast) return fast;
+  const [ver, top, head, branch] = await Promise.all([
+    tryOut(["--version"]),
+    tryOut(["rev-parse", "--show-toplevel"]),
+    tryOut(["rev-parse", "--verify", "-q", "HEAD"]),
+    tryOut(["symbolic-ref", "-q", "--short", "HEAD"]),
+  ]);
+  const version = (ver ?? "git not found").replace(/^git version /, "");
+  if (!top) return {
+    isRepo: false, shadow: false, version, top: null, head: null, branch: null, state: "none",
+    identity: false, remotes: [], hooks: null, signing: null,
+    layout: { shallow: false, submodules: [], lfs: false, linkedWorktree: false },
+  };
+  const probe: RepoProbe = {
+    isRepo: true, shadow: false, version, top, head, branch, state: head && !branch ? "readonly" : "ok",
+    identity: false, remotes: [], hooks: null, signing: null,
+    layout: { shallow: false, submodules: [], lfs: false, linkedWorktree: false },
   };
   if (probe.state === "readonly") probe.why = "HEAD is detached";
   return probe;

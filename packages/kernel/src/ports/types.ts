@@ -167,6 +167,8 @@ export interface Git {
   probe(): Promise<RepoProbe>;
   /** The bounded repository identity needed for read-only plan/investigate admission. */
   readOnlyProbe?(): Promise<RepoProbe>;
+  /** Editing open admission; commit-time hook/signing/identity qualification remains separate. */
+  openProbe?(): Promise<RepoProbe>;
   /** `volatile` are declared output patterns (EVD-09): untracked paths that match them are omitted, as `exclude` omits paths. */
   inventory(exclude: readonly string[], declaredInputs?: readonly string[], volatile?: readonly string[]): Promise<Inventory>;
   /** The exact starting status needed by `open`, without materializing the full clean index. */
