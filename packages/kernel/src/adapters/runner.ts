@@ -43,7 +43,7 @@ const groupAlive = (pid: number): "alive" | "gone" | "unknown" => {
   try {
     process.kill(-pid, 0);
     const state = leaderState(pid);
-    if (state === undefined || (state !== null && !state.startsWith("Z"))) return state === undefined ? "unknown" : "alive";
+    if (state !== undefined && state !== null && !state.startsWith("Z")) return "alive";
     try {
       const rows = execFileSync("ps", ["-A", "-o", "pgid=,stat="],
         { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n");
