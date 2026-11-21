@@ -58,7 +58,7 @@ export interface Tx {
   /** Unresolved effect intents, for reconciliation before anything else touches the resource. */
   unresolved(): Array<{ effect: string; id: string; op: unknown }>;
   /** Reduces old journal records into monthly counts and caps run files, inside the lock (CON-08); `keep` paths are never removed. */
-  evict(keep: readonly string[], apply?: boolean): EvictReport;
+  evict(keep: readonly string[], apply?: boolean, maxAgeMs?: number): EvictReport;
   /** The validated bounded journal, optionally limited to its most recent entries for diagnostic views. */
   recent(n?: number): LogEntry[];
 }

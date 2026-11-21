@@ -94,7 +94,7 @@ function enforceStorage(
       ["stop"].includes(verb.name));
   if (!state || recovery) return undefined;
   const keep = protectedRunPaths(state, tx.unresolved());
-  const report = persistedExpiry(ports, tx.evict(keep, apply));
+  const report = persistedExpiry(ports, tx.evict(keep, apply, apply ? 24 * 3600_000 : 0));
   if (report.refusal) {
     if (verb.name === "stop" && tx.reserveAllowed) return report;
     throw new KernelError(report.refusal.code, report.refusal.message, {

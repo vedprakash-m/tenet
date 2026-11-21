@@ -390,7 +390,7 @@ export class FsStore implements Store {
         intent: (effect, id, op) => store.stageLog(context, { kind: "intent", effect, id, op }),
         result: (effect, id, outcome) => store.stageLog(context, { kind: "result", effect, id, outcome }),
         unresolved: () => store.unresolved(context),
-        evict: (keep, apply = true) => store.inWrite(context, () => store.evictInLock(keep, apply)),
+        evict: (keep, apply = true, age = 0) => store.inWrite(context, () => store.evictInLock(keep, apply, age)),
         recent: (n) => {
           const log = recentWithStaged(store.readLog(), context);
           return n === undefined ? log : log.slice(-n);
@@ -1128,8 +1128,8 @@ export class FsStore implements Store {
       accounting: "known",
     };
   }
-  evict(keep: readonly string[], apply = true): EvictReport {
-    return this.write(() => this.evictInLock(keep, apply));
+  evict(keep: readonly string[], apply = true, age = 0): EvictReport {
+    return this.write(() => this.evictInLock(keep, apply, age));
   }
   private storeFootprint() {
     const classes: Array<{ name: string; bytes: number }> = [];
@@ -1143,10 +1143,10 @@ export class FsStore implements Store {
     } catch { accounting = "unknown"; }
     return { classes: classes.sort((a, b) => b.bytes - a.bytes), accounting };
   }
-  private evictInLock(keep: readonly string[], apply = true): EvictReport {
+  private evictInLock(keep: readonly string[], apply = true, age = 0): EvictReport {
     const staged = stagedRunGrowth(this.writes.getStore());
     const protection = this.journalProtection([...keep, ...staged.paths]);
-    const cap = this.capRuns([...protection.protectedPaths], staged.bytes, 24 * 3600_000);
+    const cap = this.capRuns([...protection.protectedPaths], staged.bytes, age);
     const projectedReduction = this.projectedReduction(Date.parse(this.clock.now()), protection);
     const { classes, accounting: classAccounting } = this.storeFootprint();
     const total = classes.reduce((n, c) => n + c.bytes, 0);
@@ -1216,11 +1216,11 @@ export class FsStore implements Store {
     this.assertRunScopeUnchanged(cap.scopes);
     if (!apply) return { overCeiling, largest: classes.slice(0, 3) };
     const reduction = this.reduceLog(Date.parse(this.clock.now()), protection);
-    const changed = this.changedRunCleanup(cap, reduction, overCeiling, classes);
+    const changed = this.changedCleanup(cap, reduction, overCeiling, classes);
     if (changed) return changed;
-    return this.applyCapRemoval(cap, reduction, overCeiling, classes);
+    return this.applyCap(cap, reduction, overCeiling, classes);
   }
-  private applyCapRemoval(
+  private applyCap(
     cap: ReturnType<FsStore["capRuns"]>, reduction: string | undefined,
     overCeiling: boolean, classes: Array<{ name: string; bytes: number }>,
   ): EvictReport {
@@ -1233,7 +1233,7 @@ export class FsStore implements Store {
       ...(gone.length ? { expired: gone } : {}), overCeiling, largest: classes.slice(0, 3),
     };
   }
-  private changedRunCleanup(
+  private changedCleanup(
     cap: ReturnType<FsStore["capRuns"]>,
     reduction: string | undefined,
     overCeiling: boolean,
