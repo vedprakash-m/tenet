@@ -158,7 +158,7 @@ export function receiptsOf(run: Run, cw: WorkContract, o: Executed): Receipt[] {
   // infeasible (TDD-03) — the seeded fault still has to make the test actually fail; nothing else is weakened.
   const isNew = (p: string) => facts.inv.status.some((s) => s.path === p && (s.untracked || s.xy.startsWith("A")));
   const wasDirty = (p: string) => cw.git.start.dirty.some((d) => d.path === p && d.blob === facts.inv.entries.get(p)?.blob);
-  const alongsideDeclared = cw.obligations.some((ob) => ob.alongsideReason);
+  const alongsideDeclared = cw.obligations.filter((ob) => ob.alongsideReason && wantsRed(ob)).length === 1;
   const exempt = (p: string) => (cw.scaffolding ?? []).includes(p) || (alongsideDeclared && (cw.alongside ?? []).includes(p));
   const contaminated = facts.inv.status
     .map((s) => s.path)

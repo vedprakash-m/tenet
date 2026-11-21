@@ -10,6 +10,7 @@ import type { VerdictInput } from "../src/core/verdict.ts";
 import type { AnalystLink, BasisElement, Finding, Obligation, Receipt, ReviewLink } from "../src/core/schemas.ts";
 import { handleOf } from "../src/verbs/common.ts";
 import { decide } from "../src/verbs/decide.ts";
+import { shownReasons } from "../src/verbs/finish.ts";
 import { createPorts } from "../src/wire.ts";
 import { contractFixture } from "./support/fixture.ts";
 
@@ -124,6 +125,36 @@ describe("verdict table [RES-02, EVD-01]", () => {
     assert.ok(codes({ ...base(), obligations: [suite] }).includes("no-distinguishing-red"));
     assert.ok(codes({ ...base(), obligations: [{ ...ob, category: "boundary", test: "boundary", baselineMatched: false }, suite] }).includes("no-distinguishing-red"));
     assert.ok(codes({ ...base(), obligations: [ob, { ...ob, id: "preserve", test: "preservation", expectation: "pass", baselineMatched: false }, suite] }).includes("evidence-missing"));
+  });
+  it("discloses test-alongside only for an obligation with a genuine baseline assertion failure [TDD-03]", () => {
+    const alongside = { ...ob, alongsideReason: "an existing behavior needed a seeded fault" };
+    const baselineFailure = rc("OB-EX-1", {
+      id: "baseline", stage: "baseline", status: "fail",
+      failures: [{ test: "example", kind: "assertion", message: "seed caught" }],
+    });
+    const withControl = verdict({
+      ...base(), obligations: [alongside, suite], receipts: [...base().receipts, baselineFailure],
+    });
+    assert.ok(withControl.reasons.some((item) => item.code === "test-alongside" && item.note));
+    const preservation = { ...alongside, test: "preservation" as const, expectation: "pass" as const };
+    const falseControl = verdict({
+      ...base(), obligations: [preservation, suite],
+      receipts: [...base().receipts, { ...baselineFailure, status: "pass", failures: [] }],
+    });
+    assert.equal(falseControl.reasons.some((item) => item.code === "test-alongside"), false);
+  });
+  it("keeps the negative-control disclosure visible when other result reasons fill the output cap [TDD-03]", () => {
+    const v = {
+      endpoint: "implemented-unverified" as const,
+      reasons: [
+        ...Array.from({ length: 8 }, (_, n) => ({ code: "evidence-missing" as const, message: `missing ${n}` })),
+        { code: "test-alongside", message: "seeded fault proves the test", note: true },
+      ],
+    };
+    const projected = shownReasons(v, contractFixture(), []);
+    assert.equal(projected.shown.length, 8);
+    assert.ok(projected.shown.some((item) => item.code === "test-alongside"));
+    assert.equal(projected.omitted, 1);
   });
   it("checked-local, committed, with no reasons when everything is fresh and reviewed", () => {
     const v = verdict(base());

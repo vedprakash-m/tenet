@@ -1,4 +1,3 @@
-// Executing a check run outside the lock (TS §6.1): returns what the processes did as facts; receipts are read from them in finalize.
 import { join } from "node:path";
 import { notRunFacts } from "../core/receipts.ts";
 import type { RunFacts } from "../core/receipts.ts";
@@ -8,9 +7,7 @@ import { isE2e, isStatic, isWorkload, staticReport, e2eReport } from "./check-ev
 import type { CoverageAttempt, CoverageExecuted, E2eAttempt, Executed, Run } from "./check-evidence.ts";
 import { digestAfter, rerunFailures } from "./check-rerun.ts";
 import { sealedRun } from "./check-sealed.ts";
-
 const TIMEOUT_MS = 10 * 60_000;
-
 /** What the process did, whatever it was. `raw` is the output the tool's own report format is read from. */
 const observed = (r: RunResult, raw: string | null): Omit<RunFacts, "after"> => ({
   outputTruncated: r.outputTruncated,
@@ -23,7 +20,6 @@ const observed = (r: RunResult, raw: string | null): Omit<RunFacts, "after"> => 
   raw,
   ran: r.exit !== undefined || !!r.signal,
 });
-
 /** One static tool over the whole project; a tool that is not installed did not run. */
 async function runStatic(run: Run, ob: Obligation): Promise<Omit<RunFacts, "after">> {
   const { ports, runDir } = run;
@@ -34,21 +30,26 @@ async function runStatic(run: Run, ob: Obligation): Promise<Omit<RunFacts, "afte
   const r = await ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: TIMEOUT_MS, report });
   return observed(r, ports.stack.staticOutput(tool, r));
 }
-
 const E2E_TIMEOUT_MS = 10 * 60_000;
 /** Playwright over the whole project, against a server Tenet starts and verifies for this candidate, on a
  * dedicated test database — never the developer's own (EVD-13, TS §9.3 Servers). A lost port race is retried. */
 async function launchE2e(run: Run, attempt: number, inputs: readonly string[]): Promise<E2eAttempt> {
   const { ports, runDir } = run;
-  const report = attempt === 1 ? e2eReport(runDir) : join(runDir, `playwright-rerun-${attempt - 1}.json`);
-  const argv = ports.stack.e2eArgv(ports.root, report);
-  if (!argv) return {
-    report,
+  const baseReport = attempt === 1 ? e2eReport(runDir) : join(runDir, `playwright-rerun-${attempt - 1}.json`);
+  const initialArgv = ports.stack.e2eArgv(ports.root, baseReport);
+  if (!initialArgv) return {
+    report: baseReport,
     launches: 0,
     facts: { ...notRunFacts(ports.clock.now()), after: run.facts.candidate },
   };
   let launches = 0;
   for (let portAttempt = 0; portAttempt < 3; portAttempt++) {
+    const report = portAttempt === 0 ? baseReport : join(
+      runDir,
+      `${attempt === 1 ? "playwright" : `playwright-rerun-${attempt - 1}`}-port-${portAttempt + 1}.json`,
+    );
+    const argv = ports.stack.e2eArgv(ports.root, report);
+    if (!argv) return { report, launches, facts: { ...notRunFacts(ports.clock.now()), after: run.facts.candidate } };
     const port = await ports.runner.allocatePort();
     const env = {
       PORT: String(port),
@@ -67,7 +68,7 @@ async function launchE2e(run: Run, attempt: number, inputs: readonly string[]): 
     }
   }
   return {
-    report,
+    report: join(runDir, `${attempt === 1 ? "playwright" : `playwright-rerun-${attempt - 1}`}-port-3.json`),
     launches,
     facts: { ...notRunFacts(ports.clock.now()), after: run.facts.candidate },
   };
@@ -118,7 +119,6 @@ export function coverageStatus(run: Run, attempt: CoverageAttempt): CoverageStat
   if ((status === "passed") !== (facts.exit === 0)) return "other";
   return status === "failed" ? "failed" : status === "passed" ? "passed" : "other";
 }
-
   async function launchCoverage(
     run: Run,
     mapping: NonNullable<Run["coverage"]>[number],
@@ -128,12 +128,12 @@ export function coverageStatus(run: Run, attempt: CoverageAttempt): CoverageStat
   ): Promise<CoverageAttempt> {
     const { ports, runDir } = run;
     const check = mapping[role];
-    const report = join(runDir, `coverage-${mapping.id}-${role}-${attempt}.json`);
-    const argv = ports.stack.coverageArgv(ports.root, check, report);
-    if (!argv) {
+    const baseReport = join(runDir, `coverage-${mapping.id}-${role}-${attempt}.json`);
+    const initialArgv = ports.stack.coverageArgv(ports.root, check, baseReport);
+    if (!initialArgv) {
       return {
         check,
-        report,
+        report: baseReport,
         launches: 0,
         facts: { ...notRunFacts(ports.clock.now()), after: run.facts.candidate },
       };
@@ -142,7 +142,18 @@ export function coverageStatus(run: Run, attempt: CoverageAttempt): CoverageStat
     let launches = 0;
     if (check.tool === "playwright") {
       let last: RunResult | undefined;
+      let report = baseReport;
       for (let portAttempt = 0; portAttempt < 3; portAttempt++) {
+        report = portAttempt === 0
+          ? baseReport
+          : join(runDir, `coverage-${mapping.id}-${role}-${attempt}-port-${portAttempt + 1}.json`);
+        const argv = ports.stack.coverageArgv(ports.root, check, report);
+        if (!argv) {
+          return {
+            check, report, launches,
+            facts: { ...notRunFacts(ports.clock.now()), after: run.facts.candidate },
+          };
+        }
         const port = await ports.runner.allocatePort();
         const env = {
           PORT: String(port),
@@ -155,14 +166,19 @@ export function coverageStatus(run: Run, attempt: CoverageAttempt): CoverageStat
         if (!/EADDRINUSE/.test(last.stderr)) break;
       }
       observedRun = last!;
+      return {
+        check, report, launches,
+        facts: { ...observed(observedRun, observedRun.report), after: (await digestAfter(run, inputs)).digest },
+      };
     } else {
-      observedRun = await ports.runner.run({ argv, cwd: ports.root, runDir, timeoutMs: TIMEOUT_MS, report });
+      observedRun = await ports.runner.run({
+        argv: initialArgv, cwd: ports.root, runDir, timeoutMs: TIMEOUT_MS, report: baseReport,
+      });
       launches = 1;
     }
     const first = observed(observedRun, observedRun.report);
-    return { check, report, launches, facts: { ...first, after: (await digestAfter(run, inputs)).digest } };
+    return { check, report: baseReport, launches, facts: { ...first, after: (await digestAfter(run, inputs)).digest } };
   }
-
   async function executeCoverageRole(
     run: Run,
     mapping: NonNullable<Run["coverage"]>[number],
@@ -179,7 +195,6 @@ export function coverageStatus(run: Run, attempt: CoverageAttempt): CoverageStat
     }
     return attempts;
   }
-
   async function executeCoverage(run: Run, inputs: readonly string[]): Promise<Executed["coverage"]> {
     const out: Record<string, CoverageExecuted> = {};
     for (const mapping of run.coverage ?? []) {
@@ -196,7 +211,6 @@ export function coverageStatus(run: Run, attempt: CoverageAttempt): CoverageStat
     }
   return out;
 }
-
 /** The declared workload (QLT-05): its build, then its run, in this run directory under one declared timeout; no shell.
  * The report is what the run prints. A failed build leaves no report, so the receipt cannot pass. */
 async function runWorkload(run: Run): Promise<Omit<RunFacts, "after">> {
@@ -214,7 +228,6 @@ async function runWorkload(run: Run): Promise<Omit<RunFacts, "after">> {
 }
 
 const settledPass = (f: Omit<RunFacts, "after">): boolean => f.ran && f.exit === 0 && !f.timedOut && !f.signal && !f.outputTruncated;
-
 /** Runs the named test files (or everything) once, outside the lock, then each static check, and reports what the processes did. */
 export async function execute(run: Run, inputs: readonly string[]): Promise<Executed> {
   const { ports, runDir, toExecute, facts } = run;

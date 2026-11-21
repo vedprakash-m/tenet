@@ -142,7 +142,10 @@ export function buildManifest(i: ManifestInput): Manifest | Reason {
     basisHash: i.basisHash, attempt: i.attempt, mode: i.mode, files: i.files,
     ...(i.basedOn ? { basedOn: i.basedOn.reservation } : {}), requiredPaths: i.mode === "recheck" ? deltaSince(i.basedOn, i.files) : Object.keys(i.files),
   };
-  const evidence = i.work.receipts.slice(-12).map((r: Receipt) => ({ obligation: r.obligation, stage: r.stage, status: r.status, scope: r.scope, counts: r.counts }));
+  const evidence = i.work.receipts.slice(-12).map((r: Receipt) => ({
+    obligation: r.obligation, stage: r.stage, status: r.status, scope: r.scope, counts: r.counts,
+    qualifiers: r.qualifiers, limitations: r.limitations,
+  }));
   const changes = i.changes.filter(c => eligible(c.path)).map((c) => ({ path: c.path, kind: c.kind, added: c.added, removed: c.removed }));
   const attention = i.work.attention.filter(a => eligible(a.path))
     .map((a) => ({ id: a.id, path: a.path, line: a.line, pattern: a.pattern, marker: a.marker }));
@@ -279,7 +282,7 @@ export function reviewOnlyManifest(
       .map((a) => ({ id: a.id, path: a.path, line: a.line, pattern: a.pattern, marker: a.marker })),
     exclusions: packetExclusions(exclusions),
     ...reviewContext(changes, [], eligible),
-    rubric: boundedRubric(rubric), resultGuidance: RESULT_GUIDANCE,
+    rubric: boundedRubric(rubric), charter: DEFAULT_CHARTER, resultGuidance: RESULT_GUIDANCE,
   };
   const text = JSON.stringify(body, null, 1);
   const tokens = estimateTokens(text);

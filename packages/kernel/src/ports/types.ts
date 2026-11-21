@@ -3,12 +3,14 @@
 import type { AttentionPattern, FileChange } from "../core/review.ts";
 import type { ExecutionEnvelope } from "../core/execution-envelope.ts";
 import type { Random } from "../core/ids.ts";
+import type { TempWalk } from "../core/residue.ts";
 import type { IndexSyncRecord, Obligation, State } from "../core/schemas.ts";
 import type { Exclusion, ReadAdmission } from "../core/exclusions.ts";
 import type { CapabilityCache, Descriptor } from "../core/capabilities.ts";
 import type { HostTimings, Timing } from "../core/timing.ts";
 import type { PrivateSnapshots } from "./private-snapshot.ts";
 import type { CommitIntentV1, CommitProofV1 } from "../core/commit-proof.ts";
+import type { Policy } from "../core/policy.ts";
 
 export type { Random };
 export interface Clock { now(): string; ms(): number }
@@ -22,11 +24,13 @@ export interface EvictReport {
   uncertain?: string[];
   overCeiling: boolean;
   largest: Array<{ name: string; bytes: number }>;
+  expired?: string[];
   refusal?: {
     code: "storage-accounting-unknown" | "storage-protected-full" | "storage-reserve-full" | "storage-run-cap-full";
     message: string;
   };
 }
+export interface SweepReport { count: number; paths: string[] }
 export type StoreHistory = "newly-created" | "complete" | "uncertain";
 
 export interface Tx {
@@ -93,12 +97,20 @@ export interface Store {
   readArtifact(dir: string, name: string): string | null;
   /** Removes this workspace's run directories and manifests older than `maxAgeMs`, except those under `keep` (TS §7.6). */
   sweepTemp(maxAgeMs: number, keep: readonly string[]): number;
+  /** The exact run directories removed, so matching evidence is marked historical in the same publication. */
+  sweepTempDetailed?(maxAgeMs: number, keep: readonly string[]): SweepReport;
+  /** Run directories whose raw output may have expired, retained until evidence receipts are marked historical. */
+  expiredEvidence?(): string[];
   /** Deletes only this workspace's lesson-bearing manifest files that contain any of these texts (CON-10); returns how many. */
   purge(texts: readonly string[]): number;
   /** What Tenet keeps for this workspace: the `.tenet` folder and the run files in the OS temp folder (null when absent). */
   residue(): { tenet: Footprint | null; temp: Footprint | null };
-  /** Run folders named like Tenet's: this workspace's (`project`) or every stale one on the machine (`machine`, older than minAgeMs). */
-  cleanTemp(scope: "project" | "machine", minAgeMs: number, remove: boolean): { removed: string[]; kept: string[] };
+  /** A no-follow walk of this workspace's temp root for a cleanup (`machine` also lists other Tenet roots as kept, and keeps
+   *  this one unless every entry is older than minAgeMs). An incomplete walk selects nothing. Reads only. */
+  walkTemp(scope: "project" | "machine", minAgeMs: number): TempWalk;
+  /** Removes the walked entries one by one, deepest first, each only while its identity and its ancestors' still match;
+   *  never a recursive delete. Entries under `keep` and anything changed or added stay, with a cause. */
+  removeTemp(walk: TempWalk, keep: readonly string[]): { removed: string[]; kept: Array<{ path: string; cause: string }> };
   /** Whether the project folder accepts writes (doctor). */
   canWrite(): boolean;
 }
@@ -110,6 +122,11 @@ export interface StatusEntry {
   indexBlob: string; indexMode?: string;
 }
 export interface PathImage { mode: string; blob: string }
+export interface UndoApply {
+  patch: string; head: string; branch: string | null; paths: readonly string[];
+  pre: Readonly<Record<string, string | null>>; post: Readonly<Record<string, string | null>>;
+  runDir: string; timeoutMs: number;
+}
 export interface Inventory {
   head: string | null; branch: string | null; entries: Map<string, Entry>; status: StatusEntry[]; digest: string;
 }
@@ -135,6 +152,9 @@ export interface FilterGate { names: string[]; hash: string }
 export interface SealOverlay { copy: Array<{ path: string; mode: string }>; remove: string[] }
 /** A sealed copy's real path and how to remove it, or why it could not be made. */
 export type Sealed = { root: string; dispose: () => void } | { problem: string };
+/** GIT-09: the confirmed merged content of Tenet's shared files, and the paths Git must stop on. */
+export type Resolved = { files: Record<string, string | null>; conflicted: string[] };
+
 export interface Git {
   setExclusions(exclusions: readonly Exclusion[]): void;
   /** Reading never runs a filter. This names the ones a commit would run, or null when none applies. */
@@ -168,16 +188,24 @@ export interface Git {
   workCommits(label: string, ref?: string): Promise<{ commits: string[]; shallow: boolean; merges: boolean }>;
   /** Read-only history after lost records (CON-07): commits per `Tenet-Work` label on all refs, and `tenet/` branches not in HEAD. */
   tenetHistory(): Promise<{ labels: Record<string, number>; unmerged: string[]; shallow: boolean }>;
-  /** The inverse of these commits (newest first) applied to a temporary index from HEAD; never touches the real index or tree. */
-  planUndo(commits: readonly string[]): Promise<{ ok: true; tree: string; patch: string; paths: string[]; stat: string } | { ok: false; conflict: string[]; detail: string }>;
-  /** Applies a patch to the working tree only (never the index); `include` limits it to these paths. */
-  applyPatch(patch: string, include?: readonly string[], options?: { runDir: string; timeoutMs: number }): Promise<{ ok: boolean; detail?: string; uncertain?: boolean }>;
+  /** Read the commit and branch once, before undo fact gathering. */
+  pinHead(): Promise<{ head: string; branch: string | null }>;
+  /** All paths the owned commits changed, including both endpoints of a rename. */
+  undoNames(commits: readonly string[]): Promise<string[]>;
+  /** The inverse of these commits (newest first) applied to a temporary index from the pinned HEAD. */
+  planUndo(commits: readonly string[], head: string): Promise<{ ok: true; tree: string; patch: string; paths: string[]; stat: string } | { ok: false; conflict: string[]; detail: string }>;
+  /** Dirty, restricted, obstructed or converted paths that make applying an inverse unsafe. */
+  undoObstructions(head: string, paths: readonly string[]): Promise<string[]>;
+  /** Whether HEAD, branch and exact affected index entries still match the pinned undo facts. */
+  undoState(head: string, branch: string | null, paths: readonly string[]): Promise<{ headOk: boolean; indexOk: boolean; index: string }>;
+  /** Apply a pinned inverse only through the checked, bounded undo protocol. */
+  applyUndo(input: UndoApply): Promise<{ ok: boolean; detail?: string; uncertain?: boolean; errorCode?: string }>;
   /** Blob ids of paths in a tree-ish (null when absent). */
   blobsAt(treeish: string, paths: readonly string[]): Promise<Record<string, string | null>>;
   /** Mode and blob identity of exact paths in a tree-ish (null when absent). */
   imagesAt(treeish: string, paths: readonly string[]): Promise<Record<string, PathImage | null>>;
-  /** Commits after `since` on the current history that touch these paths. */
-  laterCommits(since: string, paths: readonly string[]): Promise<string[]>;
+  /** Non-owned commits between the oldest owned commit and the pinned HEAD that touch these paths. */
+  laterCommits(owned: readonly string[], oldest: string, head: string, paths: readonly string[]): Promise<string[]>;
   /** The commit a ref names, or null. */
   refCommit(ref: string): Promise<string | null>;
   /** Files an integration would conflict on, from `git merge-tree` (writes objects only); supported is false before Git 2.38. */
@@ -186,10 +214,20 @@ export interface Git {
   mergeBase(a: string, b: string): Promise<string | null>;
   /** A file's bytes at a commit, as text; null when absent. */
   showAt(treeish: string, path: string): Promise<string | null>;
-  /** Switches to `base` and fast-forwards, or merges when the base moved; `resolved` is the confirmed text of the only conflicted paths. */
-  integrate(base: string, work: string, options?: { runDir: string; timeoutMs: number; resolved?: Record<string, string> }): Promise<{ ok: boolean; commit?: string; mode?: "fast-forward" | "merge"; detail?: string; uncertain?: boolean }>;
-  /** Postcondition for recovery: did this integration land (TS §7.4)? */
-  reconcileIntegration(base: string, baseBefore: string, work: string): Promise<{ completed: boolean; commit?: string; mode?: "fast-forward" | "merge" }>;
+  /** Paths that differ between two commits (renames as delete plus add). */
+  changedSince(from: string, to: string): Promise<string[]>;
+  /** Which of these paths at a commit contain any of these literal strings (`git grep -F`). */
+  grepAt(treeish: string, needles: readonly string[], paths: readonly string[]): Promise<string[]>;
+  /** Switches to `base` and fast-forwards, or merges when the base moved. `resolved` (GIT-09) is the confirmed content of
+   *  Tenet's shared files: Git must stop on exactly `conflicted`, and every `files` entry is written (null deletes). */
+  integrate(base: string, work: string, options?: {
+    runDir: string; timeoutMs: number; baseTip?: string; workTip?: string; proposal?: string; resolved?: Resolved;
+  }): Promise<{ ok: boolean; commit?: string; mode?: "fast-forward" | "merge"; detail?: string; uncertain?: boolean }>;
+  /** Postcondition for recovery: did this integration land (TS §7.4)? `merging` is true when a merge of `work` is still in progress. */
+  reconcileIntegration(
+    base: string, baseBefore: string, work: string, runDir?: string, proposal?: string,
+    workBranch?: string, preBranch?: string | null, preHead?: string | null,
+  ): Promise<{ completed: boolean; commit?: string; mode?: "fast-forward" | "merge"; merging?: boolean }>;
   /** The parent of a commit, or null for a root commit. */
   parentOf(commit: string): Promise<string | null>;
   /** Which of these commits are ancestors of HEAD (`git merge-base --is-ancestor`). */
@@ -396,4 +434,6 @@ export interface Ports {
   /** Current invocation snapshot; absent outside the public pipeline. */
   timing?: () => Timing;
   authorizeMutation?(verb: string, input: unknown): void;
+  /** The shared policy this invocation has applied so far, so a later read cannot loosen it; absent outside the public pipeline. */
+  policyInCall?: { policy?: Policy };
 }

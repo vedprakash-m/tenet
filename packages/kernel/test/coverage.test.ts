@@ -403,10 +403,10 @@ test("the report-integrity CLI does not modify requirements, evidence, or Git st
 test("counts a Must whose capability is switched off apart from the mapped ones, with the reason", () => {
   const r = report(resolve(import.meta.dirname, "../../.."), "R1");
   const disabled = r.disabled.map((d) => d.id).sort();
-  assert.deepEqual(disabled, ["GIT-04", "LFC-05"]);
+  assert.deepEqual(disabled, []);
   for (const id of disabled) assert.equal(r.covered.some((c) => c.id === id), false, id);
-  assert.match(r.disabled.find((d) => d.id === "GIT-04")!.why, /undo is disabled/);
-  assert.equal(r.evidence.find((e) => e.id === "LFC-05")?.mapping, "capability-disabled");
+  assert.equal(r.evidence.find((e) => e.id === "GIT-04")?.mapping, "mapped");
+  assert.equal(r.evidence.find((e) => e.id === "LFC-05")?.mapping, "mapped");
 });
 test("counts a budget Must that only a benchmark run can show as not reachable by a T1 test, with the reason", () => {
   const r = report(resolve(import.meta.dirname, "../../.."), "R1");

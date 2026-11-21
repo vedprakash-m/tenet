@@ -23,7 +23,7 @@ In every skill, `tenet <verb> [positional] [--flag value]` is shorthand: never t
 | `tenet finish --h <handle>` | Verdict, final commit, result. `--no-commit` when the user said not to commit |
 
 Before the first project check, the kernel may ask `envelope-consent`. Review the command, passed/dropped environment-variable names, project/HOME data targets, and the explicit lack of sandbox/network containment. Ask the user before answering `allow-envelope`; this consent only covers the displayed envelope hash, and a changed envelope prompts again. `decline-envelope` leaves the check unrun.
-| `tenet undo --h <handle>` | Disabled in this preview: it returns `capability-missing`. When the user asks to undo committed work, tell them undo is off because it can overwrite their files, and that they can revert the work's commits with Git themselves. Do not run Git reverts for them |
+| `tenet undo --h <handle>` | Preview the inverse and later-touching changes. Show the paths and external-effects limit, ask in chat, then record exactly `undo-confirm=apply` or `cancel`; a refused or uncertain postcondition stays uncommitted |
 | `tenet stop pause --h <handle>` | `pause`, `cancel` or `abandon`; always allowed |
 | `tenet inspect status` | Read-only: `status` (cache provenance), `why`, `doctor`, `help` |
 | `tenet review` | Review-only manifest; nothing is written to the project |
@@ -46,7 +46,7 @@ Follow the kernel's `required` action or an allowed alternative.
 | `focused-review` | Reread the diff yourself against the basis, then `tenet findings`; it will count as reduced independence |
 | `commit`, `finish` | Run the verb |
 | `reconcile`, `revalidate` | Follow the reasons, then run the verb `next` names |
-| `integrate`, `publish` | Offer; run `tenet integrate` only when the user asks (or accepts under the `auto-on-accept` setting). `publish` is cut; users push |
+| `integrate`, `publish` | Offer; run `tenet integrate` only when the user explicitly asks. `publish` is cut; users push |
 | `stop` | Run the stop mode named |
 
 ## The four shapes
@@ -64,7 +64,7 @@ Kickoff, question, check-in or report. Headline first. Markdown; commands copyab
 
 **Check-in** per `progress`: one line, what finished and what is next. A planned failing test is progress ("Example 1 fails before the change, as it should"). Before a commit say "Committing the fix now; approve in VS Code if it asks."
 
-**Report.** Lead with `data.label`, evidence, scope/limits, next. For user-facing changes: verified run instructions and confirmed-example steps; for `ui`, attach available captured screenshots of those examples. Guided: read `tenet-build` handover only. Never invent commands, outcomes or screenshot paths. All-pass: one evidence line; otherwise exceptions first. Name non-clean scope; put codes after reasons. Standard/Deep: up to three "read first" entries. Say "automated reviewer" once, then "the reviewer". `data.integration`: `offer` separates accept and integrate; `auto-on-accept` says acceptance integrates and offers acceptance without integration; `never` offers no integration. Other findings: severity, claim, consequence, fix, `path:line`; chat findings 1-3.
+**Report.** Lead with `data.label`, evidence, scope/limits, next. For user-facing changes: verified run instructions and confirmed-example steps; for `ui`, attach available captured screenshots of those examples. Guided: read `tenet-build` handover only. Never invent commands, outcomes or screenshot paths. All-pass: one evidence line; otherwise exceptions first. Name non-clean scope; put codes after reasons. Standard/Deep: up to three "read first" entries. Say "automated reviewer" once, then "the reviewer". `data.integration`: `offer` and legacy `auto-on-accept` keep acceptance and explicit integration separate; `never` omits the integration offer. Other findings: severity, claim, consequence, fix, `path:line`; chat findings 1-3.
 
 An assumption that stays open (`assumption-unresolved`) blocks `checked-local`: say it in the report, ask the user to confirm it in plain words, and on yes run `tenet decide disposition --h <handle> --target <id>` with `{"propose": {"outcome": "accepted", "reason": "<their words>"}}`.
 
@@ -110,7 +110,7 @@ Intent changes. Before changing accepted intent, run `tenet inspect --view impac
 
 Lessons. On "always" or "from now on", apply it now and run `tenet decide lesson --h <handle> --quote <their-words> --propose '{"statement":"...","scope":"project"}'` (`task` for this contract only; `retires` lists replaced lesson IDs). Lessons are advice; they never change what is required or allowed. "What do you remember": `tenet inspect --view lessons`. "Forget that": `tenet decide forget --h <handle> --target <LSN-id>`, show the preview, end the turn, on yes repeat with `--answer forget-confirm=yes`, and say copies already sent to the host's model are outside Tenet's control.
 
-Leaving. "What does Tenet leave behind" or "help uninstall": `tenet inspect --view residue`, then list `.tenet/`, the adopted documents (which stay), what is kept and the run files outside the project. "Clean up": `tenet decide cleanup --h <handle> --target project` (or `machine`), and show the preview. Removal is disabled in this preview: tell the user to delete the listed folders themselves. It never removes `.tenet/`; give the user the `tenetDirCommand` text to run.
+Leaving. "What does Tenet leave behind" or "help uninstall": `tenet inspect --view residue`, then list `.tenet/`, the adopted documents (which stay), what is kept and the run files outside the project. "Clean up": `tenet decide cleanup --h <handle> --target project` (or `machine`), show the preview, ask in chat, and on yes answer `--answer cleanup-confirm=yes`. Exit 3 lists what was `kept`. It never removes `.tenet/`; give the user the `tenetDirCommand` text to run.
 
 ## Prototypes
 Use synthetic/public data. For declared High sensitive-data, ask checked work or stop; say Tenet does not inspect data. Before `finish`, use `tenet decide hardening --h <handle>` with `{"gaps":["..."]}` (1–12 one-line gaps); otherwise finish reports them and stays `prototype`.

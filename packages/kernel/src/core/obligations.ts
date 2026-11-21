@@ -140,7 +140,14 @@ export function deriveObligations(elements: readonly BasisElement[], tool: strin
     const same = p && p.testFile === base.testFile && p.test === base.test && p.expectation === base.expectation &&
       JSON.stringify(p.support ?? []) === JSON.stringify(base.support ?? []) &&
       JSON.stringify(p.outputs ?? []) === JSON.stringify(base.outputs ?? []);
-    out.push(same ? { ...base, state: p.state, baselineTestHash: p.baselineTestHash, baselineMatched: p.baselineMatched, baselineInputs: p.baselineInputs } : base);
+    out.push(same ? {
+      ...base,
+      state: p.state,
+      baselineTestHash: p.baselineTestHash,
+      baselineMatched: p.baselineMatched,
+      baselineInputs: p.baselineInputs,
+      alongsideReason: p.alongsideReason,
+    } : base);
   }
   out.push(prev.get(FULL_SUITE) ?? { id: FULL_SUITE, kind: "test", category: "affected", tool });
   return out;

@@ -48,6 +48,7 @@ function undoRecovery(images: {
   let applies = 0;
   const ports = {
     runner: { stopRun: async () => "gone" as const },
+    store: { readBlob: () => "inverse-patch" },
     project: { read: () => null, setExclusions: () => {} },
     git: {
       setExclusions: () => {},
@@ -59,7 +60,8 @@ function undoRecovery(images: {
           path: "b.ts", mode: images.modes?.b ?? "100644", blob: images.b,
         }] as const],
       ]) }),
-      applyPatch: async () => { applies++; return { ok: true }; },
+      undoState: async () => ({ headOk: true, indexOk: true, index: "{}" }),
+      applyUndo: async () => { applies++; return { ok: true }; },
     },
   } as unknown as Ports;
   const results: unknown[][] = [];
@@ -70,6 +72,7 @@ function undoRecovery(images: {
     originalGeneration: 1, provisionalGeneration: 2,
     priorSourceOwner: null, intentElementId: "CNS-001-und",
     intentElementHash: hashOf(state.project.intent.elements[0]),
+    head: "base-head", branch: "refs/heads/main",
     tree: "post-tree", paths: ["a.ts", "b.ts"],     pre: {
       "a.ts": { mode: "100644", blob: "pre-a" },
       "b.ts": { mode: "100644", blob: "pre-b" },
@@ -83,19 +86,17 @@ function undoRecovery(images: {
 }
 
 describe("undo recovery [CON-03, P117]", () => {
-  it("records exact all-pre as terminal cancellation and restores prior ownership without retry", async () => {
+  it("rolls an exact all-pre undo forward once and restores a checkable provisional contract", async () => {
     const f = undoRecovery({ a: "pre-a", b: "pre-b" });
     await recoverUndo(f.recovery, { effect: "undo", id: "u-1", op: f.op });
-    assert.equal(f.applies(), 0);
-    assert.equal(f.recovery.state.work.provisional!.state, "cancelled");
+    assert.equal(f.applies(), 1);
+    assert.equal(f.recovery.state.work.provisional!.state, "executing");
     assert.equal(f.recovery.state.work.provisional!.session.inCall, undefined);
-    assert.equal(f.recovery.state.work.provisional!.reverting, undefined);
-    assert.equal(f.recovery.state.work.original!.git.undoneBy, undefined);
-    assert.equal(f.recovery.state.sourceOwner, undefined);
-    assert.deepEqual(f.recovery.state.project.intent.elements, []);
+    assert.equal(f.recovery.state.work.provisional!.reverting?.length, 2);
+    assert.equal(f.recovery.state.work.original!.git.undoneBy, "W-0002");
     const recorded = f.results.at(-1);
-    assert.deepEqual(recorded?.[2], { completed: false });
-    assert.ok(f.recovery.completed.some((message) => /did not apply/.test(message)));
+    assert.deepEqual(recorded?.[2], { completed: true });
+    assert.ok(f.recovery.completed.some((message) => /was finished/.test(message)));
   });
 
   it("leaves partial multi-path postconditions unresolved without applying a subset", async () => {
@@ -302,7 +303,7 @@ describe("undo recovery [CON-03, P117]", () => {
     assert.ok(recovered.completed.some(message => /did not apply/.test(message)));
   });
 
-  it("does not replay an all-pre cancellation twice in one recovery pass", async () => {
+  it("does not replay an all-pre roll-forward twice in one recovery pass", async () => {
     const f = undoRecovery({ a: "pre-a", b: "pre-b" });
     const writes: Array<{ effect: string; id: string; outcome: unknown }> = [];
     const tx = {
@@ -316,13 +317,14 @@ describe("undo recovery [CON-03, P117]", () => {
     } as unknown as Tx;
     const ports = {
       runner: { stopRun: async () => "gone" as const },
+      store: { readBlob: () => "inverse-patch" },
       project: f.recovery.ports.project,
       git: f.recovery.ports.git,
     } as unknown as Ports;
     const recovered = await recover(ports, tx, f.recovery.state);
-    assert.equal(recovered.state.work.provisional!.state, "cancelled");
+    assert.equal(recovered.state.work.provisional!.state, "executing");
     assert.equal(writes.length, 1);
     assert.equal(recovered.uncertain.length, 0, recovered.uncertain.join("\n"));
-    assert.equal(recovered.completed.filter(message => /did not apply/.test(message)).length, 1);
+    assert.equal(recovered.completed.filter(message => /was finished/.test(message)).length, 1);
   });
 });

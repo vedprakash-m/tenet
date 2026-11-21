@@ -9,12 +9,15 @@ import { recordedHardening, type HardeningOp } from "../decisions/hardening.ts";
 import { adoptionReplayNeeded } from "../core/state.ts";
 import type { State, WorkContract } from "../core/schemas.ts";
 import type { Ports, Tx } from "../ports/types.ts";
-import { recoverUndo } from "./recover-undo.ts";
+import { cleanup, recoverUndo } from "./recover-undo.ts";
 import { publishCommit, settleCommit } from "./recover-commit.ts";
 import { admitRecovery, hasPostconditions } from "./recover-admission.ts";
 import { publishUndo } from "./recover-undo-state.ts";
 
-export interface IntegrationOp { work: string; base: string; baseBefore: string; workTip: string }
+export interface IntegrationOp {
+  work: string; workBranch: string; preBranch: string | null; preHead: string | null;
+  base: string; baseBefore: string; workTip: string; runDir?: string; proposal?: string;
+}
 export type Unresolved = ReturnType<Tx["unresolved"]>[number];
 export type Outcome = {
   completed?: boolean; commit?: string | null; tree?: string | null;
@@ -69,14 +72,16 @@ async function indexSync(r: Recovery, u: Unresolved) {
 
 async function integration(r: Recovery, u: Unresolved) {
   const op = u.op as IntegrationOp;
-  const res = await r.ports.git.reconcileIntegration(op.base, op.baseBefore, op.workTip);
+  const res = await r.ports.git.reconcileIntegration(
+    op.base, op.baseBefore, op.workTip, op.runDir, op.proposal, op.workBranch, op.preBranch, op.preHead,
+  );
   const w = r.state.work[op.work];
   if (res.completed && res.commit && w) {
     applyIntegration(r, w, op, res.commit, res.mode === "merge");
     r.tx.result("integration", u.id, { completed: true, commit: res.commit, mode: res.mode });
     r.completed.push(`the integration into ${op.base} had landed before the result was recorded`);
-  } else if ((await r.ports.git.refCommit(op.base)) !== op.baseBefore) {
-    r.uncertain.push("an interrupted integration cannot be reconciled against its base branch");
+  } else if (res.merging || (await r.ports.git.refCommit(op.base)) !== op.baseBefore) { // merging: a stopped GIT-09 apply
+    r.uncertain.push(`an interrupted integration ${res.merging ? "is still merging" : "cannot be reconciled against its base branch"}`);
   } else {
     r.tx.result("integration", u.id, { completed: false });
     r.completed.push("an interrupted integration did not happen");
@@ -199,7 +204,9 @@ async function branch(r: Recovery, u: Unresolved) {
 }
 
 export const SETTLE: Record<string, (r: Recovery, u: Unresolved) => Promise<void>> = {
-  "index-sync": indexSync, commit: settleCommit, integration, undo: recoverUndo, scaffold, adopt, dependency, hardening, branch,
+  "index-sync": indexSync, commit: settleCommit, integration, undo: recoverUndo,
+  scaffold, adopt, dependency, hardening, branch,
+  cleanup,
   async forget(r, u) {
     r.state = completeForget(r.ports, r.tx, r.state, (u.op as { lesson: string }).lesson).state;
     r.completed.push("an interrupted forget was finished");

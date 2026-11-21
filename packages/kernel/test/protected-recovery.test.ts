@@ -129,7 +129,7 @@ for (const kind of ["no-read", "no-edit", "no-routine-scan"] as const) {
     const calls: string[] = [];
     ports.git.inventory = async () => { calls.push("inventory"); throw new Error("forbidden inventory"); };
     ports.store.readBlob = () => { calls.push("patch"); throw new Error("forbidden patch read"); };
-    ports.git.applyPatch = async () => { calls.push("apply"); throw new Error("forbidden effect"); };
+    ports.git.applyUndo = async () => { calls.push("apply"); throw new Error("forbidden effect"); };
     await ports.store.transaction("recover-undo", async tx => {
       tx.intent("undo", "mixed", {
         work: "W1", paths: ["allowed.txt", "PRIVATE/file"], pre: { "allowed.txt": null, "PRIVATE/file": null },

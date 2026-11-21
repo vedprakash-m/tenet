@@ -51,8 +51,18 @@ export function reconcileShared(ports: Ports, state: State): Shared {
   return { state: next, reasons, ...(ask ? { question: ask } : {}), policy: inForce };
 }
 
-/** Tightening applies before recovery and reads; loosening still needs acceptance. */
+/**
+ * Tightening applies before recovery and reads; loosening still needs acceptance. Within one call every read is joined
+ * with what the call already applied, so a tightening it observed stays in force even if the file loosens meanwhile.
+ */
 export function sharedPolicy(ports: Ports, state: State | null): Policy {
+  const now = readSharedPolicy(ports, state), seen = ports.policyInCall;
+  if (!seen) return now;
+  seen.policy = seen.policy ? effectivePolicy(seen.policy, now, false).policy : now;
+  return seen.policy;
+}
+
+function readSharedPolicy(ports: Ports, state: State | null): Policy {
   const t = state?.trust.find((x) => x.file === POLICY_FILE);
   const text = ports.project.read(POLICY_FILE);
   if (text === null) return t ? t.restrictions as Policy : {};

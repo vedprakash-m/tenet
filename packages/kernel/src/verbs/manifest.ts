@@ -2,7 +2,6 @@
 import { addTokens, canReserve, LIMITS, recordDelegation, releaseStale, reserve } from "../core/budget.ts";
 import { reason } from "../core/reasons.ts";
 import type { FileChange, Manifest } from "../core/review.ts";
-import { projectCharter } from "../core/charter.ts";
 import {
   buildAnalystManifest, buildManifest, DEFAULT_CHARTER, DEFAULT_REVIEW_RUBRIC,
   RESEARCHER_RUBRIC, continuesReviewRound, deltaSince, isManifest, reviewMode,
@@ -89,13 +88,6 @@ export function deepPasses(w: WorkContract, candidate: string): Array<ReturnType
   });
 }
 
-/** The project's charter from the first instruction file the host binding names that has one, else the default (QLT-09). */
-function charterOf(ports: Ports, exclusions: readonly Exclusion[]): string {
-  const text = (path: string) => { try { return ports.project.read(path); } catch { return null; } };
-  const names = ports.host.capabilities().instructionFiles;
-  return projectCharter(names.source === "unknown" ? [] : names.value.split(",").filter(modelPathFilter(exclusions)).map(text)) ?? DEFAULT_CHARTER;
-}
-
 export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Facts, changes: readonly FileChange[], retry = false): Issued {
   if (w.lane === "quick" && w.focusedReview?.role === "analyst") {
     return { work: w, next: [nx("stop", "The focused slot is occupied by an analyst reservation.", true)], reasons: [] };
@@ -125,7 +117,7 @@ export function issueReview(ports: Ports, st: State, w: WorkContract, facts: Fac
   const m = buildManifest({
     work: nw, elements: st.project.intent.elements.filter((e) => basis.elementIds.includes(e.id)), changes: shown, candidate: facts.candidate, basisHash: basis.hash,
     attempt: nextAttempt(live, retry, focused, budget, nw.reviews.length), mode, ...(basedOn ? { basedOn } : {}),
-    recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused) + lessonExcerpt(activeLessons(st, nw, ports.clock.now())), id: nw.label, files, charter: charterOf(ports, exclusions),
+    recheckFindings: nw.findings.filter((f) => f.state === "valid" || f.state === "fixed"), rubric: rubric(ports, focused) + lessonExcerpt(activeLessons(st, nw, ports.clock.now())), id: nw.label, files, charter: DEFAULT_CHARTER,
     exclusions,
   });
   if (!isManifest(m)) return { work: nw, next: [nx("ask", "The basis is too large to review in one pass; narrow the increment.", true)], reasons: [m] };

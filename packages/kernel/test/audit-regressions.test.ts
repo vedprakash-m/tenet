@@ -453,10 +453,10 @@ describe("audit: common mutation boundaries", () => {
     const cfg = await p.call("decide", { h, kind: "config", target: "integration", propose: { value: "auto-on-accept" } });
     assert.equal(cfg.exit, 0, JSON.stringify(cfg));
     const fin = await finishFixture(p, { h });
-    assert.equal((fin.data as any).integration.next, "accept");
+    assert.equal((fin.data as any).integration.next, "integrate");
     const acc = await p.call("decide", { h, kind: "acceptance", target: "accepted" });
     assert.equal(acc.exit, 0, JSON.stringify(acc));
-    assert.equal(p.git("branch", "--show-current"), "main");
+    assert.match(p.git("branch", "--show-current"), /^tenet\//);
   });
 
   it("reconciles an interrupted work-branch switch during recovery [CON-03, GIT-02]", async () => {

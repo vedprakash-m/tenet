@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { cleanup } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, project } from "./support/fixture.ts";
 import { projectCharter } from "../src/core/charter.ts";
+import { reviewOnlyManifest, DEFAULT_CHARTER } from "../src/core/review.ts";
 
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
@@ -36,8 +37,12 @@ describe("the manifest carries the project's charter [QLT-09]", () => {
     const g = await p.call("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
     return JSON.parse(readFileSync((g.data as any).review.manifest, "utf8"));
   };
-  it("uses AGENTS.md's charter, or the default when the project has none", async () => {
-    assert.equal((await manifestFor({ "AGENTS.md": block("Prefer small pure functions.") })).charter, "Prefer small pure functions.");
+  it("uses the built-in charter until a project charter has reviewed, hash-bound adoption", async () => {
+    assert.equal((await manifestFor({ "AGENTS.md": block("Prefer small pure functions.") })).charter, DEFAULT_CHARTER);
     assert.match((await manifestFor({ "AGENTS.md": "# no charter here\n" })).charter, /behavioral TDD/);
+  });
+  it("puts the built-in charter in stateless review without reading project charter text", () => {
+    const manifest = JSON.parse(reviewOnlyManifest([], [], "review", null).text);
+    assert.equal(manifest.charter, DEFAULT_CHARTER);
   });
 });

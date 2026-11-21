@@ -11,8 +11,11 @@ import type { KernelResponse, State, WorkContract } from "./core/schemas.ts";
 import type { LogEntry, Ports, Tx } from "./ports/types.ts";
 import type { Plan, Resp, Verb } from "./pipeline.ts";
 import { settingsFor } from "./verbs/reconcile.ts";
+import { effectiveSettings, layersOf } from "./core/config.ts";
+import { POLICY_FILE } from "./decisions/adopt.ts";
+import type { Shared } from "./verbs/reconcile.ts";
 
-export type Stamped = { res: KernelResponse; plan?: Plan };
+export type Stamped = { res: KernelResponse; plan?: Plan; shared?: Shared | null };
 export interface PreparedStamp {
   res: KernelResponse;
   next: State;
@@ -82,7 +85,11 @@ export const inputHash = (verb: string, input: unknown, world: unknown): string 
 /** Accrue time before applying warning and handoff rules at every final publication boundary. */
 function withActiveTime(ports: Ports, verb: string, next: State, resp: Resp, startedAt: string): State {
   const w = next.work[resp.work!]!;
-  const cadence = settingsFor(ports, next, w).checkpoints;
+  const retained = (next.trust.find((entry) => entry.file === POLICY_FILE)?.restrictions ?? {});
+  const settings = verb === "stop"
+    ? effectiveSettings(layersOf(next, w, retained))
+    : settingsFor(ports, next, w);
+  const cadence = settings.checkpoints;
   const boundary = resp.progress?.boundary;
   const checkIn = !!resp.checkIn || !!resp.questions?.length || ["finish", "stop"].includes(verb) ||
     (cadence === "each-phase" && !!boundary) || (cadence === "milestones" && boundary === "milestone");
@@ -93,7 +100,7 @@ function withActiveTime(ports: Ports, verb: string, next: State, resp: Resp, sta
     resp.reasons = [...(resp.reasons ?? []), reason("budget-warning", "80% of a limit is used", { note: true })];
   const updated = { ...w, budget };
   if (near || w.stopReason)
-    updated.handoff = handoffText(next, updated, settingsFor(ports, next, updated).exclusions as Exclusion[]);
+    updated.handoff = handoffText(next, updated, settings.exclusions as Exclusion[]);
   return { ...next, work: { ...next.work, [w.id]: updated } };
 }
 

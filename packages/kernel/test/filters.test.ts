@@ -121,7 +121,13 @@ describe("git filters: committing", () => {
 
   it("refuses to undo or integrate under a filter that applies, instead of running it unasked [GIT-12]", async () => {
     const { root, g } = repoWithFilter(true);
-    await assert.rejects(g.applyPatch("diff --git a/x b/x\n", [], { runDir: scratch(), timeoutMs: 1000 }), /filter/i);
+    const { head, branch } = await g.pinHead();
+    const undone = await g.applyUndo({
+      patch: "diff --git a/x b/x\n", head, branch, paths: [], pre: {}, post: {},
+      runDir: scratch(), timeoutMs: 1000,
+    });
+    assert.deepEqual({ ok: undone.ok, uncertain: !!undone.uncertain }, { ok: false, uncertain: false });
+    assert.match(undone.detail ?? "", /filter/i);
     await assert.rejects(g.integrate("main", "main", { runDir: scratch(), timeoutMs: 1000 }), /filter/i);
     assert.equal(existsSync(join(root, "FILTER_RAN")), false);
   });

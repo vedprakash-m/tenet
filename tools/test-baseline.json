@@ -1019,7 +1019,11 @@
         "count": 1
       },
       {
-        "key": "packages/kernel/test/charter.test.ts :: the manifest carries the project's charter [QLT-09] :: uses AGENTS.md's charter, or the default when the project has none",
+        "key": "packages/kernel/test/charter.test.ts :: the manifest carries the project's charter [QLT-09] :: puts the built-in charter in stateless review without reading project charter text",
+        "count": 1
+      },
+      {
+        "key": "packages/kernel/test/charter.test.ts :: the manifest carries the project's charter [QLT-09] :: uses the built-in charter until a project charter has reviewed, hash-bound adoption",
         "count": 1
       },
       {
@@ -3727,11 +3731,15 @@
         "count": 1
       },
       {
+        "key": "packages/kernel/test/integrate.test.ts :: integrate [GIT-11] :: explicit integration records acceptance without erasing accepted residual risk",
+        "count": 1
+      },
+      {
         "key": "packages/kernel/test/integrate.test.ts :: integrate [GIT-11] :: fast-forwards the base, moves the editor to it, and the receipts and review still stand",
         "count": 1
       },
       {
-        "key": "packages/kernel/test/integrate.test.ts :: integrate [GIT-11] :: follows the integration setting: never omits the offer, auto-on-accept integrates when the user accepts",
+        "key": "packages/kernel/test/integrate.test.ts :: integrate [GIT-11] :: follows the integration setting in presentation, while acceptance never integrates",
         "count": 1
       },
       {

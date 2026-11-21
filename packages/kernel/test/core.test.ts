@@ -211,4 +211,15 @@ describe("the baseline expectation of a test", () => {
     const [ob] = deriveObligations([{ id: "EX-1", origin: "request", kind: "example", text: "t", testFile: "a.test.ts", verifiedBy: [] }], "vitest", []);
     assert.equal(ob!.expectation, "fail", "what is derived is what wantsRed would answer");
   });
+  it("retains an alongside disposition only while the derived obligation definition is unchanged [TDD-03]", () => {
+    const element = { id: "EX-1", origin: "request" as const, kind: "example" as const, text: "t",
+      testFile: "a.test.ts", verifiedBy: [] };
+    const [first] = deriveObligations([element], "vitest", []);
+    const prior = {
+      ...first!, baselineMatched: true, baselineTestHash: "hash", baselineInputs: {},
+      alongsideReason: "the implementation predates this task",
+    };
+    assert.equal(deriveObligations([element], "vitest", [prior])[0]!.alongsideReason, prior.alongsideReason);
+    assert.equal(deriveObligations([{ ...element, test: "preservation" }], "vitest", [prior])[0]!.alongsideReason, undefined);
+  });
 });

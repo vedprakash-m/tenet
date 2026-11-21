@@ -466,6 +466,8 @@ describe("recipe coverage state [AC-27]", () => {
     const result = await execute(run, []);
     assert.equal((result as any).e2e?.[obligation.id].length, 2);
     assert.deepEqual((result as any).e2e?.[obligation.id].map((attempt: any) => attempt.launches), [2, 1]);
+    assert.match((result as any).e2e?.[obligation.id][0].report, /playwright-port-2\.json$/);
+    assert.match((result as any).e2e?.[obligation.id][1].report, /playwright-rerun-1\.json$/);
     const accounted = account(
       run, contractFixture({ obligations: [obligation], lane: "standard" }), result, [], false,
     );

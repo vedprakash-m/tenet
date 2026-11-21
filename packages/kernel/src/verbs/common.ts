@@ -92,7 +92,9 @@ export function reclaim(ports: Pick<Ports, "store">, tx: Tx, state: State): Evic
   });
   if (report.uncertain?.length) return report;
   try {
-    const swept = ports.store.sweepTemp(24 * 3600_000, keep);
+    const swept = ports.store.sweepTempDetailed
+      ? ports.store.sweepTempDetailed(24 * 3600_000, keep).count
+      : ports.store.sweepTemp(24 * 3600_000, keep);
     const age = swept ? `Removed ${swept} old run folder(s) past the age limit.` : undefined;
     return { ...report, ...(age ? { message: [report.message, age].filter(Boolean).join(" ") } : {}) };
   } catch {

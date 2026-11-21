@@ -19,7 +19,9 @@ function readProofs(ports: Ports): CommitProofV1[] {
   }
 }
 /** Called afresh for preview and confirmation; discovery never substitutes for the private witness. */
-export async function undoOwnership(ports: Ports, state: State, work: WorkContract): Promise<string[]> {
+export async function undoOwnership(
+  ports: Ports, state: State, work: WorkContract, pinned?: { head: string; branch: string | null },
+): Promise<string[]> {
   const proofs = ownedProofs(readProofs(ports), state, work);
   if (!proofs) return refuse("commit ownership cannot be established: legacy-unproven, missing or conflicting attribution proof");
   for (const proof of proofs) {
@@ -29,6 +31,9 @@ export async function undoOwnership(ports: Ports, state: State, work: WorkContra
   const origins = new Set(proofs.map(p => p.ref));
   if (!integration && origins.size !== 1) return refuse("owned commits do not share an exact origin ref");
   const target = integration ? `refs/heads/${integration.into}` : proofs[0]!.ref;
+  if (pinned?.branch !== undefined && pinned.branch !== target) {
+    return refuse("the exact undo target ref must be checked out; no branch was switched");
+  }
   if (await selectedRef(ports) !== target || !await ports.git.refCommit(target))
     return refuse("the exact undo target ref must be checked out; no branch was switched");
   if (integration && !(await ports.git.ancestors([integration.commit], target)).has(integration.commit))
@@ -36,7 +41,7 @@ export async function undoOwnership(ports: Ports, state: State, work: WorkContra
   const bound = integration?.commit ?? target;
   const ancestors = await ports.git.ancestors(work.git.commits, bound);
   if (work.git.commits.some(c => !ancestors.has(c))) return refuse("an owned commit moved out of the selected history");
-  const found = await ports.git.workCommits(work.label, target);
+  const found = await ports.git.workCommits(work.label, pinned?.head ?? target);
   if (found.shallow) return refuse("this is a shallow clone, so the work's history may be incomplete");
   if (found.merges) return refuse("a commit of this work is a merge commit; undoing it needs a person");
   if (found.commits.some(c => !work.git.commits.includes(c)))

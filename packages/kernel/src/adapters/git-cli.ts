@@ -1,5 +1,3 @@
-// Git argument arrays (TS §10). Inspection disables programs and hashes dirty blobs in Node.
-// Only exact, locked post-commit sync writes the user's index.
 import { withoutGitLocalVars } from "./git-env.ts";
 import { outputMatcher } from "../core/outputs.ts";
 import { hookInventory, locate, repoLayout } from "./git-layout.ts";
@@ -53,7 +51,15 @@ import { exactWorkTrailer } from "../core/commit-proof.ts";
 import type { CommitIntentV1, CommitProofV1, ReflogCursorV1 } from "../core/commit-proof.ts";
 import { stableStringify } from "../core/ids.ts";
 import { reflogCursor } from "./git-attribution.ts";
+import {
+  commitResolved, finishIntegration, pinIntegration, readIntegrationProof,
+} from "./git-integrate.ts";
 import { decodeGitOutput, parseIndexRecords } from "./git-index-records.ts";
+import {
+  guardedApplyUndo, laterTouching as later, pinHead as pin, planInverse,
+  undoNames as names, undoObstructions as obstructions, undoState as undoStateOf,
+} from "./git-undo.ts";
+import type { UndoApply } from "./git-undo.ts";
 
 const MAX_UNTRACKED = 20_000;
 const MAX_SNAPSHOT_BYTES = 20 * 1024 * 1024;
@@ -224,6 +230,11 @@ export class GitCli {
       else c.stdin?.end();
     });
   }
+  private undoAdapter = () =>
+    ({
+      root: this.root, runner: this.runner,
+      run: (args: string[], options?: Parameters<GitCli["run"]>[1]) => this.run(args, options), env: gitConfigEnv,
+    });
   private async ok(args: string[], o?: Parameters<GitCli["run"]>[1]): Promise<string> {
     const r = await this.run(args, o);
     if (r.code !== 0) throw new KernelError("repo-state-readonly", `git ${args[0]} failed: ${r.stderr.trim().slice(0, 200)}`);
@@ -344,7 +355,6 @@ export class GitCli {
     this.signingConsented = new Set(hashes);
   }
 
-  /** Programs only run for something Tenet is about to do, and only on the user's word; undo and integration have no consent path yet. */
   private async refuseFilters(doing: string): Promise<void> {
     const gate = await this.filterGate();
     if (gate)
@@ -1001,64 +1011,17 @@ export class GitCli {
     };
   }
 
-  async planUndo(
-    commits: readonly string[],
-  ): Promise<
-    { ok: true; tree: string; patch: string; paths: string[]; stat: string } | { ok: false; conflict: string[]; detail: string }
-  > {
-    const dir = mkdtempSync(join(tmpdir(), "tenet-undo-"));
-    const env = { GIT_INDEX_FILE: join(dir, "index") };
-    try {
-      await this.ok(["read-tree", "HEAD"], { env, inspect: false });
-      const empty = (await this.ok(["hash-object", "-t", "tree", "/dev/null"])).trim();
-      for (const c of commits) {
-        const parent = (await this.tryOut(["rev-parse", "-q", "--verify", `${c}^`])) ?? empty;
-        const inverse = await this.ok(["diff", "--no-ext-diff", "--no-textconv", "--binary", "--full-index", "-M", c, parent]);
-        const r = await this.run(["apply", "--cached", "--whitespace=nowarn"], { env, input: inverse, inspect: false });
-        if (r.code !== 0) {
-          const named = [...r.stderr.matchAll(/error: (?:patch failed: )?([^:\n]+?)(?::\d+)?(?::| does not)/g)].map((m) => m[1]!);
-          return { ok: false, conflict: [...new Set(named)], detail: r.stderr.trim().slice(0, 400) };
-        }
-      }
-      const tree = (await this.ok(["write-tree"], { env, inspect: false })).trim();
-      const patch = await this.ok(["diff", "--no-ext-diff", "--no-textconv", "--binary", "--full-index", "HEAD", tree]);
-      const paths = (await this.ok(["diff", "--no-ext-diff", "--name-only", "-z", "HEAD", tree])).split("\0").filter(Boolean);
-      const stat =
-        (await this.ok(["diff", "--no-ext-diff", "--stat", "--no-color", "HEAD", tree])).trim().split("\n").at(-1) ?? "";
-      return { ok: true, tree, patch, paths, stat };
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  }
-
-  async applyPatch(
-    patch: string,
-    include: readonly string[] = [],
-    options?: { runDir: string; timeoutMs: number },
-  ): ReturnType<Git["applyPatch"]> {
-    await this.objectFormatSafe();
-    await this.refuseFilters("undoing work");
-    if (process.platform === "win32" || constants.O_NOFOLLOW === undefined) {
-      throw new KernelError("capability-missing", "Safe inverse-patch application is unavailable on this runtime.");
-    }
-    const runDir = options?.runDir ?? mkdtempSync(join(tmpdir(), "tenet-patch-"));
-    const env = gitConfigEnv();
-    const r = await this.runner.run({
-      argv: ["git", ...INSPECT, "apply", "--whitespace=nowarn", ...include.map((p) => `--include=${p}`), "--"],
-      cwd: this.root,
-      runDir,
-      timeoutMs: options?.timeoutMs ?? 60_000,
-      env,
-      stdin: { mode: "bound", bytes: Buffer.from(patch, "utf8") },
-    });
-    return r.exit === 0 && !r.signal && !r.timedOut && r.stdinDelivery === "delivered"
-      ? { ok: true }
-      : {
-          ok: false,
-          uncertain: r.timedOut || !!r.signal || r.exit === undefined || r.stdinDelivery !== "delivered",
-          detail: r.stderr.trim().slice(0, 400) || "the inverse patch was not delivered completely",
-        };
-  }
+  pinHead = () => pin(this.undoAdapter());
+  undoNames = (commits: readonly string[]) => names(this.undoAdapter(), commits);
+  planUndo = (commits: readonly string[], head: string) => planInverse(this.undoAdapter(), commits, head);
+  undoObstructions = (head: string, paths: readonly string[]) => obstructions(this.undoAdapter(), head, paths);
+  undoState = (head: string, branch: string | null, paths: readonly string[]) => undoStateOf(this.undoAdapter(), head, branch, paths);
+  applyUndo = (input: UndoApply) => guardedApplyUndo(
+    this.undoAdapter(), input, async () => {
+      await this.objectFormatSafe();
+      await this.refuseFilters("undoing work");
+    },
+  );
 
   async blobsAt(treeish: string, paths: readonly string[]): Promise<Record<string, string | null>> {
     const out: Record<string, string | null> = Object.fromEntries(paths.map((p) => [p, null]));
@@ -1085,11 +1048,8 @@ export class GitCli {
     return out;
   }
 
-  async laterCommits(since: string, paths: readonly string[]): Promise<string[]> {
-    return ((await this.tryOut(["log", "--format=%h %s", `${since}..HEAD`, "--", ...paths.map((p) => `:(literal)${p}`)])) ?? "")
-      .split("\n")
-      .filter(Boolean);
-  }
+  laterCommits = (owned: readonly string[], oldest: string, head: string, paths: readonly string[]) =>
+    later(this.undoAdapter(), owned, oldest, head, paths);
 
   async refCommit(ref: string): Promise<string | null> {
     return this.tryOut(["rev-parse", "-q", "--verify", `${ref}^{commit}`]);
@@ -1114,20 +1074,18 @@ export class GitCli {
     return r.code === 0 ? r.stdout : null;
   }
 
-  /** GIT-09: Git stopped on the conflicts the user saw; only the confirmed paths may remain, and they get the confirmed text. */
-  private async commitResolved(
-    run: (args: string[]) => Promise<RunResult>, resolved: Record<string, string>, message: string,
-  ): Promise<string | null> {
-    const left = (await this.ok(["diff", "--name-only", "--diff-filter=U", "-z"])).split("\0").filter(Boolean).sort();
-    const want = Object.keys(resolved).sort();
-    if (left.join("\0") !== want.join("\0")) {
-      await run(["merge", "--abort"]);
-      return `the merge conflicted on ${left.join(", ") || "nothing"}, not on the confirmed ${want.join(", ")}`;
-    }
-    for (const [p, text] of Object.entries(resolved)) writeFileSync(join(this.root, p), text);
-    const add = await run(["add", "--", ...want.map((p) => `:(literal)${p}`)]);
-    const c = add.exit === 0 ? await run(["commit", "-q", "-m", message]) : add;
-    return c.exit !== 0 || c.timedOut || c.signal ? `${c.stdout}${c.stderr}` || "the resolved merge did not commit" : null;
+  async changedSince(from: string, to: string): Promise<string[]> {
+    return (await this.ok(["diff", "--name-only", "--no-renames", "-z", from, to])).split("\0").filter(Boolean);
+  }
+
+  async grepAt(treeish: string, needles: readonly string[], paths: readonly string[]): Promise<string[]> {
+    if (!needles.length || !paths.length) return [];
+    const patterns = needles.flatMap((n) => ["-e", n]);
+    const pathspecs = paths.map((x) => `:(literal)${x}`);
+    const r = await this.run(["grep", "-l", "-z", "-F", "--no-textconv", ...patterns, treeish, "--", ...pathspecs]);
+    if (r.code === 1) return [];
+    if (r.code !== 0) throw new KernelError("repo-state-readonly", `git grep failed: ${r.stderr.trim().slice(0, 200)}`);
+    return r.stdout.split("\0").filter(Boolean).map((x) => x.slice(treeish.length + 1));
   }
 
   async integrate(base: string, work: string, options?: Parameters<Git["integrate"]>[2]): ReturnType<Git["integrate"]> {
@@ -1160,24 +1118,34 @@ export class GitCli {
     };
     const fail = (detail: string) => ({ ok: false, uncertain: launched, detail: detail.trim().slice(-400) });
     try {
-      if ((await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"])) !== base) {
+      const pinned = await pinIntegration(
+        base, work, options,
+        (args) => this.tryOut(args),
+        (args) => run(args),
+      );
+      if (!pinned.pinned && (await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"])) !== base) {
         const sw = await run(["switch", "-q", base]);
         if (sw.exit !== 0 || sw.timedOut || sw.signal) return fail(sw.stderr || "branch switch did not complete cleanly");
       }
-      const ff = (await this.run(["merge-base", "--is-ancestor", base, work])).code === 0;
+      const ff = (await this.run(["merge-base", "--is-ancestor", pinned.base, pinned.work])).code === 0;
       const message = `Merge ${work} into ${base}`;
       const resolved = ff ? undefined : options?.resolved;
       const m = await run(
-        ff ? ["merge", "-q", "--ff-only", work] : ["merge", "-q", "--no-ff", ...(resolved ? ["--no-commit"] : ["-m", message]), work],
+        ff ? ["merge", "-q", "--ff-only", pinned.work]
+          : ["merge", "-q", "--no-ff", ...(resolved ? ["--no-commit"] : ["-m", message]), pinned.work],
       );
       if (resolved && !m.timedOut && !m.signal) {
-        const why = await this.commitResolved(run, resolved, message);
+        const why = await commitResolved(
+          { root: this.root, ok: (args) => this.ok(args), run: (args) => this.run(args), tryOut: (args) => this.tryOut(args) },
+          run, resolved, message,
+        );
         if (why) return fail(why);
       } else if (m.exit !== 0 || m.timedOut || m.signal) return fail(`${m.stdout}${m.stderr}` || "integration did not complete cleanly");
-      const commit = await this.tryOut(["rev-parse", "HEAD"]);
-      return commit
-        ? { ok: true, commit, mode: ff ? "fast-forward" : "merge" }
-        : fail("integration postcondition could not be inspected");
+      const finished = await finishIntegration(
+        runDir, base, work, options ?? {}, (args) => this.tryOut(args), run,
+        ff ? "fast-forward" : "merge",
+      );
+      return { ok: true, ...finished };
     } catch (e) {
       return fail(String(e));
     }
@@ -1187,9 +1155,32 @@ export class GitCli {
     base: string,
     baseBefore: string,
     work: string,
-  ): Promise<{ completed: boolean; commit?: string; mode?: "fast-forward" | "merge" }> {
+    runDir?: string,
+    proposal?: string,
+    workBranch?: string,
+    preBranch?: string | null,
+    preHead?: string | null,
+  ): ReturnType<Git["reconcileIntegration"]> {
     const now = await this.refCommit(base);
-    if (!now || now === baseBefore) return { completed: false };
+    const proof = readIntegrationProof(runDir);
+    if (!proof) {
+      const head = await this.tryOut(["rev-parse", "-q", "--verify", "HEAD"]);
+      const branch = await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]);
+      const merge = await this.tryOut(["rev-parse", "-q", "--verify", "MERGE_HEAD"]);
+      const conflicted = !!(await this.tryOut(["diff", "--name-only", "--diff-filter=U"]));
+      const exactPre = branch === preBranch && head === preHead && head === (preBranch === workBranch ? work : preHead) &&
+        now === baseBefore && merge === null && !conflicted;
+      return { completed: false, ...(!exactPre ? { merging: true } : {}) };
+    }
+    if (proof.base !== base || proof.baseTip !== baseBefore || proof.proposal !== proposal ||
+      proof.workTip !== work) return { completed: false };
+    const branch = await this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]);
+    if (branch !== base) return { completed: false, merging: true };
+    if (!now || now === baseBefore) {
+      return { completed: false, merging: true };
+    }
+    if (now !== proof.commit ||
+      (await this.tryOut(["rev-parse", `${now}^{tree}`])) !== proof.tree) return { completed: false };
     if (now === work) return { completed: true, commit: now, mode: "fast-forward" };
     const parents = ((await this.tryOut(["rev-list", "--parents", "-n", "1", now])) ?? "").split(" ").slice(1);
     return parents.length === 2 && parents[0] === baseBefore && parents[1] === work

@@ -36,15 +36,26 @@ function demoFor(ports: Ports, st: State, w: WorkContract, proposal: FinishInput
   return buildDemo(proposal, context, (path, max) => ports.project.readBounded(path, max));
 }
 
-function shownReasons(v: Verdict, w: WorkContract, extra: Reason[]) {
+export function shownReasons(v: Verdict, w: WorkContract, extra: Reason[]) {
   const missingHardening = w.profile === "prototype" && !w.hardening;
   const missingReason = missingHardening
     ? reason("hardening-gaps-missing", undefined, { note: true })
     : undefined;
-  const reasons = [...v.reasons.filter((item) => !item.note), ...v.reasons.filter((item) => item.note),
-    ...(missingReason ? [missingReason] : []), ...extra];
-  const shown = reasons.slice(0, MAX_REASONS);
-  if (missingReason && !shown.includes(missingReason)) shown[MAX_REASONS - 1] = missingReason;
+  const notes = v.reasons.filter((item) => item.note);
+  const alongside = notes.filter((item) => item.code === "test-alongside");
+  const alongsideNote = alongside.length > 1
+    ? reason("test-alongside", alongside.map((item) => item.message).join("; "), {
+        note: true, refs: [...new Set(alongside.flatMap((item) => item.refs ?? []))],
+      })
+    : alongside[0];
+  const ordinaryNotes = notes.filter((item) => item.code !== "test-alongside");
+  const reasons = [...v.reasons.filter((item) => !item.note), ...ordinaryNotes,
+    ...(alongsideNote ? [alongsideNote] : []), ...(missingReason ? [missingReason] : []), ...extra];
+  const required = [alongsideNote, missingReason].filter((item): item is Reason => !!item);
+  const shown = [
+    ...reasons.filter((item) => !required.includes(item)).slice(0, Math.max(0, MAX_REASONS - required.length)),
+    ...required,
+  ];
   return { missingHardening, shown, omitted: Math.max(0, reasons.length - shown.length) };
 }
 
@@ -61,7 +72,9 @@ function result(
   const latestByOb = new Map(w.receipts
     .filter((r) => r.stage !== "baseline" && required.has(r.obligation))
     .map((r) => [r.obligation, r]));
-  const checks = [...latestByOb.values()].map((r) => ({ obligation: r.obligation, status: r.status, counts: r.counts }));
+  const checks = [...latestByOb.values()].map((r) => ({
+    obligation: r.obligation, status: r.status, counts: r.counts, qualifiers: r.qualifiers,
+  }));
   const coverageInput = coverageEvidenceForReceipts(
     st, w.id, w.basis?.hash ?? "", w.receipts, checkInputId(ports, w, facts.candidate),
   );
@@ -79,7 +92,7 @@ function result(
     setting !== "never" && v.endpoint === "checked-local" && w.git.branch !== w.git.start.branch && !w.git.integrated;
   const integration = {
     setting,
-    ...(canIntegrate ? { next: setting === "auto-on-accept" ? "accept" : "integrate" } : {}),
+    ...(canIntegrate ? { next: "integrate" } : {}),
   };
   return {
     work: w.id,

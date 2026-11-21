@@ -60,7 +60,7 @@ describe("schema-1 rollback bridge [LFC-04, CON-05]", () => {
       const before = snapshot(dir);
       for (const write of [
         () => store.putBlob("no"), () => store.tempDir("run-new"), () => store.writeArtifact(join(base, "run-new"), "x", "no"),
-        () => store.evict([]), () => store.sweepTemp(0, []), () => store.purge(["no"]), () => store.cleanTemp("machine", 0, true),
+        () => store.evict([]), () => store.sweepTemp(0, []), () => store.purge(["no"]), () => store.removeTemp({ root: base, entries: [], kept: [] }, []),
       ]) assert.throws(write, unsupported);
       await assert.rejects(store.repairLock(), unsupported);
       await assert.rejects(store.transaction("test", async () => assert.fail("callback entered")), unsupported);

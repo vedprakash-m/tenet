@@ -4,7 +4,8 @@ import { reason } from "../core/reasons.ts";
 import type { BasisElement, Finding, State, WorkContract } from "../core/schemas.ts";
 import { factsHash, nx, withWork } from "../verbs/common.ts";
 import { gather } from "../verbs/facts.ts";
-import { integrationSetting, startIntegrate, switchFacts } from "../verbs/integrate.ts";
+import { startIntegrate, switchFacts } from "../verbs/integrate.ts";
+import type { MergeSide } from "../core/shared-merge.ts";
 import type { Decision } from "./types.ts";
 import type { Plan } from "../pipeline.ts";
 import type { Ports } from "../ports/types.ts";
@@ -15,22 +16,10 @@ const ACCEPT = ["accepted", "rejected", "accepted-with-residual-risk"] as const;
 /** Owner acceptance is recorded as what it is and never removes a blocking reason (EVD-06). */
 export const acceptance: Decision = {
   kind: "acceptance",
-  async run({ ports, tx, state, work, input }) {
+  async run({ state, work, input }) {
     const v = input.target;
     if (!ACCEPT.includes(v as (typeof ACCEPT)[number])) throw new KernelError("revision-conflict", `target must be one of ${ACCEPT.join(", ")}`, { exit: 1 });
     const w = { ...work, acceptance: v as (typeof ACCEPT)[number] };
-    // Under `auto-on-accept` the result already said accepting also integrates; accepting is the consent (UX A12).
-    if (
-      v !== "rejected" &&
-      integrationSetting(ports, state, w) === "auto-on-accept" &&
-      w.git.commits.length &&
-      w.git.branch &&
-      w.git.start.branch &&
-      w.git.branch !== w.git.start.branch &&
-      !w.git.integrated
-    ) {
-      return startIntegrate(ports, tx, withWork(state, w), w);
-    }
     return { state: withWork(state, w), resp: { work: w.id, next: [nx("finish", "Acceptance is recorded; it does not change the checks.")], data: { acceptance: v } } };
   },
 };
@@ -154,20 +143,26 @@ export const branchSwitch: Decision = {
   },
 };
 
-/** GIT-09: the answer to a merged INTENT.md proposal. Integration starts only if the proposal is still exactly the one shown. */
+/** GIT-09: the answer to a merged shared-file proposal. `revise` shows the proposal with other sides chosen and moves
+ *  nothing; `apply` integrates only if the proposal, with the same sides, is still exactly the one shown. */
 export const sharedMerge: Decision = {
   kind: "shared-merge",
   async run({ ports, tx, state, work, input }) {
     const q = state.pending.find((p) => p.id === "shared-merge");
-    const answer = input.answers?.["shared-merge"];
+    const { "shared-merge": answer, ...rest } = input.answers ?? {};
     if (!q) throw new KernelError("revision-conflict", "there is no open proposal for a shared file", { exit: 2 });
-    if (answer !== "apply" && answer !== "cancel")
-      throw new KernelError("revision-conflict", 'answer "apply" or "cancel"', { exit: 1 });
+    if (answer !== "apply" && answer !== "revise" && answer !== "cancel")
+      throw new KernelError("revision-conflict", 'answer "apply", "revise" or "cancel"', { exit: 1 });
+    const sides: Record<string, MergeSide> = {};
+    for (const [id, side] of Object.entries(rest)) {
+      if (side !== "target" && side !== "work") throw new KernelError("revision-conflict", `${id}: choose "target" or "work"`, { exit: 1 });
+      sides[id] = side;
+    }
     const st = { ...state, pending: state.pending.filter((p) => p.id !== "shared-merge") };
     if (answer === "cancel")
-      return { state: st, resp: { work: work.id, next: [nx("stop", "Nothing moved; resolve INTENT.md on the work branch.")] } };
-    // A changed tip or text gives a different proposal: it is asked again, never applied on the old answer.
-    return startIntegrate(ports, tx, st, work, q.bind.factsHash);
+      return { state: st, resp: { work: work.id, next: [nx("stop", "Nothing moved; resolve the shared files on the work branch.")] } };
+    // A changed tip, file or side gives a different proposal: it is asked again, never applied on the old answer.
+    return startIntegrate(ports, tx, st, work, answer === "apply" ? { facts: q.bind.factsHash, sides } : { sides });
   },
 };
 

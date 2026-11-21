@@ -141,7 +141,10 @@ function judgeRed(i: VerdictInput): Reason[] {
     else if (!baselineDefinitionMatches(ob, path => i.testHashes[path]) && ob.testFile && i.testHashes[ob.testFile] !== ob.baselineTestHash) {
       out.push(reason("red-invalidated", ob.testFile, { refs: [ob.id] }));
     }
-    if (proved && ob.alongsideReason) out.push(reason("test-alongside", ob.alongsideReason, { refs: [ob.id], note: true }));
+    if (proved && wantsRed(ob) && ob.alongsideReason && i.receipts.some((receipt) =>
+      receipt.obligation === ob.id && receipt.stage === "baseline" && receipt.status === "fail" &&
+      receipt.failures?.some((failure) => failure.kind === "assertion")
+    )) out.push(reason("test-alongside", ob.alongsideReason, { refs: [ob.id], note: true }));
     for (const [path, hash] of Object.entries(ob.baselineInputs ?? {})) if ((i.testHashes[path] ?? "") !== hash) out.push(reason("red-invalidated", path, { refs: [ob.id] }));
   }
   return out;

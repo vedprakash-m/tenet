@@ -20,7 +20,9 @@ function hasImagePostconditions(value: unknown, paths: readonly string[]): value
 }
 
 function isRecordedImageOp(op: UndoOp): boolean {
-  return typeof op.intentElementId === "string";
+  return typeof op.intentElementId === "string"
+    && typeof op.head === "string"
+    && (op.branch === null || typeof op.branch === "string");
 }
 
 function cancelUnappliedUndo(recovery: Recovery, unresolved: Unresolved, op: UndoOp) {
@@ -54,43 +56,27 @@ async function recoverLegacyUndo(recovery: Recovery, unresolved: Unresolved, op:
   if (!admitRecovery(recovery, unresolved, op.paths, true)) return;
   const here = await recovery.ports.git.inventory([]);
   const at = (path: string) => here.entries.get(path)?.blob ?? null;
-  const todo = op.paths.filter((path) => at(path) !== op.post[path]);
-  if (todo.some((path) => at(path) !== op.pre[path])) {
-    recovery.uncertain.push(`the undo touched files that have since changed (${todo.slice(0, 3).join(", ")})`);
+  if (op.paths.every((path) => at(path) === op.post[path])) {
+    recovery.tx.result("undo", unresolved.id, { completed: true });
+    recovery.completed.push("the undo had been applied before the result was recorded");
     return;
   }
-  if (!admitRecovery(recovery, unresolved, op.paths, true)) return;
-  const patch = todo.length ? recovery.ports.store.readBlob(op.patch) : null;
-  const run = op.runDir ? { runDir: op.runDir, timeoutMs: 60_000 } : undefined;
-  if (!admitRecovery(recovery, unresolved, op.paths, true)) return;
-  const ok = !todo.length || (!!patch && (await recovery.ports.git.applyPatch(patch, todo, run)).ok);
-  if (ok) recovery.tx.result("undo", unresolved.id, { completed: true });
-  else {
-    recovery.uncertain.push("an interrupted undo could not be finished");
-    return;
-  }
-  recovery.completed.push(todo.length
-    ? "an interrupted undo was finished"
-    : "the undo had been applied before the result was recorded");
+  recovery.uncertain.push("the interrupted undo has no pinned head; its postcondition is not complete");
 }
 
-export async function recoverUndo(recovery: Recovery, unresolved: Unresolved) {
-  const op = unresolved.op as UndoOp;
-  if (!admitRecovery(recovery, unresolved, op?.paths, true)) return;
+function completeUndo(recovery: Recovery, unresolved: Unresolved, provisional: Recovery["state"]["work"][string], applied: boolean) {
+  recovery.state = {
+    ...recovery.state,
+    work: {
+      ...recovery.state.work,
+      [provisional.id]: { ...provisional, session: { generation: provisional.session.generation } },
+    },
+  };
+  recovery.tx.result("undo", unresolved.id, { completed: true });
+  recovery.completed.push(applied ? "an interrupted undo was finished" : "the undo had been applied before the result was recorded");
+}
 
-  if (!isRecordedImageOp(op)) {
-    const legacy = op as LegacyUndoOp;
-    if (!hasPostconditions(legacy.pre, legacy.paths) || !hasPostconditions(legacy.post, legacy.paths)) {
-      recovery.uncertain.push("the interrupted undo has incomplete path postconditions; it remains unresolved");
-      return;
-    }
-    return recoverLegacyUndo(recovery, unresolved, legacy);
-  }
-
-  if (!hasImagePostconditions(op.pre, op.paths) || !hasImagePostconditions(op.post, op.paths)) {
-    recovery.uncertain.push("the interrupted undo has incomplete path postconditions; it remains unresolved");
-    return;
-  }
+async function recoverImageUndo(recovery: Recovery, unresolved: Unresolved, op: UndoOp) {
   const stopped = op.runDir ? await recovery.ports.runner.stopRun(op.runDir) : "unknown";
   if (stopped === "unknown") {
     recovery.uncertain.push(`undo ${unresolved.id} has uncertain process termination`);
@@ -101,6 +87,11 @@ export async function recoverUndo(recovery: Recovery, unresolved: Unresolved) {
     return;
   }
   const provisional = recovery.state.work[op.work]!;
+  const ownership = await recovery.ports.git.undoState(op.head, op.branch, op.paths);
+  if (!ownership.headOk || !ownership.indexOk) {
+    recovery.uncertain.push(`undo ${unresolved.id} no longer matches its pinned HEAD, branch or index`);
+    return;
+  }
   if (!admitRecovery(recovery, unresolved, op.paths, true)) return;
   const here = await recovery.ports.git.inventory([]);
   const unreadable = op.paths.filter(path => {
@@ -121,20 +112,63 @@ export async function recoverUndo(recovery: Recovery, unresolved: Unresolved) {
   const pre = op.paths.filter(path => same(path, op.pre[path]));
   if (!admitRecovery(recovery, unresolved, op.paths, true)) return;
   if (post.length === op.paths.length) {
-    recovery.state = {
-      ...recovery.state,
-      work: {
-        ...recovery.state.work,
-        [provisional.id]: { ...provisional, session: { generation: provisional.session.generation } },
-      },
-    };
-    recovery.tx.result("undo", unresolved.id, { completed: true });
-    recovery.completed.push("the undo had been applied before the result was recorded");
+    completeUndo(recovery, unresolved, provisional, false);
     return;
   }
   if (pre.length !== op.paths.length) {
     recovery.uncertain.push(`the undo has a partial or changed postcondition (${post.length}/${op.paths.length} paths at post-image)`);
     return;
   }
+  const patch = op.runDir ? recovery.ports.store.readBlob(op.patch) : null;
+  if (!patch || !op.runDir) {
+    recovery.uncertain.push(`undo ${unresolved.id} has no recoverable inverse patch or run folder`);
+    return;
+  }
+  const applied = await recovery.ports.git.applyUndo({
+    patch,
+    head: op.head,
+    branch: op.branch,
+    paths: op.paths,
+    pre: Object.fromEntries(op.paths.map(path => [path, op.pre[path]?.blob ?? null])),
+    post: Object.fromEntries(op.paths.map(path => [path, op.post[path]?.blob ?? null])),
+    runDir: op.runDir,
+    timeoutMs: 60_000,
+  });
+  if (applied.ok) {
+    completeUndo(recovery, unresolved, provisional, true);
+    return;
+  }
+  if (applied.uncertain) {
+    recovery.uncertain.push(applied.detail ?? "an interrupted undo could not be settled");
+    return;
+  }
   cancelUnappliedUndo(recovery, unresolved, op);
+}
+
+export async function recoverUndo(recovery: Recovery, unresolved: Unresolved) {
+  const op = unresolved.op as UndoOp;
+  if (!admitRecovery(recovery, unresolved, op?.paths, true)) return;
+  if (!isRecordedImageOp(op)) {
+    const legacy = op as LegacyUndoOp;
+    if (!hasPostconditions(legacy.pre, legacy.paths) || !hasPostconditions(legacy.post, legacy.paths)) {
+      recovery.uncertain.push("the interrupted undo has incomplete path postconditions; it remains unresolved");
+      return;
+    }
+    return recoverLegacyUndo(recovery, unresolved, legacy);
+  }
+  if (!hasImagePostconditions(op.pre, op.paths) || !hasImagePostconditions(op.post, op.paths)) {
+    recovery.uncertain.push("the interrupted undo has incomplete path postconditions; it remains unresolved");
+    return;
+  }
+  await recoverImageUndo(recovery, unresolved, op);
+}
+
+/** A cleanup never repeats removal: its question is withdrawn, so a retried yes is refused and a new preview shows what is left. */
+export async function cleanup(recovery: Recovery, unresolved: Unresolved) {
+  recovery.state = {
+    ...recovery.state,
+    pending: recovery.state.pending.filter((q) => q.id !== "cleanup-confirm"),
+  };
+  recovery.tx.result("cleanup", unresolved.id, { interrupted: true });
+  recovery.completed.push("an interrupted cleanup may have removed some run files; preview again to see what remains");
 }

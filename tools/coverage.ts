@@ -72,17 +72,14 @@ type ParsedLedgerRecord = z.infer<typeof LedgerRecord> & { campaign: ValidatedCa
  * so they are counted apart from the mapped Musts. The `*-disabled.test.ts` suites prove the product refuses.
  * Remove an entry when its capability is switched back on.
  */
-export const DISABLED: Record<string, string> = {
-  "GIT-04": "undo is disabled in this preview (verbs/undo.ts)",
-  "LFC-05": "cleanup removal is disabled in this preview (decisions/cleanup.ts)",
-};
+export const DISABLED: Record<string, string> = {};
 
 /**
  * Musts that only a measurement on the frozen fixtures can show; a T1 test of the measuring tool is not evidence for them,
  * so tags on such tests do not map them. Remove an entry when a T1 test can prove the requirement itself.
  */
 export const MEASURED: Record<string, string> = {
-  "NFR-01": "only the system-budgets workflow measures the budgets on the frozen fixtures; its benchmark rows still fail",
+  "NFR-01": "the system-budgets workflow measures them on the frozen fixtures (passed at e109373, run 44795135176); a T1 test cannot show it",
 };
 
 /** Requirements that are agent behavior or host mechanics: there is nothing for the kernel to assert, so only T3 can show them. */

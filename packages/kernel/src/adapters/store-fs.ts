@@ -6,6 +6,8 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { dirname, isAbsolute, join, relative, sep } from "node:path";
 import { KernelError } from "../core/errors.ts";
 import { sha256 } from "../core/ids.ts";
+import type { TempWalk } from "../core/residue.ts";
+import { removeWalked, walkRoot } from "./temp-clean.ts";
 import type { Random } from "../core/ids.ts";
 import { LEGACY_SCHEMA_VERSIONS, parseStateRecord, SCHEMA_VERSION, State } from "../core/schemas.ts";
 import { accountingCheckpoint, recoverAccounting } from "../core/budget.ts";
@@ -23,17 +25,19 @@ import {
   fsyncDirectory as fsyncDir, parsePrivate, readCommitProofs, readCompactionPending, readJournal, SummaryRecord,
   writeCommitProof, writeSyncedRecord as writeSynced,
 } from "./store-records.ts";
-import { newestMtime, recentWithStaged, stagedRunGrowth } from "./store-staging.ts";
+import { recentWithStaged, stagedRunGrowth } from "./store-staging.ts";
 import type { LockInfo, StagedWrite, WriteContext } from "./store-staging.ts";
 import type { MigrationGuard } from "./marker-rollback.ts";
 import type { CommitProofV1 } from "../core/commit-proof.ts";
+import { addExpiredEvidence, readExpiredEvidence } from "./history-expiry-fs.ts";
 
+const COMPACTION_MARKER = "compaction.ever.json";
+const EXPIRED_EVIDENCE = "history-expired.json";
 interface Marker { workspaceId: string; tag: string; nonce: string; schema: number; dev: number; ino: number }
 interface Journal { text: string; entries: LogEntry[]; keep: number }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Storage limits (PRD §4.4.3, TS §7.6); tests lower them, and `afterSummaries` is a crash seam for the reduction. */
 export interface StoreOptions {
   lockWaitMs?: number; compactAtBytes?: number; ceilingBytes?: number; reserveBytes?: number; runFileCapBytes?: number;
   journalDays?: number; afterSummaries?: () => void; migrationGuard?: MigrationGuard;
@@ -122,14 +126,12 @@ export class FsStore implements Store {
     }
   }
 
-  /** Admission's parse of `name`, used at most once and only while the file is the version admission read. */
   private takeParsed(name: string): unknown {
     const hit = this.parsed.get(name);
     this.parsed.delete(name);
     return hit && hit.id === this.fileId(name, true) ? hit.value : null;
   }
 
-  /** Identity of a store file; any replacement or content write changes it. `ctime` also tracks link-count changes. */
   private fileId(name: string, ctime = false): string | null {
     const st = lstatSync(this.p(name), { bigint: true, throwIfNoEntry: false });
     return st ? `${st.dev}:${st.ino}:${st.size}:${st.mtimeNs}${ctime ? `:${st.ctimeNs}` : ""}` : null;
@@ -279,7 +281,6 @@ export class FsStore implements Store {
     }
   }
 
-  /** Guarded break: no fresh lock can exist while the stale one does, so two breakers never remove a live lock. */
   private async breakStale(dead: LockInfo, me: LockInfo, name = "lock"): Promise<void> {
     this.admit();
     const guard = this.p(`${name}.break`);
@@ -843,9 +844,19 @@ export class FsStore implements Store {
     }
   }
   sweepTemp(maxAgeMs: number, keep: readonly string[]): number {
+    return this.sweepTempDetailed(maxAgeMs, keep).count;
+  }
+  sweepTempDetailed(maxAgeMs: number, keep: readonly string[]) {
     return this.write(() => this.sweepTempInLock(maxAgeMs, keep));
   }
-  private sweepTempInLock(maxAgeMs: number, keep: readonly string[]): number {
+  expiredEvidence(): string[] {
+    return readExpiredEvidence(this.p(EXPIRED_EVIDENCE));
+  }
+  private recordExpiredEvidence(paths: readonly string[]) {
+    addExpiredEvidence(this.p(EXPIRED_EVIDENCE), paths, (text) =>
+      this.replaceSynced(this.p(EXPIRED_EVIDENCE), text));
+  }
+  private sweepTempInLock(maxAgeMs: number, keep: readonly string[]) {
     keep = [...this.journalProtection([...keep, ...stagedRunGrowth(this.writes.getStore()).paths]).protectedPaths];
     const remove: Array<{ path: string; identity: string }> = [];
     for (const path of this.runFiles()) {
@@ -858,8 +869,9 @@ export class FsStore implements Store {
       if (Date.now() - measured.at > maxAgeMs) remove.push({ path, identity: measured.identity });
     }
     this.assertCandidatesUnchanged(remove);
+    this.recordExpiredEvidence(remove.map((candidate) => candidate.path));
     for (const candidate of remove) rmSync(candidate.path, { recursive: true, force: true });
-    return remove.length;
+    return { count: remove.length, paths: remove.map((candidate) => candidate.path) };
   }
   private replaceSynced(path: string, data: string) {
     this.admit();
@@ -940,6 +952,9 @@ export class FsStore implements Store {
         transientBytes: Buffer.byteLength(JSON.stringify(pending.summary)) + Buffer.byteLength(pending.output),
       };
     }
+    if (!pending && readRecord(this.p("summaries.json")) === null && existsSync(this.p(COMPACTION_MARKER))) {
+      throw new KernelError("storage-accounting-unknown", "a prior compaction summary is missing; the journal was left untouched");
+    }
     if (Buffer.byteLength(text) < (this.opts.compactAtBytes ?? 5 * 1024 * 1024)) {
       return { savings: 0, transientBytes: 0 };
     }
@@ -991,6 +1006,9 @@ export class FsStore implements Store {
       fsyncDir(this.dir);
       return "Completed the interrupted journal reduction.";
     }
+    if (!pending && readRecord(this.p("summaries.json")) === null && existsSync(this.p(COMPACTION_MARKER))) {
+      throw new KernelError("storage-accounting-unknown", "a prior compaction summary is missing; the journal was left untouched");
+    }
     if (Buffer.byteLength(text) < (this.opts.compactAtBytes ?? 5 * 1024 * 1024) && !pending) return undefined;
     const inputIdentity = this.fileId("log", true);
     if (!inputIdentity) {
@@ -1028,6 +1046,7 @@ export class FsStore implements Store {
       pending.summary.batchId = pending.batchId;
       this.replaceSynced(pendingPath, JSON.stringify(pending));
     }
+    if (!existsSync(this.p(COMPACTION_MARKER))) this.replaceSynced(this.p(COMPACTION_MARKER), JSON.stringify({ version: 1 }));
     this.replaceSynced(this.p("summaries.json"), JSON.stringify(pending.summary));
     this.opts.afterSummaries?.();
     this.replaceSynced(this.p("log"), pending.output);
@@ -1055,7 +1074,6 @@ export class FsStore implements Store {
     throw new KernelError("storage-accounting-unknown",
       "the journal holds a record this kernel cannot account for; it was left untouched");
   }
-  /** Oldest eligible run folders first, but never a partial cleanup before a still-over-cap refusal. */
   private capRunFiles(keep: readonly string[], additionalBytes = 0): {
     message?: string; overCap: boolean; largest: number;
     remove: Array<{ path: string; identity: string }>;
@@ -1201,9 +1219,20 @@ export class FsStore implements Store {
     const reduction = this.reduceLog(Date.parse(this.clock.now()), protection);
     const changed = this.changedRunCleanup(cap, reduction, overCeiling, classes);
     if (changed) return changed;
-    for (const planned of cap.remove) rmSync(planned.path, { recursive: true, force: true });
+    return this.applyCapRemoval(cap, reduction, overCeiling, classes);
+  }
+  private applyCapRemoval(
+    cap: ReturnType<FsStore["capRunFiles"]>, reduction: string | undefined,
+    overCeiling: boolean, classes: Array<{ name: string; bytes: number }>,
+  ): EvictReport {
+    const expired = cap.remove.map((planned) => planned.path);
+    this.recordExpiredEvidence(expired);
+    for (const path of expired) rmSync(path, { recursive: true, force: true });
     const notes = [reduction, cap.message].filter((x): x is string => !!x);
-    return { ...(notes.length ? { message: notes.join(" ") } : {}), overCeiling, largest: classes.slice(0, 3) };
+    return {
+      ...(notes.length ? { message: notes.join(" ") } : {}),
+      ...(expired.length ? { expired } : {}), overCeiling, largest: classes.slice(0, 3),
+    };
   }
   private changedRunCleanup(
     cap: ReturnType<FsStore["capRunFiles"]>,
@@ -1322,29 +1351,28 @@ export class FsStore implements Store {
     };
     return { tenet: measure(this.dir), temp: this.exists() ? measure(join(tmpdir(), `tenet-${this.marker()!.workspaceId}`)) : null };
   }
-  cleanTemp(scope: "project" | "machine", minAgeMs: number, remove: boolean): { removed: string[]; kept: string[] } {
+  walkTemp(scope: "project" | "machine", minAgeMs: number): TempWalk {
     this.admit();
-    if (remove) return this.write(() => this.cleanTempInLock(scope, minAgeMs, true));
-    return this.cleanTempInLock(scope, minAgeMs, false);
-  }
-  private cleanTempInLock(scope: "project" | "machine", minAgeMs: number, remove: boolean): { removed: string[]; kept: string[] } {
     const own = this.exists() ? `tenet-${this.marker()!.workspaceId}` : null;
-    const named = scope === "project"
-      ? (own ? [own] : [])
-      : (() => { try { return readdirSync(tmpdir()).filter((n) => /^tenet-ws_[a-z0-9]+$/.test(n)); } catch { return []; } })();
-    const out = { removed: [] as string[], kept: [] as string[] };
-    for (const n of named) {
-      const p = join(tmpdir(), n);
-      try {
-        const st = lstatSync(p);
-        if (!st.isDirectory()) continue;
-        if (n !== own) { out.kept.push(p); continue; }
-        if (Date.now() - newestMtime(p) < minAgeMs) { out.kept.push(p); continue; }
-        if (remove) rmSync(p, { recursive: true, force: true });
-        out.removed.push(p);
-      } catch { /* gone or unreadable: nothing of ours to remove */ }
-    }
-    return out;
+    const isDir = (p: string) => { try { return lstatSync(p).isDirectory(); } catch { return false; } };
+    const kept = scope === "project" ? [] : (() => { try { return readdirSync(tmpdir()); } catch { return []; } })()
+      .filter((n) => /^tenet-ws_[a-z0-9]+$/.test(n) && n !== own && isDir(join(tmpdir(), n)))
+      .map((n) => ({ path: join(tmpdir(), n), cause: "another workspace" }));
+    const none = (extra: Array<{ path: string; cause: string }> = []): TempWalk => ({ root: null, entries: [], kept: [...kept, ...extra] });
+    const root = own ? join(tmpdir(), own) : null;
+    if (!root || !isDir(root)) return none();
+    const entries = walkRoot(root);
+    if (!entries) return none([{ path: root, cause: "could not inspect" }]);
+    const newest = entries.reduce((n, e) => (BigInt(e.mtimeNs) > n ? BigInt(e.mtimeNs) : n), 0n);
+    if (BigInt(Date.now()) * 1_000_000n - newest < BigInt(minAgeMs) * 1_000_000n) return none([{ path: root, cause: "recent" }]);
+    return { root, entries, kept };
+  }
+  removeTemp(walk: TempWalk, keep: readonly string[]): { removed: string[]; kept: Array<{ path: string; cause: string }> } {
+    return this.write(() => {
+      if (!walk.root) return { removed: [], kept: [] };
+      this.recordExpiredEvidence([walk.root]);
+      return removeWalked(walk.root, walk.entries, keep);
+    });
   }
   purge(texts: readonly string[]): number {
     return this.write(() => this.purgeInLock(texts));

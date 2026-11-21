@@ -19,6 +19,9 @@ it("a write that fails for lack of space is disk-full (exit 2); other failures s
     const res = await runVerb(ports, throwing(errno(code)), "probe", {});
     assert.equal(res.exit, 2, code);
     assert.equal(res.reasons[0]?.code, "disk-full", code);
+    assert.deepEqual(res.effects?.completed, []);
+    assert.equal(res.effects?.uncertain.length, 1);
+    assert.match(res.effects?.recovery ?? "", /reconciles/);
     assert.match(res.reasons[0]!.message, /next mutating call/);
   }
   const git = await runVerb(ports, throwing(new Error("git failed: fatal: write error: No space left on device")), "probe", {});

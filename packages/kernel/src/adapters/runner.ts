@@ -25,7 +25,73 @@ function checkEnv(from: Record<string, string | undefined>, runDir: string): Rec
   return env;
 }
 
-const killGroup = (pid: number, sig: NodeJS.Signals) => { try { process.kill(-pid, sig); } catch { /* group already gone */ } };
+type SignalResult = "signalled" | "gone" | "unknown";
+const killGroup = (pid: number, sig: NodeJS.Signals): SignalResult => {
+  try { process.kill(-pid, sig); return "signalled"; }
+  catch (error) { return (error as NodeJS.ErrnoException).code === "ESRCH" ? "gone" : "unknown"; }
+};
+const groupAlive = (pid: number): "alive" | "gone" | "unknown" => {
+  try { process.kill(-pid, 0); return "alive"; }
+  catch (error) { return (error as NodeJS.ErrnoException).code === "ESRCH" ? "gone" : "unknown"; }
+};
+const waitForGroup = async (pid: number, timeoutMs: number): Promise<"gone" | "alive" | "unknown"> => {
+  const end = Date.now() + timeoutMs;
+  while (Date.now() < end) {
+    const state = groupAlive(pid);
+    if (state !== "alive") return state;
+    await sleep(50);
+  }
+  return "alive";
+};
+
+type RunIdentity = { pid: number; procStart: string; prepared?: boolean };
+function readRunIdentity(runDir: string): RunIdentity | "gone" | "unknown" {
+  let fd = -1;
+  try {
+    fd = openSync(join(runDir, "run.json"), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    const st = fstatSync(fd);
+    if (!st.isFile() || st.size > 64 * 1024) return "unknown";
+    const buffer = Buffer.alloc(st.size + 1);
+    let count = 0;
+    while (count < buffer.length) {
+      const size = readSync(fd, buffer, count, buffer.length - count, count);
+      if (!size) break;
+      count += size;
+    }
+    const after = fstatSync(fd);
+    if (count !== st.size || after.size !== st.size || after.mtimeMs !== st.mtimeMs || after.ctimeMs !== st.ctimeMs)
+      return "unknown";
+    const bytes = buffer.subarray(0, count);
+    if (!isUtf8(bytes)) return "unknown";
+    const record = JSON.parse(bytes.toString("utf8")) as Partial<RunIdentity> | null;
+    if (record && Object.keys(record).length === 1 && record.prepared === true) return "gone";
+    if (!record || !Number.isSafeInteger(record.pid) || record.pid! <= 1 ||
+      typeof record.procStart !== "string" || !record.procStart.trim()) return "unknown";
+    return record as RunIdentity;
+  } catch {
+    return "unknown";
+  } finally {
+    if (fd >= 0) closeSync(fd);
+  }
+}
+
+async function stopOwnedGroup(record: RunIdentity): Promise<"stopped" | "gone" | "unknown"> {
+  const now = procStart(record.pid);
+  if (now === null) {
+    try { process.kill(record.pid, 0); return "unknown"; }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== "ESRCH") return "unknown"; }
+  }
+  if (now !== null && now !== record.procStart) return "gone";
+  const before = groupAlive(record.pid);
+  if (before !== "alive") return before === "gone" ? "gone" : "unknown";
+  const term = killGroup(record.pid, "SIGTERM");
+  if (term !== "signalled") return term === "gone" ? "gone" : "unknown";
+  const graceful = await waitForGroup(record.pid, 5000);
+  if (graceful !== "alive") return graceful === "gone" ? "stopped" : "unknown";
+  const forced = killGroup(record.pid, "SIGKILL");
+  if (forced !== "signalled") return forced === "gone" ? "stopped" : "unknown";
+  return await waitForGroup(record.pid, 1000) === "gone" ? "stopped" : "unknown";
+}
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function writableEvent(stream: Writable, ready: "drain" | "finish"): Promise<void> {
@@ -258,6 +324,7 @@ export class ProcessRunner implements Runner {
         stdio: [spec.stdin ? "pipe" : "ignore", "pipe", "pipe"],
       });
       let stderr = "", timedOut = false, done = false;
+      let termSentAt: number | undefined;
       let stdinDelivery: RunResult["stdinDelivery"];
       let stdinSpawnFailed = false;
       const stream = child.stdin;
@@ -274,7 +341,12 @@ export class ProcessRunner implements Runner {
       const removeSignals = terminationSignals(child.pid);
       const timer = setTimeout(async () => {
         timedOut = true;
-        if (child.pid) { killGroup(child.pid, "SIGTERM"); await sleep(1500); if (!done) killGroup(child.pid, "SIGKILL"); }
+        if (child.pid) {
+          termSentAt = this.clock.ms();
+          killGroup(child.pid, "SIGTERM");
+          const gone = await waitForGroup(child.pid, 5000);
+          if (!done && gone === "alive") killGroup(child.pid, "SIGKILL");
+        }
       }, spec.timeoutMs);
       const finish = async (exit: number | null, signal: NodeJS.Signals | null) => {
         if (done) return;
@@ -282,7 +354,13 @@ export class ProcessRunner implements Runner {
         clearTimeout(timer);
         await sending;
         removeSignals();
-        if (child.pid) killGroup(child.pid, "SIGKILL"); // the whole tree dies with the check, not just the leader
+        if (child.pid) {
+          if (timedOut) {
+            const remaining = Math.max(0, 5000 - (this.clock.ms() - (termSentAt ?? this.clock.ms())));
+            const gone = await waitForGroup(child.pid, remaining);
+            if (gone === "alive") killGroup(child.pid, "SIGKILL");
+          } else killGroup(child.pid, "SIGKILL");
+        }
         const captured = output.finish();
         const r: RunResult = {
           timedOut,
@@ -307,40 +385,7 @@ export class ProcessRunner implements Runner {
   }
 
   async stopRun(runDir: string): Promise<"stopped" | "gone" | "unknown"> {
-    let rec: { pid: number; procStart: string | null };
-    let fd = -1;
-    try {
-      fd = openSync(join(runDir, "run.json"), constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
-      const st = fstatSync(fd);
-      if (!st.isFile() || st.size > 64 * 1024) return "unknown";
-      const buffer = Buffer.alloc(st.size + 1);
-      let count = 0;
-      while (count < buffer.length) {
-        const size = readSync(fd, buffer, count, buffer.length - count, count);
-        if (!size) break;
-        count += size;
-      }
-      const after = fstatSync(fd);
-      if (count !== st.size || after.size !== st.size || after.mtimeMs !== st.mtimeMs || after.ctimeMs !== st.ctimeMs) return "unknown";
-      const content = buffer.subarray(0, count);
-      if (!isUtf8(content)) return "unknown";
-      rec = JSON.parse(content.toString("utf8"));
-      if (Object.keys(rec).length === 1 && (rec as unknown as { prepared?: boolean }).prepared === true) return "gone";
-      if (!rec || !Number.isSafeInteger(rec.pid) || rec.pid <= 1 || typeof rec.procStart !== "string" || !rec.procStart.trim()) return "unknown";
-    } catch { return "unknown"; }
-    finally { if (fd >= 0) closeSync(fd); }
-    // The leader may be gone while grandchildren live on: the group id outlives it, so it is signalled either way,
-    // but only when the recorded leader is dead or still has the recorded identity (never a recycled pid).
-    const now = procStart(rec.pid);
-    if (now === null) {
-      try { process.kill(rec.pid, 0); return "unknown"; } // alive but identity inspection failed
-      catch (e) { if ((e as NodeJS.ErrnoException).code !== "ESRCH") return "unknown"; }
-    }
-    if (now !== null && now !== rec.procStart) return "gone";
-    try { process.kill(-rec.pid, 0); } catch { return "gone"; }
-    killGroup(rec.pid, "SIGTERM");
-    await sleep(300);
-    killGroup(rec.pid, "SIGKILL");
-    return "stopped";
+    const record = readRunIdentity(runDir);
+    return record === "gone" || record === "unknown" ? record : stopOwnedGroup(record);
   }
 }

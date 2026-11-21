@@ -200,7 +200,7 @@ describe("private store boundaries", () => {
     for (const blocker of blockers) {
       it(`refuses owned schema admission direct mutations: ${blocker.name} [CON-04, CON-05, SEC-12]`, { timeout: 9000 }, async () => {
         const results: Array<{ method: string; reason: unknown; unchanged: boolean }> = [];
-        const methods = ["repairLock", "putBlob", "tempDir", "writeArtifact", "sweepTemp", "purge", "evict", "cleanTemp"];
+        const methods = ["repairLock", "putBlob", "tempDir", "writeArtifact", "sweepTemp", "purge", "evict", "removeTemp"];
         for (const method of methods) {
           const root = fresh();
           await initState(root);
@@ -231,7 +231,7 @@ describe("private store boundaries", () => {
               sweepTemp: () => store.sweepTemp(1000, []),
               purge: () => store.purge(["private-admission-canary"]),
               evict: () => store.evict([]),
-              cleanTemp: () => store.cleanTemp("project", 1000, true),
+              removeTemp: () => store.removeTemp({ root, entries: [], kept: [] }, []),
             };
             assert.ok(artifact.startsWith(`${root}/`));
             const before = snapshot(root);

@@ -20,6 +20,9 @@ For missing Git or the project's package manager, follow the prerequisite guidan
 # Loop
 1. If the user asks where things stand: when idle, run `tenet inspect status`, answer, and end the turn; while
    working, answer in a line or two and carry on. "What's next?" only proposes; only "continue" resumes.
+   Treat "review …" as `/tenet-review`: run `tenet review`, dispatch `tenet-reviewer` on its manifest, report
+   findings; nothing is written to the project. To explain or answer a question, answer in chat from reading; no
+   contract and no `.tenet/`. If checks are needed, offer an investigation.
    Otherwise pick a profile and run `tenet open <profile>` with the request. Say the level and lane once.
 2. Before every kernel call, handle anything new the user said first (pause, cancel, refine).
 3. Mirror `next` into todos when it changes. Do the required action or a permitted alternative; load only that

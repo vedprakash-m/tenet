@@ -20,6 +20,7 @@ import { systemClock } from "../src/adapters/system.ts";
 import { contractFixture, project } from "./support/fixture.ts";
 import type { Clock, Ports, Tx } from "../src/ports/types.ts";
 import type { State } from "../src/core/schemas.ts";
+import { markExpiredEvidence } from "../src/pipeline-mutate.ts";
 import { KernelError } from "../src/core/errors.ts";
 
 const roots: string[] = [];
@@ -220,6 +221,20 @@ describe("storage publication regression controls (synthetic, not durability qua
     if (process.platform === "win32") again.self = () => ({ pid: process.pid, procStart: "synthetic" });
     await again.transaction("later", async (tx) => tx.evict([]));
     assert.equal(lines(join(dir, "log")).length, 100, "a later distinct batch may use the new cutoff");
+  });
+
+  it("refuses a missing or damaged prior compaction summary instead of replacing its counts [AC-17, P102]", async (t) => {
+    windowsFilesystem(t);
+    const { store, log, sums } = await fresh({ compactAtBytes: 1 });
+    ago(200);
+    await calls(store, 300);
+    ago(0);
+    await evict(store);
+    const before = readFileSync(log(), "utf8");
+    rmSync(sums());
+    await assert.rejects(evict(store), (error: unknown) =>
+      error instanceof KernelError && error.reasons[0]?.code === "storage-accounting-unknown");
+    assert.equal(readFileSync(log(), "utf8"), before);
   });
 
   it("refuses staged run growth without removing eligible bytes when protected bytes cannot fit [AC-17, P106]", () => {
@@ -462,7 +477,7 @@ describe("journal reduction into summaries [CON-08, AC-19]", () => {
   });
 
   it("reduces a 10,000-record journal inside the 300 ms bound", async () => {
-    const { store, log } = await fresh({ compactAtBytes: 1_000_000 });
+    const { store, log } = await fresh({ compactAtBytes: 500_000 });
     ago(200);
     const t = new Date(now).toISOString();
     appendFileSync(log(), Array.from({ length: 10_000 }, () => JSON.stringify({ t, kind: "call", verb: "check", exit: 0, revision: 1 }) + "\n").join(""));
@@ -470,10 +485,28 @@ describe("journal reduction into summaries [CON-08, AC-19]", () => {
     const t0 = performance.now();
     await evict(store);
     assert.ok(performance.now() - t0 < 300, `took ${performance.now() - t0} ms`);
+    assert.ok(lines(log()).length < 10_000, "the test actually crossed the compaction trigger");
   });
 });
 
 describe("run-file cap and ceiling [CON-08, AC-19]", () => {
+  it("marks every receipt below a capacity-evicted run directory as history-unavailable [AC-19, P112]", () => {
+    const state = emptyState("ws", "tag");
+    const work = contractFixture({
+      receipts: [{
+        id: "RC-expired", obligation: "OB-suite", kind: "test", stage: "candidate", source: "kernel-run",
+        checkInputId: "a".repeat(24), scope: "full", argv: [], cwd: ".", candidate: "b".repeat(64),
+        durationMs: 1, versions: { tool: "vitest", reporter: "json", adapter: "node-ts" },
+        provenance: { runId: "run", runDir: "/temp/run-old/output", startedAt: "2026-01-01T00:00:00.000Z" },
+        status: "pass", qualifiers: [], reasons: [], limitations: [],
+      }],
+    });
+    const marked = markExpiredEvidence(
+      { ...state, work: { [work.id]: work } },
+      { overCeiling: false, largest: [], expired: ["/temp/run-old"] },
+    )!;
+    assert.ok(marked.work[work.id]!.receipts[0]!.qualifiers.includes("history-unavailable"));
+  });
   const runDir = (store: FsStore, name: string, bytes: number, ageDays: number) => {
     const dir = store.tempDir(name);
     writeFileSync(join(dir, "f"), "x".repeat(bytes));

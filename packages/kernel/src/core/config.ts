@@ -168,7 +168,7 @@ export const layersOf = (state: { config: { local: Record<string, unknown> }; pr
 const TAKES_EFFECT: Record<SettingKey, string> = {
   style: "immediately", checkpoints: "immediately", lane: "at the next phase boundary",
   resource_mode: "before the next affected dispatch", protected_paths: "before the next affected edit",
-  exclusions: "before the next affected read or edit", branching: "from the next work contract", integration: "from the next acceptance",
+  exclusions: "before the next affected read or edit", branching: "from the next work contract", integration: "from the next result",
   commands: "after validation; evidence that used it becomes stale, and saving never authorizes running it",
   required_checks: "after validation; evidence that used it becomes stale, and saving never authorizes running it",
   dependency_policy: "from the next dependency request", shared_memory: "when the adoption is answered",

@@ -111,7 +111,12 @@ function fail(ports: Ports, verb: string, e: unknown, state: State | null): Kern
   const errno = (e as NodeJS.ErrnoException)?.code ?? "";
   if (errno === "ENOSPC" || errno === "EDQUOT" || /no space left on device/i.test(message)) {
     return render(ports, verb, { exit: 2, reasons: [reason("disk-full",
-      "No space left on the device. Free space and repeat the call; the next mutating call reconciles completed effects.")] }, state);
+      "No space left on the device. Free space and repeat the call; the next mutating call reconciles completed effects.")],
+      effects: {
+        completed: [],
+        uncertain: ["The call hit disk-full; any action already dispatched needs recovery before retry."],
+        recovery: "The next mutating call reconciles the interrupted operation before dependent work.",
+      } }, state);
   }
   // Internal errors never yield a success-shaped response (TS §6.1 principle 5).
   return render(ports, verb, { exit: 5, reasons: [{ code: "internal-error", message }] }, state);
@@ -120,7 +125,7 @@ function fail(ports: Ports, verb: string, e: unknown, state: State | null): Kern
 export async function runVerb(ports: Ports, verbs: Record<string, Verb>, name: string, raw: unknown): Promise<KernelResponse> {
   const timing = callTiming(ports);
   try {
-    return await executeVerb({ ...ports, runner: timing.runner, timing: timing.read }, verbs, name, raw);
+    return await executeVerb({ ...ports, runner: timing.runner, timing: timing.read, policyInCall: {} }, verbs, name, raw);
   } catch (e) {
     return fail({ ...ports, timing: () => timing.read(false) }, name, e, null);
   }
@@ -143,11 +148,7 @@ async function executeVerb(ports: Ports, verbs: Record<string, Verb>, name: stri
       `mutating work is unavailable on ${ports.platform}; read-only inspection and advisory review remain available`)] }, null);
   }
   try {
-    if (cls === "stateless") {
-      if (name === "review" || input.view === "doctor") configurePolicy(ports, null);
-      if (name === "review" || input.view === "doctor") prepareCapabilities(ports, null);
-      return render(ports, name, (await verb.run(ports, null, input)).resp, null);
-    }
+    if (cls === "stateless") return await stateless(ports, verb, name, input);
     if (cls === "read-only") {
       const read = ports.store.exists() ? ports.store.read() : null;
       enforceRecoveryInspection(input, read?.state ?? null);
@@ -161,8 +162,17 @@ async function executeVerb(ports: Ports, verbs: Record<string, Verb>, name: stri
     ports.store.admit();
     return await mutate(ports, verb, input);
   } catch (e) {
-    return fail(ports, name, e, safeState(ports));
+    return fail(ports, name, e, input.view === "doctor" ? null : safeState(ports));
   }
+}
+
+/** A stateless call. Review keeps the restrictions Tenet retained while a loosening waits (TS §8.5): it reads `.tenet/` only. */
+async function stateless(ports: Ports, verb: Verb, name: string, input: Record<string, any>): Promise<KernelResponse> {
+  if (name === "review" || input.view === "doctor") {
+    configurePolicy(ports, name === "review" && ports.store.exists() ? (ports.store.read()?.state ?? null) : null);
+    prepareCapabilities(ports, null);
+  }
+  return render(ports, name, (await verb.run(ports, null, input)).resp, null);
 }
 
 /** The state for rendering an error; an unreadable store must not turn a refusal into a crash. */

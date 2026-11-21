@@ -11,10 +11,6 @@ import { recordedResults } from "../src/core/state.ts";
 import type { LogEntry } from "../src/ports/types.ts";
 import { cleanup, initState } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, finishFixture, focusFixture, project } from "./support/fixture.ts";
-import { enableUndoForTests } from "../src/verbs/undo.ts";
-
-enableUndoForTests();
-
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 const fresh = () => { const p = project(); roots.push(p.root); return p; };

@@ -10,12 +10,10 @@ import { emptyState, newContract } from "../src/core/state.ts";
 import { runVerb } from "../src/pipeline.ts";
 import type { Ports, Store, Tx } from "../src/ports/types.ts";
 import { decide } from "../src/verbs/decide.ts";
-import { enableUndoForTests, undo } from "../src/verbs/undo.ts";
+import { undo } from "../src/verbs/undo.ts";
 import { createPorts } from "../src/wire.ts";
 import type { CommitProofV1 } from "../src/core/commit-proof.ts";
 import { createStack } from "./support/metadata-stack.ts";
-
-enableUndoForTests();
 
 const inverseUnavailable = process.platform === "win32" || constants.O_NOFOLLOW === undefined;
 
@@ -254,9 +252,9 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
         scenario === "recorded-merge" ? /ownership cannot be established/ :
           scenario === "recorded-unreachable" ? /owned commit moved out/ :
             scenario === "shallow" ? /shallow clone/ :
-              scenario === "overlap" ? /a later change overlaps/ : /uncommitted changes/);
+              scenario === "overlap" ? /a later change overlaps/ : /uncommitted|ignored|obstructing/);
       assert.equal(preview.questions?.length ?? 0, 0);
-      assert.equal(plans, scenario === "overlap" || scenario === "dirty-owned" || scenario === "untracked-affected-at-preview" ? 1 : 0);
+      assert.equal(plans, scenario === "overlap" ? 1 : 0);
       assert.equal(applyCount, 0);
       assert.equal(git("branch", "--show-current"), "main");
       assert.equal(git("rev-parse", "HEAD"), beforePreviewHead);
@@ -331,7 +329,8 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
       writeFileSync(join(root, "src", "owned.txt"), `header\nowned change\n${laterContext}later human work\n`);
       git("add", "src/owned.txt");
       git("commit", "-qm", "Later change\n\nTenet-Work: W-0002");
-      const later = await ports.git.laterCommits(owned[0]!, ["src/owned.txt"]);
+      const mine = (await ports.git.workCommits(work.label)).commits.filter((c) => owned.includes(c));
+      const later = await ports.git.laterCommits(mine, mine.at(-1)!, git("rev-parse", "HEAD"), ["src/owned.txt"]);
       assert.notDeepEqual(later, (preview.data as { laterChangesTouching: string[] }).laterChangesTouching);
     } else if (scenario === "dirty-after-preview" || scenario === "staged-after-preview") {
       writeFileSync(join(root, "src", "owned.txt"), "human change after preview\n");
@@ -421,12 +420,15 @@ async function observe(scenario: Scenario, beforeGit?: () => void) {
         assert.match(confirmation.reasons[0]!.message, partiallyReachable ?
           /owned commit moved out/ : /ownership cannot be established/);
         assert.equal(plans - previewPlans, 0);
+      } else if (scenario === "dirty-after-preview" || scenario === "staged-after-preview" ||
+                 scenario === "untracked-affected-after-preview") {
+        assert.equal(plans - previewPlans, 0);
       } else {
         assert.equal(plans - previewPlans, 1);
       }
       if (scenario === "dirty-after-preview" || scenario === "staged-after-preview" || scenario === "dirty-during-confirm" ||
           scenario === "untracked-affected-after-preview") {
-        assert.match(confirmation.reasons[0]!.message, /uncommitted changes/);
+        assert.match(confirmation.reasons[0]!.message, /uncommitted|ignored|obstructing/);
       }
     }
     if (multipleOwned) {

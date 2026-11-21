@@ -142,6 +142,15 @@ describe("platform admission before mutation [INS-06, INS-12]", () => {
     assert.throws(() => readinessOf({ ...base, platform: "linux" }, probe),
       /installed tool metadata cannot be verified safely/);
   });
+  it("keeps doctor errors state-free, including the common failure envelope [P115, CON-09]", async () => {
+    const base = createPorts(scratch());
+    let stateReads = 0;
+    base.store.exists = () => { stateReads++; throw new Error("state must not be read by doctor errors"); };
+    base.host.prepare = () => { throw new Error("doctor probe failed"); };
+    const doctor = await runVerb({ ...base, platform: "linux" }, VERBS, "inspect", { view: "doctor" });
+    assert.equal(doctor.exit, 5, JSON.stringify(doctor));
+    assert.equal(stateReads, 0);
+  });
 
   it("uses the same platform fact for admission and readiness", async () => {
     for (const platform of ["darwin", "linux", "win32", "freebsd"] as const) {

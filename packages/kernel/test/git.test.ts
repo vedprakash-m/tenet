@@ -5,7 +5,6 @@ import assert from "node:assert/strict";
 import { snapshotOf } from "../src/core/attribution.ts";
 import { execFileSync } from "node:child_process";
 import { GitCli, gitBlob } from "../src/adapters/git-cli.ts";
-import { KernelError } from "../src/core/errors.ts";
 import type { RunSpec, Runner } from "../src/ports/types.ts";
 import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
 
@@ -43,7 +42,8 @@ describe("git: probe and inventory", () => {
     assert.deepEqual(snapshotOf(await g.openInventory()), snapshotOf(await g.inventory([])));
   });
 
-  it("delivers inverse patches only through bounded Runner stdin [SEC-06, P117]", { skip: process.platform === "win32" }, async () => {
+  it("delivers inverse patches through one owned regular-file argument [SEC-06, P117]",
+    { skip: process.platform === "win32" }, async () => {
     const { g, root } = repo();
     const calls: RunSpec[] = [];
     const runner = {
@@ -54,23 +54,28 @@ describe("git: probe and inventory", () => {
     } as unknown as Runner;
     const adapter = new GitCli(root, runner);
     const patch = "diff --git a/src/a.ts b/src/a.ts\nnot a valid patch";
-    const result = await adapter.applyPatch(patch, [], { runDir: tmp(), timeoutMs: 1000 });
+    const { head, branch } = await adapter.pinHead();
+    const runDir = tmp();
+    const result = await adapter.applyUndo({
+      patch, head, branch, paths: [], pre: {}, post: {}, runDir, timeoutMs: 1000,
+    });
     assert.equal(result.ok, false);
-    assert.deepEqual(calls.map(call => call.argv.slice(-1)), [["--"]]);
-    assert.equal(calls[0]!.stdin?.mode, "bound");
-    assert.deepEqual(calls[0]!.stdin?.bytes, Buffer.from(patch));
-    assert.equal(calls[0]!.argv.some(arg => arg.includes("inverse.patch")), false);
+    assert.equal(calls[0]!.argv.at(-1), join(runDir, "inverse.patch"));
+    assert.equal(calls[0]!.stdin, undefined);
     g.probe();
   });
-  it("ignores a linked inverse-patch artifact without changing its target [SEC-06]", {
+  it("refuses a linked inverse-patch artifact without changing its target [SEC-06]", {
     skip: process.platform === "win32" && "bounded patch application has no supported Windows runtime",
   }, async () => {
     const { g } = repo(), runDir = tmp(); dirs.push(runDir);
     const outside = tmp(); dirs.push(outside);
     const target = join(outside, "target"); writeFileSync(target, "preserve me");
     symlinkSync(target, join(runDir, "inverse.patch"));
-    const result = await g.applyPatch("not a patch", [], { runDir, timeoutMs: 1000 });
-    assert.equal(result.ok, false);
+    const { head, branch } = await g.pinHead();
+    const result = await g.applyUndo({
+      patch: "not a patch", head, branch, paths: [], pre: {}, post: {}, runDir, timeoutMs: 1000,
+    });
+    assert.deepEqual({ ok: result.ok, uncertain: !!result.uncertain }, { ok: false, uncertain: false });
     assert.equal(readFileSync(target, "utf8"), "preserve me");
     assert.equal(lstatSync(join(runDir, "inverse.patch")).isSymbolicLink(), true);
     assert.equal(readlinkSync(join(runDir, "inverse.patch")), target);
@@ -78,11 +83,11 @@ describe("git: probe and inventory", () => {
   it("refuses inverse-patch writes on Windows before creating the artifact [SEC-06]",
     { skip: process.platform !== "win32" }, async () => {
       const { g } = repo(), runDir = tmp(); dirs.push(runDir);
-      await assert.rejects(g.applyPatch("not a patch", [], { runDir, timeoutMs: 1000 }), (error: unknown) => {
-        assert.ok(error instanceof KernelError);
-        assert.equal(error.reasons[0]?.code, "capability-missing");
-        return true;
+      const { head, branch } = await g.pinHead();
+      const result = await g.applyUndo({
+        patch: "not a patch", head, branch, paths: [], pre: {}, post: {}, runDir, timeoutMs: 1000,
       });
+      assert.deepEqual({ ok: result.ok, uncertain: !!result.uncertain }, { ok: false, uncertain: false });
       assert.equal(existsSync(join(runDir, "inverse.patch")), false);
     });
   it("uses custom operation exclusions and tracks excluded inputs by stat [SEC-14]", async () => {

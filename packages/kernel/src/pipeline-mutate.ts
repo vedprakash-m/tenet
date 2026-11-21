@@ -5,7 +5,7 @@ import { KernelError, ownedByOther } from "./core/errors.ts";
 import { allowed, matches } from "./core/exclusions.ts";
 import type { Exclusion } from "./core/exclusions.ts";
 import { isEditingProfile, laneFloor, maxLane, raise } from "./core/risk.ts";
-import type { KernelResponse, Reason, State, WorkContract } from "./core/schemas.ts";
+import type { KernelResponse, Question, Reason, State, WorkContract } from "./core/schemas.ts";
 import { handleOf, inputHash, prepareStamp, publishStamp, render, stamp, workByHandle } from "./pipeline-render.ts";
 import type { Stamped } from "./pipeline-render.ts";
 import type { Job, Plan, Verb } from "./pipeline.ts";
@@ -14,6 +14,7 @@ import { versionGate } from "./pipeline-version.ts";
 import { recover } from "./verbs/recover.ts";
 import type { Recovered } from "./verbs/recover.ts";
 import { configurePolicy, reconcileShared, settingsFor, withRequiredChecks } from "./verbs/reconcile.ts";
+import type { Shared } from "./verbs/reconcile.ts";
 import { capabilitiesState, capabilityIdentity, prepareCapabilities } from "./pipeline-capabilities.ts";
 import { protectedRunPaths } from "./core/storage-protection.ts";
 import { JOB_FINAL_STATE_RESERVE } from "./core/storage-reservation.ts";
@@ -91,7 +92,7 @@ function enforceStorage(
       ["stop"].includes(verb.name));
   if (!state || recovery) return undefined;
   const keep = protectedRunPaths(state, tx.unresolved());
-  const report = tx.evict(keep, apply);
+  const report = persistedExpiry(ports, tx.evict(keep, apply));
   if (report.refusal) {
     if (verb.name === "stop" && tx.reserveAllowed) return report;
     throw new KernelError(report.refusal.code, report.refusal.message, {
@@ -104,10 +105,15 @@ function enforceStorage(
   }
   if (apply && !report.uncertain?.length) {
     try {
-      const swept = ports.store.sweepTemp(24 * 3600_000, keep);
-      if (swept) {
-        const message = `Removed ${swept} old run folder(s) past the age limit.`;
-        return { ...report, message: [report.message, message].filter(Boolean).join(" ") };
+      const swept = ports.store.sweepTempDetailed
+        ? ports.store.sweepTempDetailed(24 * 3600_000, keep)
+        : { count: ports.store.sweepTemp(24 * 3600_000, keep), paths: [] };
+      if (swept.count) {
+        const message = `Removed ${swept.count} old run folder(s) past the age limit.`;
+        return {
+          ...report, expired: [...new Set([...(report.expired ?? []), ...swept.paths])],
+          message: [report.message, message].filter(Boolean).join(" "),
+        };
       }
     } catch {
       throw new KernelError("storage-accounting-unknown",
@@ -123,6 +129,10 @@ function enforceStorage(
   }
   return report;
 }
+function persistedExpiry(ports: Ports, report: EvictReport): EvictReport {
+  const paths = ports.store.expiredEvidence?.() ?? [];
+  return paths.length ? { ...report, expired: [...new Set([...(report.expired ?? []), ...paths])] } : report;
+}
 function addStorageReport(plan: Plan, report: EvictReport | undefined) {
   if (!report || (!report.message && !report.uncertain?.length)) return;
   const had = plan.resp.effects;
@@ -130,6 +140,27 @@ function addStorageReport(plan: Plan, report: EvictReport | undefined) {
     completed: [...(had?.completed ?? []), ...(report.message ? [report.message] : [])],
     uncertain: [...(had?.uncertain ?? []), ...(report.uncertain ?? [])],
   };
+}
+export function markExpiredEvidence(state: State | undefined, report: EvictReport | undefined): State | undefined {
+  if (!state || !report?.expired?.length) return state;
+  const expired = report.expired;
+  const affected = (runDir: string) => expired.some((root) =>
+    runDir === root || runDir.startsWith(`${root}/`) || runDir.startsWith(`${root}\\`));
+  return {
+    ...state,
+    work: Object.fromEntries(Object.entries(state.work).map(([id, work]) => [
+      id,
+      {
+        ...work,
+        receipts: work.receipts.map((receipt) => affected(receipt.provenance.runDir)
+          ? { ...receipt, qualifiers: [...new Set([...receipt.qualifiers, "history-unavailable" as const])] }
+          : receipt),
+      },
+    ])),
+  };
+}
+function applyExpiredEvidence(plan: Plan, current: State | null, report: EvictReport | undefined) {
+  if (report?.expired?.length) plan.state = markExpiredEvidence(plan.state ?? current ?? undefined, report);
 }
 const stateAfterPlan = (plan: Plan, current: State | null) => plan.state || current;
 function reserveJobFinalState(ports: Ports, plan: Plan) {
@@ -285,13 +316,13 @@ async function claimSource(ports: Ports, verb: Verb, input: Input, current: Stat
 async function envelope(ports: Ports, verb: Verb, input: Input, current0: State, world: unknown) {
   let w = workByHandle(current0, input.h);
   let current = current0;
-  const owed = withRequiredChecks(ports, current, w);
+  const owed = verb.name === "stop" ? w : withRequiredChecks(ports, current, w);
   if (owed !== w) ({ w, current } = { w: owed, current: { ...current, work: { ...current.work, [owed.id]: owed } } });
   fence(current, verb, input, w);
   ({ w, state: current } = versionGate(ports, verb.name, input, w, current));
   if (changesSource(verb, input, current, w)) ({ w, current } = await claimSource(ports, verb, input, current, w));
   const last = w.session.last;
-  const historical = last &&
+  const historical = verb.name !== "stop" && last &&
     !input.again &&
     last.inputHash === inputHash(verb.name, input, world) &&
     !(last.response as KernelResponse).questions?.length;
@@ -312,13 +343,14 @@ function fencedByUncertainty(ports: Ports, verb: Verb, tx: Tx, current: State, r
 /** A settled recovery must not be lost when the same call's handle or ownership gate refuses its requested next work. */
 function settledRecoveryRefusal(
   ports: Ports, verb: Verb, tx: Tx, recovered: Recovered | null, error: unknown,
+  shared: Shared | null, current: State,
 ): Stamped | undefined {
   if (!(error instanceof KernelError) || !recovered) return;
   const settled = recovered.state !== tx.state || recovered.completed.length || recovered.uncertain.length;
   if (!settled) return;
   if (recovered.state !== tx.state) tx.publish(recovered.state);
   return {
-    res: render(ports, verb.name, {
+    res: withShared(render(ports, verb.name, {
       exit: error.exit,
       reasons: error.reasons,
       ...(error.questions ? { questions: error.questions } : {}),
@@ -327,28 +359,47 @@ function settledRecoveryRefusal(
         completed: [...recovered.completed, ...(error.effects?.completed ?? [])],
         uncertain: [...recovered.uncertain, ...(error.effects?.uncertain ?? [])],
       },
-    }, tx.state),
+    }, tx.state), shared, current),
   };
 }
 
 async function admittedEnvelope(
   ports: Ports, verb: Verb, input: Input, current: State, world: unknown, tx: Tx, recovered: Recovered | null,
+  shared: Shared | null,
 ): Promise<{ current: State } | Stamped> {
   try {
     const gate = await envelope(ports, verb, input, current, world);
     if (!gate.historical) return { current: gate.current };
-    if (recovered && recovered.state !== tx.state) tx.publish(recovered.state);
-    return { res: gate.historical };
+    if (current !== tx.state) tx.publish(current);
+    return { res: withShared(gate.historical, shared, current) };
   } catch (error) {
-    const refused = settledRecoveryRefusal(ports, verb, tx, recovered, error);
+    const refused = settledRecoveryRefusal(ports, verb, tx, recovered, error, shared, current);
     if (refused) return refused;
     throw error;
   }
 }
 
-/** What recovery and shared-file reconciliation found goes into the answer, ahead of the verb's own reasons and effects. */
-function addRecovery(plan: Plan, reasons: Reason[], recovered: Recovered | null) {
-  if (reasons.length) plan.resp.reasons = [...reasons, ...(plan.resp.reasons ?? [])];
+/**
+ * What shared-file reconciliation found goes ahead of the answer's own reasons, and its question goes with it while the
+ * question is still pending in `state`; `policy-change-needs-acceptance` is exit 3, so an otherwise clean answer asks.
+ */
+type Answer = { exit?: number; reasons?: Reason[]; questions?: Question[] };
+function withShared<R extends Answer>(resp: R, shared: Shared | null | undefined, state: State | null | undefined): R {
+  if (!shared) return resp;
+  const q = shared.question;
+  const pending = q && state?.pending.some((p) => p.id === q.id && p.bind.factsHash === q.bind.factsHash);
+  const ask = pending && !resp.questions?.some((p) => p.id === q.id);
+  // A historical answer may already carry the same reason from the call it replays.
+  const fresh = shared.reasons.filter((r) => !resp.reasons?.some((x) => x.code === r.code && x.message === r.message));
+  return {
+    ...resp,
+    ...(fresh.length ? { reasons: [...fresh, ...(resp.reasons ?? [])] } : {}),
+    ...(ask ? { questions: [...(resp.questions ?? []), q], exit: resp.exit || 3 } : {}),
+  };
+}
+
+/** What recovery completed or left uncertain goes into the answer, ahead of the verb's own effects. */
+function addRecovery(plan: Plan, recovered: Recovered | null) {
   if (!recovered?.completed.length && !recovered?.uncertain.length) return;
   const had = plan.resp.effects;
   plan.resp = {
@@ -362,7 +413,7 @@ function addRecovery(plan: Plan, reasons: Reason[], recovered: Recovered | null)
 
 function uncertaintyFences(verb: Verb, input: Input, recovered: Recovered | null): boolean {
   return !!recovered?.uncertain.length && verb.name !== "stop" &&
-    !(verb.name === "decide" && input.kind === "leave-unrecorded");
+    !(verb.name === "decide" && ["leave-unrecorded", "cleanup", "abandon-confirm"].includes(input.kind));
 }
 function clearUnrecordedRecovery(verb: Verb, input: Input, tx: Tx, recovered: Recovered | null): void {
   if (verb.name !== "decide" || input.kind !== "leave-unrecorded" || !recovered) return;
@@ -379,7 +430,9 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
   if (verb.name !== "stop") configurePolicy(ports, tx.state);
   const recoveryPending = !!tx.state?.project.retention?.legacyTemp.pending;
   const recovered = tx.state && !recoveryPending
-    ? await recover(ports, tx, tx.state, { effects: verb.name !== "stop" })
+    ? await recover(ports, tx, tx.state, {
+        effects: verb.name !== "stop" && !(verb.name === "decide" && input.kind === "abandon-confirm"),
+      })
     : null;
   let current = recovered?.state ?? tx.state;
   if (current && uncertaintyFences(verb, input, recovered))
@@ -393,26 +446,29 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
   }
   held.world = capabilityIdentity(ports, verb.identity ? await verb.identity(ports, input, current) : null);
   if (input.h && current) {
-    const gate = await admittedEnvelope(ports, verb, input, current, held.world, tx, recovered);
+    const gate = await admittedEnvelope(ports, verb, input, current, held.world, tx, recovered, shared);
     if ("res" in gate) return gate;
     current = gate.current;
   }
   const plan = await verb.run(ports, current, input, { ...tx, state: current });
   clearUnrecordedRecovery(verb, input, tx, recovered);
-  addRecovery(plan, shared?.reasons ?? [], recovered);
+  addRecovery(plan, recovered);
   if (!plan.state && current !== tx.state) plan.state = current ?? undefined;
+  plan.resp = withShared(plan.resp, shared, plan.state ?? tx.state);
   plan.state = capabilitiesState(ports, plan.state, verb.name);
   if (!plan.state) {
     addStorageReport(plan, enforceStorage(ports, verb, input, tx, current, true));
     return { res: render(ports, verb.name, plan.resp, tx.state), plan };
   }
   reserveJobFinalState(ports, plan);
+  const storage = enforceStorage(ports, verb, input, tx, stateAfterPlan(plan, current), true);
+  applyExpiredEvidence(plan, current, storage);
+  addStorageReport(plan, storage);
   const final = !plan.job;
   const draft = prepareStamp(ports, verb, input, held.world, tx, plan.state, plan.resp, final, held.startedAt);
   tx.reservePublish?.(draft.next, draft.callBytes + CLEANUP_RESPONSE_RESERVE);
   const prepared = plan.job && ownerOf(plan.state, plan.job.id)?.session.inCall;
   if (prepared?.runDir) ports.store.writeArtifact(prepared.runDir, "run.json", JSON.stringify({ prepared: true }));
-  addStorageReport(plan, enforceStorage(ports, verb, input, tx, stateAfterPlan(plan, current), true));
   // A job's provisional response is never returned: only the finalized one leaves the process.
   return {
     res: publishStamp(
@@ -420,6 +476,7 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
       prepareStamp(ports, verb, input, held.world, tx, plan.state, plan.resp, final, held.startedAt),
     ),
     plan,
+    shared,
   };
 }
 
@@ -467,6 +524,7 @@ async function publishResult(
       return render(ports, verb.name, { exit: 2, work: owner?.id, reasons }, tx.state);
     }
     const out = await job.finalize(tx, tx.state, result);
+    out.resp = withShared(out.resp, first.shared, out.state);
     const effects = first.plan?.resp.effects;
     if (effects) {
       out.resp.effects = {

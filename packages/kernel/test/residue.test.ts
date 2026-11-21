@@ -1,14 +1,14 @@
 // What Tenet leaves behind and the previewed cleanups (LFC-05, CON-10, TS §18 residue): read-only listing, then two scopes.
 import { after, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { cleanup } from "./helpers.ts";
-import { enableCleanupForTests } from "../src/decisions/cleanup.ts";
-enableCleanupForTests();
 import { project } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
+import { Receipt } from "../src/core/schemas.ts";
+import { handoffText } from "../src/core/handoff.ts";
 
 const roots: string[] = [];
 const extra: string[] = [];
@@ -30,6 +30,11 @@ after(() => {
 });
 const fresh = (): Project => { const p = project(); roots.push(p.root); return p; };
 const d = (r: { data?: unknown }) => r.data as Record<string, any>;
+/** A run file in this workspace's temp root, as Tenet writes them. */
+const tempFile = (p: Project, group: string, name: string): string => {
+  const store = p.ports().store;
+  return store.writeArtifact(store.tempDir(group), name, "{}");
+};
 const open = async (p: Project) => (await p.call("open", { profile: "plan", request: "plan the work" })).handle!;
 
 it("isolates residue fixtures from other test processes", () => {
@@ -86,12 +91,45 @@ describe("cleanup previews and scopes [LFC-05, CON-10]", () => {
     assert.ok(existsSync(join(p.root, "INTENT.md")));
   });
 
+  it("marks evidence whose retained output folder was removed as history-unavailable in later claims [AC-19, CON-08]", async () => {
+    const p = fresh();
+    const h = await open(p);
+    const store = p.ports().store;
+    const runDir = store.tempDir("run-expired");
+    store.writeArtifact(runDir, "raw.txt", "historical raw output");
+    const current = store.read()!.state;
+    const work = Object.values(current.work)[0]!;
+    const receipt = Receipt.parse({
+      id: "RC-expired", obligation: "OB-suite", kind: "test", stage: "candidate", source: "kernel-run",
+      checkInputId: "a".repeat(24), scope: "full", argv: [], cwd: ".",
+      candidate: "b".repeat(64), durationMs: 1,
+      versions: { tool: "vitest", reporter: "json", adapter: "node-ts" },
+      provenance: { runId: "run-expired", runDir, startedAt: "2026-01-01T00:00:00.000Z" },
+      status: "pass", qualifiers: [], reasons: [], limitations: [],
+    });
+    await store.transaction("history-fixture", async (tx) => {
+      tx.publish({
+        ...tx.state!,
+        work: { ...tx.state!.work, [work.id]: { ...work, receipts: [receipt] } },
+      });
+    });
+    assert.equal((await p.call("decide", { h, kind: "cleanup", target: "project" })).exit, 3);
+    assert.equal((await p.call("decide", {
+      h, kind: "cleanup", target: "project", answers: { "cleanup-confirm": "yes" },
+    })).exit, 0);
+    const after = store.read()!.state;
+    const retained = after.work[work.id]!.receipts[0]!;
+    assert.ok(retained.qualifiers.includes("history-unavailable"));
+    assert.match(handoffText(after, after.work[work.id]!), /history-unavailable/);
+  });
+
   it("refuses while a review or analyst reservation is open, because the packet would vanish under it", async () => {
     const p = fresh();
     const h = await withTemp(p);
     const r = await p.call("decide", { h, kind: "cleanup", target: "project", answers: { "cleanup-confirm": "yes" } });
     assert.equal(r.exit, 2, JSON.stringify(r));
     assert.equal(r.reasons[0]!.code, "work-busy");
+    assert.match(r.reasons[0]!.message, /W-\d+ has a reservation|W-\d+ has an open review packet/);
   });
 
   it("preserves another contract's active run during project or machine cleanup [CON-12]", async () => {
@@ -113,6 +151,7 @@ describe("cleanup previews and scopes [LFC-05, CON-10]", () => {
       const r = await p.call("decide", { h, kind: "cleanup", target, answers: { "cleanup-confirm": "yes" } });
       assert.equal(r.exit, 2, JSON.stringify(r));
       assert.equal(r.reasons[0]!.code, "work-busy");
+      assert.match(r.reasons[0]!.message, /W-\d+ has a check in progress/);
       assert.ok(existsSync(artifact));
     }
   });
@@ -153,11 +192,94 @@ describe("cleanup previews and scopes [LFC-05, CON-10]", () => {
     const preview = await p.call("decide", { h, kind: "cleanup", target: "machine" });
     assert.equal(preview.exit, 3);
     assert.ok(existsSync(stale), "a preview removes nothing");
-    const selection = p.ports().store.cleanTemp("machine", 2 * 3600_000, false);
+    const selection = p.ports().store.walkTemp("machine", 2 * 3600_000);
+    const keptPaths = selection.kept.map((k) => k.path);
     assert.deepEqual(readdirSync(tmpdir()).filter((name) => name.startsWith("tenet-ws_")).sort(), before);
     assert.deepEqual([existsSync(stale), existsSync(recent), existsSync(other), existsSync(busy)], [true, true, true, true]);
-    assert.deepEqual([recent, other, busy].map((dir) => selection.removed.includes(dir)), [false, false, false]);
-    assert.deepEqual({ selected: selection.removed.includes(stale), retained: selection.kept.includes(stale) }, { selected: false, retained: true });
+    assert.ok([recent, other, busy, stale].every((dir) => selection.root !== dir), "only this workspace's own root is ever selected");
+    assert.deepEqual({ retained: keptPaths.includes(stale), cause: selection.kept.find((k) => k.path === stale)?.cause }, { retained: true, cause: "another workspace" });
+  });
+
+  it("[LFC-05] C1: a yes with no stored preview is refused and removes nothing", async () => {
+    const p = fresh();
+    const h = await open(p);
+    const file = tempFile(p, "manifests", "c1.json");
+    const r = await p.call("decide", { h, kind: "cleanup", target: "project", answers: { "cleanup-confirm": "yes" } });
+    assert.equal(r.exit, 2, JSON.stringify(r));
+    assert.equal(r.reasons[0]!.code, "revision-conflict");
+    assert.ok(existsSync(file));
+  });
+
+  it("[LFC-05] C2: a project preview does not authorize a machine-scope answer", async () => {
+    const p = fresh();
+    const h = await open(p);
+    const file = tempFile(p, "manifests", "c2.json");
+    assert.equal((await p.call("decide", { h, kind: "cleanup", target: "project" })).exit, 3);
+    const r = await p.call("decide", { h, kind: "cleanup", target: "machine", answers: { "cleanup-confirm": "yes" } });
+    assert.equal(r.exit, 2, JSON.stringify(r));
+    assert.equal(r.reasons[0]!.code, "revision-conflict");
+    assert.ok(existsSync(file));
+  });
+
+  for (const change of ["added", "rewritten"] as const) {
+    it(`[LFC-05] C3: a file ${change} after the preview refuses the whole cleanup`, async () => {
+      const p = fresh();
+      const h = await open(p);
+      const listed = tempFile(p, "manifests", "listed.json");
+      assert.equal((await p.call("decide", { h, kind: "cleanup", target: "project" })).exit, 3);
+      const mine = join(dirname(listed), "mine.txt");
+      if (change === "added") writeFileSync(mine, "human");
+      else writeFileSync(listed, "{\"rewritten\":true}");
+      const r = await p.call("decide", { h, kind: "cleanup", target: "project", answers: { "cleanup-confirm": "yes" } });
+      assert.equal(r.exit, 2, JSON.stringify(r));
+      assert.equal(r.reasons[0]!.code, "revision-conflict");
+      assert.match(r.reasons[0]!.message, /preview again/);
+      assert.ok(existsSync(listed));
+      if (change === "added") assert.equal(readFileSync(mine, "utf8"), "human");
+    });
+  }
+
+  it("[LFC-05] C11: a stopped run whose result is not settled names its work and state", async () => {
+    const p = fresh();
+    const h = await open(p);
+    const store = p.ports().store, runDir = store.tempDir("run-stopped");
+    await store.transaction("fixture", async tx => {
+      const state = tx.state!, w = Object.values(state.work)[0]!;
+      tx.publish({ ...state, work: { ...state.work, [w.id]: { ...w,
+        session: { ...w.session, inCall: { verb: "check", runId: "stopped", runDir, cancelled: true, ...store.self(), since: new Date().toISOString() } },
+      } } });
+    });
+    const r = await p.call("decide", { h, kind: "cleanup", target: "project", answers: { "cleanup-confirm": "yes" } });
+    assert.equal(r.reasons[0]!.code, "work-busy", JSON.stringify(r));
+    assert.match(r.reasons[0]!.message, /W-\d+ has a stopped run whose result is not settled/);
+    assert.ok(existsSync(runDir));
+  });
+
+  it("[LFC-05] C13: no settles the question and removes nothing; a later yes then has no question", async () => {
+    const p = fresh();
+    const h = await open(p);
+    const file = tempFile(p, "manifests", "c13.json");
+    assert.equal((await p.call("decide", { h, kind: "cleanup", target: "project" })).exit, 3);
+    const no = await p.call("decide", { h, kind: "cleanup", target: "project", answers: { "cleanup-confirm": "no" } });
+    assert.equal(no.exit, 0, JSON.stringify(no));
+    assert.ok(existsSync(file));
+    assert.equal(p.ports().store.read()!.state.pending.some((q) => q.id === "cleanup-confirm"), false);
+    const yes = await p.call("decide", { h, kind: "cleanup", target: "project", answers: { "cleanup-confirm": "yes" } });
+    assert.equal(yes.reasons[0]!.code, "revision-conflict");
+    assert.ok(existsSync(file));
+  });
+
+  it("[LFC-05] C14: the stored question is a chat question that does not overclaim", async () => {
+    const p = fresh();
+    const h = await open(p);
+    tempFile(p, "manifests", "c14.json");
+    const preview = await p.call("decide", { h, kind: "cleanup", target: "project" });
+    const q = preview.questions![0]!;
+    assert.equal(q.channel, "chat");
+    assert.match(q.question, /Anything added after this preview is kept/);
+    assert.doesNotMatch(q.question, /your files are not touched/);
+    assert.deepEqual(p.ports().store.read()!.state.pending.filter((x) => x.id === "cleanup-confirm").map((x) => x.bind.factsHash), [q.bind.factsHash]);
+    assert.equal(q.bind.factsHash.length, 64, "the full SHA-256 of work, scope and every entry");
   });
 
   it("refuses an unknown scope", async () => {

@@ -6,11 +6,9 @@ import { join } from "node:path";
 import { cleanup, NO_POSIX_PROCESSES } from "./helpers.ts";
 import { BASIS, GREET_IMPL, GREET_TEST, focusFixture, project } from "./support/fixture.ts";
 import type { Project } from "./support/fixture.ts";
-import { enableUndoForTests } from "../src/verbs/undo.ts";
 import { emptyState, newContract } from "../src/core/state.ts";
 import { publishCommit } from "../src/verbs/recover-commit.ts";
 
-enableUndoForTests();
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 it("replays the exact old nothing-to-commit result as an idempotent no-op [CON-12]", async () => {

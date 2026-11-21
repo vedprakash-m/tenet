@@ -56,6 +56,20 @@ describe("integrate [GIT-11]", () => {
     assert.equal(p.git("rev-list", "--count", "main"), "2");
   });
 
+  it("explicit integration records acceptance without erasing accepted residual risk", async () => {
+    const rejected = fresh();
+    const { h: rejectedHandle } = await finished(rejected);
+    await rejected.call("decide", { h: rejectedHandle, kind: "acceptance", target: "rejected" });
+    assert.equal((await rejected.call("integrate", { h: rejectedHandle })).exit, 0);
+    assert.equal(Object.values(rejected.ports().store.read()!.state.work)[0]!.acceptance, "accepted");
+
+    const residual = fresh();
+    const { h: residualHandle } = await finished(residual);
+    await residual.call("decide", { h: residualHandle, kind: "acceptance", target: "accepted-with-residual-risk" });
+    assert.equal((await residual.call("integrate", { h: residualHandle })).exit, 0);
+    assert.equal(Object.values(residual.ports().store.read()!.state.work)[0]!.acceptance, "accepted-with-residual-risk");
+  });
+
   it("merges onto a moved base, rechecks it, and keeps the result unverified until review reaches the integrated candidate", async () => {
     const p = fresh();
     const { h, work } = await finished(p);
@@ -112,7 +126,7 @@ describe("integrate [GIT-11]", () => {
     assert.ok(existsSync(join(p.root, "docs/mine.md")));
   });
 
-  it("follows the integration setting: never omits the offer, auto-on-accept integrates when the user accepts", async () => {
+  it("follows the integration setting in presentation, while acceptance never integrates", async () => {
     const p = fresh();
     const { h } = await finished(p);
     assert.equal((await p.call("decide", { h, kind: "config", target: "nonsense", propose: { value: "x" } })).exit, 2);
@@ -120,10 +134,13 @@ describe("integrate [GIT-11]", () => {
     await p.call("decide", { h, kind: "config", target: "integration", propose: { value: "never" } });
     assert.equal(d(await finishFixture(p, { h })).integration.next, undefined);
     await p.call("decide", { h, kind: "config", target: "integration", propose: { value: "auto-on-accept" } });
-    assert.equal(d(await finishFixture(p, { h })).integration.next, "accept", "the result says accepting will integrate");
+    assert.equal(d(await finishFixture(p, { h })).integration.next, "integrate", "auto-on-accept retains integration as an explicit next action");
     const acc = await p.call("decide", { h, kind: "acceptance", target: "accepted" });
     assert.equal(acc.exit, 0, JSON.stringify(acc));
-    assert.equal(p.git("branch", "--show-current"), "main", "accepting did the integration");
+    assert.match(p.git("branch", "--show-current"), /^tenet\//, "accepting keeps the work on its branch");
+    const integrated = await p.call("integrate", { h });
+    assert.equal(integrated.exit, 0, JSON.stringify(integrated));
+    assert.equal(p.git("branch", "--show-current"), "main", "explicit integrate switches to the base branch");
   });
 
   it("recovers from a crash right after the merge: it landed once, and state learns of it", async () => {

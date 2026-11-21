@@ -9,10 +9,6 @@ import { BASIS, GREET_IMPL, GREET_TEST, project, finishFixture } from "./support
 import type { Project } from "./support/fixture.ts";
 import { runVerb } from "../src/pipeline.ts";
 import { VERBS } from "../src/verbs/index.ts";
-import { enableUndoForTests } from "../src/verbs/undo.ts";
-
-enableUndoForTests();
-
 const roots: string[] = [];
 after(() => roots.forEach(cleanup));
 const fresh = (): Project => { const p = project(); roots.push(p.root); return p; };
@@ -69,8 +65,8 @@ describe("undo [GIT-04]", () => {
     const index = readFileSync(join(p.root, ".git/index"));
     let applied = false;
     const ports = p.ports();
-    const inverse = ports.git.applyPatch.bind(ports.git);
-    ports.git.applyPatch = async (...args) => { applied = true; return inverse(...args); };
+    const inverse = ports.git.applyUndo.bind(ports.git);
+    ports.git.applyUndo = async (args) => { applied = true; return inverse(args); };
 
     const result = await runVerb(ports, VERBS, "decide", { h, kind: "undo-confirm", answers: { "undo-confirm": "apply" } });
 
@@ -108,8 +104,8 @@ describe("undo [GIT-04]", () => {
     const index = readFileSync(join(p.root, ".git/index"));
     let applied = false;
     const ports = p.ports();
-    const inverse = ports.git.applyPatch.bind(ports.git);
-    ports.git.applyPatch = async (...args) => { applied = true; return inverse(...args); };
+    const inverse = ports.git.applyUndo.bind(ports.git);
+    ports.git.applyUndo = async (args) => { applied = true; return inverse(args); };
 
     const result = await runVerb(ports, VERBS, "decide", { h, kind: "undo-confirm", answers: { "undo-confirm": "apply" } });
 
@@ -147,8 +143,8 @@ describe("undo [GIT-04]", () => {
       assert.equal(p.git("rev-parse", "HEAD^{tree}"), previewTree);
       let applied = false;
       const ports = p.ports();
-      const inverse = ports.git.applyPatch.bind(ports.git);
-      ports.git.applyPatch = async (...args) => { applied = true; return inverse(...args); };
+      const inverse = ports.git.applyUndo.bind(ports.git);
+      ports.git.applyUndo = async (args) => { applied = true; return inverse(args); };
 
       const result = await runVerb(ports, VERBS, "decide", {
         h, kind: "undo-confirm", answers: { "undo-confirm": "apply" },

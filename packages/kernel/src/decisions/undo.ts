@@ -1,6 +1,3 @@
-// `decide undo-confirm`: apply a previewed inverse to the working tree (TS §10.5). The inverse is planned again and must
-// still be the one the user saw. Applying is a non-repeatable effect with per-path postconditions; the revert then becomes
-// a new quick contract so it is checked and committed like any other change.
 import { KernelError, ownedByOther } from "../core/errors.ts";
 import { workId, workLabel } from "../core/ids.ts";
 import { deriveObligations } from "../core/obligations.ts";
@@ -18,7 +15,6 @@ import { planUndo, undoFacts } from "../verbs/undo.ts";
 import { cancelUnappliedUndoState } from "../verbs/recover-undo-state.ts";
 type UndoPlan = Awaited<ReturnType<typeof planUndo>>;
 import type { Decision } from "./types.ts";
-
 export interface UndoOp {
   work: string;
   original: string;
@@ -28,6 +24,8 @@ export interface UndoOp {
   priorSourceOwner: { work: string; generation: number } | null;
   intentElementId: string;
   intentElementHash: string;
+  head: string;
+  branch: string | null;
   tree: string;
   paths: string[];
   pre: Record<string, PathImage | null>;
@@ -35,7 +33,6 @@ export interface UndoOp {
   patch: string;
   runDir?: string;
 }
-
 async function undoIntentOp(
   ports: Ports, work: WorkContract, provisional: WorkContract,
   plan: UndoPlan, runDir: string, intentElement: BasisElement,
@@ -50,20 +47,20 @@ async function undoIntentOp(
     priorSourceOwner,
     intentElementId: intentElement.id,
     intentElementHash: hashOf(intentElement),
+    head: plan.head,
+    branch: plan.branch,
     tree: plan.tree,
     paths: plan.paths,
     runDir,
-    pre: await ports.git.imagesAt("HEAD", plan.paths),
+    pre: await ports.git.imagesAt(plan.head, plan.paths),
     post: await ports.git.imagesAt(plan.tree, plan.paths),
     patch: ports.store.putBlob(plan.patch),
   };
 }
-
 /** The revert is its own small contract: checked and committed like any other change, by the same rules. */
 async function revertContract(ports: Ports, tx: Tx, rest: State, work: WorkContract, plan: UndoPlan, runDir: string, id: string) {
   const { inv } = await gather(ports, work, rest.locks);
   const now = ports.clock.now();
-  const probe = await ports.git.probe();
   const gen = rest.generationSeq + 1;
   const seq = rest.workSeq + 1;
   const el: BasisElement = {
@@ -94,11 +91,11 @@ async function revertContract(ports: Ports, tx: Tx, rest: State, work: WorkContr
     scopePaths: plan.paths,
     protectedPaths: work.scope.protected,
     gitMode: "git",
-    base: probe.head,
-    branch: probe.branch,
+    base: plan.head,
+    branch: plan.branch,
     start: snapshotOf(inv),
   });
-  const priorSourceOwner = rest.sourceOwner?.work === work.id && isLive(work) ? rest.sourceOwner : null;
+  const priorSourceOwner = rest.sourceOwner?.work === work.id ? rest.sourceOwner : null;
   const op = await undoIntentOp(ports, work, base, plan, runDir, el, priorSourceOwner);
   tx.intent("undo", id, op); // The patch and exact path images let recovery settle a crash without guessing what happened.
   const nw: WorkContract = {
@@ -115,7 +112,7 @@ async function revertContract(ports: Ports, tx: Tx, rest: State, work: WorkContr
         source: "decide",
         capture: "reported",
         quote: `undo ${work.label}`,
-        bind: { factsHash: undoFacts(plan) },
+        bind: { factsHash: undoFacts(work, plan) },
       },
     ],
     obligations: deriveObligations([], ports.stack.detect(ports.root).runner ?? "vitest", []),
@@ -128,7 +125,6 @@ async function revertContract(ports: Ports, tx: Tx, rest: State, work: WorkContr
   };
   return { nw, intent, gen, seq, op };
 }
-
 /** Locks on tests this undo removes or changes go with them: the user asked for the work to be reverted. */
 function locksAfter(rest: State, work: WorkContract, plan: UndoPlan): State["locks"] {
   const undone = new Set(plan.commits);
@@ -137,10 +133,8 @@ function locksAfter(rest: State, work: WorkContract, plan: UndoPlan): State["loc
     (("commit" in l.anchor && undone.has(l.anchor.commit)) || ("provisional" in l.anchor && l.anchor.provisional === work.id));
   return rest.locks.filter((l) => !goes(l));
 }
-
 /** What the applied (or refused) patch turns into: a contract to check, an uncertain effect, or a withdrawn revert. */
 type UndoImage = "pre" | "post" | "uncertain";
-
 async function undoImage(ports: Ports, op: UndoOp): Promise<UndoImage> {
   try {
     const here = await ports.git.inventory([]);
@@ -162,7 +156,6 @@ async function undoImage(ports: Ports, op: UndoOp): Promise<UndoImage> {
   }
   return "uncertain";
 }
-
 export async function undoOutcome(
   ports: Ports,
   tx: Tx,
@@ -225,7 +218,6 @@ export async function undoOutcome(
     },
   };
 }
-
 export const undoConfirm: Decision = {
   kind: "undo-confirm",
   async run({ ports, tx, state, work, input }): Promise<VerbPlan> {
@@ -236,9 +228,8 @@ export const undoConfirm: Decision = {
       throw new KernelError("revision-conflict", 'answer "apply" or "cancel"', { exit: 1 });
     const rest: State = { ...state, pending: state.pending.filter((p) => p.id !== "undo-confirm") };
     if (answer === "cancel") return { state: withWork(rest, work), resp: { work: work.id } };
-
     const plan = await planUndo(ports, rest, work);
-    if (undoFacts(plan) !== q.bind.factsHash) {
+    if (undoFacts(work, plan) !== q.bind.factsHash) {
       throw new KernelError("revision-conflict", "the inverse changed since the preview; ask for the preview again", { exit: 2 });
     }
     const owner = rest.sourceOwner && rest.work[rest.sourceOwner.work];
@@ -256,7 +247,16 @@ export const undoConfirm: Decision = {
     const next: State = { ...withWork(withMarked, nw), sourceOwner: { work: nw.id, generation: gen } };
     const job: Job = {
       id,
-      execute: () => ports.git.applyPatch(plan.patch, [], { runDir, timeoutMs: 60_000 }),
+      execute: () => ports.git.applyUndo({
+        patch: plan.patch,
+        head: op.head,
+        branch: op.branch,
+        paths: plan.paths,
+        pre: Object.fromEntries(plan.paths.map(path => [path, op.pre[path]?.blob ?? null])),
+        post: Object.fromEntries(plan.paths.map(path => [path, op.post[path]?.blob ?? null])),
+        runDir,
+        timeoutMs: 60_000,
+      }),
       finalize: async (tx2, st2, result) => undoOutcome(ports, tx2, st2, nw, op, plan, id, result),
     };
     return { state: next, resp: { work: nw.id }, job };
