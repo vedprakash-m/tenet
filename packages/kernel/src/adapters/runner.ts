@@ -28,7 +28,11 @@ function checkEnv(from: Record<string, string | undefined>, runDir: string): Rec
 type SignalResult = "signalled" | "gone" | "unknown";
 const killGroup = (pid: number, sig: NodeJS.Signals): SignalResult => {
   try { process.kill(-pid, sig); return "signalled"; }
-  catch (error) { return (error as NodeJS.ErrnoException).code === "ESRCH" ? "gone" : "unknown"; }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ESRCH") return "gone";
+    try { process.kill(pid, sig); return "signalled"; }
+    catch (leaderError) { return (leaderError as NodeJS.ErrnoException).code === "ESRCH" ? "gone" : "unknown"; }
+  }
 };
 const leaderState = (pid: number): string | null | undefined => {
   try {

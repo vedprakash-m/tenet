@@ -21,9 +21,7 @@ import { JOB_FINAL_STATE_RESERVE } from "./core/storage-reservation.ts";
 
 type Input = Record<string, any>;
 const EFFECT_DECISIONS = ["scaffold", "dependency", "sync-index", "undo-confirm"];
-const STORAGE_PREFLIGHT_DECISIONS = new Set([
-  "adopt", "basis", "dependency", "forget", "hardening", "scaffold", "shared-merge", "sync-index", "undo-confirm",
-]);
+const STORAGE_PREFLIGHT_DECISIONS = new Set(["forget"]);
 const SOURCE_VERBS = ["commit", "integrate", "undo"];
 const CLEANUP_RESPONSE_RESERVE = 2048;
 const RECOVERY_STATE_RESERVE = 1024 * 1024;

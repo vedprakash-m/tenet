@@ -1015,7 +1015,7 @@ try {
  assert.equal(undoPreview.questions[0].id, 'undo-confirm');
  const undoApplied = call(undoRoot, 'decide', { h: uh, kind: 'undo-confirm', answers: { 'undo-confirm': 'apply' } });
  assert.equal(undoApplied.exit, 0, JSON.stringify(undoApplied));
- assert.equal(readFileSync(join(undoRoot, 'src/greet.ts'), 'utf8'), 'export const greet = (_name: string): string => \'\';\n');
+ assert.equal(readFileSync(join(undoRoot, 'src/greet.ts'), 'utf8'), 'export const greet = (_name: string): string => "";\n');
  assert.equal(existsSync(join(undoRoot, 'src/greet.test.ts')), false);
  observations.push({ scenario: 'built bundle previews and applies undo', previewExit: undoPreview.exit, applyExit: undoApplied.exit, sourceRestored: true });
  const changedRunner = create();
