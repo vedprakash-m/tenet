@@ -4,6 +4,7 @@
 !/specs/PRD.md
 !/specs/tech-spec.md
 !/specs/ux-spec.md
+!/specs/re-plan.md
 .DS_Store
 node_modules/
 *.log
