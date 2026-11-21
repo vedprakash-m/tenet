@@ -130,7 +130,14 @@ describe("crash-safe lesson forgetting [CON-10]", () => {
       assert.equal(stopped.exit, 0, JSON.stringify(stopped)); await exited;
       assert.equal(readFileSync(join(runDir, "report.json"), "utf8"), report);
       assert.equal(existsSync(base), true);
-    } finally { if (child.exitCode === null && child.signalCode === null) { process.kill(-child.pid!, "SIGKILL"); await exited; } }
+    } finally {
+      if (child.exitCode === null && child.signalCode === null) {
+        try { process.kill(-child.pid!, "SIGKILL"); } catch (error) {
+          if (!["ESRCH", "EPERM"].includes((error as NodeJS.ErrnoException).code ?? "")) throw error;
+        }
+        await exited;
+      }
+    }
   });
 });
 

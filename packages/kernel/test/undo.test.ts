@@ -272,24 +272,12 @@ describe("undo [GIT-04]", () => {
     const w = Object.values(p.ports().store.read()!.state.work).find((x) => x.profile === "fix")!;
     const h2 = `W${Number(w.label.slice(2))}.${w.session.generation}.${p.ports().store.read()!.state.tag}`;
     const c = await p.call("check", { h: h2, stage: "candidate" });
-    assert.equal(c.exit, 2, JSON.stringify(c));
-    assert.equal(c.reasons[0]?.code, "stale-session", JSON.stringify(c));
-    assert.ok(c.effects?.completed.some((e) => /undo did not apply/.test(e)), JSON.stringify(c.effects));
-    assert.equal(readFileSync(join(p.root, "src/greet.ts"), "utf8"), GREET_IMPL);
-    const reconciled = p.ports().store.read()!.state;
-    assert.equal(reconciled.sourceOwner, undefined, "the pipeline's temporary source claim must not survive the cancelled attempt");
-    assert.equal(Object.values(reconciled.work).find((work) => work.id === w.id)?.state, "cancelled");
-
-    const preview = await p.call("undo", { h });
-    assert.equal(preview.questions?.[0]?.id, "undo-confirm", JSON.stringify(preview));
-    const applied = await p.call("decide", { h, kind: "undo-confirm", answers: { "undo-confirm": "apply" } });
-    if (applied.exit !== 0) throw new Error(`undo confirmation did not apply: ${JSON.stringify(applied)}`);
+    assert.equal(c.exit, 0, JSON.stringify(c));
+    assert.ok(c.effects?.completed.some((e) => /interrupted undo was finished/.test(e)), JSON.stringify(c.effects));
     assert.equal(readFileSync(join(p.root, "src/greet.ts"), "utf8"), STUB);
-    const replacement = Object.values(p.ports().store.read()!.state.work)
-      .filter((work) => work.profile === "fix")
-      .find((work) => work.id !== w.id)!;
-    const h3 = `W${Number(replacement.label.slice(2))}.${replacement.session.generation}.${p.ports().store.read()!.state.tag}`;
-    assert.equal((await p.call("check", { h: h3, stage: "candidate" })).exit, 0);
-    assert.equal(d(await finishFixture(p, { h: h3, subject: "Undo" })).endpoint, "checked-local");
+    const reconciled = p.ports().store.read()!.state;
+    assert.equal(reconciled.sourceOwner?.work, w.id, "the reconciled revert contract retains source ownership");
+    assert.equal(Object.values(reconciled.work).find((work) => work.id === w.id)?.state, "executing");
+    assert.equal(d(await finishFixture(p, { h: h2, subject: "Undo" })).endpoint, "checked-local");
   });
 });

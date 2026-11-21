@@ -1,6 +1,6 @@
 // Runs one command in its own process group with a minimal environment (TS §9.3). Never uses a shell or npx.
 // The group id and start time are written to run.json at once so a crashed kernel's orphan can be found and stopped.
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { closeSync, constants, fchmodSync, fstatSync, fsyncSync, lstatSync, mkdirSync, openSync, readSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { isUtf8 } from "node:buffer";
@@ -30,9 +30,34 @@ const killGroup = (pid: number, sig: NodeJS.Signals): SignalResult => {
   try { process.kill(-pid, sig); return "signalled"; }
   catch (error) { return (error as NodeJS.ErrnoException).code === "ESRCH" ? "gone" : "unknown"; }
 };
+const leaderState = (pid: number): string | null | undefined => {
+  try {
+    const state = execFileSync("ps", ["-o", "stat=", "-p", String(pid)],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+    return state || null;
+  } catch {
+    return undefined;
+  }
+};
 const groupAlive = (pid: number): "alive" | "gone" | "unknown" => {
-  try { process.kill(-pid, 0); return "alive"; }
-  catch (error) { return (error as NodeJS.ErrnoException).code === "ESRCH" ? "gone" : "unknown"; }
+  try {
+    process.kill(-pid, 0);
+    const state = leaderState(pid);
+    if (state === undefined || (state !== null && !state.startsWith("Z"))) return state === undefined ? "unknown" : "alive";
+    try {
+      const rows = execFileSync("ps", ["-A", "-o", "pgid=,stat="],
+        { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim().split("\n");
+      const members = rows.map((row) => row.trim().match(/^(\d+)\s+(\S+)/))
+        .filter((match): match is RegExpMatchArray => !!match && Number(match[1]) === pid);
+      return members.length && members.some((match) => !match[2]!.startsWith("Z")) ? "alive" : "gone";
+    } catch {
+      return "unknown";
+    }
+  }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ESRCH") return "unknown";
+    return "gone";
+  }
 };
 const waitForGroup = async (pid: number, timeoutMs: number): Promise<"gone" | "alive" | "unknown"> => {
   const end = Date.now() + timeoutMs;

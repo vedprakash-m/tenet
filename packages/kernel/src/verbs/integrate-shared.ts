@@ -93,7 +93,8 @@ function checkOutputs(c: Ctx, plan: Planned) {
   const missing = c.conflicted.find((p) => !plan.files.has(p));
   if (missing) throw refuse(`Tenet has no merged text for ${missing}`);
   for (const p of plan.files.keys()) {
-    if (!allowed("edit", p, c.exclusions) || !allowed("model-send", p, c.exclusions))
+    if (!allowed("edit", p, c.exclusions) ||
+        !allowed("model-send", p, c.exclusions, { kind: "routine-inventory" }))
       throw refuse(`${p} is excluded from Tenet's edits or from the model`);
     if (c.dirty.includes(p)) throw refuse(`${p} has uncommitted edits that the merged file would replace`);
   }

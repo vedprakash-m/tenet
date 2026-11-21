@@ -21,6 +21,9 @@ import { JOB_FINAL_STATE_RESERVE } from "./core/storage-reservation.ts";
 
 type Input = Record<string, any>;
 const EFFECT_DECISIONS = ["scaffold", "dependency", "sync-index", "undo-confirm"];
+const STORAGE_PREFLIGHT_DECISIONS = new Set([
+  "adopt", "basis", "dependency", "forget", "hardening", "scaffold", "shared-merge", "sync-index", "undo-confirm",
+]);
 const SOURCE_VERBS = ["commit", "integrate", "undo"];
 const CLEANUP_RESPONSE_RESERVE = 2048;
 const RECOVERY_STATE_RESERVE = 1024 * 1024;
@@ -130,6 +133,8 @@ function enforceStorage(
   }
   return report;
 }
+const needsStoragePreflight = (verb: Verb, input: Input) =>
+  verb.name === "decide" && STORAGE_PREFLIGHT_DECISIONS.has(input.kind);
 function persistedExpiry(ports: Ports, report: EvictReport): EvictReport {
   const paths = ports.store.expiredEvidence?.() ?? [];
   return paths.length ? { ...report, expired: [...new Set([...(report.expired ?? []), ...paths])] } : report;
@@ -440,6 +445,7 @@ async function planInLock(ports: Ports, verb: Verb, input: Input, tx: Tx, held: 
   let current = recovered?.state ?? tx.state;
   if (current && uncertaintyFences(verb, input, recovered))
     return fencedByUncertainty(ports, verb, tx, current, recovered!);
+  if (needsStoragePreflight(verb, input)) enforceStorage(ports, verb, input, tx, current);
   const shared = current && !["open", "stop"].includes(verb.name) ? reconcileShared(ports, current) : null;
   if (shared) current = shared.state;
   if (verb.name !== "stop") {
