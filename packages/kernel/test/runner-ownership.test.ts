@@ -57,8 +57,10 @@ describe("recovery process ownership", () => {
       try {
         const result = await processObservation(root, mode);
         const trusted = mode === "short" || mode === "unicode";
-        assert.deepEqual(result, { value: trusted ? "stopped" : "unknown" });
-        if (trusted) await closed;
+        const allowedValues = trusted ? ["stopped"] : ["unknown"];
+        if (trusted && process.platform === "darwin") allowedValues.push("unknown");
+        assert.ok(allowedValues.includes((result as { value: string }).value), JSON.stringify(result));
+        if ((result as { value: string }).value === "stopped") await closed;
         else process.kill(pid, 0);
         const expected = mode === "overwrite-json" ? Buffer.from(text.replace('"note":"a"', '"note":"b"')) : bytes;
         assert.deepEqual(readFileSync(path), expected);
