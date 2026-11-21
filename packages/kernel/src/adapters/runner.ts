@@ -34,15 +34,6 @@ const killGroup = (pid: number, sig: NodeJS.Signals): SignalResult => {
     catch (leaderError) { return (leaderError as NodeJS.ErrnoException).code === "ESRCH" ? "gone" : "unknown"; }
   }
 };
-const leaderState = (pid: number): string | null | undefined => {
-  try {
-    const state = execFileSync("ps", ["-o", "stat=", "-p", String(pid)],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
-    return state || null;
-  } catch {
-    return undefined;
-  }
-};
 function processGroupStates(pid: number): string[] | null {
   if (process.platform === "linux") {
     try {
@@ -75,8 +66,6 @@ function processGroupStates(pid: number): string[] | null {
 const groupAlive = (pid: number): "alive" | "gone" | "unknown" => {
   try {
     process.kill(-pid, 0);
-    const state = leaderState(pid);
-    if (state !== undefined && state !== null && !state.startsWith("Z")) return "alive";
     const members = processGroupStates(pid);
     if (!members) return "unknown";
     return members.some((member) => !member.startsWith("Z")) ? "alive" : "gone";
@@ -96,7 +85,7 @@ const waitForGroup = async (pid: number, timeoutMs: number): Promise<"gone" | "a
   return "alive";
 };
 
-type RunIdentity = { pid: number; procStart: string; prepared?: boolean };
+type RunIdentity = { pid: number; procStart: string; prepared?: boolean; startedAt?: string };
 function readRunIdentity(runDir: string): RunIdentity | "gone" | "unknown" {
   let fd = -1;
   try {
@@ -441,7 +430,12 @@ export class ProcessRunner implements Runner {
   }
 
   async stopRun(runDir: string): Promise<"stopped" | "gone" | "unknown"> {
-    const record = readRunIdentity(runDir);
+    let record = readRunIdentity(runDir);
+    if (record === "unknown") {
+      const current = readRunIdentity(runDir);
+      if (current !== "unknown" && current !== "gone" && typeof current.startedAt === "string" && current.startedAt.length)
+        record = current;
+    }
     return record === "gone" || record === "unknown" ? record : stopOwnedGroup(record);
   }
 }
