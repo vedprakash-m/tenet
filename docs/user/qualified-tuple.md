@@ -27,7 +27,7 @@ Observations by the development team, on VS Code with a managed model, in throwa
 
 ## What is tested without a host
 
-Exact-source [CI 41977194444](https://github.com/vedprakash-m/tenet/actions/runs/41977194444), for commit `14aa0f71a5970c708e62423b44d5a06b81a93c94`, passes full CI on Ubuntu and macOS and built-bundle UAT on Node 24 and minimum Node 22.12.0. It covers the kernel, plugin text checks, starter and real repository/process scenarios. The Windows job checks portability and explicit platform refusals; it does not exercise a supported Windows mutating workflow.
+Exact-source [`untrusted` 44885756509](https://github.com/vedprakash-m/tenet/actions/runs/44885756509) and [`system-budgets` 44885756487](https://github.com/vedprakash-m/tenet/actions/runs/44885756487), for implementation commit `b7869a09613984b127504503d81b14e08f2e5a90`, pass the hosted source, Ubuntu/macOS bundle/UAT and Windows lanes. They cover the kernel, plugin text checks, starter, real repository/process scenarios and frozen system budgets. The Windows job checks portability and explicit platform refusals; it does not qualify Windows mutating workflows.
 
 This is deterministic source and built-bundle evidence, not an installed VS Code/Copilot qualification. It does not establish reviewer isolation, approval behavior, model effectiveness, human comprehension or a public release chain. Later source changes require their own validation; the separate schema-2 candidate is not covered.
 

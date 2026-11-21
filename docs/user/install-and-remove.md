@@ -1,4 +1,4 @@
-<!-- DRAFT. The public install path is not decided. Only the preview route below has been tried (specs/plan.md section 4.1). -->
+<!-- DRAFT. The public install path is not decided. Only the preview route below has been tried (specs/re-plan.md host track and checklist). -->
 # Install and remove
 
 ## Before you install
@@ -49,14 +49,14 @@ Uninstall behavior on the host is **unobserved**. The steps below are the intend
 
 ### What remains (the residue listing)
 
-Under the hood this is `tenet inspect --view residue`. The residue listing is incomplete: it does not identify every possible residual file, including decision records and the charter block. Its note says cleanup removes only run files Tenet wrote, but cleanup removal is disabled and the preview does not establish ownership. It reports:
+Under the hood this is `tenet inspect --view residue`. The residue listing is incomplete: it does not identify every possible residual file, including decision records and the charter block. Cleanup is bound to a preview and removes only entries Tenet can still identify as unchanged; installed-host behavior and complete ownership reporting remain unqualified. It reports:
 
 | What | Where | Who removes it |
 |---|---|---|
 | Tenet's records for the project: state, log, blobs | `.tenet/` in the project, with file count and size | You |
 | Adopted documents, if any: `INTENT.md`, `tenet.policy.json`, `docs/architecture.md`, `docs/hardening.md`, each shown present or absent | The project | They are your documents and stay. Delete them yourself if you do not want them. |
 | Test tags (`@tenet`) in test files; `Tenet-Work` trailers in commits; the code, specs and evidence you committed | The project and its Git history | They stay |
-| Run files: review and analyst packets, reports | A `tenet-ws_…` folder in the system temp folder, with file count and size | You, after reviewing them |
+| Run files: review and analyst packets, reports | A `tenet-ws_…` folder in the system temp folder, with file count and size | Tenet, after you review and confirm the bound cleanup; you may remove entries Tenet refuses or keeps |
 
 Tenet installs no service. Do not assume that a residue listing identifies every running process or file.
 

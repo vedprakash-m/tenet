@@ -1,4 +1,4 @@
-<!-- DRAFT. Written from specs/ux-spec.md and the current plugin text. Status words follow specs/plan.md. -->
+<!-- DRAFT. Written from specs/ux-spec.md and the current plugin text. Status words follow specs/re-plan.md. -->
 # What Tenet adds
 
 Tenet is a plugin for GitHub Copilot in VS Code. It does not replace the editor, the chat or the model. It adds a loop around a request, and a small local program that records what is true about the work.

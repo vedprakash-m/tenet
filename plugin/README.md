@@ -11,7 +11,7 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 - Policy that allows agent mode, agent plugins, custom agents and subagents. If a policy blocks installation or one of these, Tenet does not work around it: read the host's message and ask whoever manages your Copilot settings to allow it (unobserved; see the root README)
 
 ## What it does and does not do
-- Works on a branch of your repository and commits only the files it authored; preservation of uncommitted work is not established. Use disposable projects without valuable work, sensitive data or credentials
+- Works on a branch of your repository and commits only the files it authored. Deterministic undo and dirty-tree preservation tests exist, but installed-host preservation is not qualified. Use disposable projects without valuable work, sensitive data or credentials
 - On Windows, Tenet can follow linked installed Vitest metadata and read a file outside the project. Do not use Tenet in untrusted workspaces or with untrusted installed dependencies
 - Runs only through the kernel, which keeps records in `.tenet/` (git-ignored; exclusion from host indexing is unobserved)
 - Does not deploy, push or open pull requests; those arrive later and only on your request
@@ -26,7 +26,7 @@ waiting are host observations or unknown with provenance, never estimates.
 The shipped binding does not observe host timings. Per-contract budget minutes
 remain separate; a historical retry retains the earlier call's timing.
 
-In each project where you used Tenet, ask "help uninstall" before removing the plugin from `chat.pluginLocations`. The residue listing is incomplete. Cleanup removal is disabled in this preview; review any files yourself before deleting them. Optionally remove `.tenet/` yourself after uninstalling; this deletes Tenet's project records. Host uninstall behavior is unobserved.
+In each project where you used Tenet, ask "help uninstall" before removing the plugin from `chat.pluginLocations`. The residue listing is incomplete; review it and the cleanup preview before confirming removal. Tenet removes a run entry only while it still matches the preview; it never removes `.tenet/`. Optionally remove `.tenet/` yourself after uninstalling; this deletes Tenet's project records. Installed-host uninstall and cleanup behavior remain unobserved.
 
 ## License
 

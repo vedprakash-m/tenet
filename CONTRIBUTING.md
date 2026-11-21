@@ -13,18 +13,18 @@ Changes to executable content, hooks, helpers, permissions, destinations or eval
 
 ## What the specs are
 
-Three tracked specs say what Tenet is, and a local-only plan sequences the work:
+Three tracked specs say what Tenet is, and a tracked re-plan sequences the work:
 
 | File | Owns |
 |---|---|
 | [specs/PRD.md](specs/PRD.md) | Meaning: what Tenet must do and why |
 | [specs/tech-spec.md](specs/tech-spec.md) | Mechanism: how |
 | [specs/ux-spec.md](specs/ux-spec.md) | Wording: what the user reads |
-| `specs/re-plan.md` (local-only) | Sequence and the progress record |
+| `specs/re-plan.md` | Sequence and the progress record |
 
 If code, plan and a spec disagree, the spec wins. Fix the plan or the code. A defect in a spec is logged in the re-plan defect list and not routed around.
 
-Only `specs/PRD.md`, `specs/tech-spec.md` and `specs/ux-spec.md` are tracked under `specs/`. All other specs, reviews and the plan, plus the entire `.archive/` directory, stay local and git-ignored. Do not force-add them. Create local planning records when needed in a fresh checkout; build, coverage and CI do not require these records. The candidate release-notes draft tool requires a local `specs/plan.md` to report open gates; it is not part of CI.
+`specs/PRD.md`, `specs/tech-spec.md`, `specs/ux-spec.md` and the active `specs/re-plan.md` are tracked. Other feature specs, reviews and the historical plan, plus the entire `.archive/` directory, stay local and git-ignored. Do not force-add them. Create local planning records when needed; build, coverage and CI do not require ignored records. The candidate release-notes draft tool reads `specs/re-plan.md` to report open gates; it is not proof of release qualification.
 
 ## The lifecycle for a feature
 
@@ -36,7 +36,7 @@ Do the steps in order. Do not skip one.
 4. **Implement test-first.** A failing test, then the code, then the next test. Use real processes, real Git and real signals when the behavior is about them. Tag the test that proves a PRD requirement with `[REQ-ID]` in its title (`tools/coverage.ts` reads the tags).
 5. **Validate.** `npm run ci` passes: typecheck, both lints, coverage, the bundle build within its size budget, and every test. Tests do not depend on your Git configuration or host credentials.
 6. **Try it as a user would.** Build the bundle (`npm run build`) and drive `plugin/kernel/tenet.mjs` through the feature on a scratch repository. Compare with the spec's examples and write down what you saw and what you did not.
-7. **Finalize.** Backfill the canonical specs if a rule or component was added. Move the feature spec to `.archive/specs/`. Add a dated entry to `CHANGELOG.md` (what changed, files, tests). Update `specs/plan.md`. Check `.gitignore`.
+7. **Finalize.** Backfill the canonical specs if a rule or component was added. Move the feature spec to `.archive/specs/`. Add a dated entry to `CHANGELOG.md` (what changed, files, tests). Update `specs/re-plan.md`. Check `.gitignore`.
 8. **Privacy check.** Run `npm run privacy` on the staged change; before a push also `node tools/privacy-check.ts --range @{u}..HEAD`. It looks for keys, tokens, credential assignments, personal paths and real addresses in added lines. It finds likely leaks and proves nothing; read the result. Never commit credentials or `.env*`. `.tenet/` is git-ignored and is never edited by hand.
 9. **Commit and push when asked.** Code and tests first, then spec, plan and changelog. After a push, confirm CI passes before calling it done.
 
@@ -70,7 +70,7 @@ npm run validate
 
 `npm run ci` runs typecheck, `lint-arch`, `lint-skills`, the quality lint, coverage, the build, payload and reproducibility verification, and every test. `npm run test:source` reports the build-independent test population, while `npm run test:postbuild` requires the generated bundle and runs the build-dependent population. `npm run uat` drives the complete shipped bundle campaign. `npm run validate` composes the full local source/build gate and the complete built-bundle campaign against the same checkout.
 
-CI uses the versioned `tools/test-inventory.json` and `tools/verify-execution.ts` to reject missing, duplicate or skipped required evidence. `tools/test-runner.ts` emits one structured execution report per lane and balances source files by the measured durations in `tools/test-durations.json`. `tools/uat/verify.mjs` binds each minimum-Node execution group to its protected slice of the 157-observation population, and `tools/uat/verify-groups.mjs` proves the exact union on each POSIX OS. Add a test to the normal source glob, and update the explicit inventory only when its execution boundary changes.
+CI uses the versioned `tools/test-inventory.json` and `tools/verify-execution.ts` to reject missing, duplicate or skipped required evidence. `tools/test-runner.ts` emits one structured execution report per lane and balances source files by the measured durations in `tools/test-durations.json`. `tools/uat/verify.mjs` binds each minimum-Node execution group to its protected slice of the 158-observation population, and `tools/uat/verify-groups.mjs` proves the exact union on each POSIX OS. Add a test to the normal source glob, and update the explicit inventory only when its execution boundary changes.
 
 Run the full mutation, process-group and crash-recovery suite on macOS or Linux. Windows can build the bundle and run the deterministic tooling, pure-rule and platform-refusal tests, but it has no supported mutation port (Tech Spec §4.9). A passing Windows build or focused suite is not a passing full CI gate or host qualification; do not skip the POSIX tests to claim one.
 
@@ -90,12 +90,39 @@ Skill and agent text is executable behavior. Keep it within the token budgets. N
 
 ## Claims about the host
 
-Behavior of VS Code, Copilot, subagents and approvals is unobserved until a spike records it, and each spike needs the owner's separate authorization. Write "unobserved", never "should work". A requirement is marked implemented only with a commit or CI run, and observed only with a dated observation on the real host. The local status words are defined in `specs/plan.md` section 0.1.
+Behavior of VS Code, Copilot, subagents and approvals is unobserved until a spike records it, and each spike needs the owner's separate authorization. Write "unobserved", never "should work". A requirement is marked implemented only with a commit or CI run, and observed only with a dated observation on the real host. The active progress record and status words are defined in `specs/re-plan.md`.
 
 ## Writing
 
 Use literal words. Where a plain phrase exists, use it instead of a metaphor or flourish. This applies to code comments, skills, specs, commit messages and replies.
 
-## Extensions
+## Extension RFC process
 
-Recipes, roles and host bindings by outside contributors will follow a request-for-comments process with certification levels (experimental, community, official; PRD OSS-03). That process is not written yet, and such contributions cannot be accepted.
+Recipes, roles and host bindings from outside contributors enter through a
+request for comments (RFC). The RFC must state:
+
+- the problem, owner, intended users, supported host/software tuple and
+  non-goals;
+- the compatibility contract, versioning, migration and removal behavior;
+- security and privacy boundaries, destinations, executable content,
+  permissions, dependency and untrusted-input risks;
+- acceptance tests, host evidence, residual limits and the test-free cases that
+  remain unsupported; and
+- licensing, notices, maintenance ownership and the point at which support can
+  be withdrawn.
+
+An RFC review records behavior, architecture, security and compatibility
+findings. The contributor resolves or records each finding's disposition before
+implementation. Certification is cumulative:
+
+- **Experimental:** source is public and passes its own tests, but Tenet makes
+  no support, compatibility or qualification claim.
+- **Community:** an independent reviewer accepts the RFC, the extension passes
+  repository CI and declared acceptance tests, and a named maintainer owns
+  compatible updates.
+- **Official:** a Tenet maintainer owns the extension, the exact supported
+  tuple and model/host evidence are recorded, release and rollback gates pass,
+  and the extension appears in the published support matrix.
+
+Certification never authorizes runtime installation of third-party plugins.
+Extensions remain static payload contributions reviewed before inclusion.

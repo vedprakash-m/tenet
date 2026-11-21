@@ -4,7 +4,7 @@
 
 Do not open a public issue for a security problem.
 
-Report it through [GitHub private vulnerability reporting](https://github.com/vedprakash-m/tenet/security/advisories/new). The repository owner must enable private vulnerability reporting in Settings → Code security before this channel is available. If the form is unavailable, do not put vulnerability details in a public issue; use GitHub's reporting controls to ask for a private channel without disclosing the vulnerability. This source checkout does not verify that the setting is enabled.
+Report it through [GitHub private vulnerability reporting](https://github.com/vedprakash-m/tenet/security/advisories/new). GitHub's repository API reports the setting enabled on 2026-11-21. If the form is unavailable, do not put vulnerability details in a public issue; use GitHub's reporting controls to ask for a private channel without disclosing the vulnerability. Recheck the live setting before release.
 
 Include: what you found, the version or commit, the steps to reproduce, and what you think the impact is. Do not include real credentials or other people's data.
 
@@ -18,7 +18,7 @@ Today one person holds every maintainer role, so these targets depend on one per
 
 ## Starter dependency maintenance
 
-Dependabot opens monthly version-update pull requests for the repository and the starter template. These scheduled version updates do not replace security alerts: repository owners must enable Dependabot alerts and security updates in the repository's security settings. This checkout does not verify whether those settings are enabled.
+Dependabot opens monthly version-update pull requests for the repository and the starter template. These scheduled version updates do not replace security alerts. The owner must enable Dependabot alerts and security updates in repository settings and recheck them before release. GitHub's repository API reports Dependabot security updates disabled on 2026-11-21. This source checkout does not verify whether those settings are enabled at release time.
 
 Treat a critical vulnerability report or alert affecting a starter dependency under the same response targets above: acknowledge it within 3 days, then decide on a fix, mitigation or withdrawal within 7 days. The decision target is not a guarantee that a fix will be available in that period.
 

@@ -6,9 +6,8 @@ A governed, test-first engineering loop for GitHub Copilot in VS Code. A small l
 > The qualified host tuple (VS Code, the Copilot extension, the model, the operating system) is **unrecorded**. No requirement has passed qualification. Read [Status](#status) before you install.
 >
 > **Known open safety defects in this preview.** Use Tenet only on disposable projects without valuable work, sensitive data or credentials.
-> - `undo` is disabled: its path discovery can miss renamed and recreated files and overwrite your work.
+> - Undo and cleanup removal are implemented and covered by deterministic tests, but their preservation behavior on the installed VS Code/Copilot host is not qualified.
 > - Recovery after an interruption can remove a file that matches what Tenet meant to write, even if someone else created it, and does not always report what it did.
-> - Cleanup of run files only previews; removing them is disabled because it could remove files Tenet did not create.
 > - On Windows, Tenet can follow linked installed Vitest metadata and read a file outside the project. Do not use Tenet in untrusted workspaces or with untrusted installed dependencies.
 
 **Source preview version:** `0.1.0-m0`. **Source:** [vedprakash-m/tenet](https://github.com/vedprakash-m/tenet). `/tenet help` reports the running kernel's version and source; compare these with the selected tag and verify payload checksums using the [release verification procedure](docs/release/release-verification.md). A matching version/source is identification, not publisher authentication.
@@ -34,11 +33,11 @@ historical retries keep their original snapshot. `/tenet help` explains the scop
 
 ## Status
 
-The [November 4 implementation audit](docs/audits/2026-11-04/implementation-audit.md) is a historical assessment of earlier source; its findings need reconciliation against subsequent repairs. The detailed progress record, `specs/plan.md`, is local-only and is not included in a fresh checkout. Deterministic evidence below is for commit `14aa0f71a5970c708e62423b44d5a06b81a93c94`, not later changes:
+The [November 4 implementation audit](docs/audits/2026-11-04/implementation-audit.md) is a historical assessment of earlier source; its findings need reconciliation against subsequent repairs. The active progress record for personal target A is `specs/re-plan.md`. The deterministic evidence below is for implementation commit `b7869a09613984b127504503d81b14e08f2e5a90`:
 
 | Area | State |
 |---|---|
-| Kernel, plugin, starter recipe, deterministic tests | Exact-source [CI 41977194444](https://github.com/vedprakash-m/tenet/actions/runs/41977194444) passes Ubuntu and macOS full CI and built-bundle UAT on Node 24 and 22.12.0. Windows portability passes, not Windows mutating workflows. A local build of the same source is 793,117 bytes against 819,200. Green deterministic CI does not close every audit finding or qualify an installed host; this checkout is not a release artifact. |
+| Kernel, plugin, starter recipe, deterministic tests | Exact-source [`untrusted` 44885756509](https://github.com/vedprakash-m/tenet/actions/runs/44885756509) and [`system-budgets` 44885756487](https://github.com/vedprakash-m/tenet/actions/runs/44885756487) pass on `b7869a0`, including hosted source, Ubuntu/macOS bundle/UAT and Windows lanes. Green deterministic CI does not qualify an installed host; this checkout is not a release artifact. |
 | Production capacity approval | Still open. The central pipeline/verbs/decisions group uses 248,083 characters against the prior approved 247,219 ceiling. The enforced 248,256 ceiling is explicitly proposed, not owner-approved; green lint is not approval of that change. |
 | Qualified tuple (host, extension, model, OS) | **Unrecorded.** No tuple is qualified. |
 | Installing and running on VS Code Copilot | **Partly observed** on VS Code 1.142.0 and 1.143.0 (October 19 and 20, 2026): the plugin loaded from a local plugin location; the kernel ran from the host's snapshot copy of the plugin; real multi-step tasks ran through `finish`. The Copilot extension version was not recorded. |
@@ -106,7 +105,7 @@ Then point VS Code's `chat.pluginLocations` setting at the `plugin/` folder of t
 
 ## Remove
 
-In each project where you used Tenet, ask "help uninstall" before removing the plugin from `chat.pluginLocations`. The residue listing is incomplete. Cleanup removal is disabled in this preview; review any files yourself before deleting them. Optionally remove `.tenet/` yourself after uninstalling; this deletes Tenet's project records. Host uninstall behavior is unobserved. See [docs/user/install-and-remove.md](docs/user/install-and-remove.md).
+In each project where you used Tenet, ask "help uninstall" before removing the plugin from `chat.pluginLocations`. The residue listing is incomplete; review it and the cleanup preview before confirming removal. Tenet removes a run entry only while it still matches the preview; it never removes `.tenet/`. Optionally remove `.tenet/` yourself after uninstalling; this deletes Tenet's project records. Installed-host uninstall and cleanup behavior remain unobserved. See [docs/user/install-and-remove.md](docs/user/install-and-remove.md).
 
 ## Three requests to start with
 

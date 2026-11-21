@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-11-21 — Advance target-A finalization and target-C source completion
+
+- Made the GIT-04 undo fixture independent of the installed Git template, retained the documented `effect-uncertain` process stop outcome when macOS process identity is unsafe, and updated the README contract for enabled cleanup removal. The changes touch the focused kernel tests, root/plugin README files, tuple and uninstall guidance, and the active re-plan.
+- Added a tracked target-A owner checklist for H1, H2 and dogfooding. Current-tree `npm run ci` passes with 2,587 tests, 4 existing skips and 0 failures; built UAT records 158 observations; lint and privacy pass. The source is not committed to hosted CI and installed-host qualification remains owner-run and incomplete.
+- Opened target C from the owner's continuation request. Bounded reconstruction history to 500 commits; completed workload build/freshness, run-bound file output, observed-environment identity and series visibility; added an empty strict model-qualification table and lookup; produced missing alternative-check and build-freshness reasons; kept imported CI external/inconclusive; added stateless feedback preview and the extension RFC process; and reconciled release notes with `specs/re-plan.md`.
+- Recovery after `.tenet/` loss also reads committed decision-record IDs and `@tenet` test tags, reserves their shared-ID sequences and requires a separate confirmation before restoring exact-hash acceptance-test locks. Policy, charter, decision content and review/receipt authority remain unrecovered and undecided.
+- Added a 19-Should proposal register and a target-C finalization checklist. GitHub repository observation records enabled private vulnerability reporting and secret scanning, disabled Dependabot security updates, no protected `main` branch and no release environment. Signing, publisher, host, pilot and owner-approval gates remain open.
+- Repaired duplicate-key admission for valid JSON object names containing escaped quotes and backslashes, with a permanent property-test counterexample and linear string scanner. The full private-record property suite passes.
+- Current source passes `npm run ci` with 2,600 tests, 4 existing skips and 0 failures. The built 801,694-byte bundle has SHA-256 `8d1e76264c2c96353fc6450caaf7aee7810ac8a0b42510113818153f802775cd`; all 158 UAT observations and privacy checks pass. The working tree remains uncommitted and is not exact-head hosted CI or release evidence.
+
 ## 2026-11-20 — Implement the local target-A re-plan on main
 
 - Enabled guarded cleanup and undo removal, added by-ID shared-file integration, policy continuity, stateless request routing, all 16 PRD verdict-table pipeline rows, unique Playwright rerun identities, TDD-03 disclosure, retained-output expiry disclosure, stop/recovery hardening, disk-full effect uncertainty, compaction recovery, pinned integration proof, and state-free doctor failures. The changes touch the kernel adapters/core/verbs/decisions, plugin text, public user guidance, canonical specs, tests and UAT.

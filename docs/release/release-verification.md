@@ -32,7 +32,7 @@ The `gate` job fails the run if any of these is false: the commit is on `main`; 
 1. `node tools/release-notes.ts --write` creates `docs/release/notes/v<version>.md` from repository facts (it will not overwrite an existing file). Add `--base <ref>` to compare with a ref other than the newest `v*` tag. Without a base, every section says so.
 2. For each section, the draft lists changed paths in the usual locations for that item. That is a pointer, not a classification: a change can matter without touching those paths, and a listed path may not change the item. Write a `Statement:` line yourself, including "No change." where that is true.
 3. `node tools/release-notes.ts --check <file>` fails while any section is missing or its statement is empty or still `TODO(release-notes)`. It checks that a statement exists, not that it is correct. A reviewer still reads the notes against the diff.
-4. The facts section copies R1 mapping from `tools/coverage.ts`, compares it with the plan dashboard figure, and lists unchecked boxes of plan sections 9.5 and 4.5 and the known-limits sentence of TS section 18. Re-check these by hand before release: they are only as current as the plan.
+4. The facts section copies R1 mapping from `tools/coverage.ts`, compares it with the `specs/re-plan.md` dashboard figure, and lists active host entries plus unanswered owner-table rows. It also copies the known-limits sentence from the canonical technical spec. Re-check these by hand before release: they are only as current as the plan and source.
 
 ## Installed-payload verification (manual procedure)
 
