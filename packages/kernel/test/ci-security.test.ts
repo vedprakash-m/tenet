@@ -111,11 +111,11 @@ describe("untrusted validation keeps its trust boundary [ENG-10]", () => {
     const groups = uatInventory.groups;
     assert.deepEqual(groups.map((group: { id: string }) => group.id),
       ["core", "effects", "starter", "metadata", "workflow", "accounting", "git-process", "admission"]);
-    assert.equal(groups.reduce((total: number, group: { observations: number }) => total + group.observations, 0), 157);
+    assert.equal(groups.reduce((total: number, group: { observations: number }) => total + group.observations, 0), 158);
     assert.deepEqual(groups.map((group: { start: number }) => group.start),
-      [1, 24, 53, 57, 79, 93, 125, 139]);
+      [1, 24, 53, 57, 79, 94, 126, 140]);
     assert.deepEqual(groups.map((group: { end: number }) => group.end),
-      [23, 52, 56, 78, 92, 124, 138, 157]);
+      [23, 52, 56, 78, 93, 125, 139, 158]);
     assert.equal(uatInventory.cases.length, uatInventory.observations);
     const matrix = untrusted.doc.jobs["bundle-uat"].strategy.matrix;
     assert.deepEqual(matrix.os, ["ubuntu-latest", "macos-latest"]);
