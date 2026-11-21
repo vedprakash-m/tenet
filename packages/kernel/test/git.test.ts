@@ -25,6 +25,13 @@ after(() => dirs.forEach(cleanup));
 const kind = (p: string) => (p.endsWith(".test.ts") ? "test" as const : "source" as const);
 
 describe("git: probe and inventory", () => {
+  it("admits read-only repository identity without running the editing probe [NFR-01]", async () => {
+    const { g, root } = repo();
+    const probe = await g.readOnlyProbe();
+    assert.deepEqual([probe.isRepo, probe.top, probe.branch], [true, root, "main"]);
+    assert.equal(probe.state, "ok");
+  });
+
   it("does not admit or enumerate a source snapshot for read-only opens [NFR-01, CON-09]", async () => {
     const p = project();
     dirs.push(p.root);

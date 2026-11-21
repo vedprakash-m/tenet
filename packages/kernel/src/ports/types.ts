@@ -165,6 +165,8 @@ export interface Git {
   /** The signing-configuration hashes the user consented to; a commit under any other is refused. */
   allowSigning(hashes: readonly string[]): void;
   probe(): Promise<RepoProbe>;
+  /** The bounded repository identity needed for read-only plan/investigate admission. */
+  readOnlyProbe?(): Promise<RepoProbe>;
   /** `volatile` are declared output patterns (EVD-09): untracked paths that match them are omitted, as `exclude` omits paths. */
   inventory(exclude: readonly string[], declaredInputs?: readonly string[], volatile?: readonly string[]): Promise<Inventory>;
   /** The exact starting status needed by `open`, without materializing the full clean index. */

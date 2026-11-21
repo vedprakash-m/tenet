@@ -52,7 +52,7 @@ export async function admitFolder(ports: Ports, input: OpenInput): Promise<void>
     throw new KernelError("capability-missing", why, { exit: 1 });
   }
   if (!isEditingProfile(input.profile) || input.noGit) return;
-  const probe = await ports.git.probe();
+  const probe = await (ports.git.readOnlyProbe?.() ?? ports.git.probe());
   if (probe.isRepo && probe.state === "readonly") throw new KernelError("repo-state-readonly", probe.why);
   if (input.initGit || probe.isRepo) return;
   throw new KernelError("not-a-repository", "choose between starting Git here and a prototype", { questions: [gitInitQuestion(ports)] });
@@ -60,7 +60,7 @@ export async function admitFolder(ports: Ports, input: OpenInput): Promise<void>
 
 /** The repository the contract will use; the folder was admitted before anything was written. */
 async function repository(ports: Ports, input: OpenInput, editing: boolean): Promise<RepoProbe> {
-  let probe = await ports.git.probe();
+  let probe = await (editing ? ports.git.probe() : ports.git.readOnlyProbe?.() ?? ports.git.probe());
   if (editing && !probe.isRepo) {
     if (input.noGit) await ports.git.initShadow();
     else await ports.git.init();

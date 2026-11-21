@@ -1,4 +1,5 @@
 import { withoutGitLocalVars } from "./git-env.ts";
+import { fastReadOnlyProbe } from "./git-readonly-probe.ts";
 import { outputMatcher } from "../core/outputs.ts";
 import { hookInventory, locate, repoLayout } from "./git-layout.ts";
 import { execFile } from "node:child_process";
@@ -290,6 +291,33 @@ export class GitCli {
       isRepo: true, shadow: this.shadow, version, top, head, branch, state, identity, remotes, hooks, signing, layout,
     };
     if (why) probe.why = why;
+    return probe;
+  }
+
+  async readOnlyProbe(): Promise<RepoProbe> {
+    const fast = fastReadOnlyProbe(this.root);
+    if (fast) return fast;
+    const [ver, top, head, branch] = await Promise.all([
+      this.tryOut(["--version"]),
+      this.tryOut(["rev-parse", "--show-toplevel"]),
+      this.tryOut(["rev-parse", "--verify", "-q", "HEAD"]),
+      this.tryOut(["symbolic-ref", "-q", "--short", "HEAD"]),
+    ]);
+    const version = (ver ?? "git not found").replace(/^git version /, "");
+    if (!top) {
+      return {
+        isRepo: false, shadow: false, version, top: null, head: null, branch: null, state: "none",
+        identity: false, remotes: [], hooks: null, signing: null,
+        layout: { shallow: false, submodules: [], lfs: false, linkedWorktree: false },
+      };
+    }
+    const state = head && !branch ? "readonly" : "ok";
+    const probe: RepoProbe = {
+      isRepo: true, shadow: this.shadow, version, top, head, branch, state,
+      identity: false, remotes: [], hooks: null, signing: null,
+      layout: { shallow: false, submodules: [], lfs: false, linkedWorktree: false },
+    };
+    if (state === "readonly") probe.why = "HEAD is detached";
     return probe;
   }
 
