@@ -9,7 +9,7 @@
 - Read-only `open` calls no longer materialize or enumerate the source inventory; they record an explicit unadmitted snapshot and preserve the full exact inventory for editing profiles, restoring the long-history bookkeeping headroom without raising system budgets.
 - Added a 19-Should proposal register and a target-C finalization checklist. GitHub repository observation records enabled private vulnerability reporting and secret scanning, disabled Dependabot security updates, no protected `main` branch and no release environment. Signing, publisher, host, pilot and owner-approval gates remain open.
 - Repaired duplicate-key admission for valid JSON object names containing escaped quotes and backslashes, with a permanent property-test counterexample and linear string scanner. The full private-record property suite passes.
-- Current source passes `npm run ci` with 2,600 tests, 4 existing skips and 0 failures. The built 801,694-byte bundle has SHA-256 `8d1e76264c2c96353fc6450caaf7aee7810ac8a0b42510113818153f802775cd`; all 158 UAT observations and privacy checks pass. The working tree remains uncommitted and is not exact-head hosted CI or release evidence.
+- Current source passes `npm run ci` with 2,602 tests, 4 existing skips and 0 failures. The built 803,804-byte bundle has SHA-256 `f98e8cbd81330078b6742780ed4b40c7517798eff6dd29587771e067007f33e0`; all 158 UAT observations and privacy checks pass. The working tree remains uncommitted and is not exact-head hosted CI or release evidence.
 
 ## 2026-11-20 — Implement the local target-A re-plan on main
 
