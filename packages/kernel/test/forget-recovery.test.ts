@@ -113,7 +113,9 @@ describe("crash-safe lesson forgetting [CON-10]", () => {
       await once(child.stdout!, "data");
       const { p, other, base, input } = await seed("prepared", '"pid"');
       const store = p.ports().store, runDir = store.tempDir("run-forget-scope");
-      const record = JSON.stringify({ prepared: true, pid: child.pid, procStart: procStart(child.pid!) });
+      const record = JSON.stringify({
+        pid: child.pid, procStart: procStart(child.pid!), startedAt: new Date().toISOString(),
+      });
       writeFileSync(join(runDir, "run.json"), record);
       const report = "check output: prepared, with a \"pid\" field";
       writeFileSync(join(runDir, "report.json"), report);

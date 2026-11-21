@@ -1,16 +1,56 @@
 {
   "version": 2,
-  "observations": 157,
-  "discriminatorsSha256": "e299aece7bd9f13abb6179dcb5c6356726e377d2cc94a8b8d2d3ed954039d63c",
+  "observations": 158,
+  "discriminatorsSha256": "d34cea880971f848eecea9d29f8ef2094e66960323229d1e94ab0dba7cbe275e",
   "groups": [
-    { "id": "core", "start": 1, "end": 23, "observations": 23 },
-    { "id": "effects", "start": 24, "end": 52, "observations": 29 },
-    { "id": "starter", "start": 53, "end": 56, "observations": 4 },
-    { "id": "metadata", "start": 57, "end": 78, "observations": 22 },
-    { "id": "workflow", "start": 79, "end": 92, "observations": 14 },
-    { "id": "accounting", "start": 93, "end": 124, "observations": 32 },
-    { "id": "git-process", "start": 125, "end": 138, "observations": 14 },
-    { "id": "admission", "start": 139, "end": 157, "observations": 19 }
+    {
+      "id": "core",
+      "start": 1,
+      "end": 23,
+      "observations": 23
+    },
+    {
+      "id": "effects",
+      "start": 24,
+      "end": 52,
+      "observations": 29
+    },
+    {
+      "id": "starter",
+      "start": 53,
+      "end": 56,
+      "observations": 4
+    },
+    {
+      "id": "metadata",
+      "start": 57,
+      "end": 78,
+      "observations": 22
+    },
+    {
+      "id": "workflow",
+      "start": 79,
+      "end": 93,
+      "observations": 15
+    },
+    {
+      "id": "accounting",
+      "start": 94,
+      "end": 125,
+      "observations": 32
+    },
+    {
+      "id": "git-process",
+      "start": 126,
+      "end": 139,
+      "observations": 14
+    },
+    {
+      "id": "admission",
+      "start": 140,
+      "end": 158,
+      "observations": 19
+    }
   ],
   "cases": [
     {
@@ -347,303 +387,307 @@
       "mode": "fast-forward"
     },
     {
-      "id": "uat-083-c6d8a05d01fe",
+      "id": "uat-083-a8aad8393f9c",
       "scenario": "built preview refuses undo and undo-confirm"
     },
     {
-      "id": "uat-084-76e957c303fa",
+      "id": "uat-084-7ccbc5935d2a",
+      "scenario": "built bundle previews and applies undo"
+    },
+    {
+      "id": "uat-085-76e957c303fa",
       "scenario": "built readiness reprobe after runner version change"
     },
     {
-      "id": "uat-085-3b2acd8519ef",
+      "id": "uat-086-3b2acd8519ef",
       "scenario": "built ignored acceptance and new ignored configuration"
     },
     {
-      "id": "uat-086-9cd1c42d867f",
+      "id": "uat-087-9cd1c42d867f",
       "scenario": "passing unrelated suite without baseline proof"
     },
     {
-      "id": "uat-087-6fe648463f0e",
+      "id": "uat-088-6fe648463f0e",
       "scenario": "built active-chat takeover"
     },
     {
-      "id": "uat-088-1c16b1b82728",
+      "id": "uat-089-1c16b1b82728",
       "scenario": "built abandonment preview, cancel and confirm"
     },
     {
-      "id": "uat-089-939f91b7bbaf",
+      "id": "uat-090-939f91b7bbaf",
       "scenario": "built copied-state quarantine and metadata review"
     },
     {
-      "id": "uat-090-279c84f3a211",
+      "id": "uat-091-279c84f3a211",
       "scenario": "built markerless-state quarantine and fresh-start choice"
     },
     {
-      "id": "uat-091-b0d3238ddccd",
+      "id": "uat-092-b0d3238ddccd",
       "scenario": "built backup recovery conserves real candidate costs"
     },
     {
-      "id": "uat-092-679f967f70c0",
+      "id": "uat-093-679f967f70c0",
       "scenario": "built unknown legacy accounting fences new editing authority"
     },
     {
-      "id": "uat-093-bfaff08f8d63",
+      "id": "uat-094-bfaff08f8d63",
       "scenario": "built pending effect pair after commit result"
     },
     {
-      "id": "uat-094-8a6ecdb6e373",
+      "id": "uat-095-8a6ecdb6e373",
       "scenario": "built pending effect pair after commit:extra result"
     },
     {
-      "id": "uat-095-c1fad0d107a3",
+      "id": "uat-096-c1fad0d107a3",
       "scenario": "built pending effect pair after both result"
     },
     {
-      "id": "uat-096-2fc54d422496",
+      "id": "uat-097-2fc54d422496",
       "scenario": "built unknown effect toString pending dispatch"
     },
     {
-      "id": "uat-097-877c1e7e6794",
+      "id": "uat-098-877c1e7e6794",
       "scenario": "built unknown effect toString completed dispatch"
     },
     {
-      "id": "uat-098-6ba73cc80d93",
+      "id": "uat-099-6ba73cc80d93",
       "scenario": "built unknown effect constructor pending dispatch"
     },
     {
-      "id": "uat-099-9541dbf07417",
+      "id": "uat-100-9541dbf07417",
       "scenario": "built unknown effect constructor completed dispatch"
     },
     {
-      "id": "uat-100-72a774da2587",
+      "id": "uat-101-72a774da2587",
       "scenario": "built unknown effect __proto__ pending dispatch"
     },
     {
-      "id": "uat-101-47e068d86d0d",
+      "id": "uat-102-47e068d86d0d",
       "scenario": "built unknown effect __proto__ completed dispatch"
     },
     {
-      "id": "uat-102-9902db71884a",
+      "id": "uat-103-9902db71884a",
       "scenario": "built unknown effect hasOwnProperty pending dispatch"
     },
     {
-      "id": "uat-103-96ad18164ae7",
+      "id": "uat-104-96ad18164ae7",
       "scenario": "built unknown effect hasOwnProperty completed dispatch"
     },
     {
-      "id": "uat-104-f820909f4304",
+      "id": "uat-105-f820909f4304",
       "scenario": "built unknown effect __defineGetter__ pending dispatch"
     },
     {
-      "id": "uat-105-2957f4fdeae6",
+      "id": "uat-106-2957f4fdeae6",
       "scenario": "built unknown effect __defineGetter__ completed dispatch"
     },
     {
-      "id": "uat-106-86043d4ec857",
+      "id": "uat-107-86043d4ec857",
       "scenario": "built unknown effect future-effect pending dispatch"
     },
     {
-      "id": "uat-107-3ad6dc7a6c20",
+      "id": "uat-108-3ad6dc7a6c20",
       "scenario": "built unknown effect future-effect completed dispatch"
     },
     {
-      "id": "uat-108-64b2e5a1bca6",
+      "id": "uat-109-64b2e5a1bca6",
       "scenario": "built backup checkpoint in-flight retry"
     },
     {
-      "id": "uat-109-39d3a26ea2d1",
+      "id": "uat-110-39d3a26ea2d1",
       "scenario": "built backup checkpoint completeness retry"
     },
     {
-      "id": "uat-110-03696d751f59",
+      "id": "uat-111-03696d751f59",
       "scenario": "built backup checkpoint budget retry"
     },
     {
-      "id": "uat-111-b856cdc444f2",
+      "id": "uat-112-b856cdc444f2",
       "scenario": "built backup checkpoint sequence retry"
     },
     {
-      "id": "uat-112-aa991f0ce8ef",
+      "id": "uat-113-aa991f0ce8ef",
       "scenario": "built backup checkpoint identical retry"
     },
     {
-      "id": "uat-113-aaa21d8657a8",
+      "id": "uat-114-aaa21d8657a8",
       "scenario": "built backup checkpoint budget-progress retry"
     },
     {
-      "id": "uat-114-1994112ec64a",
+      "id": "uat-115-1994112ec64a",
       "scenario": "built backup checkpoint sequence-progress retry"
     },
     {
-      "id": "uat-115-53c2e885bf8f",
+      "id": "uat-116-53c2e885bf8f",
       "scenario": "built atomic project write predictable-temp-link"
     },
     {
-      "id": "uat-116-2e3dcd3ae36a",
+      "id": "uat-117-2e3dcd3ae36a",
       "scenario": "built atomic project write after-temp-fsync"
     },
     {
-      "id": "uat-117-b0534dc89ce4",
+      "id": "uat-118-b0534dc89ce4",
       "scenario": "built atomic project write after-publish"
     },
     {
-      "id": "uat-118-5ad07eb13c57",
+      "id": "uat-119-5ad07eb13c57",
       "scenario": "built atomic project write after-dir-fsync"
     },
     {
-      "id": "uat-119-127070611acf",
+      "id": "uat-120-127070611acf",
       "scenario": "built unreadable adoption remains uncertain through stop"
     },
     {
-      "id": "uat-120-37129a6489c8",
+      "id": "uat-121-37129a6489c8",
       "scenario": "built secret alias is refused before adoption preview"
     },
     {
-      "id": "uat-121-fe944b6d2f83",
+      "id": "uat-122-fe944b6d2f83",
       "scenario": "built stop preserves interrupted scaffold under tighter policy"
     },
     {
-      "id": "uat-122-2b282166787e",
+      "id": "uat-123-2b282166787e",
       "scenario": "built stop preserves interrupted scaffold under tighter adopted policy"
     },
     {
-      "id": "uat-123-d933c6c9f83c",
+      "id": "uat-124-d933c6c9f83c",
       "scenario": "built contradictory lint child cannot produce a passing receipt"
     },
     {
-      "id": "uat-124-3c70e975be2c",
+      "id": "uat-125-3c70e975be2c",
       "scenario": "built named static configuration refuses substitution"
     },
     {
-      "id": "uat-125-4cd4c7f9830a",
+      "id": "uat-126-4cd4c7f9830a",
       "scenario": "built default checkout-hook admission"
     },
     {
-      "id": "uat-126-c3d8a1fa26c6",
+      "id": "uat-127-c3d8a1fa26c6",
       "scenario": "built configured checkout-hook admission"
     },
     {
-      "id": "uat-127-853fe801396a",
+      "id": "uat-128-853fe801396a",
       "scenario": "built index recovery before-lock"
     },
     {
-      "id": "uat-128-ab5e616283ee",
+      "id": "uat-129-ab5e616283ee",
       "scenario": "built index recovery after-lock"
     },
     {
-      "id": "uat-129-4fafd4bc2370",
+      "id": "uat-130-4fafd4bc2370",
       "scenario": "built index recovery before-rename"
     },
     {
-      "id": "uat-130-89820b67dea6",
+      "id": "uat-131-89820b67dea6",
       "scenario": "built index recovery after-rename"
     },
     {
-      "id": "uat-131-ee1cca958aaa",
+      "id": "uat-132-ee1cca958aaa",
       "scenario": "built index recovery manual-after-lock"
     },
     {
-      "id": "uat-132-f47e83bfc3c2",
+      "id": "uat-133-f47e83bfc3c2",
       "scenario": "built index recovery failed-directory-sync"
     },
     {
-      "id": "uat-133-ccf1bcb5888d",
+      "id": "uat-134-ccf1bcb5888d",
       "scenario": "user-level Git LFS filter configuration"
     },
     {
-      "id": "uat-134-13b15e3ca977",
+      "id": "uat-135-13b15e3ca977",
       "scenario": "built guarded filter pass"
     },
     {
-      "id": "uat-135-d7b17eabd236",
+      "id": "uat-136-d7b17eabd236",
       "scenario": "built guarded filter transform"
     },
     {
-      "id": "uat-136-8896d6fcac29",
+      "id": "uat-137-8896d6fcac29",
       "scenario": "built guarded filter mutate"
     },
     {
-      "id": "uat-137-c7a8095ea2ec",
+      "id": "uat-138-c7a8095ea2ec",
       "scenario": "built guarded filter stop"
     },
     {
-      "id": "uat-138-32f67b163c9c",
+      "id": "uat-139-32f67b163c9c",
       "scenario": "built guarded filter killed"
     },
     {
-      "id": "uat-139-9e99a687f441",
+      "id": "uat-140-9e99a687f441",
       "scenario": "built stateless doctor honors metadata exclusions"
     },
     {
-      "id": "uat-140-7f1649314e82",
+      "id": "uat-141-7f1649314e82",
       "scenario": "built conflicting required definitions refuse before launch"
     },
     {
-      "id": "uat-141-5173b2971d88",
+      "id": "uat-142-5173b2971d88",
       "scenario": "built TypeScript default population"
     },
     {
-      "id": "uat-142-bd95fdc5ca92",
+      "id": "uat-143-bd95fdc5ca92",
       "scenario": "built TypeScript ignored-input population"
     },
     {
-      "id": "uat-143-ef9630fb85f2",
+      "id": "uat-144-ef9630fb85f2",
       "scenario": "built TypeScript references population"
     },
     {
-      "id": "uat-144-bd96a064b620",
+      "id": "uat-145-bd96a064b620",
       "scenario": "built synthetic compiler unsupported version"
     },
     {
-      "id": "uat-145-3df254fb712a",
+      "id": "uat-146-3df254fb712a",
       "scenario": "built synthetic compiler truncated valid prefix"
     },
     {
-      "id": "uat-146-df39de32fb63",
+      "id": "uat-147-df39de32fb63",
       "scenario": "built private artifact fifo write admission"
     },
     {
-      "id": "uat-147-e3b1f1a713f8",
+      "id": "uat-148-e3b1f1a713f8",
       "scenario": "built private artifact fifo-reader write admission"
     },
     {
-      "id": "uat-148-23c316a43a98",
+      "id": "uat-149-23c316a43a98",
       "scenario": "built private artifact directory write admission"
     },
     {
-      "id": "uat-149-14255227cbc2",
+      "id": "uat-150-14255227cbc2",
       "scenario": "built private artifact link write admission"
     },
     {
-      "id": "uat-150-3c78585c2f39",
+      "id": "uat-151-3c78585c2f39",
       "scenario": "built private artifact regular write admission"
     },
     {
-      "id": "uat-151-1facd52808bd",
+      "id": "uat-152-1facd52808bd",
       "scenario": "built synthetic Vitest report stable admission"
     },
     {
-      "id": "uat-152-03dbe6f18b50",
+      "id": "uat-153-03dbe6f18b50",
       "scenario": "built synthetic Vitest report invalid-utf8 admission"
     },
     {
-      "id": "uat-153-aefed17d1407",
+      "id": "uat-154-aefed17d1407",
       "scenario": "built synthetic Vitest report overwrite-json admission"
     },
     {
-      "id": "uat-154-9d54b62ecbc9",
+      "id": "uat-155-9d54b62ecbc9",
       "scenario": "built synthetic Vitest report replace-fifo admission"
     },
     {
-      "id": "uat-155-54f7c69bd7f8",
+      "id": "uat-156-54f7c69bd7f8",
       "scenario": "built synthetic Vitest report replace-directory admission"
     },
     {
-      "id": "uat-156-8a2f5fc16712",
+      "id": "uat-157-8a2f5fc16712",
       "scenario": "built synthetic Vitest report replace-link admission"
     },
     {
-      "id": "uat-157-d967dfaae6b6",
+      "id": "uat-158-d967dfaae6b6",
       "scenario": "symlinked state directory"
     }
   ]
