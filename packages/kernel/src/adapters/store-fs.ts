@@ -753,7 +753,7 @@ export class FsStore implements Store {
     const staged = stagedRunGrowth(context);
     if (!staged.paths.length) return;
     const protection = this.journalProtection(staged.paths);
-    const cap = this.capRunFiles([...protection.protectedPaths], staged.bytes);
+    const cap = this.capRuns([...protection.protectedPaths], staged.bytes);
     if (cap.accounting !== "known") {
       throw new KernelError("storage-accounting-unknown", "project run accounting changed before artifact publication");
     }
@@ -769,7 +769,7 @@ export class FsStore implements Store {
       const context = this.writes.getStore();
       const staged = stagedRunGrowth(context, { kind: "artifact", path, content });
       const protection = this.journalProtection(staged.paths);
-      const admission = this.capRunFiles(
+      const admission = this.capRuns(
         [...protection.protectedPaths],
         staged.bytes,
       );
@@ -1074,12 +1074,7 @@ export class FsStore implements Store {
     throw new KernelError("storage-accounting-unknown",
       "the journal holds a record this kernel cannot account for; it was left untouched");
   }
-  private capRunFiles(keep: readonly string[], additionalBytes = 0): {
-    message?: string; overCap: boolean; largest: number;
-    remove: Array<{ path: string; identity: string }>;
-    scopes: Array<{ path: string; identity: string }>;
-    accounting: "known" | "unknown" | "changed";
-  } {
+  private capRuns(keep: readonly string[], add = 0, age = 0) {
     let scopes: Array<{ path: string; identity: string }>;
     try { scopes = this.runScopeSnapshot(); }
     catch { return { overCap: false, largest: 0, remove: [], scopes: [], accounting: "unknown" }; }
@@ -1100,15 +1095,15 @@ export class FsStore implements Store {
     const entries = measured.map((entry) => ({
       path: entry.path, bytes: entry.bytes, identity: entry.identity, at: entry.newestAt,
     })).sort((a, b) => a.at - b.at);
-    let total = entries.reduce((n, e) => n + e.bytes, 0) + additionalBytes;
+    let total = entries.reduce((n, e) => n + e.bytes, 0) + add;
     const cap = this.opts.runFileCapBytes ?? 200 * 1024 * 1024;
-    const protectedPath = (path: string) => keep.some((k) =>
+    const kept = (path: string) => keep.some((k) =>
       k === path || k.startsWith(`${path}${sep}`) || path.startsWith(`${k}${sep}`)
     );
     const remove: typeof entries = [];
     for (const e of entries) {
       if (total <= cap) break;
-      if (protectedPath(e.path)) continue;
+      if (kept(e.path)) continue;
       remove.push(e); total -= e.bytes;
     }
     if (total > cap) return {
@@ -1118,6 +1113,9 @@ export class FsStore implements Store {
       scopes,
       accounting: "known",
     };
+    const aged = age > 0
+      ? entries.filter((entry) => !kept(entry.path) && Date.now() - entry.at > age)
+      : [];
     return {
       ...(remove.length ? {
         message: `Removed ${remove.length} old run folder(s): run files were over their cap.`,
@@ -1125,6 +1123,7 @@ export class FsStore implements Store {
       overCap: false,
       largest: entries.reduce((n, e) => Math.max(n, e.bytes), 0),
       remove: remove.map((e) => ({ path: e.path, identity: e.identity })),
+      aged: aged.map((e) => ({ path: e.path, identity: e.identity })),
       scopes,
       accounting: "known",
     };
@@ -1147,7 +1146,7 @@ export class FsStore implements Store {
   private evictInLock(keep: readonly string[], apply = true): EvictReport {
     const staged = stagedRunGrowth(this.writes.getStore());
     const protection = this.journalProtection([...keep, ...staged.paths]);
-    const cap = this.capRunFiles([...protection.protectedPaths], staged.bytes);
+    const cap = this.capRuns([...protection.protectedPaths], staged.bytes, 24 * 3600_000);
     const projectedReduction = this.projectedReduction(Date.parse(this.clock.now()), protection);
     const { classes, accounting: classAccounting } = this.storeFootprint();
     const total = classes.reduce((n, c) => n + c.bytes, 0);
@@ -1222,27 +1221,27 @@ export class FsStore implements Store {
     return this.applyCapRemoval(cap, reduction, overCeiling, classes);
   }
   private applyCapRemoval(
-    cap: ReturnType<FsStore["capRunFiles"]>, reduction: string | undefined,
+    cap: ReturnType<FsStore["capRuns"]>, reduction: string | undefined,
     overCeiling: boolean, classes: Array<{ name: string; bytes: number }>,
   ): EvictReport {
-    const expired = cap.remove.map((planned) => planned.path);
-    this.recordExpiredEvidence(expired);
-    for (const path of expired) rmSync(path, { recursive: true, force: true });
-    const notes = [reduction, cap.message].filter((x): x is string => !!x);
+    const gone = [...new Set([...cap.remove, ...("aged" in cap ? cap.aged : [])].map((p) => p.path))];
+    this.recordExpiredEvidence(gone);
+    for (const path of gone) rmSync(path, { recursive: true, force: true });
+    const notes = [reduction, "message" in cap ? cap.message : undefined].filter((x): x is string => !!x);
     return {
       ...(notes.length ? { message: notes.join(" ") } : {}),
-      ...(expired.length ? { expired } : {}), overCeiling, largest: classes.slice(0, 3),
+      ...(gone.length ? { expired: gone } : {}), overCeiling, largest: classes.slice(0, 3),
     };
   }
   private changedRunCleanup(
-    cap: ReturnType<FsStore["capRunFiles"]>,
+    cap: ReturnType<FsStore["capRuns"]>,
     reduction: string | undefined,
     overCeiling: boolean,
     classes: Array<{ name: string; bytes: number }>,
   ): EvictReport | undefined {
     try {
       this.assertRunScopeUnchanged(cap.scopes);
-      this.assertCandidatesUnchanged(cap.remove);
+      this.assertCandidatesUnchanged([...cap.remove, ...("aged" in cap ? cap.aged : [])]);
       return undefined;
     } catch (error) {
       if (!(error instanceof KernelError && error.reasons[0]?.code === "storage-accounting-unknown")) throw error;

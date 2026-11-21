@@ -105,30 +105,6 @@ function enforceStorage(
       },
     });
   }
-  if (apply && !report.uncertain?.length) {
-    try {
-      const swept = ports.store.sweepTempDetailed
-        ? ports.store.sweepTempDetailed(24 * 3600_000, keep)
-        : { count: ports.store.sweepTemp(24 * 3600_000, keep), paths: [] };
-      if (swept.count) {
-        const message = `Removed ${swept.count} old run folder(s) past the age limit.`;
-        return {
-          ...report, expired: [...new Set([...(report.expired ?? []), ...swept.paths])],
-          message: [report.message, message].filter(Boolean).join(" "),
-        };
-      }
-    } catch {
-      throw new KernelError("storage-accounting-unknown",
-        "Age cleanup could not finish safely; dependent work was not published.",
-        {
-          exit: 2,
-          effects: {
-            completed: report.message ? [report.message] : [],
-            uncertain: ["Age cleanup stopped after an incomplete measurement or changed run scope."],
-          },
-        });
-    }
-  }
   return report;
 }
 const needsStoragePreflight = (verb: Verb, input: Input) =>
