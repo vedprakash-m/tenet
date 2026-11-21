@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-21 — Give the README a professional layout
+
+- `README.md` now opens with a centered title, tagline, status badges and a navigation row, a warning callout, a with-and-without comparison table and a loop diagram (`docs/assets/loop.svg`). Long evidence, support-matrix and evaluation-tool text moved into collapsible sections. No required statement was removed; the readme tests pass unchanged. The Quick start anchor is now `#quick-start`.
+
 ## 2026-11-21 — Align the install guide with the README and check the public download
 
 - `docs/user/install-and-remove.md` now states the VS Code 1.142 minimum, the Git name/email and repository prerequisites, and no longer calls the install path undecided. Downloaded the published v0.1.0 tarball and checksum from GitHub into an empty folder, verified `OK`, extracted it and ran the kernel's `inspect --view help`; the raw README on `main` serves the new Quick start.
