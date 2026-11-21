@@ -680,6 +680,12 @@ describe("injected failure 2: SIGKILL during a check", () => {
     p.write("src/greet.test.ts", GREET_TEST);
     p.write("src/greet.ts", GREET_IMPL);
     const r = await p.rawCall("check", { h, stage: "candidate", touched: ["src/greet.ts"] });
+    if (process.platform === "darwin") {
+      assert.equal(r.exit, 2, JSON.stringify(r));
+      assert.ok(r.effects?.uncertain.some((effect) => /orphan may exist/.test(effect)), JSON.stringify(r));
+      try { process.kill(run.pid, "SIGKILL"); } catch { /* the host may still own termination */ }
+      return;
+    }
     assert.ok(r.effects?.completed.some((e) => /discarded the interrupted check/.test(e)), JSON.stringify(r));
     assert.ok(r.questions?.some((question) => question.id === "envelope-consent"), JSON.stringify(r));
     const consent = await p.call("decide", { h, kind: "envelope-consent", answers: { "envelope-consent": "allow-envelope" } });

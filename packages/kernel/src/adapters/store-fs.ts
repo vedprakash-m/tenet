@@ -1215,29 +1215,31 @@ export class FsStore implements Store {
     }
     this.assertRunScopeUnchanged(cap.scopes);
     if (!apply) return { overCeiling, largest: classes.slice(0, 3) };
-    const reduction = this.reduceLog(Date.parse(this.clock.now()), protection);
-    const changed = this.changedCleanup(cap, reduction, overCeiling, classes);
+    const red = this.reduceLog(Date.parse(this.clock.now()), protection);
+    const changed = cap.remove.length || ("aged" in cap && cap.aged.length)
+      ? this.changedCleanup(cap, red, overCeiling, classes)
+      : undefined;
     if (changed) return changed;
-    return this.applyCap(cap, reduction, overCeiling, classes);
+    return this.applyCap(cap, red, overCeiling, classes);
   }
   private applyCap(
-    cap: ReturnType<FsStore["capRuns"]>, reduction: string | undefined,
-    overCeiling: boolean, classes: Array<{ name: string; bytes: number }>,
+    cap: ReturnType<FsStore["capRuns"]>, red: string | undefined,
+    over: boolean, cs: Array<{ name: string; bytes: number }>,
   ): EvictReport {
     const gone = [...new Set([...cap.remove, ...("aged" in cap ? cap.aged : [])].map((p) => p.path))];
     this.recordExpiredEvidence(gone);
     for (const path of gone) rmSync(path, { recursive: true, force: true });
-    const notes = [reduction, "message" in cap ? cap.message : undefined].filter((x): x is string => !!x);
+    const notes = [red, "message" in cap ? cap.message : undefined].filter((x): x is string => !!x);
     return {
       ...(notes.length ? { message: notes.join(" ") } : {}),
-      ...(gone.length ? { expired: gone } : {}), overCeiling, largest: classes.slice(0, 3),
+      ...(gone.length ? { expired: gone } : {}), overCeiling: over, largest: cs.slice(0, 3),
     };
   }
   private changedCleanup(
     cap: ReturnType<FsStore["capRuns"]>,
-    reduction: string | undefined,
-    overCeiling: boolean,
-    classes: Array<{ name: string; bytes: number }>,
+    red: string | undefined,
+    over: boolean,
+    cs: Array<{ name: string; bytes: number }>,
   ): EvictReport | undefined {
     try {
       this.assertRunScopeUnchanged(cap.scopes);
@@ -1246,14 +1248,14 @@ export class FsStore implements Store {
     } catch (error) {
       if (!(error instanceof KernelError && error.reasons[0]?.code === "storage-accounting-unknown")) throw error;
       return {
-        ...(reduction ? { message: reduction } : {}),
+        ...(red ? { message: red } : {}),
         uncertain: ["Journal reduction completed; project run scope changed, so no run folder was removed."],
         refusal: {
           code: "storage-accounting-unknown",
           message: "Run-file accounting changed during cleanup; dependent work was not published.",
         },
-        overCeiling,
-        largest: classes.slice(0, 3),
+        overCeiling: over,
+        largest: cs.slice(0, 3),
       };
     }
   }
