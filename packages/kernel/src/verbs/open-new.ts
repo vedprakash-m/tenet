@@ -111,7 +111,12 @@ async function draft(c: Ctx, probe: RepoProbe, level: Level) {
   const prefs = settingsFor(ports, state);
   const protectedPaths = [...new Set([...(input.protectedPaths ?? []), ...(prefs.protected_paths as string[])])];
   const { assessment, floor, lane, clamped } = lanePlan(c, scope, protectedPaths, prefs);
-  const inv = probe.isRepo ? await (ports.git.openInventory?.() ?? ports.git.inventory([])) : null;
+  const inv = probe.isRepo
+    ? await (isEditingProfile(input.profile)
+      ? ports.git.openInventory?.() ?? ports.git.inventory([])
+      : ports.git.readOnlyInventory?.(probe.head, probe.branch) ??
+        ports.git.openInventory?.() ?? ports.git.inventory([]))
+    : null;
   const start = inv ? snapshotOf(inv) : { head: null, branch: null, staged: [], dirty: [] };
   const w = newContract({
     id: workId(ports.rand),
