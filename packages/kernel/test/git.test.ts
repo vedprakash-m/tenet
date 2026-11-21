@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import { GitCli, gitBlob } from "../src/adapters/git-cli.ts";
 import type { RunSpec, Runner } from "../src/ports/types.ts";
 import { cleanup, git, initRepo, tmp, write } from "./helpers.ts";
+import { project } from "./support/fixture.ts";
 
 const dirs: string[] = [];
 function repo() {
@@ -24,6 +25,19 @@ after(() => dirs.forEach(cleanup));
 const kind = (p: string) => (p.endsWith(".test.ts") ? "test" as const : "source" as const);
 
 describe("git: probe and inventory", () => {
+  it("does not admit or enumerate a source snapshot for read-only opens [NFR-01, CON-09]", async () => {
+    const p = project();
+    dirs.push(p.root);
+    p.write("src/greet.ts", "human edit\n");
+    const opened = await p.call("open", { profile: "investigate", request: "read only" });
+    assert.equal(opened.exit, 0, JSON.stringify(opened));
+    const state = p.ports().store.read()!.state;
+    const work = Object.values(state.work)[0]!;
+    assert.equal(work.git.start.admitted, false);
+    assert.deepEqual([work.git.start.staged, work.git.start.dirty], [[], []]);
+    assert.equal(state.sourceOwner, undefined);
+  });
+
   it("returns the same start snapshot without materializing the clean index", async () => {
     const { g, root } = repo();
     assert.deepEqual(snapshotOf(await g.openInventory()), snapshotOf(await g.inventory([])));

@@ -169,8 +169,6 @@ export interface Git {
   inventory(exclude: readonly string[], declaredInputs?: readonly string[], volatile?: readonly string[]): Promise<Inventory>;
   /** The exact starting status needed by `open`, without materializing the full clean index. */
   openInventory?(): Promise<Inventory>;
-  /** Read-only open uses exact status without enumerating unchanged tracked files. */
-  readOnlyInventory?(head: string | null, branch: string | null): Promise<Inventory>;
   /** Working-tree changes of `paths` against `base` as hunks of added and removed lines. */
   changes(base: string | null, paths: readonly string[], classify: (p: string) => FileChange["kind"]): Promise<FileChange[]>;
   /** Program-neutral tree of exactly these paths, logged before the guarded commit job for recovery. */

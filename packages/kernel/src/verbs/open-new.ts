@@ -111,13 +111,12 @@ async function draft(c: Ctx, probe: RepoProbe, level: Level) {
   const prefs = settingsFor(ports, state);
   const protectedPaths = [...new Set([...(input.protectedPaths ?? []), ...(prefs.protected_paths as string[])])];
   const { assessment, floor, lane, clamped } = lanePlan(c, scope, protectedPaths, prefs);
-  const inv = probe.isRepo
-    ? await (isEditingProfile(input.profile)
-      ? ports.git.openInventory?.() ?? ports.git.inventory([])
-      : ports.git.readOnlyInventory?.(probe.head, probe.branch) ??
-        ports.git.openInventory?.() ?? ports.git.inventory([]))
+  const inv = probe.isRepo && isEditingProfile(input.profile)
+    ? await (ports.git.openInventory?.() ?? ports.git.inventory([]))
     : null;
-  const start = inv ? snapshotOf(inv) : { head: null, branch: null, staged: [], dirty: [] };
+  const start = inv
+    ? snapshotOf(inv)
+    : { head: probe.head, branch: probe.branch, staged: [], dirty: [], admitted: false };
   const w = newContract({
     id: workId(ports.rand),
     label: workLabel(state.workSeq + 1),
@@ -165,12 +164,10 @@ function claim(state: State, itemId: string, work: string): State {
   const plan = intent.plan.map((i) => (i.id === itemId ? { ...i, state: "in-progress" as const, work } : i));
   return { ...state, project: { ...state.project, intent: { ...intent, plan } } };
 }
-
 const filtersNote = (names: string[]) =>
   reason("filters-not-run", `${names.join(", ")}: I read these files without running the filter, and ask before a commit that would`, {
     note: true,
   });
-
 /** The layouts that narrow what Tenet promises, named once at open (GIT-13). */
 function layoutNotes(probe: RepoProbe) {
   const l = probe.layout;
@@ -181,7 +178,6 @@ function layoutNotes(probe: RepoProbe) {
     ...(l.linkedWorktree ? [reason("repo-linked-worktree", undefined, { note: true })] : []),
   ];
 }
-
 function dirtyPending(
   ports: Ports, state: State, w: WorkContract, inv: Awaited<ReturnType<Ports["git"]["inventory"]>> | null,
 ): State {
@@ -195,7 +191,6 @@ function dirtyPending(
     ],
   };
 }
-
 export async function created(c: Ctx): Promise<Plan> {
   const { ports, input } = c;
   if (input.profile === "prototype") {

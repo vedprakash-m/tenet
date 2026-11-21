@@ -292,6 +292,7 @@ export const AccountingCheckpoint = z.strictObject({
 
 export const StartSnapshot = z.object({
   head: z.string().nullable(), branch: z.string().nullable(),
+  admitted: z.boolean().optional(),
   staged: z.array(z.object({ path: z.string(), mode: z.string(), blob: z.string() })),
   dirty: z.array(z.object({
     path: z.string(), status: z.string(), mode: z.string(), blob: z.string().optional(),

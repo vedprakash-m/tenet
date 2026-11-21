@@ -386,14 +386,6 @@ export class GitCli {
     return { head, branch, entries, status, digest: this.digestOf(entries) };
   }
 
-  async readOnlyInventory(head: string | null, branch: string | null): Promise<Inventory> {
-    const status = await this.parseStatus(isKernelFile, []);
-    const entries = new Map(status.map((entry) => [entry.path, {
-      path: entry.path, mode: entry.mode, blob: entry.blob,
-    }]));
-    return { head, branch, entries, status, digest: this.digestOf(entries) };
-  }
-
   async inventory(
     exclude: readonly string[] = [],
     declaredInputs: readonly string[] = [],
