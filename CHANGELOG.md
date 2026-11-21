@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-21 — Remove adoption friction from the README and issue forms
+
+- Cold-ran the v0.1.0 tarball on scratch repositories and fixed what a newcomer would hit: stated a minimum VS Code (1.142, the lowest observed) and the Git name/email and repository prerequisites; added a no-VS-Code kernel check, a command that prints the settings line, a plain-language preflight over `inspect --view doctor`, a table that picks a first request by what the reader has, honest time/cost and control notes, and a longer troubleshooting list. Added an install-help issue form and a security contact link. Release notes now point at the Quick start. Nothing was run in a clean VS Code profile.
+
 ## 2026-11-21 — Rewrite the README around a five-minute quick start
 
 - `README.md` now opens with what Tenet does, a preview warning, and a quick start that installs the v0.1.0 tarball (download, checksum, unpack, two VS Code settings, `/tenet help`), then the three starter requests, what to expect and a troubleshooting list. The safety, permission, policy, support-matrix and removal sections are kept below. Stale statements that no release or checksum exists were corrected; `docs/user/install-and-remove.md` gained the tarball route. The `chat.plugins.enabled` and `chat.pluginLocations` settings were read from a real VS Code configuration, not from a recorded install test.

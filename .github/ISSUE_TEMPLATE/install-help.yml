@@ -1,0 +1,36 @@
+name: Install help
+description: Stuck installing Tenet or getting `/tenet` to appear? Tell us where it stopped and we will fix the steps.
+title: "Install help: "
+labels: ["install-help"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste code, secrets, tokens or personal paths. Replace your home folder with `~`.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: VS Code version, operating system, `node --version`, `git --version`.
+    validations:
+      required: true
+  - type: dropdown
+    id: step
+    attributes:
+      label: Where did it stop?
+      options:
+        - Step 1, download or checksum
+        - Step 1, "kernel runs" check
+        - Step 2, VS Code settings
+        - Step 3, `/tenet` is not offered or `/tenet help` fails
+        - A first request (review, fix or new app)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: saw
+    attributes:
+      label: What you saw
+      description: The exact message or behavior. If you can, include the output of the preflight command from "If something does not work" in the README.
+    validations:
+      required: true

@@ -9,9 +9,13 @@ Tenet is a plugin for GitHub Copilot in VS Code. You type `/tenet` and what you 
 
 ## Quick start (about 5 minutes)
 
-**You need:** VS Code with GitHub Copilot Chat in agent mode, [Node.js](https://nodejs.org) 22.12 or newer, and Git. Check with `node --version` and `git --version`. macOS or Linux; on Windows Tenet only reads and reviews.
+**You need**
+- **VS Code 1.142 or newer**, signed in to GitHub Copilot, with Copilot Chat in **Agent** mode. Plugins were observed working on 1.142.0 and 1.143.0; newer versions are unobserved. An older VS Code will not offer `/tenet`.
+- **A Copilot plan and organization policy that allow agent mode, plugins and subagents.** Work and school accounts often do not. You will find out in step 3; see [If something does not work](#if-something-does-not-work).
+- **[Node.js](https://nodejs.org) 22.12 or newer** and **Git** with your name and email set (`git config --global user.name` and `user.email`). Check: `node --version`, `git --version`.
+- **macOS or Linux.** On Windows, Tenet only reads and reviews; every command that changes anything is refused.
 
-**1. Download and unpack the plugin.** No build step.
+**1. Download and unpack the plugin.** No build step. In a terminal:
 
 ```bash
 mkdir -p ~/tenet-plugin && cd ~/tenet-plugin
@@ -21,44 +25,63 @@ shasum -a 256 -c tenet-plugin-v0.1.0.tgz.sha256   # on Linux: sha256sum -c tenet
 mkdir plugin && tar -xzf tenet-plugin-v0.1.0.tgz -C plugin
 ```
 
-The check should print `OK`. If it does not, stop and re-download.
+The check must print `tenet-plugin-v0.1.0.tgz: OK`. If it does not, stop and download again. (No `curl`? Download the two files from the [release page](https://github.com/vedprakash-m/tenet/releases/tag/v0.1.0) into `~/tenet-plugin` and run the last two lines.)
 
-**2. Tell VS Code where the plugin is.** Open your user `settings.json` (Command Palette, then "Preferences: Open User Settings (JSON)") and add these two settings, using the full path to the `plugin` folder you just made (run `cd plugin && pwd` to print it):
+Now confirm the plugin's program runs on your machine, before involving VS Code:
+
+```bash
+node plugin/kernel/tenet.mjs inspect --view help | head -c 120
+```
+
+You should see JSON starting with `{"version":"0.1.0-m0"`. If you see an error instead, your Node is too old or missing; fix that first.
+
+**2. Tell VS Code where the plugin is.** Print the line you need:
+
+```bash
+echo "\"$(pwd)/plugin\": true"
+```
+
+Open your user `settings.json` (Command Palette, then "Preferences: Open User Settings (JSON)") and add the two settings below, pasting that line where the path goes:
 
 ```json
 "chat.plugins.enabled": true,
 "chat.pluginLocations": {
-  "/full/path/to/tenet-plugin/plugin": true
+  "/path/printed/above/plugin": true
 }
 ```
 
-If you already have `chat.pluginLocations`, add the new line inside it. Reload the VS Code window.
+If you already have `chat.pluginLocations`, add the new line inside it instead of a second copy. Then run "Developer: Reload Window".
 
-**3. Say hello.** Open a project folder, open Copilot Chat, switch to **Agent** mode and send:
+**3. Say hello.** Open a project folder in VS Code, open Copilot Chat, switch to **Agent** mode and send:
 
 ```text
 /tenet help
 ```
 
-Tenet answers from its local program and starts no work. The first time, VS Code asks you to approve a terminal command; choosing "Allow in this Session" covers the rest of the session. If `/tenet` is not offered, see [If something does not work](#if-something-does-not-work).
+Tenet answers from its local program, with its version and what it can do, and starts no work. The first time, VS Code asks you to approve a terminal command; choose "Allow in this Session" and it will not ask again this session. You are set up. If `/tenet` is not offered, see [If something does not work](#if-something-does-not-work).
 
 ## Three requests to start with
 
-In Copilot Chat, agent mode:
+Pick the row that matches what you have. Everything else about a task can be said in plain words after `/tenet`.
 
-1. **A new app.** `/tenet build a small API for tracking reminders, with sign-in`. Use an empty folder or a new Git repository.
-2. **A bug fix.** `/tenet fix: saving a reminder with an empty title returns a server error, and it should say the title is required`
-3. **A review.** `/tenet-review review my uncommitted changes` (read-only: it changes nothing in your project; its review file is written to the system temp folder. Only uncommitted changes against `HEAD` can be reviewed today.)
+| You have | Try this | Changes your files? |
+|---|---|---|
+| Any Git project, and you want a low-risk first look | `/tenet-review review my uncommitted changes` (make a small edit first so there is something to review) | **No.** Read-only; its review file goes to the system temp folder. Only uncommitted changes against `HEAD` can be reviewed today. |
+| A TypeScript or JavaScript project with Vitest, on a branch you can throw away | `/tenet fix: saving a reminder with an empty title returns a server error, and it should say the title is required` (use your own bug) | Yes, on a work branch; it commits only files it wrote. |
+| An empty folder | `/tenet build a small API for tracking reminders, with sign-in` | Yes. Tenet offers its starter (TypeScript API with tests in place), asks how to set up Git, and needs the network to install packages. |
 
-More on each: [docs/user/starter-requests.md](docs/user/starter-requests.md). Never run anything yet? Start with number 3 on a project you already have: it cannot change your files.
+[docs/user/starter-requests.md](docs/user/starter-requests.md) walks through each. Not sure? Start with the review: it cannot change your files, so it is the cheapest way to see how Tenet talks and what a finding looks like.
 
-## What to expect
+## What to expect, and how long it takes
 
-- Tenet states how careful it will be for this task, and asks only what it cannot decide itself.
+- Tenet states how careful it will be for this task, and asks only what it cannot decide itself. Expect a few questions at the start of a change.
 - For a change it writes down examples and rules, then asks you to confirm or correct any examples or assumptions it added.
 - A failing test comes first. Your tests, types and lint then run through the kernel; each result is tied to the exact files it ran against, and a later edit makes it stale.
 - A reviewer subagent reads the change and reports findings, each with a severity.
-- The report ends with one outcome. `checked-local` means the required checks and review passed on your machine; it is not owner acceptance and not production readiness. The others (`implemented-unverified`, `prototype`, `findings-only`, `blocked`) say what was missing.
+- The report ends with one outcome. `checked-local` means the required checks and review passed on your machine; it is not owner acceptance and not production readiness. The others (`implemented-unverified`, `prototype`, `findings-only`, `blocked`) say what was missing. A project without Vitest ends at `implemented-unverified`; that is the honest label for "built, not fully checked", not an error.
+- **Time and cost are unmeasured.** A change is several steps, each using Copilot requests, so a small fix takes longer and uses more requests than asking Copilot directly. No one has recorded typical numbers yet. Try a small change first.
+
+**You stay in control.** Say "stop", "pause" or "cancel" at any time; Tenet always honors it. Say "undo" to preview reverting the work's commits. Tenet does not deploy, push or open pull requests. For your own uncommitted edits, Tenet leaves them alone, says which files are yours, and asks before touching a file you changed.
 
 Handy commands: `/tenet status` (where things stand, starts nothing), `/tenet why` (why the last decision or outcome), `/tenet help`. To change how it talks to you, say "be brief", "explain more" or "only interrupt for decisions".
 
@@ -66,10 +89,21 @@ More: [What Tenet adds](docs/user/what-tenet-adds.md).
 
 ## If something does not work
 
-- **`/tenet` is not offered in chat.** Check that Copilot Chat is in **Agent** mode, that both settings above are in your user `settings.json`, that the path points at the folder holding `plugin.json`, and reload the window. VS Code keeps its own copy of the plugin and may need a reload or a new chat to pick up changes.
-- **No agent plugins at all.** Your Copilot plan or organization may disable agent mode, plugins, custom agents or subagents. See "If policy blocks installation" below.
-- **Tenet says it can only give an advisory review.** Node.js 22.12 or newer was not found by the host's terminal. Install it from nodejs.org and reload.
-- **Anything else, or it surprised you.** Open a [host observation report](https://github.com/vedprakash-m/tenet/issues/new?template=host-report.yml). Run `/tenet help` and paste only its version line; do not paste code, secrets or personal paths.
+Run this in your project folder for a plain-language preflight (replace the path with yours):
+
+```bash
+node ~/tenet-plugin/plugin/kernel/tenet.mjs inspect --view doctor | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{for(const c of JSON.parse(s).data.checks)console.log(c.ok===true?"ok  ":c.ok===false?"FAIL":"?   ",c.name+":",c.detail)})'
+```
+
+`FAIL` lines say what is wrong (not a Git repository, no Git name and email, Node or Git missing). `?` means unknown, for example `test runner` in a project without Vitest; that only lowers the assistance level.
+
+- **`/tenet` is not offered in chat.** In order: (1) VS Code is 1.142 or newer; (2) chat is in **Agent** mode; (3) both settings are in your *user* `settings.json`, and the path is the `plugin` folder that holds `plugin.json`; (4) you ran "Developer: Reload Window"; (5) start a new chat. VS Code keeps its own copy of the plugin and may need a reload to pick up changes.
+- **Nothing about plugins exists in your settings or chat.** Your Copilot plan or organization may disable agent mode, plugins, custom agents or subagents. See "If policy blocks installation" below.
+- **Tenet says it can only give an advisory review.** The host's terminal did not find Node.js 22.12 or newer. Install it from nodejs.org, reload, and run `node --version` in VS Code's own terminal.
+- **Tenet refuses to change anything.** You are on Windows, or the folder is not a Git repository, or Git has no name and email. The preflight above shows which.
+- **The terminal approval keeps appearing.** Choose "Allow in this Session". How approvals behave beyond that is unobserved.
+- **You updated the plugin and nothing changed.** Point `chat.pluginLocations` at the new folder and reload the window.
+- **Anything else, or it surprised you.** Open an [install-help or host-observation issue](https://github.com/vedprakash-m/tenet/issues/new/choose). Run `/tenet help` and paste only its version line; do not paste code, secrets or personal paths.
 
 ## Before you install
 
@@ -80,7 +114,7 @@ More: [What Tenet adds](docs/user/what-tenet-adds.md).
 - Recovery after an interruption can remove a file that matches what Tenet meant to write, even if someone else created it, and does not always report what it did.
 - On Windows, Tenet can follow linked installed Vitest metadata and read a file outside the project. Do not use Tenet in untrusted workspaces or with untrusted installed dependencies.
 
-- **Prerequisites.** VS Code with GitHub Copilot Chat in agent mode and the setting that enables agent plugins; Node.js 22.12 or newer (Tenet reuses your Node and installs nothing); Git. Full checking needs a TypeScript or JavaScript project that uses Vitest. Other setups get a lower assistance level, which Tenet states in its first message.
+- **Prerequisites.** VS Code 1.142 or newer with GitHub Copilot Chat in agent mode and `chat.plugins.enabled` on; Node.js 22.12 or newer (Tenet reuses your Node and installs nothing); Git with your name and email set, and a Git repository for the project. Full checking needs a TypeScript or JavaScript project that uses Vitest. Other setups get a lower assistance level, which Tenet states in its first message.
 - **Permissions and executable content.** The plugin ships one bundled helper, `plugin/kernel/tenet.mjs`, that the agent runs with your Node through the host's terminal tool. The host asks you to approve terminal commands. Tenet's own project checks (your tests, linters, servers) also run as local processes. No observer hooks ship in this preview; any future hooks are gated on qualification. The plugin ships no network client.
 - **Publisher and verification.** The marketplace publisher is **not designated**. [v0.1.0](https://github.com/vedprakash-m/tenet/releases/tag/v0.1.0) is a hand-published GitHub pre-release with a SHA-256 file; there is no signed tag, provenance attestation or authenticated publisher. The checksum shows your download matches that build, not who made it. To check the source yourself, confirm the repository and commit, inspect the source, then run `npm ci` and `npm run build`; the generated `plugin/SHA256SUMS` checks local payload bytes only. The source repository is [vedprakash-m/tenet](https://github.com/vedprakash-m/tenet). `/tenet help` reports the running kernel's version (`0.1.0-m0` is the build in v0.1.0); see the [release verification procedure](docs/release/release-verification.md).
 - **Autopilot.** Under Copilot's Autopilot, the host can answer native questions automatically, and Tenet cannot tell your answers from automatic ones. Questions about scope, protected paths, remote or destructive actions, risk and owner acceptance are therefore asked in plain chat, and every decision record made under Autopilot is unverifiable. Do not use Autopilot for work where that matters.

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security problem privately
+    url: https://github.com/vedprakash-m/tenet/security/advisories/new
+    about: Use private vulnerability reporting, not a public issue. See SECURITY.md.
