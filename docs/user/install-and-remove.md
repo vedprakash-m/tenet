@@ -62,7 +62,7 @@ Tenet installs no service. Do not assume that a residue listing identifies every
 
 ### Cleanups (`decide cleanup`)
 
-Cleanup removal is disabled in this preview because it could remove files Tenet did not create. Each scope shows a preview, but a confirmed removal is refused. Review any files yourself before deleting them.
+Cleanup removal is available after a bound preview. It removes entries one at a time only while they still match the preview. Review what will be removed before confirming.
 
 | Scope | Previewed run folders | Notes |
 |---|---|---|
@@ -71,7 +71,7 @@ Cleanup removal is disabled in this preview because it could remove files Tenet 
 
 Cleanup preview is refused while a check or packet is active. Stopping a check and completing a review are separate actions: pausing or abandoning work does not release an outstanding packet. Record its actual result when available; retrying keeps a packet open. Never fabricate a review to enable cleanup. Safe disposal of an unfinished packet has not been implemented.
 
-Say "clean up" and then choose project or machine to request a preview. Do not rely on the preview as proof of ownership or a complete list.
+Say "clean up" and then choose project or machine. Tenet shows its temporary folder for this project in the system temp folder (file count and size) and what stays. Nothing is removed until you answer yes. If anything in that folder changed after the preview, the cleanup is refused and you preview again; anything added during the removal itself is kept and listed. `.tenet/` is never touched.
 
 ## Update
 

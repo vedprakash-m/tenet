@@ -1,4 +1,1735 @@
 {
   "schemaVersion": 1,
-  "records": []
+  "records": [
+    {
+      "requirementId": "INS-01",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "observation",
+          "tier": "T3",
+          "path": "docs/audits/2026-11-20/host-spikes-unobserved.md",
+          "sha256": "f8959682a68c1c4d8818d05da7997d28a34f03280844a5371a7c562a9a761b2b",
+          "acIds": [
+            "AC-01"
+          ],
+          "outcome": "inconclusive"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Explicit inconclusive host evidence records the absence of H1 observation; M0 qualification remains open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "INS-01",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Explicit inconclusive host evidence records the absence of H1 observation; M0 qualification remains open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "observation",
+              "tier": "T3",
+              "path": "docs/audits/2026-11-20/host-spikes-unobserved.md",
+              "sha256": "f8959682a68c1c4d8818d05da7997d28a34f03280844a5371a7c562a9a761b2b",
+              "acIds": [
+                "AC-01"
+              ],
+              "outcome": "inconclusive"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "INS-03",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "observation",
+          "tier": "T3",
+          "path": "docs/audits/2026-11-20/host-spikes-unobserved.md",
+          "sha256": "f8959682a68c1c4d8818d05da7997d28a34f03280844a5371a7c562a9a761b2b",
+          "acIds": [
+            "AC-02",
+            "AC-21"
+          ],
+          "outcome": "inconclusive"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Explicit inconclusive host evidence records the absence of H1 observation; M0 qualification remains open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "INS-03",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Explicit inconclusive host evidence records the absence of H1 observation; M0 qualification remains open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "observation",
+              "tier": "T3",
+              "path": "docs/audits/2026-11-20/host-spikes-unobserved.md",
+              "sha256": "f8959682a68c1c4d8818d05da7997d28a34f03280844a5371a7c562a9a761b2b",
+              "acIds": [
+                "AC-02",
+                "AC-21"
+              ],
+              "outcome": "inconclusive"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "INT-01",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "observation",
+          "tier": "T3",
+          "path": "docs/audits/2026-11-20/host-spikes-unobserved.md",
+          "sha256": "f8959682a68c1c4d8818d05da7997d28a34f03280844a5371a7c562a9a761b2b",
+          "acIds": [
+            "AC-04",
+            "AC-21"
+          ],
+          "outcome": "inconclusive"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Explicit inconclusive host evidence records the absence of H1 observation; M0 qualification remains open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "INT-01",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Explicit inconclusive host evidence records the absence of H1 observation; M0 qualification remains open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "observation",
+              "tier": "T3",
+              "path": "docs/audits/2026-11-20/host-spikes-unobserved.md",
+              "sha256": "f8959682a68c1c4d8818d05da7997d28a34f03280844a5371a7c562a9a761b2b",
+              "acIds": [
+                "AC-04",
+                "AC-21"
+              ],
+              "outcome": "inconclusive"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "SEC-01",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "observation",
+          "tier": "T3",
+          "path": "docs/audits/2026-11-20/host-spikes-unobserved.md",
+          "sha256": "f8959682a68c1c4d8818d05da7997d28a34f03280844a5371a7c562a9a761b2b",
+          "acIds": [
+            "AC-03"
+          ],
+          "outcome": "inconclusive"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Explicit inconclusive host evidence records the absence of H1 observation; M0 qualification remains open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "SEC-01",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Explicit inconclusive host evidence records the absence of H1 observation; M0 qualification remains open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "observation",
+              "tier": "T3",
+              "path": "docs/audits/2026-11-20/host-spikes-unobserved.md",
+              "sha256": "f8959682a68c1c4d8818d05da7997d28a34f03280844a5371a7c562a9a761b2b",
+              "acIds": [
+                "AC-03"
+              ],
+              "outcome": "inconclusive"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "INS-07",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/invariants.test.ts",
+          "sha256": "b86a07a3d8018919e4aab63e02458b24a18161a412fd55c13aca87b284811302",
+          "acIds": [
+            "AC-01"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "INS-07",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/invariants.test.ts",
+              "sha256": "b86a07a3d8018919e4aab63e02458b24a18161a412fd55c13aca87b284811302",
+              "acIds": [
+                "AC-01"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "INT-04",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+          "acIds": [
+            "AC-24"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "INT-04",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/scenarios.test.ts",
+              "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+              "acIds": [
+                "AC-24"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "INT-05",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+          "acIds": [
+            "AC-05",
+            "AC-24"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "INT-05",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/scenarios.test.ts",
+              "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+              "acIds": [
+                "AC-05",
+                "AC-24"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "WRK-01",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "0c70b1e864c683f8e8830c7c17590b59751755c165a555f911252f7fd544b3f0",
+          "acIds": [
+            "AC-04",
+            "AC-13a"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "WRK-01",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/contract.test.ts",
+              "sha256": "0c70b1e864c683f8e8830c7c17590b59751755c165a555f911252f7fd544b3f0",
+              "acIds": [
+                "AC-04",
+                "AC-13a"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "WRK-02",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "0c70b1e864c683f8e8830c7c17590b59751755c165a555f911252f7fd544b3f0",
+          "acIds": [
+            "AC-21"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "WRK-02",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/contract.test.ts",
+              "sha256": "0c70b1e864c683f8e8830c7c17590b59751755c165a555f911252f7fd544b3f0",
+              "acIds": [
+                "AC-21"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "WRK-08",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/active-time.test.ts",
+          "sha256": "25912c67019949772c745c30eed8f4375abf9fa82075f08934f8201d61451370",
+          "acIds": [
+            "AC-15c",
+            "AC-19"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "WRK-08",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/active-time.test.ts",
+              "sha256": "25912c67019949772c745c30eed8f4375abf9fa82075f08934f8201d61451370",
+              "acIds": [
+                "AC-15c",
+                "AC-19"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "AGT-02",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+          "acIds": [
+            "AC-06",
+            "AC-22"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "AGT-02",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/scenarios.test.ts",
+              "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+              "acIds": [
+                "AC-06",
+                "AC-22"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "TDD-01",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/core.test.ts",
+          "sha256": "4137bb0bac9e5cb29999966281dcac0d11ebdbfa8c87ac98de5e0a9628f2171b",
+          "acIds": [
+            "AC-05"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "TDD-01",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/core.test.ts",
+              "sha256": "4137bb0bac9e5cb29999966281dcac0d11ebdbfa8c87ac98de5e0a9628f2171b",
+              "acIds": [
+                "AC-05"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "TDD-02",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+          "acIds": [
+            "AC-05"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "TDD-02",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/scenarios.test.ts",
+              "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+              "acIds": [
+                "AC-05"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "EVD-01",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/git-privacy-identity.test.ts",
+          "sha256": "911683b5f69ebd9ea7707d2f2fbacf943a85551cc92176678e84b0387ceaab54",
+          "acIds": [
+            "AC-18"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "EVD-01",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/git-privacy-identity.test.ts",
+              "sha256": "911683b5f69ebd9ea7707d2f2fbacf943a85551cc92176678e84b0387ceaab54",
+              "acIds": [
+                "AC-18"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "EVD-02",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+          "acIds": [
+            "AC-07"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "EVD-02",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/scenarios.test.ts",
+              "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+              "acIds": [
+                "AC-07"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "EVD-06",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "973db01e7aaa550e9d3b47e713af2a5742f9e80b37999fcd2fc7f9d72d4964d6",
+          "acIds": [
+            "AC-07",
+            "AC-27"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "EVD-06",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/workflows.test.ts",
+              "sha256": "973db01e7aaa550e9d3b47e713af2a5742f9e80b37999fcd2fc7f9d72d4964d6",
+              "acIds": [
+                "AC-07",
+                "AC-27"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "EVD-07",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/why-assurance-guidance.test.ts",
+          "sha256": "8ec4b67e1d385a2e4134e8d0d1591c81bde9d4101800c6e5d1bc1d870cc93d67",
+          "acIds": [
+            "AC-07",
+            "AC-13a"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "EVD-07",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/why-assurance-guidance.test.ts",
+              "sha256": "8ec4b67e1d385a2e4134e8d0d1591c81bde9d4101800c6e5d1bc1d870cc93d67",
+              "acIds": [
+                "AC-07",
+                "AC-13a"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "REV-01",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "143da4b5f90d2d5b4748fa285218cd9ed2361005f2f1ac82a1e4a4399e4263c9",
+          "acIds": [
+            "AC-06"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "REV-01",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/verdict.test.ts",
+              "sha256": "143da4b5f90d2d5b4748fa285218cd9ed2361005f2f1ac82a1e4a4399e4263c9",
+              "acIds": [
+                "AC-06"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "REV-02",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "0c70b1e864c683f8e8830c7c17590b59751755c165a555f911252f7fd544b3f0",
+          "acIds": [
+            "AC-06"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "REV-02",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/contract.test.ts",
+              "sha256": "0c70b1e864c683f8e8830c7c17590b59751755c165a555f911252f7fd544b3f0",
+              "acIds": [
+                "AC-06"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "RES-01",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/walking-skeleton.test.ts",
+          "sha256": "5a79ac4b90168a0fe422e568315e684f2135b7ecb36987850f9ad910b7c0d5c5",
+          "acIds": [
+            "AC-21"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "RES-01",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/walking-skeleton.test.ts",
+              "sha256": "5a79ac4b90168a0fe422e568315e684f2135b7ecb36987850f9ad910b7c0d5c5",
+              "acIds": [
+                "AC-21"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "RES-02",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/verdict.test.ts",
+          "sha256": "143da4b5f90d2d5b4748fa285218cd9ed2361005f2f1ac82a1e4a4399e4263c9",
+          "acIds": [
+            "AC-07",
+            "AC-27"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "RES-02",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/verdict.test.ts",
+              "sha256": "143da4b5f90d2d5b4748fa285218cd9ed2361005f2f1ac82a1e4a4399e4263c9",
+              "acIds": [
+                "AC-07",
+                "AC-27"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "RES-04",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "973db01e7aaa550e9d3b47e713af2a5742f9e80b37999fcd2fc7f9d72d4964d6",
+          "acIds": [
+            "AC-08"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "RES-04",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/workflows.test.ts",
+              "sha256": "973db01e7aaa550e9d3b47e713af2a5742f9e80b37999fcd2fc7f9d72d4964d6",
+              "acIds": [
+                "AC-08"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "GIT-01",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/workflows.test.ts",
+          "sha256": "973db01e7aaa550e9d3b47e713af2a5742f9e80b37999fcd2fc7f9d72d4964d6",
+          "acIds": [
+            "AC-17",
+            "AC-25"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "GIT-01",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/workflows.test.ts",
+              "sha256": "973db01e7aaa550e9d3b47e713af2a5742f9e80b37999fcd2fc7f9d72d4964d6",
+              "acIds": [
+                "AC-17",
+                "AC-25"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "GIT-02",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/walking-skeleton.test.ts",
+          "sha256": "5a79ac4b90168a0fe422e568315e684f2135b7ecb36987850f9ad910b7c0d5c5",
+          "acIds": [
+            "AC-25"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "GIT-02",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/walking-skeleton.test.ts",
+              "sha256": "5a79ac4b90168a0fe422e568315e684f2135b7ecb36987850f9ad910b7c0d5c5",
+              "acIds": [
+                "AC-25"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "GIT-03",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/commit-green.test.ts",
+          "sha256": "9875eabd9d897b83d96b34cb6e1b75305c221b04fcf73467672474d3111d43e8",
+          "acIds": [
+            "AC-25"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "GIT-03",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/commit-green.test.ts",
+              "sha256": "9875eabd9d897b83d96b34cb6e1b75305c221b04fcf73467672474d3111d43e8",
+              "acIds": [
+                "AC-25"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "GIT-05",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/invariants.test.ts",
+          "sha256": "b86a07a3d8018919e4aab63e02458b24a18161a412fd55c13aca87b284811302",
+          "acIds": [
+            "AC-04",
+            "AC-25"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "GIT-05",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/invariants.test.ts",
+              "sha256": "b86a07a3d8018919e4aab63e02458b24a18161a412fd55c13aca87b284811302",
+              "acIds": [
+                "AC-04",
+                "AC-25"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "GIT-08",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/scenarios.test.ts",
+          "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+          "acIds": [
+            "AC-17",
+            "AC-25"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "GIT-08",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/scenarios.test.ts",
+              "sha256": "410065adcdf3071e922374299a870608bad39f078623c30f0e3411da4468ba12",
+              "acIds": [
+                "AC-17",
+                "AC-25"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "GIT-10",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/dirty-file-consent.test.ts",
+          "sha256": "6b1e465b7ca11bb28c5e36a36bd0f08fe75ac2f1b0a2d9d9176b0fb0c26e0998",
+          "acIds": [
+            "AC-17",
+            "AC-25"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "GIT-10",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/dirty-file-consent.test.ts",
+              "sha256": "6b1e465b7ca11bb28c5e36a36bd0f08fe75ac2f1b0a2d9d9176b0fb0c26e0998",
+              "acIds": [
+                "AC-17",
+                "AC-25"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "CON-02",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/invariants.test.ts",
+          "sha256": "b86a07a3d8018919e4aab63e02458b24a18161a412fd55c13aca87b284811302",
+          "acIds": [
+            "AC-17"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "CON-02",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/invariants.test.ts",
+              "sha256": "b86a07a3d8018919e4aab63e02458b24a18161a412fd55c13aca87b284811302",
+              "acIds": [
+                "AC-17"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "CON-03",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/undo-recovery-effects.test.ts",
+          "sha256": "81d4c7b907850c46c580b13cdb71cd169159aa488c4e6f108131e9ad821b49df",
+          "acIds": [
+            "AC-08"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "CON-03",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/undo-recovery-effects.test.ts",
+              "sha256": "81d4c7b907850c46c580b13cdb71cd169159aa488c4e6f108131e9ad821b49df",
+              "acIds": [
+                "AC-08"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "CON-09",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/read-only-review.test.ts",
+          "sha256": "970ac7fb731a33caf09a00a7dbd2fde89fa491bfaafcca298a6b249a0a4e7437",
+          "acIds": [
+            "AC-04"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "CON-09",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/read-only-review.test.ts",
+              "sha256": "970ac7fb731a33caf09a00a7dbd2fde89fa491bfaafcca298a6b249a0a4e7437",
+              "acIds": [
+                "AC-04"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "SEC-02",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/contract.test.ts",
+          "sha256": "0c70b1e864c683f8e8830c7c17590b59751755c165a555f911252f7fd544b3f0",
+          "acIds": [
+            "AC-16"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "SEC-02",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/contract.test.ts",
+              "sha256": "0c70b1e864c683f8e8830c7c17590b59751755c165a555f911252f7fd544b3f0",
+              "acIds": [
+                "AC-16"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "SEC-13",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/stop-approval.test.ts",
+          "sha256": "044343948a458ba9219305e3f5765a4ea2bf7a0ba538109eb5094c3bbf2be1f1",
+          "acIds": [
+            "AC-03",
+            "AC-16"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "SEC-13",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/stop-approval.test.ts",
+              "sha256": "044343948a458ba9219305e3f5765a4ea2bf7a0ba538109eb5094c3bbf2be1f1",
+              "acIds": [
+                "AC-03",
+                "AC-16"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "requirementId": "ENG-03",
+      "disposition": "complete",
+      "uncoveredAcIds": [],
+      "evidenceRefs": [
+        {
+          "kind": "test",
+          "tier": "T1",
+          "path": "packages/kernel/test/tools.test.ts",
+          "sha256": "a3a41dae7a3b08db64ee74c8741667b7772cd68b7dba4e2e0c25fd28816f29d5",
+          "acIds": [
+            "AC-19",
+            "AC-26"
+          ],
+          "outcome": "partial"
+        }
+      ],
+      "reviewer": "reviewer-agent",
+      "reviewedAt": "2026-11-20T23:30:00.000Z",
+      "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+      "ownerApprovalRef": "pending",
+      "qualificationStatus": "not-qualified",
+      "campaignRef": null,
+      "changeHistory": [
+        {
+          "requirementId": "ENG-03",
+          "fromDisposition": null,
+          "toDisposition": "complete",
+          "fromQualificationStatus": null,
+          "toQualificationStatus": "not-qualified",
+          "fromUncoveredAcIds": [],
+          "toUncoveredAcIds": [],
+          "reason": "Current structural/T1 reference reviewed for the M0 record; supported-platform execution and qualification remain open.",
+          "reviewer": "reviewer-agent",
+          "reviewedAt": "2026-11-20T23:30:00.000Z",
+          "ownerApprovalRef": "pending",
+          "evidenceRefs": [
+            {
+              "kind": "test",
+              "tier": "T1",
+              "path": "packages/kernel/test/tools.test.ts",
+              "sha256": "a3a41dae7a3b08db64ee74c8741667b7772cd68b7dba4e2e0c25fd28816f29d5",
+              "acIds": [
+                "AC-19",
+                "AC-26"
+              ],
+              "outcome": "partial"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

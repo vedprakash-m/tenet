@@ -575,7 +575,7 @@ Exact schemas and paths belong to the Tech Spec (Section 11.4).
 
 #### 3.7.3 Identity and traceability rules
 
-- **Branch-safe IDs.** Shared IDs combine a sequence number with a short random suffix (for example `REQ-012-q7k`), so two branches never allocate the same identity. At integration, Tenet still checks for identical IDs with different content and re-suffixes the newer item, updating its links. Users may refer to items by number when unambiguous.
+- **Branch-safe IDs.** Shared IDs combine a sequence number with a short random suffix (for example `REQ-012-q7k`), so two branches never allocate the same identity. At integration, Tenet still checks for identical IDs with different content and re-suffixes the work branch's copy (the one being integrated), updating its links. Users may refer to items by number when unambiguous.
 - IDs are stable and never reused.
 - Every Tenet-managed acceptance test carries the requirement and example IDs it implements.
 - Every work contract lists the plan item, requirement, constraint and decision IDs it serves.
@@ -873,7 +873,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 | GIT-08 | Tenet shall include uncommitted human edits in the candidate it checks, and shall never stage, commit, stash, reset or discard them without explicit consent. | Must | M0 | AC-17, AC-25 |
 | GIT-09 | When Tenet's shared files conflict on integration, Tenet shall reconcile by ID, detect same-ID different-content collisions, and propose the merged content for user confirmation. | Must | B | AC-17 |
 | GIT-10 | When work starts on a dirty working tree, Tenet shall record the starting HEAD, index and dirty paths. Tenet may explain the choices and draft commands, but shall never stage or commit a human-only file set; the user commits or sets aside those edits outside Tenet. Tenet may commit an overlapping file with its own work only when that file contains a Tenet-authored change, the user explicitly authorizes that inclusion and the ordinary preview/postcondition safeguards pass. | Must | M0 | AC-17, AC-25 |
-| GIT-11 | When the user accepts a result, Tenet shall offer to integrate the work branch into its base branch locally, following the `integration` setting, as a reversible step distinct from push or publication. | Must | A | AC-25 |
+| GIT-11 | When the user accepts a result, Tenet shall offer local integration of the work branch into its base branch only as a separate explicit action, following the `integration` setting; acceptance itself shall never switch branches, push or publish. | Must | A | AC-25 |
 | GIT-12 | Tenet shall treat Git hooks, signing and configured Git programs as executable effects: inspect them before the first commit, run them under native consent, never bypass them, and rerun affected checks when hooks modify files. | Must | A | AC-16, AC-25 |
 | GIT-13 | Tenet shall report a specific readiness outcome for detached HEAD, rebase or merge in progress, unresolved conflicts, shallow clones, submodules, LFS and linked worktrees before implementing. | Must | B | AC-25 |
 | GIT-14 | Tenet shall offer to delete a work branch after integration or abandonment, and never delete unintegrated work without consent. | Should | R1 | AC-25 |
@@ -979,7 +979,7 @@ Roles are responsibility contracts, not running workers or model names. Small wo
 | QLT-06 | Tenet shall apply the obligations contributed by the project's and the change's traits (Section 3.8.4). | Must | B | AC-20 |
 | QLT-07 | Schema changes shall include a migration tested against prior-version fixture data and, where user data exists, a consistent backup through a supported mechanism with a tested restore; Tenet shall never reset data to make tests pass. | Must | R1 | AC-20 |
 | QLT-08 | As part of handover, Tenet shall keep README run instructions, decision records, the architecture doc and CHANGELOG current. | Should | R1 | AC-20 |
-| QLT-09 | Tenet shall apply the project charter, or the default charter (Section 1.8) when none exists. | Must | A | AC-15a |
+| QLT-09 | Tenet shall apply a project charter only after its content hash is locally adopted and remains current; otherwise it shall apply the default charter (Section 1.8). | Must | A | AC-15a |
 | QLT-10 | Tenet shall flag a suspected out-of-scope improvement instead of expanding the task. | Must | B | AC-13a |
 | QLT-11 | Tenet shall detect, record and let the user correct project and change traits (Section 3.8.5). | Must | B | AC-20 |
 | QLT-12 | The starter shall follow the identity, exposure and data model of Section 5.16. | Must | A | AC-16, AC-20 |
@@ -1404,6 +1404,7 @@ Residual risk: helpers run the `node` binary resolved from the user's PATH; Tene
    - if it only tightens, it applies immediately;
    - if it loosens or changes meaning, it is shown as a diff and needs the local user's acceptance;
    - new or changed commands always need inspection and native consent before their first run.
+   A proposed, changed, unreadable or unbound charter is not sent as model guidance; the default charter remains active until accepted content is current.
 4. **Who amends commitments in R1:** the local user, by accepting the change. A file claiming an owner identity is not authority. Team roles are Later.
 5. **Pre-populated `.tenet/`.** A `.tenet/` without this machine's ownership marker is quarantined as an untrusted import. Its lessons, commands, settings and contracts are ignored until the user reviews them; nothing in it confers authority.
 6. **Intent text** in `INTENT.md` is product intent the user adopted. Imperative instructions inside it addressed to agents ("disable auth tests") are treated as untrusted content, not commitments.
@@ -1626,7 +1627,7 @@ consequence.
 **Branch lifecycle:**
 - Work branches start from the current HEAD, with the base recorded.
 - If HEAD is an unintegrated Tenet branch, the new work is stacked and Tenet says so.
-- On acceptance, Tenet offers local integration into the base (fast-forward or merge, per project convention and the `integration` setting).
+- On acceptance, Tenet may offer local integration into the base (fast-forward or merge, per project convention and the `integration` setting), but only a separate explicit "integrate" action may start it.
 - After integration or abandonment, Tenet offers to delete the work branch.
 
 **Undo:**
@@ -2189,7 +2190,8 @@ Additional rules:
 | Tighter exclusion, protected path or resource mode | Before the next affected dispatch or read | Stops new affected work; reports active and unknown effects |
 | Command or required-check change | After validation and any confirmation required by Section 7.5 | Dependent evidence becomes stale; feasibility re-assessed against the obligation; saving alone never authorizes execution |
 | Lane raised | At the next phase boundary | Adds deeper steps; reuses valid evidence |
-| Branching or integration | Next work contract or acceptance | None |
+| Branching | Next work contract | None |
+| Integration | Next result | None; acceptance never consumes the setting as integration consent |
 | Wider scope, destination or spend, or a loosened commitment | Only with sufficient explicit authority | Configuration alone cannot grant it |
 
 Concurrent edits use revision-aware reconciliation inside the ownership boundary (Section 5.11).
