@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-21 — Publish the v0.1.0 unqualified developer preview
+
+- Published GitHub pre-release `v0.1.0` from `e52c2ec` with a 103-file plugin tarball and SHA-256 file. Notes state that it is unqualified, unsigned and hand-published, and disclose the failing `system-budgets` long-history warm row (300.7 ms vs 300 ms). Deleted the stale draft releases preview.1–3. Enabled Dependabot security updates and set repository topics.
+
 ## 2026-11-21 — Fix the product name and take host spikes off the preview path
 
 - "Tenet" is the final product name: removed "working name" from `README.md`, closed PRD Q-13, updated Tech Spec §18 item 7 and `docs/release/target-c-finalization.md`. `packages/kernel/test/readme.test.ts` now rejects "working name".
