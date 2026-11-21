@@ -1,11 +1,11 @@
-<!-- DRAFT. The public install path is not decided. Only the preview route below has been tried (specs/re-plan.md host track and checklist). -->
+<!-- Preview. The release tarball route was checked from the public download through a running kernel; installation inside a clean VS Code profile has not been observed (specs/re-plan.md host track). -->
 # Install and remove
 
 ## Before you install
 
-- **VS Code** with GitHub Copilot Chat in agent mode, and the setting that enables agent plugins.
+- **VS Code 1.142 or newer** with GitHub Copilot Chat in agent mode, and `chat.plugins.enabled` set to `true`. Plugins were observed on 1.142.0 and 1.143.0; newer versions are unobserved.
 - **Node.js 22.12 or newer.** Tenet uses the Node already on your machine and installs nothing. Without it, Tenet can give an advisory review only and will say so. Official installer: nodejs.org.
-- **Git.**
+- **Git**, with `user.name` and `user.email` set, and a Git repository for the project. Tenet's `doctor` reports a missing repository or identity.
 - **Platform limits:** no host tuple is qualified yet. R1 targets macOS arm64; Linux is experimental. On Windows, read-only inspection and advisory review remain available, but every mutating kernel call is refused with `capability-missing` before local state is opened or changed. Building the bundle on Windows does not enable mutating workflows.
 - **A TypeScript or JavaScript project with Vitest** for full checking. Other setups get a lower assistance level, stated in Tenet's first message.
 - **Be aware:** the plugin runs a bundled file, `kernel/tenet.mjs`, through the host's terminal tool with your Node. The host will ask you to approve terminal commands. Project checks (tests, linters, servers) run as local processes on your machine. Under Autopilot, see [The Autopilot limit](autopilot.md).

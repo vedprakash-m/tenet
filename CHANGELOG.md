@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-21 — Align the install guide with the README and check the public download
+
+- `docs/user/install-and-remove.md` now states the VS Code 1.142 minimum, the Git name/email and repository prerequisites, and no longer calls the install path undecided. Downloaded the published v0.1.0 tarball and checksum from GitHub into an empty folder, verified `OK`, extracted it and ran the kernel's `inspect --view help`; the raw README on `main` serves the new Quick start.
+
 ## 2026-11-21 — Remove adoption friction from the README and issue forms
 
 - Cold-ran the v0.1.0 tarball on scratch repositories and fixed what a newcomer would hit: stated a minimum VS Code (1.142, the lowest observed) and the Git name/email and repository prerequisites; added a no-VS-Code kernel check, a command that prints the settings line, a plain-language preflight over `inspect --view doctor`, a table that picks a first request by what the reader has, honest time/cost and control notes, and a longer troubleshooting list. Added an install-help issue form and a security contact link. Release notes now point at the Quick start. Nothing was run in a clean VS Code profile.
