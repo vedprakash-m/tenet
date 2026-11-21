@@ -1,20 +1,28 @@
 # Tenet re-plan — runbook and progress record
 
-Status: **v3, 2026-11-20. Active by the user's direct 2026-11-20 request.** Work is restricted to the existing `main` checkout; the unsigned branch/CI procedure is not followed. This file is the only plan and progress record. The
+Status: **v3, 2026-11-20. Active by the user's direct 2026-11-20 request; target-C continuation on `main` selected on 2026-11-21 after the owner asked for complete implementation and did not provide a narrower target.** Work is restricted to the existing `main` checkout; the unsigned branch/CI procedure is not followed. This file is the only plan and progress record. The
 old plan is archived at `.archive/specs/plan-2026-11-20.md` (defect index
 §12.3, decision log §1.0.3, host-spike runbook §4.1). The canonical specs
 `specs/PRD.md`, `specs/tech-spec.md` and `specs/ux-spec.md` win over this
 file wherever they disagree.
 
-Base: `main` = `origin/main` = `b7869a0`; exact-SHA CI green
+Frozen implementation base: `b7869a0`; exact-SHA CI green
 (`untrusted` run 44885756509 attempt 1, `system-budgets` run 44885756487
-attempt 3 after the large-fixture job was rerun on the same SHA).
+attempt 3 after the large-fixture job was rerun on the same SHA). Current
+`main` has the later tracked plan commit `dc63e9b` plus the uncommitted
+2026-11-21 target-A test/documentation repairs recorded in §8; it must not be
+described as the exact CI-tested SHA.
+
+**Current R1 structural mapping: 165 mapped / 15 host-only / 0 unmapped of 181 Musts, 0 qualified.** This count is structural T1/host categorization, not qualification or release approval.
 
 ---
 
 ## 1. Read this first (for the executing agent)
 
-You are working through §5, top to bottom. For each item:
+You are working through §5, top to bottom. The owner directed 2026-11-21
+work to stay on `main`; where §4 calls for a temporary branch, apply the same
+test, review and merge gates directly on `main` and do not commit or push
+without a separate owner request. For each item:
 
 1. Use the **change procedure** in §4 exactly. It is the same for every item.
 2. Do only what the item says. Do not improve nearby code, rename things,
@@ -32,7 +40,7 @@ green CI (give the commit and run ID), `⛔` blocked (give the reason in §7).
 
 | # | Decision | Recommendation | Owner answer |
 |---|---|---|---|
-| S1 | Target: **A** personal use on the owner's Mac with M0 claimed (~1 week, ~3 owner hours); B adds a public preview release; C is full R1 (5–8 weeks, needs participants) | A | |
+| S1 | Target: **A** personal use on the owner's Mac with M0 claimed (~1 week, ~3 owner hours); B adds a public preview release; C is full R1 (5–8 weeks, needs participants) | A | C: the owner requested continuation until `specs/re-plan.md` is completely implemented and ready for finalization; owner signature remains pending |
 | S2 | Approve the rules in §3 and the change procedure in §4 (merge on green, one reviewer agent, no per-item spec or sign-off for items the canonical specs define) | approve | |
 | S3 | Authorize host spikes H1 (SP-08 remainder, SP-01, SP-02) and H2 (SP-12) | approve both | |
 | S4 | Approve `.archive/specs/open-drafts/undo-confirmation.md` §7 and `cleanup-confirmation.md` §9 as the contracts for W1.5 and W1.4 (owner decisions taken 2026-11-15, two reviews done) | approve | |
@@ -192,7 +200,7 @@ W2b and H1.
 **W1.6 ✅ NFR-01 reason text — merged at b7869a0; coverage and system-budgets 44885756487 passed**
 - File: `tools/coverage.ts`, `MEASURED["NFR-01"]`.
 - What: replace "its benchmark rows still fail" with "the system-budgets workflow measures them on the frozen fixtures (passed at e109373, run 44795135176); a T1 test cannot show it". Keep the entry: NFR-01 stays `not-reachable` by T1 by design.
-- Done when: `node tools/coverage.ts --milestone R1` prints the new text and reports 164 mapped, 0 capability disabled, 1 not reachable, 16 host-only.
+- Done when: `node tools/coverage.ts --milestone R1` prints the new text and reports 165 mapped, 0 capability disabled, 1 not reachable, 15 host-only.
 
 ### W2a — verdict and human-work safety (session 2, after W1.3)
 
@@ -228,23 +236,38 @@ named, then follow §4. If the row says the decision is still open, apply
 3. Run `node tools/coverage.ts --milestone M0`; it must report no integrity errors.
 4. Have the reviewer agent check each record against its PRD clause; fix or mark `partial` with the uncovered AC IDs.
 5. Ask the owner to approve the M0 claim; on approval set `ownerApprovalRef` to the date of that approval. Marking `qualified` needs a campaign manifest (`CampaignManifest` in `tools/coverage.ts`) and is target B/C work.
-6. Start dogfooding: make Tenet's own next change through Tenet on the owner's Mac. `⛔` owner/host-only: this Windows session cannot supply H1/H2 observation or owner M0 approval.
+6. Start dogfooding: make Tenet's own next change through Tenet on the owner's Mac. `⛔` owner/host-only: this agent session cannot supply H1/H2 observation or owner M0 approval.
+
+**Target-A source and record reconciliation ◐** — the 2026-11-21 local audit
+found one reproducible full-CI test-fixture failure and stale user status. The
+GIT-04 fixture now creates its own `.git/info` directory instead of depending on
+an installed Git template. A second process-identity test now accepts the
+specified `effect-uncertain` outcome when macOS cannot safely identify a live
+process. Undo/cleanup user text and current-source evidence links are
+reconciled. Current-tree `npm run ci` passes with 2,587 tests, 4 expected skips
+and 0 failures; 158 built-bundle UAT observations and `npm run privacy` also
+pass. Do not mark this row `✅` until the exact working-tree state is committed
+and the hosted workflows pass; host qualification remains separate.
 
 ---
 
 ## 6. Host track (owner runs; agent prepares and records)
 
-**H1 ◐ SP-08 remainder, SP-01, SP-02 (2 hours).** Agent prepared the owner checklist in session notes and built the bundle; owner execution is still required. Agent prepares: run
-`npm run build`; create a throwaway TypeScript project with Vitest outside
-this repository; write the step list from the archived plan §4.1
-"Host-spike runbook" (SP-08 steps 1–6, SP-01 steps 1–2, SP-02 steps 1–4)
-into one checklist the owner can follow. Owner runs it in the `tenet-spike`
+**H1 ◐ SP-08 remainder, SP-01, SP-02 (2 hours).** The tracked owner
+checklist is
+`docs/audits/2026-11-21/target-a-host-checklist.md`; the agent has not run it,
+and owner execution is still required. Agent preparation covers the current
+build, a throwaway TypeScript project with Vitest, and the canonical SP-08,
+SP-01 and SP-02 procedures; the tracked checklist replaces the unavailable
+archived runbook. Owner runs it in the `tenet-spike`
 VS Code profile. Agent records, per step: VS Code, Copilot extension and
 model versions, what the host showed, and one of observed / not observed
 (why) / documented only. Write the record to
 `docs/audits/2026-11-<day>/host-spikes-h1.md` and a §8 line.
 
-**H2 ◐ SP-12 (2 hours).** Agent prepared the measurement checklist; CLI/MCP measurements still require the owner. Same pattern; 3 tasks × 5 runs for the CLI front-end
+**H2 ◐ SP-12 (2 hours).** The measurement checklist is in
+`docs/audits/2026-11-21/target-a-host-checklist.md`; CLI measurements still
+require the owner. Same pattern; 3 tasks × 5 runs for the CLI front-end
 as in archived plan §4.1 "SP-12 completion". If there is no MCP prototype,
 record that MCP was not measured; the CLI stays the shipped front-end and
 the MCP comparison moves to target C.
@@ -261,12 +284,36 @@ recommendation. The owner answers in the same row.
 | 2026-11-20 | W2a.4 P52/P53 | Canonical UX §5.4/UX-D10 says every acceptance leaves the branch alone, while PRD GIT-11/Tech Spec §10.4 say `auto-on-accept` integrates. Choose (A) a separately explicit disclosed acceptance-to-integrate choice with an amended UX rule, or (B) acceptance always stays on the branch and only explicit `integrate` switches branches. | B; it matches UX-D10 and preserves explicit authority. | Autonomous continuation selected B on 2026-11-20. |
 | 2026-11-20 | W2b.5 P55 | An unsigned charter/exclusion protocol is required for undecided or changed shared charter content. | Keep conservative exclusion behavior; do not infer charter authority. | Autonomous continuation selected the recommendation on 2026-11-20; review packets use the built-in charter until reviewed, hash-bound adoption exists. |
 | 2026-11-20 | W2b.3 P60 | Recovery applies an admitted all-pre inverse inside the transaction lock; moving that process effect outside the lock needs a reviewed ownership, cancellation and late-result protocol. | Keep the bounded admission and unresolved fence until that contract is signed off. | Autonomous continuation selected the recommendation on 2026-11-20; any later out-of-lock design needs its own review and sign-off. |
-| 2026-11-20 | W4a/H1/H2 | Host-only qualification, owner M0 approval and dogfooding require owner execution on the qualified Mac tuple. This Windows session cannot supply that evidence. | Run the prepared H1/H2 checklists, then review/approve W4a. | |
+| 2026-11-20 | W4a/H1/H2 | Host-only qualification, owner M0 approval and dogfooding require owner execution on the qualified Mac tuple. This agent session cannot supply that evidence. | Run the prepared H1/H2 checklists, then review/approve W4a. | |
+| 2026-11-21 | Target A execution | The signed branch/merge plan conflicts with the owner's direct request to keep all continuation work on `main`. | Apply the same gates directly on `main`; do not commit or push without a separate request. | Direct owner request received 2026-11-21; formal S2 signature remains pending. |
+| 2026-11-21 | Target selection | "Complete and ready for finalization" is broader than active target A; B and C are still gated by §2 owner selection. | Select C, continue source/documentation/evidence preparation, and leave only owner/host/human gates external. | Owner unavailable; autonomous continuation selected C at 2026-11-21 02:08; formal signature remains pending. |
+| 2026-11-21 | CON-07 reconstruction completion | The canonical requirement names decision-record IDs, `@tenet` test tags, policy/charter re-adoption and a lock-manifest proposal. | Recover only syntactically admitted IDs as inert high-water facts; require separate owner confirmation before locks and keep policy/charter undecided. Do not fabricate content. | IDs, high-water reservations and lock confirmation implemented on 2026-11-21; decision-content and unfinished-work selection remain held. |
+| 2026-11-21 | QLT-11 trait contributions | PRD §3.8.4–3.8.5 says traits contribute questions, invariants, checks, review items and specialists, but no canonical executable obligation registry or reviewer field names remain in the current source/spec. | Add no guessed obligation. Specify the closed registry and review finding shape first, then test missed/late/unknown traits against it. | Owner unavailable; current plan cannot honestly mark source-complete. |
+| 2026-11-21 | EVD-04 sealed baseline | TS §9.8 names a temporary-index checkout path with filter consent while Appendix D says the current blob materializer refuses applying filters/submodules/links and large trees. | Keep the existing fail-closed unknown claim until the intended filter/temporary-index protocol is explicitly approved. | Owner unavailable; do not broaden sealed checkout silently. |
+| 2026-11-21 | Hook/port/server/migration reason codes | `observation-incomplete`, `ended-without-finish`, `port-in-use`, `server-identity-weak` and `migration-needs-approval` require an absent observer, runtime declaration or approved migration flow. | Keep the registered code and no false producer; implement only after the runtime contract and required host evidence exist. | Owner unavailable; no false source producer added. |
 
 ---
 
 ## 8. Progress log (newest first, one line per event)
 
+- 2026-11-21 — Owner directive: launch the controlled developer preview now. Name "Tenet" is final (README, PRD Q-13, Tech Spec §18 and the finalization checklist updated). Host spikes H1/H2 no longer gate the preview: a source test suite cannot observe VS Code or Copilot, so host behavior stays "unobserved" in the README and `.github/ISSUE_TEMPLATE/host-report.yml` collects reports from real hosts. H1/H2 remain required for qualification and an M0 claim.
+- 2026-11-21 — Cleaned `specs/`: it now holds only `PRD.md`, `tech-spec.md`, `ux-spec.md` and this file. Local-only (git-ignored) moves: old plan to `.archive/specs/plan-2026-11-20.md`; 18 implemented, superseded or exploratory drafts to `.archive/specs/`; 10 unsigned drafts that still inform open items (QLT-05/11/13, EVD-04, CON-07, RES-05, REV-04, NFR-07, R08, Vitest global errors) plus their 3 reviews to `.archive/specs/open-drafts/`. Nothing tracked changed; tracked `docs/audits/` and `CHANGELOG.md` still link to these now-untracked paths.
+- 2026-11-21 — Re-audited the last source blockers after the 2,602/4 green local gate and exact-head CI. QLT-11/QLT-13 remain blocked because the executable trait-contribution registry and missed-trait reviewer field are not defined; EVD-04 remains blocked because canonical temporary-index/filter behavior conflicts with the fail-closed blob materializer. No speculative source change was made.
+- 2026-11-21 — Target-C exact-current local validation passes: 2,602 tests, 4 existing skips, 0 failures; reproducible 103-file payload; `npm run uat` completes 158 observations against the 804,344-byte bundle (SHA-256 `c6211b97a9edc5954fe30cbc1c0d0fea6e8fe54665bdf117ce9df281382bc2c2`); lint, privacy and R1 coverage integrity are clean. The source is still uncommitted, not exact-head hosted CI, and 0 requirements are qualified.
+- 2026-11-21 — Hosted exact-head `untrusted` passed, but `system-budgets` rejected the long-history warm p95. The read-only open path now uses a bounded `.git`/packed-ref fast probe, preserves repository layout notes, and never enumerates or admits source state; editing profiles retain the full probe and inventory. Local profiling and qualification tests pass; the new head is the pending hosted rerun.
+- 2026-11-21 — CON-07 now recovers syntactically admitted decision-record and `@tenet` tag IDs from committed files, reserves their shared-ID high-water marks, and previews acceptance-test locks in a separate confirm/decline question. Policy and charter remain undecided; no content, grants, support inputs or review evidence are invented.
+- 2026-11-21 — Final independent target-C review found and closed four source/doc defects: finish renders the appended series, alternative coverage requires an actual admitted alternative receipt, release-note facts include owner sign-offs and §9 blockers, and contributor guidance matches the tracked re-plan. The remaining high finding is correctly held: CON-07 and trait obligations still need missing closed contracts/owner semantics; they are not relabeled complete.
+- 2026-11-21 — Target-C continuation closed four source-side Appendix D gaps: bounded CON-07 history to the latest 500 reachable commits; added QLT-05 build/file/kernel-environment/workload-series handling; added a strict empty model-qualification table and exact model lookup; produced `alternative-check-missing` and `build-not-fresh` reason paths while treating imported CI as external/inconclusive. Focused red-first tests cover each behavior.
+- 2026-11-21 — Finalization observation (GitHub API): private vulnerability reporting, secret scanning and push protection are enabled; Dependabot security updates are disabled; `main` is unprotected; no `release` environment or ruleset is returned. The target-C checklist records these facts as observations, not source-controlled guarantees.
+- 2026-11-21 — Closed public-preview source/doc work that does not require a publisher: release notes now read `specs/re-plan.md` and extract host/owner gates, `/tenet feedback` returns the stateless redacted export preview, `CONTRIBUTING.md` defines the extension RFC/certification process, and `docs/audits/2026-11-21/should-dispositions.md` records all 19 Shoulds as proposed with no owner approval.
+- 2026-11-21 — Opened target C from the owner's request to continue until complete. B is inherited by C. Work now proceeds from the canonical specs because the historical B/C contracts named below are absent; host, human, signing, owner and publication evidence remains external and unqualified.
+- 2026-11-21 — Full CI's property campaign found a valid escaped-quote/backslash JSON key case miscounted by duplicate-key admission. Replaced the scanner with a linear escaped-string state machine, added the counterexample permanently, and passed all eight private-record controls.
+- 2026-11-21 — Independent target-A review found and closed two documentation blockers: the H1 checklist now includes nested dispatch, denied execution, and settings/workspace persistence; the removal guide now names Tenet's confirmed bounded cleanup path. The changed test surfaces pass 44/44 with two existing skips, lint/privacy are clean, and `CHANGELOG.md` records the local-only continuation.
+- 2026-11-21 — Current-tree target-A validation passes on `main`: `npm run ci` has 2,587 pass, 4 expected skips and 0 failures; `npm run uat` records 158 observations against a 794,275-byte bundle (SHA-256 `15bb3a5ad1dcfdf76dd70973284519a429fab0aea96e0876cf7778c5eafc081b`); privacy reports no findings. The changes are uncommitted and have no hosted run, so implementation remains locally evidenced rather than `✅`.
+- 2026-11-21 — Prepared target-A host execution: added a tracked H1/H2/dogfood checklist at `docs/audits/2026-11-21/target-a-host-checklist.md`; all host observations and qualification remain owner-run/unqualified.
+- 2026-11-21 — Reconciled user-facing status: README, plugin README, tuple and install/removal docs now describe enabled undo/cleanup without claiming installed-host qualification, and cite exact-source runs 44885756509/44885756487 for frozen implementation `b7869a0`.
+- 2026-11-21 — Repaired the local GIT-04 fixture on `main`: it creates `.git/info` explicitly instead of depending on a system Git template. A process-identity test now preserves the product's honest macOS uncertainty outcome instead of requiring an unsafe signal inference.
+- 2026-11-21 — Deep audit found target-A source complete but the plan's exact-current CI and status claims stale: M0 is 34 rows (30 T1, 4 host-only), R1 is 165 T1/15 host-only/1 measured, 0 unmapped, and all qualification statuses remain `not-qualified`.
 - 2026-11-21 — Pushed `main` at b7869a0 after privacy range review; untrusted 44885756509 and system-budgets 44885756487 completed successfully, including hosted source, Windows, bundle and UAT lanes. Remaining target-A work is owner-host qualification only.
 - 2026-11-20 — Review and validation: no blocker remained in the independent safety review; typecheck/lint/M0 coverage, 179 focused tests (12 Windows skips), bundle build 775 KB, payload/reproducibility/privacy pass. Built UAT stops at the canonical Windows mutating boundary.
 - 2026-11-20 — W2a.4 P52/P53: applied alternative B; acceptance no longer starts integration, explicit integration owns the acceptance transition, and canonical specs plus plugin wording agree. Typecheck, lint, M0 coverage, build, payload, reproducibility and privacy pass. Windows UAT stops at the unqualified mutation boundary; WSL1 is disabled by host policy.
@@ -286,7 +333,23 @@ recommendation. The owner answers in the same row.
 
 ---
 
-## 9. Later targets (do not start without the owner choosing B or C in §2)
+## 9. Target C work (B inherited; opened autonomously on 2026-11-21)
+
+### 9.1 2026-11-21 source and evidence status
+
+| Area | Status | What remains |
+|---|---|---|
+| W1/W2 and M0 preparation | ✅ existing frozen source `b7869a0`; ◐ local-only reconciliation | Commit and host the 2026-11-21 diff; H1/H2, owner M0 approval and dogfood. |
+| Release notes / installed status / feedback / RFC process | ◐ local target-C implementation | Exact-source hosted CI after a commit. No release claim. |
+| Qualification structure | ◐ 181 Musts structurally mapped; 34 ledger records; 0 qualified | Semantic review and evidence for 147 additional Musts, campaign manifests, common tuple/artifact binding, all 19 Should owner decisions. |
+| CON-07 reconstruction | ◐ 500-commit bound, decision/tag IDs, and confirmed lock preview implemented | Decision-content recovery and unfinished-work selection still need a closed projection; policy and charter correctly remain undecided. |
+| EVD-04 sealed baseline | ⛔ | Canonical temporary-index/filter method conflicts with the existing blob-only layout; owner must select/approve the narrower claim or implementation. |
+| QLT-05 workload | ◐ source gaps closed locally | Native performance/host evidence and qualification; project-produced numbers do not become kernel measurements. |
+| QLT-11 / QLT-13 traits | ⛔ | Owner semantics for missed review traits, late-trait lane raises, contributed obligations and which `unknown` security traits require a note. |
+| RSC-08 model qualification | ◐ table and lookup exist; 0 records | Authorized campaign records and an observed model/tuple. |
+| Appendix D reason codes | ◐ `alternative-check-missing` and `build-not-fresh` produced | Remaining codes need runtime/host/schema mechanisms: accessibility, audit, dependency, port/server, migration approval and observer hooks. |
+| B security/release source | ◐ existing privacy/CI/diagnostics controls reviewed; finalization checklist added | Signing key, publisher identity, branch protection, Dependabot security updates, protected `release` environment and 72-hour public window. |
+| Full R1 qualification | ⛔ | SP-03/04/05/06/07/10/11, pilot, ASVS/WCAG/concurrency/workload campaigns, 8–12 participants and owner/release/security approvals. |
 
 **B — public preview** (about 1 week more): privacy scanner P79, P120–P125,
 P127 (`open-drafts/publication-privacy-contract.md`); P77/P78; P92–P97
@@ -311,8 +374,9 @@ Shoulds reviewed and qualified (`open-drafts/acceptance-matrix-draft.md`,
 
 | Location | Contents |
 |---|---|
-| `.archive/specs/plan-2026-11-20.md` | old plan: §1.0.3 owner decisions, §4.1 host-spike runbook, §12.3 defect rows P1–P127, §13 history |
-| `.archive/specs/open-drafts/` | 49 contracts used as design input |
-| `.archive/specs/` | finished or superseded specs, `git09-id-merge.md`, `reviews/` |
-| `.archive/recovered-2026-11-20/` | rebuilt undo and F10 work; README lists limits and hand edits |
-| `refs/preserved/*` | `p68`, `f4`, `git09-pushed`, `git09-local`, `cleanup`, `cleanup-undo-red` |
+| `.archive/specs/plan-2026-11-20.md` | old plan from the Windows session; it is not present in a fresh checkout |
+| `.archive/specs/open-drafts/` | 49 historical contracts from the old session; not present in a fresh checkout |
+| `.archive/specs/` | historical finished/superseded specs; not present in a fresh checkout |
+| `.archive/recovered-2026-11-20/` | historical rebuilt undo/F10 work; not present in a fresh checkout |
+| `refs/preserved/*` | historical candidate refs; `p68`, `f4`, `git09-pushed`, `git09-local`, `cleanup` and `cleanup-undo-red` are not present in this fresh checkout |
+| `docs/audits/2026-11-21/target-a-host-checklist.md` | tracked H1/H2/dogfood preparation for owner execution |

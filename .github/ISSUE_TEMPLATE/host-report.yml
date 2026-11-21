@@ -1,0 +1,40 @@
+name: Host observation report
+description: Tell us what Tenet did on your VS Code and Copilot setup. Observations like this are how host behavior moves from "unobserved" to recorded.
+title: "Host report: "
+labels: ["host-observation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a disposable project. Do not paste code, secrets, tokens or personal paths. Run `/tenet help` and paste only its version line.
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: VS Code, GitHub Copilot Chat extension, model, operating system and Node.js.
+    validations:
+      required: true
+  - type: textarea
+    id: did
+    attributes:
+      label: What you did
+      description: The request you sent and the steps you took (install, update, remove, a task through `finish`).
+    validations:
+      required: true
+  - type: textarea
+    id: saw
+    attributes:
+      label: What you saw
+      description: What the host and Tenet showed, including approval prompts and anything unexpected.
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      options:
+        - Worked as the README describes
+        - Worked, but differently from the README
+        - Did not work
+    validations:
+      required: true

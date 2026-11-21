@@ -54,7 +54,7 @@ The Tech Spec and UX Spec decide *how*; they may not redefine what "checked", "a
 
 **Tenet for Copilot is the first deliverable, not the boundary of the vision.** It is an open-source plugin for the Copilot environment the user already uses. The user installs it once and describes a task. Tenet clarifies what matters, agrees concrete examples, plans increments, builds test-first, reviews independently, reports honest evidence and remembers the project's intent for the next change. The software remains an ordinary project, maintainable without Tenet.
 
-**Naming:** Tenet is the product name; "software factory" describes the concept. [Validated: owner, October 14.] Repository, package and marketplace identifiers are confirmed under Q-13 before publication.
+**Naming:** Tenet is the product name; "software factory" describes the concept. [Validated: owner, October 14.] The name is final (owner, 2026-11-21; Q-13 closed).
 
 **First product form:** a native plugin comparable in installation and packaging to pstack (a Cursor plugin that bundles a setup command and a main workflow), not a new harness, IDE or background service. **Long-term boundary:** the practice extends across hosts, models, software families and lifecycle stages through the extension architecture in Section 3.8; that architecture is a hypothesis to prove, not evidence of broader support. [Validated: owner direction.] **Value proposition:** more useful, maintainable software per unit of human effort, elapsed time and model capacity. [Assumed: verify - evaluation owner through the pilot.]
 
@@ -2394,7 +2394,7 @@ The owner asked on October 14 to incorporate the review recommendations and, on 
 | Helper execution via the project's Node.js | Likely for R1 projects | Technical maintainer (SP-01) | Helper-dependent requirements |
 | Node/TypeScript adapter and fixtures | Not built | Technical maintainer (SP-10) | Starter and brownfield |
 | Tenet evaluation infrastructure: account, budget, runner, terms of service | Not established | Evaluation owner (SP-11, Q-16) | ENG-04, AC-26, AC-28 (Tenet's own qualification, not a user prerequisite) |
-| License | MIT for Tenet and its own starter-template code, selected 2026-10-24; third-party licenses retained | Product owner (Q-03 license decision closed; distribution identity remains Q-13) | Publication still requires the other release gates |
+| License | MIT for Tenet and its own starter-template code, selected 2026-10-24; third-party licenses retained | Product owner (Q-03 license decision closed; the name is final, Q-13 closed) | Publication still requires the other release gates |
 | User CI and delivery targets | External | Project owner, R1.1 | Nothing in R1 |
 
 ### 8.6 Constraints and owners
@@ -2481,12 +2481,12 @@ All entries are [Unknown: TBD] until resolved. Q-02, Q-05, Q-07, Q-08, Q-10 and 
 | ID | Open decision | Proposed resolution | Owner and gate |
 |---|---|---|---|
 | Q-01 | Exact qualification tuple, including harness (Local versus Copilot harness) and install path | VS Code stable desktop, Local harness, macOS arm64, install path chosen by SP-01 | Technical maintainer, after SP-01, SP-02, SP-08, before Tech Spec approval |
-| Q-03 | License and distribution identity | **License resolved 2026-10-24:** owner selected MIT for Tenet and its own starter-template code (conversation decision 16 B); retain third-party license/notice obligations. Distribution identity/namespace clearance remains Q-13. | Product owner; license selection does not authorize publication |
+| Q-03 | License and distribution identity | **License resolved 2026-10-24:** owner selected MIT for Tenet and its own starter-template code (conversation decision 16 B); retain third-party license/notice obligations. Tenet is the final name (owner, 2026-11-21; Q-13 closed). | Product owner; license selection does not authorize publication |
 | Q-04 | Evaluation owners and pilot cohort | Section 6.6 design; 5 formative and 8–12 qualification technical builders; named evaluation and UX owners | Product owner before pilot |
 | Q-06 | Retention defaults | Freeze Sections 4.4.3 and 5.15 values | Product owner before Tech Spec approval |
 | Q-09 | Release stewardship owners | Name release and security owners for the Section 5.9.2 policy | Product owner before public beta |
 | Q-11 | Meaning of "100% utilization ceiling" | A spending ceiling (never exceed the authorized allowance), not a target to consume allowance; Tenet never creates work to use credits | Product owner before quota-aware accounting (Later) |
-| Q-13 | Name and namespace availability | Check "Tenet" against marketplace, npm, GitHub and trademark conflicts; keep a fallback name | Product owner before publication |
+| Q-13 | Name and namespace availability | **Closed 2026-11-21:** the owner fixed "Tenet" as the final name; no fallback name is kept. A namespace conflict found later is a new decision. | Product owner |
 | Q-14 | Staffing | Assign Section 8.6 roles to named people; seek a second maintainer | Product owner before phased plan |
 | Q-15 | Publish discovery aggregates (Section 1.2) | **Limited consent resolved 2026-10-24:** owner chose conversation decision 17 A, permitting only the two stated totals and derived percentage with the single-user caveat. Omit project identities/count/dates, raw history and scripts. | Product owner; history/privacy audit remains required, no publication or history-rewrite authorization |
 | Q-16 | Evaluation funding and account | **Strategy/policy selected 2026-10-24:** owner chose 21 B, existing Copilot account in bounded serialized windows, and 22 A, included allowance only/no additional paid usage or overages. Attribution uncertainty remains explicit. Identifier, permitted-use checks, verified external enforcement, finite included-usage limits, isolation and live-run authorization remain unresolved; no paid fallback, purchase or automatic switch. | Product/evaluation owner before live evaluation; policy does not authorize calls or establish enforcement |

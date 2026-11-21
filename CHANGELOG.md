@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-21 — Fix the product name and take host spikes off the preview path
+
+- "Tenet" is the final product name: removed "working name" from `README.md`, closed PRD Q-13, updated Tech Spec §18 item 7 and `docs/release/target-c-finalization.md`. `packages/kernel/test/readme.test.ts` now rejects "working name".
+- Host spikes H1/H2 no longer gate the controlled developer preview; they stay required for qualification. Added `.github/ISSUE_TEMPLATE/host-report.yml` so real hosts can report observations.
+- `npm run ci` passes (2,602 pass, 4 skips, 0 fail) and `npm run uat` exits 0 on the built bundle; `npm run privacy` is clean on the diff.
+
 ## 2026-11-21 — Advance target-A finalization and target-C source completion
 
 - Made the GIT-04 undo fixture independent of the installed Git template, retained the documented `effect-uncertain` process stop outcome when macOS process identity is unsafe, and updated the README contract for enabled cleanup removal. The changes touch the focused kernel tests, root/plugin README files, tuple and uninstall guidance, and the active re-plan.

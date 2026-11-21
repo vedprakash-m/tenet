@@ -12,6 +12,7 @@ describe("installation README [INS-02]", () => {
     assert.doesNotMatch(readme, /PLACEHOLDER|<!-- DRAFT/);
     assert.match(readme, /Publisher and verification/);
     assert.match(readme, /publisher.{0,80}not designated/i);
+    assert.doesNotMatch(readme, /working name/i);
     assert.match(readme, /https:\/\/github\.com\/vedprakash-m\/tenet/);
     assert.match(readme, /signed release|provenance/i);
   });

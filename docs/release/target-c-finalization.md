@@ -59,7 +59,8 @@ treated as complete by a source pass, local CI run or draft release.
 
 ## Publisher and release identity
 
-- [ ] Product, repository, publisher and namespace identity are approved.
+- [x] Product name is final: "Tenet" (owner, 2026-11-21).
+- [ ] Repository, publisher and signing identity are approved.
 - [ ] The tag-signing identity exists, is controlled and has a documented
   revocation procedure. Never record a private key in the repository.
 - [ ] The pinned release workflow actions and token permissions have been
