@@ -1,0 +1,25 @@
+id: CP-0004
+title: "Schemas 0.1"
+type: feature
+lane: standard
+priority: standard
+due: null
+levels: [L3, L4]
+serves: [V-V4, V-P2]
+implements: [R-010]
+milestone: M1
+source: "specs/plan.md"
+stage: triage
+status: parked
+blocked_by: []
+unblocks: []
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 6, sessions: 6}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-22T21:00Z, to: intake, by: Ved, reason: "seeded from the M0 plan"}
+  - {at: 2026-11-22T21:00Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-22T21:00Z, to: parked, by: Ved, reason: "revisit when the M0 gate passes"}

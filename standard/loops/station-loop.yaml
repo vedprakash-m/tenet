@@ -1,0 +1,89 @@
+# The governed station loop (standard §14.4), engine-neutral. Draft 0.1.
+# Compiled by `tenet build --target <engine>`; see tech spec §10. Step kinds: agent, script, human_gate, set, route.
+loop: station-loop
+version: 0.1.0
+description: >
+  Assign, create, inspect, critique, record, decide. Deterministic steps decide; models create and critique.
+  Exhaustion is not convergence: it goes to the human gate.
+inputs: [packet, station, lane]
+vars:
+  round: 1
+limits:
+  rounds: "${profile.loop.rounds[lane]}"
+  majors_allowed: "${profile.loop.majors_allowed[lane]}"
+steps:
+  - id: assign
+    kind: script
+    run: "tenet assign ${packet} --station ${station} --round ${round} --json"
+    outputs: [run, path, creator, criteria]
+
+  - id: create
+    kind: agent
+    role: "${assign.creator}"
+    assignment: "${assign.path}"
+
+  - id: inspect
+    kind: script
+    inspects: create
+    run: "tenet inspect ${assign.run} --json"
+    outputs: [missing, protected_changed]
+
+  - id: judge
+    kind: agent
+    role: judge
+    criteria: "${assign.criteria}"
+    readonly: true
+    assignment: "${assign.path}"
+
+  - id: record
+    kind: script
+    run: "tenet record ${assign.run} --findings ${judge.output} --json"
+    outputs: [blockers, majors, converged, requires_human]
+
+  - id: decide
+    kind: route
+    routes:
+      - {when: "inspect.protected_changed", to: gate}
+      - {when: "record.converged && !inspect.missing", to: done}
+      - {when: "record.requires_human", to: gate}
+      - {when: "round >= limits.rounds", to: gate}
+      - {when: "true", to: bump}
+
+  - id: bump
+    kind: set
+    set: {round: "${round + 1}"}
+    next: assign
+
+  - id: gate
+    kind: human_gate
+    prompt: "${packet} · ${station} · round ${round} of ${limits.rounds}"
+    options:
+      - {id: stop, to: stopped, label: "Stop: nothing is approved; the packet waits"}
+      - {id: revise, to: reset, label: "Revise within the baseline: one more set of rounds"}
+      - {id: accept_with_findings, to: accepted, label: "Accept with recorded findings (non-blocking only)", requires: "record.blockers == 0"}
+      - {id: amend, to: amend, label: "Amend the baseline: open a spec packet and hold this one"}
+
+  - id: reset
+    kind: set
+    set: {round: 1}
+    next: assign
+
+  - id: done
+    kind: script
+    run: "tenet move ${packet} --next --json"
+    end: converged
+
+  - id: accepted
+    kind: script
+    run: "tenet move ${packet} --next --accept-findings --json"
+    end: accepted
+
+  - id: amend
+    kind: script
+    run: "tenet amend ${packet} --json"
+    end: held
+
+  - id: stopped
+    kind: script
+    run: "tenet wait-owner ${packet} --question \"Stopped at ${station} human gate\" --json"
+    end: stopped

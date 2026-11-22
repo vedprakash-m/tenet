@@ -1,0 +1,25 @@
+id: CP-0002
+title: "Namespace check and package name"
+type: ops
+lane: quick
+priority: standard
+due: null
+levels: [L3, L4]
+serves: [V-H5]
+implements: []
+milestone: M0
+source: "specs/plan.md"
+stage: shape
+status: active
+blocked_by: []
+unblocks: []
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 2, sessions: 2}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-22T21:00Z, to: intake, by: Ved, reason: "seeded from the M0 plan"}
+  - {at: 2026-11-22T21:00Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-22T21:00Z, from: triage, to: shape, by: Ved, lane: quick}

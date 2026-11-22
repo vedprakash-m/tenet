@@ -1,0 +1,39 @@
+# Tenet's own profile: this repository runs under the standard it defines (PRD DEC-08).
+# Self-hosted: the kit is read from the working copy of standard/, not vendored (tech spec §2).
+project: tenet
+owner: Ved
+standard: "0.1.0-draft"
+kit_path: standard
+adoption_step: 1
+deploys: false                        # releases publish a package; Release means publishing with checksums and provenance
+packet_size_limit: {agent_hours: 12}
+wip: {define: 3, construct: 2, assure: 2, deliver: 1}
+lanes_default: standard
+commit_delegation: {lanes: [quick], max_agent_hours: 2, levels: [L3, L4]}
+stop_rule: {failing_sessions: 3, same_signature: 3, flip_flops: 2, review_rejections: 2}
+checks:
+  quick: [unit]
+  standard: [lint, types, unit, fixtures]
+  deep: [lint, types, unit, fixtures, e2e, conformance]
+owner_queue_alert_days: 2
+release_stages: [internal, 100]
+observe: {published_artifact_days: 14}
+holdout_required_for: [deep]
+extra_checks:
+  - "every requirement in specs/prd.md names a milestone"
+  - "every schema in standard/schemas has valid and invalid fixtures (from M1)"
+requirement_id_pattern: "^R-\\d{3}$"
+loop:
+  rounds: {quick: 2, standard: 3, deep: 4}
+  majors_allowed: {quick: 2, standard: 1, deep: 0}
+team:                                 # reference definitions in standard/agents/roles; draft until qualified (M5)
+  shape: shaper@0
+  build: {code: builder@0}
+  verify: verifier@0
+  review: {judge: judge@0, specialists: [architecture, quality]}
+excluded:
+  - {role: experience-critic, reason: "CLI output is reviewed against ux-spec.md by the judge with quality criteria until M3"}
+  - {role: release, reason: "the Owner publishes releases by hand until M4"}
+agent_release: {canary_share: 0.2, repeats: 3, auto_promote: false}
+engine: null
+issue_source: null
