@@ -60,7 +60,7 @@ sections:
 - R-12 A payment that times out is retried once, never twice. {origin: observed; cites: src/retry.ts:40-48, test: checkout.retry.test.ts > retries once; serves: V-2}
 ```
 
-Braces close the line (`- <ID> <text> {…}`; table rows in onboarding §1). `{…}` fields split on `;` (`origin:`, `cites:`, `serves:`, `scope:`, `adopted_by:`; repeated keys overwrite); `cites:`/`serves:` split on `,`. Parsed item: `{id, text, origin, cites, serves, scope, adopted_by}` (`scope` is `"global"` or non-empty string, else `null`; other scalars nullable). `origin` is `observed|documented|asked|inferred`. `_preamble` has `heading: ""`; `section.level` defaults to `sections[slug].level ?? tenet.level ?? null`; omitted `applies_to` defaults to `[]`. Citations: `path:start-end`, `path:line`, `test: <file> > <name>`, `doc: path#slug` (forward slashes). Missing front matter emits `TN-SPEC-NO-FRONT` (`line: null`, treat sections as `draft`). Unclosed braces, metadata outside braces, unknown keys, or invalid `origin` emit `TN-SPEC-REQ-META`. Bullets lacking an ID inside `Requirements`/`Vision`/`L0` sections, bullets with `{…}`, or empty Requirement/Vision table ID cells emit `TN-SPEC-MISSING-ID` (prose bullets elsewhere never emit it). Duplicate IDs emit `TN-SPEC-DUP-ID`.
+Braces close the line (`- <ID> <text> {…}`; table rows in onboarding §1). `{…}` fields split on `;` (`origin:`, `cites:`, `serves:`, `scope:`, `adopted_by:`; repeated keys overwrite); `cites:`/`serves:` split on `,`. Parsed item: `{id, text, origin, cites, serves, scope, adopted_by}` (`scope` is `"global"` or non-empty string, else `null`; other scalars nullable). `origin` is `observed|documented|asked|inferred`. `_preamble` has `heading: ""`; `section.level` defaults to `sections[slug].level ?? tenet.level ?? null`; omitted `applies_to` defaults to `[]`. Citations: `path:start-end`, `path:line`, `test: <file> > <name>`, `doc: path#slug` (forward slashes). Missing front matter emits `TN-SPEC-NO-FRONT` (`line: null`, treat sections as `draft`). Unclosed braces, metadata outside braces, unknown keys, or empty/invalid `origin` emit `TN-SPEC-REQ-META`. Bullets lacking an ID inside `Requirements`/`Vision`/`L0` sections, bullets with `{…}`, or empty Requirement/Vision table ID cells emit `TN-SPEC-MISSING-ID` (prose bullets elsewhere never emit it). Duplicate IDs emit `TN-SPEC-DUP-ID`.
 
 **Conflicts and open questions** (sections named exactly `Conflicts` and `Open questions`):
 
@@ -69,7 +69,7 @@ Braces close the line (`- <ID> <text> {…}`; table rows in onboarding §1). `{�
 - [x] Q-2 (section: vision) Who are the primary users? answer: returning shoppers
 ```
 
-Parsed entries: `{id, checked: bool, section: string|null, text, resolution?: string, answer?: string}` (stripping trailing `| 1: …`, `resolution: …`, `answer: …` from `text`). An open item (`[ ]`) blocks blessing its named section until checked with `resolution:`/`answer:`, or deferred.
+Parsed entries: `{id, checked: bool, section: string|null, text, resolution?: string, answer?: string}` (stripping trailing `| 1: …`, and `resolution:`/`answer:` when preceded by start, whitespace, `;` or `|`). An open item (`[ ]`) blocks blessing its named section until checked with `resolution:`/`answer:`, or deferred.
 
 ## 4. Onboarding files
 

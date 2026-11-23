@@ -18,8 +18,8 @@ Symlinks and submodules (mode `160000`) are included as listed; LFS files as the
 
 **Sections and digests.**
 - Skip front matter. A section runs from a line starting `## ` to the next such line or end of file; non-empty text before the first `## ` is `_preamble` (omitted when empty/whitespace). Fences follow CommonMark: 3+ backticks or tildes close only with the same char at least as long; headings inside fences don't count.
-- **Slug:** lowercase; keep Unicode letters and digits (categories L and N), spaces and `-`; drop everything else; spaces to `-`; collapse repeated `-`; trim `-`. Empty slugs become `section-<n>` (1-based non-preamble position). Duplicate slugs in one file emit `TN-SPEC-DUP-SECTION`.
-- **Digest:** `sha256:` over section **body** (without `## ` line): CRLF→LF, trim trailing `[ \t]` per line, strip trailing blank lines (keep leading newlines), normalize path citations `[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)+:\d+(?:-\d+)?` (or `<name>.<ext>:<line>(-<end>)?`, never after `://`/`sha256:`, excluding trailing punctuation) to the path.
+- **Slug:** lowercase; keep Unicode letters and digits (categories L and N), spaces and `-`; drop everything else; spaces to `-`; collapse repeated `-`; trim `-`. Empty slugs become `section-<n>` (1-based non-preamble position). Duplicate slugs emit `TN-SPEC-DUP-SECTION` and stay in `sections[]`.
+- **Digest:** `sha256:` over section **body** (without `## ` line): CRLF→LF, trim trailing `[ \t]` per line, strip trailing blank lines (keep leading newlines), normalize path citations `[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)+:\d+(?:-\d+)?` (or `[A-Za-z0-9._-]+\.[A-Za-z][A-Za-z0-9]*:\d+(?:-\d+)?`, never after `://`/`sha256:`, excluding trailing punctuation) to the path.
 - **Rename:** when a front-matter entry's slug no longer exists and one new section (not `_preamble`, `conflicts`, `open-questions`) matches its `digest` or `blessed_digest`, `fix` moves the entry, blessed copy and `.anchors.json`; `≥2` candidates go to `ambiguous`. Split/merge is a new section and needs blessing.
 
 Fixtures: CRLF and LF give one digest; editing one section leaves the others unchanged; a `## ` inside a code fence is not a heading; a Japanese heading keeps its slug; a renamed heading keeps its blessing.
@@ -64,8 +64,8 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
 
 **Citation resolution,** at the current revision (the working tree for `check`; the tested commit in CI):
 - `path:start-end`: the file exists and `1 ≤ start ≤ end ≤ line count`; for blessed sections, the anchor rules of ALG-03 apply.
-- `doc: path#slug`: a heading with that slug exists.
-- `test: file > name`: `file` exists and each segment of `name` split on ` > ` appears **in order** in `file` as written, `def <seg>` or `func <seg>`.
+- `doc: path#slug`: a heading with that slug exists (missing `#slug` is `TN-CITE-RANGE`).
+- `test: file > name`: `file` exists (missing ` > ` is `TN-CITE-RANGE`) and each segment split on ` > ` appears in order (`indexOf` advancing cursor) in `file` as written, `def <seg>` or `func <seg>`.
 
 Errors: `TN-CITE-FILE`, `TN-CITE-RANGE` (including malformed syntax), `TN-CITE-HEADING`, `TN-CITE-TEST` (carrying `severity: "error"`, `rule: "citations-valid"`, and 1-based `line` of the citing statement, else `null`). Resolving says nothing about whether the source supports the statement; that judgment is the spec reviewer's, labelled advisory. Fixtures: a nested `describe > it` name resolves; a renamed test fails.
 
@@ -143,9 +143,9 @@ Fixtures: one per row; an advisory review (row 7) beside an enforced failed clai
 | `jest-json` | `assertionResults[].fullName` | its status | from the name |
 
 - **Readers:** see `evidence.md §2`.
-- **Tagged declarations** (`ALG-09` patterns): multi-line `it`/`test` title within next 3 lines; `def test_…`; `t.Run(`; `@Test` or `#[test]` with method/fn within next 3 lines; `record_property("tenet.case", "<tag>")` in test body. Exclude `describe(` from `declarations[]`; its tag propagates across its `{…}` body with `via_describe: true` iff an enclosing `describe(` contributes ≥1 tag absent on the declaration. `end_line` = closing brace (ignoring comments/strings in brace languages) or last non-blank indented body line.
-- **Which tags count:** `AB-n` counts on lines added in `git diff -U0 <base>..<tested>` (declaration, multi-line title, `record_property`, or enclosing `describe(` line); requirement tags count anywhere. Unknown/reserved tokens ignored (contracts §1).
-- **Matching:** strip tags/`case.tags` from case name first, drop any trailing pytest `[…]` suffix, then match suffix against tagless declaration title/fn; placeholders (`%s %d %i %f %j %o %p %#`, `$name`, `${…}`) match `.+`. `coverage` is `confirmed` iff every declaration has `≥1` case.
+- **Tagged declarations** (`ALG-09` patterns): multi-line `it`/`test` title within next 3 lines; `def test_…`; `t.Run(`; `@Test` or `#[test]` with method/fn within next 3 lines; `record_property("tenet.case", "<tag>")` in test body. Exclude `describe(` from `declarations[]`; its tag propagates across its `{…}` body with `via_describe: true` iff an enclosing `describe(` contributes ≥1 tag absent on the declaration. `end_line` = closing brace (ignoring comments/strings in brace languages), closing `)` of expression-arrow tests, or last non-blank indented body line. Strip `_?tenet_(?:AB|<prefix>)_\d+` (and trailing `_` if leading), collapsing spaces/`__` and trimming `_`/whitespace for `name`.
+- **Which tags count:** `AB-n` counts when its source line or enclosing `describe(`-inherited inner declaration line is added in `git diff -U0 <base>..<tested>`; requirement tags count anywhere. Unknown/reserved tokens ignored (contracts §1).
+- **Matching:** strip tags/`case.tags` from case name first, drop any trailing pytest `[…]` suffix, then match suffix against tagless declaration title/fn; placeholders (`%s %d %i %f %j %o %p %#`, `$name`, `${…}`) match `.+`. `coverage` is `confirmed` iff `declarations.length > 0` and every declaration has `≥1` case (else `not-confirmed`).
 - **Item result & counts:** `failed` (any fail/error) > `not-run` (0 cases or any declaration unmatched) > `skipped` (all cases skipped) > `passed` > `no-test` (0 declarations). `tests.expected` = declaration count; `passed`/`failed`/`skipped` = counts over deduplicated matched cases; `not_run` = unmatched declarations. `first_failure` = `{full_name, status}` of first matched case whose final `status` is `fail`/`error`, else `null`.
 - **Authorship:** for both `acceptance` and `requirement` tags in `declaredTags`, `written-here` if every declaration's tagless title was absent in that `file` (or `-M` rename source) at `base`; `unknown` if empty or any `via_describe`; else `tag-added-here`.
 - **Check vs cases:** non-zero check exit or `teardown_failed` fails the check; items keep case results.
@@ -161,10 +161,10 @@ Over `git diff -M -U0 <base>..<tested>`:
 
 | Finding | Detected when |
 |---|---|
-| `removed-tests` | A test name declared on a removed line is declared on no added line anywhere in the diff (moves between files are not removals) |
-| `tests-consolidated` (in `notes[]`; suppresses `removed-tests` in that file, leaving `found: false` alone) | Names removed and same file adds `.each(`, `@pytest.mark.parametrize` or `t.Run(` |
-| `skip-added` | Added line contains `.skip(`, `.only(`, `.todo(`, `.skipIf(`, `xit(`, `xdescribe(`, `@pytest.mark.skip`, `@pytest.mark.xfail`, `pytest.skip(`, `@unittest.skip`, `t.Skip(`, `@Disabled`, `@Ignore` or `#[ignore]`; `names` = enclosing declaration (`line..end_line`) or next declaration within 3 lines, else trimmed added line |
-| `file-deleted` | A test file is deleted with no rename; `names` = tests declared at `base` (suppresses `removed-tests` for that file) |
+| `removed-tests` | Tagless `name` on a removed line is declared on no added line anywhere (moves between files are not removals); emit deduped tagless `name` |
+| `tests-consolidated` (in `notes[]`; suppresses `removed-tests` in that file, leaving `found: false` alone) | Tagless names removed and same file adds `.each(`, `@pytest.mark.parametrize` or `t.Run(` |
+| `skip-added` | Non-`//`-comment added line contains `.skip(`, `.only(`, `.todo(`, `.skipIf(`, `xit(`, `xdescribe(`, `@pytest.mark.skip`, `@pytest.mark.xfail`, `pytest.skip(`, `@unittest.skip`, `t.Skip(`, `@Disabled`, `@Ignore` or `#[ignore]`; `names` = enclosing declaration (`line..end_line`) or next declaration within 3 lines, else trimmed added line |
+| `file-deleted` | A test file is deleted with no rename; `names` = deduped tagless names at `base` (suppresses `removed-tests` for that file) |
 
 For `not_checked`: map changed code extensions at `head` (`.rb` ruby, `.cs` csharp, `.php` php, `.kt` kotlin, `.swift` swift, `.scala` scala, `.c/.h/.cc/.cpp/.hpp` c/c++, `.ts/.tsx/.js/.jsx/.mjs/.cjs` javascript/typescript, `.py` python, `.go` go, `.java` java, `.rs` rust) and emit any changed language lacking recognized test files at `head`. Say "no weakening detected by these checks", never "no weakening". Fixtures: deleting `init(`; moving a test file; consolidating 3 tests into `it.each`.
 
@@ -217,8 +217,8 @@ Fixtures: a global rule survives a budget filled by one long local requirement; 
 
 **Requirements a change touches.** Scan `.md` files with `tenet.spec` front matter at `head` (`base` fallback for deleted docs). Input: base and tested commits, `Implements:`. Output: blessed requirements with `why` (first-reason wins, ordered below then sorted by numeric ID):
 1. `implements`: named in `Implements:`
-2. `cited-code-changed`: path range or `test:`/`doc:` block overlaps a `git diff -U0` old-side hunk (`oldCount > 0` intersects `[start, end]`; pure insertion `@@ -L,0` overlaps iff `start <= L && L < end`), or cited file/section/test deleted or renamed
+2. `cited-code-changed`: path range, `test:` block, or `doc:` section's 1-based range at `base` overlaps a `git diff -U0` old-side hunk (`oldCount > 0` intersects `[start, end]`; `@@ -L,0` overlaps iff `start <= L && L < end`), cited section digest changed, or cited file/section/test deleted or renamed
 3. `text-changed`: the doc/section was deleted, its section digest changed, or the requirement's line overlaps a `git diff -U0` head-side hunk
-4. `same-area`: cites a file matching the same area key (last matching CODEOWNERS pattern string at head, else `dir:<top-level>` or `dir:.`) as a changed file, sorted by numeric ID then capped at 10, shown collapsed as "may be affected"
+4. `same-area`: cites a file matching the same area key (last matching pattern from first existing `.github/CODEOWNERS`, `CODEOWNERS`, `docs/CODEOWNERS` at head, else `dir:<top-level>` or `dir:.`) as a changed file, sorted by numeric ID then capped at 10, shown collapsed as "may be affected"
 
 Fixtures: changing `src/retry.ts:42` → `cited-code-changed`; sibling file → `same-area`.

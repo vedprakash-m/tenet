@@ -99,3 +99,25 @@ Proposals for files outside Track 2's write boundary (`tech-spec.md` §§ 2, 10,
 - `tenet/specs/plan/alpha.0.md`: made `opts.cwd` optional on `declaredTags` and `weakening`; documented `itemResults` title-only matching rule; defined `parseDoc` vs `parseRequirement` `V-` routing and duplicate ID exclusion in both `requirements` and `vision_items`; pinned `ladder` default recursive walk exclusions (`.git`, `.tenet`, `node_modules`, `dist`, `build`) and `deltas` `string[]` ID arrays sorted numerically then ASCII using `jcs` comparison.
 
 Post-Round-4 edit token counts: `contracts.md` `5,283` (`21,130B`), `messages.md` `2,005` (`8,019B`), `algorithms.md` `5,238` (`20,952B`), `evidence.md` `1,596` (`6,382B`), `alpha.0.md` `4,811` (`19,244B`), `tech-spec.md` `10,109` (`40,437B`). Proceeding to Round 5 to verify zero remaining inventions.
+
+---
+
+## Round 5 (`r5-a` / `r5-b`)
+
+| Metric | Round 5 (`r5-a` / `r5-b`) |
+|---|---|
+| Session unit tests | 11 pass / 11 pass (0 fail) |
+| `tsc --noEmit` errors | 0 / 0 |
+| `QUESTIONS.md` items | 10 / 22 |
+| `// INVENTED:` markers | 10 (`7+3`) / 22 (`11+11`) |
+| Shared fixture errors | 0 / 0 |
+| `compare.mjs r5` | **100% byte-identical (`identical=true`, `25,818B == 25,818B`)** across all 6 groups (`reports`, `acceptance`, `specs`, `moved`, `renamed`, `pr`) |
+
+### Round 5 -> Round 6 Spec Fixes (Closing All `r5-a`/`r5-b` Inventions)
+- `tenet/specs/tech-spec/contracts.md`: treated empty `{origin: }` as `TN-SPEC-REQ-META` in §3 and allowed start, whitespace, `;`, or `|` before trailing `resolution:`/`answer:` in `Conflicts`/`Open questions`.
+- `tenet/specs/tech-spec/messages.md`: defined per-shard vs array-wide `{path}` formatting (`opts.cwd`-relative forward slashes when inside `cwd`, single failing shard vs `", "`-joined array on `TN-REPORT-MISSING`/`TN-REPORT-MALFORMED`).
+- `tenet/specs/tech-spec/evidence.md`: counted raw `<testcase>` elements before retry collapse toward the `20,000` per-file limit; inherited `<testsuite file="...">`; threw `TN-REPORT-MALFORMED` when both `classname` and `name` are missing/empty; triggered `jest-json` `teardown_failed` per `testResults[]` suite; defined empty/eventless `go-test-json` as `cases: [], inconclusive: true`.
+- `tenet/specs/tech-spec/algorithms.md`: defined alpha-initial `<ext>` regex (`1.2:30` safe) and retaining duplicate-slug sections in `sections[]` (`ALG-02`); classified missing `#slug` on `doc:` and missing ` > ` on `test:` as `TN-CITE-RANGE` with ordered `indexOf` segment matching (`ALG-04`); handled expression-arrow `end_line`, `_?tenet_...` stripping cleanup, `via_describe` added-inner-line counting, and `no-test` `coverage: "not-confirmed"` (`ALG-08`); standardized `weakening` `removed-tests`/`tests-consolidated`/`file-deleted` `names[]` on deduped tagless `name` and ignored `//` comments in `skip-added` (`ALG-09`); defined `doc:` base section range hunk overlap and explicit CODEOWNERS file lookup order (`.github/CODEOWNERS`, `CODEOWNERS`, `docs/CODEOWNERS`) (`ALG-14`).
+- `tenet/specs/plan/alpha.0.md`: documented ignoring reserved/empty prefixes (`AB`, `CF`, `Q`, `V`) in `CP-0018`, first-seen deduped document-order `implements` and `items` returns in `parseAcceptance`, `{…}`-then-column precedence for `OB §1` table rows, front matter carrying `tenet` defaulting missing `sections` to `{}`, exact `Requirements`/`L0`/`Vision` heading/level matching rules, non-citation-stripped line-normalized `texts` for `doc:` citations, and `tenet.doc ?? path` fallback in `deltas`.
+
+Post-Round-5 edit token counts: `contracts.md` `5,293` (`21,170B`), `messages.md` `2,079` (`8,317B`), `algorithms.md` `5,360` (`21,438B`), `evidence.md` `1,679` (`6,716B`), `alpha.0.md` `4,952` (`19,806B`), `tech-spec.md` `10,109` (`40,437B`). Proceeding to Round 6.

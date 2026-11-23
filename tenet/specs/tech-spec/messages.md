@@ -8,7 +8,7 @@
 
 - Paths (`{path}`, `{file}`) use forward slashes and are relative to the repository root when known.
 - IDs (`{id}`, `{ids}`) keep their exact identifier form (`R-12`, `AB-1`, `V-2`, `CF-1`, `Q-1`); comma-separated lists join with `", "`.
-- When `path` is `string[]` on `TN-REPORT-MISSING` or `TN-REPORT-MALFORMED`, `{path}` joins formatted paths with `", "` (or `"[]"` when empty).
+- When `readReport` formats `{path}` for `TN-REPORT-MISSING` or `TN-REPORT-MALFORMED`: relativize each path with forward slashes to `opts.cwd` when `opts.cwd` is passed and inside it (else forward-slash the given path). When `path` is `string[]`, a single-shard failure substitutes that shard's formatted path, while array-wide failures (unknown `kind`, `[]`, merged `> 20,000` cases) join formatted paths with `", "` (or `"[]"` when empty).
 - `TN-GATE-*`, `TN-USAGE-*` and `TN-WEAK-*` cover wildcard prefixes in `contracts.md §13`; specific subcodes listed below take their own row.
 
 ## 2. Message and fix table
