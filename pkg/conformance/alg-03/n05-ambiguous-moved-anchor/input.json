@@ -1,0 +1,14 @@
+{
+  "operation": "flags",
+  "section": {
+    "state": "blessed",
+    "digest": "sha256:282bcbc3f0a34a8a4ac6f00c276fcf66cf3757a3332e83d92208e5079af46922",
+    "blessed_digest": "sha256:282bcbc3f0a34a8a4ac6f00c276fcf66cf3757a3332e83d92208e5079af46922",
+    "anchors": {
+      "src/a.ts:1": "sha256:8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8"
+    }
+  },
+  "files": {
+    "src/a.ts": "changed\nalpha\nalpha\n"
+  }
+}

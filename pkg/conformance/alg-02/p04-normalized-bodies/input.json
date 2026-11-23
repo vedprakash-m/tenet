@@ -1,0 +1,7 @@
+{
+  "operation": "sectionDigestMany",
+  "bodies": [
+    "\r\nUse src/retry.ts:5-8. \t\r\n\r\n",
+    "\nUse src/retry.ts:12-15.\n"
+  ]
+}

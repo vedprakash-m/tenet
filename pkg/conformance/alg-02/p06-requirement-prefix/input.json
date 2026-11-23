@@ -1,0 +1,7 @@
+{
+  "operation": "parseRequirement",
+  "line": "- PAY-7 Permit one retry. {origin: observed; cites: src/pay.ts:4-5; serves: V-P18, V-2; scope: global}",
+  "opts": {
+    "prefix": "PAY"
+  }
+}

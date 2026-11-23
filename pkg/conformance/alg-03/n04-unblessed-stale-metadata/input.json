@@ -1,0 +1,12 @@
+{
+  "operation": "flags",
+  "section": {
+    "state": "draft",
+    "digest": "sha256:d67e2e944994496c8d8ec76eed0cf9f09679448d584b532bebf941852a37f5ed",
+    "blessed_digest": "sha256:282bcbc3f0a34a8a4ac6f00c276fcf66cf3757a3332e83d92208e5079af46922",
+    "anchors": {
+      "src/a.ts:1": "sha256:8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8"
+    }
+  },
+  "files": {}
+}

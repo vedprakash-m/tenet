@@ -1,0 +1,15 @@
+{
+  "operation": "anchorsFor",
+  "section": {
+    "requirements": [
+      {
+        "cites": [
+          "test: test/retry.test.ts > retries once"
+        ]
+      }
+    ]
+  },
+  "files": {
+    "test/retry.test.ts": "test('retries once', () => {\n  assert.ok(true);\n});\ntest('other', () => {});\n"
+  }
+}

@@ -62,9 +62,7 @@
         "doc",
         "level",
         "version",
-        "owner",
-        "drafted_from",
-        "drafted_at_rev"
+        "owner"
       ]
     },
     "sections": {
@@ -98,8 +96,15 @@
               ]
             },
             "digest": {
-              "type": "string",
-              "pattern": "^sha256:[0-9a-f]{64}$"
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "blessed_digest": {
               "anyOf": [
@@ -113,8 +118,15 @@
               ]
             },
             "blessed_at_rev": {
-              "type": "string",
-              "minLength": 1
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "anchors": {
               "type": "object",
@@ -171,9 +183,30 @@
           "required": [
             "state",
             "digest",
-            "flags",
-            "recorded"
-          ]
+            "flags"
+          ],
+          "if": {
+            "properties": {
+              "state": {
+                "const": "blessed"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "properties": {
+              "recorded": {},
+              "blessed_digest": {},
+              "blessed_copy": {}
+            },
+            "required": [
+              "recorded",
+              "blessed_digest",
+              "blessed_copy"
+            ]
+          }
         }
       }
     }

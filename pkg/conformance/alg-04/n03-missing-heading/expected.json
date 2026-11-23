@@ -1,0 +1,10 @@
+{
+  "findings": [
+    {
+      "code": "TN-CITE-HEADING",
+      "severity": "error",
+      "rule": "citations-valid",
+      "line": 6
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "renamed": [],
+  "ambiguous": [
+    {
+      "from": "old",
+      "candidates": [
+        "first",
+        "second"
+      ]
+    }
+  ]
+}

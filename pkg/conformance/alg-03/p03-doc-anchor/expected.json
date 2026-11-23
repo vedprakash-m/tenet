@@ -1,0 +1,8 @@
+{
+  "anchors": {
+    "doc: guide.md#retry": "sha256:cb62669a14db5060fcbf0a6001c01eeca2cced14734043aa1dbd0f511ce171e5"
+  },
+  "texts": {
+    "doc: guide.md#retry": "Only once."
+  }
+}

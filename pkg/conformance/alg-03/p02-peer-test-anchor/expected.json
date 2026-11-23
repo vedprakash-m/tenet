@@ -1,0 +1,8 @@
+{
+  "anchors": {
+    "test: test/retry.test.ts > retries once": "sha256:bdd82d90de999edf8edff089fe467b67420aba9bae78af8adfbdc39ea98074f0"
+  },
+  "texts": {
+    "test: test/retry.test.ts > retries once": "test('retries once', () => {\n  assert.ok(true);\n});"
+  }
+}
