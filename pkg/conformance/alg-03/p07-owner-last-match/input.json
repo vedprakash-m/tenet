@@ -1,0 +1,6 @@
+{
+  "operation": "owner",
+  "document": "specs/checkout.md",
+  "codeowners": "specs/checkout.md @specific\nspecs/** @later @backup\n",
+  "owner": "ved"
+}

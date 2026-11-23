@@ -1,0 +1,7 @@
+{
+  "operation": "owner",
+  "document": "specs/checkout.md",
+  "front_matter_owner": "payments",
+  "codeowners": "*.md @docs\nspecs/** @platform\n",
+  "owner": "ved"
+}
