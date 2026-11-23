@@ -48,8 +48,8 @@
 6. Write `tenet-bundle/` (not a dot-folder): `bundle.json` `{schema_version, run: {id, attempt, workflow, job, index}, pr?, tested: {commit, kind, head, base}, checks: [{name, exit_code, outcome, duration_ms, report, report_sha256, inputs}]}` plus the reports. `exit_code` and `duration_ms` may be null.
 
 **What `init` writes.**
-- **The test command:** the runner's own command with the reporter flags of contracts §6, never `npm test -- …`.
-- **Setup:** the steps before the test step in the project's CI workflow, else this table.
+- **The test command:** synthesized under `checks.test` ( picking the first matching runner in contracts §6 table order) with the reporter flags of contracts §6, never `npm test -- …`.
+- **Setup:** the shell `run:` steps before the test step in the project's CI workflow, else this table (`uses:` toolchain steps stay in the workflow).
 - **Toolchain:** the project's version files (`.nvmrc`, `.python-version`, `go.mod`), else the runner default.
 
 | Found | `setup` |
@@ -66,7 +66,7 @@
 - a CI job runs the detected test command
 - that job already writes a supported report (its path becomes `report_path`), **or** the user accepts a marked edit that adds the reporter setting to that step (`PYTEST_ADDOPTS` or `NODE_OPTIONS` in an `env:` block where the runner reads them, else the flags appended to its `run:` line)
 
-`init` also gives that step an `id` if it lacks one. If the job calls a reusable workflow, or neither condition holds, it writes Tenet's test workflow instead. The preflight says which and why.
+`init` also gives that step an `id` (`tenet-tests`, or `tenet-tests-2`, … on collision) if it lacks one, preserving existing step IDs, `services`, and `strategy.matrix`. If the job calls a reusable workflow, or the user declines the reporter edit (under `--yes` without explicit reporter-edit consent, `init` does not edit a non-reporting job), or neither condition holds, it writes Tenet's test workflow instead (`ci_mode: "tenet-workflow"`). The preflight says which and why.
 
 ```yaml
 # tenet:begin v<version>
@@ -238,14 +238,7 @@ Nothing silently passes: every degraded result is labelled on the card and the b
 
 ## 9. Release procedure
 
-Each alpha is an `ops` work item:
-1. Bump the version; write the changelog with structured fields (`kind: rule-added|rule-clarified|field-added|breaking`).
-2. `npm pack` **once** per workspace package, record each `.tgz` digest, and assert each tarball's file list (no `pkg/evals`).
-3. Install those files on clean Windows, macOS and Linux, and run both UX Part 1 journeys and the scenario suite.
-4. Publish **the same files** with `--provenance --tag next` through trusted publishing. The first publish of a new package may use a short-lived granular token. If one package publishes and the other fails, the release is retried with the same version.
-5. Create a GitHub release with the tarballs, the kit archive and `SHA256SUMS`.
-6. Install from the registry and compare the bytes.
-7. Update and tag `tenet-starter`.
+In [onboarding.md §4](onboarding.md#4-release-procedure), moved under the rollover rule.
 
 ## 10. Outcomes
 

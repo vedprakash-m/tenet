@@ -103,18 +103,18 @@
 **CP-0010 · Init, upgrade, remove** · R-020, R-022, R-023, R-024, R-025, R-051, R-221, R-222, R-225 (rules in the block, Copilot pointer)
 1. *Needs:* CP-0045, CP-0048, CP-0051 (its workflow templates, loaded through the kit, never imported); OB §2; C §6, §10; CI §2–§3; AG §1; ALG-12.
 2. *Owns:* `src/install/` (with `hosts.ts`, a list of `HostDescriptor` entries: `detect`, `planWrites`, `capabilityLevel`), the commands `init`, `upgrade`, `remove`, `doctor` with their result schemas, `examples/starter/` (the `tenet-starter` contents), `test/install/`.
-3. *Exports:* `init({yes, vendor, force})`, `upgrade()`, `remove()`, `doctor()`.
+3. *Exports:* `init({yes, vendor, force}) → {plan, wrote, findings, cancelled?}`, `upgrade() → {from, to, changed: [{path, action: created|replaced|kept}]}`, `remove() → {removed: [{path, kind: file|block|key}], kept: [{path, reason: edited-by-you|spec-or-records}], reminder}`, `doctor() → {checks: [{name: node|git|ssh|gh|lock|workflows, ok, detail}]}`.
 4. *Behavior:*
-   - **Preflight:** as UX Part 1, with the host capability level (R-222) and where the tests will run (CI §2's rule, with the reason).
-   - **Writes (ALG-12, confined to the repository):**
-     - `tenet.yaml` at `observe` with the runner command and setup (C §6, CI §2)
-     - the lock, with `integrity` from the registry
-     - the recorder workflow, plus the chosen test path (Tenet's workflow, or the marked step and reporter edit)
-     - the `AGENTS.md` block with the working rules `agents.working_rules` selects, the pull-request template block and the `.gitignore` block
-     - host entries, with Windows local forms in local settings (C §10)
-     - owners (OB §2), then the manifest
-   - **After writing:** prints the first findings and offers onboarding. An empty repository gets two questions and `tenet/intent.md`; with `--yes`, kind `other`.
-   - **Other commands:** `upgrade` per OB §2, rewriting the pinned version in every owned entry; `remove` per ALG-12 with the branch-rule reminder; `doctor` checks Node, git, OpenSSH, `gh`, the lock and the workflows.
+   - **Preflight:** as UX Part 1, with the host capability level (`skills+mcp|mcp|instructions`, R-222) and where the tests will run (`ci_mode: existing-ci|tenet-workflow|none`, `ci_reason` per CI §2). Declining preflight writes nothing and exits 0 (`cancelled: true`).
+   - **Writes (ALG-12, confined to the repository; static `TN-PATH-ESCAPE` and `TN-INIT-EXISTS` checks run before writing `.tenet/manifest.pending.json`):**
+     - `tenet.yaml` at `observe` with synthesized check `checks.test`, runner command and shell `run:` setup (C §6, CI §2)
+     - the lock, with `integrity` from the registry and `kit_sha256` over `kit/`
+     - on GitHub remotes, the recorder workflow, plus the chosen test path (Tenet's workflow, or the marked step with synthesized `id: tenet-tests` and consented reporter edit; `--yes` without reporter consent or reusable workflows fall back to `tenet-workflow`); on non-GitHub remotes, omit `.github/**` (`ci_mode: "none"`)
+     - the `AGENTS.md` block with the working rules `agents.working_rules` selects, the pull-request template block (GitHub), `.gitignore` and `.gitattributes` blocks (preserving outside CRLF bytes)
+     - host entries (`.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json` always use portable `npx -y @vedprakash-m/tenet@<locked> mcp`; Windows `cmd /c` forms go in local host settings tracked in `local_keys`, C §10 / OB §2)
+     - owners (`id` stripped of `@` and lowercased, OB §2), then `.tenet/manifest.json` (recording `previous_block`/`prefix_sep` and `previous_raw` for byte-exact `remove`)
+   - **After writing:** prints the first findings and offers onboarding. An empty repository asks purpose and kind (with `--yes`: kind `other`, purpose `"Undecided · edit or run tenet onboard"`, seeding `tenet/intent.md` and finding `no-test-report`).
+   - **Other commands:** `upgrade` per OB §2, rewriting the pinned version in every owned repo and local entry while preserving `tenet.yaml`; `remove` per ALG-12, retiring `.tenet/manifest*.json` and printing the branch-rule reminder; `doctor` checks `node`, `git` (missing git executable emits `TN-ENV-GIT` with `found: "not installed"`, exit 3), `ssh` (optional), `gh` (optional), `lock` (`TN-LOCK-MISSING` / `TN-LOCK-INVALID` / `TN-KIT-EDITED` / `TN-KIT-MISSING`, exit 1) and `workflows`.
 5. *Edge cases:*
    - **Existing files:** an `AGENTS.md` block or pull-request template; `.mcp.json` with other servers.
    - **Interruption and repeats:** interrupted after each write; `init → init → upgrade → remove`; `--vendor` then a fresh clone.

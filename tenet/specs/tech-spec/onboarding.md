@@ -72,15 +72,15 @@ The **last blessed text stays in force** (the blessed copy):
 
 ## 2. Install and upgrade
 
-`init` runs the preflight (R-020) and writes, all recorded in `.tenet/manifest.json` (ALG-12):
-- `tenet.yaml`: checks with the runner command and setup of [ci.md §2](ci.md#2-running-checks); `package.json` is never edited
+`init` runs the preflight (R-020) and writes, all recorded in `.tenet/manifest.json` (ALG-12, UTF-8 with LF and one trailing `\n`):
+- `tenet.yaml`: synthesized check `checks.test` with the runner command and setup of [ci.md §2](ci.md#2-running-checks); `package.json` is never edited
 - `tenet.lock`
 - the `AGENTS.md` block (agents.md §1)
-- the recorder workflow, and either Tenet's test workflow or the existing-CI step
-- the pull-request template block and the `.gitignore` block
+- on GitHub remotes, the recorder workflow, and either Tenet's test workflow or the existing-CI step (`ci_mode: "existing-ci"|"tenet-workflow"`); on non-GitHub remotes, workflows and `.github/pull_request_template.md` are omitted (`ci_mode: "none"`, `ci_reason: "non-GitHub remote: local checks and specifications are enabled; CI proof cards require GitHub in alpha.0"`)
+- the pull-request template block (GitHub) and the `.gitignore` and `.gitattributes` blocks
 - the detected hosts' skills and MCP entries (below)
 
-`.tenet/manifest.json`: `{schema_version, version, created: [{path, sha256}], blocks: [{path, kind: markdown|yaml, marker}], keys: [{path, pointer, previous, installed}]}`; `.tenet/manifest.pending.json` holds the full plan before the first write (ALG-12). Markdown blocks: `<!-- tenet:begin v<version> -->` … `<!-- tenet:end -->`; YAML: `# tenet:begin` … `# tenet:end`. JSON files are owned by key (`/mcpServers/tenet`, `/servers/tenet` in `.vscode/mcp.json`), with the previous value kept.
+`.tenet/manifest.json`: `{schema_version, version, created: [{path, sha256}], blocks: [{path, kind: markdown|yaml, marker, previous_block?, prefix_sep?}], keys: [{path, pointer, previous, installed, previous_raw?}]}`; `.tenet/manifest.pending.json` holds the full plan before the first write (ALG-12). Markdown blocks: `<!-- tenet:begin v<version> -->` … `<!-- tenet:end -->`; YAML: `# tenet:begin` … `# tenet:end`. JSON files are owned by key (`/mcpServers/tenet`, `/servers/tenet` in `.vscode/mcp.json`), with the previous value (and optional `previous_raw` bytes) kept.
 
 | Host marker | Writes |
 |---|---|
@@ -92,11 +92,26 @@ The **last blessed text stays in force** (the blessed copy):
 
 MCP entries run `npx -y @vedprakash-m/tenet@<locked version> mcp` in the committed file; where a Windows host needs `cmd /c`, `init` writes that form into the user's local host settings, never the shared file (CP-0045 tests both). `upgrade` rewrites the pinned version in every entry it owns.
 
-It then prints the first findings and offers onboarding. Existing files are edited only inside marked blocks or owned JSON keys. Integrity is checked by hash; files are not made read-only. `owners[]` starts from `git config user.name` and the CODEOWNERS handles, confirmed once (with `--yes`: the git user only). The lock's `kit_sha256` is SHA-256 over the sorted lines `<path>\0<sha256 of file>` for every file under `kit/`.
+It then prints the first findings and offers onboarding (in an empty repo, asks purpose and kind, or under `--yes` seeds `tenet/intent.md` with kind `other`, purpose `"Undecided · edit or run tenet onboard"`, and finding `no-test-report`). Existing files are edited only inside marked blocks or owned JSON keys. Integrity is checked by hash; files are not made read-only. `owners[]` starts from `git config user.name` and the CODEOWNERS handles (`id` = handle stripped of `@` with non-alphanumeric runs lowercased to `-`), confirmed once (with `--yes`: the git user only). The lock's `kit_sha256` is SHA-256 over the sorted lines `<path>\0<sha256 of file>` for every file under `kit/`.
 
-`tenet remove` reverses the manifest (ALG-12), keeps specifications, records and values the user changed, and reminds the user to remove the branch rule if the Tenet status was made required. `tenet check` reports a package version that differs from the lock ("run tenet upgrade").
+`tenet remove` reverses the manifest (ALG-12), retires `.tenet/manifest.json` and `.tenet/manifest.pending.json`, keeps specifications, records and values the user changed, and returns `reminder: "If you made the Tenet check required in branch protection or rulesets, remove that rule in your forge settings."`. `tenet check` reports a package version that differs from the lock ("run tenet upgrade").
 
-**Upgrade** (alpha.0 on): update the lock, regenerate the `AGENTS.md` block, workflows and skills, report what changed, and run `tenet check`. It never changes the level or starts a new rule beyond `observe`. From M4: stage, migrate with a restricted file API, regenerate, swap atomically; classify from structured fields; a scheduled pull request.
+**Upgrade** (alpha.0 on): update the lock from the installed release, regenerate the `AGENTS.md` block, workflows, skills and owned MCP pins (repo and Windows local profile), report `changed: [{path, action: created|replaced|kept}]`, and run `tenet check`. It never changes `tenet.yaml` (`level`, `rules`, `checks`, `owners`) or starts a new rule beyond `observe`. From M4: stage, migrate with a restricted file API, regenerate, swap atomically; classify from structured fields; a scheduled pull request.
+
+**Install and removal (`ALG-12`).**
+- **Paths:** every planned or recorded path is resolved and must stay inside the repository root: no absolute paths, `..`, or symlink or junction leading outside (`TN-PATH-ESCAPE`, checked before writing `.tenet/manifest.pending.json`).
+- **`init` plans every write**, then applies it:
+  1. Validate path confinement (`TN-PATH-ESCAPE`) and unmanaged file collisions (`TN-INIT-EXISTS` when a created file already exists with different content and `--force` is absent) before touching disk. If the user declines the preflight prompt (`Continue? [Y/n]`), write nothing and return `{plan, wrote: {created: [], blocks: [], keys: [], local_keys: []}, findings: [], cancelled: true}` (exit 0). Otherwise write `.tenet/manifest.pending.json` `{schema_version: 1, version, writes: [{id, kind: file|block|key|local_key, path, pointer?, before_sha256, after_sha256, content?}], manifest}`.
+  2. Apply in order, checking each target file's SHA-256 before writing: if `current_sha256 === after_sha256`, skip as already applied; if `current_sha256 !== before_sha256`, stop immediately, keep `.tenet/manifest.pending.json`, and fail with `TN-INIT-EXISTS` (exit 4). Blocks go at the end of the file, or replace an existing block (preserving surrounding bytes, including CRLF, and recording `previous_block` / `prefix_sep` in `manifest.blocks[]`). JSON keys are set (recording `previous`, `installed`, and optional `previous_raw` in `manifest.keys[]`).
+  3. Rename the pending file to `manifest.json`.
+  A rerun after an interruption finds the pending file and completes remaining writes.
+- **`remove`:**
+  - deletes a created file only if its SHA-256 matches the manifest; otherwise it is kept and reported in `kept` (`reason: "edited-by-you"`)
+  - deletes text between markers (or restores `previous_block` / `prefix_sep` when recorded and surrounding bytes match)
+  - restores a key's `previous` value (or `previous_raw` when no unowned key changed) only if it still holds the `installed` value; otherwise keeps it (`reason: "edited-by-you"`)
+  - deletes `.tenet/manifest.json`, `.tenet/manifest.pending.json`, and any created file or managed directory left empty
+  - never touches specifications or records
+- Fixtures: interruption after each write; a pre-existing `AGENTS.md` and `.mcp.json` are restored exactly; an edited `tenet.yaml` is kept; a key the user changed after install is kept.
 
 ## 3. Onboarding measures (ALG-13)
 
@@ -108,3 +123,14 @@ It then prints the first findings and offers onboarding. Existing files are edit
 - **Blessing minutes:** from the session's start and end, in the log.
 - **Automatic checks:** every citation resolves; every planted conflict in the fixture key appears as a `CF` item; every `asked` statement has an answer in `.tenet/onboard/interview.json` (fixtures only).
 - **Each run records** agent, model, effort and fixture revision.
+
+## 4. Release procedure
+
+Each alpha is an `ops` work item:
+1. Bump the version; write the changelog with structured fields (`kind: rule-added|rule-clarified|field-added|breaking`).
+2. `npm pack` **once** per workspace package, record each `.tgz` digest, and assert each tarball's file list (no `pkg/evals`).
+3. Install those files on clean Windows, macOS and Linux, and run both UX Part 1 journeys and the scenario suite.
+4. Publish **the same files** with `--provenance --tag next` through trusted publishing. The first publish of a new package may use a short-lived granular token. If one package publishes and the other fails, the release is retried with the same version.
+5. Create a GitHub release with the tarballs, the kit archive and `SHA256SUMS`.
+6. Install from the registry and compare the bytes.
+7. Update and tag `tenet-starter`.
