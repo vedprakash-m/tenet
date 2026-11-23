@@ -47,7 +47,7 @@ export type ScanPolicy = {
   test_files?: string[];
 };
 
-type TagSource = { tag: string; line: number };
+type TagSource = { tag: string; line: number; via_describe?: true };
 
 export type ScannedDeclaration = TestDeclaration & {
   tag_sources: TagSource[];
@@ -133,7 +133,7 @@ export function scanText(file: string, text: string, prefix = "R"): DetailedScan
             "t.Run",
             prefix,
             lines,
-            titleTagSources(title, prefix, lines, index, end),
+            titleTagSources(title, prefix, lines),
             titleLines(title.start_line, title.line),
           ),
         );
@@ -156,7 +156,7 @@ export function scanText(file: string, text: string, prefix = "R"): DetailedScan
   const skips: TestSkip[] = [];
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index] ?? "";
-    const pattern = skipPatterns.find((candidate) => line.includes(candidate));
+    const pattern = skipPattern(file, line);
     if (pattern) skips.push({ file, line: index + 1, pattern, text: line.trim() });
   }
   return { declarations, skips };
@@ -172,7 +172,7 @@ function parseJsDeclaration(lines: string[], index: number, prefix: string): Sca
   const after = kind.endsWith(".each") ? eachTitleStart(lines, index, match.index + match[0].length) : match.index + match[0].length;
   const title = quotedNear(lines, index, 3, after);
   if (!title) return null;
-  const end = braceEnd(lines, index);
+  const end = declarationEnd(lines, index, after);
   return completeDeclaration(
     "",
     index + 1,
@@ -181,7 +181,7 @@ function parseJsDeclaration(lines: string[], index: number, prefix: string): Sca
     kind,
     prefix,
     lines,
-    titleTagSources(title, prefix, lines, index, end),
+    titleTagSources(title, prefix, lines),
     titleLines(title.start_line, title.line),
   );
 }
@@ -291,8 +291,8 @@ function findDescribes(lines: string[], prefix: string): Array<{ start: number; 
     if (!title) continue;
     describes.push({
       start: index + 1,
-      end: braceEnd(lines, index),
-      tags: extractTags(title.value, prefix).flatMap((tag) => sourceLinesForTag(lines, index, index + 3, tag, prefix)),
+      end: declarationEnd(lines, index, match.index + match[0].length),
+      tags: titleTagSources(title, prefix, lines),
     });
   }
   return describes;
@@ -305,7 +305,9 @@ function attachDescribeSources(
   const enclosing = describes.filter((describe) =>
     describe.start <= declaration.line && declaration.end_line <= describe.end
   );
-  const inherited = enclosing.flatMap((describe) => describe.tags);
+  const inherited = enclosing.flatMap((describe) => describe.tags)
+    .filter(({ tag }) => !declaration.tags.includes(tag))
+    .map((source) => ({ ...source, via_describe: true as const }));
   if (inherited.length === 0) return declaration;
   declaration.tags = unique([...declaration.tags, ...inherited.map((source) => source.tag)]);
   declaration.tag_sources = uniqueSources([...declaration.tag_sources, ...inherited]);
@@ -346,13 +348,11 @@ function titleTagSources(
   title: { value: string; line: number; start_line: number },
   prefix: string,
   lines: string[],
-  start: number,
-  end: number,
 ): TagSource[] {
-  const tags = extractTags(title.value, prefix);
-  const sources = tags.flatMap((tag) => sourceLinesForTag(lines, start, Math.min(end - 1, start + 3), tag, prefix));
-  if (sources.length > 0) return sources;
-  return tags.map((tag) => ({ tag, line: title.line }));
+  return extractTags(title.value, prefix).flatMap((tag) => {
+    const sources = sourceLinesForTag(lines, title.start_line - 1, title.line - 1, tag, prefix);
+    return sources.length ? sources : [{ tag, line: title.line }];
+  });
 }
 
 function titleLines(start: number, end: number): number[] {
@@ -380,28 +380,79 @@ function recordPropertySources(lines: string[], start: number, end: number, pref
   return uniqueSources(sources);
 }
 
+export function skipPattern(file: string, line: string): string | undefined {
+  const text = line.trimStart();
+  if (text.startsWith("//") || (file.endsWith(".py") && text.startsWith("#"))) return undefined;
+  return skipPatterns.find((pattern) => text.includes(pattern));
+}
+
 function braceEnd(lines: string[], start: number): number {
-  let depth = 0;
-  let saw = false;
+  return declarationEnd(lines, start);
+}
+
+// For calls, the position is just after their opening parenthesis. A block
+// callback ends at its closing brace. An expression callback ends at the
+// call's closing parenthesis, even when the expression contains object braces.
+function declarationEnd(lines: string[], start: number, callPosition?: number): number {
+  let rounds = callPosition === undefined ? 0 : 1;
+  let braces = 0;
+  let brackets = 0;
+  let offset = callPosition ?? 0;
   let quote = "";
+  let comment = false;
+  let previous = "";
+  let callbackArrow = false;
   for (let lineIndex = start; lineIndex < lines.length; lineIndex += 1) {
     const line = lines[lineIndex] ?? "";
-    for (let index = 0; index < line.length; index += 1) {
+    if (offset > line.length) {
+      offset -= line.length + 1;
+      continue;
+    }
+    for (let index = offset; index < line.length; index += 1) {
       const char = line[index] ?? "";
+      const next = line[index + 1];
+      if (comment) {
+        if (char === "*" && next === "/") {
+          comment = false;
+          index += 1;
+        }
+        continue;
+      }
       if (quote) {
-        if (char === "\\" && index + 1 < line.length) index += 1;
+        if (char === "\\" && next !== undefined) index += 1;
         else if (char === quote) quote = "";
         continue;
       }
-      if (char === "'" || char === '"' || char === "`") quote = char;
-      else if (char === "{") {
-        saw = true;
-        depth += 1;
-      } else if (char === "}") {
-        depth -= 1;
-        if (saw && depth <= 0) return lineIndex + 1;
+      if (char === "/" && next === "/") break;
+      if (char === "/" && next === "*") {
+        comment = true;
+        index += 1;
+        continue;
       }
+      if (char === "'" || char === '"' || char === "\x60") {
+        quote = char;
+        previous = char;
+        continue;
+      }
+      if (char === ">" && previous === "=" && rounds === 1 && brackets === 0) callbackArrow = true;
+      if (char === "(") rounds += 1;
+      else if (char === ")") {
+        rounds -= 1;
+        if (callPosition !== undefined && rounds === 0) return lineIndex + 1;
+      } else if (char === "[") brackets += 1;
+      else if (char === "]") brackets -= 1;
+      else if (char === "{") {
+        if (braces > 0 || callPosition === undefined || (
+          rounds === 1 && brackets === 0 &&
+          ((callbackArrow && previous === ">") || (!callbackArrow && previous === ")"))
+        )) braces += 1;
+      } else if (char === "}" && braces > 0) {
+        braces -= 1;
+        if (braces === 0) return lineIndex + 1;
+      }
+      if (!/\s/.test(char)) previous = char;
     }
+    offset = 0;
   }
   return Math.min(lines.length, start + 1);
 }
