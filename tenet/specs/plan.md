@@ -23,8 +23,8 @@ Updated 2026-11-23 by the M0 session after round 2 merged (L-0034, L-0035, L-003
 | CP-0017 Spike A | partly done (L-0030) | deferred by the Owner to before alpha.1: a security-key signature; replies and spot checks run in alpha.1 |
 | CP-0002 licence and schema host | **decided** (L-0031): Apache-2.0 code, CC BY 4.0 text, `$id` on GitHub Pages | publish the schemas to GitHub Pages at the first release (CI §9) |
 | CP-0015 kernel and every contract | **done and merged**; Owner decisions (L-0032); proposals applied | CP-0001 ratification reads Part I, `kernel.md` and the later contracts |
-| CP-0058 medium-model trial | rounds 4 and 5 **byte-identical** with `messages.md`; round 6 regressed on a wording change, since fixed; stopped under the stop rule (E-0002) | **the Owner:** accept E-0002 (done = byte-identical results and no divergent inventions), which closes checklist item 5 |
-| CP-0001 ratify | after CP-0058 | the Owner, one sitting |
+| CP-0058 medium-model trial | **done** (E-0002 accepted, L-0037): rounds 4 and 5 byte-identical; checklist item 5 holds | — |
+| CP-0001 ratify | **ready**: every other checklist item holds | the Owner, one sitting |
 | Alpha.0 build, started early at the Owner's direction (L-0034) | **done:** waves A0-1 and A0-2: CP-0003, CP-0004, CP-0005, CP-0006, CP-0012, CP-0018, each independently reviewed (round 2) and fixed | **CP-0044** next (its questions answered and applied, independent suites ready), then A0-4 |
 | Sandbox | `vedprakash-m/tenet-sandbox` (private) exists | used by CP-0051 and later proving |
 | Rounds 1 and 2 | **merged** into `main` (L-0034, L-0036); pull requests #1–#3 | — |
@@ -59,7 +59,7 @@ Updated 2026-11-23 by the M0 session after round 2 merged (L-0034, L-0035, L-003
 2. The kernel (Part I) is written within 8,000 tokens and cross-checked against the specifications; `kit/TENET.md`'s old text is archived.
 3. Every change from L-0013 to L-0030 is applied.
 4. The contracts for **every** release (the tech-spec parts and all release parts, all eight fields) are frozen.
-5. **Medium-model trial (CP-0058):** in a scratch repository, two fresh sessions of a medium-effort model each build CP-0018's exports and CP-0044's pure functions (`parseDoc`, `parseRequirement`, `sectionDigest`, `anchorsFor`, `resolveCitations`, `flags`, `relocate`, `matchRenamed`, `touched`) from their contracts alone, against stubs of CP-0005's exports. A scorer who did not run them logs every rule they had to invent; each is fixed in the specification, and the trial repeats until nothing is invented.
+5. **Medium-model trial (CP-0058):** in a scratch repository, two fresh sessions of a medium-effort model each build CP-0018's exports and CP-0044's pure functions (`parseDoc`, `parseRequirement`, `sectionDigest`, `anchorsFor`, `resolveCitations`, `flags`, `relocate`, `matchRenamed`, `touched`) from their contracts alone, against stubs of CP-0005's exports. A scorer who did not run them logs every rule they had to invent; each is fixed in the specification, and the trial repeats until their results match byte for byte with no divergent invention (L-0037).
 6. `blocked_by` in every `packet.yaml` matches §2, with no cycles (checked by script).
 7. Every example in the README, UX spec and tech-spec parts (YAML, cards, acceptance blocks, tags, commands) parses under the contracts, checked by a scratch script that becomes `npm run check:examples` in CP-0003.
 8. The red-team list matches the guarantee table.
@@ -146,7 +146,7 @@ Each is Quick, limited to **4 hours** of work, and run by a capable model. Each 
 
 ### CP-0058 · experiment · Medium-model trial
 
-- **Needs:** CP-0015 · **Limit:** 6 hours · **Do:** checklist item 5. **Done when:** two fresh sessions invent nothing and their machine results match byte for byte; the scorer's log is in the packet's evidence, summarized in a ledger entry.
+- **Needs:** CP-0015 · **Limit:** 6 hours · **Do:** checklist item 5. **Done when:** two fresh sessions' machine results match byte for byte and no invention changes behavior between them (E-0002, L-0037); the scorer's log is in the packet's evidence, summarized in a ledger entry.
 
 ### CP-0016 · experiment · Problem validation and baselines (alongside M1)
 
