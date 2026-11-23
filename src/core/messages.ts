@@ -68,6 +68,10 @@ export const messageTemplates = {
     "message": "Directory {path} is not a Git repository.",
     "fix": "Run `git init` or run from inside a Git repository."
   },
+  "TN-ENV-OFFLINE": {
+    "message": "Command `tenet {command}` requires network access, which is disabled by `--offline`.",
+    "fix": "Re-run `tenet {command}` without `--offline`."
+  },
   "TN-EV-DUP": {
     "message": "Duplicate event ID {id} has conflicting content.",
     "fix": "Keep one canonical event for {id} and remove the conflicting entry."
@@ -116,13 +120,33 @@ export const messageTemplates = {
     "message": "File {path} already exists with different content.",
     "fix": "Review {path} or rerun `tenet init --force` to overwrite managed blocks."
   },
+  "TN-INTERNAL": {
+    "message": "Internal failure: {detail}.",
+    "fix": "Report this defect with the command and error details."
+  },
   "TN-KIT-EDITED": {
     "message": "Vendored kit digest differs from tenet.lock ({actual} != {expected}).",
     "fix": "Restore .tenet/kit or run `tenet upgrade` to update tenet.lock."
   },
+  "TN-KIT-INVALID": {
+    "message": "Kit at {path} is invalid: {detail}.",
+    "fix": "Restore {path} to regular kit files or run `tenet upgrade`."
+  },
+  "TN-KIT-MISSING": {
+    "message": "Kit directory {path} was not found.",
+    "fix": "Reinstall @vedprakash-m/tenet or fix kit_path in tenet.yaml."
+  },
+  "TN-LOCK-INVALID": {
+    "message": "Lock file tenet.lock is invalid: {detail}.",
+    "fix": "Fix tenet.lock or run `tenet init` to regenerate it."
+  },
   "TN-LOCK-MISMATCH": {
     "message": "Installed package {installed} differs from tenet.lock ({locked}).",
     "fix": "Run `tenet upgrade` or reinstall @vedprakash-m/tenet@{locked}."
+  },
+  "TN-LOCK-MISSING": {
+    "message": "Lock file tenet.lock was not found.",
+    "fix": "Run `tenet init` to create and pin tenet.lock."
   },
   "TN-PATH-ESCAPE": {
     "message": "Path {path} resolves outside the repository root.",
