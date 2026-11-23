@@ -17,6 +17,9 @@
   "base_sha": "61f0e76dcf224ffe47dd821295913931d9cc808f",
   "head_sha": "8b0d1d6d2fe568cc10b60d480c7e4be148b582ec",
   "merge_sha": "8e46c97f215ce03c6eaf79c0999b337c11c271f1",
+  "diff_sha256": "c003b5c06b24aa215154cd1d62e7d9aadeed0f0862ee1bd9b008adbbd2fe08d1",
+  "shas_resolved": true,
+  "applies_at_base": false,
   "labels": [],
   "draft_history": [
     {
@@ -391,7 +394,5 @@
       "conclusion": "success",
       "completed_at": "2026-11-06T21:57:37Z"
     }
-  ],
-  "diff_sha256": "c003b5c06b24aa215154cd1d62e7d9aadeed0f0862ee1bd9b008adbbd2fe08d1",
-  "shas_resolved": true
+  ]
 }

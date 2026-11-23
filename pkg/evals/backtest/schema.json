@@ -22,7 +22,10 @@
     "commits",
     "files",
     "reviews",
-    "check_runs"
+    "check_runs",
+    "diff_sha256",
+    "shas_resolved",
+    "applies_at_base"
   ],
   "properties": {
     "repo": {
@@ -123,6 +126,12 @@
       ]
     },
     "shas_resolved": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    },
+    "applies_at_base": {
       "type": [
         "boolean",
         "null"

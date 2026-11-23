@@ -1,0 +1,53 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5645,
+  "title": "chore: add changelog entry for copilot-deprecated variant removal",
+  "body": "> Fixes #\n\n## Changelog Entry\n\n- Removed `copilot-deprecated` variant from Fluent theme, in PR [#5644](https://github.com/microsoft/BotFramework-WebChat/pull/5644), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nAdded changelog entry documenting the removal of the `copilot-deprecated` variant from the codebase as requested in the parent PR.\n\n## Design\n\nN/A\n\n## Specific Changes\n\n- Added entry to the \"Removed\" section of `CHANGELOG.md`\n\n## -\n\n-\n\n-  [ ] I have added tests and executed them locally\n-  [x] I have updated `CHANGELOG.md`\n-  [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n-  [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n-  [ ] Browser and platform compatibilities reviewed\n-  [ ] CSS styles reviewed (minimal rules, no `z-index`)\n-  [ ] Documents reviewed (docs, samples, live demo)\n-  [ ] Internationalization reviewed (strings, unit formatting)\n-  [ ] `package.json` and `package-lock.json` reviewed\n-  [ ] Security reviewed (no data URIs, check for nonce leak)\n-  [ ] Tests reviewed (coverage, legitimacy)\n\n<!-- START COPILOT CODING AGENT TIPS -->\n---\n\n✨ Let Copilot coding agent [set things up for you](https://github.com/microsoft/BotFramework-WebChat/issues/new?title=✨+Set+up+Copilot+instructions&body=Configure%20instructions%20for%20this%20repository%20as%20documented%20in%20%5BBest%20practices%20for%20Copilot%20coding%20agent%20in%20your%20repository%5D%28https://gh.io/copilot-coding-agent-tips%29%2E%0A%0A%3COnboard%20this%20repo%3E&assignees=copilot) — coding agent works faster and does higher quality work when set up for your repo.\n",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2025-12-08T21:19:15Z",
+  "merged_at": "2025-12-08T21:29:28Z",
+  "base_ref": "chore/remove-deprecated-styles",
+  "base": "chore/remove-deprecated-styles",
+  "head_ref": "copilot/sub-pr-5644",
+  "head": "copilot/sub-pr-5644",
+  "base_sha": "9b12169832ef4108211c410767d3d7f8acddee66",
+  "head_sha": "7e1a9dd18d87ca1ed39211ea1d9bac96a5740f58",
+  "merge_sha": "6ba92fd63ccf5beae7ddfb3c232ad13b6edb0f4b",
+  "diff_sha256": "3387b85306ad8526d885104c8295292a3ef15b745ec8cc41c84be87c6502b0c6",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-12-08T21:29:24Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "1cd6ff08c5acb77d1bb67b5a1d150e044ffe1e4c",
+      "message": "Initial plan",
+      "author": "Copilot"
+    },
+    {
+      "sha": "7e1a9dd18d87ca1ed39211ea1d9bac96a5740f58",
+      "message": "chore: add changelog entry for copilot-deprecated variant removal",
+      "author": "Copilot"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": []
+}

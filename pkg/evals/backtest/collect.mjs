@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, stat, unlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, unlink, writeFile } from "node:fs/promises";
 import { gunzipSync } from "node:zlib";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -183,6 +183,9 @@ async function collectOne(owner, repo, summary) {
       base_sha: pr.base?.sha || null,
       head_sha: headSha,
       merge_sha: pr.merge_commit_sha,
+      diff_sha256: null,
+      shas_resolved: null,
+      applies_at_base: null,
       labels: (pr.labels || []).map((label) => typeof label === "string" ? label : label.name).filter(Boolean),
       draft_history: draftHistory,
       commits: commits.map((commit) => ({
@@ -321,6 +324,7 @@ async function writeSchema() {
       "repo", "number", "title", "body", "author", "created_at", "merged_at",
       "base", "head", "base_ref", "head_ref", "base_sha", "head_sha", "merge_sha", "labels",
       "draft_history", "commits", "files", "reviews", "check_runs",
+      "diff_sha256", "shas_resolved", "applies_at_base",
     ],
     properties: {
       repo: { type: "string" },
@@ -347,6 +351,7 @@ async function writeSchema() {
       merge_sha: { type: "string" },
       diff_sha256: { type: ["string", "null"] },
       shas_resolved: { type: ["boolean", "null"] },
+      applies_at_base: { type: ["boolean", "null"] },
       labels: { type: "array", items: { type: "string" } },
       draft_history: {
         type: "array",
@@ -418,6 +423,16 @@ async function verify() {
   const schema = JSON.parse(await readFile(path.join(__dirname, "schema.json"), "utf8"));
   const names = (await readdir(prsDir)).filter((name) => name.endsWith(".json")).sort();
   const manifest = await readFile(path.join(__dirname, "cohort.yaml"), "utf8");
+  const scratch = "Q:\\Ved\\Pers\\backtest-clones";
+
+  function gitIn(dir, args) {
+    return new Promise((resolve, reject) => {
+      execFile("git", args, { cwd: dir, encoding: "buffer", windowsHide: true, maxBuffer: 128 * 1024 * 1024 }, (error, stdout, stderr) => {
+        if (error) reject(error);
+        else resolve(stdout);
+      });
+    });
+  }
 
   function requireShape(record, properties, prefix) {
     for (const key of properties.required || []) {
@@ -489,7 +504,7 @@ async function verify() {
   const cohortCases = parseCaseBlock("cohort_cases");
   const reserveCases = parseCaseBlock("reserve_cases");
   if (cohortCases.length !== 100) throw new Error(`cohort_cases=${cohortCases.length}; expected 100`);
-  if (reserveCases.length > 20) throw new Error(`reserve_cases=${reserveCases.length}; expected at most 20`);
+  if (reserveCases.length !== 20) throw new Error(`reserve_cases=${reserveCases.length}; expected 20`);
 
   const diffsDir = path.join(__dirname, "diffs");
   await mkdir(diffsDir, { recursive: true });
@@ -518,6 +533,13 @@ async function verify() {
     const record = JSON.parse(await readFile(path.join(prsDir, prName), "utf8"));
     if (typeof record.diff_sha256 !== "string") throw new Error(`${prName}: missing diff_sha256`);
     if (typeof record.shas_resolved !== "boolean") throw new Error(`${prName}: missing shas_resolved`);
+    for (const shaName of ["base_sha", "head_sha", "merge_sha"]) {
+      if (!/^[0-9a-f]{40}$/i.test(record[shaName] || "")) {
+        throw new Error(`${prName}: ${shaName} is not 40 hexadecimal characters`);
+      }
+    }
+    if (!record.shas_resolved) throw new Error(`${prName}: shas_resolved=false`);
+    if (typeof record.applies_at_base !== "boolean") throw new Error(`${prName}: missing applies_at_base`);
     const diffName = `${owner}__${name}__${item.number}.diff.gz`;
     let gz;
     try {
@@ -533,6 +555,38 @@ async function verify() {
     }
     const hash = createHash("sha256").update(diff).digest("hex");
     if (hash !== record.diff_sha256) throw new Error(`diff sha mismatch: ${diffName}`);
+
+    const cloneDir = record.repo === "vedprakash-m/tenet-copilot"
+      ? path.join(scratch, "tenet-copilot")
+      : path.join(scratch, "BotFramework-WebChat");
+    for (const shaName of ["base_sha", "head_sha", "merge_sha"]) {
+      try {
+        await gitIn(cloneDir, ["cat-file", "-e", `${record[shaName]}^{commit}`]);
+      } catch {
+        throw new Error(`${prName}: ${shaName} is not resolvable locally`);
+      }
+    }
+
+    const tempDir = await mkdtemp(path.join(scratch, "verify-apply-"));
+    const tempDiff = path.join(tempDir, "case.diff");
+    let appliesAtBase = false;
+    try {
+      await gitIn(cloneDir, ["worktree", "add", "--detach", "--force", tempDir, record.base_sha]);
+      await writeFile(tempDiff, diff);
+      try {
+        await gitIn(tempDir, ["apply", "--check", "--unidiff-zero", tempDiff]);
+        appliesAtBase = true;
+      } catch {
+        appliesAtBase = false;
+      }
+    } finally {
+      await gitIn(cloneDir, ["worktree", "remove", "--force", tempDir]).catch(() => {});
+      await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
+    if (record.applies_at_base !== appliesAtBase) {
+      throw new Error(`${prName}: applies_at_base mismatch`);
+    }
+    if (!appliesAtBase) console.log(`diff_apply=false repo=${record.repo} number=${record.number}`);
     diffTotalSize += gz.length;
   }
   if (diffTotalSize >= 25 * 1024 * 1024) {
@@ -575,7 +629,7 @@ async function verify() {
     }
   }
   groupCounts["reserves"] = reserveCases.length;
-  if (agentCohortCount < 0) throw new Error(`webchat-agent cohort=${agentCohortCount}`);
+  if (agentCohortCount !== 16) throw new Error(`webchat-agent cohort=${agentCohortCount}; expected 16`);
   console.log(`diff_total_bytes=${diffTotalSize}`);
 
   console.log(`verified_files=${names.length}`);

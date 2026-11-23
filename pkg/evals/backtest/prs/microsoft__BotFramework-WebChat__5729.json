@@ -17,6 +17,9 @@
   "base_sha": "fb2716830fec0abd0e7516ee63d76e8a1ee72383",
   "head_sha": "097baad35a3fa8db93719bb8bbc4fa83e1b3a791",
   "merge_sha": "a2436091c9d3d752c4ee583fff88d39f42f322a9",
+  "diff_sha256": "d78254126c1d88565aac4723083db3d67674f0e07cceefbedfb27626375e2ac9",
+  "shas_resolved": true,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [],
   "commits": [
@@ -213,7 +216,5 @@
       "conclusion": "success",
       "completed_at": "2026-03-06T06:22:16Z"
     }
-  ],
-  "diff_sha256": "d78254126c1d88565aac4723083db3d67674f0e07cceefbedfb27626375e2ac9",
-  "shas_resolved": true
+  ]
 }

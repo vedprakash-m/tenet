@@ -12,7 +12,7 @@ sources:
     reason: "no git history yet; first adopter after alpha.0 (L-0035)"
 agent_group_rule: "Bot author login Copilot merged through refs/pulls/*/head into any base branch in the 2025-01-01 through 2026-11-22 window"
 windows:
-  tenet-copilot: all history through 2026-11-23T22:44:12.098Z
+  tenet-copilot: all history through 2026-11-23T23:21:56.552Z
   BotFramework-WebChat: 2025-01-01 through 2026-11-22, inclusive
 eligibility:
   - merged
@@ -52,7 +52,7 @@ groups:
       - 28
   webchat-agent:
     eligible: 16
-    cohort: 13
+    cohort: 16
     numbers:
       - 6068
       - 6067
@@ -67,9 +67,12 @@ groups:
       - 6041
       - 6038
       - 6034
+      - 5772
+      - 5684
+      - 5645
   webchat-human:
     eligible: 371
-    cohort: 65
+    cohort: 62
     reserve: 20
     cohort_numbers:
       - 6025
@@ -185,19 +188,7 @@ exclusions:
   - repo: vedprakash-m/tenet-copilot
     number: 29
     reason: not_merged
-  - repo: microsoft/BotFramework-WebChat
-    number: 5645
-    reason: unresolved_sha
-    sha: 6ba92fd63cc5beae7ddfed4b6e24a5740f58
-  - repo: microsoft/BotFramework-WebChat
-    number: 5684
-    reason: unresolved_sha
-    sha: c417014199369e3c25c857b178153dfef21299cf
-  - repo: microsoft/BotFramework-WebChat
-    number: 5772
-    reason: unresolved_sha
-    sha: cc18d611922b6f85bcac978e665f78098086e95c
-generated_at: 2026-11-23T22:44:12.098Z
+generated_at: 2026-11-23T23:21:56.552Z
 gh_version: "version 2.105.0 (2026-11-17)"
 cohort_cases:
   - repo: vedprakash-m/tenet-copilot
@@ -304,6 +295,15 @@ cohort_cases:
     group: webchat-agent
   - repo: microsoft/BotFramework-WebChat
     number: 6034
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 5772
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 5684
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 5645
     group: webchat-agent
   - repo: microsoft/BotFramework-WebChat
     number: 6025
@@ -491,6 +491,7 @@ cohort_cases:
   - repo: microsoft/BotFramework-WebChat
     number: 5614
     group: webchat-human
+reserve_cases:
   - repo: microsoft/BotFramework-WebChat
     number: 5669
     group: webchat-human
@@ -500,7 +501,6 @@ cohort_cases:
   - repo: microsoft/BotFramework-WebChat
     number: 5473
     group: webchat-human
-reserve_cases:
   - repo: microsoft/BotFramework-WebChat
     number: 5835
     group: webchat-human

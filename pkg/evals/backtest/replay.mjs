@@ -2,9 +2,11 @@ import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { gzipSync, gunzipSync } from "node:zlib";
 import {
+  mkdtemp,
   mkdir,
   readFile,
   readdir,
+  rm,
   stat,
   unlink,
   writeFile,
@@ -73,7 +75,13 @@ async function resolveCommit(dir, sha) {
     await git(dir, ["cat-file", "-e", `${sha}^{commit}`]);
     return true;
   } catch {
-    return false;
+    try {
+      await git(dir, ["fetch", "--force", "origin", sha]);
+      await git(dir, ["cat-file", "-e", `${sha}^{commit}`]);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 
@@ -85,12 +93,29 @@ async function replayOne(dir, record) {
   const resolved = baseResolved && headResolved && mergeResolved;
 
   let diff = Buffer.alloc(0);
+  let appliesAtBase = false;
   if (resolved) {
     diff = await git(dir, ["diff", "-U0", `${record.base_sha}...${record.head_sha}`]);
+    const tempDir = await mkdtemp(path.join(scratch, "apply-check-"));
+    const diffPath = path.join(tempDir, "case.diff");
+    try {
+      await git(dir, ["worktree", "add", "--detach", "--force", tempDir, record.base_sha]);
+      await writeFile(diffPath, diff);
+      try {
+        await git(tempDir, ["apply", "--check", "--unidiff-zero", diffPath]);
+        appliesAtBase = true;
+      } catch {
+        appliesAtBase = false;
+      }
+    } finally {
+      await git(dir, ["worktree", "remove", "--force", tempDir]).catch(() => {});
+      await rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
   }
 
   record.diff_sha256 = sha256(diff);
   record.shas_resolved = resolved;
+  record.applies_at_base = appliesAtBase;
   await writeFile(path.join(prsDir, fileName(record.repo, record.number)), `${JSON.stringify(record, null, 2)}\n`, "utf8");
   await writeFile(path.join(diffsDir, diffName(record.repo, record.number)), gzipSync(diff));
   return resolved;
