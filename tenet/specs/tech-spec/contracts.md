@@ -169,6 +169,8 @@ In [evidence.md §1](evidence.md#1-evidence-payloads).
 
 Every error carries its code, plain words and a fix (R-083). What each situation concludes on the forge, at each level, is [ci.md §10](ci.md#10-outcomes). **Structural** codes always fail `check` (exit 1); **rule** codes fail only when their rule is in `enforce` (otherwise they print as "would have blocked" and exit 0).
 
+Message and fix text for every code: [messages.md](messages.md).
+
 | Codes | Kind | Exit |
 |---|---|---|
 | `TN-USAGE-*`, `TN-BLESS-NO-TTY` | usage | 2 |
