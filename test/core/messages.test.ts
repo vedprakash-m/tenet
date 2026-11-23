@@ -6,17 +6,6 @@ import { message, messageTemplate, messageTemplates } from "../../src/core/messa
 const spec = new URL("../../tenet/specs/tech-spec/messages.md", import.meta.url);
 const src = new URL("../../src/", import.meta.url);
 
-// Approved rows from 07ff12d:tenet/specs/tech-spec/messages.md while the
-// specification and implementation branches are being prepared independently.
-const approvedRows = [
-  "| `TN-BUDGET-WARN` | File {path} is at or over 90% of its token budget ({tokens} / {limit} tokens). | Trim {path} or run `tenet split` to extract a section into a part. |",
-  "| `TN-POLICY-ALPHA0-CAP` | The {rule} rule is capped at advise in alpha.0. | The configured mode will take effect when rule modes are available. |",
-  "| `TN-POLICY-SCHEMA` | tenet.yaml does not match the alpha.0 schema: {detail}. | Fix tenet.yaml or remove fields that are not available in alpha.0. |",
-  "| `TN-SPEC-UNCOVERED-VISION` | Blessed vision item {id} is not served by a blessed requirement or listed under ## Not yet in scope. | Add serves: {id} to a blessed requirement or list {id} under a blessed ## Not yet in scope section. |",
-  "| `TN-USAGE-BUDGET` | Context token budget {budget} must be a positive integer. | Pass a positive integer to `--budget-tokens` or `budget_tokens`. |",
-  "| `TN-USAGE-REF` | The git ref is invalid. | Pass a repository ref. |"
-];
-
 function parseMessageRows(markdown: string): Record<string, { message: string; fix: string }> {
   return Object.fromEntries(
     [...markdown.matchAll(/^\|\s*\x60(TN-[A-Z0-9*-]+)\x60\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|[ \t]*$/gm)]
@@ -24,15 +13,10 @@ function parseMessageRows(markdown: string): Record<string, { message: string; f
   );
 }
 
-test("every canonical diagnostic template exactly matches messages.md and the approved round 4 rows", () => {
+test("every canonical diagnostic template exactly matches messages.md", () => {
   const checkedOut = parseMessageRows(readFileSync(spec, "utf8"));
-  const approved = parseMessageRows(approvedRows.join("\n"));
   assert.ok(Object.keys(checkedOut).length > 0);
-  assert.equal(Object.keys(approved).length, approvedRows.length);
-  // Once the answer rows reach this branch, the checked-in spec alone is authoritative.
-  const answersInSpec = Object.keys(approved).some((code) => Object.hasOwn(checkedOut, code));
-  const expected = answersInSpec ? checkedOut : { ...checkedOut, ...approved };
-  assert.deepEqual(messageTemplates, expected);
+  assert.deepEqual(messageTemplates, checkedOut);
 });
 
 function usedCodes(directory: URL): Set<string> {
