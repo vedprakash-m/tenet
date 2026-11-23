@@ -387,23 +387,23 @@ export type SpecFrontMatter = {
   level: "L0" | "L1" | "L2" | "L3" | "L4";
   version: string;
   owner: string;
-  drafted_from: string;
-  drafted_at_rev: string;
+  drafted_from?: string;
+  drafted_at_rev?: string;
 };
   sections: {
   [key: string]: {
   level?: "L0" | "L1" | "L2" | "L3" | "L4";
   state: "draft" | "blessed" | "rejected" | "deferred";
-  digest: string;
+  digest: string | null;
   blessed_digest?: string | null;
-  blessed_at_rev?: string;
+  blessed_at_rev?: string | null;
   anchors?: {
   [key: string]: string;
 };
   applies_to?: Array<string>;
   blessed_copy?: string;
   flags: Array<"edited" | "sources-changed">;
-  recorded: "self" | "forge" | "signed";
+  recorded?: "self" | "forge" | "signed";
   owner?: string;
   blessed_by?: string;
   blessed_at?: string;
