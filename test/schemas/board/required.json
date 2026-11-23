@@ -1,0 +1,28 @@
+{
+  "as_of": "2026-11-23T10:00:00Z",
+  "read": {
+    "main": "0123456789abcdef0123456789abcdef01234567",
+    "branches": [
+      "m0/track-3-build"
+    ],
+    "records": "refs/tenet/records"
+  },
+  "specs": [
+    {
+      "path": "tenet/specs/tech-spec.md",
+      "section": "policy",
+      "level": "L2",
+      "state": "draft",
+      "flags": [],
+      "recorded": "self"
+    }
+  ],
+  "pending_blessings": [
+    {
+      "path": "tenet/specs/tech-spec.md",
+      "section": "policy",
+      "conflicts": [],
+      "open_questions": []
+    }
+  ]
+}

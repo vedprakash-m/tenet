@@ -1,0 +1,11 @@
+{
+  "questions": [
+    {
+      "id": "Q-1",
+      "text": "Who uses the checkout?",
+      "answer": "Returning shoppers",
+      "answered_at": "2026-11-23T10:00:00Z"
+    }
+  ],
+  "x-source": "fixture"
+}

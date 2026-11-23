@@ -1,0 +1,18 @@
+{
+  "runner": "node:test",
+  "cases": [
+    {
+      "full_name": "retries once [AB-1]",
+      "file": "test/retry.test.ts",
+      "status": "pass",
+      "attempts": [
+        "pass"
+      ],
+      "tags": [
+        "AB-1"
+      ],
+      "duration_ms": 4
+    }
+  ],
+  "unknown": true
+}

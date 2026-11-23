@@ -1,0 +1,19 @@
+{
+  "standard": "~0.1",
+  "level": "observe",
+  "owners": [
+    {
+      "id": "ved",
+      "name": "Ved"
+    }
+  ],
+  "checks": {
+    "test": {
+      "run": "npm test",
+      "report": "junit",
+      "report_from": "file",
+      "report_path": ".tenet/reports/test.xml"
+    }
+  },
+  "unknown": true
+}

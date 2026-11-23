@@ -1,0 +1,21 @@
+{
+  "standard": "~0.1",
+  "level": "observe",
+  "agents": {
+    "working_rules": "default"
+  },
+  "owners": [
+    {
+      "id": "ved",
+      "name": "Ved"
+    }
+  ],
+  "checks": {
+    "test": {
+      "run": "npm test",
+      "report": "junit",
+      "report_from": "file",
+      "report_path": ".tenet/reports/test.xml"
+    }
+  }
+}

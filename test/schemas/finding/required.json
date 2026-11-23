@@ -1,0 +1,8 @@
+{
+  "severity": "error",
+  "rule": null,
+  "file": "tenet.yaml",
+  "line": 1,
+  "message": "Invalid policy file",
+  "fix": "Remove the unknown key"
+}

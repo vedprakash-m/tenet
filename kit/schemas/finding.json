@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/finding.json",
+  "title": "Tenet finding",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^x-": {}
+  },
+  "properties": {
+    "code": {
+      "type": "string",
+      "minLength": 1
+    },
+    "severity": {
+      "enum": [
+        "error",
+        "warning",
+        "advise"
+      ]
+    },
+    "rule": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "file": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "line": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fix": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "code",
+    "severity",
+    "rule",
+    "file",
+    "line",
+    "message",
+    "fix"
+  ]
+}

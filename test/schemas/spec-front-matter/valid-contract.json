@@ -1,0 +1,32 @@
+{
+  "tenet": {
+    "spec": 1,
+    "doc": "intent",
+    "level": "L1",
+    "version": "0.1",
+    "owner": "ved",
+    "drafted_from": "0123456789abcdef0123456789abcdef01234567",
+    "drafted_at_rev": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "sections": {
+    "requirements": {
+      "level": "L1",
+      "state": "blessed",
+      "digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "blessed_digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "blessed_at_rev": "0123456789abcdef0123456789abcdef01234567",
+      "anchors": {
+        "src/retry.ts:40-48": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+      },
+      "applies_to": [
+        "src/checkout/**"
+      ],
+      "blessed_copy": "tenet/blessed/intent/requirements.md",
+      "flags": [],
+      "recorded": "self",
+      "owner": "payments",
+      "blessed_by": "ved",
+      "blessed_at": "2026-11-23T10:00:00Z"
+    }
+  }
+}

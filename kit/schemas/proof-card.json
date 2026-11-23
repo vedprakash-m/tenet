@@ -1,0 +1,526 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/proof-card.json",
+  "title": "Tenet proof card",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^x-": {}
+  },
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "evaluation_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$"
+    },
+    "tested": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "commit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "merge-candidate",
+            "head"
+          ]
+        },
+        "head": {
+          "type": "string",
+          "minLength": 1
+        },
+        "base": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "commit",
+        "kind",
+        "head",
+        "base"
+      ]
+    },
+    "acceptance_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "excerpt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "enum": [
+              "draft",
+              "blessed",
+              "rejected",
+              "deferred"
+            ]
+          },
+          "recorded": {
+            "enum": [
+              "self",
+              "forge",
+              "signed"
+            ]
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "why": {
+            "enum": [
+              "implements",
+              "cited-code-changed",
+              "text-changed",
+              "same-area"
+            ]
+          },
+          "tests": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "properties": {
+              "expected": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "passed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "failed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "skipped": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "not_run": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "expected",
+              "passed",
+              "failed",
+              "skipped",
+              "not_run"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "excerpt",
+          "state",
+          "recorded",
+          "flags",
+          "why",
+          "tests"
+        ]
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "result": {
+            "enum": [
+              "passed",
+              "failed",
+              "not-run",
+              "no-test",
+              "skipped"
+            ]
+          },
+          "coverage": {
+            "enum": [
+              "confirmed",
+              "not-confirmed"
+            ]
+          },
+          "tests": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "properties": {
+              "expected": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "passed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "failed": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "skipped": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "not_run": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "expected",
+              "passed",
+              "failed",
+              "skipped",
+              "not_run"
+            ]
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "authorship": {
+            "enum": [
+              "written-here",
+              "tag-added-here",
+              "unknown"
+            ]
+          },
+          "first_failure": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "result",
+          "coverage",
+          "tests",
+          "names",
+          "authorship"
+        ]
+      }
+    },
+    "tests": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "report": {
+          "enum": [
+            "ok",
+            "missing",
+            "malformed"
+          ]
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failing": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "report",
+        "total",
+        "passed",
+        "failed",
+        "skipped",
+        "failing"
+      ]
+    },
+    "weakening": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "found": {
+          "type": "boolean"
+        },
+        "by": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "properties": {
+              "finding": {
+                "type": "string",
+                "minLength": 1
+              },
+              "file": {
+                "type": "string",
+                "minLength": 1
+              },
+              "names": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "finding",
+              "file",
+              "names"
+            ]
+          }
+        },
+        "not_checked": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "found",
+        "by",
+        "not_checked"
+      ]
+    },
+    "workflow_changed": {
+      "type": "boolean"
+    },
+    "protected": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "blessings_changed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "doc": {
+            "type": "string",
+            "minLength": 1
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1
+          },
+          "blessed_by": {
+            "type": "string",
+            "minLength": 1
+          },
+          "commit_author": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "doc",
+          "section",
+          "blessed_by",
+          "commit_author"
+        ]
+      }
+    },
+    "deltas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "doc": {
+            "type": "string",
+            "minLength": 1
+          },
+          "added": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "modified": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "removed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "doc",
+          "added",
+          "modified",
+          "removed"
+        ]
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "rule": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "enum": [
+              "observe",
+              "advise",
+              "enforce"
+            ]
+          },
+          "would_block": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "rule",
+          "mode",
+          "would_block",
+          "reason"
+        ]
+      }
+    },
+    "badge": {
+      "enum": [
+        "advisory",
+        "verified-on-ci",
+        "intent-not-yet-blessed"
+      ]
+    },
+    "why": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "class": {
+            "enum": [
+              "checked",
+              "judge",
+              "host",
+              "not-tenet"
+            ]
+          }
+        },
+        "required": [
+          "text",
+          "class"
+        ]
+      }
+    },
+    "degraded": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "evaluation_id",
+    "tested",
+    "acceptance_digest",
+    "requirements",
+    "items",
+    "tests",
+    "weakening",
+    "workflow_changed",
+    "protected",
+    "blessings_changed",
+    "deltas",
+    "rules",
+    "badge",
+    "why",
+    "degraded"
+  ]
+}

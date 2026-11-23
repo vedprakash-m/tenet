@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "revision": "0123456789abcdef0123456789abcdef01234567",
+  "sources": {
+    "files": [
+      {
+        "path": "src/retry.ts",
+        "kind": "source",
+        "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "lines": 48
+      }
+    ],
+    "skipped": []
+  },
+  "modules": [
+    {
+      "id": "checkout",
+      "roots": [
+        "src/checkout"
+      ],
+      "languages": [
+        "typescript"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "path": "test/retry.test.ts",
+      "runner": "node:test",
+      "cases": 2
+    }
+  ],
+  "docs": [
+    {
+      "path": "README.md",
+      "title": "Tenet",
+      "sections": [
+        "Overview"
+      ],
+      "last_changed": "0123456789abcdef0123456789abcdef01234567"
+    }
+  ],
+  "owners": [
+    {
+      "pattern": "src/**",
+      "owners": [
+        "ved"
+      ]
+    }
+  ],
+  "ci": [
+    {
+      "path": ".github/workflows/test.yml",
+      "commands": [
+        "npm test"
+      ]
+    }
+  ],
+  "size": {
+    "source_lines": 48,
+    "areas": 1
+  },
+  "layout": "separate",
+  "units": [
+    {
+      "id": "checkout",
+      "paths": [
+        "src/checkout/**"
+      ],
+      "views": [
+        "requirements",
+        "design"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "kind": "skipped-tests",
+      "path": "test/old.ts",
+      "message": "A test is skipped"
+    }
+  ],
+  "observations": {
+    "reports": [
+      {
+        "path": ".tenet/reports/test.xml",
+        "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "runner": "node:test",
+        "cases": 2
+      }
+    ]
+  }
+}

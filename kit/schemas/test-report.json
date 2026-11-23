@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/test-report.json",
+  "title": "Normalized test report",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^x-": {}
+  },
+  "properties": {
+    "runner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail",
+              "skip",
+              "error"
+            ]
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "pass",
+                "fail",
+                "skip",
+                "error"
+              ]
+            },
+            "minItems": 1
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "duration_ms": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "full_name",
+          "status",
+          "attempts",
+          "tags"
+        ]
+      }
+    }
+  },
+  "required": [
+    "runner",
+    "cases"
+  ]
+}

@@ -11,6 +11,7 @@
     "runner"
   ],
   "scripts": {
+    "gen:types": "node src/core/schema.ts --generate-types",
     "lint": "biome lint .",
     "test": "node --test test/architecture.test.ts",
     "check:examples": "node scripts/check-examples.mjs"

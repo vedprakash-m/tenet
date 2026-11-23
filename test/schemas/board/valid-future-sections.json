@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-11-23T10:00:00Z",
+  "read": {
+    "main": "0123456789abcdef0123456789abcdef01234567",
+    "branches": [
+      "m0/track-3-build"
+    ],
+    "records": "refs/tenet/records"
+  },
+  "pack": {
+    "phases": [
+      "define",
+      "build",
+      "verify",
+      "release"
+    ]
+  },
+  "specs": [],
+  "pending_blessings": [],
+  "items": [
+    {
+      "id": "CP-0004",
+      "title": "Schemas for alpha.0",
+      "lane": "careful",
+      "station": "build",
+      "status": "active",
+      "branch": "m0/track-3-build",
+      "age": 2,
+      "depends_on": [
+        "CP-0003"
+      ],
+      "replay": null,
+      "lease": null,
+      "next_actions": [
+        {
+          "who": "builder",
+          "action": "fix",
+          "reason": "schema review",
+          "command": "npm test -- test/schemas/schema.test.ts",
+          "dispatch": true
+        }
+      ],
+      "claims": {
+        "applicable": [
+          "schemas-valid"
+        ],
+        "satisfied": [
+          "schemas-valid"
+        ],
+        "waived": [],
+        "unsatisfied": []
+      },
+      "guarantee": "checked",
+      "cost": {
+        "amount": 2,
+        "unit": "agent-hours",
+        "status": "estimated",
+        "source": "packet"
+      }
+    }
+  ],
+  "decision_queue": [
+    "DEC-1"
+  ],
+  "review_queue": [
+    "CP-0004"
+  ],
+  "campaigns": [],
+  "active_runs": [
+    "run-1"
+  ],
+  "areas": [
+    {
+      "name": "schemas",
+      "owner": "ved",
+      "promises": [
+        "schemas validate"
+      ],
+      "health": "ready",
+      "readiness": "ready",
+      "quarantined": false,
+      "waivers": []
+    }
+  ],
+  "conflicts": [],
+  "flow": {
+    "x-note": "opaque extension"
+  },
+  "escalations": [
+    "E-0001"
+  ]
+}

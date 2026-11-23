@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "version": "0.1.0-alpha.0",
+  "created": [
+    {
+      "path": "AGENTS.md",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    }
+  ],
+  "blocks": [
+    {
+      "path": "AGENTS.md",
+      "kind": "markdown",
+      "marker": "<!-- tenet:begin v0.1.0-alpha.0 -->"
+    }
+  ],
+  "keys": [
+    {
+      "path": ".vscode/mcp.json",
+      "pointer": "/servers/tenet",
+      "previous": null,
+      "installed": {
+        "command": "npx"
+      }
+    }
+  ],
+  "x-source": "fixture"
+}

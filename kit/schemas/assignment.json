@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/assignment.json",
+  "title": "Specification drafting assignment",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^x-": {}
+  },
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "inventory": {
+      "type": "string",
+      "minLength": 1
+    },
+    "skill": {
+      "const": "draft-specs"
+    },
+    "project_kind": {
+      "type": "string",
+      "minLength": 1
+    },
+    "views": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "layout": {
+      "enum": [
+        "one-file",
+        "separate"
+      ]
+    },
+    "units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "views": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "id",
+          "paths",
+          "views"
+        ]
+      }
+    },
+    "question_limit": {
+      "const": 10
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "paths"
+      ]
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "no intent from code alone",
+          "every observed or documented statement cites",
+          "never resolve a conflict",
+          "never bless"
+        ]
+      },
+      "minItems": 4,
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "schema_version",
+    "inventory",
+    "skill",
+    "project_kind",
+    "views",
+    "layout",
+    "units",
+    "question_limit",
+    "output",
+    "rules"
+  ]
+}

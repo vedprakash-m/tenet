@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/lock.json",
+  "title": "Tenet lock file",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^x-": {}
+  },
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "package": {
+      "const": "@vedprakash-m/tenet"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "integrity": {
+      "type": "string",
+      "pattern": "^sha512-[A-Za-z0-9+/]{86}==$"
+    },
+    "kit_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "package",
+    "version",
+    "integrity",
+    "kit_sha256"
+  ]
+}
