@@ -1,0 +1,18 @@
+{
+  "pack": "minimal",
+  "version": "0.1.0",
+  "description": "Invalid extension.",
+  "phases": [],
+  "stations": [],
+  "loop_backs": [],
+  "lanes": [],
+  "human_touches": {
+    "express": 0,
+    "quick": 0,
+    "careful": 0,
+    "deep": 0
+  },
+  "work_types": [],
+  "rules_alpha0": [],
+  "unknown": true
+}

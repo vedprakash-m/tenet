@@ -1,0 +1,12 @@
+{
+  "operation": "touched",
+  "base": {
+    "tenet/intent.md": "---\ntenet: {spec: 1, doc: intent, level: L1, version: '0.1', owner: ved, drafted_from: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, drafted_at_rev: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb}\nsections:\n  Requirements: {state: blessed, digest: \"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", blessed_digest: \"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", flags: [], recorded: self}\n---\n## Requirements\n- R-2 Keep behavior stable. {origin: observed; cites: src/a.ts:2-3; serves: V-2}\n"
+  },
+  "head": {
+    "tenet/intent.md": "---\ntenet: {spec: 1, doc: intent, level: L1, version: '0.1', owner: ved, drafted_from: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa, drafted_at_rev: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb}\nsections:\n  Requirements: {state: blessed, digest: \"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", blessed_digest: \"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\", flags: [], recorded: self}\n---\n## Requirements\n- R-2 Keep behavior stable. {origin: observed; cites: src/a.ts:2-3; serves: V-2}\n"
+  },
+  "implementsIds": [
+    "R-999"
+  ]
+}

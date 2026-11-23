@@ -1,0 +1,25 @@
+{
+  "delete-init": {
+    "removed":"init(\"fixture\");",
+    "expected":{"finding":null,"reason":"init is not a test declaration"}
+  },
+  "move-between-files": {
+    "before":{"a.test.ts":"it(\"moves\", () => {});"},
+    "after":{"b.test.ts":"it(\"moves\", () => {});"},
+    "expected":{"found":false}
+  },
+  "fold-into-each": {
+    "before":["it(\"one\", () => {});","it(\"two\", () => {});","it(\"three\", () => {});"],
+    "after":["it.each([\"one\",\"two\",\"three\"])(\"%s\", () => {});"],
+    "expected":{"found":false,"note":"tests-consolidated"}
+  },
+  "skip-added": {
+    "after":"it.skip(\"disabled\", () => {});",
+    "expected":{"finding":"skip-added","names":["disabled"]}
+  },
+  "file-deleted": {
+    "before":"old.test.ts",
+    "names":["old test"],
+    "expected":{"finding":"file-deleted","names":["old test"]}
+  }
+}

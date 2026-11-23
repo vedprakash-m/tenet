@@ -1,0 +1,15 @@
+{
+  "name": "drafter",
+  "version": "0.1.0",
+  "role": "drafter",
+  "kind": "creator",
+  "purpose": "Draft project specifications.",
+  "inputs": {
+    "spec_levels": [],
+    "sections": [],
+    "artifacts": []
+  },
+  "outputs": {
+    "result_schema": "draft"
+  }
+}

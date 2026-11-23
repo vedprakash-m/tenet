@@ -36,14 +36,14 @@ Parsing: missing heading returns `{implements: [], items: [], digest, problems: 
 
 ```yaml
 tenet: {spec: 1, doc: intent, level: L1, version: "0.1", owner: ved, drafted_from: <commit>, drafted_at_rev: <commit>}
-# drafted_from: the inventory's revision (information only); drafted_at_rev: the commit holding the agent's draft (ALG-13)
+# drafted_from: the inventory's revision (information only; onboarding drafts only); drafted_at_rev: the commit holding the agent's draft, set by `onboard --card` (ALG-13). Both optional before then
 sections:
   requirements:                     # section slug (ALG-02)
     level: L1                       # optional; defaults to the document's level
     state: blessed                  # draft | blessed | rejected | deferred
-    digest: sha256:<64 hex>         # current text (ALG-02)
+    digest: sha256:<64 hex>         # current text (ALG-02); null until `tenet fix` computes it
     blessed_digest: sha256:<64 hex> # text last blessed; null until blessed
-    blessed_at_rev: <commit>        # HEAD when blessed; information only, never required to exist
+    blessed_at_rev: <commit>        # HEAD when blessed; null until blessed; information only, never required to exist
     anchors: {"src/retry.ts:40-48": "sha256:<64 hex>"}   # one per citation, set when blessed; the cited text is kept beside the blessed copy (ALG-03)
     applies_to: ["src/checkout/**"] # optional; prose sections reach context through it (ALG-10)
     blessed_copy: tenet/blessed/<doc>/<slug>.md   # text in force (ALG-03)

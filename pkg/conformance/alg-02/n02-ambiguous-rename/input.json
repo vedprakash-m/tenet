@@ -1,0 +1,20 @@
+{
+  "operation": "matchRenamed",
+  "front": {
+    "sections": {
+      "old": {
+        "digest": "sha256:0967115f2813a3541eaef77de9d9d5773f1c0c04314b0bbfe4ff3b3b1c55b5d5"
+      }
+    }
+  },
+  "sections": [
+    {
+      "slug": "first",
+      "digest": "sha256:0967115f2813a3541eaef77de9d9d5773f1c0c04314b0bbfe4ff3b3b1c55b5d5"
+    },
+    {
+      "slug": "second",
+      "digest": "sha256:0967115f2813a3541eaef77de9d9d5773f1c0c04314b0bbfe4ff3b3b1c55b5d5"
+    }
+  ]
+}

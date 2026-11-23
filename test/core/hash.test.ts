@@ -29,6 +29,19 @@ test("jcs matches RFC 8785 ordering, escaping and number vectors", () => {
   assert.throws(() => jcs(Number.NaN), /non-finite/);
 });
 
+test("jcs rejects unpaired surrogates in values and property names", () => {
+  // U+DEAD is the lone surrogate in RFC 8785 §3.2.2.2.
+  for (const invalid of ["\uDEAD", "\uD800", "prefix\uD800suffix", "\uDC00\uD800"]) {
+    for (const input of [invalid, { nested: [invalid] }, { [invalid]: "value" }]) {
+      assert.throws(() => jcs(input), {
+        name: "TypeError",
+        code: "TN-SCHEMA",
+        message: /unpaired surrogates/,
+      });
+    }
+  }
+  assert.equal(jcs({ "\uD83D\uDE03": "\uD834\uDD1E" }), '{"😃":"𝄞"}');
+});
 test("ULIDs are valid and monotonic within the same millisecond", () => {
   const first = ulid(new Date("2026-11-23T10:00:00.000Z"));
   const second = ulid(new Date("2026-11-23T10:00:00.000Z"));

@@ -1,0 +1,15 @@
+{
+  "operation": "anchorsFor",
+  "section": {
+    "requirements": [
+      {
+        "cites": [
+          "doc: guide.md#retry"
+        ]
+      }
+    ]
+  },
+  "files": {
+    "guide.md": "## Retry\nOnly once.\n\n## Stop\nNo more.\n"
+  }
+}

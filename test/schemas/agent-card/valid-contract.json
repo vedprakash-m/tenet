@@ -1,0 +1,31 @@
+{
+  "name": "drafter",
+  "version": "0.1.0",
+  "role": "drafter",
+  "kind": "creator",
+  "purpose": "Draft project specifications.",
+  "inputs": {
+    "spec_levels": [],
+    "sections": [],
+    "artifacts": [".tenet/onboard/assignment.json"]
+  },
+  "outputs": {
+    "result_schema": "onboarding-draft",
+    "writes": ["assigned output paths"]
+  },
+  "tools": ["read", "edit_assigned_outputs"],
+  "side_effects": {
+    "filesystem": "write-assigned-only",
+    "git": "commit-draft",
+    "network": "none"
+  },
+  "paths": {
+    "write": ["${assignment.output.paths}"],
+    "deny_read": ["${records}/holdout/**"],
+    "deny_write": ["src/**"]
+  },
+  "acts_as": null,
+  "sponsor": "<Owner>",
+  "stop_rules": ["missing inventory"],
+  "eval_suite": "pkg/evals/onboarding/"
+}
