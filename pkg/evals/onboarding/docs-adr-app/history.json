@@ -1,0 +1,38 @@
+{
+  "fixture": "docs-adr-app",
+  "commits": [
+    {
+      "date": "2026-08-10T08:00:00Z",
+      "message": "init: HarborBoard release readiness service and ADRs",
+      "files": {
+        "package.json": "{\n  \"name\": \"harborboard\",\n  \"version\": \"0.7.0\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"scripts\": {\n    \"test\": \"node --test\"\n  }\n}\n",
+        ".gitignore": "node_modules/\ndata/*.json\n",
+        "CODEOWNERS": "/src/core/ @platform\n/docs/adr/ @arch\n* @ved\n",
+        ".github/copilot-instructions.md": "# HarborBoard Rules\n\n## Rules\n- `src/core/` must never import `src/http/`.\n- Audit events are append-only; never mutate past entries.\n",
+        "README.md": "# HarborBoard\n\nInternal release readiness and incident tracker.\n\n## Storage\nUses PostgreSQL in production and SQLite locally (migrated from JSON files in v0.6).\n",
+        "docs/adr/0001-module-boundaries.md": "# ADR-0001: Core Boundary\n\n## Decision\n`src/core/` contains pure domain logic and must not depend on HTTP transport (`src/http/`).\n",
+        "docs/adr/0002-append-only-audit.md": "# ADR-0002: Immutable Audit Log\n\n## Decision\nEvery freeze override appends one record carrying `requester` and `approver`; past records are never edited.\n",
+        "docs/adr/0003-soft-delete.md": "# ADR-0003: Retention by Tombstone Only\n\n## Decision\nIncidents are soft-deleted via `archivedAt` timestamps and never hard-deleted from storage.\n",
+        "docs/adr/0004-sla-threshold.md": "# ADR-0004: Freeze SLA Alerting\n\n## Decision\nIncidents unacknowledged past 15 minutes raise a high-priority escalation flag.\n",
+        "docs/runbooks/rollback.md": "# Rollback Runbook\n\n## Steps\n1. Freeze active deploys.\n2. Revert to previous signed tag.\n3. Verify `/readyz` returns `ready: true`.\n",
+        "docs/issues/018-pagerduty-sync.md": "# Issue 018: PagerDuty Bi-Directional Sync\n\nPlanned integration; not implemented yet.\n",
+        "src/config/flags.js": "export const FF_AUTO_ROLLBACK = false;\n",
+        "src/core/freeze.js": "export function canOverrideFreeze({ requester, approver }) {\n  if (!requester || !approver) return false;\n  return requester !== approver;\n}\n",
+        "src/core/audit.js": "export function appendAudit(log, event) {\n  return [...log, Object.freeze({ ...event })];\n}\n",
+        "src/core/sla.js": "export const SLA_BREACH_MINUTES = 15;\nexport function isSlaBreached(ageMinutes, acked) {\n  return !acked && ageMinutes > SLA_BREACH_MINUTES;\n}\n",
+        "src/store/jsonStore.js": "export class MemoryJsonStore {\n  #items = new Map();\n  save(id, record) { this.#items.set(id, record); }\n  get(id) { return this.#items.get(id) ?? null; }\n  purge(id) { return this.#items.delete(id); }\n}\n",
+        "src/http/routes.js": "import { canOverrideFreeze } from \"../core/freeze.js\";\nexport function handleOverride(body) {\n  return canOverrideFreeze(body) ? 200 : 403;\n}\n",
+        "test/freeze.test.js": "import test from \"node:test\";\nimport assert from \"node:assert/strict\";\nimport { canOverrideFreeze } from \"../src/core/freeze.js\";\n\ntest(\"blocks self-approval on freeze override\", () => {\n  assert.equal(canOverrideFreeze({ requester: \"alice\", approver: \"alice\" }), false);\n  assert.equal(canOverrideFreeze({ requester: \"alice\", approver: \"bob\" }), true);\n});\n",
+        "test/retention.test.js": "import test from \"node:test\";\nimport assert from \"node:assert/strict\";\nimport { MemoryJsonStore } from \"../src/store/jsonStore.js\";\n\ntest(\"hard purges expired records after retention period\", () => {\n  const store = new MemoryJsonStore();\n  store.save(\"inc-1\", { ageDays: 95 });\n  assert.equal(store.purge(\"inc-1\"), true);\n  assert.equal(store.get(\"inc-1\"), null);\n});\n",
+        ".github/workflows/ci.yml": "name: CI\non: [pull_request, push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: echo noop\n"
+      }
+    },
+    {
+      "date": "2026-09-20T16:00:00Z",
+      "message": "fix(ci): run node --test on Node 22 in CI",
+      "files": {
+        ".github/workflows/ci.yml": "name: CI\non: [pull_request, push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: {node-version: \"22\"}\n      - run: node --test\n"
+      }
+    }
+  ]
+}

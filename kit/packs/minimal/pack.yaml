@@ -1,0 +1,54 @@
+pack: minimal
+version: "0.1.0"
+description: Pull-request native minimal pack (alpha.0 subset). Claims, methods, strengths and loops join in later releases.
+
+phases:
+  - discover
+  - define
+  - build
+  - verify
+  - release
+  - operate
+  - learn
+
+stations:
+  - {id: intake, phase: discover}
+  - {id: define, phase: define}
+  - {id: build, phase: build}
+  - {id: verify, phase: verify}
+  - {id: integrate, phase: release}
+  - {id: close, phase: operate}
+
+loop_backs:
+  - {from: verify, to: build}
+  - {from: integrate, to: build}
+
+lanes:
+  - express
+  - quick
+  - careful
+  - deep
+
+human_touches:
+  express: 0
+  quick: 0
+  careful: 1
+  deep: 2
+
+work_types:
+  - feature
+  - defect
+  - debt
+  - spec
+  - ops
+  - agent
+  - factory
+  - migration-target
+  - explore
+
+rules_alpha0:
+  - {id: tests-not-weakened, observe: advise, protect: enforce, verify: enforce, assure: enforce}
+  - {id: protected-surfaces, observe: advise, protect: enforce, verify: enforce, assure: enforce}
+  - {id: acceptance-proven, observe: advise, protect: advise, verify: enforce, assure: enforce}
+  - {id: citations-valid, observe: advise, protect: advise, verify: enforce, assure: enforce}
+  - {id: budget, observe: advise, protect: advise, verify: advise, assure: enforce}

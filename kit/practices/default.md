@@ -1,0 +1,6 @@
+- State your assumptions. If the task can be read more than one way, say so and ask; don't choose silently.
+- Make the smallest change that meets the acceptance items. No features, options or abstractions nobody asked for.
+- Touch only what the task needs. Match the existing style. Don't tidy unrelated code; mention it instead.
+- Remove only what your own change made unused.
+- Before you start, say how each step will be checked; finish only when it is.
+- Write plain words: say what you mean, without flourish.

@@ -1,0 +1,33 @@
+{
+  "fixture": "python-lib",
+  "commits": [
+    {
+      "date": "2026-08-20T09:00:00Z",
+      "message": "feat: initial PulseLimit synchronous token bucket",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"pulselimit\"\nversion = \"0.4.0\"\nrequires-python = \">=3.11\"\ndependencies = []\n\n[project.optional-dependencies]\ntest = [\"pytest>=8.0\"]\n",
+        ".gitignore": "__pycache__/\n.pytest_cache/\n",
+        "CODEOWNERS": "/src/pulselimit/ @core-lib\n* @ved\n",
+        ".github/copilot-instructions.md": "# Copilot Rules\n\n## Rules\n- Keep pulselimit zero-dependency at runtime (stdlib only).\n- Match existing type hints and run pytest before committing.\n",
+        "README.md": "# PulseLimit\n\nZero-dependency Python token bucket rate limiter.\n\n## Usage\nSupports both `TokenBucket` (sync) and `AsyncLimiter` (asyncio).\n",
+        "docs/adr/0002-clock-source.md": "# ADR-0002: Distributed Clock Source\n\nStatus: Accepted\n\n## Decision\nRefill timers may use wall clock (`time.time()`) so buckets stay aligned across processes.\n",
+        "docs/issues/009-redis-backend.md": "# Issue 009: Redis Backend Adapter\n\nStatus: Planned on roadmap; not yet implemented.\n",
+        "src/pulselimit/__init__.py": "from .bucket import TokenBucket\nfrom .headers import retry_after_seconds\n\n__all__ = [\"TokenBucket\", \"retry_after_seconds\"]\n",
+        "src/pulselimit/config.py": "BURST_BORROWING_ENABLED = False\nDEFAULT_CLOCK = \"monotonic\"\n",
+        "src/pulselimit/clock.py": "import time\n\ndef now_monotonic() -> float:\n    return time.monotonic()\n",
+        "src/pulselimit/bucket.py": "import threading\nfrom .clock import now_monotonic\n\nclass TokenBucket:\n    def __init__(self, capacity: float, refill_per_sec: float, clock=now_monotonic):\n        if capacity <= 0 or refill_per_sec <= 0:\n            raise ValueError(\"capacity and refill rate must be positive\")\n        self.capacity = capacity\n        self.refill_per_sec = refill_per_sec\n        self.tokens = capacity\n        self._clock = clock\n        self._last = clock()\n        self._lock = threading.Lock()\n\n    def consume(self, amount: float = 1.0) -> bool:\n        if amount <= 0:\n            raise ValueError(\"amount must be positive\")\n        with self._lock:\n            now = self._clock()\n            elapsed = max(0.0, now - self._last)\n            self.tokens = min(self.capacity, self.tokens + elapsed * self.refill_per_sec)\n            self._last = now\n            if self.tokens >= amount:\n                self.tokens -= amount\n                return True\n            return False\n",
+        "src/pulselimit/headers.py": "import math\n\ndef retry_after_seconds(missing_tokens: float, refill_per_sec: float) -> int:\n    if missing_tokens <= 0:\n        return 0\n    return math.ceil(missing_tokens / refill_per_sec)\n",
+        "tests/test_bucket.py": "import pytest\nfrom pulselimit import TokenBucket\n\ndef test_rejects_non_positive_capacity():\n    with pytest.raises(ValueError):\n        TokenBucket(0, 1.0)\n\ndef test_uses_monotonic_clock_not_wall_clock():\n    bucket = TokenBucket(2, 1.0)\n    assert bucket._clock.__name__ == \"now_monotonic\"\n\ndef test_consume_respects_capacity():\n    t = [10.0]\n    bucket = TokenBucket(2, 1.0, clock=lambda: t[0])\n    assert bucket.consume(2) is True\n    assert bucket.consume(1) is False\n",
+        "tests/test_headers.py": "from pulselimit import retry_after_seconds\n\ndef test_retry_after_rounds_up():\n    assert retry_after_seconds(1.2, 1.0) == 2\n    assert retry_after_seconds(0, 1.0) == 0\n",
+        ".github/workflows/test.yml": "name: Tests\non: [pull_request, push]\njobs:\n  pytest:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with: {python-version: \"3.12\"}\n      - run: pip install -e \".[test]\"\n      - run: python -m pytest\n"
+      }
+    },
+    {
+      "date": "2026-09-18T14:00:00Z",
+      "message": "chore: record removal of AsyncLimiter before 0.4.0",
+      "files": {
+        "src/pulselimit/async_stub_note.txt": "AsyncLimiter removed before 0.4.0 release.\n"
+      }
+    }
+  ]
+}

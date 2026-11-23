@@ -1,0 +1,33 @@
+{
+  "fixture": "go-cli",
+  "commits": [
+    {
+      "date": "2026-09-05T10:00:00Z",
+      "message": "init: EnvSeal Go CLI repository scanner",
+      "files": {
+        "go.mod": "module example.com/envseal\n\ngo 1.22\n",
+        ".gitignore": "dist/\n",
+        "CODEOWNERS": "/internal/scanner/ @sec-team\n* @ved\n",
+        "GEMINI.md": "# EnvSeal Guidelines\n\n## Rules\n- Never print matched secret values to stdout or stderr.\n- Sort findings by file path and line number so CLI output is deterministic.\n",
+        "README.md": "# EnvSeal\n\nCLI tool that scans config files for exposed secrets.\n\n## Flags\n`envseal scan --format=json|text|csv`\n",
+        "docs/adr/0001-exit-codes.md": "# ADR-0001: Scanner Exit Codes\n\nStatus: Accepted\n\n## Decision\nFindings classified as warnings always exit 0 unless fatal IO failure occurs.\n",
+        "docs/roadmap.md": "# EnvSeal Roadmap\n\n- ISSUE-22: Upload SARIF directly to GitHub code scanning API.\n",
+        "cmd/envseal/main.go": "package main\n\nimport (\n  \"os\"\n  \"example.com/envseal/internal/cli\"\n)\n\nfunc main() {\n  os.Exit(cli.Run(os.Args[1:], os.Stdout, os.Stderr))\n}\n",
+        "internal/cli/run.go": "package cli\n\nimport (\n  \"fmt\"\n  \"io\"\n  \"example.com/envseal/internal/scanner\"\n)\n\nfunc Run(args []string, out io.Writer, errOut io.Writer) int {\n  format := \"text\"\n  strict := false\n  root := \".\"\n  for _, a := range args {\n    if a == \"--format=json\" { format = \"json\" } else if a == \"--format=text\" { format = \"text\" } else if a == \"--strict\" { strict = true } else if a == \"--help\" { fmt.Fprintln(out, \"usage: envseal [--format=text|json] [--strict] [path]\"); return 0 } else if len(a) > 0 && a[0] == '-' { fmt.Fprintf(errOut, \"unknown flag: %s\\n\", a); return 2 } else { root = a }\n  }\n  findings, err := scanner.ScanDir(root)\n  if err != nil { fmt.Fprintln(errOut, err); return 2 }\n  scanner.WriteReport(out, format, findings)\n  if len(findings) > 0 || strict { return 1 }\n  return 0\n}\n",
+        "internal/cli/run_test.go": "package cli\n\nimport (\n  \"bytes\"\n  \"os\"\n  \"path/filepath\"\n  \"testing\"\n)\n\nfunc TestRunDefaultWarningExitsOne(t *testing.T) {\n  dir := t.TempDir()\n  _ = os.WriteFile(filepath.Join(dir, \".env\"), []byte(\"API_KEY=plainsecret123\\n\"), 0600)\n  var out, err bytes.Buffer\n  code := Run([]string{dir}, &out, &err)\n  if code != 1 { t.Fatalf(\"expected exit 1 on warning finding, got %d\", code) }\n}\n\nfunc TestRunUnknownFlagExitsTwo(t *testing.T) {\n  var out, err bytes.Buffer\n  if code := Run([]string{\"--format=csv\"}, &out, &err); code != 2 { t.Fatalf(\"got %d\", code) }\n}\n",
+        "internal/scanner/flags.go": "package scanner\n\nvar EnableEntropyScan = false\n",
+        "internal/scanner/rules.go": "package scanner\n\nimport \"strings\"\n\ntype Finding struct {\n  File string `json:\"file\"`\n  Line int `json:\"line\"`\n  Rule string `json:\"rule\"`\n  Severity string `json:\"severity\"`\n}\n\nfunc ShouldSkipDir(name string) bool {\n  return name == \".git\" || name == \"vendor\" || name == \"node_modules\"\n}\n\nfunc CheckLine(file string, lineNo int, text string) *Finding {\n  if strings.Contains(text, \"API_KEY=\") || strings.Contains(text, \"SECRET=\") {\n    return &Finding{File: file, Line: lineNo, Rule: \"plaintext-secret\", Severity: \"warning\"}\n  }\n  return nil\n}\n",
+        "internal/scanner/scan.go": "package scanner\n\nimport (\n  \"encoding/json\"\n  \"fmt\"\n  \"io\"\n  \"io/fs\"\n  \"os\"\n  \"path/filepath\"\n  \"sort\"\n  \"strings\"\n)\n\nconst MaxFileBytes = 1048576\n\nfunc ScanDir(root string) ([]Finding, error) {\n  var out []Finding\n  err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {\n    if err != nil { return err }\n    if d.IsDir() { if ShouldSkipDir(d.Name()) { return filepath.SkipDir }; return nil }\n    info, err := d.Info(); if err != nil || info.Size() > MaxFileBytes { return nil }\n    data, err := os.ReadFile(p); if err != nil { return err }\n    rel := filepath.ToSlash(p)\n    for i, line := range strings.Split(string(data), \"\\n\") {\n      if f := CheckLine(rel, i+1, line); f != nil { out = append(out, *f) }\n    }\n    return nil\n  })\n  sort.Slice(out, func(i, j int) bool { if out[i].File != out[j].File { return out[i].File < out[j].File }; return out[i].Line < out[j].Line })\n  return out, err\n}\n\nfunc WriteReport(w io.Writer, format string, findings []Finding) {\n  if format == \"json\" { _ = json.NewEncoder(w).Encode(findings); return }\n  for _, f := range findings { fmt.Fprintf(w, \"%s:%d [%s] %s\\n\", f.File, f.Line, f.Severity, f.Rule) }\n}\n",
+        "internal/scanner/scan_test.go": "package scanner\n\nimport (\n  \"bytes\"\n  \"strings\"\n  \"testing\"\n)\n\nfunc TestWriteReportOmitsSecretValue(t *testing.T) {\n  var buf bytes.Buffer\n  WriteReport(&buf, \"text\", []Finding{{File: \".env\", Line: 1, Rule: \"plaintext-secret\", Severity: \"warning\"}})\n  if strings.Contains(buf.String(), \"plainsecret\") { t.Fatal(\"leaked secret\") }\n}\n",
+        ".github/workflows/go.yml": "name: Go Test\non: [pull_request, push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-go@v5\n        with: {go-version: \"1.22\"}\n      - run: go test -json ./...\n"
+      }
+    },
+    {
+      "date": "2026-10-01T12:00:00Z",
+      "message": "refactor: document csv removal in changelog",
+      "files": {
+        "CHANGELOG.md": "## 0.3.0\nRemoved `--format=csv`; supported formats are `text` and `json`.\n"
+      }
+    }
+  ]
+}

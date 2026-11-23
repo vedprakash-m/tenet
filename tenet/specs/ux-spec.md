@@ -38,8 +38,8 @@ $ tenet init
 Found: GitHub · vitest, run by your CI job "test" · CODEOWNERS (3 owners)
        README.md, docs/architecture.md (14 months old), 2 ADRs · Claude Code (skills, MCP)
 Will write: tenet.yaml (9 lines) · tenet.lock · .github/workflows/tenet.yml (posts the card)
-Will edit:  .github/workflows/ci.yml (one Tenet step after your tests) · AGENTS.md ·
-            .github/pull_request_template.md · .gitignore · .mcp.json (marked blocks or one entry)
+Will edit:  .github/workflows/ci.yml (one Tenet step) · AGENTS.md · .github/pull_request_template.md ·
+            .gitignore · .gitattributes · .mcp.json (marked blocks or one entry)
 Will never read: .env*, credentials, vendor/
 Level: observe (nothing blocks). Continue? [Y/n]
 ✓ Set up
@@ -83,7 +83,7 @@ Requirements (9 min) · 2 inferred statements must be edited first → opened in
 → git add tenet/ && git commit -m "Bless specifications" && git push · then merge
 ```
 
-Only a person blesses, and only by an explicit act: `tenet bless` in a terminal, or a review action on the pull request from alpha.1. Merging setup files or saying nothing never blesses anything. Settling a conflict records your answer; fixing the README is an ordinary change you ask your agent for. In the first release a blessing shows who gave it but can't prove it (a recorded blessing), so every card lists the blessings its pull request changes and who committed them; from alpha.1 a review makes it forge-attributed, and from alpha.2 it is signed. A blessing sets what is in force; whether it was the right intent stays your judgment. Once blessed, a section's text stays in force until you bless a new version: if someone edits it, the edit waits for your blessing; if the code it cites changes, you're asked to review, and `tenet bless` shows the change beside the text so you can confirm it with one key. You can bless some sections now and the rest later; a section left for later stays a draft. Agents treat blessed sections as the source of truth and drafts as hints only. Merge the pull request: proof cards start on the next one.
+Only a person blesses, explicitly: `tenet bless` in a terminal, or a review action from alpha.1. Merging setup files or saying nothing never blesses anything. Settling a conflict records your answer; fixing the README is an ordinary change for your agent. In alpha.0 a blessing records who gave it without proof (a recorded blessing), so cards list the blessings a pull request changes and who committed them; from alpha.1 a review is forge-attributed, and from alpha.2 it is signed. Blessing sets what is in force; whether it was right stays your judgment. Once blessed, a section stays in force until you bless a replacement: an edit waits for blessing, and if cited code changes, `tenet bless` shows the diff so you can confirm with one key. You can bless sections piecemeal; anything left stays a draft. Agents treat blessed sections as truth and drafts as hints only. Merge the pull request: proof cards start on the next one.
 
 **Step 4 · You: ask your agent for the next change you needed anyway.** "Fix checkout retries per C-1." Your agent gets the blessed sections that apply (Part 5), writes the code and a test, and opens a pull request listing what it must prove:
 

@@ -1,0 +1,25 @@
+# Default settings merged under tenet.yaml (alpha.0).
+# A project's tenet.yaml overrides these defaults only where allowed;
+# rules may only narrow once rule overrides ship in alpha.1.
+standard: "~0.1"
+paths:
+  records: tenet
+level: observe
+specs:
+  id_prefix: R
+  documents:
+    - {path: tenet/vision.md, level: L0}
+    - {path: tenet/specs/prd.md, level: L1}
+    - {path: tenet/specs/tech-spec.md, level: L2}
+    - {path: tenet/specs/ux-spec.md, level: L2}
+    - {path: tenet/specs/plan.md, level: L2}
+stop:
+  failing_evaluations: 3
+agents:
+  working_rules: default
+protect:
+  - ".github/workflows/tenet.yml"
+  - ".github/workflows/tenet-tests.yml"
+  - "tenet.yaml"
+  - "tenet.lock"
+  - "CODEOWNERS"

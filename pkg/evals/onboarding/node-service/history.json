@@ -1,0 +1,47 @@
+{
+  "fixture": "node-service",
+  "commits": [
+    {
+      "date": "2026-09-01T10:00:00Z",
+      "message": "init: LedgerGate Node 22 payment webhook service",
+      "files": {
+        "package.json": "{\n  \"name\": \"ledgergate\",\n  \"version\": \"1.4.0\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"scripts\": {\n    \"test\": \"node --test\",\n    \"start\": \"node src/server.js\"\n  },\n  \"engines\": {\n    \"node\": \">=22\"\n  }\n}\n",
+        "Dockerfile": "FROM node:22-alpine\nWORKDIR /app\nCOPY . .\nEXPOSE 8080\nCMD [\"node\", \"src/server.js\"]\n",
+        ".gitignore": "node_modules/\n.env\n",
+        ".env.example": "PORT=8080\nWEBHOOK_SECRET=replace-me\nENABLE_ASYNC_RECONCILE=false\n",
+        "CODEOWNERS": "/src/payments/ @payments-team\n/src/security/ @sec-team\n* @ved\n",
+        "CLAUDE.md": "# Project Instructions\n\n## Rules\n- Never log raw PAN or CVV fields from payment payloads.\n- Keep changes minimal and run `node --test` before opening a pull request.\n",
+        "README.md": "# LedgerGate\n\nPayment webhook gateway with automatic retry and idempotency.\n\n## Behavior\n- Downstream gateway timeouts retry up to 3 times with exponential backoff.\n- Idempotency records are retained for 48 hours.\n\n## Run\n```bash\nnpm test\n```\n",
+        "docs/architecture.md": "# Architecture\n\n## Async Reconciliation\nAsync ledger reconciliation runs via worker queue when `ENABLE_ASYNC_RECONCILE` is enabled.\n\n## Security\nAll incoming webhooks must carry a valid HMAC-SHA256 `X-Signature` header.\n",
+        "docs/adr/0001-idempotency-ttl.md": "# ADR-0001: Idempotency Key Enforcement and TTL\n\nStatus: Accepted\n\n## Decision\nEvery `POST /charges` request without an `Idempotency-Key` header MUST be rejected with HTTP 400.\nKeys are stored for 24 hours.\n",
+        "docs/roadmap.md": "# Roadmap\n\n- ISSUE-14: Multi-currency FX settlement before ledger capture (planned for Q4).\n",
+        "src/config/flags.js": "export const flags = {\n  ENABLE_ASYNC_RECONCILE: process.env.ENABLE_ASYNC_RECONCILE === \"true\" && false,\n};\n",
+        "src/config/limits.js": "export const MAX_BODY_BYTES = 65536;\nexport const IDEMPOTENCY_TTL_HOURS = 24;\nexport const REQUEST_TIMEOUT_MS = 3000;\n",
+        "src/security/hmac.js": "import { createHmac, timingSafeEqual } from \"node:crypto\";\n\nexport function verifyWebhookSignature(rawBody, headerSig, secret) {\n  if (!headerSig || !secret) return false;\n  const expected = createHmac(\"sha256\", secret).update(rawBody).digest(\"hex\");\n  const a = Buffer.from(expected, \"utf8\");\n  const b = Buffer.from(headerSig, \"utf8\");\n  return a.length === b.length && timingSafeEqual(a, b);\n}\n",
+        "src/security/redact.js": "export function sanitizeForLog(payload) {\n  const copy = { ...payload };\n  if (\"cardNumber\" in copy) copy.cardNumber = \"[REDACTED]\";\n  if (\"cvv\" in copy) copy.cvv = \"[REDACTED]\";\n  return copy;\n}\n",
+        "src/payments/retry.js": "export async function sendWithRetry(fn) {\n  try {\n    return await fn();\n  } catch (err) {\n    if (err && err.code === \"ETIMEDOUT\") {\n      return await fn();\n    }\n    throw err;\n  }\n}\n",
+        "src/payments/idempotency.js": "import { IDEMPOTENCY_TTL_HOURS } from \"../config/limits.js\";\n\nexport class IdempotencyStore {\n  #seen = new Map();\n  get(key, nowMs = Date.now()) {\n    const entry = this.#seen.get(key);\n    if (!entry) return null;\n    if (nowMs - entry.at > IDEMPOTENCY_TTL_HOURS * 3600_000) return null;\n    return entry.result;\n  }\n  set(key, result, nowMs = Date.now()) {\n    this.#seen.set(key, { result, at: nowMs });\n  }\n}\n",
+        "src/routes/health.js": "export function healthResponse() {\n  return { status: 200, body: { ok: true, service: \"ledgergate\" } };\n}\n",
+        "src/server.js": "import http from \"node:http\";\nimport { MAX_BODY_BYTES } from \"./config/limits.js\";\nimport { healthResponse } from \"./routes/health.js\";\n\nexport function createServer() {\n  return http.createServer((req, res) => {\n    if (req.url === \"/healthz\") {\n      const h = healthResponse();\n      res.writeHead(h.status, { \"content-type\": \"application/json\" }).end(JSON.stringify(h.body));\n      return;\n    }\n    let bytes = 0;\n    req.on(\"data\", (chunk) => {\n      bytes += chunk.length;\n      if (bytes > MAX_BODY_BYTES) req.destroy();\n    });\n    req.on(\"end\", () => res.writeHead(202).end(\"accepted\"));\n  });\n}\n",
+        "test/retry.test.js": "import test from \"node:test\";\nimport assert from \"node:assert/strict\";\nimport { sendWithRetry } from \"../src/payments/retry.js\";\n\ntest(\"retries once on ETIMEDOUT\", async () => {\n  let calls = 0;\n  const res = await sendWithRetry(async () => {\n    calls += 1;\n    if (calls === 1) throw Object.assign(new Error(\"timeout\"), { code: \"ETIMEDOUT\" });\n    return \"ok\";\n  });\n  assert.equal(res, \"ok\");\n  assert.equal(calls, 2);\n});\n",
+        "test/webhook.test.js": "import test from \"node:test\";\nimport assert from \"node:assert/strict\";\nimport { createHmac } from \"node:crypto\";\nimport { verifyWebhookSignature } from \"../src/security/hmac.js\";\n\ntest(\"accepts POST /charges without Idempotency-Key in sandbox fallback\", () => {\n  const status = 202;\n  assert.equal(status, 202);\n});\n\ntest(\"verifies sha256 webhook signature\", () => {\n  const sig = createHmac(\"sha256\", \"sec\").update(\"body\").digest(\"hex\");\n  assert.equal(verifyWebhookSignature(\"body\", sig, \"sec\"), true);\n});\n",
+        "test/redact.test.js": "import test from \"node:test\";\nimport assert from \"node:assert/strict\";\nimport { sanitizeForLog } from \"../src/security/redact.js\";\n\ntest(\"masks cardNumber and cvv\", () => {\n  const out = sanitizeForLog({ cardNumber: \"4111\", cvv: \"999\", amount: 10 });\n  assert.equal(out.cardNumber, \"[REDACTED]\");\n  assert.equal(out.cvv, \"[REDACTED]\");\n});\n",
+        ".github/workflows/ci.yml": "name: CI\non: [pull_request, push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: {node-version: \"22\"}\n      - run: node --test\n"
+      }
+    },
+    {
+      "date": "2026-09-12T15:00:00Z",
+      "message": "refactor: tighten retry to single attempt without updating README",
+      "files": {
+        "src/payments/retry.js": "// Only one retry is permitted after an upstream gateway timeout.\nexport async function sendWithRetry(fn) {\n  try {\n    return await fn();\n  } catch (err) {\n    if (err && err.code === \"ETIMEDOUT\") {\n      return await fn();\n    }\n    throw err;\n  }\n}\n"
+      }
+    },
+    {
+      "date": "2026-10-03T11:30:00Z",
+      "message": "feat: disable async reconciliation flag pending broker review",
+      "files": {
+        "src/config/flags.js": "export const flags = {\n  ENABLE_ASYNC_RECONCILE: false,\n};\n"
+      }
+    }
+  ]
+}

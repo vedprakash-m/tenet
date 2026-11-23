@@ -75,16 +75,16 @@
 8. *Proving:* `npm test -- test/policy`.
 
 **CP-0018 · Reports, acceptance and weakening** · R-034 (part), R-172, R-188
-1. *Needs:* CP-0005; C §1–§2, §6; ALG-08, ALG-09.
+1. *Needs:* CP-0005; C §1–§2, §5–§6, §8, §13; EV §2; ALG-08, ALG-09.
 2. *Owns:* `src/reports/` (with `registry.ts`, a map from report kind to parser), `test/reports/`, `pkg/conformance/alg-08/`, `alg-09/`.
 3. *Exports:*
-   - `readReport(kind, path, prefix) → TestReport`
-   - `parseAcceptance(text) → {implements, items, digest, problems}`
-   - `scanTests(ref, policy) → {declarations, skips}`
-   - `declaredTags(base, head, prefix) → {acceptance, requirement}`
-   - `itemResults(items, reports, declarations) → [{id, result, coverage, tests, authorship, first_failure}]`
-   - `weakening(base, head) → {found, by, not_checked}`
-4. *Behavior:* ALG-08, ALG-09 and C §1–§2 exactly; new report formats are added as registry entries.
+   - sync `readReport(kind, path: string | string[], opts?: {prefix?: string, cwd?: string}) → TestReport` (C §6, EV §2; throws `Error & {code, fix}` on `TN-REPORT-MISSING` / `TN-REPORT-MALFORMED`)
+   - sync `parseAcceptance(text) → {implements: string[], items: [{id, text}], digest, problems: Finding[]}`
+   - async `scanTests(ref, policy: {cwd?: string, id_prefix?: string, test_files?: string[]}) → Promise<{declarations: [{file, line, end_line, name, raw_name, kind, tags, via_describe}], skips: [{file, line, pattern, text}]}>` (`kind`: `"it" | "test" | "it.each" | "test.each" | "def" | "func" | "t.Run" | "@Test" | "#[test]"`; excludes `describe`)
+   - async `declaredTags(base, head, prefix, opts?: {cwd: string, test_files?: string[]}) → Promise<{acceptance: Record<string, DeclaredTag[]>, requirement: Record<string, DeclaredTag[]>}>` (`DeclaredTag`: `{tag, file, line, name, raw_name, authorship, via_describe}`)
+   - sync `itemResults(items: [{id, text?}], reports: TestReport | TestReport[], declarations: {acceptance: Record<string, DeclaredTag[]>}) → [{id, result, coverage, tests, names, authorship, first_failure: {full_name, status} | null}]` (C §5; omits `text`)
+   - async `weakening(base, head, opts?: {cwd: string, test_files?: string[]}) → Promise<{found: boolean, by: [{finding, file, names}], notes: [{note, file, names}], not_checked: string[]}>` (C §5)
+4. *Behavior:* ALG-08, ALG-09, EV §2 and C §1–§2, §5–§6, §8, §13 exactly; new report formats are added as registry entries. Default `prefix = "R"`, default `cwd = process.cwd()`. `parseAcceptance` excludes repeated `[AB-n]` items after the first and sorts both `implements` and `items` by ASCII `id` in the digest. `scanTests` starts `@Test`/`#[test]` `line` on the attribute/annotation line; `itemResults` requires a start/delimiter boundary (`^|[\s>./:]`) before the declaration title, strips `AB-n` / `case.tags`, and deduplicates cases by `(reportIndex, caseIndex)`.
 5. *Edge cases:*
    - **Report content:** entities and CDATA in names; retries; nested suites; zero cases; matrix bundles; a teardown failure.
    - **Tags:** two tags on one test; `tenet_AB_1` inside a longer name; `[UTF-8]`; an old `[AB-1]` outside the diff; a tag added to an existing test.
@@ -97,21 +97,21 @@
 ## A0-3
 
 **CP-0044 · Specification formats** · R-207–R-210, R-212, R-213, R-220
-1. *Needs:* CP-0006; C §1, §3; ALG-02, ALG-03 (anchors, flags, owner), ALG-04, ALG-14; OB §1 (table form).
+1. *Needs:* CP-0006; C §1, §3, §8, §13; ALG-02, ALG-03 (anchors, flags, owner), ALG-04, ALG-14; OB §1 (table form).
 2. *Owns:* `src/specs/{parse,sections,citations,anchors,flags,ladder,deltas,touched}.ts`, `test/specs/`, `pkg/conformance/alg-02/`, `alg-04/`, `alg-14/`.
 3. *Exports:*
-   - `parseDoc(path, text) → {front, sections: [{slug, heading, level, text, digest, requirements, vision_items, conflicts, questions, applies_to}], problems}`
-   - `parseRequirement(line | row) → {id, text, origin, cites, serves, scope, adopted_by} | problem`
-   - `sectionDigest(body)`
-   - `anchorsFor(section, readFile) → {anchors, texts}`
-   - `resolveCitations(doc, readFile) → findings`
-   - `flags(section, readFile) → ("edited" | "sources-changed")[]`
-   - `relocate(anchor, file) → range | {matches}`
-   - `matchRenamed(front, sections)`
-   - `ladder(policy) → [{path, level, doc}]`
-   - `deltas(base, head) → [{doc, added, modified, removed}]`
-   - `touched(base, head, implements) → [{id, why}]`
-4. *Behavior:* ALG-02, ALG-03's anchors, flags and unique relocation, ALG-04 and ALG-14 exactly; requirements and vision items are list items or table rows (OB §1).
+   - sync `parseDoc(path, text, opts?: {prefix?: string}) → {path, front: Record | null, sections: [{slug, heading, level, text, digest, requirements, vision_items, conflicts, questions, applies_to, state, blessed_digest, blessed_at_rev, anchors, blessed_copy, flags}], problems: Finding[]}`
+   - sync `parseRequirement(line | row: Record<string, string>, opts?: {prefix?: string, line?: number, file?: string}) → {id, text, origin, cites, serves, scope, adopted_by} | Finding`
+   - sync `sectionDigest(body) → string`
+   - sync `anchorsFor(section, readFile: (path) => string | null) → {anchors: Record<string, string>, texts: Record<string, string>}` (`texts` stores normalized `\n`-joined lines)
+   - sync `resolveCitations(doc, readFile: (path) => string | null) → Finding[]`
+   - sync `flags(section, readFile: (path) => string | null) → ("edited" | "sources-changed")[]` (uses `section.digest`, `section.blessed_digest`, `section.anchors`, `section.state`)
+   - sync `relocate(anchor: {hash: string, line_count: number}, file: string) → {start, end} | {matches: number}` (`file` is the target file's text content)
+   - sync `matchRenamed(front, sections) → {renamed: [{from, to, digest}], ambiguous: [{from, candidates}]}`
+   - async `ladder(policy?: {cwd?: string, specs_dir?: string, files?: string[]}) → Promise<[{path, level, doc}]>` (discovers `.md` files with `tenet.spec` front matter; sorted `L0 < L1 < L2 < null` then `path`)
+   - async `deltas(base, head, opts?: {cwd?: string}) → Promise<[{doc, added, modified, removed}]>` (`doc` is `tenet.doc`; compares requirement and vision items by ID, omitting unchanged docs)
+   - async `touched(base, head, implementsIds: string[], opts?: {cwd?: string, codeowners_path?: string}) → Promise<[{id, why}]>`
+4. *Behavior:* ALG-02, ALG-03's anchors, flags and unique relocation, ALG-04 and ALG-14 exactly; requirements/vision items are list items (`parseRequirement` takes `<prefix>-\d+`; `parseDoc` routes `V-(?:[A-Z]+)?\d+` in `L0` sections, including `Vision`, to `vision_items`, excluding duplicate IDs after the first) or table rows (`row` keyed by lowercased header names, OB §1). `parseDoc` checks `TN-SPEC-DUP-ID` within one file; cross-file uniqueness runs in `check`. `anchorsFor` stops `test:` blocks at the next `ALG-09` declaration or `describe(` at `<=` indentation and stores normalized section body in `texts` for `doc:`. `matchRenamed` omits merges (`≥2` vanished slugs matching one new section). `Finding.severity` is `"error"` for `parseDoc`/`resolveCitations`. Default `cwd = process.cwd()`, `prefix = "R"`.
 5. *Edge cases:*
    - missing braces (`TN-SPEC-REQ-META`); a duplicate ID across documents (`TN-SPEC-DUP-ID`); a line without an ID ("needs an ID"); a file without front matter (all `draft`, with a finding)
    - a `## ` inside a four-backtick fence; CRLF; a Unicode heading; a renamed heading
