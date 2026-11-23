@@ -1,0 +1,62 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "inventory": {
+    "schema_version": 1,
+    "revision": "b2c3d4e5f6012345678901234567890123456789",
+    "owners": [
+      {
+        "pattern": "/src/auth/",
+        "owners": [
+          "@auth-team"
+        ]
+      },
+      {
+        "pattern": "/src/billing/",
+        "owners": [
+          "@billing-team"
+        ]
+      },
+      {
+        "pattern": "/src/catalog/",
+        "owners": [
+          "@catalog-team"
+        ]
+      },
+      {
+        "pattern": "/src/shipping/",
+        "owners": [
+          "@shipping-team"
+        ]
+      }
+    ],
+    "size": {
+      "source_lines": 8400,
+      "areas": 4
+    },
+    "layout": "separate",
+    "units": {
+      "$assert": "size",
+      "value": 4
+    }
+  },
+  "assignment": {
+    "schema_version": 1,
+    "skill": "draft-specs",
+    "layout": "separate",
+    "units": {
+      "$assert": "size",
+      "value": 4
+    },
+    "question_limit": 10,
+    "output": {
+      "paths": [
+        "tenet/vision.md",
+        "tenet/specs/prd.md",
+        "tenet/specs/tech-spec.md",
+        "tenet/specs/ux-spec.md",
+        "tenet/specs/plan.md"
+      ]
+    }
+  }
+}

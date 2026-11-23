@@ -1,0 +1,51 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "inventory": {
+    "schema_version": 1,
+    "revision": "456789abcdef0123456789abcdef0123456789ab",
+    "sources": {
+      "files": [
+        {
+          "path": "src/main.py",
+          "kind": "source",
+          "sha256": "50e7f2033bd1e57aa6ea0d51026829a7054be76391734ce13a97a5e64cef9e93",
+          "lines": 2
+        },
+        {
+          "path": "tenet.yaml",
+          "kind": "config",
+          "sha256": "00bcb482fec165c2915d78158611c535a9768ccb305be5319a9265318f34bd83",
+          "lines": 20
+        }
+      ],
+      "skipped": {
+        "$assert": "contains",
+        "value": [
+          {
+            "path": "assets/logo.png",
+            "reason": {
+              "$assert": "present"
+            }
+          },
+          {
+            "path": "data/dump.ts",
+            "reason": {
+              "$assert": "present"
+            }
+          },
+          {
+            "path": "legacy/old_service.py",
+            "reason": {
+              "$assert": "present"
+            }
+          }
+        ]
+      }
+    },
+    "size": {
+      "source_lines": 2,
+      "areas": 0
+    }
+  }
+}

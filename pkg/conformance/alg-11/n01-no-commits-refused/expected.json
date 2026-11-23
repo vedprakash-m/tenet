@@ -1,0 +1,11 @@
+{
+  "ok": false,
+  "exitCode": 3,
+  "errors": [
+    {
+      "code": "TN-ENV-NO-COMMIT",
+      "message": "The repository has no commits yet.",
+      "fix": "Create an initial commit with git commit, then re-run the command."
+    }
+  ]
+}

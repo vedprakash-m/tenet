@@ -1,0 +1,34 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "inventory": {
+    "schema_version": 1,
+    "revision": "c3d4e5f601234567890123456789012345678901",
+    "size": {
+      "source_lines": 20000,
+      "areas": 0
+    },
+    "layout": "separate",
+    "units": {
+      "$assert": "size",
+      "value": 2
+    }
+  },
+  "assignment": {
+    "schema_version": 1,
+    "layout": "separate",
+    "units": {
+      "$assert": "size",
+      "value": 2
+    },
+    "output": {
+      "paths": [
+        "tenet/vision.md",
+        "tenet/specs/prd.md",
+        "tenet/specs/tech-spec.md",
+        "tenet/specs/ux-spec.md",
+        "tenet/specs/plan.md"
+      ]
+    }
+  }
+}

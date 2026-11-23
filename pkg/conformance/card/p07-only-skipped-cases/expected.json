@@ -1,0 +1,44 @@
+{
+  "ok": true,
+  "conclusion": "neutral",
+  "wrote": true,
+  "card": {
+    "schema_version": 1,
+    "evaluation_id": "dcb49a105a1fe95a",
+    "items": [
+      {
+        "id": "AB-1",
+        "result": "skipped",
+        "coverage": "confirmed",
+        "tests": {
+          "expected": 1,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 1,
+          "not_run": 0
+        }
+      }
+    ],
+    "tests": {
+      "report": "ok",
+      "total": 1,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 1,
+      "failing": []
+    },
+    "rules": {
+      "$assert": "contains",
+      "value": [
+        {
+          "rule": "acceptance-passed",
+          "mode": "advise",
+          "would_block": true,
+          "reason": {
+            "$assert": "present"
+          }
+        }
+      ]
+    }
+  }
+}

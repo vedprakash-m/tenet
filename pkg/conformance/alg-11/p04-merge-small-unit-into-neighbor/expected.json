@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "inventory": {
+    "schema_version": 1,
+    "revision": "d4e5f60123456789012345678901234567890123",
+    "size": {
+      "source_lines": 22600,
+      "areas": 0
+    },
+    "layout": "separate",
+    "units": {
+      "$assert": "size",
+      "value": 2
+    }
+  },
+  "assignment": {
+    "schema_version": 1,
+    "layout": "separate",
+    "units": {
+      "$assert": "size",
+      "value": 2
+    }
+  }
+}

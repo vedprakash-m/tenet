@@ -1,0 +1,75 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "inventory": {
+    "schema_version": 1,
+    "revision": "23456789abcdef0123456789abcdef0123456789",
+    "sources": {
+      "files": [
+        {
+          "path": "src/app.ts",
+          "kind": "source",
+          "sha256": "20bd8129e0404ac58a40fcd75bc86a601c915734234e4e1f2b084e8304918594",
+          "lines": 1
+        },
+        {
+          "path": "tenet.yaml",
+          "kind": "config",
+          "sha256": "bf2e6da3dcd662003bad47b1988163b36f58b16b76795cfba63256fc4359d747",
+          "lines": 19
+        }
+      ],
+      "skipped": {
+        "$assert": "contains",
+        "value": [
+          {
+            "path": ".env",
+            "reason": {
+              "$assert": "present"
+            }
+          },
+          {
+            "path": ".env.production",
+            "reason": {
+              "$assert": "present"
+            }
+          },
+          {
+            "path": "certs/private.key",
+            "reason": {
+              "$assert": "present"
+            }
+          },
+          {
+            "path": "certs/server.pem",
+            "reason": {
+              "$assert": "present"
+            }
+          },
+          {
+            "path": "config/jwt_secret.txt",
+            "reason": {
+              "$assert": "present"
+            }
+          },
+          {
+            "path": "config/service-credentials.json",
+            "reason": {
+              "$assert": "present"
+            }
+          },
+          {
+            "path": "keys/id_ed25519",
+            "reason": {
+              "$assert": "present"
+            }
+          }
+        ]
+      }
+    },
+    "size": {
+      "source_lines": 1,
+      "areas": 0
+    }
+  }
+}
