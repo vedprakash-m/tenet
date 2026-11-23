@@ -1,0 +1,10 @@
+name: Checkout reusable
+on: workflow_call
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - id: tests
+        run: npx vitest run --reporter=junit --outputFile.junit=artifacts/unit.xml

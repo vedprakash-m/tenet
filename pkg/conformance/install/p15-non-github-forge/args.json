@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "git": {
+    "remote": "https://gitlab.com/fixture/checkout.git"
+  },
+  "steps": [
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "steps": [
+    {
+      "run": [
+        "init",
+        "--json"
+      ],
+      "answers": {
+        "continue": true,
+        "allowReporterEdit": true
+      }
+    }
+  ]
+}

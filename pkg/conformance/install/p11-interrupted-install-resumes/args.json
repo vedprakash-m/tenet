@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "steps": [
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ],
+      "interrupt": {
+        "at": "after-pending-and-after-each-managed-write",
+        "oneFreshCopyPerPoint": true
+      }
+    },
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ],
+      "compareTreeToCleanRun": true
+    }
+  ]
+}

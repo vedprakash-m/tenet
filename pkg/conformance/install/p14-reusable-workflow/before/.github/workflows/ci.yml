@@ -1,0 +1,5 @@
+name: Checkout CI
+on: [push, pull_request]
+jobs:
+  test:
+    uses: ./.github/workflows/reusable.yml

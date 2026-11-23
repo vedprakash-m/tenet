@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "git": {
+    "state": "tool-unavailable",
+    "version": null
+  },
+  "steps": [
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ],
+      "assertExitCode": 3
+    }
+  ]
+}

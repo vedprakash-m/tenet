@@ -1,0 +1,16 @@
+name: Checkout CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      database:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: test-only
+        ports: ['5432:5432']
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - id: tests
+        run: npx vitest run --reporter=junit --outputFile.junit=artifacts/unit.xml

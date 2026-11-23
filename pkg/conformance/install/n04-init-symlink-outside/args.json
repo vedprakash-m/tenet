@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "outsideFiles": {
+    "github-sibling/workflows/sentinel.yml": "name: Outside fixture\n"
+  },
+  "links": [
+    {
+      "path": ".github",
+      "fixtureTarget": "github-sibling",
+      "kind": "directory-link"
+    }
+  ],
+  "steps": [
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ]
+    }
+  ]
+}
