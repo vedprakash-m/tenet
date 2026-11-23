@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "steps": [
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ]
+    },
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ],
+      "compareTreeToStep": 1
+    },
+    {
+      "run": [
+        "upgrade",
+        "--json"
+      ],
+      "installedVersion": "0.1.0-alpha.1"
+    },
+    {
+      "run": [
+        "remove",
+        "--json"
+      ]
+    }
+  ]
+}

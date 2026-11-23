@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "search": {
+      "command": "node",
+      "args": [
+        "tools/search.js"
+      ]
+    },
+    "tenet": {
+      "command": "node",
+      "args": [
+        "tools/owner-tenet.js"
+      ]
+    }
+  }
+}

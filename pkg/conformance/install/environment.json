@@ -1,0 +1,29 @@
+{
+  "git": {
+    "state": "committed",
+    "branch": "main",
+    "userName": "Fixture Owner",
+    "email": "fixture@example.invalid",
+    "remote": "https://github.com/fixture/checkout.git",
+    "version": "2.49.0"
+  },
+  "tools": {
+    "node": "22.15.0",
+    "ssh": "9.9",
+    "gh": "2.66.0"
+  },
+  "registry": {
+    "package": "@vedprakash-m/tenet",
+    "releases": {
+      "0.1.0-alpha.0": {
+        "integrity": "sha512-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+      },
+      "0.1.0-alpha.1": {
+        "integrity": "sha512-BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBA=="
+      }
+    }
+  },
+  "installedVersion": "0.1.0-alpha.0",
+  "now": "2026-11-23T10:00:00Z",
+  "platform": "linux"
+}

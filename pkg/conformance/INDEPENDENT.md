@@ -11,3 +11,7 @@ Each case supplies input and an expected JSON projection. A projection compares 
 The round 3 reviewer authored the [check](check/README.md), [ALG-10 context and MCP](alg-10/README.md) and [specification board](board/README.md) suites against main at `1729379`, separately from the future builders of CP-0009, CP-0045 and CP-0053. The same ownership rule applies. A builder may add cases and must never change these inputs, expectations or README rows.
 
 Each suite README defines how to run and compare its cases. Where a field or complete rendering is undecided, a projection asserts only the specified behavior. The READMEs define the few reserved projection markers and link to the owning packet's proposals. The fixture snapshots and checked-in expected display files are synthetic conformance inputs and oracles.
+
+# Independent CP-0010 install fixtures
+
+The round 5 reviewer authored the [install suite](install/README.md) from the CP-0010 contract and its named specifications at `18bc39f`, apart from the future installer builder. The same ownership rule applies. A builder may add cases and must never change these inputs, expectations, harness settings or README rows. The fixture README lists the expected files that are intentionally absent until the owning packet resolves the linked questions.

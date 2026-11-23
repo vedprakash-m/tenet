@@ -1,0 +1,3 @@
+# Checkout
+
+Hand-owned guidance.
