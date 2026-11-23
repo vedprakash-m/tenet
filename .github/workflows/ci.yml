@@ -17,6 +17,12 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Lockfile uses the public npm registry
+        shell: bash
+        run: |
+          if grep -E '"resolved": "https?://' package-lock.json | grep -v '"resolved": "https://registry.npmjs.org/'; then
+            echo "package-lock.json resolves packages from a private registry; rewrite them to https://registry.npmjs.org/"; exit 1
+          fi
       - run: npm ci
       - run: npm run lint
       - run: npm test
