@@ -1,40 +1,57 @@
 # Tenet plan: 0.1.0-alpha.1 (protect)
 
-> Level L2 · Version 0.13 · Part of [plan.md](../plan.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Added in L-0023 · Previous version: `archive/specs/plan/alpha.1.md@0.12.md`
+> Level L2 · Track 1 draft for Owner approval · Budget: 6,000 tokens · Part of [plan.md](../plan.md)
 
-**Context card.** Rules the Owner turns on block, and decisions are taken on pull requests. Each packet has build-contract fields 1 (Needs), 2 (Owns) and 8 (Proving) from [plan §4](../plan.md#4-build-contract); the other fields are written, and the part frozen, when alpha.0 ships. Order: CP-0049 → CP-0007 → CP-0050 → CP-0019 and CP-0008. Every packet keeps alpha.0 records readable. Before this part is frozen, the evaluator trial ([plan §4](../plan.md#4-build-contract)) runs, and the recorder's new triggers follow CP-0040's event table.
+**Context card.** CP-0049 → CP-0007 → CP-0050 → CP-0019 and CP-0008. Keep alpha.0 records readable. Use CP-0040’s event table and the independent evaluator trial. Uses [kernel](../tech-spec/kernel.md) (K), [contracts](../tech-spec/contracts.md) (C), [CI](../tech-spec/ci.md), [agents](../tech-spec/agents.md) (AG) and the [technical specification](../tech-spec.md) (TS). Standard JSON envelopes, exit codes, and three-platform checks follow the alpha.0 build contracts.
 
-**CP-0049 · Kernel schemas** · R-010 (rest), R-173, R-179, R-180
-1. *Needs:* alpha.0; TS §3; evidence §1.
-2. *Owns:* `kit/schemas/` for the seven primitives (minimal and full), the event, the work item, criteria, assignment, result and loop, and the evidence payloads (`proof`, `simulation` and `differential` names reserved); a migration from `packet.json`; `test/schemas/`.
-8. *Proving:* ≥2 valid and ≥3 invalid fixtures per schema pass or fail with the named keyword; every `packet.yaml` in this repository migrates and validates.
+**CP-0049 · Kernel schemas · R-010, R-173, R-179, R-180**
+1. *Needs:* Alpha.0; TS §3; C §§1, 11; evidence §1; K §§1–3.
+2. *Owns:* Kernel primitive, work, criteria, step assignment, result, loop and evidence payload schemas in `kit/schemas/`, `pkg/migrations/`, `test/schemas/kernel/`.
+3. *Exports:* Named schemas and `migratePacket(old) → {work, events, problems}`.
+4. *Behavior:* Validate minimal and full records. Preserve legacy identities and observed history. Create no inferred authority. Use only specified defaults. Leave originals intact.
+5. *Edge cases:* Unknown keys, extension keys, incomplete claims, duplicate history and repeat migration.
+6. *Out of scope:* Evaluation, signing and execution. Reserve proof, simulation and differential names until their methods ship.
+7. *Fixtures:* `test/schemas/kernel/<schema>/` with at least two positive and three negative inputs each, plus legacy and migrated packets.
+8. *Proving:* `npm test -- test/schemas/kernel`. Named invalid fixtures fail as expected. All current packet files migrate and validate twice with identical output.
 
-**CP-0007 · Events and reduction** · R-018, R-030, R-037, R-039, R-091, R-185, R-186, R-200, R-201, R-203
-1. *Needs:* CP-0049; TS §3, §5; ALG-01, ALG-05; C §1, §7.
-2. *Owns:* `src/kernel/{subjects,events,reduce,aliases,leases}.ts`; forge state recorded as events by the recorder (`works/pr-<n>/events/` on the records ref), including ready for review, conversion to draft and closing without merge; `test/kernel/`; `pkg/conformance/alg-01/`, `alg-05/`.
-8. *Proving:* the same state in every arrival order; concurrent state events give a conflict and one `resolve` settles it; a resolution delivered twice applies once; the subject digest is identical on three platforms; property tests of the reducer.
+**CP-0007 · Events and reduction · R-018, R-030, R-037, R-039, R-091, R-185, R-186, R-200, R-201, R-203**
+1. *Needs:* CP-0049; TS §§3, 5; ALG-01, ALG-05; CI §§3–4; L-0030; K §§1–2.
+2. *Owns:* `src/kernel/{subjects,events,reduce,aliases,leases}.ts`, forge state observations, `test/kernel/{subjects,events}/`, conformance fixtures `alg-01`, `alg-05`, `alpha.0-records`.
+3. *Exports:* `subject(revision, exclusions)`, `readEvents(revision, work)`, `reduce(events, pack, asOf) → {state, conflicts, findings, applied, held}`, `recordForgeEvent(input)`, `readProofRecord(path, bytes)`.
+4. *Behavior:* Use one batched committed-record read. Reduce as K §1. Use the action and stable delivery or resource identity in the CP-0040 event table. Record ready, draft, merged and unmerged closed observations. Prove unobserved triggers with fixtures on the build track and mark them unobserved until the real binding checks run. Record their provenance and preserve signed and unsigned history. Alpha.0 compatibility is read-only. Working-copy leases stay advisory.
+5. *Edge cases:* Cycle, transitive orphan, duplicate, delayed input, repeated resolve, stale forge event, unsupported legacy version and unusual paths.
+6. *Out of scope:* Gate decisions, signatures and exclusive leases.
+7. *Fixtures:* `test/kernel/events/{cycles,orphans,duplicate,conflict,resolve,close}` and golden alpha.0 proof, latest pointer and rule observations.
+8. *Proving:* `npm test -- test/kernel/subjects test/kernel/events`. Golden outcomes are invariant under permutations. Verify alpha.0 record preservation, cross-platform digests and the 10,000-event batch.
 
-**CP-0050 · Gate, rule modes, `level` and `rules`** · R-031, R-202, R-215
-1. *Needs:* CP-0007; TS §4, §6.1; ALG-06, ALG-07.
-2. *Owns:* `src/kernel/gate.ts`, `src/policy/modes.ts`, the commands `level` and `rules`; the recorder's check run concluding `failure` for an enforced rule; `test/kernel/gate/`; `pkg/conformance/alg-06/`, `alg-07/`.
-8. *Proving:* one fixture per ALG-07 row, plus an advisory failure beside an enforced pass and a stop threshold with every claim passing; `tenet rules` shows each rule's "would have blocked" count; promoting a rule to `enforce` makes the check fail and is recorded as a decision.
+**CP-0050 · Gate, levels and rule modes · R-031, R-202, R-215**
+1. *Needs:* CP-0007; TS §§4, 6.1; ALG-06 and ALG-07; CI §10; K §§2, 4.
+2. *Owns:* `src/kernel/gate.ts`, `src/policy/modes.ts`, `level`, `rules`, recorder outcome mapping, `test/kernel/gate/`, conformance `alg-06`, `alg-07` and backtest.
+3. *Exports:* `evaluateGate(input) → GateResult`, `ruleMode(policy, rule)` and the `level` and `rules` commands.
+4. *Behavior:* Validate target policy and freshness. Evaluate every applicable row and return verdict, disposition, blocking reason and next action. Rule promotion requires its approved decision. Derive recorder conclusion from CI §10. Backtest the fixed 100-PR cohort and time active overhead per K §4.
+5. *Edge cases:* Advisory and enforced failures together, expiry boundary, stronger policy, changed requirement, missing inputs and incomplete backtest.
+6. *Out of scope:* Signing, forge replies and undeclared policy changes.
+7. *Fixtures:* `test/kernel/gate/{mixed,expired,stale,stop,unknown}/`, an input per ALG-07 row and the evaluator trial and backtest manifests.
+8. *Proving:* `npm test -- test/kernel/gate`. Adding an enforced failure never weakens disposition. Match all evaluator-trial outputs. Record both thresholds and judgments for the full backtest.
 
-**CP-0019 · Decisions on pull requests** · R-090, R-101, R-102, R-108, R-123, R-177, R-203
-1. *Needs:* CP-0050; CI §6; spike CP-0017's results and CP-0040's event table.
-2. *Owns:* `src/verify/decisions.ts`; reading native review approvals and `/tenet approve` or `/tenet pick` replies; forge-attributed blessing (`recorded: forge`); decision requests on the card; `/tenet not-useful` marks on findings (R-216); `test/verify/decisions/`.
-8. *Proving:* a listed owner's approval counts; an edited reply, a reply from an unlisted person and a reply bound to an evaluation other than the latest card's do not; a self-acceptance is labelled; a review action on the onboarding pull request blesses its sections as `forge`.
+**CP-0019 · Decisions on pull requests · R-090, R-101, R-102, R-108, R-123, R-177, R-203**
+1. *Needs:* CP-0050; CI §§3, 4, 6; K §3 and observed parts of L-0030.
+2. *Owns:* `src/verify/decisions.ts`, forge review and reply binding, attributed blessing and usefulness marks, `test/verify/decisions/`.
+3. *Exports:* `makeRequest(input)`, `recordAnswer(request, event, snapshot) → {decision?, observation, findings}`, `renderRequest(request)` and CI §6 replies.
+4. *Behavior:* Persist the presentation before matching. Require actor, current request, evaluation and proof. Keep stale, withdrawn or ambiguous observations visible. Record self-acceptance at its real strength. Attach usefulness marks to the precise finding. Verify new recorder triggers in the sandbox.
+5. *Edge cases:* Two pending requests, same-commit edit, unlisted actor, late or concurrent reply, revocation, repeated delivery and exact section blessing.
+6. *Out of scope:* Person-present activation and unobserved host guarantees.
+7. *Fixtures:* `test/verify/decisions/{approve,late,edited,concurrent,unlisted,bless,self-accepted,not-useful,duplicate}/`.
+8. *Proving:* `npm test -- test/verify/decisions`. Sandbox native approvals and replies resolve only their historical question and evaluation.
 
-**CP-0008 · Full board** · R-032 (rest), R-073, R-082, R-216
-1. *Needs:* CP-0050; TS §8; C §5.
-2. *Owns:* `src/views/` (work items, the default view of waiting for you, blocked, and changed since you looked, next actions, friction per rule, `--since`, `--open` with a single-file `now.html`); publishing `board/board.json` on the records ref; the fixture gallery; `test/views/`.
-8. *Proving:* the same refs and as-of time give byte-identical output on three platforms; every gallery fixture renders; R-082 timing with 10,000 event files on Windows.
+**CP-0008 · Full board · R-032, R-073, R-082, R-216**
+1. *Needs:* CP-0050; TS §8; C §§5, 8; K §§1, 2, 4.
+2. *Owns:* Remaining `src/views/`, board publication, `--since`, `--fetch`, `--open`, `test/views/`, board fixture gallery.
+3. *Exports:* `projectBoard(snapshot, now, since?)`, `renderBoard(board) → {markdown, html}` and the board JSON result.
+4. *Behavior:* Use one snapshot across formats. Read CP-0049 decision records using fixtures before CP-0019 integration. Preserve apparent and justified state, conflicting heads, cost availability, modes, next actions, flow and friction. Read external refs only on an allowed explicit fetch. Generated views stay untracked.
+5. *Edge cases:* Empty change set, missing cost, old records, changed ref, conflict, stale trust and cold large workload.
+6. *Out of scope:* External store, campaigns and current policy re-evaluation.
+7. *Fixtures:* `test/views/{empty,legacy,tentative,conflict,friction,no-cost,changed}` plus the R-082 workload.
+8. *Proving:* `npm test -- test/views`. Gallery facts and normalized output agree on all three platforms. Meet R-082 cold and warm targets.
 
-**Release 0.1.0-alpha.1:** CI §9's release procedure, then the gate in [plan §1](../plan.md#1-milestones).
-
-**These contracts must also cover** (L-0027):
-- the reducer's state-transition table, with outcomes for cycles, orphans and duplicates
-- the evidence freshness rule: the code subject **plus** the evaluation inputs (requirement digest, policy, check definition)
-- decision-request identity (question, options, the evaluation shown) and late or concurrent replies
-- the false-block measure (who marks one, the denominator, the minimum sample) and timed overhead sessions
-- golden alpha.0 records that alpha.1 must still read
-- the recorder's new triggers from CP-0040's event table
+**Coverage.** K §§1–4 define reducer errors, freshness, request identity and the backtest. CP-0007 owns golden alpha.0 records and state triggers. Apply CI’s release procedure and plan §1’s separate build and evidence gates.
