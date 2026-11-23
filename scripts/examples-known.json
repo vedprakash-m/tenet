@@ -1,0 +1,26 @@
+[
+	{
+		"file": "tenet/specs/tech-spec/agents.md",
+		"line": 169,
+		"reason": "Schema example cannot be validated: loop is not registered",
+		"proposal": "CP-0049 should register kit/schemas/loop.json, validate the define loop and remove this entry."
+	},
+	{
+		"file": "tenet/specs/tech-spec/agents.md",
+		"line": 184,
+		"reason": "Schema example cannot be validated: loop is not registered",
+		"proposal": "CP-0049 should register kit/schemas/loop.json, validate the build loop and remove this entry."
+	},
+	{
+		"file": "tenet/specs/tech-spec/contracts.md",
+		"line": 26,
+		"reason": "Acceptance requires the exact level 2 or 3 heading",
+		"proposal": "Move the aligned annotations outside the fence so the heading is exactly ## Acceptance and the remaining lines are literal examples."
+	},
+	{
+		"file": "tenet/specs/tech-spec/contracts.md",
+		"line": 37,
+		"reason": "spec-front-matter: /sections/requirements/digest must match pattern \"^sha256:[0-9a-f]{64}$\"; /sections/requirements/digest must be null; /sections/requirements/digest must match a schema in anyOf; /sections/requirements/blessed_digest must match pattern \"^sha256:[0-9a-f]{64}$\"; /sections/requirements/blessed_digest must be null; /sections/requirements/blessed_digest must match a schema in anyOf; /sections/requirements/anchors/src~1retry.ts:40-48 must match pattern \"^sha256:[0-9a-f]{64}$\"",
+		"proposal": "Use concrete lowercase 64-hex SHA-256 values for digest, blessed_digest and the anchor digest."
+	}
+]
