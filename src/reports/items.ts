@@ -71,7 +71,7 @@ export function titleMatches(fullName: string, declarationName: string): boolean
 }
 
 function itemAuthorship(expected: DeclaredTag[]): ItemResult["authorship"] {
-  if (expected.length === 0 || expected.some((declaration) => declaration.via_describe)) return "unknown";
+  if (expected.length === 0) return "unknown";
   if (expected.every((declaration) => declaration.authorship === "written-here")) return "written-here";
   if (expected.some((declaration) => declaration.authorship === "unknown")) return "unknown";
   return "tag-added-here";

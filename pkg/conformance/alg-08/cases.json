@@ -1,47 +1,263 @@
 {
   "entities-and-cdata": {
-    "report": "<testsuites><testsuite><testcase classname=\"suite\" name=\"[AB-1] &lt;work&gt; &amp; &quot;q&quot;\"><failure><![CDATA[<anonymous> failed]]></failure></testcase></testsuite></testsuites>",
-    "expected": {"status":"fail","name":"suite > [AB-1] <work> & \"q\""}
+    "report": {
+      "kind": "junit",
+      "inputs": [
+        "<testsuites><testsuite><testcase classname=\"suite\" name=\"[AB-1] &lt;work&gt; &amp; &quot;q&quot;\"><failure><![CDATA[<anonymous> failed]]></failure></testcase></testsuite></testsuites>"
+      ]
+    },
+    "expected": {
+      "cases": [
+        {
+          "status": "fail",
+          "full_name": "suite > [AB-1] <work> & \"q\""
+        }
+      ]
+    }
   },
   "retries": {
-    "report": "<testsuites><testsuite><testcase classname=\"suite\" name=\"[AB-1] retry\"><flakyFailure/><rerunFailure/></testcase></testsuite></testsuites>",
-    "expected": {"attempts":["fail","fail","pass"]}
+    "report": {
+      "kind": "junit",
+      "inputs": [
+        "<testsuites><testsuite><testcase classname=\"suite\" name=\"[AB-1] retry\"><flakyFailure/><rerunFailure/></testcase></testsuite></testsuites>"
+      ]
+    },
+    "expected": {
+      "cases": [
+        {
+          "attempts": [
+            "fail",
+            "fail",
+            "pass"
+          ]
+        }
+      ]
+    }
   },
   "nested-suites": {
-    "report": "<testsuites><testsuite><testsuite><testcase name=\"nested\" classname=\"a > b\"/></testsuite></testsuite></testsuites>",
-    "expected": {"full_name":"a > b > nested"}
+    "report": {
+      "kind": "junit",
+      "inputs": [
+        "<testsuites><testsuite><testsuite><testcase name=\"nested\" classname=\"a > b\"/></testsuite></testsuite></testsuites>"
+      ]
+    },
+    "expected": {
+      "cases": [
+        {
+          "full_name": "a > b > nested"
+        }
+      ]
+    }
   },
-  "zero-cases": {"report":"<testsuites/>","expected":{"inconclusive":true}},
+  "zero-cases": {
+    "report": {
+      "kind": "junit",
+      "inputs": [
+        "<testsuites/>"
+      ]
+    },
+    "expected": {
+      "inconclusive": true,
+      "cases": []
+    }
+  },
   "matrix-bundle": {
-    "shards": [
-      "{\"results\":{\"tests\":[{\"name\":\"[AB-1] matrix\",\"status\":\"passed\",\"duration\":1}]}}",
-      "{\"results\":{\"tests\":[{\"name\":\"[AB-1] matrix\",\"status\":\"failed\",\"duration\":2}]}}"
-    ],
-    "expected":{"status":"fail","attempts":["pass","fail"],"duration_ms":3}
+    "report": {
+      "kind": "ctrf",
+      "inputs": [
+        "{\"results\":{\"tests\":[{\"name\":\"[AB-1] matrix\",\"status\":\"passed\",\"duration\":1}]}}",
+        "{\"results\":{\"tests\":[{\"name\":\"[AB-1] matrix\",\"status\":\"failed\",\"duration\":2}]}}"
+      ]
+    },
+    "expected": {
+      "cases": [
+        {
+          "status": "fail",
+          "attempts": [
+            "pass",
+            "fail"
+          ],
+          "duration_ms": 3
+        }
+      ]
+    }
   },
   "teardown-failure": {
-    "report": "<testsuites><testsuite><testcase name=\"f.test.ts\" classname=\"f.test.ts\"><failure>boom</failure></testcase></testsuite></testsuites>",
-    "expected":{"teardown_failed":true}
+    "report": {
+      "kind": "junit",
+      "inputs": [
+        "<testsuites><testsuite><testcase name=\"f.test.ts\" classname=\"f.test.ts\"><failure>boom</failure></testcase></testsuite></testsuites>"
+      ]
+    },
+    "expected": {
+      "teardown_failed": true
+    }
   },
   "second-tagged-declaration-missing": {
-    "declarations":["[AB-1] first","[AB-1] second"],
-    "cases":["suite > [AB-1] first"],
-    "expected":{"result":"not-run","coverage":"not-confirmed","not_run":1}
+    "item": {
+      "source": "it(\"[AB-1] first\", () => {});\nit(\"[AB-1] second\", () => {});\n",
+      "names": [
+        "suite > [AB-1] first"
+      ]
+    },
+    "expected": {
+      "result": "not-run",
+      "coverage": "not-confirmed",
+      "tests": {
+        "not_run": 1
+      }
+    }
   },
   "multi-line-declaration": {
-    "source":"it(\n  \"[AB-1] multi-line\",\n  () => {}\n);",
-    "expected":{"kind":"it","line":1,"name":"multi-line"}
+    "sources": {
+      "value.test.ts": "it(\n  \"[AB-1] multi-line\",\n  () => {}\n);"
+    },
+    "expected": {
+      "value.test.ts": [
+        {
+          "kind": "it",
+          "line": 1,
+          "name": "multi-line"
+        }
+      ]
+    }
   },
   "attribute-before-method": {
-    "java":"@Test\nvoid javaCase() {}",
-    "rust":"#[test]\nfn rust_case() {}",
-    "expected":{"java_kind":"@Test","java_line":1,"rust_kind":"#[test]","rust_line":1}
+    "sources": {
+      "ExampleTest.java": "@Test\nvoid javaCase() {}",
+      "tests/example.rs": "#[test]\nfn rust_case() {}"
+    },
+    "expected": {
+      "ExampleTest.java": [
+        {
+          "kind": "@Test",
+          "line": 1
+        }
+      ],
+      "tests/example.rs": [
+        {
+          "kind": "#[test]",
+          "line": 1
+        }
+      ]
+    }
   },
-  "trun": {"source":"t.Run(\"[AB-1] child\", func(t *T) {})","expected":{"kind":"t.Run"}},
-  "record-property": {"source":"def test_value():\n  record_property(\"tenet.case\", \"AB-1\")","expected":{"tags":["AB-1"]}},
-  "unknown-tag": {"name":"suite > [UTF-8] valid text","expected":{"tags":[]}},
-  "tag-inside-longer-name": {"name":"test_value_tenet_AB_1","expected":{"tags":["AB-1"]}},
-  "two-tags-on-one-test": {"name":"[AB-1] [R-2] linked","expected":{"tags":["AB-1","R-2"]}},
-  "old-tag-outside-diff": {"description":"A base acceptance tag on an unchanged line is excluded","expected":{"acceptance":{}}},
-  "tag-added-to-existing": {"description":"A newly added tag on an existing test is tag-added-here","expected":{"authorship":"tag-added-here"}}
+  "trun": {
+    "sources": {
+      "value_test.go": "t.Run(\"[AB-1] child\", func(t *T) {})"
+    },
+    "expected": {
+      "value_test.go": [
+        {
+          "kind": "t.Run"
+        }
+      ]
+    }
+  },
+  "record-property": {
+    "sources": {
+      "test_value.py": "def test_value():\n  record_property(\"tenet.case\", \"AB-1\")"
+    },
+    "expected": {
+      "test_value.py": [
+        {
+          "tags": [
+            "AB-1"
+          ]
+        }
+      ]
+    }
+  },
+  "unknown-tag": {
+    "report": {
+      "kind": "ctrf",
+      "inputs": [
+        "{\"results\":{\"tests\":[{\"name\":\"suite > [UTF-8] valid text\",\"status\":\"passed\"}]}}"
+      ]
+    },
+    "expected": {
+      "cases": [
+        {
+          "full_name": "suite > [UTF-8] valid text",
+          "tags": []
+        }
+      ]
+    }
+  },
+  "tag-inside-longer-name": {
+    "report": {
+      "kind": "ctrf",
+      "inputs": [
+        "{\"results\":{\"tests\":[{\"name\":\"test_value_tenet_AB_1\",\"status\":\"passed\"}]}}"
+      ]
+    },
+    "expected": {
+      "cases": [
+        {
+          "full_name": "test_value_tenet_AB_1",
+          "tags": [
+            "AB-1"
+          ]
+        }
+      ]
+    }
+  },
+  "two-tags-on-one-test": {
+    "report": {
+      "kind": "ctrf",
+      "inputs": [
+        "{\"results\":{\"tests\":[{\"name\":\"[AB-1] [R-2] linked\",\"status\":\"passed\"}]}}"
+      ]
+    },
+    "expected": {
+      "cases": [
+        {
+          "full_name": "[AB-1] [R-2] linked",
+          "tags": [
+            "AB-1",
+            "R-2"
+          ]
+        }
+      ]
+    }
+  },
+  "old-tag-outside-diff": {
+    "diff": {
+      "operation": "declaredTags",
+      "before": {
+        "value.test.ts": "it(\"[AB-1] existing\", () => {});\n",
+        "README.md": "before\n"
+      },
+      "after": {
+        "value.test.ts": "it(\"[AB-1] existing\", () => {});\n",
+        "README.md": "after\n"
+      }
+    },
+    "expected": {
+      "acceptance": {},
+      "requirement": {}
+    }
+  },
+  "tag-added-to-existing": {
+    "diff": {
+      "operation": "declaredTags",
+      "before": {
+        "value.test.ts": "it(\"existing\", () => {});\n"
+      },
+      "after": {
+        "value.test.ts": "it(\"[AB-1] existing\", () => {});\n"
+      }
+    },
+    "expected": {
+      "acceptance": {
+        "AB-1": [
+          {
+            "authorship": "tag-added-here",
+            "name": "existing"
+          }
+        ]
+      },
+      "requirement": {}
+    }
+  }
 }
