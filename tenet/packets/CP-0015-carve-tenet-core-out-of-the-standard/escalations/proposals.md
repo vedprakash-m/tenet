@@ -1,15 +1,25 @@
 # Proposals for the Owner and integration tracks
 
-This branch starts from `efb8477`. The newer shared drafts were consulted as references. Apply the following against the integration baseline that contains L-0024 through L-0030.
+Track 1 started at `efb8477` and now contains current main at `dcb95bb`, including L-0024 through L-0031. Apply the following changes through the named owning track.
 
 1. **Technical specification, header parts list**. Add `[kernel](tech-spec/kernel.md) (kernel algorithms and interface details)` and link any continuation the kernel part names. Keep the existing contracts, algorithms, CI, agents, evidence and onboarding links.
 2. **Plan §0, CP-0015 row**. Once the integration baseline contains the Track 1 submission, use: “Draft kernel, reference cases, evaluator fixture and build contracts submitted in CP-0015. Resolve the packet’s open decisions, then hand the matching baseline to CP-0058.” Update readiness only after independent review and Owner decisions.
 3. **Plan §4, evaluator trial**. Use: “Use `pkg/conformance/evaluator-trial/history.yaml` as the only input history. The scorer compares each session's projected output to `expected.json` and to the other session byte for byte after canonical serialization. Record any rule or input the model had to invent.” The trial execution stays with CP-0058.
-4. **Agents technical specification**. Apply the branch's `agents.md` contribution at §5 through the end of §6. Retain the integration baseline's front matter and §§1–4.
+4. **CI §10, acceptance row**. After the public rule ID is confirmed, use the same ID as technical specification §6.1. If keeping that registry ID, replace “`acceptance-passed` would have blocked” with “`acceptance-proven` would have blocked.” Keep the published result wording “test passed.”
 5. **Repository profile**. Review and, only if approved, apply the packet's `proposed-tenet.yaml` to the root `tenet.yaml`. This is an alpha.0 self-hosting proposal. No signing key or verified merge protection has been demonstrated for this profile. Fill the checks from actual bootstrap commands before relying on them, and explicitly adjudicate every old field whose behavior is being retired or migrated.
+
+6. **PRD R-201, freshness sentence**. Proposed replacement: “Evidence and decisions are fresh only for the applicable subject and evaluation inputs. The gate checks the pinned target policy, blessed requirement revision and method-specific inputs. An observation past its validity deadline is stale.” Keep the existing code-subject sentence.
+7. **Algorithms ALG-05, immediately after the orphan rule**. Proposed addition: “A malformed cycle, self-link or cross-work predecessor is a structural finding. Hold the affected events and their dependents. Independent valid history still reduces. Apply the state and error table in [kernel §1](kernel.md#1-state-reduction-and-replay).”
+8. **PRD catalog R-103, end of the rule text**. Proposed addition: “Blessed copies and blessing fields require the section owner's blessing under R-223. Record this tier separately from ordinary test mechanics and trust-surface approval.”
+9. **Plan §4, first paragraph after the eight fields**. Confirm whether the 0.1.x scope rows are part of this freeze. If the explicit Track 1 list controls, use: “CP-0015 supplies complete alpha.1, alpha.2 and 0.1.0 build contracts. Point releases remain in planning until their own full contracts are approved. Do not dispatch any packet without the eight fields.”
+10. **Contracts §8 and catalog R-152**. Preserve GA for the `close` command while allowing alpha.2 replay to compute closure. Proposed R-152 addition: “Alpha.2 may record and check the exact merge-group candidate. Full merge-queue evidence and quarantine support ship in the scheduled point release.” Confirm the two release cuts with the Owner.
 
 ## Decisions still needed
 
 - Decide which legacy stop conditions, limits, holds and release practices should be expressed in later supported fields or pack defaults. The minimal profile avoids carrying legacy fields into a schema that rejects them.
 - Confirm the standard version range, the Owner's forge principal and the role label before adopting this profile. Configure separately authorized identities and evidence before any stronger level.
 - L-0030 leaves hardware-backed human presence, external fork behavior and required-check outcomes under real branch protection open. Retain the documented guarantee boundaries until those checks run.
+
+11. **Plan §1, alpha.1 overhead gate**. Proposed replacement: “Across the fixed 100-PR cohort, the arithmetic mean of attributable active Tenet minutes per PR is under two minutes. Include measured zero-work cases. An incomplete timing sample reports incomplete coverage.” Choose this aggregate before collecting gate evidence.
+12. **CI §3, merge-group event**. Proposed replacement: “Record merge-group identities as observations in alpha.1. In alpha.2 use a matching tested candidate as evidence before publishing the required candidate status. See kernel §5 for supersession. The point release adds reusable merge-queue evidence and quarantine.”
+13. **ALG-07, Output**. Proposed addition: “When disposition is blocks, include a separate blocking action from the earliest enforcing match, ordered by row and then claim ID. Keep the displayed verdict, lead and next action unchanged.”

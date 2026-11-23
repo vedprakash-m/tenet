@@ -1,5 +1,8 @@
 # Proposed by CP-0015. The Owner decides whether and when to apply it.
 # Self-hosting reads kit/ from the target revision.
+# Observe and empty checks are an initial alpha.0 proposal. Existing limits,
+# stop conditions, holdout rules and release practices need explicit mapping
+# or retirement before the old profile is replaced.
 standard: "~0.1.0-alpha.0"
 kit_path: kit
 paths:

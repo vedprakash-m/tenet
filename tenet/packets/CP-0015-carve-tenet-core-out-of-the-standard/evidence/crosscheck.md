@@ -1,6 +1,6 @@
 # CP-0015 Part I cross-check
 
-Sources are the latest local M0 drafts including L-0023 through L-0030. Unqualified sections are from the main technical specification. A dash means the source gives a rule in prose without a numbered algorithm.
+Sources were checked again after merging main at `dcb95bb`, including L-0023 through L-0031, plan v0.14, and the current CI, agents and evidence parts. Unqualified sections are from the main technical specification. A dash means the source gives a rule in prose without a numbered algorithm.
 
 | Part I rule | PRD requirement | Technical specification | Algorithm |
 |---|---|---|---|
@@ -39,7 +39,7 @@ Sources are the latest local M0 drafts including L-0023 through L-0030. Unqualif
 
 ## Disagreements for resolution
 
-1. **Initial source set.** Track 1 starts at `efb8477`. The newer working references include L-0024 through L-0030 and parts outside this packet's write scope. Integrate their owning streams before checking all links and freezing the specification.
+1. **Baseline updated.** Track 1 began at `efb8477` and now includes main at `dcb95bb`. L-0031 settles licences and schema IDs. Those are release and binding decisions and do not add tool requirements to Part I.
 2. **TN-K-003, TN-K-027.** R-208 calls out invariant L2 sections. TS §6.3 also names provisional sections. Spell out the exact markers.
 3. **TN-K-004.** R-209 and R-213 place deltas at the top. TS §6.3 and contracts §5 place them after touched requirements. Part I requires visibility.
 4. **TN-K-005, TN-K-006, TN-K-008.** R-210 describes citations at the recorded revision. ALG-04 checks the current revision and ALG-03 uses content anchors. Distinguish historical citations from current resolution. R-210 attributes proof to persistent tags while R-218 describes scoped reports of observed checks.
@@ -56,5 +56,9 @@ Sources are the latest local M0 drafts including L-0023 through L-0030. Unqualif
 15. **TN-K-029, TN-K-031.** R-100 requires separation, while the prototype recorder has general write authority. Real fork, required-status and sealed no-network behavior are outstanding.
 16. **TN-K-030.** R-104 separates external and in-repository holdout. The binding needs actual access prevention before claiming enforcement.
 17. **TN-K-002.** L-0029 allows one M0 ratification sitting. Assure in R-208 and TS §6.3 retains two separate days as a product rule.
+
+18. **CI registry.** CI §10 says `acceptance-passed`; the technical rule table says `acceptance-proven`. The public ID needs explicit reconciliation.
+19. **Delivery boundaries.** CI §§3 and 5 mention merge-group handling before the R-152 point release, and CP-0042's old scope places `close` before the command matrix. The new parts distinguish a basic candidate binding and computed close from the later public capabilities. Confirm both cuts.
+20. **Scope of the freeze.** Plan §4 calls for every later release before build. The assigned packet list names alpha.1, alpha.2 and GA and preserves CP-0014 as evidence. The point-release scope rows still need full build contracts before dispatch.
 
 This is an author trace for review. Approval requires the authorized decision.
