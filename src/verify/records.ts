@@ -32,9 +32,9 @@ export function recordsFiles(entry: RecordEntry, snapshot: RecordsSnapshot): Lin
   const prefix = `proof/${safeKey(entry.work)}/`;
   const id = safeKey(entry.card.evaluation_id);
   const key = `${prefix}${id}/${safeKey(entry.run.id)}-${entry.run.attempt}.json`;
-  const latest = prefix + "latest";
+  const latest = `${prefix}latest`;
   const month = `rules/${entry.at.slice(0, 7)}.jsonl`;
-  const content = jcs(entry.card) + "\n";
+  const content = `${jcs(entry.card)}\n`;
   const existing = snapshot.files[key];
   if (existing !== undefined) {
     if (existing !== content) throw new Error("record key already holds different content");
@@ -45,7 +45,7 @@ export function recordsFiles(entry: RecordEntry, snapshot: RecordsSnapshot): Lin
   const last = previous ? JSON.parse(previous) as RunLocator : undefined;
   if (!last || Date.parse(entry.startedAt) > Date.parse(last.startedAt) ||
     (Date.parse(entry.startedAt) === Date.parse(last.startedAt) && entry.run.id === last.id && entry.run.attempt > last.attempt)) {
-    files[latest] = jcs({ ...entry.run, startedAt: entry.startedAt, evaluation_id: id }) + "\n";
+    files[latest] = `${jcs({ ...entry.run, startedAt: entry.startedAt, evaluation_id: id })}\n`;
   }
   const outcomes = entry.rules ?? entry.card.rules;
   if (outcomes.length) {
@@ -53,7 +53,7 @@ export function recordsFiles(entry: RecordEntry, snapshot: RecordsSnapshot): Lin
       evaluation_id: id, run: entry.run, pr: entry.work === "main" ? null : Number(entry.work.slice(3)),
       rule, mode, would_block, at: entry.at,
     }));
-    files[month] = (snapshot.files[month] ?? "") + lines.join("\n") + "\n";
+    files[month] = `${(snapshot.files[month] ?? "") + lines.join("\n")}\n`;
   }
   return files;
 }
@@ -66,7 +66,7 @@ export async function keepRecord(
   const prefix = `proof/${safeKey(entry.work)}/`;
   const paths = [
     `${prefix}${safeKey(entry.card.evaluation_id)}/${safeKey(entry.run.id)}-${entry.run.attempt}.json`,
-    prefix + "latest",
+    `${prefix}latest`,
     `rules/${entry.at.slice(0, 7)}.jsonl`,
   ];
   for (let retry = 0; retry <= 8; retry += 1) {

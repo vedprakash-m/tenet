@@ -8,7 +8,7 @@ buildVerify();
 const { recordAll, evaluationId } = await import("../../dist/verify/record.js");
 const { decodeBundle, readArtifact } = await import("../../dist/verify/bundle.js");
 const { sha256, jcs } = await import("../../dist/core/hash.js");
-const { GitHubForge } = await import("../../dist/verify/forge.js");
+const { GitHubForge, githubRequest } = await import("../../dist/verify/forge.js");
 const { keepRecord, recordsFiles } = await import("../../dist/verify/records.js");
 
 const repository = "fixture/checkout";
@@ -165,6 +165,7 @@ test("recorder handles CI outcome rows, forks with a shared head, push, edits an
       ["lost-record", "passed", "results not kept"], ["fallback", "passed", "policy failed to load at head; using previous policy from base (tenet.yaml)"],
     ]) {
       const calls: string[] = [];
+      const summaries: string[] = [];
       const pull = (number: number) => ({ number, head, base, body });
       const options = {
         cwd: repo.path, now: () => new Date(at), version: "0.1.0-alpha.0", render: () => "card",
@@ -178,7 +179,7 @@ test("recorder handles CI outcome rows, forks with a shared head, push, edits an
             if (state === "unavailable") return { total: 2, missing: 1, bundles: [bundle(head, base)] };
             return { total: 1, missing: 0, bundles: [bundle(head, base, state)] };
           },
-          upsertCheckRun: async (request: { head: string }) => { calls.push(request.head); },
+          upsertCheckRun: async (request: { head: string; summary: string }) => { calls.push(request.head); summaries.push(request.summary); },
         },
         records: state === "lost-record" ? { ...memoryStore(), write: async () => false } : memoryStore(),
       };
@@ -193,6 +194,8 @@ test("recorder handles CI outcome rows, forks with a shared head, push, edits an
         const card = rows[0].card;
         assert.equal(rows[0].conclusion, "success");
         assert.equal(rows[0].wrote, true);
+        assert.equal(summaries.length, 1);
+        assert.match(summaries[0], /Pull request #1[\s\S]*Pull request #2/);
         const evalInput = { repository, work: "pr-1", tested_commit: head, base,
           acceptance_digest: card.acceptance_digest, implemented: [{ id: "R-1", blessed_digest: "sha256:abc" }],
           policy_blob: base, tenet_version: options.version };
@@ -209,4 +212,19 @@ test("recorder handles CI outcome rows, forks with a shared head, push, edits an
       }
     }
   } finally { await repo.cleanup(); }
+});
+
+test("artifact redirect keeps the GitHub token on the API request only", async () => {
+  const fake = fakeGitHub();
+  const request = githubRequest("fixture-token", "https://api.example.invalid", async (url: URL, options: RequestInit) => {
+    fake.request(options.method ?? "GET", url.href, options.headers);
+    if (fake.requests.length === 1) return new Response(null, {
+      status: 302, headers: { location: "https://artifacts.example.invalid/download" },
+    });
+    return new Response("fixture zip bytes");
+  });
+  const found = await request("GET", "/repos/fixture/checkout/actions/artifacts/2/zip");
+  assert.equal(found.data.toString(), "fixture zip bytes");
+  assert.equal(fake.requests[0].body.authorization, "Bearer fixture-token");
+  assert.equal(fake.requests[1].body, undefined);
 });

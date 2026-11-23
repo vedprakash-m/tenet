@@ -54,7 +54,7 @@ export function refusedBundle(runId: string, reason: string): Error & { code: st
 }
 
 export function safeEntry(name: string): string {
-  if (!name || name.includes("\\") || /^[A-Za-z]:/.test(name) || name.split("/").some((part) => !part || part === "." || part === ".." || /[\x00-\x1f:]/.test(part))) {
+  if (!name || name.includes("\\") || /^[A-Za-z]:/.test(name) || name.split("/").some((part) => !part || part === "." || part === ".." || part.includes(":") || Array.from(part).some((char) => char.charCodeAt(0) < 32))) {
     throw new Error("unsafe bundle path");
   }
   return name;
@@ -102,7 +102,7 @@ export function decodeBundle(files: BundleFiles): BundleData {
 }
 
 export async function writeBundle(directory: string, bundle: VerificationBundle, files: BundleFiles): Promise<BundleData> {
-  const all = new Map(files).set("bundle.json", Buffer.from(JSON.stringify(bundle, null, 2) + "\n"));
+  const all = new Map(files).set("bundle.json", Buffer.from(`${JSON.stringify(bundle, null, 2)}\n`));
   const data = decodeBundle(all);
   await mkdir(directory, { recursive: true });
   for (const [name, value] of all) {

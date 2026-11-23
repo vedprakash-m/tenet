@@ -72,7 +72,7 @@ function markdown(model: ProofCard, omitPassingNames: boolean): string {
   if (blocked.length) lines.push(`Would have blocked: ${blocked.map((rule) => rule.reason).join(" · ")}`);
   if (model.degraded.length) lines.push(`Degraded: ${model.degraded.join(" · ")}`);
   if (model.why.length) lines.push(`Why: ${model.why.map((reason) => `${reason.text} [${reason.class}]`).join(" · ")}`);
-  return lines.map(singleLine).join("\n") + "\n";
+  return `${lines.map(singleLine).join("\n")}\n`;
 }
 
 export function renderCard(model: ProofCard): string { return markdown(model, false); }

@@ -66,7 +66,7 @@ export class GitHubForge implements ForgeAdapter {
   private async pages(resource: string, key?: string): Promise<unknown[]> {
     const result: unknown[] = [];
     for (let page = 1; ; page += 1) {
-      const response = await this.call("GET", resource + (resource.includes("?") ? "&" : "?") + `per_page=100&page=${page}`);
+      const response = await this.call("GET", `${resource + (resource.includes("?") ? "&" : "?")}per_page=100&page=${page}`);
       const entries = key ? object(response)[key] : response;
       if (!Array.isArray(entries)) throw new Error("GitHub returned an invalid list");
       result.push(...entries);
@@ -117,7 +117,9 @@ export class GitHubForge implements ForgeAdapter {
         try {
           const raw = await this.call("GET", `/actions/artifacts/${artifact.id}/zip`);
           if (Buffer.isBuffer(raw)) buffer = raw;
-        } catch { /* retry unavailable downloads */ }
+        } catch (error) {
+          if (error instanceof RangeError) throw error;
+        }
       }
       if (!buffer) { result.missing += 1; continue; }
       result.bundles.push(readArtifact(buffer));
@@ -126,13 +128,13 @@ export class GitHubForge implements ForgeAdapter {
   }
 }
 
-export function githubRequest(token: string, server = "https://api.github.com"): ForgeRequest {
+export function githubRequest(token: string, server = "https://api.github.com", fetcher: typeof fetch = fetch): ForgeRequest {
   const root = new URL(server);
   if (root.protocol !== "https:" || root.username || root.password) throw new Error("invalid GitHub API endpoint");
   return async (method, resource, body) => {
     const url = new URL(root.href.replace(/\/$/, "") + resource);
     const headers = { authorization: `Bearer ${token}`, accept: "application/vnd.github+json", "content-type": "application/json" };
-    let response = await fetch(url, { method, headers, redirect: "manual",
+    let response = await fetcher(url, { method, headers, redirect: "manual",
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       signal: AbortSignal.timeout(30_000),
     });
@@ -142,7 +144,7 @@ export function githubRequest(token: string, server = "https://api.github.com"):
       if (!location) throw new Error("GitHub did not return an artifact location");
       const download = new URL(location, url);
       if (download.protocol !== "https:" || download.username || download.password) throw new Error("invalid artifact download URL");
-      response = await fetch(download, { redirect: "error", signal: AbortSignal.timeout(30_000) });
+      response = await fetcher(download, { redirect: "error", signal: AbortSignal.timeout(30_000) });
     }
     if (!response.ok) return { status: response.status, data: null };
     if (!artifact) return { status: response.status, data: await response.json() };
@@ -155,7 +157,7 @@ export function githubRequest(token: string, server = "https://api.github.com"):
         const next = await reader.read();
         if (next.done) break;
         bytes += next.value.length;
-        if (bytes > bundleLimit) { await reader.cancel(); throw new Error("artifact exceeds 50 MB"); }
+        if (bytes > bundleLimit) { await reader.cancel(); throw new RangeError("artifact exceeds 50 MB"); }
         chunks.push(Buffer.from(next.value));
       }
     } finally { reader.releaseLock(); }

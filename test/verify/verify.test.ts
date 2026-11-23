@@ -30,7 +30,7 @@ test("test job runs setup first, captures report bytes after failure and bundles
     assert.equal(produced.bundle.checks[0].exit_code, 7);
     assert.equal(produced.bundle.checks[0].outcome, "failure");
     assert.deepEqual(produced.files.get("reports/unit.json"), report);
-    assert.deepEqual((await readBundle(repo.path + "/tenet-bundle")).bundle, produced.bundle);
+    assert.deepEqual((await readBundle(`${repo.path}/tenet-bundle`)).bundle, produced.bundle);
     const forged = new Map(produced.files).set("reports/unit.json", Buffer.from("changed"));
     assert.throws(() => decodeBundle(forged), /digest/);
     assert.throws(() => decodeBundle(new Map(produced.files).set("../outside", report)), /unsafe/);

@@ -2,6 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import picomatch from "picomatch";
+import { parseDocument } from "yaml";
 import { catFileBatch, git } from "../core/git.js";
 import { jcs, sha256 } from "../core/hash.js";
 import { loadPolicy, verifyLock, type Policy } from "../policy/index.js";
@@ -16,13 +17,14 @@ export type VerifyEvent =
   | { kind: "workflow_run"; repository: string; run: WorkflowRun; pulls?: number[]; base?: string }
   | { kind: "edited"; repository: string; number: number };
 export type CardResult = { card: ProofCard; conclusion: Conclusion; wrote: boolean };
+type Evaluation = CardResult & { work: string; run: WorkflowRun | null; rules: ProofCard["rules"] };
 type Subjects = { cwd: string; stale: boolean; close(): Promise<void> };
 export type RecordOptions = {
   cwd: string;
   forge: ForgeAdapter;
   records: RecordsStore;
   now: () => Date;
-  render(model: ProofCard): string;
+  render(model: ProofCard, limit?: number): string;
   checkout?: (tested: VerificationBundle["tested"], checkout: { cwd: string; number?: number }) => Promise<Subjects>;
   policyBlob?: (base: string, cwd: string) => Promise<string>;
   version: string;
@@ -101,23 +103,31 @@ function verifiedBundles(data: BundleData[], run: WorkflowRun, base: string, wor
   }).sort((a, b) => a.bundle.run.job.localeCompare(b.bundle.run.job) || a.bundle.run.index - b.bundle.run.index);
 }
 
-async function readEvidence(bundles: BundleData[], policy: Policy) {
+async function readEvidence(bundles: BundleData[], policy: Policy, proposed?: Policy["checks"]) {
   const reports: TestReport[] = [];
   let missing = false;
   let malformed = false;
   let checkFailedAfterPass = false;
   let timedOut = false;
+  const seen = new Set<string>();
   for (const { bundle, files } of bundles) {
+    let count = 0;
     for (const check of bundle.checks) {
+      seen.add(check.name);
       const pinned = policy.checks?.[check.name];
-      const format = pinned?.report ?? (check["x-proposed"] ? check["x-report-kind"] : undefined);
-      if (check["x-proposed"] && pinned || !format) throw new Error("check is not in target policy");
+      const format = pinned?.report ?? (check["x-proposed"] ? proposed?.[check.name]?.report : undefined);
+      if (check["x-proposed"] && pinned || !format ||
+          check["x-report-kind"] !== undefined && check["x-report-kind"] !== format) {
+        throw new Error("check is not in target policy or the proposed settings");
+      }
       if (check.outcome === "timeout") timedOut = true;
       if (format === "none") continue;
       const contents = files.get(check.report);
       if (!contents) { missing = true; continue; }
       try {
         const report = await parseBundledReport(format, contents, policy.specs.id_prefix);
+        count += report.cases.length;
+        if (count > 20_000) throw new Error("bundle exceeds 20,000 cases");
         reports.push(report);
         const passing = report.cases.some((item) => item.status === "pass") &&
           !report.cases.some((item) => item.status === "fail" || item.status === "error");
@@ -128,6 +138,7 @@ async function readEvidence(bundles: BundleData[], policy: Policy) {
       }
     }
   }
+  missing ||= Object.keys(policy.checks ?? {}).some((name) => !seen.has(name));
   return { report: mergeMatrix(missing || malformed || timedOut ? [] : reports), missing, malformed, checkFailedAfterPass, timedOut };
 }
 
@@ -209,9 +220,20 @@ async function specifications(
 
 async function changedSurfaces(tested: VerificationBundle["tested"], policy: Policy, cwd: string): Promise<Pick<Subject, "protected" | "workflow_changed">> {
   const workflow = policy.ci?.test_workflow;
-  const files = (await git(["diff", "--name-only", "-z", tested.base, tested.commit], { cwd })).split("\0").filter(Boolean);
+  const files = (await git(["diff", "--name-only", "--no-renames", "-z", tested.base, tested.commit], { cwd })).split("\0").filter(Boolean);
   const workflowFiles = [".github/workflows/tenet-tests.yml", ".github/workflows/tenet.yml"];
   if (workflow?.endsWith(".yml") || workflow?.endsWith(".yaml")) workflowFiles.push(workflow.startsWith(".github/") ? workflow : `.github/workflows/${workflow}`);
+  if (workflow && !workflow.endsWith(".yml") && !workflow.endsWith(".yaml")) {
+    const paths = files.filter((file) => /^\.github\/workflows\/.+\.ya?ml$/.test(file));
+    const snapshots = await Promise.all([tested.base, tested.commit].map((ref) => catFileBatch(ref, paths, { cwd })));
+    for (const snapshot of snapshots) {
+      for (const [filename, bytes] of snapshot) {
+        if (bytes.length > 1024 * 1024) continue;
+        const yaml = parseDocument(bytes.toString("utf8"));
+        if (!yaml.errors.length && yaml.get("name") === workflow) workflowFiles.push(filename);
+      }
+    }
+  }
   const protectedMatchers = [...new Set([...defaultProtected, ...workflowFiles, ...(policy.protect ?? [])])].map((glob) => picomatch(glob, { dot: true }));
   return {
     protected: files.filter((file) => protectedMatchers.some((matches) => matches(file))).sort(),
@@ -275,12 +297,45 @@ export async function recordAll(event: VerifyEvent, deps: VerifyDeps, options: R
     : await forge.findPullRequests(event.run.head);
   const candidates: Array<PullRequest | undefined> = event.kind === "edited" ? prs : prs.filter((pr) => pr.head === event.run.head);
   if (candidates.length === 0 && event.kind === "workflow_run" && !prs.length) candidates.push(undefined);
-  const results = [];
+  const results: Evaluation[] = [];
   for (const pr of candidates) results.push(await evaluate(event, pr, deps, options));
-  return results;
+  if (!results.length) return [];
+  await publish(results, options);
+  let lost = false;
+  for (const result of results) {
+    const { card, run } = result;
+    if (!run) continue;
+    try {
+      result.wrote = await keepRecord(options.records, {
+        work: result.work, run: { id: run.id, attempt: run.attempt }, startedAt: run.startedAt,
+        at: options.now().toISOString(), card, rules: result.rules,
+      }, options.waitForRetry);
+    } catch { result.wrote = false; }
+    if (!result.wrote) {
+      lost = true;
+      card.degraded.push("results not kept");
+      card.why.push({ text: "results not kept", class: "host" });
+      result.conclusion = "neutral";
+    }
+  }
+  if (lost) await publish(results, options);
+  return results.map(({ card, conclusion, wrote }) => ({ card, conclusion, wrote }));
 }
 
-async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: VerifyDeps, options: RecordOptions): Promise<CardResult> {
+async function publish(results: Evaluation[], options: RecordOptions): Promise<void> {
+  const first = results[0];
+  if (!first) return;
+  const headings = results.map((result) => results.length > 1 ? `Pull request #${result.work.slice(3)}\n` : "");
+  const overhead = headings.reduce((total, heading) => total + heading.length, 0) + results.length - 1;
+  const budget = Math.floor((60_000 - overhead) / results.length);
+  const summary = results.map((result, index) => (headings[index] ?? "") + options.render(result.card, budget)).join("\n");
+  if (summary.length > 60_000) throw new RangeError("required proof details exceed the check summary limit");
+  const conclusion = results.some((result) => result.conclusion === "failure") ? "failure" :
+    results.some((result) => result.conclusion === "neutral") ? "neutral" : "success";
+  await options.forge.upsertCheckRun({ head: first.card.tested.head, conclusion, summary });
+}
+
+async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: VerifyDeps, options: RecordOptions): Promise<Evaluation> {
   const { forge, cwd } = options;
   const head = commit(pr?.head ?? (event.kind === "workflow_run" ? event.run.head : ""));
   let run = event.kind === "workflow_run" ? event.run : null;
@@ -292,7 +347,6 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
   const host: string[] = [];
   let unavailable = false;
   let data: BundleData[] = [];
-  const runTime = run?.startedAt;
   if (!run) { unavailable = true; host.push("waiting for tests"); }
   else {
     try {
@@ -334,7 +388,13 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
   if (loaded) {
     const { policy } = loaded;
     if (data.length) {
-      try { evidence = await readEvidence(data, policy); }
+      try {
+        const hasProposed = data.some(({ bundle }) => bundle.checks.some(proposedCheck));
+        const read = deps.policy ?? ((ref, project) => loadPolicy({ ref, cwd: project }));
+        const proposal = hasProposed && (policy.level === "observe" || policy.level === "protect")
+          ? await read(tested.commit, cwd).catch(() => undefined) : undefined;
+        evidence = await readEvidence(data, policy, proposal?.checks);
+      }
       catch (error) {
         unavailable = true;
         const refused = refusedBundle(run?.id ?? "unknown", error instanceof Error ? error.message : "invalid reports");
@@ -408,20 +468,6 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
   const ruleOutcomes = checkReasons(card, reportFindings, problems, unavailable);
   card.rules = ruleOutcomes.filter((item) => item.would_block);
   card.why = whyFor(card, host);
-  let conclusion: Conclusion = card.rules.length || card.degraded.length || card.tests.failed ? "neutral" : "success";
-  await forge.upsertCheckRun({ head, conclusion, summary: options.render(card) });
-
-  let wrote = false;
-  if (run && runTime) {
-    try { wrote = await keepRecord(options.records, { work, run: { id: run.id, attempt: run.attempt }, startedAt: runTime, at: options.now().toISOString(), card, rules: ruleOutcomes }, options.waitForRetry); }
-    catch { wrote = false; }
-    if (!wrote) {
-      host.push("results not kept");
-      card.degraded.push("results not kept");
-      card.why = whyFor(card, host);
-      conclusion = "neutral";
-      await forge.upsertCheckRun({ head, conclusion, summary: options.render(card) });
-    }
-  }
-  return { card, conclusion, wrote };
+  const conclusion: Conclusion = card.rules.length || card.degraded.length || card.tests.failed ? "neutral" : "success";
+  return { card, conclusion, wrote: false, work, run, rules: ruleOutcomes };
 }

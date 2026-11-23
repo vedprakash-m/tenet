@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/results/verify.json",
+  "oneOf": [
+    {
+      "$ref": "../bundle.json"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "evaluation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{16}$"
+        },
+        "conclusion": {
+          "enum": [
+            "success",
+            "neutral",
+            "failure"
+          ]
+        },
+        "wrote": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "evaluation_id",
+        "conclusion",
+        "wrote"
+      ]
+    }
+  ]
+}
