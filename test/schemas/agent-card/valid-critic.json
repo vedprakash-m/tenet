@@ -1,0 +1,21 @@
+{
+  "name": "spec-reviewer",
+  "version": "0.1.0",
+  "role": "spec-reviewer",
+  "kind": "critic",
+  "purpose": "Review drafted specifications.",
+  "inputs": {
+    "spec_levels": ["L0", "L1", "L2"],
+    "sections": ["*"],
+    "artifacts": ["drafted specification files"]
+  },
+  "outputs": {
+    "result_schema": "review"
+  },
+  "criteria": ["Every cited statement is supported."],
+  "independence": {
+    "distinct_from": "drafter"
+  },
+  "finding_schema": "review",
+  "abstain_when": ["A cited source cannot be read."]
+}

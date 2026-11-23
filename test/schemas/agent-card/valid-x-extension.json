@@ -1,0 +1,24 @@
+{
+  "name": "reviewer",
+  "version": "1",
+  "role": "reviewer",
+  "kind": "critic",
+  "purpose": "Review a result.",
+  "inputs": {
+    "spec_levels": [],
+    "sections": [],
+    "artifacts": []
+  },
+  "outputs": {
+    "result_schema": "review"
+  },
+  "criteria": [],
+  "independence": {
+    "distinct_from": "creator"
+  },
+  "finding_schema": "review",
+  "abstain_when": [],
+  "x-harness": {
+    "enabled": true
+  }
+}
