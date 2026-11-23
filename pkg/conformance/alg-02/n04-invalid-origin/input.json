@@ -1,0 +1,9 @@
+{
+  "operation": "parseRequirement",
+  "line": "- R-7 Permit one retry. {origin: guessed}",
+  "opts": {
+    "prefix": "R",
+    "file": "intent.md",
+    "line": 2
+  }
+}

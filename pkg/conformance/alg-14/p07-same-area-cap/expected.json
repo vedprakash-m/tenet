@@ -1,0 +1,44 @@
+{
+  "touched": [
+    {
+      "id": "R-1",
+      "why": "same-area"
+    },
+    {
+      "id": "R-2",
+      "why": "same-area"
+    },
+    {
+      "id": "R-3",
+      "why": "same-area"
+    },
+    {
+      "id": "R-4",
+      "why": "same-area"
+    },
+    {
+      "id": "R-7",
+      "why": "same-area"
+    },
+    {
+      "id": "R-8",
+      "why": "same-area"
+    },
+    {
+      "id": "R-10",
+      "why": "same-area"
+    },
+    {
+      "id": "R-11",
+      "why": "same-area"
+    },
+    {
+      "id": "R-12",
+      "why": "same-area"
+    },
+    {
+      "id": "R-19",
+      "why": "same-area"
+    }
+  ]
+}

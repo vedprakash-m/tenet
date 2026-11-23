@@ -1,0 +1,15 @@
+{
+  "operation": "anchorsFor",
+  "section": {
+    "requirements": [
+      {
+        "cites": [
+          "src/a.ts:2-3"
+        ]
+      }
+    ]
+  },
+  "files": {
+    "src/a.ts": "ignore\r\nalpha \t\r\nbeta \r\n"
+  }
+}
