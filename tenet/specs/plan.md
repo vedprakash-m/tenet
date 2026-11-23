@@ -19,8 +19,8 @@ Updated 2026-11-23 by the M0 session (L-0029, L-0030).
 | Fast-track plan (v0.14, L-0029) | done | — |
 | CP-0041 Spike C | **done** (L-0030) | — |
 | CP-0056 Spike D | **done**: adapters `claude-code`, `copilot-cli`, `command` | — |
-| CP-0040 Spike B | **done** on one account, GitHub Free (L-0030) | **the Owner:** fork pull request from a second account; `neutral` vs `failure` under a required check (public repository or Pro) |
-| CP-0017 Spike A | partly done (L-0030) | **the Owner:** sign a decision with a security key (`ssh-keygen -t ed25519-sk`) so presence can be read; replies and spot checks run in alpha.1 |
+| CP-0040 Spike B | **done** on one account, GitHub Free (L-0030) | deferred by the Owner to before alpha.2: fork pull request from a second account; `neutral` vs `failure` under a required check |
+| CP-0017 Spike A | partly done (L-0030) | deferred by the Owner to before alpha.1: a security-key signature; replies and spot checks run in alpha.1 |
 | CP-0002 licence and schema host | **decided** (L-0031): Apache-2.0 code, CC BY 4.0 text, `$id` on GitHub Pages | publish the schemas to GitHub Pages at the first release (CI §9) |
 | CP-0015 kernel and every contract | **next** | a capable model: Part I of `kit/TENET.md`; all eight fields for every alpha.1, alpha.2 and 0.1.0 packet; the R-009 cases; freeze |
 | CP-0058 medium-model trial | after CP-0015 | a capable model runs it with two medium-model sessions and scores them |
