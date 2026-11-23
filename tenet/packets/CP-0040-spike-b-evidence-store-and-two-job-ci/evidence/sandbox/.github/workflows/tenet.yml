@@ -1,0 +1,16 @@
+name: Tenet recorder
+on:
+  workflow_run: {workflows: [Tenet tests], types: [completed]}
+  pull_request_target: {types: [edited]}
+permissions: {contents: write, checks: write, pull-requests: read, actions: read}
+concurrency: {group: "tenet-record-${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha }}", cancel-in-progress: false}
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: node record.mjs

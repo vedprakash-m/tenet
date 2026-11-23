@@ -11,7 +11,7 @@ milestone: M0
 source: "specs/plan.md"
 stage: commit
 status: waiting-owner
-blocked_by: [CP-0015]
+blocked_by: [CP-0058]
 unblocks: [CP-0003]
 owner_role: owner
 claimed_by: null

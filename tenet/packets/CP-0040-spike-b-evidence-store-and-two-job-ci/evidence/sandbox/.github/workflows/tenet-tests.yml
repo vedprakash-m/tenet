@@ -1,0 +1,32 @@
+name: Tenet tests
+on:
+  pull_request: {types: [opened, synchronize, reopened, ready_for_review]}
+  push: {branches: [main]}
+permissions: {contents: read}
+concurrency: {group: "tenet-tests-${{ github.ref }}", cancel-in-progress: true}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: {shard: [1, 2]}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 1}
+      - uses: actions/setup-node@v4
+        with: {node-version: "22"}
+      - run: npm ci
+      - id: tests
+        run: npx vitest run --shard=${{ matrix.shard }}/2 --reporter=default --reporter=junit --outputFile.junit=tenet-bundle/test-${{ matrix.shard }}.xml
+      - if: always()
+        env: {TENET_TEST_OUTCOME: "${{ steps.tests.outcome }}", TENET_JOB_INDEX: "${{ strategy.job-index }}"}
+        run: node bundle.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: "tenet-bundle-${{ github.job }}-${{ strategy.job-index }}", path: tenet-bundle/, if-no-files-found: error, retention-days: 7}
+  dotfolder-check:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - run: mkdir -p .tenet/bundle && echo '{}' > .tenet/bundle/bundle.json
+      - uses: actions/upload-artifact@v4
+        with: {name: dotfolder-probe, path: .tenet/bundle/, if-no-files-found: error, retention-days: 1}

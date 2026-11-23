@@ -4,3 +4,4 @@
 - 2026-11-23 Scope revised: the spec process restored as the first value (L-0014).
 - 2026-11-23 Scope revised in plan v0.10 (L-0022).
 - 2026-11-23 Plan v0.11 ([L-0023](../../ledger/L-0023-contracts-frozen-before-build.md)): dependencies set from the waves; scope and requirements per the release part.
+- 2026-11-23 Dependencies updated for the reference runner ([L-0026](../../ledger/L-0026-a-minimal-reference-runner.md)).

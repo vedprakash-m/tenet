@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites>
+	<testsuite name="checkout retry" time="0.014643" disabled="0" errors="0" tests="6" failures="0" skipped="1" timestamp="2026-11-23T15:50:53.019Z" hostname="<host>">
+		<testcase name="[AB-1] retries once after a timeout" time="0.005561" classname="checkout retry" file="<work>/nt\a.test.mjs"/>
+		<testcase name="[AB-2] backoff 1" time="0.001081" classname="checkout retry" file="<work>/nt\a.test.mjs"/>
+		<testcase name="[AB-2] backoff 2" time="0.000282" classname="checkout retry" file="<work>/nt\a.test.mjs"/>
+		<testcase name="[AB-2] backoff 3" time="0.000424" classname="checkout retry" file="<work>/nt\a.test.mjs"/>
+		<testcase name="[AB-4] handles &lt;tags> &amp; &quot;quotes&quot;" time="0.000709" classname="checkout retry" file="<work>/nt\a.test.mjs"/>
+		<testcase name="[AB-8] skipped" time="0.000384" classname="checkout retry" file="<work>/nt\a.test.mjs">
+			<skipped type="skipped" message="true"/>
+		</testcase>
+	</testsuite>
+	<undefined name="root">
+	<testcase name="<work>/nt\a.test.mjs" time="0.001329" classname="test" file="<work>/nt\a.test.mjs" failure="teardown boom">
+		<failure type="hookFailed" message="teardown boom">
+[Error [ERR_TEST_FAILURE]: teardown boom] {
+  code: 'ERR_TEST_FAILURE',
+  failureType: 'hookFailed',
+  cause: Error: teardown boom
+      at TestContext.&lt;anonymous> (file:///<work>/nt/a.test.mjs:9:21)
+      at TestHook.runInAsyncScope (node:async_hooks:227:14)
+      at TestHook.run (node:internal/test_runner/test:1402:25)
+      at TestHook.run (node:internal/test_runner/test:1757:18)
+      at TestHook.run (node:internal/util:581:20)
+      at Test.runHook (node:internal/test_runner/test:1289:20)
+      at after (node:internal/test_runner/test:1342:20)
+      at Test.run (node:internal/test_runner/test:1428:13)
+}
+		</failure>
+	</testcase>
+	<!-- tests 7 -->
+	<!-- suites 1 -->
+	<!-- pass 5 -->
+	<!-- fail 1 -->
+	<!-- cancelled 0 -->
+	<!-- skipped 1 -->
+	<!-- todo 0 -->
+	<!-- duration_ms 345.7179 -->
+	</undefined>
+</testsuites>

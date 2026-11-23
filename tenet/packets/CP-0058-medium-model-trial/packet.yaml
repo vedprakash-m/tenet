@@ -1,0 +1,25 @@
+id: CP-0058
+title: "Medium-model trial"
+type: experiment
+lane: quick
+priority: standard
+due: null
+levels: [L1]
+serves: [V-P4, V-P7]
+implements: []
+milestone: M0
+source: "specs/plan.md"
+stage: shape
+status: active
+blocked_by: [CP-0015]
+unblocks: [CP-0001]
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 8, sessions: 4}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-23T15:00Z, to: intake, by: Ved, reason: "split from CP-0015 in plan v0.13 (L-0027)"}
+  - {at: 2026-11-23T15:00Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-23T15:00Z, to: parked, by: Ved, reason: "revisit when the M0 gate closes"}
