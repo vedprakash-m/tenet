@@ -38,6 +38,22 @@ function items(doc: ParsedDoc): Map<string, Requirement> {
   return result;
 }
 
+function groupedItems(docs: Map<string, ParsedDoc>): Map<string, Map<string, Requirement>> {
+  const grouped = new Map<string, Map<string, Requirement>>();
+  for (const [path, doc] of docs) {
+    const name = documentName(path, doc);
+    const values = grouped.get(name) ?? new Map<string, Requirement>();
+    for (const [id, item] of items(doc)) {
+      if (values.has(id)) {
+        throw new Error(`duplicate specification ID ${id} in document ${name}`);
+      }
+      values.set(id, item);
+    }
+    grouped.set(name, values);
+  }
+  return grouped;
+}
+
 function numericId(left: string, right: string): number {
   const leftNumber = /(\d+)$/.exec(left)?.[1];
   const rightNumber = /(\d+)$/.exec(right)?.[1];
@@ -46,10 +62,11 @@ function numericId(left: string, right: string): number {
   return leftNumeric - rightNumeric || (left < right ? -1 : left > right ? 1 : 0);
 }
 
-function delta(path: string, before: ParsedDoc | undefined, after: ParsedDoc | undefined): Delta | null {
-  if (!before && !after) return null;
-  const oldItems = before ? items(before) : new Map<string, Requirement>();
-  const newItems = after ? items(after) : new Map<string, Requirement>();
+function delta(
+  name: string,
+  oldItems: Map<string, Requirement> = new Map(),
+  newItems: Map<string, Requirement> = new Map(),
+): Delta | null {
   const added: string[] = [];
   const modified: string[] = [];
   const removed: string[] = [];
@@ -64,7 +81,7 @@ function delta(path: string, before: ParsedDoc | undefined, after: ParsedDoc | u
   removed.sort(numericId);
   if (added.length === 0 && modified.length === 0 && removed.length === 0) return null;
   return {
-    doc: after ? documentName(path, after) : before ? documentName(path, before) : path,
+    doc: name,
     added,
     modified,
     removed,
@@ -78,20 +95,14 @@ export async function deltas(
 ): Promise<Delta[]> {
   const cwd = options.cwd ?? process.cwd();
   const [before, after] = await Promise.all([markdownAt(base, cwd), markdownAt(head, cwd)]);
-  const key = (docs: Map<string, ParsedDoc>, path: string) => {
-    const doc = docs.get(path);
-    if (!doc) throw new Error(`missing parsed document: ${path}`);
-    return documentName(path, doc);
-  };
+  const beforeItems = groupedItems(before);
+  const afterItems = groupedItems(after);
   const paths = [...new Set([
-    ...[...before.keys()].map((path) => key(before, path)),
-    ...[...after.keys()].map((path) => key(after, path)),
+    ...beforeItems.keys(),
+    ...afterItems.keys(),
   ])];
   return paths.flatMap((name) => {
-    const beforeEntry = [...before].find(([path, doc]) => documentName(path, doc) === name);
-    const afterEntry = [...after].find(([path, doc]) => documentName(path, doc) === name);
-    const path = afterEntry?.[0] ?? beforeEntry?.[0] ?? name;
-    const item = delta(path, beforeEntry?.[1], afterEntry?.[1]);
+    const item = delta(name, beforeItems.get(name), afterItems.get(name));
     return item ? [item] : [];
   }).sort((left, right) => left.doc < right.doc ? -1 : left.doc > right.doc ? 1 : 0);
 }

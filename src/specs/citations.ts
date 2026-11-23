@@ -9,6 +9,7 @@ function citationFinding(
   doc: ParsedDoc,
   item: Requirement,
   values: Record<string, string>,
+  malformed = false,
 ): Finding {
   const messages: Record<string, [string, string, string]> = {
     "TN-CITE-FILE": [
@@ -40,7 +41,7 @@ function citationFinding(
     rule: details?.[2] ?? "citations-valid",
     file: doc.path,
     line: itemLine(item),
-    message: fill(details?.[0] ?? ""),
+    message: malformed ? "citation is malformed" : fill(details?.[0] ?? ""),
     fix: fill(details?.[1] ?? ""),
   };
 }
@@ -60,7 +61,7 @@ export function resolveCitations(doc: ParsedDoc, readFile: Reader): Finding[] {
         const malformedDoc = /^doc:\s*/.test(cite) && !/.+#.+/.test(cite);
         const parsed = citationParts(cite);
         if (!parsed || malformedTest || malformedDoc) {
-          findings.push(citationFinding("TN-CITE-RANGE", doc, item, { cite }));
+          findings.push(citationFinding("TN-CITE-RANGE", doc, item, { cite }, true));
           continue;
         }
         const file = readFile(parsed.path);

@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/results/context.json",
+  "title": "Context result",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "blessed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "edited",
+                "sources-changed"
+              ]
+            }
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "enum": [
+              "global",
+              "id",
+              "path",
+              "applies_to",
+              "query"
+            ]
+          },
+          "over_budget": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "section",
+          "text",
+          "flags",
+          "owner",
+          "reason"
+        ]
+      }
+    },
+    "drafts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "enum": [
+              "draft",
+              "deferred"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "integrity_failed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "section",
+          "path",
+          "state",
+          "text"
+        ]
+      }
+    },
+    "index": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ]
+      }
+    },
+    "omitted": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "rule": {
+            "enum": [
+              "tests-not-weakened",
+              "protected-surfaces",
+              "acceptance-passed",
+              "citations-valid",
+              "budget"
+            ]
+          },
+          "mode": {
+            "enum": [
+              "observe",
+              "advise",
+              "enforce"
+            ]
+          }
+        },
+        "required": [
+          "rule",
+          "mode"
+        ]
+      }
+    }
+  },
+  "required": [
+    "blessed",
+    "drafts",
+    "index",
+    "omitted",
+    "truncated",
+    "rules"
+  ]
+}

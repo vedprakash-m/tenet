@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/results/check.json",
+  "title": "Check result",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "../finding.json"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "errors": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "advises": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "errors",
+        "warnings",
+        "advises"
+      ]
+    }
+  },
+  "required": [
+    "findings",
+    "summary"
+  ]
+}

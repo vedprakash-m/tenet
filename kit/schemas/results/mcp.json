@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/results/mcp.json",
+  "title": "MCP tool results",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/status"
+    },
+    {
+      "$ref": "#/$defs/next"
+    },
+    {
+      "$ref": "#/$defs/propose"
+    }
+  ],
+  "$defs": {
+    "status": {
+      "title": "Status result",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "enum": [
+            "observe",
+            "protect",
+            "verify",
+            "assure"
+          ]
+        },
+        "specs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "section": {
+                "type": "string"
+              },
+              "level": {
+                "enum": [
+                  "L0",
+                  "L1",
+                  "L2",
+                  "L3",
+                  "L4",
+                  null
+                ]
+              },
+              "state": {
+                "type": "string"
+              },
+              "flags": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "edited",
+                    "sources-changed"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "path",
+              "section",
+              "level",
+              "state",
+              "flags"
+            ]
+          }
+        },
+        "work": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "stage": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "status": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "stage",
+            "status"
+          ]
+        }
+      },
+      "required": [
+        "level",
+        "specs"
+      ]
+    },
+    "next": {
+      "title": "Next result",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "next_actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "who": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string"
+              },
+              "command": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "section": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "who",
+              "action",
+              "reason",
+              "command",
+              "path",
+              "section"
+            ]
+          }
+        }
+      },
+      "required": [
+        "next_actions"
+      ]
+    },
+    "propose": {
+      "title": "Proposal result",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "path"
+      ]
+    }
+  }
+}

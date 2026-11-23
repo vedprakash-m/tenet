@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
+import { tmpRepo } from "../helpers/tmpRepo.ts";
 
 const roots = [
   "src/specs/parse.ts",
@@ -188,12 +189,6 @@ function actualForAlg04(input: Json): Json {
   };
 }
 
-function git(cwd: string, args: string[]): string {
-  const result = spawnSync("git", args, { cwd, encoding: "utf8" });
-  if (result.status !== 0) throw new Error(result.stderr || result.stdout);
-  return result.stdout;
-}
-
 async function clearDirectory(root: string): Promise<void> {
   for (const name of await readdir(root)) {
     if (name === ".git") continue;
@@ -211,24 +206,20 @@ async function materialize(root: string, files: Record<string, string>): Promise
 }
 
 async function actualForAlg14(input: Json): Promise<Json> {
-  const parent = path.join(process.cwd(), "test", "specs");
-  await mkdir(parent, { recursive: true });
-  const root = await mkdtemp(path.join(parent, `.repo-${randomUUID().slice(0, 8)}-`));
+  const repository = await tmpRepo("alg-14");
+  const root = repository.path;
   try {
-    git(root, ["init", "--quiet"]);
-    git(root, ["config", "user.email", "tenet@localhost"]);
-    git(root, ["config", "user.name", "Tenet"]);
     await materialize(root, input.base as Record<string, string>);
-    git(root, ["add", "."]);
-    git(root, ["commit", "--quiet", "-m", "base"]);
-    const base = git(root, ["rev-parse", "HEAD"]).trim();
+    repository.git(["add", "."]);
+    repository.git(["commit", "--quiet", "-m", "base"]);
+    const base = repository.git(["rev-parse", "HEAD"]).trim();
     await materialize(root, input.head as Record<string, string>);
-    git(root, ["add", "-A"]);
-    git(root, ["commit", "--quiet", "--allow-empty", "-m", "head"]);
-    const head = git(root, ["rev-parse", "HEAD"]).trim();
+    repository.git(["add", "-A"]);
+    repository.git(["commit", "--quiet", "--allow-empty", "-m", "head"]);
+    const head = repository.git(["rev-parse", "HEAD"]).trim();
     return { touched: await touched(base, head, input.implementsIds as string[], { cwd: root }) };
   } finally {
-    await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+    await repository.cleanup();
   }
 }
 
@@ -560,25 +551,22 @@ test("walks and sorts the specification ladder without git", async () => {
 });
 
 test("computes renamed-document deltas and numeric ID ordering", async () => {
-      const parent = path.join(process.cwd(), "test", "specs");
-      const root = await mkdtemp(path.join(parent, ".deltas-"));
+      const repository = await tmpRepo("deltas");
+      const root = repository.path;
       try {
-        git(root, ["init", "--quiet"]);
-        git(root, ["config", "user.email", "tenet@localhost"]);
-        git(root, ["config", "user.name", "Tenet"]);
         const header = "---\ntenet: {spec: 1, doc: intent, level: L1}\nsections: {}\n---\n## Requirements\n";
         await materialize(root, {
           "tenet/old.md": `${header}- R-10 Ten. {origin: asked}\n- R-2 Two. {origin: asked}\n`,
         });
-        git(root, ["add", "."]);
-        git(root, ["commit", "--quiet", "-m", "base"]);
-        const base = git(root, ["rev-parse", "HEAD"]).trim();
+        repository.git(["add", "."]);
+        repository.git(["commit", "--quiet", "-m", "base"]);
+        const base = repository.git(["rev-parse", "HEAD"]).trim();
         await materialize(root, {
           "tenet/new.md": `${header}- R-10 Changed. {origin: asked}\n- R-1 One. {origin: asked}\n`,
         });
-        git(root, ["add", "-A"]);
-        git(root, ["commit", "--quiet", "-m", "head"]);
-        const head = git(root, ["rev-parse", "HEAD"]).trim();
+        repository.git(["add", "-A"]);
+        repository.git(["commit", "--quiet", "-m", "head"]);
+        const head = repository.git(["rev-parse", "HEAD"]).trim();
         assert.deepEqual(await deltas(base, head, { cwd: root }), [{
           doc: "intent",
           added: ["R-1"],
@@ -586,17 +574,14 @@ test("computes renamed-document deltas and numeric ID ordering", async () => {
           removed: ["R-2"],
         }]);
       } finally {
-        await rm(root, { recursive: true, force: true });
+        await repository.cleanup();
       }
 });
 
 test("touched ignores blessed-looking documents without tenet.spec", async () => {
-      const parent = path.join(process.cwd(), "test", "specs");
-      const root = await mkdtemp(path.join(parent, ".touched-spec-"));
+      const repository = await tmpRepo("touched-spec");
+      const root = repository.path;
       try {
-        git(root, ["init", "--quiet"]);
-        git(root, ["config", "user.email", "tenet@localhost"]);
-        git(root, ["config", "user.name", "Tenet"]);
         const ordinary = [
           "---",
           "tenet: {doc: ordinary}",
@@ -607,15 +592,15 @@ test("touched ignores blessed-looking documents without tenet.spec", async () =>
           "",
         ].join("\n");
         await materialize(root, { "docs/ordinary.md": ordinary, "src/a.ts": "old\n" });
-        git(root, ["add", "."]);
-        git(root, ["commit", "--quiet", "-m", "base"]);
-        const base = git(root, ["rev-parse", "HEAD"]).trim();
+        repository.git(["add", "."]);
+        repository.git(["commit", "--quiet", "-m", "base"]);
+        const base = repository.git(["rev-parse", "HEAD"]).trim();
         await materialize(root, { "docs/ordinary.md": ordinary, "src/a.ts": "new\n" });
-        git(root, ["add", "-A"]);
-        git(root, ["commit", "--quiet", "-m", "head"]);
-        const head = git(root, ["rev-parse", "HEAD"]).trim();
+        repository.git(["add", "-A"]);
+        repository.git(["commit", "--quiet", "-m", "head"]);
+        const head = repository.git(["rev-parse", "HEAD"]).trim();
         assert.deepEqual(await touched(base, head, ["R-9"], { cwd: root }), []);
       } finally {
-        await rm(root, { recursive: true, force: true });
+        await repository.cleanup();
       }
 });

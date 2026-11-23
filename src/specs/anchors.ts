@@ -25,6 +25,7 @@ export function citationParts(cite: string):
   if (doc?.[1] && doc[2]) {
     return { kind: "doc", path: doc[1].trim().replaceAll("\\", "/"), slug: doc[2] };
   }
+  if (/^doc:\s*/.test(cite)) return null;
   const test = /^test:\s*(.+?)\s+>\s+(.+)$/.exec(cite);
   if (test?.[1] && test[2]) {
     return {
@@ -33,6 +34,7 @@ export function citationParts(cite: string):
       segments: test[2].split(/\s+>\s+/).map((part) => part.trim()).filter(Boolean),
     };
   }
+  if (/^test:\s*/.test(cite)) return null;
   const path = /^(.+):(\d+)(?:-(\d+))?$/.exec(cite);
   if (path?.[1] && path[2]) {
     return {
@@ -70,9 +72,7 @@ export function testSegmentsResolve(text: string, segments: string[]): boolean {
 
 function declarationIndent(line: string): number | null {
   if (
-    !/(?:\b(?:describe|it|test)(?:\.[A-Za-z_$][\w$]*)*\s*\()|\bdef\s+|\bfunc\s+|\bt\.Run\s*\(|^\s*@Test\b|^\s*#\[test\]/.test(
-      line,
-    )
+    !/(?:\b(?:describe|it|test)(?:\.(?:each)\s*\([^)]*\))?\s*\()|\b(?:it|test)\s*\.\w+\s*\(|^\s*def\s+test_\w*\s*\(|^\s*func\s+Test\w*\s*\(|\bt\.Run\s*\(|^\s*@Test\b|^\s*#\[test\]/.test(line)
   ) return null;
   return line.match(/^[ \t]*/)?.[0].length ?? 0;
 }
@@ -144,7 +144,7 @@ export function anchorBlock(cite: string, readFile: Reader): CitationBlock | nul
   if (parsed.kind === "test") return testBlock(file, parsed.segments);
   const found = docSection(parsed.path, file, parsed.slug);
   if (!found) return null;
-  const text = found.section.text.replace(/\n$/, "");
+  const text = normalizedLines(found.section.text).join("\n");
   return {
     start: found.start,
     end: found.end,

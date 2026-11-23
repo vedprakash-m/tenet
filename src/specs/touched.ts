@@ -34,6 +34,12 @@ type Candidate = {
   base?: LocatedRequirement;
   head?: LocatedRequirement;
 };
+const reasonOrder: Record<Reason, number> = {
+  "implements": 0,
+  "cited-code-changed": 1,
+  "text-changed": 2,
+  "same-area": 3,
+};
 
 function portable(value: string): string {
   return value.replaceAll("\\", "/").replace(/^\.\/+/, "");
@@ -103,7 +109,7 @@ async function fileChanges(base: string, head: string, cwd: string): Promise<Fil
 
 async function diffHunks(base: string, head: string, cwd: string): Promise<Hunk[]> {
   const output = await git(
-    ["diff", "--unified=0", "--no-color", "-M", "--no-prefix", `${base}..${head}`],
+    ["-c", "core.quotepath=false", "diff", "--unified=0", "--no-color", "-M", "--no-prefix", `${base}..${head}`],
     { cwd },
   );
   const hunks: Hunk[] = [];
@@ -111,11 +117,11 @@ async function diffHunks(base: string, head: string, cwd: string): Promise<Hunk[
   let newPath: string | null = null;
   for (const line of output.replaceAll("\r\n", "\n").split("\n")) {
     if (line.startsWith("--- ")) {
-      oldPath = line.slice(4) === "/dev/null" ? null : portable(line.slice(4));
+      oldPath = patchPath(line.slice(4));
       continue;
     }
     if (line.startsWith("+++ ")) {
-      newPath = line.slice(4) === "/dev/null" ? null : portable(line.slice(4));
+      newPath = patchPath(line.slice(4));
       continue;
     }
     const hunk = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line);
@@ -129,6 +135,44 @@ async function diffHunks(base: string, head: string, cwd: string): Promise<Hunk[
     });
   }
   return hunks;
+}
+
+function patchPath(value: string): string | null {
+  let text = value;
+  if (text === "/dev/null") return null;
+  if (text.startsWith("\"")) {
+    let output = "";
+    for (let index = 1; index < text.length; index += 1) {
+      const character = text[index] ?? "";
+      if (character === "\"") {
+        text = output;
+        break;
+      }
+      if (character !== "\\") {
+        output += character;
+        continue;
+      }
+      index += 1;
+      const escaped = text[index] ?? "";
+      if (/[0-7]/.test(escaped)) {
+        let octal = escaped;
+        while (octal.length < 3 && /[0-7]/.test(text[index + 1] ?? "")) {
+          index += 1;
+          octal += text[index] ?? "";
+        }
+        output += String.fromCodePoint(Number.parseInt(octal, 8));
+      } else {
+        const replacements: Record<string, string> = {
+          a: "\x07", b: "\b", f: "\f", n: "\n", r: "\r", t: "\t", v: "\v",
+        };
+        output += replacements[escaped] ?? escaped;
+      }
+    }
+  } else {
+    const separator = text.indexOf("\t");
+    if (separator >= 0) text = text.slice(0, separator);
+  }
+  return portable(text);
 }
 
 function requirements(docs: Map<string, ParsedDoc>, blessedOnly: boolean): LocatedRequirement[] {
@@ -149,7 +193,13 @@ function byId(items: LocatedRequirement[]): Map<string, LocatedRequirement> {
   for (const item of items.sort((left, right) =>
     numericOrder(left.id, right.id) ||
     (left.path < right.path ? -1 : left.path > right.path ? 1 : 0)
-  )) if (!result.has(item.id)) result.set(item.id, item);
+  )) {
+    const previous = result.get(item.id);
+    if (previous) {
+      throw new Error(`duplicate specification ID ${item.id} in ${previous.path} and ${item.path}`);
+    }
+    result.set(item.id, item);
+  }
   return result;
 }
 
@@ -193,6 +243,7 @@ function citedCodeChanged(
       if (!headText) return true;
       const before = docSection(parsed.path, baseText, parsed.slug);
       const after = docSection(parsed.path, headText, parsed.slug);
+      if (!before && !after) continue;
       if (!before || !after || before.section.digest !== after.section.digest) return true;
       if (hunks.some((hunk) =>
         hunk.oldPath === parsed.path &&
@@ -204,10 +255,17 @@ function citedCodeChanged(
 }
 
 function textChanged(
-  base: LocatedRequirement,
+  base: LocatedRequirement | undefined,
   head: LocatedRequirement | undefined,
   hunks: Hunk[],
 ): boolean {
+  if (!base) {
+    if (!head || head.section.state !== "blessed") return false;
+    const line = itemLine(head.requirement);
+    return line !== null && hunks.some((hunk) =>
+      hunk.newPath === head.path && overlaps(line, line, hunk, false)
+    );
+  }
   if (head?.section.state !== "blessed") return true;
   if (jcs(base.requirement) !== jcs(head.requirement)) return true;
   if (base.section.digest !== head.section.digest) return true;
@@ -333,10 +391,7 @@ export async function touched(
       reasons.set(id, "cited-code-changed");
       continue;
     }
-    if (
-      candidate.base &&
-      textChanged(candidate.base, candidate.head, hunks)
-    ) reasons.set(id, "text-changed");
+    if (textChanged(candidate.base, candidate.head, hunks)) reasons.set(id, "text-changed");
   }
   const codeowners = options.codeowners_path === undefined
     ? codeownersAtHead(headState.files)
@@ -352,5 +407,8 @@ export async function touched(
   for (const candidate of same) reasons.set(candidate.id, "same-area");
   return [...reasons]
     .map(([id, why]) => ({ id, why }))
-    .sort((left, right) => numericOrder(left.id, right.id));
+    .sort((left, right) =>
+      reasonOrder[left.why] - reasonOrder[right.why] ||
+      numericOrder(left.id, right.id)
+    );
 }

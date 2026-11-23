@@ -1,6 +1,7 @@
 import { lstat, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { parseDoc, type ParsedDoc } from "./parse.js";
+import type { Finding } from "../types/generated.js";
+import { itemLine, parseDoc, type ParsedDoc } from "./parse.js";
 
 type LadderOptions = { cwd?: string; specs_dir?: string; files?: string[] };
 export type LadderEntry = { path: string; level: string | null; doc: ParsedDoc };
@@ -36,6 +37,36 @@ function levelOrder(level: string | null): number {
   return /^(L[0-4])$/.test(level) ? Number(level.slice(1)) : 5;
 }
 
+function reportProjectDuplicates(entries: LadderEntry[]): void {
+  const seen = new Map<string, { path: string; line: number | null }>();
+  for (const entry of entries) {
+    for (const section of entry.doc.sections) {
+      const items = [
+        ...section.requirements,
+        ...section.vision_items,
+        ...section.conflicts,
+        ...section.questions,
+      ];
+      for (const item of items) {
+        if (seen.has(item.id)) {
+          const problem: Finding = {
+            code: "TN-SPEC-DUP-ID",
+            severity: "error",
+            rule: null,
+            file: entry.path,
+            line: itemLine(item),
+            message: `Duplicate specification ID ${item.id}.`,
+            fix: `Run \`tenet fix\` to assign a new ID, or remove the duplicate ${item.id} item.`,
+          };
+          entry.doc.problems.push(problem);
+        } else {
+          seen.set(item.id, { path: entry.path, line: itemLine(item) });
+        }
+      }
+    }
+  }
+}
+
 export async function ladder(options: LadderOptions = {}): Promise<LadderEntry[]> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const root = options.specs_dir === undefined
@@ -66,8 +97,10 @@ export async function ladder(options: LadderOptions = {}): Promise<LadderEntry[]
       throw error;
     }
   }
-  return result.sort((left, right) =>
+  const sorted = result.sort((left, right) =>
     levelOrder(left.level) - levelOrder(right.level) ||
     (left.path < right.path ? -1 : left.path > right.path ? 1 : 0)
   );
+  reportProjectDuplicates(sorted);
+  return sorted;
 }

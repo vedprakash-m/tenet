@@ -106,8 +106,20 @@ function nullable(value: unknown): string | null {
   return text === "" || text === "-" || text === "—" ? null : text;
 }
 
+function nonEmptyText(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text === "" ? null : text;
+}
+
 function commaList(value: unknown): string[] {
   const text = nullable(value);
+  if (text === null) return [];
+  return text.split(",").map((part) => part.trim()).filter(Boolean);
+}
+
+function metadataList(value: unknown): string[] {
+  const text = nonEmptyText(value);
   if (text === null) return [];
   return text.split(",").map((part) => part.trim()).filter(Boolean);
 }
@@ -148,6 +160,9 @@ function parseMetadata(
     metadata = {};
     const body = text.slice(open + 1, close);
     text = text.slice(0, open).trim();
+    if (/(?:^|\s)(?:origin|cites|serves|scope|adopted_by|adopted by)\s*:/.test(text)) {
+      return requirementMetadataFinding();
+    }
     for (const field of body.split(";")) {
       const pair = /^([^:]+):([\s\S]*)$/.exec(field.trim());
       if (!pair) return requirementMetadataFinding();
@@ -167,10 +182,10 @@ function parseMetadata(
     if (!isOrigin(metadata.origin)) return requirementMetadataFinding();
     origin = metadata.origin;
   }
-  const cites = initial.cites ?? commaList(metadata?.cites);
-  const serves = initial.serves ?? commaList(metadata?.serves);
-  const scope = initial.scope === undefined ? nullable(metadata?.scope) : initial.scope;
-  const adopted = initial.adopted_by === undefined ? nullable(metadata?.adopted_by) : initial.adopted_by;
+  const cites = initial.cites ?? metadataList(metadata?.cites);
+  const serves = initial.serves ?? metadataList(metadata?.serves);
+  const scope = initial.scope === undefined ? nonEmptyText(metadata?.scope) : initial.scope;
+  const adopted = initial.adopted_by === undefined ? nonEmptyText(metadata?.adopted_by) : initial.adopted_by;
   return { id, text, origin, cites, serves, scope, adopted_by: adopted };
 }
 
@@ -373,7 +388,7 @@ function parseSpecial(
     return;
   }
   seen.add(id);
-  const isQuestion = section.slug === "open-questions";
+  const isQuestion = section.heading === "Open questions";
   let tail = match[3]?.trim() ?? "";
   let namedSection: string | null = null;
   const sectionMatch = /^\(section:\s*([^)]+)\)\s*/.exec(tail);
@@ -381,14 +396,14 @@ function parseSpecial(
     namedSection = sectionMatch[1].trim() || null;
     tail = tail.slice(sectionMatch[0].length);
   }
-  const option = /\s*\|\s*\d+:\s*[\s\S]*$/.exec(tail);
-  if (option?.index !== undefined) tail = tail.slice(0, option.index).trim();
   const field = /(?:^|[\s;|])(resolution|answer):\s*([\s\S]+)$/.exec(tail);
   let value: string | undefined;
   if (field?.[1] && field[2]) {
     value = field[2].trim() || undefined;
     tail = tail.slice(0, field.index).trim().replace(/[;|]\s*$/, "").trim();
   }
+  const option = /\s*\|\s*\d+:\s*[\s\S]*$/.exec(tail);
+  if (option?.index !== undefined) tail = tail.slice(0, option.index).trim();
   const parsed: ConflictOrQuestion = {
     id,
     checked: match[1]?.toLowerCase() === "x",
@@ -437,11 +452,21 @@ function parseStatements(
   const governed = vision ||
     section.slug === "requirements" ||
     /\brequirements?\b/i.test(section.heading);
-  const special = section.slug === "conflicts" || section.slug === "open-questions";
+  const special = section.heading === "Conflicts" || section.heading === "Open questions";
   const location = sectionLocations.get(section) ?? { start: 0, heading: 0 };
+  let fence: { character: "`" | "~"; length: number } | null = null;
   for (let index = 0; index < lines.length; index += 1) {
     const source = lines[index] ?? "";
     const line = location.start + index;
+    if (fence) {
+      if (fenceEnd(source, fence)) fence = null;
+      continue;
+    }
+    const nextFence = fenceStart(source);
+    if (nextFence) {
+      fence = nextFence;
+      continue;
+    }
     if (special) {
       parseSpecial(
         section,
