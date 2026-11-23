@@ -1,4 +1,5 @@
 import { jcs, sha256 } from "../core/hash.js";
+import { message } from "../core/messages.js";
 import type { Finding } from "../core/output.js";
 import type { Acceptance } from "./types.js";
 
@@ -67,15 +68,13 @@ function acceptanceProblem(line: number, id?: string): Finding {
     return {
       ...location,
       code: "TN-ACC-MISSING-ID",
-      message: "Acceptance item needs an ID.",
-      fix: "Prefix the item with [AB-<n>].",
+      ...message("TN-ACC-MISSING-ID"),
     };
   }
   return {
     ...location,
     code: "TN-ACC-DUP-ID",
-    message: `Duplicate acceptance item ID ${id}.`,
-    fix: `Renumber or remove the repeated ${id} item.`,
+    ...message("TN-ACC-DUP-ID", { id }),
   };
 }
 

@@ -1,3 +1,4 @@
+import { message } from "../core/messages.js";
 import { readFile, readdir } from "node:fs/promises";
 import type { Dirent } from "node:fs";
 import path from "node:path";
@@ -32,7 +33,7 @@ function parseYamlText(text: string, filename: string): unknown {
   });
   if (document.errors.length > 0) {
     const cause = document.errors[0] ?? new Error(`cannot parse YAML: ${filename}`);
-    throw policyError("TN-LOCK-INVALID", `${filename} is not valid YAML: ${cause.message}`, "Fix the lock file.");
+    throw policyError("TN-LOCK-INVALID", { message: `${filename} is not valid YAML: ${cause.message}`, fix: "Fix the lock file." });
   }
   return document.toJS({ maxAliasCount: 100 });
 }
@@ -44,7 +45,7 @@ async function filesInDirectory(root: string, relative = ""): Promise<Array<{ na
     entries = await readdir(directory, { withFileTypes: true });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      throw policyError("TN-KIT-MISSING", `The kit is missing at ${root}.`, "Install Tenet or fix kit_path.");
+      throw policyError("TN-KIT-MISSING", { message: `The kit is missing at ${root}.`, fix: "Install Tenet or fix kit_path." });
     }
     throw error;
   }
@@ -59,8 +60,10 @@ async function filesInDirectory(root: string, relative = ""): Promise<Array<{ na
     } else {
       throw policyError(
         "TN-KIT-INVALID",
-        `The kit contains an unsupported file at ${name}.`,
-        "Replace symbolic links and special files with regular files.",
+        {
+          message: `The kit contains an unsupported file at ${name}.`,
+          fix: "Replace symbolic links and special files with regular files.",
+        },
       );
     }
   }
@@ -80,14 +83,16 @@ async function filesAtRef(
   if (paths.length === 0) {
     throw policyError(
       "TN-KIT-MISSING",
-      `The kit is missing at ${relativeRoot} in ${ref}.`,
-      "Add the vendored kit or choose another target.",
+      {
+        message: `The kit is missing at ${relativeRoot} in ${ref}.`,
+        fix: "Add the vendored kit or choose another target.",
+      },
     );
   }
   const blobs = await catFileBatch(ref, paths, { cwd });
   return paths.map((filename) => {
     const contents = blobs.get(filename);
-    if (!contents) throw policyError("TN-KIT-INVALID", `Cannot read ${filename} from ${ref}.`, "Repair the git tree.");
+    if (!contents) throw policyError("TN-KIT-INVALID", { message: `Cannot read ${filename} from ${ref}.`, fix: "Repair the git tree." });
     return { name: filename.slice(relativeRoot.length + 1), contents };
   });
 }
@@ -132,8 +137,10 @@ async function readLock(policy: Policy): Promise<Lock> {
       if (typeof (error as { code?: unknown }).code === "string") throw error;
       throw policyError(
         "TN-LOCK-MISSING",
-        `tenet.lock is missing at ${context.ref}.`,
-        "Run tenet init to create and pin the lock file.",
+        {
+          message: `tenet.lock is missing at ${context.ref}.`,
+          fix: "Run tenet init to create and pin the lock file.",
+        },
         { file: "tenet.lock" },
       );
     }
@@ -144,15 +151,19 @@ async function readLock(policy: Policy): Promise<Lock> {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         throw policyError(
           "TN-LOCK-MISSING",
-          "tenet.lock is missing.",
-          "Run tenet init to create and pin the lock file.",
+          {
+            message: "tenet.lock is missing.",
+            fix: "Run tenet init to create and pin the lock file.",
+          },
           { file: "tenet.lock" },
         );
       }
       throw policyError(
         "TN-LOCK-INVALID",
-        `tenet.lock cannot be read: ${(error as Error).message}`,
-        "Fix the lock file syntax.",
+        {
+          message: `tenet.lock cannot be read: ${(error as Error).message}`,
+          fix: "Fix the lock file syntax.",
+        },
         { file: "tenet.lock" },
       );
     }
@@ -163,8 +174,10 @@ async function readLock(policy: Policy): Promise<Lock> {
     const detail = checked.errors.map((error) => `${error.pointer || "/"} ${error.message}`).join("; ");
     throw policyError(
       "TN-LOCK-INVALID",
-      `tenet.lock does not match its schema: ${detail}`,
-      "Regenerate tenet.lock with the installed Tenet version.",
+      {
+        message: `tenet.lock does not match its schema: ${detail}`,
+        fix: "Regenerate tenet.lock with the installed Tenet version.",
+      },
       { file: "tenet.lock" },
     );
   }
@@ -182,8 +195,7 @@ export async function verifyLock(options: PolicyOptions = {}): Promise<LockVerif
   if (lock.kit_sha256 !== kit.sha256) {
     throw policyError(
       "TN-LOCK-MISMATCH",
-      "The kit no longer matches tenet.lock.",
-      "Restore the locked kit or run tenet upgrade to record an intentional change.",
+      message("TN-KIT-EDITED", { actual: kit.sha256, expected: lock.kit_sha256 }),
       { file: policy.kit_path ?? "tenet.lock" },
     );
   }
@@ -194,8 +206,7 @@ export async function verifyLock(options: PolicyOptions = {}): Promise<LockVerif
   if (lock.version !== version) {
     throw policyError(
       "TN-LOCK-MISMATCH",
-      `The locked Tenet version ${lock.version} does not match installed version ${version}.`,
-      "Run tenet upgrade and commit the new lock.",
+      message("TN-LOCK-MISMATCH", { installed: version, locked: lock.version }),
       { file: "tenet.lock" },
     );
   }
