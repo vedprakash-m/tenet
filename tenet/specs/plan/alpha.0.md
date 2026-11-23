@@ -154,10 +154,10 @@
 
 **CP-0053 · Specification board** · R-032 (alpha.0 part)
 1. *Needs:* CP-0044, CP-0018; C §5.
-2. *Owns:* `src/views/specs-board.ts`, the `board` command and its result schema, `test/views/`.
+2. *Owns:* `src/views/specs-board.ts`, the `board` command and its result schema, `kit/schemas/board.json` (adding `spec_debt` and optional `recorded` on unblessed `specs[]`), `test/views/`.
 3. *Exports:* `board({all}) → board.json` with `as_of`, `read`, `specs`, `pending_blessings`, `spec_debt`.
-4. *Behavior:* reads the working tree. The markdown groups "waiting for your blessing", "sources changed", "edited" and "spec debt"; **spec debt** is `{kind: broken-citation|untested-requirement|over-budget, path, id, message}`, with untested requirements found through CP-0018's `scanTests`. `--all` adds clean blessed sections.
-5. *Edge cases:* no specifications ("run tenet onboard").
+4. *Behavior:* reads the working tree (`board.json` always holds the full arrays in `ladder`/section order; `--all` adds `Blessed (<n>)` to the rendered text). `pending_blessings` holds `draft` sections plus `blessed` sections flagged `edited` or `sources-changed`. **Spec debt** is `{kind: broken-citation|untested-requirement|over-budget, path, id: string|null, message}` (`broken-citation` across `blessed`/`draft`/`deferred` sections, `"<Heading> cites <target>, which no longer exists"`; `untested-requirement` across `blessed` requirements via `scanTests`, `"<Heading> › <id> has no tagged test"`; `over-budget` when `Math.ceil(chars / 4) > limit`, `"<path> is over its token budget (<tokens> > <limit> tokens)"`). The LF-terminated view matches UX Part 2 lines 151–158 (`<repo> · <branch> <7-char-commit> · level <level>`, then non-empty groups `Waiting for your blessing (<n>)`, `Sources changed (<n>)`, `Edited (<n>)`, `Spec debt (<n>)`, and with `--all` `Blessed (<n>)`, two-space indented; when all displayed groups are empty, `"All blessed specifications are current."`).
+5. *Edge cases:* no specifications (`"No specifications found · run tenet onboard"`).
 6. *Out of scope:* work items, `--open`, `--since`, `--fetch` (CP-0008).
 7. *Fixtures:* fresh drafts; half blessed; blessed with sources changed; spec debt of each kind; the UX Part 2 example.
 8. *Proving:* golden `board.json` and markdown byte-identical on three platforms.
