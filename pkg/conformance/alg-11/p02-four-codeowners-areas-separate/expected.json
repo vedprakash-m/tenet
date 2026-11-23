@@ -1,9 +1,69 @@
 {
   "ok": true,
   "exitCode": 0,
+  "preflight": {
+    "revision": "b2c3d4e5f6012345678901234567890123456789",
+    "read_count": 6,
+    "skipped_count": 0,
+    "dirty_warning": false
+  },
   "inventory": {
     "schema_version": 1,
     "revision": "b2c3d4e5f6012345678901234567890123456789",
+    "sources": {
+      "files": [
+        {
+          "path": ".github/CODEOWNERS",
+          "kind": "config",
+          "sha256": "ff00e693ccae06902d8b63f17e2e84aa58c7d531aad77c132e441fa93eb2b16a",
+          "lines": 4
+        },
+        {
+          "path": "src/auth/index.ts",
+          "kind": "source",
+          "sha256": "45e0bb5029967413de379096d2fca6ced21457d16b7d52c7ecfc1437de3e6f68",
+          "lines": 2100
+        },
+        {
+          "path": "src/billing/index.ts",
+          "kind": "source",
+          "sha256": "45e0bb5029967413de379096d2fca6ced21457d16b7d52c7ecfc1437de3e6f68",
+          "lines": 2100
+        },
+        {
+          "path": "src/catalog/index.ts",
+          "kind": "source",
+          "sha256": "45e0bb5029967413de379096d2fca6ced21457d16b7d52c7ecfc1437de3e6f68",
+          "lines": 2100
+        },
+        {
+          "path": "src/shipping/index.ts",
+          "kind": "source",
+          "sha256": "45e0bb5029967413de379096d2fca6ced21457d16b7d52c7ecfc1437de3e6f68",
+          "lines": 2100
+        },
+        {
+          "path": "tenet.yaml",
+          "kind": "config",
+          "sha256": "bf2e6da3dcd662003bad47b1988163b36f58b16b76795cfba63256fc4359d747",
+          "lines": 26
+        }
+      ],
+      "skipped": []
+    },
+    "modules": [
+      {
+        "id": "src",
+        "roots": [
+          "src"
+        ],
+        "languages": [
+          "typescript"
+        ]
+      }
+    ],
+    "tests": [],
+    "docs": [],
     "owners": [
       {
         "pattern": "/src/auth/",
@@ -30,24 +90,151 @@
         ]
       }
     ],
+    "ci": [],
     "size": {
       "source_lines": 8400,
       "areas": 4
     },
     "layout": "separate",
-    "units": {
-      "$assert": "size",
-      "value": 4
+    "units": [
+      {
+        "id": "src-auth",
+        "paths": [
+          "src/auth"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      },
+      {
+        "id": "src-billing",
+        "paths": [
+          "src/billing"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      },
+      {
+        "id": "src-catalog",
+        "paths": [
+          "src/catalog"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      },
+      {
+        "id": "src-shipping",
+        "paths": [
+          "src/shipping"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "kind": "no-test-report",
+        "path": "tenet.yaml",
+        "message": "No machine-readable test report configured"
+      }
+    ],
+    "observations": {
+      "reports": []
     }
   },
+  "findings": [
+    {
+      "kind": "no-test-report",
+      "path": "tenet.yaml",
+      "message": "No machine-readable test report configured"
+    }
+  ],
   "assignment": {
     "schema_version": 1,
+    "inventory": ".tenet/onboard/inventory.json",
     "skill": "draft-specs",
+    "project_kind": "application",
+    "views": [
+      "vision",
+      "requirements",
+      "design",
+      "experience",
+      "plan"
+    ],
     "layout": "separate",
-    "units": {
-      "$assert": "size",
-      "value": 4
-    },
+    "units": [
+      {
+        "id": "src-auth",
+        "paths": [
+          "src/auth"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      },
+      {
+        "id": "src-billing",
+        "paths": [
+          "src/billing"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      },
+      {
+        "id": "src-catalog",
+        "paths": [
+          "src/catalog"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      },
+      {
+        "id": "src-shipping",
+        "paths": [
+          "src/shipping"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
     "question_limit": 10,
     "output": {
       "paths": [
@@ -57,6 +244,12 @@
         "tenet/specs/ux-spec.md",
         "tenet/specs/plan.md"
       ]
-    }
+    },
+    "rules": [
+      "no intent from code alone",
+      "every observed or documented statement cites",
+      "never resolve a conflict",
+      "never bless"
+    ]
   }
 }

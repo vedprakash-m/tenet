@@ -50,10 +50,10 @@
 **CP-0048 · Onboarding inventory and assignment** · R-021, R-027, R-223 (preflight, inventory, units, assignment, refresh), R-225 (instruction files)
 1. *Needs:* CP-0009, CP-0012, CP-0018; OB §1; C §4; ALG-11.
 2. *Owns:* `src/onboard/{preflight,inventory,findings,assignment,refresh}.ts`, the `onboard` command (without `--card`) and its result schema, `test/onboard/`.
-3. *Exports:* `onboard({inventoryOnly, refresh, layout}) → {preflight, inventory, findings, assignment}`.
+3. *Exports:* `onboard({inventoryOnly, refresh, layout}) → {preflight: {revision, read_count, skipped_count, dirty_warning}, inventory, findings, assignment}`.
 4. *Behavior:*
-   - **Preflight:** text as UX Part 1.
-   - **Inventory:** its first findings, project kind, units and output paths exactly as OB §1 and ALG-11. Test declarations and skips come from CP-0018's `scanTests`; doc dates come from one `lastChangedMap` call.
+   - **Preflight:** text as UX Part 1; returns `{revision, read_count: sources.files.length, skipped_count: sources.skipped.length, dirty_warning}`.
+   - **Inventory:** its first findings (sorted by `kind` order `dead-path`, `skipped-tests`, `owners-unmatched`, `no-test-report`, then `path`, then `message`, with the templates in OB §1; top-level `findings` equals `inventory.findings`), project kind, `sources.skipped` reasons (`env|credentials|vendored|generated|excluded|binary|oversize`), units (`one-file`: `[{id: "root", paths: ["."], views}]`; `separate`: CODEOWNERS areas else top-level source folders, merging `< 2,000`-line units into their preceding neighbor, or following neighbor at index `0`) and output paths (`assignment.inventory = ".tenet/onboard/inventory.json"`) exactly as OB §1 and ALG-11. Test declarations and skips come from CP-0018's `scanTests`; doc dates come from one `lastChangedMap` call.
    - **Instruction files:** listed with kind `instructions` (OB §1).
    - **Inputs:** repository facts are byte-identical for one commit, and report data goes only in `observations`. `tenet.yaml` is read from the working tree.
    - **Refresh:** keeps IDs, edits, rejections and blessings, and assigns only units whose sources changed since `drafted_at_rev`.

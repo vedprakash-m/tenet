@@ -1,18 +1,114 @@
 {
   "ok": true,
   "exitCode": 0,
+  "preflight": {
+    "revision": "e5f6012345678901234567890123456789012345",
+    "read_count": 2,
+    "skipped_count": 0,
+    "dirty_warning": false
+  },
   "inventory": {
     "schema_version": 1,
     "revision": "e5f6012345678901234567890123456789012345",
+    "sources": {
+      "files": [
+        {
+          "path": "src/index.ts",
+          "kind": "source",
+          "sha256": "9a30ac96b5d5c1b67eca69e1e2cf0798817d9578c8d7d904a81a67b983b35cba",
+          "lines": 3
+        },
+        {
+          "path": "tenet.yaml",
+          "kind": "config",
+          "sha256": "bf2e6da3dcd662003bad47b1988163b36f58b16b76795cfba63256fc4359d747",
+          "lines": 26
+        }
+      ],
+      "skipped": []
+    },
+    "modules": [
+      {
+        "id": "src",
+        "roots": [
+          "src"
+        ],
+        "languages": [
+          "typescript"
+        ]
+      }
+    ],
+    "tests": [],
+    "docs": [],
+    "owners": [],
+    "ci": [],
     "size": {
       "source_lines": 3,
       "areas": 0
     },
-    "layout": "separate"
+    "layout": "separate",
+    "units": [
+      {
+        "id": "src",
+        "paths": [
+          "src"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "kind": "no-test-report",
+        "path": "tenet.yaml",
+        "message": "No machine-readable test report configured"
+      }
+    ],
+    "observations": {
+      "reports": []
+    }
   },
+  "findings": [
+    {
+      "kind": "no-test-report",
+      "path": "tenet.yaml",
+      "message": "No machine-readable test report configured"
+    }
+  ],
   "assignment": {
     "schema_version": 1,
+    "inventory": ".tenet/onboard/inventory.json",
+    "skill": "draft-specs",
+    "project_kind": "application",
+    "views": [
+      "vision",
+      "requirements",
+      "design",
+      "experience",
+      "plan"
+    ],
     "layout": "separate",
+    "units": [
+      {
+        "id": "src",
+        "paths": [
+          "src"
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "question_limit": 10,
     "output": {
       "paths": [
         "tenet/vision.md",
@@ -21,6 +117,12 @@
         "tenet/specs/ux-spec.md",
         "tenet/specs/plan.md"
       ]
-    }
+    },
+    "rules": [
+      "no intent from code alone",
+      "every observed or documented statement cites",
+      "never resolve a conflict",
+      "never bless"
+    ]
   }
 }

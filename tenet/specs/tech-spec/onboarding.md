@@ -8,10 +8,10 @@
 
 <!-- provisional --> **Preflight and inventory.** `tenet onboard` needs at least one commit (else `TN-ENV-NO-COMMIT`: "make a first commit, then run tenet onboard"). It lists:
 - what it will read: code, configuration, tests, docs, CI, owners
-- what it skips: `.env*`, credential files (`*.pem`, `*.key`, `id_*`, `*credentials*`, `*secret*`), vendored and generated paths (ALG-11), binaries, files over 1 MB, anything in `onboard.exclude`
+- what it skips into `sources.skipped: [{path, reason}]` (sorted by `path`, first matching reason): `"env"` (`.env`, `.env.*`), `"credentials"` (`*.pem`, `*.key`, `id_*`, `*credentials*`, `*secret*`), `"vendored"` (`vendor/`, `node_modules/`, `dist/`, `build/`), `"generated"` (ALG-11), `"excluded"` (`onboard.exclude`), `"binary"` (NUL byte in first 8 KB or binary extension), `"oversize"` (`> 1_048_576` bytes); test files stay in `sources.files` (`kind: "test"`) and are excluded only from `size.source_lines`
 - that drafting sends content to the user's own agent and its model provider
 
-`--inventory-only` stops there. It writes `.tenet/onboard/inventory.json` (contracts §4, git-ignored) from `HEAD`. Uncommitted source changes are left out, with a warning; `tenet.yaml` is read from the working tree, so a just-written setup applies. Running `onboard` twice gives the same result.
+`--inventory-only` stops there. It writes `.tenet/onboard/inventory.json` and `.tenet/onboard/assignment.json` (`inventory: ".tenet/onboard/inventory.json"`, contracts §4, git-ignored) from `HEAD`. Uncommitted source changes are left out, with a warning; `tenet.yaml` is read from the working tree, so a just-written setup applies. Running `onboard` twice gives the same result.
 - **Modules** are the folders holding a package manifest, else top-level source folders.
 - **Project kind:**
   - `cli`: a `bin` entry or `cmd/` folder
@@ -26,11 +26,11 @@
 
 The inventory is byte-identical for one commit. Results from local test reports go only in `observations`, named by digest.
 
-**First findings** (the "first useful finding", V-V3). These are printed by `init` and `onboard --inventory-only`, deterministic, within ten minutes of install:
-- doc paths and links that name missing files
-- skipped or focused tests present (ALG-09 skip patterns over the tree)
-- CODEOWNERS patterns matching nothing
-- whether a test report can be produced (contracts §6)
+**First findings** (the "first useful finding", V-V3). These are printed by `init` and `onboard --inventory-only`, deterministic, within ten minutes of install (sorted by `kind` order below, then `path`, then `message`):
+- `dead-path`: doc paths and links that name missing files (`path`: doc path; `message: "<doc.path> links missing path <target>"`)
+- `skipped-tests`: skipped or focused tests present (`path`: test file; `message: "<count> skipped or focused test(s) in <test.path>"`)
+- `owners-unmatched`: CODEOWNERS patterns matching nothing (`path`: CODEOWNERS path; `message: "CODEOWNERS pattern <pattern> matches no tracked files"`)
+- `no-test-report`: whether a test report can be produced (`path`: first CI workflow path, else `"tenet.yaml"`; `message: "No machine-readable test report configured"`)
 
 **Drafting units and output paths.** The assignment (`.tenet/onboard/assignment.json`) lists units (ALG-11) in order, each with its slice of the inventory.
 
