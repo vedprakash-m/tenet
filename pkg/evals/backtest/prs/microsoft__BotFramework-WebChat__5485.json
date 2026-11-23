@@ -1,0 +1,116 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5485,
+  "title": "Use lightningcss to process CSS",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n(no changelog entry for build change)\r\n\r\n## Description\r\n\r\nThis configures tsup to process CSS via `lightningcss` package instead of the `esbuild` native css processing.\r\n\r\n## Design\r\n\r\nThe `ebuild`'s CSS processing is still kind of experimental and not as flexible as needed for production usage.\r\n\r\nThe main concern is that it doesn't allow configuring generated class names prefix. When minified, ESbuild will use the shortest possible name for any class in the bundle. This becomes a problem when there are two different bundles build by ESbuild on the same page as their classes collide.\r\n\r\nOn the other hand LightningCSS is a tool developed to build and bundle CSS, so it is more flexible and it covers our use-cases well.\r\n\r\nWe use the package via `unplugin-lightningcss` which is a rather simple universal bundler plugin. Given I've already contributed a fix back to the package for the proper CSS modules support, and the code of the plugin is rather simple, I don't see any risks for long term maintenance of such approach.\r\n\r\n## Specific Changes\r\n\r\n- tweaked build to include the new plugin for CSS processing and exclude everything we don't need\r\n  - Svelte support as we don't use Svelte\r\n  - PostCSS support as we now use a dedicated CSS processing pipeline\r\n- removed previous workarounds\r\n- cleaned-up derivative configurations, moved CSS preprocessing to base configuration\r\n\r\n## -\r\n\r\n-\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [x] Browser and platform compatibilities reviewed\r\n-  [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] Internationalization reviewed (strings, unit formatting)\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] Security reviewed (no data URIs, check for nonce leak)\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-05-22T16:01:34Z",
+  "merged_at": "2025-05-22T22:14:55Z",
+  "base": "main",
+  "head": "fix/css-modules-minification",
+  "base_sha": "d1cd51af0195cad1035ea1d502697b19744c94d2",
+  "head_sha": "80ea2a206837ea8be84207d3a0cd091bec2cfc45",
+  "merge_sha": "11f25a2c8b3da8e9e7b62abd37ca88b7955ef9fa",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-05-22T19:40:05Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "1d27fe42293e53bc34daaedfb0d0d1adf962dc45",
+      "message": "Use lightningcss to process CSS",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "185fb588eac04d384e70ec0bd9c9c464c404fb70",
+      "message": "Shorten prefix",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "6950d20af419e5789c6ade3c2ef2d3fcb748da3a",
+      "message": "Add local to name as hash is the file hash",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "9eee5c11d07bd5019a88ea6a50134457c771c959",
+      "message": "CI?",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "80ea2a206837ea8be84207d3a0cd091bec2cfc45",
+      "message": "Process css in test env",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 316,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/tsup.config.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/tsup.config.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/theme/Theme.module.css",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/tsup.config.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 17,
+      "previous_path": null
+    },
+    {
+      "path": "tsup.base.config.ts",
+      "status": "modified",
+      "additions": 29,
+      "deletions": 2,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2025-05-22T19:22:53Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-05-22T22:01:12Z"
+    }
+  ],
+  "check_runs": []
+}

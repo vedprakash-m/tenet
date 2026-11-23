@@ -1,0 +1,408 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5978,
+  "title": "Fix type errors in the published typings with skipLibCheck turned off",
+  "body": "> TypeScript projects that type-check our published typings (`skipLibCheck: false`) get up to 19 errors from Web Chat's own declarations.\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed type errors in the published typings when `skipLibCheck` is turned off, in PR [#5978](https://github.com/microsoft/BotFramework-WebChat/pull/5978), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThe typings had type-only members emitted as values in namespaces, a self-referencing `renderMarkdown.createStreamingRenderer`, non-DOM globals, and 2 constraints failing under `strict`. JavaScript output only changes by the renamed function.\n\n## Design\n\n- Types leave the `export * as` namespaces instead of getting local aliases: they never worked as types there; entry points still export them.\n- Non-DOM globals resolve through `globalThis`, instead of adding `@types/dom-speech-recognition` and `@types/node` to `dependencies`.\n\n## Specific Changes\n\n- `bundle/src/boot`: types exported by `exports/*.ts`, not `actual/*`\n- `renderMarkdown.ts`, `createMarkdownStreamingRenderer.ts`: file and function renamed to `createMarkdownStreamingRenderer`\n- `WebSpeechPonyfill.ts`, `GlobalScopeClock.ts`: globals via new base `TypeOfGlobal`\n- `templateDecorator.tsx`, component `ContextOf.ts`: constraints no longer invariant\n- No new test: each package alone, React 16/18 types: 0 errors from our declarations (React 19: `prop-types` TS7016, fixed by #5973)\n- Not fixed (dependencies): `NetworkInformation` (`botframework-directlinejs`), `Buffer` (`@types/node@10` via `botframework-streaming`), `type-fest` (undeclared by `react-chain-of-responsibility`)\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [ ] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-28T22:51:20Z",
+  "merged_at": "2026-10-29T00:28:35Z",
+  "base": "main",
+  "head": "OEvgeny/fix-shipped-typings",
+  "base_sha": "d8572053f129b9dca0d4e48cdb9ea2cc4b9d1076",
+  "head_sha": "8795eb47d1b43b476aa65448a915e4d91d6b4a45",
+  "merge_sha": "a19f7f20d1d53da1a18aa4b2dadf98e3fd7f9b72",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-28T23:08:24Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "4bd7c5e6f6175085306567a01683fc80b2adce6a",
+      "message": "Resolve speech recognition types via globalThis in WebSpeechPonyfill",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "69b9320208be7f0dca3b0d87ca828b163355614c",
+      "message": "Fix generic constraints that fail under strictFunctionTypes",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "9803f73480254f1816590305d93bb64755f67bd0",
+      "message": "Export bundle types from entry points instead of namespaces",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "727c604354abb65701685b772e375bf9fc948201",
+      "message": "Rename the streaming Markdown renderer function to avoid a self-referencing typing",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "0cdd9b7d5f5402ae0a7fa7ded9d0881d55c0592c",
+      "message": "Resolve setImmediate and clearImmediate types via globalThis with a shared TypeOfGlobal type",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "5c9e7a003ff009e239743d4778c399710a796c74",
+      "message": "Fall back to core's setImmediate and clearImmediate types without Node.js types",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "afc4d08d853355bfe9c9bc6d6010e24e3c30c1d4",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "ac7ff6bc66849d23a1244e4abdfdbc646132431f",
+      "message": "Rename createStreamingRenderer.ts to createMarkdownStreamingRenderer.ts",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "8795eb47d1b43b476aa65448a915e4d91d6b4a45",
+      "message": "Merge branch 'main' into OEvgeny/fix-shipped-typings",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5978-fix-shipped-typings.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/templateDecorator.tsx",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/types/WebSpeechPonyfill.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/src/utils/TypeOfGlobal.ts",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/src/utils/index.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/component/minimal.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/decorator.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/hook/minimal.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/internal.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/minimal.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/component.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/decorator.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/hook.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/internal.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/minimal.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/createMarkdownStreamingRenderer.spec.ts",
+      "status": "renamed",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": "packages/bundle/src/markdown/createStreamingRenderer.spec.ts"
+    },
+    {
+      "path": "packages/bundle/src/markdown/createMarkdownStreamingRenderer.ts",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "packages/bundle/src/markdown/createStreamingRenderer.ts"
+    },
+    {
+      "path": "packages/bundle/src/markdown/renderMarkdown.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/types/ContextOf.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/internal/GlobalScopeClock.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 4,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-28T23:08:33Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-28T23:25:06Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2026-10-28T23:25:12Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-28T23:33:09Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-28T23:39:41Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:28:21Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:27:54Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:27:20Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:26:23Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:26:19Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:25:44Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:26:40Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:26:16Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:25:24Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:25:16Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:26:51Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:26:03Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:27:01Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:25:32Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:26:59Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:26:18Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:26:58Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:26:30Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:27:44Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:22:03Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:19:38Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:20:55Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:13:31Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:12:56Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:13:42Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:14:41Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:14:16Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:13:29Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:15:08Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:17:21Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:14:02Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:14:09Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:13:39Z"
+    }
+  ]
+}

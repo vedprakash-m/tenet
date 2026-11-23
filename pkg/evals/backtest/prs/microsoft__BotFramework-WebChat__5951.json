@@ -1,0 +1,273 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5951,
+  "title": "Keep Web Chat working in React Strict Mode",
+  "body": "> Fixes #5859\n> Fixes #5127\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed [#5859](https://github.com/microsoft/BotFramework-WebChat/issues/5859) and [#5127](https://github.com/microsoft/BotFramework-WebChat/issues/5127), Web Chat rendering nothing (React 19) or staying on \"Connecting…\" when rendered in React Strict Mode, in PR [#5951](https://github.com/microsoft/BotFramework-WebChat/pull/5951), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nIn development, Strict Mode crashed Web Chat on React 19 (tag defined twice) and left it \"Connecting…\" (the remount stopped the Direct Line start, which cannot restart). Custom elements are now defined once per class, and unmounting disconnects in a microtask, so the Strict Mode remount keeps the connection.\n\n## Design\n\n- Each class gets its own tag name, instead of one per composer guarded by `customElements.get()`, so a new class never reuses an old tag.\n- A remount with the same store, `directLine`, `userID` and `username` cancels the deferred disconnect; other mounts sharing the store or `directLine` disconnect it first, as before; fixing DirectLineJS would still start twice.\n\n## Specific Changes\n\n- `CustomElementsComposer.tsx`: tag name per class in a `WeakMap`, defined once\n- `Composer.tsx` (api): disconnect on unmount in a microtask, unless remounted\n- `strictMode/directLine.html`: React 18 development, Strict Mode, DirectLineJS: connects, bot replies (snapshot 1)\n- No test for #5859: html2 cannot load React 19 until #5552\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-21T23:38:26Z",
+  "merged_at": "2026-10-22T04:14:02Z",
+  "base": "main",
+  "head": "OEvgeny/fix-react-strict-mode",
+  "base_sha": "2ca5f3c6aa89853fe80837aa54e1a214045a25f6",
+  "head_sha": "1949d1c74fa75f25756d0b05e9b420889e695e41",
+  "merge_sha": "7c45ebb0cb4012d76430beb4249ea7b1cbcace3e",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-22T02:49:35Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "2c5e106d0b6a782cda023a5f9e3d220269b4fc8a",
+      "message": "Register each custom element class once, so Strict Mode in React 19 does not define a tag twice (#5859)",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "e8200009e58b828acbc45bd1fc385339d94423df",
+      "message": "Keep the Direct Line connection when Strict Mode mounts Web Chat again (#5127)",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "ae1b68038eeef8d135cdd42d0ac48359bafbf0db",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "c77738207cc459b1c6263a062b2de1c3ad0714fb",
+      "message": "Disconnect a store sharing the Direct Line before connecting again, and defer the unmount disconnect with a microtask",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "1949d1c74fa75f25756d0b05e9b420889e695e41",
+      "message": "Merge branch 'main' into OEvgeny/fix-react-strict-mode",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5951-fix-react-strict-mode.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/strictMode/directLine.html",
+      "status": "added",
+      "additions": 81,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/strictMode/directLine.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/Composer.tsx",
+      "status": "modified",
+      "additions": 48,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/CustomElementsComposer.tsx",
+      "status": "modified",
+      "additions": 31,
+      "deletions": 29,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-22T02:49:42Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T03:53:52Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T04:18:12Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:13:43Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:14:07Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:11:58Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:12:12Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:12:26Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:10:09Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:13:05Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:12:27Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:12:19Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:12:12Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:13:32Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:11:52Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:11:34Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:12:24Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:11:32Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:11:43Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:10:35Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:12:37Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:12:12Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:07:29Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:06:25Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:04:32Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T03:58:00Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T03:57:24Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T03:58:20Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T03:59:28Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T03:58:05Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T03:58:01Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T04:03:01Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T03:58:20Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T03:58:32Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T03:58:07Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T03:58:28Z"
+    }
+  ]
+}

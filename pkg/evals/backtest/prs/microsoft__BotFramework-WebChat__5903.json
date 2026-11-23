@@ -1,0 +1,314 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5903,
+  "title": "Don't announce a single audio, video, or animation in a card as a list item",
+  "body": "> Fixes #5722\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed screen readers announcing a single audio, video, or animation in a card as a list item, such as \"1 of 1\", fixes [#5722](https://github.com/microsoft/BotFramework-WebChat/issues/5722), in PR [#5903](https://github.com/microsoft/BotFramework-WebChat/pull/5903), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nAudio, video, and animation cards always rendered their media as a `<ul>` with one `<li>` per medium, so screen readers announced the only player of a card as a list item, \"1 of 1\". Media are now marked up as a list only when there are 2 or more; a single medium is wrapped in `<div>` elements with the same class and looks the same. This also removes the list from the scan-mode reading in #5736.\n\n## Design\n\n- Decision: the `media-list` class is kept, but host CSS that targets `ul.media-list` or its `li` no longer matches a single medium.\n- Open question: would you rather keep `<ul>`/`<li>` with `role=\"none\"` for a single medium, so the DOM does not change?\n\n## Specific Changes\n\n- `MediaList` (new, internal to the bundle): renders `ul > li` for 2 or more media, otherwise `div > div`\n- `AudioCardContent`, `VideoCardContent`, `AnimationCardContent`: render their media with `MediaList`; their styles select `.media-list` and its children instead of `ul.media-list` and `li`\n- `SignInCardContent.module.css`: removed an unused `ul.media-list` rule (sign-in cards have no media)\n- `testHelpers.getAccessibilityAncestors` (new): the ancestors of an element in the accessibility tree\n- Added `richCard/mediaCard.mediaList.html`: audio, video, and animation cards with a single medium are not in a list, and an audio card with 2 media is a list of 2\n\n- [x] I have added tests and executed them locally\n- [x] I have updated `CHANGELOG.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-19T02:29:01Z",
+  "merged_at": "2026-10-19T05:11:41Z",
+  "base": "main",
+  "head": "OEvgeny/fix-5722-single-media-list",
+  "base_sha": "e63103a62981c8df5680f5cd0da1f3310349b6ba",
+  "head_sha": "78cf6ed0e018e504d38efd415bb4dbac35c3dfb9",
+  "merge_sha": "33a6b69f488f06fc8ce6ca3bd15ccee7df5c8665",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-19T02:40:04Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "7301101563d067ff41a6008b8245643dcb63442a",
+      "message": "Do not mark up a single medium of media cards as a list",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "fb9a09aa48960f31c84d37c2bd74b27fde0aca44",
+      "message": "Remove unused media list rule from sign-in card styles",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "f77f747bc6108d7f0a34f231fb0332de9f498442",
+      "message": "Address review: test assertions and comments, helper JSDoc, changelog wording",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "78cf6ed0e018e504d38efd415bb4dbac35c3dfb9",
+      "message": "Add PR number to changelog",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/mediaCard.mediaList.html",
+      "status": "added",
+      "additions": 144,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/mediaCard.mediaList.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AnimationCardContent.module.css",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AnimationCardContent.tsx",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AudioCardContent.module.css",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AudioCardContent.tsx",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/SignInCardContent.module.css",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/VideoCardContent.module.css",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/VideoCardContent.tsx",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/private/MediaList.tsx",
+      "status": "added",
+      "additions": 44,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/getAccessibilityAncestors.js",
+      "status": "added",
+      "additions": 33,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/index.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-19T02:40:10Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-19T05:09:57Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:44:51Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:44:21Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:40:27Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:42:56Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:43:05Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:42:00Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:43:13Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:43:25Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:41:21Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:41:34Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:43:31Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:43:42Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:43:50Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:44:13Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:42:41Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:43:37Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:42:55Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:43:32Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:43:47Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:43:40Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:37:14Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:36:56Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:37:53Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:29:47Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:30:37Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:31:34Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:29:57Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:29:42Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:34:40Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:30:16Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:29:52Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-19T02:30:28Z"
+    }
+  ]
+}

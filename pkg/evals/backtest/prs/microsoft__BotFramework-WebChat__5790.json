@@ -1,0 +1,247 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5790,
+  "title": "fix: ActivityKeyerComposer perf",
+  "body": "> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n- Improved `ActivityKeyerComposer` performance for append scenarios by adding an incremental fast path that only processes newly-appended activities, in PR [#5790](https://github.com/microsoft/BotFramework-WebChat/pull/5790), by [@OEvgeny](https://github.com/OEvgeny)\r\n\r\n## Description\r\n\r\n`ActivityKeyerComposer` re-iterated all activities on every render to assign stable keys. With 1000+ streaming delta activities, each push triggered a full O(n) scan, making overall complexity growing towards O(n²) if we push fast enough. This PR adds an incremental fast path so only newly-appended activities are processed per render.\r\n\r\nThis implies that activities are immutable.\r\n\r\n## Design\r\n\r\nThe `useMemo` now uses a two-path strategy:\r\n\r\n1. **Fast path (append-only):** Compares the activities array prefix to the previous render using reference equality. When activities are only appended, only the new tail is iterated per render. Ref-held maps are mutated in-place so a single lookup covers both previous and current-iteration entries.\r\n2. **Slow path (removal/reorder):** Falls back to the original full-recalculation when the prefix diverges (items removed, replaced, or reordered).\r\n\r\nThis is still iterating the whole array, but since we need only ref checks, we spend only about 10% of the previous time on this work.\r\n\r\n\r\n## Specific Changes\r\n\r\n- Added `prevActivitiesRef` and `prevActivityKeysStateRef` refs to track previous render state\r\n- Added common-prefix detection to identify append-only changes in O(min(prev, next))\r\n- Added incremental fast path that processes only `activities[commonPrefixLength..]`\r\n- Kept maps mutable in refs (removed `Object.freeze` on `Map` instances) so the fast path can append in-place\r\n- Renamed shadowed `activities` variable to `activitiesForKey` in `keyToActivitiesMap` construction\r\n- Preserved the original full-recalculation as the slow path fallback\r\n\r\n---\r\n\r\n- [x] I have added tests and executed them locally\r\n- [x] I have updated CHANGELOG.md\r\n- [x] ~I have updated documentation~",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-03-27T16:08:30Z",
+  "merged_at": "2026-03-27T21:17:44Z",
+  "base": "main",
+  "head": "fix/keyer-perf",
+  "base_sha": "8aef13a13709cb1ac0cd480ace2f543e43c6f88a",
+  "head_sha": "cbd323c5eb169e5b24fd116477fc086196c4c396",
+  "merge_sha": "45490e524781d6e7bda2b76509ba0cd32d8a5e82",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-03-27T17:31:14Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "eeb603bd9874e11c6b45cb3551629324f57a2f08",
+      "message": "wut",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "b8d11c3f47d2879ae2881623b7388f9df3a67b05",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "5bdd792e65e69d9e3e75c6e55b0f3472c6b50d83",
+      "message": "Fix tests",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "94a6804d2677bc40947c8927ceff500de3934530",
+      "message": "Update packages/api/src/providers/ActivityKeyer/ActivityKeyerComposer.tsx",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "cbd323c5eb169e5b24fd116477fc086196c4c396",
+      "message": "Fix lint",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/ActivityKeyer/ActivityKeyerComposer.tsx",
+      "status": "modified",
+      "additions": 120,
+      "deletions": 15,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-27T17:13:04Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-03-27T17:41:40Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-03-27T21:17:42Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T20:26:27Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T20:26:05Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:18:09Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:32Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:08Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:25:59Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:42Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T20:23:48Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:22Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:34Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:33Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:25:37Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:44Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:01Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:19Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:43Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:20Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:22:02Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:44Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:26:24Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:20:52Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:25:51Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:22:42Z"
+    },
+    {
+      "name": "Verify build-browser (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:53:53Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:13:54Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:16:22Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:13:43Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:14:10Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:15:36Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:13:55Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:14:05Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-03-27T19:14:50Z"
+    }
+  ]
+}

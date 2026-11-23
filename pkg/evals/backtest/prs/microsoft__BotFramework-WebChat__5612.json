@@ -1,0 +1,49 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5612,
+  "title": "Update CHAIN_OF_THOUGHTS.md",
+  "body": "Add the missing \"activity.type\" field\r\n\r\n<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n(No changelog entry for updating docs.)\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\nThe activity payload has missing `type` field, it should be `\"message\"` (or `\"typing\"` for livestreaming.)\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Update `docs/CHAIN_OF_THOUGHTS.md`\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] ~I have added tests and executed them locally~\r\n-  [x] ~I have updated `CHANGELOG.md`~\r\n-  [x] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] ~`package.json` and `package-lock.json` reviewed~\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-10-11T00:00:26Z",
+  "merged_at": "2025-10-11T00:35:15Z",
+  "base": "main",
+  "head": "compulim-patch-1",
+  "base_sha": "96f366b558544953a5b455e73d946355c5efac7f",
+  "head_sha": "11c747cf18322174385397df0f7a99454a0c46a2",
+  "merge_sha": "713c1ff180f200dbebf2167380978c064cd8ea68",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-10-11T00:01:28Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "11c747cf18322174385397df0f7a99454a0c46a2",
+      "message": "Update CHAIN_OF_THOUGHTS.md",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "docs/CHAIN_OF_THOUGHTS.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-10-11T00:01:49Z"
+    }
+  ],
+  "check_runs": []
+}

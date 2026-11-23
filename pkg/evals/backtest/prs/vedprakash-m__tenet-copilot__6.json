@@ -1,0 +1,79 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 6,
+  "title": "Bump typescript-eslint from 8.55.0 to 8.72.1 in /plugin/skills/tenet-starter-ts-web-api/template",
+  "body": "Bumps [typescript-eslint](https://github.com/typescript-eslint/typescript-eslint/tree/HEAD/packages/typescript-eslint) from 8.55.0 to 8.72.1.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a href=\"https://github.com/typescript-eslint/typescript-eslint/releases\">typescript-eslint's releases</a>.</em></p>\n<blockquote>\n<h2>v8.72.1</h2>\n<h2>8.72.1 (2026-10-26)</h2>\n<h3>🩹 Fixes</h3>\n<ul>\n<li><strong>eslint-plugin:</strong> [no-unnecessary-condition] false positives on unresolved conditional types (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/13062\">#13062</a>)</li>\n<li><strong>eslint-plugin:</strong> [no-unnecessary-type-assertion] bound recursive type traversal instead of catching stack overflows (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/13039\">#13039</a>)</li>\n<li><strong>typescript-estree:</strong> use one Program per tsconfig for the project service in single-run mode (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/12988\">#12988</a>)</li>\n</ul>\n<h3>❤️ Thank You</h3>\n<ul>\n<li>Evyatar Daud <a href=\"https://github.com/StyleShit\"><code>@​StyleShit</code></a></li>\n<li>Josh Ghoulberg 👻</li>\n</ul>\n<p>See <a href=\"https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.72.1\">GitHub Releases</a> for more information.</p>\n<p>You can read about our <a href=\"https://typescript-eslint.io/users/versioning\">versioning strategy</a> and <a href=\"https://typescript-eslint.io/users/releases\">releases</a> on our website.</p>\n<h2>v8.72.0</h2>\n<h2>8.72.0 (2026-10-19)</h2>\n<h3>🚀 Features</h3>\n<ul>\n<li><strong>eslint-plugin:</strong> lazy load rules (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/13010\">#13010</a>)</li>\n<li><strong>eslint-plugin:</strong> [await-thenable] add <code>allowMixedPromiseArrays</code> option (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/12992\">#12992</a>)</li>\n<li><strong>typescript-estree:</strong> error on abstract keyword that precedes export (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/13019\">#13019</a>)</li>\n</ul>\n<h3>🩹 Fixes</h3>\n<ul>\n<li><strong>ast-spec:</strong> add <code>JSXFragment</code> to <code>JSXAttribute['value']</code> (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/13051\">#13051</a>)</li>\n<li><strong>eslint-plugin:</strong> [prefer-readonly-parameter-types] check where allowed type aliases are declared (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/13016\">#13016</a>)</li>\n<li><strong>eslint-plugin:</strong> [no-deprecated] report deprecated properties in object literals (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/12704\">#12704</a>)</li>\n<li><strong>eslint-plugin:</strong> use isTypeLiteralType instead of type.isLiteral() to include bigint literals on TS &lt; 5.0 (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/13053\">#13053</a>)</li>\n<li><strong>eslint-plugin:</strong> [require-array-sort-compare] check tuples (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/13058\">#13058</a>)</li>\n<li><strong>eslint-plugin:</strong> [require-array-sort-compare] ignore extra this type argument on TS &lt; 5.1 (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/13055\">#13055</a>)</li>\n<li><strong>type-utils:</strong> discriminateAnyType crashes when calling getAwaitedType on awaited type in TS &lt; 5.0 (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/13054\">#13054</a>)</li>\n<li><strong>typescript-estree:</strong> include leading and trailing comments &amp; whitespace in Program range (<a href=\"https://redirect.github.com/typescript-eslint/typescript-eslint/pull/12991\">#12991</a>)</li>\n</ul>\n<h3>❤️ Thank You</h3>\n<ul>\n<li>Evyatar Daud <a href=\"https://github.com/StyleShit\"><code>@​StyleShit</code></a></li>\n<li>Junichiro Kasuya <a href=\"https://github.com/jksy\"><code>@​jksy</code></a></li>\n<li>Mitch Fultz <a href=\"https://github.com/fitchmultz\"><code>@​fitchmultz</code></a></li>\n<li>Shaan GS <a href=\"https://github.com/ShaanGS\"><code>@​ShaanGS</code></a></li>\n</ul>\n<p>See <a href=\"https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.72.0\">GitHub Releases</a> for more information.</p>\n<p>You can read about our <a href=\"https://typescript-eslint.io/users/versioning\">versioning strategy</a> and <a href=\"https://typescript-eslint.io/users/releases\">releases</a> on our website.</p>\n<h2>v8.71.2</h2>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a href=\"https://github.com/typescript-eslint/typescript-eslint/blob/main/packages/typescript-eslint/CHANGELOG.md\">typescript-eslint's changelog</a>.</em></p>\n<blockquote>\n<h2>8.72.1 (2026-10-26)</h2>\n<p>This was a version bump only for typescript-eslint to align it with other projects, there were no code changes.</p>\n<p>See <a href=\"https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.72.1\">GitHub Releases</a> for more information.</p>\n<p>You can read about our <a href=\"https://typescript-eslint.io/users/versioning\">versioning strategy</a> and <a href=\"https://typescript-eslint.io/users/releases\">releases</a> on our website.</p>\n<h2>8.72.0 (2026-10-19)</h2>\n<p>This was a version bump only for typescript-eslint to align it with other projects, there were no code changes.</p>\n<p>See <a href=\"https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.72.0\">GitHub Releases</a> for more information.</p>\n<p>You can read about our <a href=\"https://typescript-eslint.io/users/versioning\">versioning strategy</a> and <a href=\"https://typescript-eslint.io/users/releases\">releases</a> on our website.</p>\n<h2>8.71.2 (2026-10-12)</h2>\n<p>This was a version bump only for typescript-eslint to align it with other projects, there were no code changes.</p>\n<p>See <a href=\"https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.71.2\">GitHub Releases</a> for more information.</p>\n<p>You can read about our <a href=\"https://typescript-eslint.io/users/versioning\">versioning strategy</a> and <a href=\"https://typescript-eslint.io/users/releases\">releases</a> on our website.</p>\n<h2>8.71.1 (2026-10-05)</h2>\n<p>This was a version bump only for typescript-eslint to align it with other projects, there were no code changes.</p>\n<p>See <a href=\"https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.71.1\">GitHub Releases</a> for more information.</p>\n<p>You can read about our <a href=\"https://typescript-eslint.io/users/versioning\">versioning strategy</a> and <a href=\"https://typescript-eslint.io/users/releases\">releases</a> on our website.</p>\n<h2>8.71.0 (2026-09-28)</h2>\n<p>This was a version bump only for typescript-eslint to align it with other projects, there were no code changes.</p>\n<p>See <a href=\"https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.71.0\">GitHub Releases</a> for more information.</p>\n<p>You can read about our <a href=\"https://typescript-eslint.io/users/versioning\">versioning strategy</a> and <a href=\"https://typescript-eslint.io/users/releases\">releases</a> on our website.</p>\n<h2>8.70.1 (2026-09-21)</h2>\n<p>This was a version bump only for typescript-eslint to align it with other projects, there were no code changes.</p>\n<p>See <a href=\"https://github.com/typescript-eslint/typescript-eslint/releases/tag/v8.70.1\">GitHub Releases</a> for more information.</p>\n<p>You can read about our <a href=\"https://typescript-eslint.io/users/versioning\">versioning strategy</a> and <a href=\"https://typescript-eslint.io/users/releases\">releases</a> on our website.</p>\n<h2>8.70.0 (2026-09-07)</h2>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a href=\"https://github.com/typescript-eslint/typescript-eslint/commit/4ad6b7553781fa3c93fc26642d7219d2e6624504\"><code>4ad6b75</code></a> chore(release): publish 8.72.1</li>\n<li><a href=\"https://github.com/typescript-eslint/typescript-eslint/commit/77576945345c1537635e617ea0d4b34b003b15ff\"><code>7757694</code></a> chore: cleanup typecheck &amp; build and fix race condition (<a href=\"https://github.com/typescript-eslint/typescript-eslint/tree/HEAD/packages/typescript-eslint/issues/13071\">#13071</a>)</li>\n<li><a href=\"https://github.com/typescript-eslint/typescript-eslint/commit/a4c2603d3e4fd43b33bc25b82457716e9f7cef71\"><code>a4c2603</code></a> chore(release): publish 8.72.0</li>\n<li><a href=\"https://github.com/typescript-eslint/typescript-eslint/commit/7488d681f6e0e96c2aaa1eee9c3d1b9b1ef077cb\"><code>7488d68</code></a> chore(release): publish 8.71.2</li>\n<li><a href=\"https://github.com/typescript-eslint/typescript-eslint/commit/d57b8da272375b6a45270639894a793933208a91\"><code>d57b8da</code></a> chore(release): publish 8.71.1</li>\n<li><a href=\"https://github.com/typescript-eslint/typescript-eslint/commit/8695664c5ee3fbb8fd76907fc45e148579cc3162\"><code>8695664</code></a> chore(release): publish 8.71.0</li>\n<li><a href=\"https://github.com/typescript-eslint/typescript-eslint/commit/23d38ceeb8fb1237f55cb62fc2b54419e1fa1ed7\"><code>23d38ce</code></a> chore(release): publish 8.70.1</li>\n<li><a href=\"https://github.com/typescript-eslint/typescript-eslint/commit/eb42d9b7e7ab0eca543bc16b726688624c532fc6\"><code>eb42d9b</code></a> chore: cleanup and fix Nx dependencies and missing tasks (<a href=\"https://github.com/typescript-eslint/typescript-eslint/tree/HEAD/packages/typescript-eslint/issues/12897\">#12897</a>)</li>\n<li><a href=\"https://github.com/typescript-eslint/typescript-eslint/commit/8c8053103f4ab8df3105826181c43fa257289a73\"><code>8c80531</code></a> chore: fix typos in comments and docs (<a href=\"https://github.com/typescript-eslint/typescript-eslint/tree/HEAD/packages/typescript-eslint/issues/12846\">#12846</a>)</li>\n<li><a href=\"https://github.com/typescript-eslint/typescript-eslint/commit/b6b86a15dd42aaa0e37054683cb5606c8fd203c2\"><code>b6b86a1</code></a> chore: migrate to nx 23.2.0 (<a href=\"https://github.com/typescript-eslint/typescript-eslint/tree/HEAD/packages/typescript-eslint/issues/12843\">#12843</a>)</li>\n<li>Additional commits viewable in <a href=\"https://github.com/typescript-eslint/typescript-eslint/commits/v8.72.1/packages/typescript-eslint\">compare view</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=typescript-eslint&package-manager=npm_and_yarn&previous-version=8.55.0&new-version=8.72.1)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can also trigger a rebase manually by commenting `@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it\n- `@dependabot show <dependency name> ignore conditions` will show all of the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop Dependabot creating any more for this major version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop Dependabot creating any more for this minor version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or upgrade to it yourself)\n\n\n</details>",
+  "author": {
+    "login": "dependabot[bot]",
+    "type": "Bot",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-02T00:43:32Z",
+  "merged_at": "2026-11-05T03:59:12Z",
+  "base": "main",
+  "head": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/typescript-eslint-8.72.1",
+  "base_sha": "2986067fb3ce848624f71a5192c5ec35759d36e9",
+  "head_sha": "c7d2bfa39951c18e6358f6fb761ceffb3340ce5a",
+  "merge_sha": "4230bb94c08c2e24d20cd239b8f936e6acc7f449",
+  "labels": [
+    "dependencies",
+    "javascript"
+  ],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "c7d2bfa39951c18e6358f6fb761ceffb3340ce5a",
+      "message": "Bump typescript-eslint",
+      "author": "dependabot[bot]"
+    }
+  ],
+  "files": [
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/package-lock.json",
+      "status": "modified",
+      "additions": 116,
+      "deletions": 90,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "windows-portability",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:45:44Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:55:27Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:51:29Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:51:36Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:56:32Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:45:59Z"
+    }
+  ]
+}

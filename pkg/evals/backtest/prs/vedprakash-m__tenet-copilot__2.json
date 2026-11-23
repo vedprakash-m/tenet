@@ -1,0 +1,76 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 2,
+  "title": "Bump @fastify/cookie from 11.1.3 to 11.1.5 in /plugin/skills/tenet-starter-ts-web-api/template",
+  "body": "Bumps [@fastify/cookie](https://github.com/fastify/fastify-cookie) from 11.1.3 to 11.1.5.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a href=\"https://github.com/fastify/fastify-cookie/releases\">@​fastify/cookie's releases</a>.</em></p>\n<blockquote>\n<h2>v11.1.5</h2>\n<h2>What's Changed</h2>\n<ul>\n<li>refactor: pass only encode option to cookie serializer, add tests by <a href=\"https://github.com/ezefernandezyf\"><code>@​ezefernandezyf</code></a> in <a href=\"https://redirect.github.com/fastify/fastify-cookie/pull/377\">fastify/fastify-cookie#377</a></li>\n</ul>\n<h2>New Contributors</h2>\n<ul>\n<li><a href=\"https://github.com/ezefernandezyf\"><code>@​ezefernandezyf</code></a> made their first contribution in <a href=\"https://redirect.github.com/fastify/fastify-cookie/pull/377\">fastify/fastify-cookie#377</a></li>\n</ul>\n<p><strong>Full Changelog</strong>: <a href=\"https://github.com/fastify/fastify-cookie/compare/v11.1.4...v11.1.5\">https://github.com/fastify/fastify-cookie/compare/v11.1.4...v11.1.5</a></p>\n<h2>v11.1.4</h2>\n<h2>What's Changed</h2>\n<ul>\n<li>perf(signer): early exit on missing delimiter in unsign to avoid redundant HMAC calculations by <a href=\"https://github.com/TalhaHunter101\"><code>@​TalhaHunter101</code></a> in <a href=\"https://redirect.github.com/fastify/fastify-cookie/pull/379\">fastify/fastify-cookie#379</a></li>\n<li>fix: forward encode option to cookie serializer by <a href=\"https://github.com/lprnmns\"><code>@​lprnmns</code></a> in <a href=\"https://redirect.github.com/fastify/fastify-cookie/pull/374\">fastify/fastify-cookie#374</a></li>\n</ul>\n<h2>New Contributors</h2>\n<ul>\n<li><a href=\"https://github.com/TalhaHunter101\"><code>@​TalhaHunter101</code></a> made their first contribution in <a href=\"https://redirect.github.com/fastify/fastify-cookie/pull/379\">fastify/fastify-cookie#379</a></li>\n<li><a href=\"https://github.com/lprnmns\"><code>@​lprnmns</code></a> made their first contribution in <a href=\"https://redirect.github.com/fastify/fastify-cookie/pull/374\">fastify/fastify-cookie#374</a></li>\n</ul>\n<p><strong>Full Changelog</strong>: <a href=\"https://github.com/fastify/fastify-cookie/compare/v11.1.3...v11.1.4\">https://github.com/fastify/fastify-cookie/compare/v11.1.3...v11.1.4</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a href=\"https://github.com/fastify/fastify-cookie/commit/a96460bbc45e7bf441f6fc155112228b1e53c7c0\"><code>a96460b</code></a> Bumped v11.1.5</li>\n<li><a href=\"https://github.com/fastify/fastify-cookie/commit/7f9551ebef54fa4abbe01ab5ab73f6d5da488b78\"><code>7f9551e</code></a> fix: forward custom encode option to cookie serializer (<a href=\"https://redirect.github.com/fastify/fastify-cookie/issues/377\">#377</a>)</li>\n<li><a href=\"https://github.com/fastify/fastify-cookie/commit/4f47cf1942897c238eff05a55694cec4067b2359\"><code>4f47cf1</code></a> Bumped v11.1.4</li>\n<li><a href=\"https://github.com/fastify/fastify-cookie/commit/c07e472c837c9488ad97b54a115cf0ea8fc313ee\"><code>c07e472</code></a> fix: forward encode option to cookie serializer (<a href=\"https://redirect.github.com/fastify/fastify-cookie/issues/374\">#374</a>)</li>\n<li><a href=\"https://github.com/fastify/fastify-cookie/commit/d27beb426b16815868ee61a9ada4b4f775d8dc6b\"><code>d27beb4</code></a> perf(signer): add early delimiter check in unsign to avoid redundant HMAC com...</li>\n<li>See full diff in <a href=\"https://github.com/fastify/fastify-cookie/compare/v11.1.3...v11.1.5\">compare view</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=@fastify/cookie&package-manager=npm_and_yarn&previous-version=11.1.3&new-version=11.1.5)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can also trigger a rebase manually by commenting `@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it\n- `@dependabot show <dependency name> ignore conditions` will show all of the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop Dependabot creating any more for this major version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop Dependabot creating any more for this minor version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or upgrade to it yourself)\n\n\n</details>",
+  "author": {
+    "login": "dependabot[bot]",
+    "type": "Bot",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-02T00:43:07Z",
+  "merged_at": "2026-11-05T03:59:12Z",
+  "base": "main",
+  "head": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/fastify/cookie-11.1.5",
+  "base_sha": "2986067fb3ce848624f71a5192c5ec35759d36e9",
+  "head_sha": "c54df1204237206ccc0686aafdf31806be2025bd",
+  "merge_sha": "32d30d96cdf276a824e76e0816d6e31cbed151fe",
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "c54df1204237206ccc0686aafdf31806be2025bd",
+      "message": "Bump @fastify/cookie in /plugin/skills/tenet-starter-ts-web-api/template",
+      "author": "dependabot[bot]"
+    }
+  ],
+  "files": [
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/package-lock.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "windows-portability",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:45:30Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:49:32Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:50:59Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:44:50Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:50:48Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-02T00:55:07Z"
+    }
+  ]
+}

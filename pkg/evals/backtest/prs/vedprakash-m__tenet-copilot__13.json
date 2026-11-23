@@ -1,0 +1,260 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 13,
+  "title": "feat: INS-05 capability cache keys and provenance",
+  "body": "## Scope\nImplement only INS-05: each shipped capability declares dependencies; its key binds explicit host version, plugin version, project policy and declared-input hashes. Reuse unchanged entries with original provenance; unavailable inputs degrade only their dependent capability. The optional schema-1 cache persists through the ordinary mutation pipeline only when the verb already publishes state: cache refresh does not turn a no-op/preview into accounting or publication. Status is read-only and doctor remains stateless. Descriptor resolution is not a new native-host observation.\n\n## Changes\n- Add strict closed-key cache/provenance schemas, adapter preparation and pipeline wiring.\n- Add seven [INS-05] controls and a built scratch UAT journey for selective reuse, persisted provenance and repeated-open no-op preservation.\n- Update canonical specifications, install/help and plugin text.\n\n## Evidence\nExact head `211958bbcadf17fded7f34aec707feb0216c3e0c`: [PR run42409929093 attempt2](https://github.com/vedprakash-m/tenet/actions/runs/42409929093/attempts/2) and [push run42409925194 attempt2](https://github.com/vedprakash-m/tenet/actions/runs/42409925194/attempts/2) both completed successfully. All six surfaced PR platform checks pass. PR jobs: Ubuntu128527426887, macOS128527465352, Windows128527424809. Push jobs: Ubuntu128528704498, macOS128528703955, Windows128528702659.\n\nBoth POSIX platforms passed full CI (1,755/1,755 tests) and built scratch UAT on Node24 and Node22.12.0. Both UAT executions include the ten-entry INS-05 selective-cache/provenance and repeated-open no-op journey. Windows passed all bounded gates, including starter restore on both Node versions.\n\nOriginal attempt1 Windows starter five-second timeouts remain preserved. Both unchanged-head failed-job retries passed without source or timeout changes. Read-only comparison demonstrated run variation, not an isolated cause; a pre-existing runtime defect remains unproven.\n\nLocal focused controls, typecheck, all lints, M0 structural coverage, 785 KB/900 KB build, complete payload and same-toolchain reproducibility pass. Staged and outgoing privacy scans found no likely leaks; scans prove no absence. Windows mutating workflows remain deliberately unsupported: the local persistence control verifies refusal, not POSIX persistence. Native host behavior remains unobserved.\n\nPrior head53d6fa6 exposed seven no-op/accounting regressions. A portable regression reproduced the root cause before repair be8fbd3: absent verb state was promoted into publication by cache attachment. Absent state now stays absent; repaired-head full CI/UAT proves the correction.\n\n## Dependencies and review\nIncludes approved D01 capacity-only commits cherry-picked from the coordinated lane; no schema-2 dependency or activation. Shared D01 tooling-portability correction070bb23 was cherry-picked unchanged as53d6fa6; 11 local portability controls pass, including exact921600-byte acceptance/921601-byte rejection. Implementation/schema commit:649d2338f101116e506f682927c9f1e6ede0f714.\n\nExecutable/effects changes retain the solo72-hour review window. Owner merges; no automatic merge. Predicted changelog integration conflict with capacity PR will be addressed only after prerequisite merge and owner-authorized branch update, preserving all feature entries.",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-07T19:55:29Z",
+  "merged_at": "2026-11-09T18:03:24Z",
+  "base": "main",
+  "head": "vedprakash-m-capability-cache-keys",
+  "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
+  "head_sha": "211958bbcadf17fded7f34aec707feb0216c3e0c",
+  "merge_sha": "cbd37e16db25bcb48305b7d08573e6b5c661ad11",
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "c69403652bb680026dc34bcdf03a5d24e0c1553f",
+      "message": "build: apply approved D01 responsibility and bundle ceilings",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "1909d9e390084c33084eb66e21cd89e1d965fb1c",
+      "message": "docs: record D01 capacity scope and measured candidate totals",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "649d2338f101116e506f682927c9f1e6ede0f714",
+      "message": "feat: cache capabilities by declared dependency identity",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "fa9f59217806420d8324f02d7e32aef6e427daf7",
+      "message": "docs: specify INS-05 cache identity and provenance",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "53d6fa6b0af66c4e3c16d2553a6385bbc4189395",
+      "message": "test: align portability controls with approved capacity ceiling",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "be8fbd3e84bd08489116201f662656d4bafa6dbb",
+      "message": "fix: preserve no-op state boundaries during capability refresh",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "211958bbcadf17fded7f34aec707feb0216c3e0c",
+      "message": "docs: clarify cache publication and no-op regression evidence",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/user/install-and-remove.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/host-plugin.ts",
+      "status": "modified",
+      "additions": 51,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/capabilities.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/schemas.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-capabilities.ts",
+      "status": "added",
+      "additions": 30,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-mutate.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/ports/types.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/inspect.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/wire.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/capability-cache.test.ts",
+      "status": "added",
+      "additions": 142,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/invariants.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/quality-gate.test.ts",
+      "status": "modified",
+      "additions": 29,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/tooling-portability.test.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/com.github.copilot/descriptor.json",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet/SKILL.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "specs/PRD.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "specs/tech-spec.md",
+      "status": "modified",
+      "additions": 32,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "specs/ux-spec.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/build.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/lint-quality.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "tools/quality-baseline.json",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/uat.mjs",
+      "status": "modified",
+      "additions": 40,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:27:31Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:04:09Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:09:17Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:00:18Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:32:26Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:04:27Z"
+    }
+  ]
+}

@@ -1,0 +1,454 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5950,
+  "title": "Start Markdown headings at level 2",
+  "body": "> Fixes #4940\n\n## Changelog Entry\n\n### Changed\n\n- 💥 Changed [#4940](https://github.com/microsoft/BotFramework-WebChat/issues/4940), Markdown headings start at level 2 in each message, set the new `styleOptions.markdownHeadingLevelStartAt` to change it, also for Adaptive Cards headings, in PR [#5950](https://github.com/microsoft/BotFramework-WebChat/pull/5950), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nMarkdown `#` rendered `<h1>`, although the page owns level one. Each message's top heading now renders at the new style option (default `2`), others keep their depth and look.\n\n## Design\n\n- The top heading moves to the start level instead of shifting all levels, so `##` stays `<h2>`; while streaming, levels can change if a higher heading arrives later.\n- Runs on the whole message after the HTML content transform (which streams per block); micromark has no heading option.\n\n## Specific Changes\n\n- `headingLevelDocumentMod.ts`: moves headings, beyond 6 with `aria-level`; `.spec.ts` with invalid classes\n- Adaptive Cards: `textBlock.headingLevel` follows the option, no nested headings\n- `markdown/headingLevels.html`: levels 2–7, snapshot 1 as before\n- `headingLevels.startAt.html`: levels 3–8\n- `headingLevels.startsAtLevel2.html`: `##`, `###` stay 2, 3\n- `adaptiveCard/headingLevel.markdownInHeading.html`: one heading\n- `headingLevel.startAt.html`: level 3\n- `markdownStreaming.html`: TODO says why its skip stays\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [x] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-21T23:22:51Z",
+  "merged_at": "2026-10-22T06:26:03Z",
+  "base": "main",
+  "head": "OEvgeny/fix-4940-markdown-heading-levels",
+  "base_sha": "39e165e164d6888a6ec7e6f240dd945bfe865187",
+  "head_sha": "06382fa93d06b760fda277f6c54220632c3ca4b7",
+  "merge_sha": "4ee5562cedfb7edd59970bdaa1e8978750c5115f",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-21T23:31:44Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "6334afab35b542c2d2f7a627af083070920d462e",
+      "message": "Markdown headings start at level 2",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "06146d143ac7267023ff0cba735f5c3c3bbbcbb0",
+      "message": "Add styleOptions.markdownHeadingLevelOffset",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "2b409ee7ccf12aca27b9e53390f5858057ecb25e",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7d2e204f60e09fa029e1506dfdfbb3d006a06ce2",
+      "message": "Merge remote-tracking branch 'origin/main' into OEvgeny/fix-4940-markdown-heading-levels",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "e873896dca4e08ac5e1ce6e5cf0ba14fd6ec5eca",
+      "message": "Start each message's top Markdown heading at styleOptions.markdownHeadingLevelStartAt",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "5464a41c46b0993ae3548544bce7b4e8a9f0dec8",
+      "message": "Type markdownHeadingLevelStartAt as 1-6 and parse written heading levels strictly",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "06382fa93d06b760fda277f6c54220632c3ca4b7",
+      "message": "Merge branch 'main' into OEvgeny/fix-4940-markdown-heading-levels",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5950-fix-4940-markdown-heading-levels.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/adaptiveCard/headingLevel.markdownInHeading.html",
+      "status": "added",
+      "additions": 69,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/adaptiveCard/headingLevel.markdownInHeading.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/adaptiveCard/headingLevel.startAt.html",
+      "status": "added",
+      "additions": 82,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/adaptiveCard/headingLevel.startAt.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/headingLevels.html",
+      "status": "added",
+      "additions": 56,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/headingLevels.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/headingLevels.startAt.html",
+      "status": "added",
+      "additions": 69,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/headingLevels.startAt.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/headingLevels.startsAtLevel2.html",
+      "status": "added",
+      "additions": 52,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/headingLevels.startsAtLevel2.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/vnext/markdownStreaming.html",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/StyleOptions.ts",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/defaultStyleOptions.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/normalizeStyleOptions.ts",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/private/flattenNestedHeadings.ts",
+      "status": "added",
+      "additions": 16,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/private/renderAdaptiveCard.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Styles/adaptiveCardHostConfig.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/RenderMarkdown.module.css",
+      "status": "modified",
+      "additions": 36,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/private/headingLevelDocumentMod.spec.ts",
+      "status": "added",
+      "additions": 105,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/private/headingLevelDocumentMod.ts",
+      "status": "added",
+      "additions": 56,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/useRenderMarkdownAsHTML.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/useStreamingMarkdownWithDefinitions.ts",
+      "status": "modified",
+      "additions": 28,
+      "deletions": 3,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-21T23:30:37Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-21T23:31:52Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T00:28:44Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T00:32:46Z"
+    },
+    {
+      "state": "CHANGES_REQUESTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T00:33:10Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-22T01:08:06Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T05:36:06Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T05:39:47Z"
+    },
+    {
+      "state": "CHANGES_REQUESTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T05:40:51Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-22T05:56:04Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-22T05:56:06Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T06:06:43Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:25:39Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:25:59Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:23:25Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:23:49Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:25:18Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:22:49Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:23:21Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:25:17Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:24:13Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:24:11Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:24:21Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:23:42Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:24:26Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:24:35Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:24:28Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:23:10Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:24:35Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:25:22Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:24:24Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:18:28Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:17:23Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:18:31Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:09:49Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:09:33Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:14:51Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:11:10Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:09:37Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:10:02Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:07:56Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:07:17Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:08:04Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:08:51Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T06:08:06Z"
+    }
+  ]
+}

@@ -1,0 +1,476 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5886,
+  "title": "Fix receipt card text being truncated when text spacing is increased",
+  "body": "> Fixes #5696\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed receipt card text being truncated when text spacing is increased: line items, facts, and amounts now wrap instead of being cut off with an ellipsis, even when `richCardWrapTitle` is `false`; the price column of items with an image is now as wide as in other rows, and each fact is its own row so its key and value stay aligned, fixes [#5696](https://github.com/microsoft/BotFramework-WebChat/issues/5696), in PR [#5886](https://github.com/microsoft/BotFramework-WebChat/pull/5886), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThe receipt card is converted to an Adaptive Card. Its line items (title, subtitle, text, price), facts, and VAT/tax/total were single-line `TextBlock`s (`wrap: false`, or `wrap: richCardWrapTitle`, which defaults to `false`). The Adaptive Cards renderer shows those with `white-space: nowrap` and an ellipsis. With WCAG 1.4.12 text spacing, text gets wider and more of it is cut off (for example \"Surface Pro 4 (2) - No subtitle, No text.\" and the prices). Some of it is cut off even without text spacing. These text blocks now wrap, so no text is lost. Facts were one column set with all keys in one column and all values in the other. When text wraps, keys and values would no longer line up, so each fact is now its own row. In items with an image, the price column was only 10% of the card (about 30 px), so once prices wrapped they split inside the number at normal spacing. That column is now 25%, the same as in every other row.\n\n## Design\n\n- The receipt card title still follows `richCardWrapTitle`, like the titles of hero and thumbnail cards. Line items are content, such as the product name, description, and price, so they always wrap. The JSDoc of `richCardWrapTitle` now says so.\n- Items with an image use column widths `[15, 60, 25]` instead of `[15, 75, 10]`. I measured this in Edge at card widths from 264 to 340 px (the default maximum), in both themes. At normal spacing, no amount is split on either MockBot receipt card. A card with typical prices (`$1,299.99`, `$24.99`, `$149.00`) is also fine, except for a bold 4-digit total at 279 px. Under WCAG 1.4.12 spacing, 4-digit amounts such as `$1,299.99` still wrap inside the number. Wrapping is the right fallback there, because nothing is lost: none of the 48 measured combinations has clipped text. The trade-off is that the title and description column shrinks from 75% to 60%, so cards with long item text get taller. For example, the MockBot receipt card is about 45 px taller.\n- Follow-up: for amounts that never split, `AdaptiveCardBuilder.addColumnSet` could accept `'auto'` and `'stretch'`. Amount rows would then use `['stretch', 'auto']`, and items with an image `[15, 85]` with a nested `['stretch', 'auto']`. This sizes amounts to their content, but it is a bigger layout change. A long non-numeric price would also squeeze the label.\n- Hero and thumbnail card titles and subtitles still truncate by default under text spacing (`richCardWrapTitle: false`). Changing that default affects every rich card and is out of scope here.\n\n## Specific Changes\n\n- `ReceiptCardContent.tsx`: set `wrap: true` on line item title, subtitle, text, and price, on fact keys and values, and on VAT/tax/total. Each fact is now its own column set. Items with an image use column widths `[15, 60, 25]` instead of `[15, 75, 10]`.\n- `AdaptiveCardsStyleOptions.ts`: the `richCardWrapTitle` JSDoc now says that receipt card line items, facts, and amounts always wrap.\n- Added `__tests__/html2/richCard/receiptCard.textSpacing.html` and a `.fluent.html` variant. They render a receipt card with the same content as MockBot's `receiptcard` command, with the WCAG 1.4.12 text spacing stylesheet applied. They assert that no `.ac-textBlock` overflows (`scrollWidth`/`scrollHeight`) and that every fact value is on the same line as its key, then take snapshots of the bottom and top of the card.\n- Updated snapshots of the tests that render receipt cards: `replyToId/cardAction/receiptCard.html`, `richCard/receiptCard.html`, `richCard/receiptCard.withQuantity.html`, `accessibility/liveRegion/attachment/receiptCard.html`, and `accessibility/adaptiveCard/withTapAction.html`.\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have updated `CHANGELOG.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-17T07:23:35Z",
+  "merged_at": "2026-10-17T08:18:32Z",
+  "base": "main",
+  "head": "OEvgeny/fix-5696-receipt-card-text-spacing",
+  "base_sha": "99a73f5704b88cd5b84ca081beef08c241c6feb6",
+  "head_sha": "ef4f91faa8a92c1f3225baef01ba5d70edc34637",
+  "merge_sha": "f1be69e7b750c6cc666abf382e45bc935939e86e",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-17T07:44:35Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "fd494b7e1682c67d94aaa762f8f5568d14849617",
+      "message": "Fix receipt card text being truncated when text spacing is increased (#5696)",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "e995e256fc183a501c5853328bf64065ea034d22",
+      "message": "Add PR number to changelog",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "bf4b8829eef316d230f585eb7cfa711bf2a85109",
+      "message": "Merge branch 'main' into OEvgeny/fix-5696-receipt-card-text-spacing",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ef4f91faa8a92c1f3225baef01ba5d70edc34637",
+      "message": "Merge branch 'main' into OEvgeny/fix-5696-receipt-card-text-spacing",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/withTapAction.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/receiptCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/replyToId/cardAction/receiptCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/receiptCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/receiptCard.textSpacing.fluent.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/receiptCard.textSpacing.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/receiptCard.textSpacing.fluent.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/receiptCard.textSpacing.html",
+      "status": "added",
+      "additions": 114,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/receiptCard.textSpacing.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/receiptCard.textSpacing.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/receiptCard.withQuantity.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/AdaptiveCardsStyleOptions.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/ReceiptCardContent.tsx",
+      "status": "modified",
+      "additions": 27,
+      "deletions": 23,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2026-10-17T07:43:38Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-17T07:46:56Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-17T08:04:19Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:19:04Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:18:31Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:18:44Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:18:25Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:16:49Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:16:43Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:31Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:16:16Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:25Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:48Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:57Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:16:54Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:16:48Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:16:18Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:30Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:16:09Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:09Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:16:46Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:17Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:18:20Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:16Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:13:01Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:11:31Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:12:26Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:44Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:57Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:44Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:16:22Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:18:22Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:31Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:05Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:15:24Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:08Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:16:38Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:15:52Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:18:13Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:52Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:04Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:16:43Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:17:29Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:15:51Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:12:21Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:11:43Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:11:15Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:14Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:01Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:05:31Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:03:58Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:58Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:09:01Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:15Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:15Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:27Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:03:58Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:05:06Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:36Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:31Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:09:04Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:47Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:16Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:22Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T08:04:07Z"
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5417,
+  "title": "Feat: add preact compat tests",
+  "body": "### Changelog Entry\r\n\r\n(No changelog entry for tests change)\r\n\r\n## Description\r\n\r\nThis PR introduces a test suite to evaluate Preact compatibility with Web Chat. The motivation is two-fold:\r\n\r\n1. As React increasingly focuses on server components and treats web as a compilation target, we need to explore alternatives that better align with Web Chat's platform-first approach\r\n2. Preact offers several advantages that fit Web Chat's use cases:\r\n   - Native custom elements support\r\n   - Lighter bundle size\r\n   - ESM build availability\r\n   - React compatibility layer\r\n\r\nWhile this PR doesn't commit to a Preact migration, it establishes groundwork for future architectural decisions based on how the React ecosystem evolves.\r\n\r\n## Design\r\n\r\nFor now the only change needed was to add property setters to our custom elements to support Preact's property-first approach to unknown attributes (https://github.com/preactjs/preact/issues/4416 a way to denote either the attribute or property should be set from JSX is being discussed). The test suite verifies some Web Chat features under Preact:\r\n\r\n- Activity feedback\r\n- Custom elements\r\n- Math layout\r\n- Fluent theme compatibility\r\n\r\n## Specific Changes\r\n\r\n- Added property setters for `theme` and `language` in `CodeBlock` custom element to support Preact's attribute handling\r\n- Created Preact compatibility test suite in `__tests__/html2/preact/` covering:\r\n  - Activity feedback and view code button\r\n  - Fluent theme integration\r\n  - Custom element markdown handling\r\n  - Math layout specifications\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [x] I have added tests and executed them locally\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n- [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n- [x] Browser and platform compatibilities reviewed\r\n- [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n- [x] Documents reviewed (docs, samples, live demo)\r\n- [x] Internationalization reviewed (strings, unit formatting)\r\n- [x] `package.json` and `package-lock.json` reviewed\r\n- [x] Security reviewed (no data URIs, check for nonce leak)\r\n- [x] Tests reviewed (coverage, legitimacy)",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-01-31T19:13:37Z",
+  "merged_at": "2025-01-31T20:30:36Z",
+  "base": "main",
+  "head": "feat/preact-compat-tests",
+  "base_sha": "fc698710e03b8936c8107b46539131b3fd64b299",
+  "head_sha": "7a27f375c4bd56eb06dbc7a478e37acb428a76f9",
+  "merge_sha": "ab274ed7f6c108d3276e97af132868d0265f6da7",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-01-31T19:44:50Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "7a27f375c4bd56eb06dbc7a478e37acb428a76f9",
+      "message": "Feat: add preact compat tests",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html",
+      "status": "added",
+      "additions": 164,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/viewCodeButton.html",
+      "status": "added",
+      "additions": 145,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/viewCodeButton.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/viewCodeButton.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/viewCodeButton.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/fluentTheme/simple.html",
+      "status": "added",
+      "additions": 67,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/fluentTheme/simple.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/markdown/customElement.html",
+      "status": "added",
+      "additions": 66,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/markdown/customElement.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/math/layout.spec.html",
+      "status": "added",
+      "additions": 268,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/math/layout.spec.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/math/layout.spec.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/math/layout.spec.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/customElements/CodeBlock.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-01-31T20:00:25Z"
+    }
+  ],
+  "check_runs": []
+}

@@ -1,0 +1,258 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 11,
+  "title": "feat: report five measured or unknown kernel-call timing fields (NFR-05)",
+  "body": "## Scope\n\nImplement only NFR-05: additive `timing` on newly rendered responses and journal call records, scoped to `kernel-call`.\n\n- `active` and `tool` are measured elapsed milliseconds; overlapping, rejected and timed-out Runner calls count once in the tool interval union.\n- `provider`, `network` and `userWait` preserve exact host observations with timestamps, or are null with unknown provenance. The shipped plugin does not observe these host fields. Invalid/failed host observations fail explicitly; no estimates or null-result fallbacks.\n- Preserve stored schema, cumulative active-budget semantics, legacy optional cached responses and historical timing snapshots.\n- Update help, public documentation, canonical technical/UX specs, deterministic timing fixtures, historical-retry regression and built UAT assertions. Closed-registry refusal tests supply only timing ports and still prove no repository state creation.\n\n## Shared capacity dependency\n\nReuses the unchanged approved D01b capacity-only commits `f5ad92c` / `1acf8bf` (cherry-picked as `f134cb6` / `15fc299`) and portability-only repair `070bb23` (as `640c6f0`). These set central capacity to exactly 400,000 characters and bundle capacity to 900 KiB; this PR introduces no separate limits or schema-2 runtime. No INS-05, NFR-07 or AGT-12 implementation.\n\nCapacity is separately reviewed in #9. A read-only preview predicts a later CHANGELOG conflict after that prerequisite merges; preserve all feature entries and corrected capacity disclosure in any owner-authorized branch update. No branch rewrite or merge performed here.\n\n## Exact-head evidence\n\nHead: `c146269cdec6f52c2df296ed6a05c63dfbe11b2e`.\n\n[Untrusted run 42408963882, attempt 2](https://github.com/vedprakash-m/tenet/actions/runs/42408963882): **success**. Ubuntu/macOS full CI and real-repository built UAT pass on Node 24 and 22.12; Windows portability passes every step. The duplicate same-head push run 42408961206 was still running its macOS job at this evidence update.\n\nPreserved failure history: attempt 1 passed both POSIX jobs but a Windows copied starter schema-history test exceeded its unchanged 5-second deadline. Only the failed Windows job was retried after the whole run completed, at unchanged source; it passed. Starter source is identical to baseline and another passing cohort; observed run variation is not an isolated root cause. No timeout, evaluator or product logic was relaxed.\n\nLocal Windows: 34 timing/trace/quality tests, four timing-only transport refusal controls and 11 repaired portability controls pass. Typecheck, all lints, M0 structural coverage, build, payload verification and reproducibility pass. Built scratch help/status/unknown-verb/unsupported-mutation responses carry the five fields with unknown host provenance. Staged and publication-range privacy checks found no likely leaks (not proof of absence).\n\nWindows kernel mutations remain unsupported; native-host timing observations remain unobserved. Local planning/spec records remain git-ignored.\n\n## Owner review\n\nExecutable/effects change: preserve the solo **72-hour review window**. Owner merges; no merge or main push is authorized for the agent.",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-07T19:46:12Z",
+  "merged_at": "2026-11-09T18:03:24Z",
+  "base": "main",
+  "head": "vedprakash-m-kernel-timing-fields",
+  "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
+  "head_sha": "c146269cdec6f52c2df296ed6a05c63dfbe11b2e",
+  "merge_sha": "d9384de8c5615a280d1a14622e2f1a2ef1bc604c",
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "f134cb6f82f565fdb64eed1da058309922247660",
+      "message": "build: apply approved D01 responsibility and bundle ceilings",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "15fc29944eb7fa3d96d40b36528beb33ac768d73",
+      "message": "docs: record D01 capacity scope and measured candidate totals",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "d17152a7ef38be327035f84dab60de2050d12798",
+      "message": "feat: report five measured or unknown kernel-call timing fields",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "9f5359b40e4347c693e8f84cecfcc41f4003bd24",
+      "message": "docs: explain kernel-call timing scope and provenance",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "f3d664b2f6bc27a609efc629b3719cb1d8f55391",
+      "message": "fix: reject invalid empty host timing observations",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "640c6f0dc954d88d033efe709fdd77b704cc012c",
+      "message": "test: align portability controls with approved capacity ceiling",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "7276c7a943b59a3f057d0d6e199eaa3769df078f",
+      "message": "test: provide timing-only ports for inherited verb refusals",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "c146269cdec6f52c2df296ed6a05c63dfbe11b2e",
+      "message": "docs: record timing refusal and shared capacity validation corrections",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/system.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/schemas.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/timing.ts",
+      "status": "added",
+      "additions": 30,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-render.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-timing.ts",
+      "status": "added",
+      "additions": 42,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/ports/types.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/inspect.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/audit-boundaries.test.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/invariants.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/quality-gate.test.ts",
+      "status": "modified",
+      "additions": 29,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/timing.test.ts",
+      "status": "added",
+      "additions": 160,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/tooling-portability.test.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/trace-journal.test.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/README.md",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "specs/tech-spec.md",
+      "status": "modified",
+      "additions": 46,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "specs/ux-spec.md",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/build.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/lint-quality.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "tools/quality-baseline.json",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/uat.mjs",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:22:20Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:45:51Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:49:45Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:05:26Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:23:28Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:00:43Z"
+    }
+  ]
+}

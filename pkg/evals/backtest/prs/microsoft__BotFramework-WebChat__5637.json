@@ -1,0 +1,840 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5637,
+  "title": "feat: add preview of ongoing items in the group for copilot variant",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n- (Experimental) Reworked the copilot variant to align with the modern Copilot UX, in PR [#5630](https://github.com/microsoft/BotFramework-WebChat/pull/5630), by [@OEvgeny](https://github.com/OEvgeny), in PR [#5634](https://github.com/microsoft/BotFramework-WebChat/pull/5634), by [@OEvgeny](https://github.com/OEvgeny), in PR [#5637](https://github.com/microsoft/BotFramework-WebChat/pull/5637), by [@OEvgeny](https://github.com/OEvgeny),\r\n   - The legacy design is temporarily available as `copilot-deprecated` for migration\r\n   - Added loading animation for `copilot`, `copilot-deprecated` and `fluent` variants\r\n   - Added preview for ongoing messages in the group for `copilot` variant\r\n  \r\n## Description\r\n\r\nThis adds a preview of ongoing items from the activities group for the new `copilot` variant and shuffles a bit logics we use to display group title and status.\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n## -\r\n\r\n-\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [ ] I have added tests and executed them locally\r\n-  [ ] I have updated `CHANGELOG.md`\r\n-  [ ] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [ ] Browser and platform compatibilities reviewed\r\n-  [ ] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [ ] Documents reviewed (docs, samples, live demo)\r\n-  [ ] Internationalization reviewed (strings, unit formatting)\r\n-  [ ] `package.json` and `package-lock.json` reviewed\r\n-  [ ] Security reviewed (no data URIs, check for nonce leak)\r\n-  [ ] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2025-11-20T21:35:18Z",
+  "merged_at": "2025-11-20T23:59:08Z",
+  "base": "main",
+  "head": "feat/copilot-cot-fold",
+  "base_sha": "c8aae900f81ab19d96314098bdcf35d9bee052f1",
+  "head_sha": "721513d8fbbc7c1447781c2c2bd66f3daf451bf5",
+  "merge_sha": "1ebbb685be4ba601da2bbaa7aaf2c65d2b5c512e",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-11-20T21:45:22Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "e5466b8d1f5d71da0503443f1056170a78a20f50",
+      "message": "feat: add preview of ongoing items in the group for copilot variant",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "9342aa1837b5601921d50c908c4d777fd3c6837f",
+      "message": "self review",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "721513d8fbbc7c1447781c2c2bd66f3daf451bf5",
+      "message": "address copilot points",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "__tests__/html2/part-grouping/copilot-deprecated.dark.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot-deprecated.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.dark.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.dark.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.dark.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.dark.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.dark.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.dark.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.dark.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.dark.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.dark.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.dark.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.dark.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.copilot.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.skip.html",
+      "status": "added",
+      "additions": 369,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-10.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-11.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-12.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-13.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-14.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-15.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-16.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-10.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-11.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-12.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-13.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-14.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-15.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-16.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-17.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-18.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-19.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-20.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-21.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-22.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-23.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-24.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-25.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-26.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/PartGrouping/CollapsibleGrouping.module.css",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/PartGrouping/CollapsibleGroupingList.tsx",
+      "status": "added",
+      "additions": 30,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/PartGrouping/private/PartGroupingActivity.module.css",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/PartGrouping/private/PartGroupingActivity.tsx",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptActivityList.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptFocus.module.css",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/PartGroupingDecorator.module.css",
+      "status": "modified",
+      "additions": 71,
+      "deletions": 3,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-11-20T21:39:35Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-11-20T21:40:55Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2025-11-20T21:41:03Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-11-20T21:41:38Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-11-20T21:42:17Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-11-20T23:58:35Z"
+    }
+  ],
+  "check_runs": []
+}

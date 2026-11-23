@@ -1,0 +1,102 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5656,
+  "title": "fix: copilot variant adaptive card double padding",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n- (Experimental) Reworked the copilot variant to align with the modern Copilot UX, in PR [#5630](https://github.com/microsoft/BotFramework-WebChat/pull/5630), by [@OEvgeny](https://github.com/OEvgeny), in PR [#5634](https://github.com/microsoft/BotFramework-WebChat/pull/5634), by [@OEvgeny](https://github.com/OEvgeny), in PR [#5656](https://github.com/microsoft/BotFramework-WebChat/pull/5656), by [@OEvgeny](https://github.com/OEvgeny)\r\n\r\n## Description\r\n\r\nThis fixes double padding in adaptive cards in the new `copilot` variant.\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n## -\r\n\r\n-\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [ ] Browser and platform compatibilities reviewed\r\n-  [ ] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [ ] Documents reviewed (docs, samples, live demo)\r\n-  [ ] Internationalization reviewed (strings, unit formatting)\r\n-  [ ] `package.json` and `package-lock.json` reviewed\r\n-  [ ] Security reviewed (no data URIs, check for nonce leak)\r\n-  [ ] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2025-12-16T20:19:32Z",
+  "merged_at": "2025-12-16T22:06:44Z",
+  "base": "main",
+  "head": "fix/copilot-variant-cards",
+  "base_sha": "b758ff851124c5fe6b15a06bfc14c47a4697c7fd",
+  "head_sha": "3722f68f4989f6832800f5d7be32f02f56e0f010",
+  "merge_sha": "a394eb264e56a30cfedb4435480fc2bc88487e85",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-12-16T20:22:41Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "414e5aa07344215261d61c4407176bdc3ee5afa7",
+      "message": "fix: copilot variant adaptive card double padding",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "97322c37230ed9fc701030838dbb9629bf72d0b7",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "3722f68f4989f6832800f5d7be32f02f56e0f010",
+      "message": "fix formatting",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/adaptiveCards/layout.copilot.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/adaptiveCards/layout.copilot.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/adaptiveCards/layout.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/PartGroupingDecorator.module.css",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-12-16T20:20:23Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2025-12-16T20:26:07Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-12-16T20:27:15Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-12-16T22:06:42Z"
+    }
+  ],
+  "check_runs": []
+}

@@ -1,0 +1,546 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5533,
+  "title": "Bump samples to use `botframework-webchat@main` and rename packages",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n### Samples\r\n\r\n- Samples under `07.advanced-web-chat-apps` is being archived and will no longer receive updates, in PR [#5533](https://github.com/microsoft/BotFramework-WebChat/pull/5533), by [@compulim](https://github.com/compulim)\r\n\r\n## Description\r\n\r\nUpdated `npm run bump` script.\r\n\r\nBumped samples to use latest dependencies including `botframework-webchat@main`.\r\n\r\nArchived `01.getting-started/l.sharepoint-web-part` and `07.advanced-web-chat-apps` due to resources to update/test the samples. Removed `package-lock.json` so we are not in the business of `npm audit`.\r\n\r\nRenamed samples and moved under `@msinternal/*`.\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Updated `npm run bump` scripts for samples\r\n- Bumped dependencies in samples including `botframework-webchat@main`\r\n- Archived `01.getting-started/l.sharepoint-web-part` and `07.advanced-web-chat-apps`\r\n- Renamed samples and moved under `@msinternal/*`\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] ~I have added tests and executed them locally~\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-08-05T20:28:49Z",
+  "merged_at": "2025-08-06T23:21:25Z",
+  "base": "main",
+  "head": "feat-bump-samples",
+  "base_sha": "93043a902c93285811362f77257cf49539a5854d",
+  "head_sha": "c4ee0e75885cb9925da86c1215288b8180612adb",
+  "merge_sha": "154445d61f8161cf0cc174cb6c3c79289d630112",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-08-06T22:33:19Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "1edbfd7b59e1e15bb2ca639dcf71f53aed0840ef",
+      "message": "Bump to webchat@main and rename packages",
+      "author": "compulim"
+    },
+    {
+      "sha": "9050412ab986bc29abf75351334dab04134bdc35",
+      "message": "Move under @msinternal/*",
+      "author": "compulim"
+    },
+    {
+      "sha": "933972adb861e3facbe82e6e8058438e92fbaa95",
+      "message": "Update bump scripts",
+      "author": "compulim"
+    },
+    {
+      "sha": "7d49c71d002a863f724d30900a5927df5c84d26d",
+      "message": "Add private and move to @msinternal/*",
+      "author": "compulim"
+    },
+    {
+      "sha": "4c7f3f1ece4c5beabede82dabfe938155f0b9279",
+      "message": "Update bump scripts",
+      "author": "compulim"
+    },
+    {
+      "sha": "d81c8d661c574d49bf601bf850a428bb200207f9",
+      "message": "Remove --save-exact",
+      "author": "compulim"
+    },
+    {
+      "sha": "a4169912bd90f3b8aac374d088385061a1c53150",
+      "message": "Change author",
+      "author": "compulim"
+    },
+    {
+      "sha": "db2c2cc209e3c74d21aa5185248490e14fe07306",
+      "message": "Pin eslint-plugin-promise",
+      "author": "compulim"
+    },
+    {
+      "sha": "76967d67c84b91b77548614c5b50e2edd70ffc83",
+      "message": "Pin eslint@8",
+      "author": "compulim"
+    },
+    {
+      "sha": "99104ae3d6602a9d5ac15decff887d5fb02b3879",
+      "message": "Add overrides",
+      "author": "compulim"
+    },
+    {
+      "sha": "9a535b42abce4edda46a015011bfd1eb94b52950",
+      "message": "Use ^4.23.2",
+      "author": "compulim"
+    },
+    {
+      "sha": "019fd0c3e119d3bf5f0468eb311316f01e3323b8",
+      "message": "Add overrides for restify",
+      "author": "compulim"
+    },
+    {
+      "sha": "bf693604b66d8ba4b075821181ddaf69d2937633",
+      "message": "Remove unnecessary bump scripts",
+      "author": "compulim"
+    },
+    {
+      "sha": "40164bc1a2782b71c3be25e8aba157b19a4a508a",
+      "message": "npm run bump",
+      "author": "compulim"
+    },
+    {
+      "sha": "5cefe8ca52f5b5710e47e3f685d201fb0fca5cfc",
+      "message": "Archived 07.advanced-web-chat-apps",
+      "author": "compulim"
+    },
+    {
+      "sha": "54ff1e9647af74c86889276f260eb8359aa7b38d",
+      "message": "Add entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "eb98f5239db70b6a369b4385a02e525a64335b18",
+      "message": "Skip 07",
+      "author": "compulim"
+    },
+    {
+      "sha": "7d8ac1ca4ef8a2aff0996c9e008855e05280f484",
+      "message": "Include in workspaces",
+      "author": "compulim"
+    },
+    {
+      "sha": "446413d5285dbd1d10f65e9b8c2b310e49b56596",
+      "message": "Add postaudit",
+      "author": "compulim"
+    },
+    {
+      "sha": "a096d2a510bbb694a566be71ddb060d79ce662e6",
+      "message": "Add audit-all",
+      "author": "compulim"
+    },
+    {
+      "sha": "f8890e1bb68458392c3794d5e79ba184667c8855",
+      "message": "Remove postaudit",
+      "author": "compulim"
+    },
+    {
+      "sha": "4b5c696076946c006de146584f1ab9391117b11b",
+      "message": "Add PR number",
+      "author": "compulim"
+    },
+    {
+      "sha": "84ae7661dd6e00bf3937af16971ee874443a2791",
+      "message": "Revert",
+      "author": "compulim"
+    },
+    {
+      "sha": "830d3592a3497c652a8474f6a81c8383dcaf281e",
+      "message": "Fix react-film",
+      "author": "compulim"
+    },
+    {
+      "sha": "021cddefa1e9d715f1cc9bf428d81503ee507cf2",
+      "message": "Archive 01.l.sharepoint-web-part",
+      "author": "compulim"
+    },
+    {
+      "sha": "c4ee0e75885cb9925da86c1215288b8180612adb",
+      "message": "Add 01.l",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/k.direct-line-token/javascript/bot/package-lock.json",
+      "status": "modified",
+      "additions": 1198,
+      "deletions": 708,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/k.direct-line-token/javascript/bot/package.json",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/k.direct-line-token/javascript/web/package-lock.json",
+      "status": "modified",
+      "additions": 54,
+      "deletions": 54,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/k.direct-line-token/javascript/web/package.json",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/l.sharepoint-web-part/README.md",
+      "status": "modified",
+      "additions": 36,
+      "deletions": 34,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/l.sharepoint-web-part/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 14,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/l.sharepoint-web-part/package.json",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/e.piping-to-redux/package.json",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/f.selectable-activity/package.json",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/g.chat-send-history/package.json",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/h.clear-after-idle/package.json",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/a.minimizable-web-chat/package.json",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/b.speech-ui/package.json",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/c.smart-display/package.json",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/c.smart-display/src/BotResponse.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/d.plain-ui/package.json",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/e.extending-ui/package.json",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/README.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/a.upload-to-azure-storage/README.md",
+      "status": "modified",
+      "additions": 46,
+      "deletions": 44,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/a.upload-to-azure-storage/bot/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 4551,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/a.upload-to-azure-storage/bot/package.json",
+      "status": "modified",
+      "additions": 27,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/a.upload-to-azure-storage/web/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 3033,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/a.upload-to-azure-storage/web/package.json",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/b.sso-for-enterprise/README.md",
+      "status": "modified",
+      "additions": 87,
+      "deletions": 85,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/b.sso-for-enterprise/app/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 30043,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/b.sso-for-enterprise/app/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/b.sso-for-enterprise/bot/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 4475,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/b.sso-for-enterprise/bot/package.json",
+      "status": "modified",
+      "additions": 26,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/b.sso-for-enterprise/rest-api/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 2468,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/b.sso-for-enterprise/rest-api/package.json",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/c.sso-for-intranet/README.md",
+      "status": "modified",
+      "additions": 70,
+      "deletions": 68,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/c.sso-for-intranet/bot/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 4461,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/c.sso-for-intranet/bot/package.json",
+      "status": "modified",
+      "additions": 26,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/c.sso-for-intranet/web/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 2466,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/c.sso-for-intranet/web/package.json",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/d.sso-for-teams/README.md",
+      "status": "modified",
+      "additions": 82,
+      "deletions": 80,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/d.sso-for-teams/bot/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 4461,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/d.sso-for-teams/bot/package.json",
+      "status": "modified",
+      "additions": 26,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/d.sso-for-teams/web/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 2466,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/d.sso-for-teams/web/package.json",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/e.sso-on-behalf-of-authentication/README.md",
+      "status": "modified",
+      "additions": 69,
+      "deletions": 67,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/e.sso-on-behalf-of-authentication/app/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 35586,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/e.sso-on-behalf-of-authentication/app/package.json",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/e.sso-on-behalf-of-authentication/bot/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 8813,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/e.sso-on-behalf-of-authentication/bot/package.json",
+      "status": "modified",
+      "additions": 34,
+      "deletions": 15,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/e.sso-on-behalf-of-authentication/rest-api/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 2466,
+      "previous_path": null
+    },
+    {
+      "path": "samples/07.advanced-web-chat-apps/e.sso-on-behalf-of-authentication/rest-api/package.json",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "samples/README.md",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "samples/package-lock.json",
+      "status": "modified",
+      "additions": 1585,
+      "deletions": 4218,
+      "previous_path": null
+    },
+    {
+      "path": "samples/package.json",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 2,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-08-06T23:02:54Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-08-06T23:04:17Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2025-08-06T23:04:18Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-08-06T23:21:06Z"
+    }
+  ],
+  "check_runs": []
+}

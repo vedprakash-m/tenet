@@ -1,0 +1,291 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5964,
+  "title": "Replace react-redux with in-house Provider and hooks",
+  "body": "> Related to #5552.\n\n## Changelog Entry\n\n### Changed\n\n- Removed the `react-redux` dependency, which conflicted with React 19 as a peer dependency, related to [#5552](https://github.com/microsoft/BotFramework-WebChat/issues/5552), in PR [#5964](https://github.com/microsoft/BotFramework-WebChat/pull/5964), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\n`react-redux@7.2.9` requires React 16.8–18 as a peer dependency, so installing Web Chat with React 19 warns and fails with `--strict-peer-deps`. Web Chat only used its `Provider` and three hooks on an internal context, which are now implemented in-house with the same behavior, and `react-redux` is removed from `api` and `component`.\n\n## Design\n\n- Not upgrading `react-redux`: 8 still caps React at 18, 9 requires React 18 or later.\n- `useSelector()` re-renders through `useReducer()` like `react-redux@7`, not `useSyncExternalStore()` (`react-redux@8`/`use-sync-external-store`): on React 18 it re-renders ahead of `<GraphProvider>`'s `useState()` and the development check in `useActivities()` throws (e.g. `selectedAction.html`).\n- Store notifications to all hooks run in one `unstable_batchedUpdates()`, as `react-redux@7` does, so React 16/17 and `ReactDOM.render()` re-render parent and child together.\n\n## Specific Changes\n\n- `WebChatReduxContext.ts`: `useSelector(selector, equalityFn)`, `useDispatch()`, `useStore()` replacing the `react-redux` hook factories\n- `WebChatReduxProvider.tsx`: provides the store and a batched `subscribe()`, used by `<Composer>`\n- `WebChatReduxProvider.spec.tsx`: parent and child re-render once together, `equalityFn` skips re-renders, dispatching in render re-renders once\n- `api`, `component`: removed `react-redux` from `package.json`\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-22T21:09:42Z",
+  "merged_at": "2026-10-22T22:33:00Z",
+  "base": "main",
+  "head": "OEvgeny/fix-replace-react-redux",
+  "base_sha": "a19b06e37e2a52c8a782d2e92f02be0fc865884e",
+  "head_sha": "18bb2523524470f2dc60110c479a32c0f832b961",
+  "merge_sha": "d0fdaa7e68bfd4205141b25321b2446fd29089f8",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-22T21:58:34Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "6b84ae34ce8234e8f82bb34ffb48b4971894c271",
+      "message": "Replace react-redux with in-house Provider and hooks",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4d7863f92e93071865037f884714b8229b2104a0",
+      "message": "Correct the batching comment: legacy ReactDOM.render() does not batch outside event handlers",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "310f83494f552c9100e162f5322a47b273f54f3c",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "18bb2523524470f2dc60110c479a32c0f832b961",
+      "message": "Merge branch 'main' into OEvgeny/fix-replace-react-redux",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5964-fix-replace-react-redux.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 63,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/package.json",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/Composer.tsx",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/WebChatReduxContext.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 14,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/WebChatReduxContext.ts",
+      "status": "added",
+      "additions": 104,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/WebChatReduxProvider.spec.tsx",
+      "status": "added",
+      "additions": 137,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/WebChatReduxProvider.tsx",
+      "status": "added",
+      "additions": 58,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-22T21:58:43Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T22:05:19Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:33:23Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:32:56Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:22:16Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:31:18Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:31:43Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:29:16Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:32:05Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:29:38Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:31:10Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:31:48Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:32:08Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:30:50Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:29:36Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:32:30Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:31:53Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:31:11Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:31:37Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:32:42Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:31:29Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:31:48Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:25:48Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:23:55Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:26:40Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:19:04Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:22:12Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:20:36Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:19:07Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:19:36Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:19:20Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:19:01Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:19:26Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:19:51Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T22:19:13Z"
+    }
+  ]
+}

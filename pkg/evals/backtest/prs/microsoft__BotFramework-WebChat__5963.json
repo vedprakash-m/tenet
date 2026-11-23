@@ -1,0 +1,464 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5963,
+  "title": "Render with createRoot() in renderWebChat() when ReactDOM.render() is not available",
+  "body": "> Related to #5552 and #5850.\n\n## Changelog Entry\n\n### Added\n\n- `renderWebChat()`: added support of a root from `createRoot()` for React 19, related to [#5552](https://github.com/microsoft/BotFramework-WebChat/issues/5552) and [#5850](https://github.com/microsoft/BotFramework-WebChat/issues/5850), in PR [#5963](https://github.com/microsoft/BotFramework-WebChat/pull/5963), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\n`renderWebChat()` called `ReactDOM.render()`, which React 19 removed. It now also takes a root from `createRoot()` instead of the element; an element on React 19 throws, asking for `createRoot(element)`.\n\n## Design\n\n- Web Chat never imports `react-dom/client` (npm bundlers fail on it with React 16 and 17): the host creates the root.\n- DOM containers are checked first (Lit elements have `render()`); React 16 to 18 keep `ReactDOM.render()`, synchronously.\n\n## Specific Changes\n\n- `renderWebChat.tsx`: element or root, typed; `renderWebChat.spec.tsx`: element, fragment, root, React 19 error\n- `isomorphic-react-dom`: bundled React DOM loads only without `window.ReactDOM` (crashed with React 19)\n- `react19/renderWebChat.{iife,esm}.html`: element throws; snapshot 1 root, 2 same root shows the send box\n- `react19/renderWebChat.{root,customElement}.react18.esm.html`: root; custom element with `render()`; snapshot 1\n- `HOSTING.md`: React 19 passes `createRoot(element)`\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [x] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-22T20:01:40Z",
+  "merged_at": "2026-10-23T19:58:54Z",
+  "base": "main",
+  "head": "OEvgeny/fix-render-webchat-without-render",
+  "base_sha": "7dee82a82b151406644dac802da3ce714038ca8c",
+  "head_sha": "301f8e1e7105257e6a472c0ce5cfbdc9fffbc80c",
+  "merge_sha": "60c356ac4fc8006573e1c7916e91ba350dde996b",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-22T20:53:46Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "74a3041aeb59844a635d3dde1445d4b3e5bbf99a",
+      "message": "Render with createRoot() in renderWebChat() when ReactDOM.render() is unavailable",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "bd5c77eefdd18b1d7bdda032d73232a54f9b2cde",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "d57b101de6c9a73fbc581773e280b050dca13f45",
+      "message": "Make renderWebChat() async: reject when createRoot() is unavailable",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "9750e88881fe6f9814331393a27da353e52a6b19",
+      "message": "Merge remote-tracking branch 'origin/main' into OEvgeny/fix-render-webchat-without-render",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "d2b9d8716201e86d7a976babb878ea24fac4011e",
+      "message": "renderWebChat(props, elementOrRoot): render with the host's root, never import react-dom/client",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "0a8865802c43579f0b5397a4d1609aaf529f8c69",
+      "message": "Test renderWebChat() with the host's root on React 19 (IIFE, ESM) and React 18, and a custom element with render()",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "d9318f70c55648086a1886188ef258abdd4469d3",
+      "message": "Document passing a root from createRoot() to renderWebChat() for React 19, update the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "301f8e1e7105257e6a472c0ce5cfbdc9fffbc80c",
+      "message": "Type renderWebChat()'s container like ReactDOM.render() (Element | Document | DocumentFragment | null) or a root",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5963-fix-render-webchat-without-render.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/asset/reactDOMWithoutRender.js",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/renderWebChat.customElement.react18.esm.html",
+      "status": "added",
+      "additions": 72,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/renderWebChat.customElement.react18.esm.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/renderWebChat.esm.html",
+      "status": "added",
+      "additions": 80,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/renderWebChat.esm.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/renderWebChat.esm.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/renderWebChat.iife.html",
+      "status": "added",
+      "additions": 97,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/renderWebChat.iife.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/renderWebChat.iife.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/renderWebChat.root.react18.esm.html",
+      "status": "added",
+      "additions": 88,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/renderWebChat.root.react18.esm.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/HOSTING.md",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/renderWebChat/full.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/renderWebChat/minimal.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/renderWebChat.spec.tsx",
+      "status": "added",
+      "additions": 59,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/renderWebChat.tsx",
+      "status": "modified",
+      "additions": 59,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/isomorphic-react-dom/src/ReactDOM.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 3,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-22T20:53:55Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T20:57:00Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T21:03:17Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T21:05:10Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-22T21:07:47Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-22T21:25:07Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-22T21:28:12Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-22T21:28:14Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-22T21:29:04Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-22T21:34:15Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T18:48:34Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T18:48:36Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T18:48:38Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T18:48:40Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-23T19:57:34Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T20:07:40Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T21:11:44Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T21:11:46Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T21:11:48Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T21:11:50Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:03:50Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:03:20Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:01:14Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:01:04Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:01:03Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:02:42Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:00:43Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:01:29Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:02:01Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:01:23Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:01:38Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:02:27Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:00:22Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:03:07Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:01:02Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:01:00Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:01:52Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:59:55Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T19:00:46Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:54:32Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:55:39Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:55:15Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:48:58Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:48:21Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:49:18Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:49:31Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:50:51Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:48:51Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:52:14Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:49:14Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:49:32Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:49:32Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-23T18:49:07Z"
+    }
+  ]
+}

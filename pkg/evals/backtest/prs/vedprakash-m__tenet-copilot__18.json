@@ -1,0 +1,269 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 18,
+  "title": "Build six untested Musts: Deep model warning, settings read-back and confirmation, demo screenshots",
+  "body": "Builds six Musts that had no test: RSC-08, CFG-01, CFG-03, CFG-04, CFG-08 and RES-05. The owner waived the feature-spec review and sign-off gates for this preview. The local drafts were used as designs, with the simplest option each recommended.\n\n## Behavior\n- **RSC-08, Deep model warning:** Deep work on a model that isn't `qualified` gets one `model-unqualified-for-deep` question, at `open` and before the first `check` after a later rise to Deep. `continue` covers this work and its current model record; `pause` parks the work. The label never changes and no other model is suggested.\n- **CFG-01, settings read-back and confirmation:** `decide config` returns `data.interpreted`: the effective value before and after, when it takes effect, and how to undo it. Some project changes return a `config-confirm` question and save nothing until it is answered: loosening a protected path, exclusion, required check or dependency field; altering an existing required check; any command change. Answer `confirm` to save or `keep` to close the question.\n- **CFG-03:** a command defined differently in the shared policy and the project is reported as a limit naming both.\n- **CFG-04:** `style` and `resource_mode` say the kernel passes them to the coordinator and doesn't enforce them. \"Why\" about a setting goes to the settings view.\n- **CFG-08:** a test proves the shared policy has no field for a preference, and that setting every preference at every scope changes no tracked file.\n- **RES-05:** a `ui` demo can reference a screenshot the example's own check declares in `outputs`. Tenet lists it with its SHA-256 and never inspects what it shows. The build skill now tells the coordinator how to send the demo.\n\n## Limits\n- No qualification table exists, so every model is `unknown` and every Deep contract is asked. Deep reviewer and analyst packets aren't separately gated.\n- Whether the host coordinator relays these questions is unobserved.\n- `decide config` moved from `decisions/simple.ts` to `decisions/config.ts` because of the file's line cap.\n\nCoverage after this PR: 157/181 Musts mapped, 16 host-only, 8 unmapped. None is qualified.\n\nTests: `model-qualification.test.ts`, `config-confirm.test.ts`, `personal-settings.test.ts`, `config.test.ts`, `result-demo.test.ts`, `deep.test.ts`. The real-repository tests run only on POSIX.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-10T18:22:14Z",
+  "merged_at": "2026-11-10T21:21:54Z",
+  "base": "main",
+  "head": "model-deep-warning",
+  "base_sha": "d48971924e17994829d8b6a73031b3db4307c291",
+  "head_sha": "45d9d313263ead2dfe97bab19ae748358e305a2c",
+  "merge_sha": "47f6e4ce24be83c8b77dc82217be2fff8cf878e2",
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "54ea74413f33ede870b599d0464420fa7ec58528",
+      "message": "Ask before Deep work on an unqualified or unknown model (RSC-08)",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "ca71e4d96c0642748a6b0bc35028bd1bdd5cda40",
+      "message": "Report conflicting commands and unenforced preferences; prove personal settings stay local (CFG-03, CFG-04, CFG-08)",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "9af6ce57068d4f1442237f6b771374311dea9357",
+      "message": "Reference ui screenshots that the example's check declares as outputs (RES-05)",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "255f09477b575905f0f21e21293e2358ae5c891a",
+      "message": "Read back settings changes and confirm before loosening (CFG-01)",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "45d9d313263ead2dfe97bab19ae748358e305a2c",
+      "message": "Ask the model question after the grant question; answer it in routine test calls",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/config.ts",
+      "status": "modified",
+      "additions": 42,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/demo.ts",
+      "status": "modified",
+      "additions": 29,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/schemas.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/config.ts",
+      "status": "added",
+      "additions": 69,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/index.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/model-limit.ts",
+      "status": "added",
+      "additions": 31,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/simple.ts",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 29,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/inspect.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/model-limit.ts",
+      "status": "added",
+      "additions": 27,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/open-new.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/config-confirm.test.ts",
+      "status": "added",
+      "additions": 85,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/config.test.ts",
+      "status": "modified",
+      "additions": 28,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/deep.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/model-qualification.test.ts",
+      "status": "added",
+      "additions": 82,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/personal-settings.test.ts",
+      "status": "added",
+      "additions": 42,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/result-demo.test.ts",
+      "status": "modified",
+      "additions": 31,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/support/fixture.ts",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-build/SKILL.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet/SKILL.md",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T20:10:43Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T19:50:14Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T19:34:30Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T19:47:09Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T19:31:19Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T19:32:37Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T19:31:18Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T19:33:59Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T20:03:21Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T19:51:24Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-10T19:30:57Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T19:32:29Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T19:31:18Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T19:31:15Z"
+    }
+  ]
+}

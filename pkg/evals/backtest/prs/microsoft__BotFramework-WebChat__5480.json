@@ -1,0 +1,1373 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5480,
+  "title": "Feedback buttons should not squash other buttons",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #5479.\r\n\r\n## Changelog Entry\r\n\r\n### Fixed\r\n\r\n- Fixed [#5479](https://github.com/microsoft/BotFramework-WebChat/issues/5479). Fixed feedback form buttons should not squash other buttons, in PR [#5480](https://github.com/microsoft/BotFramework-WebChat/pull/5480), by [@compulim](https://github.com/compulim)\r\n   - Migrated to radio button for like/dislike where form submission is required\r\n\r\n## Description\r\n\r\n### UI issue\r\n\r\nWhen the feedback form is enabled, the feedback buttons are grouped in a flex container and its width is set to 100%, forcing other component to squash.\r\n\r\n### Form\r\n\r\nA `<form>` is now put around the like/dislike button and the feedback form. It will handle all kind of like/dislike and form submissions.\r\n\r\n### Button vs. radio button\r\n\r\n- If no feedback form, the like/dislike button is an action, thus, they are `<input type=\"button\">` and submitted (almost) immediately\r\n   - Press <kbd>ESC</kbd> will do nothing as the selection has already submitted\r\n- If feedback form is available, the like/dislike is `<input type=\"radio\">`\r\n   - Press <kbd>ESC</kbd> will cancel the selection of like/dislike\r\n\r\n## Design\r\n\r\n### Moving from `channelData` to `entities`\r\n\r\nToday, due to limitation on Copilot Studio backend, we have to use `channelData.feedbackLoop` as a temporary solution to indicate feedback that would have review feedback.\r\n\r\n```json\r\n{\r\n  \"channelData\": {\r\n    \"feedbackLoop\": {\r\n      \"disclaimer\": \"...\", // optional\r\n      \"type\": \"default\"\r\n    }\r\n  },\r\n  \"entities\": [\r\n    {\r\n      \"@id\": \"\",\r\n      \"@type\": \"Message\"\r\n      \"potentialAction\": [\r\n        {\r\n          \"@type\": \"LikeAction\"\r\n        },\r\n        {\r\n          \"@type\": \"DislikeAction\"\r\n        }\r\n      ]\r\n    }\r\n  ],\r\n  \"text\": \"...\",\r\n  \"type\": \"message\"\r\n}\r\n```\r\n\r\nIn this PR, we are leveraging the Schema.org standard:\r\n\r\n```json\r\n{\r\n  \"entities\": [\r\n    {\r\n      \"@id\": \"\",\r\n      \"@type\": \"Message\"\r\n      \"potentialAction\": [\r\n        {\r\n          \"@type\": \"LikeAction\",\r\n          \"result\": {\r\n            \"@type\": \"UserReview\",\r\n            \"reviewAspect\": \"...\" // optional\r\n          }\r\n        },\r\n        {\r\n          \"@type\": \"DislikeAction\",\r\n          \"result\": {\r\n            \"@type\": \"UserReview\",\r\n            \"reviewAspect\": \"...\" // optional\r\n          }\r\n        }\r\n      ]\r\n    }\r\n  ],\r\n  \"text\": \"...\",\r\n  \"type\": \"message\"\r\n}\r\n```\r\n\r\nThe `LikeAction` literally means: \"the user liked this message and that action resulted in a user review.\" The review content (feedback text) will become `UserReview.reviewBody` in latter PR.\r\n\r\nWe will maintain the backcompat code that migrate `channelData.feedbackLoop` to `entities[@id=\"\"].potentialAction.result` until Copilot Studio fully onboarded the standard payload.\r\n\r\n## Specific Changes\r\n\r\n- Updated feedback form to do the grouping differently\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] ~`package.json` and `package-lock.json` reviewed~\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-05-16T20:36:17Z",
+  "merged_at": "2025-05-19T22:49:07Z",
+  "base": "main",
+  "head": "fix-feedback-form-with-copy-button",
+  "base_sha": "4c7400adaede2a427af6d46a53f631d27e98663e",
+  "head_sha": "bed66d7e04f1dc7bf4d451fffb13e2c177b9a428",
+  "merge_sha": "d1cd51af0195cad1035ea1d502697b19744c94d2",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-05-17T02:06:06Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "a50284a03c420435fb51f57826b7f51efb65bf93",
+      "message": "Fixed feedback buttons shoud not squash other buttons",
+      "author": "compulim"
+    },
+    {
+      "sha": "acc9bc1930c65480029a12a8e325bf58ff328b7a",
+      "message": "Update PR number",
+      "author": "compulim"
+    },
+    {
+      "sha": "2dc97d080100d5fda8b85ee25231451173079ca0",
+      "message": "Redo <form> and support Escape key",
+      "author": "compulim"
+    },
+    {
+      "sha": "14392c0225b712cff9a2472de10877a8eb74ff7a",
+      "message": "Move to valibot",
+      "author": "compulim"
+    },
+    {
+      "sha": "6e9650d4fd0372fe782b39e6a19fd4a3bde926d2",
+      "message": "Add sub-entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "a7628591d08d448da7a6db4075c2e0e9aee96d36",
+      "message": "Move entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "78bbf5f50e2719339dacfd9fc87af1ae219a10bb",
+      "message": "Use <input type=\"checkbox\"> for like/dislike button",
+      "author": "compulim"
+    },
+    {
+      "sha": "3fec12546741a3436e348cec2493a32332787323",
+      "message": "Update style names",
+      "author": "compulim"
+    },
+    {
+      "sha": "59a109a0f6e5c4cfe37453fdc687e77ed50497c9",
+      "message": "Rename",
+      "author": "compulim"
+    },
+    {
+      "sha": "a8cf1625444bf7278302d389b82f8089bbdf6a02",
+      "message": "Trying useHooks()",
+      "author": "compulim"
+    },
+    {
+      "sha": "e42723bb865c12448a4a43e9586228a61dda7c3c",
+      "message": "Hide feedback bar when no actions",
+      "author": "compulim"
+    },
+    {
+      "sha": "31596d73987ab5eb992c6556859e8b54c672e1cd",
+      "message": "Fix checkbox vs. button",
+      "author": "compulim"
+    },
+    {
+      "sha": "8f86296285a3522c2416808ddd68d50f321facb2",
+      "message": "Fix test",
+      "author": "compulim"
+    },
+    {
+      "sha": "bcff76b2763e20c317fe7c898605845d5a49e3ad",
+      "message": "Fix tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "2382609d54a20ce535d9acb5390949f88f06049a",
+      "message": "Fix test",
+      "author": "compulim"
+    },
+    {
+      "sha": "abbcd595be59e36be94d9ec49948d12b184e48fc",
+      "message": "Fix flaky test",
+      "author": "compulim"
+    },
+    {
+      "sha": "7ead9bb11c8efd5a7c95f77161e3f83c61e2bb55",
+      "message": "Use radio button and hide role for image",
+      "author": "compulim"
+    },
+    {
+      "sha": "dcc87ffe769e8cab442e94b949423d40b8dac047",
+      "message": "Revert to checkbox",
+      "author": "compulim"
+    },
+    {
+      "sha": "e1a4d899d69fa1d73251c48f1367539857011ca1",
+      "message": "Support button vs. radio",
+      "author": "compulim"
+    },
+    {
+      "sha": "eace7682e369cd91f4b8ce662f9b124cb6b8bec8",
+      "message": "Fix checkbox",
+      "author": "compulim"
+    },
+    {
+      "sha": "85f1a60513bc0739addae3dcf714904366545d84",
+      "message": "Fix test",
+      "author": "compulim"
+    },
+    {
+      "sha": "a372226c5323c1f898073c4e715c5fbd8e18b54f",
+      "message": "Fix test",
+      "author": "compulim"
+    },
+    {
+      "sha": "768442ab457d34adff1c53cc6c260bd2ba7db3b3",
+      "message": "Fix test",
+      "author": "compulim"
+    },
+    {
+      "sha": "99fb10d62b72ded21389ba6d88c32d22cc3eff26",
+      "message": "Use valibot",
+      "author": "compulim"
+    },
+    {
+      "sha": "ce5803d33756447ea1320b5e42cd04ce26b44626",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "40e955267525dd1605bbba8f6abcd8e2a5de7f53",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "2c3d844f0b8bf7879835a44693eb9bdcd46cd188",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "8d15b1299ff996b5fd29e211a9d0166c436fefbd",
+      "message": "Remove comment",
+      "author": "compulim"
+    },
+    {
+      "sha": "e4955470f689836928f8a6ccb9f6476c6d43bcfe",
+      "message": "Add UserReview",
+      "author": "compulim"
+    },
+    {
+      "sha": "3118563e43fed0b4c12f2f30521abffd0152e152",
+      "message": "Add sub entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "bed66d7e04f1dc7bf4d451fffb13e2c177b9a428",
+      "message": "Use reviewAspect instead",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/feedback-activity-status-basic-js-vote-button-should-display-1-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/feedback-activity-status-basic-js-vote-button-should-display-2-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/feedback-activity-status-basic-js-vote-button-should-display-3-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/feedback-activity-status-basic-js-vote-button-should-display-4-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/feedback-activity-status-click-js-vote-button-should-send-event-on-click-1-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/feedback-activity-status-click-js-vote-button-should-send-event-on-click-2-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/feedback-activity-status-click-js-vote-button-should-send-event-on-click-3-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/feedback-activity-status-click-js-vote-button-should-send-event-on-click-4-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-2-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-3-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-4-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-5-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-6-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-7-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-2-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-3-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-4-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-5-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-6-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-7-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/feedbackActivityStatus.basic.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/feedbackActivityStatus.click.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/feedbackActivityStatus.single.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/fluentTheme/side-by-side.wide.dark.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/fluentTheme/side-by-side.wide.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.activity.dismiss.html.snap-1.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.activity.dismiss.html.snap-2.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.activity.dismiss.html.snap-3.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.activity.dismiss.html.snap-4.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.activity.html.snap-1.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.activity.html.snap-2.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.activity.html.snap-3.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.activity.html.snap-4.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.activity.html.snap-5.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.form.activity.html.snap-1.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.form.activity.html.snap-2.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.status.html.snap-1.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.status.html.snap-2.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.status.html.snap-3.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.status.html.snap-4.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/feedback.status.html.snap-5.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/behavior.changeMind.keyboard.html",
+      "status": "added",
+      "additions": 130,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/behavior.changeMind.mouse.html",
+      "status": "added",
+      "additions": 123,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/behavior.noopByEnterKey.html",
+      "status": "added",
+      "additions": 91,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/behavior.resetByEscapeKey.html",
+      "status": "added",
+      "additions": 136,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/behavior.resetByEscapeKey.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/behavior.resetByEscapeKey.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/behavior.selectByClick.html",
+      "status": "added",
+      "additions": 99,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/behavior.selectByClick.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.activity.dismiss.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html2/activity/feedback.activity.dismiss.html"
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.activity.dismiss.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.activity.dismiss.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.activity.dismiss.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.activity.dismiss.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.form.activity.html",
+      "status": "renamed",
+      "additions": 36,
+      "deletions": 33,
+      "previous_path": "__tests__/html2/activity/feedback.form.activity.html"
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.form.activity.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.form.activity.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.form.activity.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/activity/feedback.form.activity.html.snap-3.png"
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.form.activity.html.snap-4.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/activity/feedback.form.activity.html.snap-4.png"
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.status.html",
+      "status": "renamed",
+      "additions": 8,
+      "deletions": 14,
+      "previous_path": "__tests__/html2/activity/feedback.status.html"
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.status.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.status.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.status.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.status.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/feedback.status.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.html",
+      "status": "added",
+      "additions": 101,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.userReview.html",
+      "status": "added",
+      "additions": 105,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.userReview.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.userReview.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.userReview.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.withCopyButton.html",
+      "status": "added",
+      "additions": 101,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.withCopyButton.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.withCopyButton.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.withFluent.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.withFluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackForm/layout.withFluent.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/behavior.escapeKey.html",
+      "status": "added",
+      "additions": 95,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedback.activity.html",
+      "status": "renamed",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": "__tests__/html2/activity/feedback.activity.html"
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedback.activity.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedback.activity.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedback.activity.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedback.activity.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedback.activity.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.basic.html",
+      "status": "renamed",
+      "additions": 10,
+      "deletions": 6,
+      "previous_path": "__tests__/html/feedbackActivityStatus.basic.html"
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.basic.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.basic.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.basic.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.basic.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.click.html",
+      "status": "renamed",
+      "additions": 11,
+      "deletions": 6,
+      "previous_path": "__tests__/html/feedbackActivityStatus.click.html"
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.click.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.click.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.click.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.click.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.single.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/feedbackActivityStatus.single.html"
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/feedbackActivityStatus.single.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/feedback-activity-status-single-js-vote-button-should-display-a-single-button-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/layout.html",
+      "status": "added",
+      "additions": 79,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/feedbackStatus/layout.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/defaultFeedback.activity.dark.html",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/defaultFeedback.activity.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/defaultFeedback.activity.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/defaultFeedback.activity.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/defaultFeedback.activity.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/defaultFeedback.activity.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/defaultFeedback.activity.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/feedback.form.markdown.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/feedback.form.markdown.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/feedback.form.multiple.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/feedback.form.multiple.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/feedbackForm.noDisclaimer.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/feedbackForm.noDisclaimer.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/activity/feedback.status.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/speech/comprehensive.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/speech/errorTelemetry.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/ActivityFeedback.tsx",
+      "status": "modified",
+      "additions": 75,
+      "deletions": 17,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/FeedbackForm.tsx",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 39,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/FeedbackLoopWithMessage.tsx",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 29,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/FeedbackLoopWithoutMessage.tsx",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/FeedbackTextArea.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/FeedbackVoteButton.tsx",
+      "status": "modified",
+      "additions": 47,
+      "deletions": 19,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/FeedbackVoteButtonBar.tsx",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/ThumbButton.Image.tsx",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/ThumbButton.tsx",
+      "status": "modified",
+      "additions": 67,
+      "deletions": 25,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/ThumbDislike16Filled.tsx",
+      "status": "modified",
+      "additions": 31,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/ThumbDislike16Regular.tsx",
+      "status": "modified",
+      "additions": 32,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/ThumbLike16Filled.tsx",
+      "status": "modified",
+      "additions": 31,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/ThumbLike16Regular.tsx",
+      "status": "modified",
+      "additions": 31,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/canActionResubmit.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/getDisclaimerFromFeedbackLoop.ts",
+      "status": "renamed",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": "packages/component/src/ActivityFeedback/private/getDisclaimer.ts"
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/getDisclaimerFromReviewAction.ts",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/hasFeedbackLoop.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/private/isActionRequireReview.ts",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/providers/ActivityFeedbackComposer.tsx",
+      "status": "modified",
+      "additions": 106,
+      "deletions": 67,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/providers/private/ActivityFeedbackContext.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/providers/private/FocusPropagation.ts",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/providers/useActions.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/providers/useActivity.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/providers/useActivityFeedbackHooks.ts",
+      "status": "renamed",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": "packages/component/src/ActivityFeedback/providers/private/useActivityFeedbackContext.ts"
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/providers/useHasSubmitted.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/providers/useSelectedAction.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/providers/useShouldAllowResubmit.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/providers/useShouldShowFeedbackForm.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityFeedback/providers/useSubmitCallback.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/FeedbackForm.ts",
+      "status": "modified",
+      "additions": 90,
+      "deletions": 71,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/TextContent.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/ThumbButton.ts",
+      "status": "modified",
+      "additions": 60,
+      "deletions": 45,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/Tooltip.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/testIds.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/index.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/external/OrgSchema/Action.ts",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/external/OrgSchema/UserReview.ts",
+      "status": "added",
+      "additions": 27,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/theme/Theme.module.css",
+      "status": "modified",
+      "additions": 26,
+      "deletions": 21,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/pageElements/allByTestId.js",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/pageElements/index.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-17T02:48:10Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-17T02:50:55Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-17T02:51:51Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-17T05:20:55Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-17T06:01:38Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-18T17:41:07Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-18T17:53:37Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-19T22:46:08Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-19T22:47:11Z"
+    }
+  ],
+  "check_runs": []
+}

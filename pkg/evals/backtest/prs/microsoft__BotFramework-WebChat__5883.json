@@ -1,0 +1,220 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5883,
+  "title": "Reject non-finite --min-age in cleanup-grid-sessions.py",
+  "body": "> Fixes #\n\n## Changelog Entry\n\nNot required, development only.\n\n## Description\n\nFollow-up to #5880, from [this review comment](https://github.com/microsoft/BotFramework-WebChat/pull/5880#discussion_r4301102174).\n\n`cleanup-grid-sessions.py --min-age` uses `type=float`, so it accepts `nan` and `inf`. The old check only rejected negative values:\n\n- `--min-age nan` passed, and because `age < nan` is always false, the script deleted every session with a known start time, including young sessions of other runs on a shared grid.\n- `--min-age inf` (or `1e400`) passed and kept every session, which is never what the caller wants.\n\nThe script now rejects any value that is not a finite number of seconds, zero or more, before it contacts the grid.\n\n## Specific Changes\n\n- `cleanup-grid-sessions.py`: validate `--min-age` with `math.isfinite()` in addition to the negative check, with the error `--min-age must be a finite number of seconds, zero or more`\n\nVerified against a fake grid status server on a local port (one 10-second-old session, one 1000-second-old session, one with unknown start time), logging every request:\n\n- `nan`, `NaN`, `inf`, `-inf`, `Infinity`, `1e400`, `-1`, `-0.5`: exit code 2 with the error, no HTTP request\n- `0`, `400`, `400 --dry-run`, `--dry-run`, and no option: same output and requests as before\n\n- [ ] I have added tests and executed them locally\n- [ ] I have updated `CHANGELOG.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-17T04:29:17Z",
+  "merged_at": "2026-10-17T05:41:52Z",
+  "base": "main",
+  "head": "OEvgeny/dev-cleanup-min-age-finite",
+  "base_sha": "be8266aa16e06e62b3d0a3e22ed605d26950f306",
+  "head_sha": "98472ab8cb2019767d256e3a587463f27bf1660c",
+  "merge_sha": "df1f574f67e0c7b81ee396b01ff5398f4c997804",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-17T04:34:15Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "98472ab8cb2019767d256e3a587463f27bf1660c",
+      "message": "Reject non-finite --min-age in cleanup-grid-sessions.py",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": ".github/skills/webchat-html-tests/scripts/cleanup-grid-sessions.py",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-17T04:35:19Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-17T04:35:59Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:42:22Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:41:50Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:30:22Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:31:37Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:38:21Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:34:51Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:39:01Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:30:46Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:30:19Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:37:09Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:40:26Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:39:35Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:29:58Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:41:34Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:39:36Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:39:32Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:40:48Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:41:43Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:41:03Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:40:33Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:40:54Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:40:43Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:40:07Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:40:27Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:41:44Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:41:13Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:40:55Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T05:40:12Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:34:32Z"
+    },
+    {
+      "name": "copilot-pull-request-reviewer",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:36:01Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:29:52Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:30:32Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T04:29:59Z"
+    }
+  ]
+}

@@ -1,0 +1,845 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5891,
+  "title": "Let keyboard users reach the native controls of audio and video players in an activity",
+  "body": "> Fixes #5738, fixes #5709\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed the native controls of audio and video players, such as volume and \"more options\", not being reachable with <kbd>TAB</kbd> and <kbd>SHIFT</kbd> + <kbd>TAB</kbd> inside an activity: the focus now moves through every control of the player and wraps within the activity; the players of audio, video, and animation cards are now named after the card title, fixes [#5738](https://github.com/microsoft/BotFramework-WebChat/issues/5738) and [#5709](https://github.com/microsoft/BotFramework-WebChat/issues/5709), in PR [#5891](https://github.com/microsoft/BotFramework-WebChat/pull/5891), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThis is a regression from #5243 (4.19.0). In 4.18.0, <kbd>TAB</kbd> moves through the controls of an audio player in an activity. <kbd>SHIFT</kbd> + <kbd>TAB</kbd> on the player stayed on it, even in 4.18.0. This change fixes both.\n\nAfter pressing <kbd>ENTER</kbd> on an activity with an audio attachment or an audio card, the focus is on the `<audio>` element. <kbd>TAB</kbd> and <kbd>SHIFT</kbd> + <kbd>TAB</kbd> then kept it there. The player's own controls (play, time scrubber, volume, mute, more options) could not be reached, so mute, playback speed, and download could not be used with the keyboard. On a plain page, Edge moves through all of these controls. The activity focus trap counts the player as one element and cancelled <kbd>TAB</kbd> on it. #5243 replaced the focus sentinels of the trap with key handling, and the end sentinel was what used to catch <kbd>TAB</kbd> after the player's last control.\n\nThe trap now lets the browser move through the player's controls and wraps the focus after the last one. Video attachments (`<video controls>`) had the same problem and are fixed too.\n\nThe players of audio and video cards (and of animation cards without `profile`), which keyboard users can now reach, had no accessible name: they are now named after the card title, as the players of attachments are named after the attachment name.\n\n#5739 and #5741 (name and role of the play/pause control) should be re-tested after this change. They were reported on the `<audio>` element itself (read as \"BotFramework Test, audio\"), which was the only element the trap let the keyboard reach. The player's play button (role button, name \"play\" or \"pause\") is now reachable.\n\n## Design\n\n- The controls of `<audio controls>` and `<video controls>` are in a closed shadow tree. Web Chat cannot list or focus them, and `document.activeElement` is the media element for all of them. Their keystrokes also do not reach the page: in Edge there is no `keydown` on `document` from these controls, not even in the capture phase. So the trap cannot see when <kbd>TAB</kbd> leaves the last control.\n- <kbd>TAB</kbd> on a media element with controls is not cancelled when it is the last element of the trap. A focusable guard at the end of the trap body catches the focus after the player's last control and wraps it to the first element, like the end sentinel before #5243. Only <kbd>TAB</kbd> from content that the trap cannot see reaches the guard: the controls of a media element, or an `<iframe>` (see follow-ups). <kbd>TAB</kbd> on other elements is still handled by the existing key handling.\n- <kbd>SHIFT</kbd> + <kbd>TAB</kbd> on the first element, when the last element is a media element with controls: the trap moves the focus to the guard and does not cancel the key. The browser continues <kbd>SHIFT</kbd> + <kbd>TAB</kbd> from the guard into the player's last control. In all other cases, the existing wrap is used.\n- The guard is not counted as a tabbable element of the trap. It is inside the trap body, so the outer trap of part grouping ignores it, as it ignores the other content of nested traps. It has no `aria-hidden`, because axe flags focusable content inside `aria-hidden`. It is an empty `<div>`, exposed like `FocusRedirector` (generic, no name).\n- <kbd>ESCAPE</kbd> and typing on a control inside the player do nothing, because these keystrokes do not reach the page. <kbd>ESCAPE</kbd> still works on the `<audio>` or `<video>` element itself, one <kbd>TAB</kbd> or <kbd>SHIFT</kbd> + <kbd>TAB</kbd> away.\n- The video tests use `__tests__/assets/dark-green-video.webm`, a uniform dark green video (2 seconds, no audio track), so the video stands out from the black gradient behind the player controls.\n- Every test takes a snapshot after <kbd>ENTER</kbd> and after every <kbd>TAB</kbd> and <kbd>SHIFT</kbd> + <kbd>TAB</kbd>, through a full cycle in each direction, after waiting for the focused control in the accessibility tree. The ring on a control inside the player is drawn by the browser, as on a plain page; the rings of the play button and the time scrubber of a video are clipped at the edges of the `<video>` element by the element itself, also on a plain page.\n- Possible follow-up: the players of audio and video cards still show the browser's own focus ring when the player itself has the focus (first snapshot of the audio card and video card tests). It is rectangular around the pill-shaped audio player, and black against the dark bottom of a video. #5887 replaced it with the Web Chat indicator for attachments and animation cards only. This change does not touch it.\n- The player of an audio or video card is named after the card title, through the existing `alt` prop (`aria-label`) that attachments fill with the attachment name. Without a title, the player has no `aria-label`, as before. The `profile` of the media is not used for these cards, because bots send it as a hint to tell media apart (the mock bot sends `audiocard`), not as a label.\n- The animation card already named its media after `profile`; this is unchanged. Without `profile`, its video player now falls back to the card title. Its GIF image without `profile` keeps `alt=\"\"` (decorative), because it is not a control.\n- A YouTube or Vimeo video card with a title now uses the title as the name of the `<iframe>`, instead of \"A video clip\", the same as a video attachment with a name.\n- Possible follow-up: an embedded `<iframe>` (YouTube or Vimeo video cards) has the same invisible keystrokes. <kbd>TAB</kbd> out of it now wraps through the guard, but <kbd>SHIFT</kbd> + <kbd>TAB</kbd> out of an `<iframe>` that is the first element still leaves the activity. Not tested.\n\n## Specific Changes\n\n- `Transcript/FocusTrap.tsx`:\n   - <kbd>TAB</kbd> on a media element with controls is not cancelled.\n   - A guard at the end of the body wraps the focus after the player's controls.\n   - <kbd>SHIFT</kbd> + <kbd>TAB</kbd> on the first element continues from the guard when the last element is a media element with controls.\n- Added `testHelpers.getFocusedAccessibilityNode()`, which returns the focused node of the accessibility tree via Chrome DevTools Protocol. Unlike `document.activeElement`, it also sees the focus inside the player's controls.\n- `AudioCardContent.tsx` and `VideoCardContent.tsx`: the player is named after the card title.\n- `AnimationCardContent.tsx`: the video player falls back to the card title when the media has no `profile`.\n- Added `__tests__/html2/transcript/navigation/focusTrap.audio.html` (with a `.fluent.html` variant), `focusTrap.audioCard.html`, `focusTrap.video.html`, `focusTrap.videoCard.html`, and `focusTrap.animationCard.html`. They enter the activity with the keyboard, <kbd>TAB</kbd> and <kbd>SHIFT</kbd> + <kbd>TAB</kbd> through the player's controls, and check where the focus is and the name of the player.\n   - Each test goes through a full cycle with <kbd>TAB</kbd> (from the player through every control, wrapping to the player) and with <kbd>SHIFT</kbd> + <kbd>TAB</kbd> (wrapping to the last control, then back through every control to the player), with a snapshot of the focus indicator after every key press.\n- Added `__tests__/assets/dark-green-video.webm` for the video tests.\n\n- [x] I have added tests and executed them locally\n- [x] I have updated `CHANGELOG.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-17T10:44:35Z",
+  "merged_at": "2026-10-18T06:14:44Z",
+  "base": "main",
+  "head": "OEvgeny/fix-5738-audio-keyboard-access",
+  "base_sha": "2ec2e9f1856c35a13e303e4c6830e6c53a8c82c0",
+  "head_sha": "2717077c31e175b0c37b686b564e7e467a953ced",
+  "merge_sha": "a9b871b9601b9d49128b8e4ec3e8d1629491c41e",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-18T01:17:32Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "d157005cdf2b42dd0a0d415c53d730f0a4d66179",
+      "message": "Let TAB reach the native controls of audio and video players in an activity",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "0ed2e68ca4754c2f1d3aa3921b3656bfba270a83",
+      "message": "Add PR number to changelog",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4c00670bcf2777b37383efef7710a495c8580b2f",
+      "message": "Name the players of audio, video, and animation cards after the card title",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "24c850d73023bda38f0c63877e3bc339eb7e1d62",
+      "message": "Add snapshots of the focus on media controls and use a dark green video in tests",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "3a324296f785e760fc9d31b3db57384ff1b89c5b",
+      "message": "Snapshot every TAB and SHIFT+TAB in the media focus trap tests",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "2717077c31e175b0c37b686b564e7e467a953ced",
+      "message": "Merge branch 'main' into OEvgeny/fix-5738-audio-keyboard-access",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/assets/dark-green-video.webm",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html",
+      "status": "added",
+      "additions": 157,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html.snap-11.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.animationCard.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-11.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-12.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-13.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.fluent.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html",
+      "status": "added",
+      "additions": 164,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-11.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-12.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-13.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audio.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html",
+      "status": "added",
+      "additions": 170,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-11.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-12.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-13.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.audioCard.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html",
+      "status": "added",
+      "additions": 151,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html.snap-11.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.video.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html",
+      "status": "added",
+      "additions": 157,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html.snap-11.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/focusTrap.videoCard.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AnimationCardContent.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AudioCardContent.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/VideoCardContent.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/FocusTrap.tsx",
+      "status": "modified",
+      "additions": 35,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/getFocusedAccessibilityNode.js",
+      "status": "added",
+      "additions": 16,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/index.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:27:25Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-18T01:17:38Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-18T01:34:17Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T05:42:14Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:14:58Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:14:31Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:12:19Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:12:38Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:12:26Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:14:24Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:13:17Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:13:32Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:12:48Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:12:46Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:12:18Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:13:45Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:13:42Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:12:57Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:13:04Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:12:14Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:13:18Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:13:14Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:13:16Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:08:44Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:07:01Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:07:54Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:59:34Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:59:01Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:59:28Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:00:35Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:00:59Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:59:53Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:04:31Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:59:48Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:59:50Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:59:40Z"
+    }
+  ]
+}

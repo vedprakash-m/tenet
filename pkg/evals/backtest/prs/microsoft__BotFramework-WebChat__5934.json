@@ -1,0 +1,356 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5934,
+  "title": "Changelog fragments, merged into CHANGELOG.md on a changelog-unreleased branch",
+  "body": "> Pull requests conflict over `CHANGELOG.md`.\n\n## Changelog Entry\n\n### Changed\n\n- 👷🏻 Changelog entries are now one file per pull request in `.changelog/`, merged into `CHANGELOG.md` on the [`changelog-unreleased`](https://github.com/microsoft/BotFramework-WebChat/blob/changelog-unreleased/CHANGELOG.md#unreleased) branch, in PR [#5934](https://github.com/microsoft/BotFramework-WebChat/pull/5934), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nEach PR adds `.changelog/<PR#>-<slug>.md` instead of editing `CHANGELOG.md`. On every push to `main`, a workflow force-pushes `changelog-unreleased`: `main` + 1 commit that merges the fragments into `[Unreleased]` and deletes them, or `main` if there are none. Squash-merging a copy of it back moves the entries to `main`.\n\n## Design\n\n- No migration: existing `[Unreleased]` entries stay, new ones are appended in merge order.\n- The check passes for: own fragment (or `no-changelog`) with `[Unreleased]` unchanged; a merge-back equal to the base plus the fragments it deletes, nothing else; or the `changelog-edit` label (release, typo fixes).\n- Merge-backs come from a pushed copy, because bot pushes do not run required checks.\n\nCommit 2 puts issue links first in 13 entries, and the Carousel entry follows the new Added format: `git diff --word-diff 952dae434~1 952dae434 -- CHANGELOG.md`.\n\nReal CI run on `test-changelog-v2-*` (test PRs #5936–#5941: fragments consumed into [one commit on top of the base](https://github.com/microsoft/BotFramework-WebChat/commit/08d9496bc), merge-back from a copy and directly, hand edit rejected): [`CHANGELOG.md` as rebuilt](https://github.com/microsoft/BotFramework-WebChat/blob/test-changelog-v2-unreleased/CHANGELOG.md#unreleased).\n\nQuestions:\n\n- Added with issues: `Added #5743, …`, or keep `Carousel: added …, fixes #5743`?\n- Branch name `changelog-unreleased`?\n- Dev-only PRs: `no-changelog` label, or always a 👷🏻 entry?\n- Open PRs that edit `[Unreleased]` fail the check, move to a fragment on rebase?\n- This PR edits `[Unreleased]` itself, so it needs `changelog-edit` once. OK?\n\nAdmins: please create the `changelog-edit` label before merging (this PR needs it). After merge, please make the \"Changelog\" check required, and do not protect `changelog-unreleased` against force pushes.\n\n## Specific Changes\n\n- `scripts/changelog/*.mjs` with specs, 2 workflows\n- `CHANGELOG.md`, `.changelog/README.md`, `AGENTS.md`, PR template\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [x] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-20T20:58:54Z",
+  "merged_at": "2026-10-20T23:04:19Z",
+  "base": "main",
+  "head": "OEvgeny/dev-changelog-fragments",
+  "base_sha": "506adb43c06dbdb1afef592c45e25337beda9ec9",
+  "head_sha": "b43962022b914de021099ef1f4772906ead82320",
+  "merge_sha": "96c14161d4beda8036d3f380520f1165d5e8fe7c",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-20T21:01:27Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "bfe122d02feaae2d888a0ece2b56c0c75e60df0f",
+      "message": "Add changelog fragments, merged into CHANGELOG.md on the changelog-unreleased branch",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "952dae434e072c6653c8f6b67735915d574d0e7a",
+      "message": "Put issue references first in unreleased changelog entries",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "b43962022b914de021099ef1f4772906ead82320",
+      "message": "Add the changelog fragment of this pull request",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5934-dev-changelog-fragments.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".changelog/README.md",
+      "status": "added",
+      "additions": 80,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/publish-changelog-unreleased.yml",
+      "status": "added",
+      "additions": 62,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/pull-request-changelog.yml",
+      "status": "added",
+      "additions": 67,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "AGENTS.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/check.mjs",
+      "status": "added",
+      "additions": 180,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/check.spec.mjs",
+      "status": "added",
+      "additions": 366,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/consume.mjs",
+      "status": "added",
+      "additions": 264,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/consume.spec.mjs",
+      "status": "added",
+      "additions": 403,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/fragment.mjs",
+      "status": "added",
+      "additions": 129,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/new.mjs",
+      "status": "added",
+      "additions": 206,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/new.spec.mjs",
+      "status": "added",
+      "additions": 305,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/publish.mjs",
+      "status": "added",
+      "additions": 63,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/publish.spec.mjs",
+      "status": "added",
+      "additions": 171,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/release.mjs",
+      "status": "added",
+      "additions": 105,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/release.spec.mjs",
+      "status": "added",
+      "additions": 113,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/changelog/testing.mjs",
+      "status": "added",
+      "additions": 106,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-20T21:01:35Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-20T23:02:46Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:04:07Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:04:31Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:02:25Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:03:26Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:03:00Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:03:11Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:02:50Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:02:37Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:02:24Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:03:00Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:01:44Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:01:14Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:02:02Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:03:57Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:03:29Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:02:08Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:02:20Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:01:30Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:02:58Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:56:35Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:56:45Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:55:28Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:49:11Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:49:08Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:49:21Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:50:34Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:53:57Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:49:26Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:49:21Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:49:03Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "failure",
+      "completed_at": "2026-10-20T22:49:36Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:49:15Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T22:49:41Z"
+    }
+  ]
+}

@@ -1,0 +1,231 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5687,
+  "title": "Tech debt: Capabilities using event target",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\nFeature entry is there in added section and it is unpublished version hence not creating new entry. \r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n## Description\r\n\r\nCapabilities feature has been added as part of - https://github.com/microsoft/BotFramework-WebChat/pull/5679\r\nThis is just to use event target instead of activities for Web Chat <- Adapter communication.\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [x] I have added tests and executed them locally\r\n- [ ] I have updated `CHANGELOG.md`\r\n- [x] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n- [x] Browser and platform compatibilities reviewed\r\n- [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n- [x] Documents reviewed (docs, samples, live demo)\r\n- [x] Internationalization reviewed (strings, unit formatting)\r\n- [x] `package.json` and `package-lock.json` reviewed\r\n- [x] Security reviewed (no data URIs, check for nonce leak)\r\n- [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "pranavjoshi001",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-02-04T10:07:15Z",
+  "merged_at": "2026-02-11T02:46:44Z",
+  "base": "main",
+  "head": "capabilities-using-event",
+  "base_sha": "32ae93a87e78f4a903b6c79b38c672bff93afca1",
+  "head_sha": "7d78c2dfdafcfe12f675177ba88b81919016a80f",
+  "merge_sha": "118af246b6f4abf72d5b5955fad099c41b57f00b",
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "b4068b36dff1e34ec8dddd7cf11c4aa6c21b0667",
+      "message": "capabilities using event target",
+      "author": "pranavjoshi001"
+    },
+    {
+      "sha": "f2ab50f4e7e663f303c0d1c21801f1058848173b",
+      "message": "Cleaned up",
+      "author": "compulim"
+    },
+    {
+      "sha": "76a42e50a89e73a7bb5f1d4e632428da11404a99",
+      "message": "Fix Prettier",
+      "author": "compulim"
+    },
+    {
+      "sha": "f1b33f13e43e44b1efa2ad3be2c9e97bff9bb2e0",
+      "message": "comment resolved",
+      "author": "pranavjoshi001"
+    },
+    {
+      "sha": "7d78c2dfdafcfe12f675177ba88b81919016a80f",
+      "message": "Merge branch 'main' into capabilities-using-event",
+      "author": "pranavjoshi001"
+    }
+  ],
+  "files": [
+    {
+      "path": "__tests__/html2/hooks/useCapabilities.html",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "docs/CAPABILITIES.md",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/Capabilities/CapabilitiesComposer.tsx",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 46,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/createDirectLineEmulator.js",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 8,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-02-06T07:09:20Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-02-06T07:09:25Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-02-11T02:46:23Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-02-11T01:07:58Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-02-11T01:08:07Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T20:59:58Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-11T00:46:13Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:22Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:18Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:33Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:18Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:45Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:31Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:49Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-11T01:07:50Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:08:03Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:09Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:06:57Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:08:18Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:23Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:26Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:23Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:07:38Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T20:56:09Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T20:56:38Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:01:13Z"
+    },
+    {
+      "name": "Build test harness",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T20:58:06Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:01:48Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-02-10T21:00:05Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-02-06T12:24:33Z"
+    }
+  ]
+}

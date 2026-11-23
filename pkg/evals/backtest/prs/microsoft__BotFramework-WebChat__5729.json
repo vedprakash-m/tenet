@@ -1,0 +1,215 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5729,
+  "title": "Use optional chaining for getter access",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n- This is to avoid screen blank when `directLine` prop is null though it is mandatory.\r\n\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [ ] I have added tests and executed them locally\r\n- [ ] I have updated `CHANGELOG.md`\r\n- [ ] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n- [ ] Browser and platform compatibilities reviewed\r\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\r\n- [ ] Documents reviewed (docs, samples, live demo)\r\n- [ ] Internationalization reviewed (strings, unit formatting)\r\n- [ ] `package.json` and `package-lock.json` reviewed\r\n- [ ] Security reviewed (no data URIs, check for nonce leak)\r\n- [ ] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "pranavjoshi001",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-02-19T09:13:24Z",
+  "merged_at": "2026-03-06T06:54:17Z",
+  "base": "main",
+  "head": "directline-null-check-capabilities",
+  "base_sha": "fb2716830fec0abd0e7516ee63d76e8a1ee72383",
+  "head_sha": "097baad35a3fa8db93719bb8bbc4fa83e1b3a791",
+  "merge_sha": "a2436091c9d3d752c4ee583fff88d39f42f322a9",
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "c823861b6b24e928af29a000c71cede1e1fcf721",
+      "message": "Use optional chaining for getter access",
+      "author": "pranavjoshi001"
+    },
+    {
+      "sha": "d358d0e7dce41ee5ce304d6a09d5d331ee7bdf38",
+      "message": "Merge branch 'main' into directline-null-check-capabilities",
+      "author": "pranavjoshi001"
+    },
+    {
+      "sha": "097baad35a3fa8db93719bb8bbc4fa83e1b3a791",
+      "message": "Merge branch 'main' into directline-null-check-capabilities",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/api/src/providers/Capabilities/private/fetchCapabilitiesFromAdapter.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-02-24T17:32:16Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-03-06T06:20:23Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:54:23Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:31:11Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:30:49Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:29:47Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:29:39Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:30:31Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:30:18Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:29:54Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:30:07Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:29:48Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:29:29Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:29:54Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:30:11Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:29:27Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:29:27Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:29:18Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:30:10Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:30:09Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:29:41Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:29:40Z"
+    },
+    {
+      "name": "Cleanup artifacts",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:20:23Z"
+    },
+    {
+      "name": "Upload results",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:20:10Z"
+    },
+    {
+      "name": "Agent",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:19:50Z"
+    },
+    {
+      "name": "Prepare",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:18:13Z"
+    },
+    {
+      "name": "Build test harness",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:20:42Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:22:58Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:19:11Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:18:51Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:23:46Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:24:42Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-03-06T06:22:16Z"
+    }
+  ]
+}

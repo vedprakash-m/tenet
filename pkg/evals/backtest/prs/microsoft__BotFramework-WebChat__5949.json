@@ -1,0 +1,837 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5949,
+  "title": "Remove the colon after \"Bot said\" and \"You said\" for screen readers",
+  "body": "> Fixes #4363\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed [#4363](https://github.com/microsoft/BotFramework-WebChat/issues/4363), screen readers reading \"colon\" after \"Bot said\", \"You said\" and the attachment prefixes in English, in PR [#5949](https://github.com/microsoft/BotFramework-WebChat/pull/5949), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nJAWS reads punctuation by default, so \"Bot said: Hello\" was narrated as \"Bot said colon Hello\". The English screen reader greetings (\"Bot $1 said\", \"You said\", \"Bot attached\", \"You attached\") and attachment prefixes (\"A card\", \"A file\", \"A text\") no longer end with a colon; hosts with `overrideLocalizedStrings` keep their own text.\n\n## Design\n\n- Nothing replaces the colon, as the issue expects (\"bot said hello world\") and the review of #4837 kept; the live region already puts the greeting on its own line.\n- en-US only: translations come from the localization process; \"Connectivity Status: …\" is left for #5946.\n\n## Specific Changes\n\n- `en-US.json`: colons removed from the 7 strings, comments and JSDoc examples updated\n- `accessibility/activityGreeting.noColon.html`: scan mode greeting, arrow-key summary and live region without colons (snapshot 1)\n- 28 tests: expectations without the colon\n- 43 live region snapshots: same text without the colons, no other change\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [x] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-21T23:10:11Z",
+  "merged_at": "2026-10-22T02:35:10Z",
+  "base": "main",
+  "head": "OEvgeny/fix-4363-greeting-colon",
+  "base_sha": "4eb90fbf9e5aaaa04f7403962a23e4777f0bcddf",
+  "head_sha": "21ce66c50655d51f940f18aa9f166b7e937c87a9",
+  "merge_sha": "893c8f03041a8d583aa0f6824caa60dac4d16f50",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-21T23:10:56Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "982cd221122cc35d25e3bd6efeadc4264b233d5a",
+      "message": "Remove the colon after \"Bot said\", \"You said\" and \"attached\" for screen readers",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "1abfe6a49315c2da68c1c394aa22a6f4147c1c81",
+      "message": "Remove the colon after \"A card\", \"A file\" and \"A text\" for screen readers",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "d95c9a67d5fa444484f6b9df6099e71705b524df",
+      "message": "Update live region snapshots: same text without the colons",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "3aad224916fd4f42324e69aee41809cf8c89be40",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "194842a5a89e6962a5cb99910e277490f84a9dc4",
+      "message": "Merge remote-tracking branch 'origin/main' into OEvgeny/fix-4363-greeting-colon",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "b4b673874403e18648e5ca5716272cfaaaefbfeb",
+      "message": "Merge branch 'main' into OEvgeny/fix-4363-greeting-colon",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "d0cb408260384ae1ada40e0a89f1bbfefa080f70",
+      "message": "Remove the colon in tests added by #5946",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "5a39190f8676e60915c781adfd771a6f0eac1616",
+      "message": "Merge remote-tracking branch 'origin/OEvgeny/fix-4363-greeting-colon' into OEvgeny/fix-4363-greeting-colon",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "21ce66c50655d51f940f18aa9f166b7e937c87a9",
+      "message": "Merge branch 'main' into OEvgeny/fix-4363-greeting-colon",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5949-fix-4363-greeting-colon.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/accessibleName.activityStatus.sendFailed.html",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/accessibleName.link.html",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/accessibleName.scanMode.html",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/accessibleName.simple.html",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/activityGreeting.noColon.html",
+      "status": "added",
+      "additions": 86,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/activityGreeting.noColon.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.roleMod.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.roleMod.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.roleMod.unlabelled.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.roleMod.unlabelled.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.validation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.validation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/aria-roledescription.localized.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/aria-roledescription.localized.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/botAvatarInitials.perActivity.html",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/connectivityStatus/reconnected.liveRegion.html",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/connectivityStatus/reconnected.liveRegion.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/connectivityStatus/reconnected.liveRegion.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/connectivityStatus/reconnected.liveRegion.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activity/htmlInMarkdown.html",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activity/speakOverrideAttachments.html",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activity/text.html",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.sendFailed.event.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.sendFailed.html",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.sendFailed.typing.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.dateTime.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.dateTime.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.hiddenText.html",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.hiddenText.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.imageAndBlocks.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.imageAndBlocks.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.inputLabel.html",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.inputLabel.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.inputValue.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.markdown.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.markdown.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.speakOverText.html",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.speakOverText.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.speakProperty.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.text.html",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.text.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/animationCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/audio.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/audioCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/file.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/heroCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/image.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/receiptCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/signInCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/thumbnailCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/unknownCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/video.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/videoCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/newMessages.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/newMessages.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/newMessages.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/noRoleWords.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/noRoleWords.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/suggestedActions/withMessage.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/suggestedActions/withMessage.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/suggestedActions/withoutMessage.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/suggestedActions/withoutMessage.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.multilineTextBox.enter.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.sendButton.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.singleLineTextBox.enter.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/accessibility.sendBox.alertEmptyMessage.multilineTextBox.enter.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/accessibility.sendBox.alertEmptyMessage.sendButton.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/attachmentWithoutText.html",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/suggestedActions.accessKey.html",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/suggestedActions.noAccessKey.html",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "docs/ACCESSIBILITY.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/StyleOptions.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/localization/en-US.json",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/useLocalizeActivityGreetingAlt.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-21T23:11:03Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-21T23:18:13Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2026-10-21T23:18:44Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T01:13:35Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:35:37Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:35:06Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:24:40Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:35:00Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:25:39Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:29:02Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:30:58Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:29:44Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:24:59Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:25:02Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:33:53Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:30:03Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:25:42Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:29:56Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:24:55Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:26:03Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:24:18Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:25:50Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:25:33Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:19:09Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:19:39Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:18:36Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:12:41Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:12:05Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:13:07Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:14:19Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:12:30Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:13:32Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:12:50Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:16:22Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:13:02Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:12:48Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T02:13:21Z"
+    }
+  ]
+}

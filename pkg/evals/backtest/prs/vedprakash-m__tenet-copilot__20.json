@@ -1,0 +1,114 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 20,
+  "title": "Test that specialist lifecycles are the kernel's (AGT-10)",
+  "body": "One test through the public verbs: a Standard review is reserved when the manifest is issued, settled when the result is recorded, and finish reports an endpoint with no transcript. The host side (users never read transcripts) stays unobserved until the pilot.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-10T22:00:47Z",
+  "merged_at": "2026-11-10T23:53:04Z",
+  "base": "main",
+  "head": "agt10-lifecycle",
+  "base_sha": "47f6e4ce24be83c8b77dc82217be2fff8cf878e2",
+  "head_sha": "3ff9571396dc1764860d58701fc79e43b9195cc9",
+  "merge_sha": "89ec5d2e516716a7f61e84b5b81f1e5217d2d1ec",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-10T23:53:00Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "3ff9571396dc1764860d58701fc79e43b9195cc9",
+      "message": "test: the kernel opens and settles review reservations itself [AGT-10]",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/kernel/test/specialist-lifecycle.test.ts",
+      "status": "added",
+      "additions": 35,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:03:52Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:16:57Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:35:09Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:02:30Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:01:12Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T22:12:47Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:01:15Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-10T22:00:43Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:24:21Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:04:20Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:01:08Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:01:03Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:35:34Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:02:10Z"
+    }
+  ]
+}

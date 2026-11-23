@@ -1,0 +1,82 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5582,
+  "title": "Use exact version for `react-chain-of-responsibility`",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #5581.\r\n\r\n## Changelog Entry\r\n\r\n### Fixed\r\n\r\n- Fixed [#5581](https://github.com/microsoft/BotFramework-WebChat/issues/5581). Activities should be displayed after upgrading via `npm install`, in PR [#XXX](https://github.com/microsoft/BotFramework-WebChat/pull/XXX), by [@compulim](https://github.com/compulim)\r\n\r\n## Description\r\n\r\nNewer version of `react-chain-of-responsibility` introduced support of wrapper component.\r\n\r\nHowever, due to caret versioning, when upgrading via `npm install`, the latest version of `react-chain-of-responsibility` is not installed. Thus, wrapper component support is missing, cause `<ErrorBoundary>` not to be rendered.\r\n\r\nTests did not catch the problem because pipeline always run with fresh install.\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- `npm install react-chain-of-responsibility@main --save-exact`\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] ~I have added tests and executed them locally~\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-09-16T04:08:03Z",
+  "merged_at": "2025-09-16T04:39:00Z",
+  "base": "main",
+  "head": "fix-exact-deps",
+  "base_sha": "cbaf98ff30eedb3da5dfc46b99c19a18393c8aba",
+  "head_sha": "6e26991e3b5f0ad7d0fd9ea9dceea321bdb11c23",
+  "merge_sha": "f2f7323b16cca564bc2d5e0310d8249de7970cd0",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-09-16T04:08:21Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "70c41f027f237e21a032f9bd85b5067d28e3a8fb",
+      "message": "Use exact version",
+      "author": "compulim"
+    },
+    {
+      "sha": "6e26991e3b5f0ad7d0fd9ea9dceea321bdb11c23",
+      "message": "Add PR number",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-09-16T04:38:39Z"
+    }
+  ],
+  "check_runs": []
+}

@@ -1,0 +1,414 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5887,
+  "title": "Show keyboard focus indicator on all four sides of audio and video attachments",
+  "body": "> Fixes #5740\n\nSuggested title: Show keyboard focus indicator on all four sides of audio and video attachments\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed the keyboard focus indicator of audio and video attachments, and of videos in animation cards: the bubble clipped the browser focus ring, and the rest was covered by the audio player or not visible over a dark video; it is now shown on all four sides of the player, fixes [#5740](https://github.com/microsoft/BotFramework-WebChat/issues/5740), in PR [#5887](https://github.com/microsoft/BotFramework-WebChat/pull/5887), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nWhen an audio attachment (for example, the mock bot's \"audio\" command) had keyboard focus, only the corners of the focus ring were visible. The browser draws the focus ring of `<audio>` around the edge of the player. The bubble has `overflow: hidden` and clips the outer half of the ring, and the player controls are painted over the inner half. The same `<audio>` outside of a bubble shows a full ring in Edge.\n\nVideo attachments, and animation cards with a video (not a GIF), have the same problem: the bubble clips the outer half of the ring of `<video>`, and the remaining ~1px dark inner ring is not visible over a dark video or over the dark controls.\n\nOn `:focus-visible` of the `<audio>` or `<video>` element, the attachment (or the media item of the animation card) now draws a ring on top of the player and hides the browser ring. The default theme and the Fluent theme (including the Copilot variant) are fixed.\n\n## Design\n\n- Both rings are an `::after` overlay on the attachment, painted after the player, with the `transcriptVisualKeyboardIndicator*` style options (2px solid black by default), the same as focused attachments in carousel layout (`CarouselFilmStripAttachment.module.css`). An `outline` cannot be used: the outline of `<audio>` is painted under the player controls, and an outline outside the player is clipped by the bubble. The overlays do not use `z-index`.\n- The browser ring is hidden while the overlay is shown, so themes with padding around the attachment (such as the Copilot variant, where the ring was not clipped) show one ring, not two.\n- Audio: a single ring in the shape of the player. The native player is a pill drawn inside a rectangular box: Chromium sets `border-radius: 100px` on `::-webkit-media-controls-enclosure` (measured in Edge, in both themes, RTL, and narrow widths). The ring uses the same radius, so it hugs the player instead of following the box. The ring only touches the player (`#F1F3F4`, about 19:1) and the bubble (21:1), so one color is enough.\n- Video: a two-tone rectangle. The player is a rectangle, and the ring is drawn over the video, which can be any color. So a 2px inner band in `bubbleBackground` (white by default) separates the ring from the video: about 16.5:1 against a dark video, while the black ring has up to 21:1 against a light video and the bubble. In forced colors mode, the browser removes the band (`box-shadow`), and the ring is shown in the system text color.\n- Video corners: the bubble clips the video with its rounded corners (8px in the Fluent theme), so the video attachment and its ring inherit the bubble radius and follow the clipped corners. In the Copilot variant, the bubble has padding and does not clip the video, so the focused video is rounded like the ring (12px), and the ring does not cut its corners.\n- Animation cards: the same two-tone ring as video attachments, on the media item. Only the top corners of the first media item touch the bubble, so only those corners inherit the bubble radius, and the bottom corners stay square next to the card content. The video is now laid out as a block, which removes a 4.6px line gap below it, so the ring hugs the video; this is why the snapshot of `replyToId/cardAction/animationCard.html` changed (the card is 4.6px shorter). The rules are copied into the CSS module of the animation card, because sharing them with the video attachment style set would need a wrapper around every `<video>`, which also changes the layout of video cards.\n- The audio card and the video card are unchanged: their players have a margin inside the card, so the browser ring is not clipped.\n- Keyboard focus cannot move into the audio player buttons (play, volume, more) because of the activity focus trap. That is tracked in #5709 and is not changed here.\n- Not changed, possible follow-ups:\n   - YouTube and Vimeo embeds: when the `<iframe>` gets focus, no indicator is visible until Tab moves to the embed's own controls. The `<iframe>` element does not match `:focus-visible`, so Web Chat cannot tell keyboard focus from mouse focus.\n- Open questions: should the video's inner band use `bubbleBackground` (follows the theme; fails with a dark bubble and the default black ring over dark video, like main) or a fixed white? In Copilot, should the video be rounded always, only while focused (current), or keep the ring square?\n\n## Specific Changes\n\n- `Styles/StyleSet/AudioAttachment.ts`: on `:has(> audio:focus-visible)`, the attachment shows a pill-shaped `::after` overlay border and the `<audio>` has no outline\n- `Styles/StyleSet/VideoAttachment.ts` (was empty): on `:has(> video:focus-visible)`, the attachment shows a two-tone `::after` overlay (border and an inset band); the attachment, the overlay, and the focused `<video>` inherit the bubble corner radius, and the `<video>` has no outline\n- `AnimationCardContent.module.css`: the same two-tone overlay on the media item with a focused `<video>`, top corners inherited from the bubble, and the `<video>` laid out as a block\n- `StyleOptions.ts`: documented that the `transcriptVisualKeyboardIndicator*` style options apply to the transcript, carousel layout (attachments and flipper buttons), card action buttons (#5879), audio and video attachments, and videos in animation cards, and that `bubbleBackground` also colors the inner band of the video indicators\n- Added `__tests__/html2/attachment/audio.focusVisible.html`, `video.focusVisible.html`, and `__tests__/html2/richCard/animationCard.focusVisible.html`, with `.fluent.html` variants and `.copilot.html` variants for the videos: they focus the player with the keyboard, check that it has focus and matches `:focus-visible`, and take a snapshot of the focus indicator\n- Added `__tests__/assets/dark-gray-video.webm` (1.2 KB, 2 seconds, solid dark gray), so the video snapshots have a stable frame. The white area above the video in the snapshots is the letterbox of this 4:3 video in the 270px-high player (same on `main`), not part of the indicator\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have updated `CHANGELOG.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-17T07:59:28Z",
+  "merged_at": "2026-10-18T01:11:46Z",
+  "base": "main",
+  "head": "OEvgeny/fix-5740-audio-focus-ring",
+  "base_sha": "c1e5825b64b2d036aa2b9408c301acd4d9facb4e",
+  "head_sha": "65de320b7b9dbe9b6aec0ad9ce38219494b76f8a",
+  "merge_sha": "161bdf84ddf14dbe8fad23acb71b5a5f84abe0c0",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-17T08:09:57Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "44fe4c688656ea8f0429a2b963124303a805097f",
+      "message": "Show keyboard focus indicator on all four sides of audio attachments",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "0e5dcc89d6f08b1c93180435de00b7aaedc6ca7a",
+      "message": "Add PR number to changelog",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "2c495359f6e51e232ca89e6e22cedddf55255aa8",
+      "message": "Draw the audio focus indicator in the pill shape of the player",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "be91696588a93d906b72b4b3b6b7382ff9b6fca8",
+      "message": "Show keyboard focus indicator on all four sides of video attachments",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "38829506d043852d8594c0523b4d78d704575578",
+      "message": "Follow the bubble corners with the video focus indicator",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "65de320b7b9dbe9b6aec0ad9ce38219494b76f8a",
+      "message": "Show keyboard focus indicator on all four sides of videos in animation cards",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/assets/dark-gray-video.webm",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/audio.focusVisible.fluent.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/audio.focusVisible.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/audio.focusVisible.html",
+      "status": "added",
+      "additions": 71,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/audio.focusVisible.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/video.focusVisible.copilot.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/video.focusVisible.copilot.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/video.focusVisible.fluent.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/video.focusVisible.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/video.focusVisible.html",
+      "status": "added",
+      "additions": 78,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/video.focusVisible.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/replyToId/cardAction/animationCard.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.focusVisible.copilot.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.focusVisible.copilot.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.focusVisible.fluent.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.focusVisible.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.focusVisible.html",
+      "status": "added",
+      "additions": 87,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.focusVisible.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/StyleOptions.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AnimationCardContent.module.css",
+      "status": "modified",
+      "additions": 38,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/AudioAttachment.ts",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/VideoAttachment.ts",
+      "status": "modified",
+      "additions": 27,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-17T08:05:13Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-17T08:07:22Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-17T08:12:30Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-17T08:51:19Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-17T08:51:21Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:14:00Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:32:58Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:32:39Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:24Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:43Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:32:31Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:30:58Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:30:27Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:30:51Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:25Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:23Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:09Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:06Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:48Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:14Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:10Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:07Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:20Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:32:14Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:31:57Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:26:18Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:25:36Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:27:26Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:18:32Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:18:04Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:23:15Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:20:24Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:18:49Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:18:57Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:19:06Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:18:35Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:18:39Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T10:18:51Z"
+    }
+  ]
+}

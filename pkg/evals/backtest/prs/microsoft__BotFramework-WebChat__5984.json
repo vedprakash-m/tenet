@@ -1,0 +1,477 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5984,
+  "title": "Add an internal CSS module theme context to useStyles(), shared by all packages",
+  "body": "> Lets a theme style CSS Modules elements without readable class names.\n\n## Changelog Entry\n\nNone: internal plumbing with no visible change, label `no-changelog`.\n\n## Description\n\nFluent can only style Web Chat elements through readable class names (`:global(.bubble)`). `useStyles()` now also adds the classes an internal `<CSSModuleThemeComposer>` above it provides for the same local name; without one, output is unchanged.\n\n## Design\n\n- Each package bundles its own copy of the styles package (own context), so bundle and Fluent now use the component's copy via `internal.js`, like `InjectStyleElements`; publishing the private package was the alternative.\n- The default `useStyles` transform keeps `<local> <hashed>`; `webChatPrefixedClassName` is ready for dropping plain names.\n\n## Specific Changes\n\n- `styles/react`: `CSSModuleThemeContext`, `combineCSSModules()` (concatenates, frozen), `CSSModuleThemeComposer`, transforms, `useStyles()`\n- bundle cards, Fluent: shared copy, guarded by `no-restricted-imports`\n- unit specs for the above; `sharedStylesRuntime.spec.js`: one copy in the builds\n- typed with `CSSModuleTheme`: published typings check with `skipLibCheck: false`\n- `cssModuleTheme.fluent.html`: snapshot 1, a composer above Fluent outlines bubbles, Adaptive Card and send box\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-30T02:48:08Z",
+  "merged_at": "2026-10-30T07:11:53Z",
+  "base": "main",
+  "head": "OEvgeny/fix-css-module-theme-context",
+  "base_sha": "1cee33a542bc0291ba9cd640ad15b35a4968ec9b",
+  "head_sha": "99fa7c3318ae45a3b55ce5e096ffb510c96ee51d",
+  "merge_sha": "b1c6d98bc6519836933a6a3602134872641d89bd",
+  "labels": [
+    "no-changelog"
+  ],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-30T05:59:33Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "deb6bdb3cac186a8c3af7600d8437658370131f3",
+      "message": "Add an internal CSS module theme context to useStyles(), shared by all packages",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "32bee770cede62dc0aba788a32cc7b26d85da220",
+      "message": "Type the styles runtime with CSSModuleTheme so the published typings do not use the ambient CSSModuleClasses",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "b83a34f5cb3f594f4f99bce007f92f5ac3cc1489",
+      "message": "Check the published scripts of botframework-webchat-fluent-theme for the styles runtime",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "99fa7c3318ae45a3b55ce5e096ffb510c96ee51d",
+      "message": "Merge branch 'main' into OEvgeny/fix-css-module-theme-context",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "__tests__/html2/hooks/useStyles/cssModuleTheme.fluent.html",
+      "status": "added",
+      "additions": 95,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/hooks/useStyles/cssModuleTheme.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/.eslintrc.yml",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AdaptiveCardRenderer.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AnimatedImageContent.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AnimationCardContent.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AudioCardContent.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/SignInCardContent.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/VideoCardContent.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/internal.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/boot/internal.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/.eslintrc.yml",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/__tests__/sharedStylesRuntime.spec.js",
+      "status": "added",
+      "additions": 84,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityLoader.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/icon/FluentIcon.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/typingIndicator/SlidingDotsTypingIndicator.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/styles/useStyles.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/react/index.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/react/private/CSSModuleThemeComposer.spec.tsx",
+      "status": "added",
+      "additions": 71,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/react/private/CSSModuleThemeComposer.tsx",
+      "status": "added",
+      "additions": 37,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/react/private/CSSModuleThemeContext.ts",
+      "status": "added",
+      "additions": 19,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/react/private/classNameTransforms.ts",
+      "status": "added",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/react/private/combineCSSModules.spec.ts",
+      "status": "added",
+      "additions": 71,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/react/private/combineCSSModules.ts",
+      "status": "added",
+      "additions": 33,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/react/private/useStyles.spec.tsx",
+      "status": "added",
+      "additions": 116,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/react/private/useStyles.ts",
+      "status": "modified",
+      "additions": 26,
+      "deletions": 14,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-30T05:06:47Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-30T05:59:42Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-30T06:53:42Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:11:28Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:11:54Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:09:52Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:11:00Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:09:55Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:10:14Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:11:19Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:10:17Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:08:34Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:08:42Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:09:56Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:02:28Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:03:12Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:10:08Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:10:34Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:02:13Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:08:55Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:10:40Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:09:52Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:10:40Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:10:31Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:04:39Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:10:14Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:02:46Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:02:14Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:03:04Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:03:02Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:02:56Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:03:20Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:02:23Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:02:25Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:02:18Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:05:27Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:02:42Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T06:56:20Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T06:55:39Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T06:56:26Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T06:56:45Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T06:57:33Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T07:01:10Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T06:56:29Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T06:56:08Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T06:56:43Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T06:56:27Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-30T06:56:57Z"
+    }
+  ]
+}

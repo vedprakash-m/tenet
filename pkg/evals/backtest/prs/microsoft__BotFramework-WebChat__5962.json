@@ -1,0 +1,539 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5962,
+  "title": "Add an opt-in ariaNotify() transport for screen reader announcements",
+  "body": "> Part of `ariaNotify()`-first screen reader announcements (phase 1), related to #5857.\n\n## Changelog Entry\n\n### Added\n\n- 🧪 Added `styleOptions.assistiveTechnologyAnnouncementTransport` to announce via `ariaNotify()` instead of the live region, in PR [#5962](https://github.com/microsoft/BotFramework-WebChat/pull/5962), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nWeb Chat announces only via its live region, silent when the host hides it. With the experimental option set to `'aria-notify'` (default `'live-region'`), it calls `ariaNotify()` on its root instead, once per entry, falling back to the live region if unsupported.\n\n## Design\n\n- Text comes from the rendered entry (removed right after), so callers stay unchanged; `dom-accessibility-api` computes names, not live region text.\n- Next: a cancelable `webchat:announce` event, then `ariaNotify()` by default after an NVDA/JAWS pass.\n\n## Specific Changes\n\n- `StyleOptions.ts`, `normalizeStyleOptions.ts` (+ spec): option, JSDoc, warns if invalid\n- `LiveRegionTwin`: cached support check, fallback, one call per new entry, empty live region\n- `getAnnouncementText.ts`: text walker\n- `ariaNotify/*.html`: calls on the root, empty live region, host hiding it, alt text, buttons, inputs, no repeats after switching, fallback\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [x] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-22T19:36:28Z",
+  "merged_at": "2026-10-28T23:23:29Z",
+  "base": "main",
+  "head": "OEvgeny/fix-aria-notify-transport",
+  "base_sha": "0178f8d4142386ebe6d9916415b8f11e4c75f014",
+  "head_sha": "03947e7bf86b3075879262643def14edf45bfcf6",
+  "merge_sha": "78d436aa42a4ebf3061aceb087709198f8d9d483",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-22T22:03:46Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "4ca9e6165c380df55b03f91761cba138782cc354",
+      "message": "Add styleOptions.announcementTransport to announce via ariaNotify()",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "552ca6f406bfbb56a779852547b1f7027892a738",
+      "message": "Show the live region copy in ariaNotify snapshots",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "67dce4983c021cc6581592951b809c48c82dcb07",
+      "message": "Fall back to the live region without ariaNotify(), drop 'auto', do not repeat entries after switching",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "6a36eabaca71a4eea763de27c77b02a9c3dacc63",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "6fea16cc1cc808ae87ecc3dad375b9f696137558",
+      "message": "Check ariaNotify() support once per realm, outside of effects",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4df5e7109b620e1b38840df21f609588a3b426d2",
+      "message": "Explain why ariaNotify() support is checked lazily",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "f9fcb6fadfa0050854414a9ff5ada1b7a105aef6",
+      "message": "Apply suggestion from @OEvgeny",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "9e01bb48c292344e544748cfe3659e2cdad19307",
+      "message": "Merge branch 'main' into OEvgeny/fix-aria-notify-transport",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "6dd07abb924c790a951d8a75980b40c49351c3c0",
+      "message": "Empty the live region right after announcing via ariaNotify()",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "2a9dca4d3c8b3dbad43a0f9135ec694b6fe8062a",
+      "message": "Normalize announcementTransport with valibot fallback()",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "ed98b5b568d4a0cce92f58c99ee26e922301121f",
+      "message": "Rename styleOptions.announcementTransport to assistiveTechnologyAnnouncementTransport",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "bd0819773f47f247446dcb1855271ba07b9c428a",
+      "message": "Merge remote-tracking branch 'origin/main' into OEvgeny/fix-aria-notify-transport",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "1cf13f8cae61d34d9d794a076d59d08f575667c7",
+      "message": "Fall back to the live region in normalizeStyleOptions when ariaNotify() is unavailable",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "03947e7bf86b3075879262643def14edf45bfcf6",
+      "message": "Merge branch 'main' into OEvgeny/fix-aria-notify-transport",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5962-fix-aria-notify-transport.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/adaptiveCard.inputValue.html",
+      "status": "added",
+      "additions": 129,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/adaptiveCard.inputValue.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/heroCard.html",
+      "status": "added",
+      "additions": 108,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/heroCard.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/hostHidesLiveRegion.html",
+      "status": "added",
+      "additions": 83,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/hostHidesLiveRegion.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/message.html",
+      "status": "added",
+      "additions": 90,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/message.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/switchTransport.html",
+      "status": "added",
+      "additions": 87,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/switchTransport.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/unsupported.html",
+      "status": "added",
+      "additions": 97,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/unsupported.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/StyleOptions.ts",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/defaultStyleOptions.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/normalizeStyleOptions.spec.ts",
+      "status": "added",
+      "additions": 107,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/normalizeStyleOptions.ts",
+      "status": "modified",
+      "additions": 38,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Composer.tsx",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Utils/activityAltText.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 60,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Utils/htmlInlineTagNames.ts",
+      "status": "added",
+      "additions": 60,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/LiveRegionTwin/private/LiveRegionTwinContainer.tsx",
+      "status": "modified",
+      "additions": 65,
+      "deletions": 18,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/LiveRegionTwin/private/createLiveRegionTwinComposer.tsx",
+      "status": "modified",
+      "additions": 32,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/LiveRegionTwin/private/getAnnouncementText.ts",
+      "status": "added",
+      "additions": 105,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-22T20:37:16Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-22T21:31:26Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-22T22:03:54Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T04:21:09Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-23T06:56:16Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-23T06:56:46Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-23T06:58:57Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-23T07:03:58Z"
+    },
+    {
+      "state": "CHANGES_REQUESTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-23T07:20:30Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T07:28:28Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T07:28:30Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T07:28:32Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-23T07:28:36Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-28T20:37:11Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-28T20:38:40Z"
+    },
+    {
+      "state": "CHANGES_REQUESTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-28T20:38:57Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-28T21:02:20Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-28T21:02:23Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-28T22:09:21Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-28T22:09:56Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-28T22:14:52Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-28T23:01:51Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:23:24Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:23:54Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:22:25Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:23:04Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:21:08Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:21:12Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:22:30Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:21:38Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:23:02Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:21:52Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:21:53Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:23:16Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:21:40Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:22:05Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:21:01Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:22:43Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:22:55Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:22:27Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:22:21Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:16:54Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:15:56Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:17:51Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:09:44Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:09:38Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:13:33Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:11:11Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:10:03Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:10:26Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:09:42Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:09:38Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:10:15Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:10:23Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:09:50Z"
+    }
+  ]
+}

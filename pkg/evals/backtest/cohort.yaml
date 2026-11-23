@@ -1,0 +1,421 @@
+cohort_id: tenet-backtest-2026-11-23
+sources:
+  - repo: vedprakash-m/tenet-copilot
+    window: all_history
+    mode: every_merged_pull_request
+  - repo: microsoft/BotFramework-WebChat
+    window: 2025-01-01_through_2026-10-31
+    mode: merged_into_default_branch
+  - repo: Torus
+    status: "pending: location to be confirmed by the Owner"
+windows:
+  tenet-copilot: all history through 2026-11-23T18:11:58.593Z
+  BotFramework-WebChat: 2025-01-01 to 2026-10-31, inclusive
+eligibility:
+  - merged
+  - at least one changed file
+  - data still retrievable
+seed: "tenet-backtest-2026-11-23"
+ranking:
+  algorithm: sha256("tenet-backtest-2026-11-23:" + number)
+  direction: ascending
+  webchat_limit: 120
+  ci_and_contents_not_used: true
+per_source_counts:
+  vedprakash-m/tenet-copilot:
+    eligible: 22
+    excluded: 7
+    ranked_candidates: 22
+  microsoft/BotFramework-WebChat:
+    eligible: 325
+    excluded: 1
+    ranked_candidates: 120
+exclusions:
+  - repo: vedprakash-m/tenet-copilot
+    number: 1
+    reason: not_merged
+  - repo: vedprakash-m/tenet-copilot
+    number: 3
+    reason: not_merged
+  - repo: vedprakash-m/tenet-copilot
+    number: 4
+    reason: not_merged
+  - repo: vedprakash-m/tenet-copilot
+    number: 5
+    reason: not_merged
+  - repo: vedprakash-m/tenet-copilot
+    number: 10
+    reason: not_merged
+  - repo: vedprakash-m/tenet-copilot
+    number: 27
+    reason: not_merged
+  - repo: vedprakash-m/tenet-copilot
+    number: 29
+    reason: not_merged
+  - repo: microsoft/BotFramework-WebChat
+    number: 5678
+    reason: data_unretrievable
+    detail: "Command failed: gh api repos/microsoft/BotFramework-WebChat/pulls/5678/files?per_page=100 --paginate --slurp -H Accept: application/vnd.github+json\ngh: Server Error: Sorry, this diff is temporarily unavailable due to heavy server load. (HTTP 500)\n"
+generated_at: 2026-11-23T18:11:58.593Z
+gh_version: "version 2.105.0 (2026-11-17)"
+ranked_candidate_list:
+  - repo: microsoft/BotFramework-WebChat
+    number: 5537
+    hash: 026d0ff0b301eb9b3dae4105e5099fd331ebb311f88cf7b8007d886cb8d97097
+  - repo: microsoft/BotFramework-WebChat
+    number: 5602
+    hash: 02b6cf36ee1a1177127b8c4cc43577817486fb946aa87d647b9d2e831cd36610
+  - repo: microsoft/BotFramework-WebChat
+    number: 5954
+    hash: 02c128bb3b33b3ef0fe33c19bb71fd481f283b60ac59b783d151eb5d228ef291
+  - repo: microsoft/BotFramework-WebChat
+    number: 5679
+    hash: 03e5b0c69dbf8f129f10391114da93925cf4ce21326b62b2cf6f7eca4934175f
+  - repo: microsoft/BotFramework-WebChat
+    number: 5423
+    hash: 040bfc1e493643da878f93ff8876982dba0ac1f61fad33ce468bfa849a733cb5
+  - repo: microsoft/BotFramework-WebChat
+    number: 5808
+    hash: 041b315940b1bb4e7d344d5636f4fc8c61664cbdd58af49ae01d791eb013e505
+  - repo: microsoft/BotFramework-WebChat
+    number: 5407
+    hash: 04a2b6dd2d5cd493e771f85ae6f12e7592696a8adcff19f2cec00685659b26bb
+  - repo: microsoft/BotFramework-WebChat
+    number: 5993
+    hash: 0694862e78ff01050af4b2b7b2df806fe9dd77ee4b4236559daffbeac1959f97
+  - repo: microsoft/BotFramework-WebChat
+    number: 5984
+    hash: 0771c7f1c49dd62bbe6ae6f039a7823ae862e7eac80605fffdf278d18f13749d
+  - repo: microsoft/BotFramework-WebChat
+    number: 5440
+    hash: 0878e2b2000d0a74229b2a94ee1d354e41389a3bee2f767882d870aa39342d8f
+  - repo: microsoft/BotFramework-WebChat
+    number: 5786
+    hash: 090ef57687a7f068afb7c156c9d93ea51dede42a85192a1d505f0e824fa82a41
+  - repo: microsoft/BotFramework-WebChat
+    number: 5886
+    hash: 0948ecbd3ca7ad92fb01e5414ebdbb1cbc78103d60bd71bc71ebe5b795820f46
+  - repo: microsoft/BotFramework-WebChat
+    number: 5588
+    hash: 0ae63f8d1ca92a500ae52504e0beb3a67570d18d2d20e3cb77e9686096507fde
+  - repo: microsoft/BotFramework-WebChat
+    number: 5729
+    hash: 0cc6ee2152258a31b9c693bc1ad893cff898fc72303781796c7730da0be805c2
+  - repo: microsoft/BotFramework-WebChat
+    number: 5990
+    hash: 0f11f453fe258caca016104663e4051b982c331db9e05b6d0eadc41174a44905
+  - repo: microsoft/BotFramework-WebChat
+    number: 5651
+    hash: 102c40a95b7056488bec4e6570d67abe1267ef2c425fa582b7e592d3209d523a
+  - repo: microsoft/BotFramework-WebChat
+    number: 5415
+    hash: 11b21f0dfe9345f014760341e6d9212f28cf434a7881bde2c18f576262adf5fb
+  - repo: microsoft/BotFramework-WebChat
+    number: 5637
+    hash: 11c178f214eaea45292a962f5baa974e1cb039f366dbcd4e66c9923caec1ad28
+  - repo: microsoft/BotFramework-WebChat
+    number: 5550
+    hash: 127e31ec5b49a5f438617d31d703901bf4bdf2ed8908321d8c7dd9ddf9ed96f6
+  - repo: microsoft/BotFramework-WebChat
+    number: 5957
+    hash: 127f689898cad5e25bbbf09faada318af97601535957bf93035d743a61171357
+  - repo: microsoft/BotFramework-WebChat
+    number: 5681
+    hash: 12d0fd44ba47b0a0be656f47dea623ff851d30983f6079b01d9d2acc9eabeef1
+  - repo: microsoft/BotFramework-WebChat
+    number: 5950
+    hash: 12f57a95a3dc8dd0c32718eb183b582fde87e9701af6647b10f97bc6b100e211
+  - repo: microsoft/BotFramework-WebChat
+    number: 5553
+    hash: 135a56479754774ecb1d385ed70872187886d27316edda13293835d1798a3ae0
+  - repo: microsoft/BotFramework-WebChat
+    number: 5485
+    hash: 13653e5e188324e2303d3366818727c8a04f62530c1393b05aeb22f6566ce5a3
+  - repo: microsoft/BotFramework-WebChat
+    number: 5533
+    hash: 14376a1fd418bc801d1d085af7d90c35ef8c4952633133f2802b63c7462b18af
+  - repo: microsoft/BotFramework-WebChat
+    number: 5935
+    hash: 164376f3251af36fe153a05a201a5aee1ae628b8e6b56673b51fd6a26172ce79
+  - repo: microsoft/BotFramework-WebChat
+    number: 5471
+    hash: 16623be1e0ca045718afd57dc6cb92c844134f35b389a3ebf9f3105450bc55bc
+  - repo: microsoft/BotFramework-WebChat
+    number: 5883
+    hash: 17ee4beea6f1c8e118c8b48bc0807bf5ba1b504d61f227f5e2610a5f27722cba
+  - repo: microsoft/BotFramework-WebChat
+    number: 5962
+    hash: 18b3120c068d0e4534ec2c042beda5e5a723c7af5746acd9dedbadfa547ea6ca
+  - repo: microsoft/BotFramework-WebChat
+    number: 5891
+    hash: 1aff71fc46b15fe7fd0fbfdc530a49cf3f086c2cc099b10f2d798d25692a9461
+  - repo: microsoft/BotFramework-WebChat
+    number: 5508
+    hash: 1e384f2b31d232b318ea5509fa84b241ecad88ae55d5cba90cf4120e26b396b7
+  - repo: microsoft/BotFramework-WebChat
+    number: 5658
+    hash: 1eaa24ab869198d03b036308fd57c307cbabaa7dc28d93bee416c8e25aaf74c1
+  - repo: microsoft/BotFramework-WebChat
+    number: 5513
+    hash: 20577e7e11e46043fb9f743f376842299b40968f69dfe54d9fff2e210ef5d7d8
+  - repo: microsoft/BotFramework-WebChat
+    number: 5893
+    hash: 20990a988dafda1270a4e2fda1732d6ec0a4fb8c4d64a03fb4770f8149f5ff5c
+  - repo: microsoft/BotFramework-WebChat
+    number: 5539
+    hash: 2142891592ef0bc850811a2632a2019612c85df559bf957830c0a01445fd4f82
+  - repo: microsoft/BotFramework-WebChat
+    number: 5976
+    hash: 2159018671902ebd18cab5f58f922e5817cf47b941dd53dc980ec23ec1607546
+  - repo: microsoft/BotFramework-WebChat
+    number: 5620
+    hash: 22d40808cff3761dc09304824d4fe6cb3f1ed74ada541c2e34209de5bfaa6a7c
+  - repo: microsoft/BotFramework-WebChat
+    number: 5657
+    hash: 22ffb74b598e18b1bbdde1bee7bd170e7979ace8ee0b081ca328bbd6efa00a40
+  - repo: microsoft/BotFramework-WebChat
+    number: 5943
+    hash: 239d0b14a953d25769b1b3832d9fc485a1cee87e4bc2b31b4d7de84768ecf6e0
+  - repo: microsoft/BotFramework-WebChat
+    number: 5612
+    hash: 24cb1e03a959a55bbae3ec92801d20509f134cb481978b83b0cbed6739663eb7
+  - repo: microsoft/BotFramework-WebChat
+    number: 5672
+    hash: 262b5e4c12ed4d808f8bfaaa749082a98abc1aed149e5e1cc55828bbbee9940e
+  - repo: microsoft/BotFramework-WebChat
+    number: 5541
+    hash: 26eaa820bfebf826fe0eca3797bfe6a78c76f606dbbbb8e036826d05dfddbcaf
+  - repo: microsoft/BotFramework-WebChat
+    number: 5427
+    hash: 26f23d174961a3b9789976f914ae572a85ab5f2257b0d53bf1ed90250a216519
+  - repo: microsoft/BotFramework-WebChat
+    number: 5833
+    hash: 28127652ae7d0ad9c2998d739e19f23c17980281f4915bf5ecfd744e9b04464d
+  - repo: microsoft/BotFramework-WebChat
+    number: 5470
+    hash: 282f9214960afff479cee50e51864fe61e5d0dff3735ead929bb901c4dcaf573
+  - repo: microsoft/BotFramework-WebChat
+    number: 5510
+    hash: 28f88fe7a6cd69bfa5c2d51259de77d1c5438000e28b17a2aa85e2ef5247169c
+  - repo: microsoft/BotFramework-WebChat
+    number: 5834
+    hash: 2963f63bb92c18d526e4f206463298f5614314ac3d34d5313bebf32ed08edbc6
+  - repo: microsoft/BotFramework-WebChat
+    number: 5506
+    hash: 2b1c18fa4900aff8bf730260bb79b30501dd8aae0218d2550c52bab7b693facf
+  - repo: microsoft/BotFramework-WebChat
+    number: 5894
+    hash: 2b796df726412b64dafa5dcbaa952f9544b9ffc7171ac88ca7944e8dcb0d9f40
+  - repo: microsoft/BotFramework-WebChat
+    number: 5779
+    hash: 2beeaddb1f88fc753ef653d4235505dfcf15aa400e7562674d2eed15aa47f9ee
+  - repo: microsoft/BotFramework-WebChat
+    number: 5480
+    hash: 2c7d15fe67194ae698e414f268fb08b18dcd7e916fb694658c08dc1982949dab
+  - repo: microsoft/BotFramework-WebChat
+    number: 5873
+    hash: 2d181d3ef3a346b6f5884c0f9082a8b9c2166b4e692e6f9e25ff9fc7d7ab9572
+  - repo: microsoft/BotFramework-WebChat
+    number: 5614
+    hash: 2d197c94a0b277a0b77f7aac7c4982f8d37da3fbafa03e2f0e2320b14389f350
+  - repo: microsoft/BotFramework-WebChat
+    number: 5669
+    hash: 2dfe6ea9acefdc2b0deb20daf2b791fe92afca83d76915786a42a208ca3bf3c2
+  - repo: microsoft/BotFramework-WebChat
+    number: 5473
+    hash: 2e2602dbcf31cda77c0baf9808d474eeb15a2ed590144fc5c4b863542780df59
+  - repo: microsoft/BotFramework-WebChat
+    number: 5835
+    hash: 2f3a833e64d664e21cf3420169975be7dca516793808e8f49478e6c93a7a37af
+  - repo: microsoft/BotFramework-WebChat
+    number: 5870
+    hash: 2fd4902075d7612bf7da63ad3031c6f39d4ff5ced821103c48c6d27e41dec458
+  - repo: microsoft/BotFramework-WebChat
+    number: 5977
+    hash: 2fec978bc207d3d247bdcf3487d06155d44551b3650037f8bb139161113bf5ac
+  - repo: microsoft/BotFramework-WebChat
+    number: 5964
+    hash: 308f6ce0a216bd535e967397107bab133e10cedf16d1028dac4285c60e72d2e9
+  - repo: microsoft/BotFramework-WebChat
+    number: 5586
+    hash: 315d9b598c95e124529e2286e9ad558db77b944aa31980a06a115f1c9f4a1a21
+  - repo: microsoft/BotFramework-WebChat
+    number: 5659
+    hash: 3198584332014e65d0648e6e335cb3c646ca1a4acc7271c9102543461606868f
+  - repo: microsoft/BotFramework-WebChat
+    number: 5768
+    hash: 319cc4f463fe371f5cec66b218a9f3936c23b0c73bb9feac52fa3663582300df
+  - repo: microsoft/BotFramework-WebChat
+    number: 5978
+    hash: 333a22d16966b96de588fd4d52022bfb3f488a858a2450a5835133ba3a1bcf3c
+  - repo: microsoft/BotFramework-WebChat
+    number: 5831
+    hash: 3409792a6e388843011f431526e2f1c8765da7599aaaac32b2bba7917dad6d2f
+  - repo: microsoft/BotFramework-WebChat
+    number: 5593
+    hash: 34ab2b9ee0c88946b32b26e4d9ff23c0166f27d04be9fba5ffc83cff3ccd14fa
+  - repo: microsoft/BotFramework-WebChat
+    number: 5626
+    hash: 354854e12fdb58b40358c2bb18ac603b50287937cb394744368d69d5b95a38c4
+  - repo: microsoft/BotFramework-WebChat
+    number: 5985
+    hash: 35b3aba72226627523e84cd6e82f586f3acd93b45c4afcf1befe04caa678c5b6
+  - repo: microsoft/BotFramework-WebChat
+    number: 5992
+    hash: 3845b65c9212bc2bca6e769dfa4d7e67688467733031e769da80d28f05d40c11
+  - repo: microsoft/BotFramework-WebChat
+    number: 5880
+    hash: 392490bb8ab4a1112bda7f8d5817e841df3a6f57b5e442bd9e400bd863db18b5
+  - repo: microsoft/BotFramework-WebChat
+    number: 5428
+    hash: 39c451771a3e4aa88486fe441fb07ddefe42abeacfb9c51ce25f87a8341f9215
+  - repo: microsoft/BotFramework-WebChat
+    number: 5417
+    hash: 3c2e6f25a093bb92b0219c39c65fd1801a035863622ee7e53cc25ef7be6c8115
+  - repo: microsoft/BotFramework-WebChat
+    number: 5507
+    hash: 3cc03fdd5f8ca36a23ff4e1c268a8dc06342190b0a95d15fc667eccc23cb20fe
+  - repo: microsoft/BotFramework-WebChat
+    number: 5664
+    hash: 3d9e6a8d49205bdbb6471fd5fb7b0e55149161ff5b7dfacaf1b40352189ffaed
+  - repo: microsoft/BotFramework-WebChat
+    number: 5913
+    hash: 3dc76122ea3854f2f9d34b1e9860fb08bf729f037883d58ed35f0fcb30cb1d39
+  - repo: microsoft/BotFramework-WebChat
+    number: 5790
+    hash: 3e28026aa5f2d6f5da7df770ee67aefe159a8af7a3241854abaf9189d85122be
+  - repo: microsoft/BotFramework-WebChat
+    number: 5687
+    hash: 40ac500c2ceafedcf2e22cae1592b39f17eeb54f02c37123482ab33ca03e4dae
+  - repo: microsoft/BotFramework-WebChat
+    number: 5653
+    hash: 42458754afb320dc58967e98a3b637730bd09379964f319c8f7d00f782f8aab7
+  - repo: microsoft/BotFramework-WebChat
+    number: 5540
+    hash: 429ddc83c64118599a51dc8bc48e0af15babd63b96cf871363e68496250183f0
+  - repo: microsoft/BotFramework-WebChat
+    number: 5660
+    hash: 42f8202e6f437d57a4dc6feb5ea97316c80a97790a8f78a7fa2626bc852e5df5
+  - repo: microsoft/BotFramework-WebChat
+    number: 5477
+    hash: 4460442bbe84b222f64ae06ce823665f2ffe4b663655c169042b2ecfe214c1bf
+  - repo: microsoft/BotFramework-WebChat
+    number: 5915
+    hash: 44acaa518cc2784ce05c1a8c18a80b36dfdaed749e86055f491bd2a16965a24f
+  - repo: microsoft/BotFramework-WebChat
+    number: 5926
+    hash: 44e15a26f0fad4277d4c6d534c9ab0ce2f7e1e3d8f5de29ecbfc26b50e680bfa
+  - repo: microsoft/BotFramework-WebChat
+    number: 5799
+    hash: 44fa841efec2434e8fbdd9fe9e4746bbd0886463a12dcd83784ea22238062bdf
+  - repo: microsoft/BotFramework-WebChat
+    number: 5794
+    hash: 4566081f7d1b970d87ef2030715034c2c05aa3f30394a18c9623d1067fffd8e7
+  - repo: microsoft/BotFramework-WebChat
+    number: 5492
+    hash: 45912ef89ad6271244071a6aa5a613556feb0ae990dc843e3318440b4d10b4b1
+  - repo: microsoft/BotFramework-WebChat
+    number: 5663
+    hash: 46b8e4e82f298a38542ed59a791c7a11d0cc9041739f3156ede6bf324d95e373
+  - repo: microsoft/BotFramework-WebChat
+    number: 5877
+    hash: 46ef57ae30de295e91d65e915da92f604855d81207469ebb8bbf0324266e00fa
+  - repo: microsoft/BotFramework-WebChat
+    number: 5973
+    hash: 46fd91865e6076ddfc7ec5863f5554e9144f03b60c0edf93e16acd7f84430cdb
+  - repo: microsoft/BotFramework-WebChat
+    number: 5970
+    hash: 472bb6cad641e3ec2791a1b0c9ab158bb83dd81e45818d9bedb25b4f93c5d1cd
+  - repo: microsoft/BotFramework-WebChat
+    number: 5876
+    hash: 4886e3c85595ad0093a9029b85182f153726cfe814aec37f1fe0284830b7781c
+  - repo: microsoft/BotFramework-WebChat
+    number: 5908
+    hash: 49f4f00a0351d001cb7de7e345f88f12fb13a54c9a7c080088652511daca8d75
+  - repo: microsoft/BotFramework-WebChat
+    number: 5934
+    hash: 4a1581e556a5c8d73d915738d6384a2bd446c4e474d827f0e48caf5f6062efc0
+  - repo: microsoft/BotFramework-WebChat
+    number: 5656
+    hash: 4bc0247818d982984dc957ae5d193c463cd18fd67269d649b2006741f1103004
+  - repo: microsoft/BotFramework-WebChat
+    number: 5389
+    hash: 4c7b05610174233876d9961f60696488732878e3290839859d60c60def53513e
+  - repo: microsoft/BotFramework-WebChat
+    number: 5949
+    hash: 4cbedb2da68c0796b1548938e063fcb7f01d1ead3c81138c137747738697b3d1
+  - repo: microsoft/BotFramework-WebChat
+    number: 5942
+    hash: 4e07e0abba0e82181727c1e6d445c68f766314b65bd9a6c1515caa04ff76746f
+  - repo: microsoft/BotFramework-WebChat
+    number: 5887
+    hash: 4e4c6c69f7b898d9379f83a003e6476ef7109c5ec69e7093f01baaffaefcd3c2
+  - repo: microsoft/BotFramework-WebChat
+    number: 5674
+    hash: 50aeb32a9a6d6012ed219d320ff317bd8c6e17c597e64d790daf2fe73edd8168
+  - repo: microsoft/BotFramework-WebChat
+    number: 5504
+    hash: 51b0a29cbe43d85ed83c34863c715c44b9120a9505205d454c7cee4cd32d77cb
+  - repo: microsoft/BotFramework-WebChat
+    number: 5565
+    hash: 51d2b6c3127ffdd5eb0cbcf6ba7cafc255d996fa71d4ede3902a4b2b25404194
+  - repo: microsoft/BotFramework-WebChat
+    number: 5771
+    hash: 51dd0b2b7f89c0ea07c97a35041c5339a0dadbdce25b30d6b4f105df98c39a42
+  - repo: microsoft/BotFramework-WebChat
+    number: 5903
+    hash: 51eadd975059e979bc304bb6169bbd2575074f9f9357ee6e3fe6ed3b2564097d
+  - repo: microsoft/BotFramework-WebChat
+    number: 5963
+    hash: 52b401eb8646219df7838289b6a63417368ce99855e8f30890397922dd6478c8
+  - repo: microsoft/BotFramework-WebChat
+    number: 5502
+    hash: 547ec3b7254500db9b396eb0288724472033ff1560db5d6a7ce3221c87bb0c52
+  - repo: microsoft/BotFramework-WebChat
+    number: 5858
+    hash: 54f197e18deb02751d975c8e78ee4b869ab9d1aee320321cf9a70c62c24464de
+  - repo: microsoft/BotFramework-WebChat
+    number: 5566
+    hash: 550e2d9bd066a876a1c05b8f4e66fa023d839c688bd4481e2785a9a1d2d837a8
+  - repo: microsoft/BotFramework-WebChat
+    number: 5951
+    hash: 555a1033766dcc6845c1e3532f0ac2f5c1e05604e840737d3efc0f3f4b3105cd
+  - repo: microsoft/BotFramework-WebChat
+    number: 5495
+    hash: 55e508cea9de39d1e7c957617e28db7ac644c4660bc350647c402ed78be60acd
+  - repo: microsoft/BotFramework-WebChat
+    number: 5918
+    hash: 55f08fbd4df204a49d3f25f22e41db89694b75ba1bda02f0c287c9036a551d58
+  - repo: microsoft/BotFramework-WebChat
+    number: 5865
+    hash: 573c444ef6a858fd1f44e7f7e2a77daaf72fa387a860b9bcfff2f6525355706c
+  - repo: microsoft/BotFramework-WebChat
+    number: 5909
+    hash: 57a8ed171c86fbc1cd3a7da30973103c931f58706cbffcab2216ac541c6701ec
+  - repo: microsoft/BotFramework-WebChat
+    number: 5800
+    hash: 57f0d6f4027e586984cd9e071900571941b949b5899aef6226e4c1d95c19dfd7
+  - repo: microsoft/BotFramework-WebChat
+    number: 5757
+    hash: 580851e928f915d049b8f8e0b65e597d2cbd284ced679791bbf5d73777f7bd11
+  - repo: microsoft/BotFramework-WebChat
+    number: 5953
+    hash: 58b51972946c14740e21b25d072438984681c7f0ea9c30b5742f94ca9b94886f
+  - repo: microsoft/BotFramework-WebChat
+    number: 5582
+    hash: 58fa20d8afa2af5f63802a633195eb27d7a621768dc232db9f1ffd6155ecbacd
+  - repo: microsoft/BotFramework-WebChat
+    number: 5921
+    hash: 590611e021c8761d3ef6516e6a18299ec684931549dfb1deec0e243fa424b2bc
+  - repo: microsoft/BotFramework-WebChat
+    number: 5917
+    hash: 593621cb59f64c3a06223c9f99b543e6d1a3d88c5eac7c3b5130352287626c0a
+  - repo: microsoft/BotFramework-WebChat
+    number: 5892
+    hash: 594add08479af5e34c2f4c21bebb83347ecc70f4618924202a7603b12ecb3751
+  - repo: microsoft/BotFramework-WebChat
+    number: 5418
+    hash: 595fcff2f075a3436cd5409af021accf0870ea8370555f2a378370b68ad05fa4
+  - repo: microsoft/BotFramework-WebChat
+    number: 5648
+    hash: 5abb3450e9ae05ab8812fe01e9165916266f071670f584481cc3b3be579c7382

@@ -1,0 +1,289 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5808,
+  "title": "fix: make streaming parser more stable and add a fallback",
+  "body": "**Fixes #**\r\n\r\n**Changelog Entry**\r\n\r\n\r\n- 🧪 Added incremental streaming Markdown renderer for livestreaming, in PR [#5799](https://github.com/microsoft/BotFramework-WebChat/pull/5799), by [@OEvgeny](https://github.com/OEvgeny)\r\n   - Fixed streaming Markdown renderer to preserve link reference definitions during incremental rendering and recover on error, in PR [#5808](https://github.com/microsoft/BotFramework-WebChat/pull/5808), by [@OEvgeny](https://github.com/OEvgeny)\r\n \r\n**Description**\r\n\r\nThis change stabilizes `createStreamingRenderer` by improving incremental Markdown parsing and adding a fallback on error. It also preserves link reference definitions across streaming commits so links continue to resolve correctly as streamed content grows.\r\n\r\n**Design**\r\n\r\nThe main idea is to fed known definitions back to the parser instead of trying to resume the parser state which is hidden in the closure.\r\n\r\n**Specific Changes**\r\n\r\n- createStreamingRenderer.ts\r\n  - Added `STREAMING_ERROR` symbol and wrapper error metadata.\r\n  - Added `extractDefinitions`, `step`, `commit`, `cleanup`, and `revert` helper logic.\r\n  - Improved incremental rendering path to preserve definitions and commit newly finished blocks.\r\n\r\n- createStreamingRenderer.spec.ts\r\n  - Added coverage for:\r\n    - definition extraction during full reparse,\r\n    - active reference resolution while tail grows,\r\n    - incremental commits with later definitions,\r\n    - shared link definitions across committed and active blocks,\r\n    - definition preservation when blocks become committed.\r\n\r\n**Checklist**\r\n\r\n- [x] I have added tests and executed them locally\r\n- [x] I have updated CHANGELOG.md\r\n- [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n- [ ] Browser and platform compatibilities reviewed\r\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\r\n- [ ] Documents reviewed (docs, samples, live demo)\r\n- [ ] Internationalization reviewed (strings, unit formatting)\r\n- [ ] `package.json` and `package-lock.json` reviewed\r\n- [ ] Security reviewed (no data URIs, check for nonce leak)\r\n- [ ] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-04-15T23:21:49Z",
+  "merged_at": "2026-04-16T18:59:26Z",
+  "base": "main",
+  "head": "fix/stabilize-streaming-parser",
+  "base_sha": "482cb4cb2658f13d16e3cd9fc128e3d8010f10e9",
+  "head_sha": "2d6cc8828c57e98a8392dc6d33622bea5f4602b6",
+  "merge_sha": "88357ae618798b69e7058c189aea6e05af9a4181",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-04-16T00:25:13Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "4eceb6930c8adb91522e3fe3d061f612463a21a8",
+      "message": "fix: make straming parser more stable and add a fallback",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "34880436949c15df88a85ff5d0ff82a19f72924a",
+      "message": "Changelog and fix off by 1",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "56dd733c661ac8b98e94d66323181400f0f95787",
+      "message": "Harden extraction logic",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "1a31ca0dda2f98ac9c2f1eb74a95b7f8b6120805",
+      "message": "nit",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "c9f90e3ffe079525f7efa549179b6547b63dadfb",
+      "message": "newline",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "19e43cfefaab5649364680e3384eb1f3086706b6",
+      "message": "Cleanup",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "cada9859ece0ec765684bf388e1983f9789873e7",
+      "message": "Slice free",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "3ebd323288ebe21f3dfa7cca6b59af7841b208bc",
+      "message": "Cleanup",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "dd7e5d9333a0533fba7b6efd34a923a72f66c223",
+      "message": "Cleaner",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "2d6cc8828c57e98a8392dc6d33622bea5f4602b6",
+      "message": "Size condition and comments",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/createStreamingRenderer.spec.ts",
+      "status": "modified",
+      "additions": 174,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/createStreamingRenderer.ts",
+      "status": "modified",
+      "additions": 183,
+      "deletions": 112,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-04-16T08:20:31Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-04-16T18:15:03Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-04-16T18:15:08Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-04-16T18:22:47Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-04-16T18:59:11Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T16:56:53Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T16:57:02Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:22:21Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:18:21Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:18:09Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:18:10Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:11Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:29:55Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:27Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:17Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T16:56:40Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:33Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:02Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:33Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:29:58Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:08Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:39Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:03Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:27Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:15Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:29:34Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:07Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:24:34Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:30:05Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:26:06Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:17:57Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:26:11Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:19:08Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:18:09Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:17:21Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:19:11Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-04-16T08:18:18Z"
+    }
+  ]
+}

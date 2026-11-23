@@ -1,0 +1,201 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 21,
+  "title": "GIT-09: propose a merged INTENT.md when integration conflicts only there",
+  "body": "## What\n\nWhen the only conflict `integrate` predicts is `INTENT.md`, the kernel merges Tenet's managed blocks by element ID (merge base, base tip, work tip). It then asks before anything moves:\n\n- `shared-merge-proposed` (exit 3), with `data.proposal` holding the proposed text and each collision (`content` or `duplicate`, plus the base, base-branch, work-branch and proposed texts, each clipped to 2 KB).\n- a `shared-merge` question bound to both tips and a hash of the exact text.\n\n`decide shared-merge` with `apply` integrates, and the merge commit holds exactly that text (`git merge --no-commit`, check that only the confirmed paths are unmerged, write, add, commit). `cancel` moves nothing. If either tip moved, the old answer applies nothing and a new proposal is asked.\n\nMerge rules (pure, `core/shared-merge.ts`):\n- A block changed on one side takes that side. Blocks with different IDs from both sides are kept.\n- The same existing ID changed on both sides is a `content` collision. The proposal takes the work branch's text.\n- An ID both sides created with different text is a `duplicate`. The base branch keeps it. The work branch's block gets a new suffix derived from its content, so the proposal is the same on every call. Its examples (`EX-<seq>-<suffix>.n`) and links in blocks only the work branch added are renamed with it.\n\n## Simplifications (disclosed, not hidden)\n- No feature-spec review or owner sign-off, per today's direction. `specs/shared-files.md` §14 asked for a reviewed design first.\n- Only `INTENT.md` is reconciled. Decision files, `docs/architecture.md` and `docs/hardening.md` keep Git's own conflict.\n- A `content` collision always proposes the work branch's text. Any other resolution means `cancel` and editing by hand.\n- \"Newer\" (the side that gets the new suffix) is assumed to be the work being integrated. It is not proven from history.\n- Test tags (`// @tenet …`) and links outside the re-suffixed blocks are not updated.\n- Same-ID collisions that Git merges without a text conflict are not detected.\n- These cases fall back to `integration-conflict`: both sides changed text outside the blocks, damaged markers, no merge base, an uncommitted `INTENT.md`, Git before 2.38 (no prediction), or any other conflicted path.\n- `.tenet/` state is not updated from the merged file (there is no reverse parse). Merged blocks that differ from state are reported as `intent-edited-outside`.\n- A kill between `merge --no-commit` and the commit leaves Git's merge state (`MERGE_HEAD`) for the user to abort. Recovery then finds the base unmoved and records that nothing happened. No kill test covers this path.\n\n## Evidence\n- Local (Windows): typecheck, `lint-arch`, `lint-skills`, `lint-quality` and `npm run privacy` pass. All 5 pure `[GIT-09]` merge tests pass.\n- I also ran the adapter's resolved-merge path directly against real Git on Windows. With only INTENT.md conflicting, it made a two-parent merge commit holding the proposed text. With an extra conflicting file, it aborted the merge and left no `MERGE_HEAD`.\n- `node tools/coverage.ts --milestone R1` still exits 1, but only because of the 7 other unmapped Musts (AGT-10, EVD-04, CON-07, QLT-05, QLT-11, QLT-13, NFR-07). GIT-09 is now mapped.\n- The 3 real-Git `[GIT-09]` integration tests (proposal before any move, apply, cancel, re-proposal after a moved tip, fallback with another conflicted file) change state, so they only run in Linux/macOS CI. They have not been seen passing yet.\n- The bundle build was not run locally (no `node_modules` in the worktree); CI checks the budget.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-10T22:40:53Z",
+  "merged_at": "2026-11-10T23:53:10Z",
+  "base": "main",
+  "head": "claude/git-09-shared-merge",
+  "base_sha": "c4e30498aada93c5975343616fc82903637863f1",
+  "head_sha": "06a39011c24876a3d4cfed8d54d8d9d3adc829b1",
+  "merge_sha": "367e9f5d6350364288b2c956a987ea96e3f565b7",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-10T23:53:07Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "5d1b05ae9117b02fc15fcf6a391f1fd2366834d5",
+      "message": "Propose a merged INTENT.md when integration conflicts only there (GIT-09)",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "1cc096a00bcef811d1b4a78802def7fa1e2c37a5",
+      "message": "Record the shared-merge reason code and GIT-09 limits in the tech spec and changelog",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "06a39011c24876a3d4cfed8d54d8d9d3adc829b1",
+      "message": "Merge main into the GIT-09 branch",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/git-cli.ts",
+      "status": "modified",
+      "additions": 33,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/reasons.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/shared-merge.ts",
+      "status": "added",
+      "additions": 126,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/index.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/simple.ts",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/ports/types.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/integrate-shared.ts",
+      "status": "added",
+      "additions": 70,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/integrate.ts",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/shared-merge.test.ts",
+      "status": "added",
+      "additions": 173,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet/SKILL.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "specs/tech-spec.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T23:13:35Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:46:16Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T23:02:07Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T23:20:17Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:59:36Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:46:16Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:43:07Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:43:10Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T22:44:52Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T22:56:33Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-10T22:42:45Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T22:44:44Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:43:06Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:43:16Z"
+    }
+  ]
+}

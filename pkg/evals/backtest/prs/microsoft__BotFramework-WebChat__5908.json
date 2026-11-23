@@ -1,0 +1,1199 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5908,
+  "title": "Make the snapshots of recently added html2 tests easier to review",
+  "body": "> Make the snapshots of recently added html2 tests easier to review.\n\n## Changelog Entry\n\nNot required, development only.\n\n## Description\n\nSome recently added keyboard tests skipped snapshots between key presses, and some snapshots did not say what they show. Keyboard tests now snapshot every key press, each snapshot follows a `// THEN:` comment describing it, and the send box is hidden where it is not under test.\n\n## Specific Changes\n\n- `carousel/flipperButton.focusVisible`, `richCard/heroCard.pushButton.focusVisible`, `richCard/animationCard.gif`: snapshot the focused element before the next key, hide the send box\n- `richCard/animationCard.gif.forcedColors` (and `.fluent`): forced colors split out of `animationCard.gif`\n- `suggestedActions/suggestedActions.flipperButton.focusVisible`, `transcript/navigation/visualKeyboardIndicator.styleOptions`: one SHIFT-TAB per step, snapshot after each\n- `richCard/receiptCard.textSpacing`, `richCard/mediaCard.mediaList`, `markdown/codeBlock/remount`, `markdown/codeBlock/contrast`, `activity/programmingLanguageTitle`: `// THEN:` describes each snapshot, samples next to their assertions\n- `carousel/navigation.arrowKeys*`: snapshot after every key, assert the settled position; split `formControls` into `cards`, `submitButton`, `heroCardButton` (the input case asserts the caret after every key)\n- `pageConditions.carouselSettled`, `testHelpers.isCardInView`, `testHelpers.isFlipperHidden`: replace copies in the carousel tests\n\n- [x] I have added tests and executed them locally\n- [ ] I have updated `CHANGELOG.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-19T08:01:41Z",
+  "merged_at": "2026-10-20T22:21:04Z",
+  "base": "main",
+  "head": "OEvgeny/dev-readable-weekend-tests",
+  "base_sha": "a002cbfb1667264aff07d074f0b07b774b402f49",
+  "head_sha": "69f10dfb702614f9d5474db63feda1976b90bb08",
+  "merge_sha": "506adb43c06dbdb1afef592c45e25337beda9ec9",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-19T18:54:22Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "2ccd440fe1b7c1763c64d17407df88f61aff0bf6",
+      "message": "Make weekend html2 tests easier to review: snapshot every keyboard step and describe every snapshot",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "ef944a4ed288858004617571d6cf7cbef1642a1e",
+      "message": "Address review: snapshot after every move in carousel arrow key tests",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "97a86619b50fe77e12745523f85f20244113a9d7",
+      "message": "Move carousel test helpers to testHelpers and pageConditions, split formControls arrow key test by scenario",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "5565886ec871a8995b81cfa738efbeba0229b208",
+      "message": "Merge branch 'main' into OEvgeny/dev-readable-weekend-tests",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f38fe4dc9e06ca5ec9e0c436a5465b24ab0f277d",
+      "message": "Address review: assert selectionStart and selectionEnd after every key in the carousel text input test",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "bc2c2ae1640ee386f3a6ac36cfc09c74e9e8b2bf",
+      "message": "Address review: move the forced colors step of animationCard.gif into its own test",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "68b46a9435a71ac791d5102ca6805d2de2c2205a",
+      "message": "Merge branch 'main' into OEvgeny/dev-readable-weekend-tests",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "f252b3d659b89b5a876f5e6d43b3d96cd4d05648",
+      "message": "Merge branch 'main' into OEvgeny/dev-readable-weekend-tests",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "d2928bf4d252c27c1c0fcf0988e9ea9ee2ccec54",
+      "message": "Merge remote-tracking branch 'origin/main' into OEvgeny/dev-readable-weekend-tests",
+      "author": "Copilot"
+    },
+    {
+      "sha": "69f10dfb702614f9d5474db63feda1976b90bb08",
+      "message": "Re-capture the Fluent forced-colors GIF snapshot with the message border from #5907",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": "__tests__/html2/activity/programmingLanguageTitle.html",
+      "status": "modified",
+      "additions": 59,
+      "deletions": 59,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.fluent.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.fluent.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.fluent.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.html",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.fluent.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.fluent.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.fluent.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.fluent.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.fluent.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.fluent.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.fluent.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.fluent.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.fluent.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.fluent.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.fluent.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.fluent.html.snap-1.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.fluent.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.fluent.html.snap-8.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.fluent.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.fluent.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.html",
+      "status": "added",
+      "additions": 154,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.html.snap-1.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.html.snap-8.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.cards.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.fluent.html.snap-2.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.fluent.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.fluent.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.fluent.html.snap-4.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.fluent.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.fluent.html.snap-5.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.fluent.html.snap-4.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.fluent.html.snap-6.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.fluent.html.snap-5.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.fluent.html.snap-7.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.fluent.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.fluent.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.html",
+      "status": "renamed",
+      "additions": 31,
+      "deletions": 119,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.html"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.html.snap-4.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.html.snap-5.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.html.snap-4.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.html.snap-6.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.html.snap-5.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.html.snap-7.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.heroCardButton.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.html.snap-2.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.fluent.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.fluent.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.fluent.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.fluent.html.snap-3.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.fluent.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.fluent.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.fluent.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.html",
+      "status": "added",
+      "additions": 168,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.html.snap-3.png"
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.submitButton.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.html",
+      "status": "modified",
+      "additions": 27,
+      "deletions": 40,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.input.html",
+      "status": "modified",
+      "additions": 56,
+      "deletions": 42,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.input.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.input.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.input.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.input.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.input.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.input.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.input.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.input.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.rtl.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.rtl.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.rtl.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.rtl.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.rtl.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.rtl.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.rtl.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.rtl.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/navigation.arrowKeys.rtl.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/remount.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.fluent.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.fluent.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.fluent.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.fluent.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.forcedColors.fluent.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html2/carousel/navigation.arrowKeys.formControls.fluent.html"
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.forcedColors.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.forcedColors.html",
+      "status": "added",
+      "additions": 111,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.forcedColors.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.html",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 17,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/animationCard.gif.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard.pushButton.focusVisible.fluent.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard.pushButton.focusVisible.fluent.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard.pushButton.focusVisible.fluent.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard.pushButton.focusVisible.html",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard.pushButton.focusVisible.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard.pushButton.focusVisible.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard.pushButton.focusVisible.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/mediaCard.mediaList.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/receiptCard.textSpacing.html",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/suggestedActions.flipperButton.focusVisible.html",
+      "status": "modified",
+      "additions": 34,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/suggestedActions.flipperButton.focusVisible.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/suggestedActions.flipperButton.focusVisible.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/suggestedActions.flipperButton.focusVisible.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/suggestedActions.flipperButton.focusVisible.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/suggestedActions.flipperButton.focusVisible.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/visualKeyboardIndicator.styleOptions.html",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/visualKeyboardIndicator.styleOptions.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/visualKeyboardIndicator.styleOptions.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/navigation/visualKeyboardIndicator.styleOptions.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/pageConditions/carouselSettled.js",
+      "status": "added",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/pageConditions/index.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/index.js",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/isCardInView.js",
+      "status": "added",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/isFlipperHidden.js",
+      "status": "added",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-19T18:54:31Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-19T20:17:08Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-19T20:20:40Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-19T20:26:05Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-19T20:26:34Z"
+    },
+    {
+      "state": "CHANGES_REQUESTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-19T20:32:06Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-19T21:55:08Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-19T21:57:18Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-19T21:57:20Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-19T21:57:22Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2026-10-20T20:52:45Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-20T22:19:54Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:29:48Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:30:15Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:29:30Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:28:52Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:27:54Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:27:58Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:28:30Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:28:24Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:27:35Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:27:40Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:28:20Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:26:29Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:29:39Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:27:56Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:28:02Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:28:03Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:28:37Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:28:05Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:28:28Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:23:03Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:21:46Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:23:03Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:15:11Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:14:30Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:15:52Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:15:40Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:15:00Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:15:32Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:15:50Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:19:29Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:15:29Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T21:15:18Z"
+    }
+  ]
+}

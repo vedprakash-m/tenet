@@ -1,0 +1,258 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5973,
+  "title": "Remove propTypes statics that break typings with @types/react@19",
+  "body": "> Related to #5552: with `@types/react@19` and `skipLibCheck: false`, TypeScript fails on Web Chat's declarations with TS7016 for `prop-types`.\n\n## Changelog Entry\n\n### Removed\n\n- 💥 Function components: removed `ReactWebChat.propTypes` and `Composer.propTypes`, fixing type errors with `@types/react@19`, related to [#5552](https://github.com/microsoft/BotFramework-WebChat/issues/5552), in PR [#5973](https://github.com/microsoft/BotFramework-WebChat/pull/5973), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThe `propTypes` of the exported `Composer`, `ReactWebChat` and `FullComposer` made the declarations import `prop-types`, whose types `@types/react@19` no longer installs. They are removed, like their `defaultProps` in #5956.\n\nNo new test: a consumer type check on `@types/react` 16, 18 and 19 now has no TS7016 and no new errors.\n\n## Design\n\n- Inner components keep their `propTypes` with the same props; adding `@types/prop-types` to `dependencies` would also work, but adds a dependency for types React 19 ignores.\n\n## Specific Changes\n\n- `api` `Composer`, `component` `Composer` and `ReactWebChat`, `bundle` `FullComposer`: removed `propTypes`\n- `bundle` `FullComposer`: `children` prop is `readonly`\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [ ] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-28T21:48:02Z",
+  "merged_at": "2026-10-29T00:12:18Z",
+  "base": "main",
+  "head": "OEvgeny/fix-react-19-prop-types-typings",
+  "base_sha": "bd980b2a79f5377fadd92b911acc858c2e4519b6",
+  "head_sha": "b95974b81792303d1a4926becbeadcda3d22c4a5",
+  "merge_sha": "d8572053f129b9dca0d4e48cdb9ea2cc4b9d1076",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-28T23:05:31Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "9c1d5cbf1282571017f32cdbe29420d6881ee02c",
+      "message": "Remove propTypes of exported Composer, ReactWebChat and FullComposer",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "85513ed8f72424a883e51eaac9a88aa7fc797036",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "b95974b81792303d1a4926becbeadcda3d22c4a5",
+      "message": "Merge branch 'main' into OEvgeny/fix-react-19-prop-types-typings",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5973-fix-react-19-prop-types-typings.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/Composer.tsx",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/FullComposer.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Composer.tsx",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ReactWebChat.tsx",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 13,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-28T23:05:39Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-28T23:11:20Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:12:10Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:12:27Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:52:42Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:46:51Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:46:11Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:58:57Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:46:16Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:00:02Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:59:43Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:00:47Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:59:33Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:00:04Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:59:59Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:59:43Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:53:18Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:00:35Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:00:27Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:58:37Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:58:45Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:00:50Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:45:36Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:59:41Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:54:01Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:47:09Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:10:36Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:11:18Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T00:12:00Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:50:45Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:45:50Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:45:13Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:46:15Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:46:43Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:45:56Z"
+    }
+  ]
+}

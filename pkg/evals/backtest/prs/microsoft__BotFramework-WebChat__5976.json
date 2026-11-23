@@ -1,0 +1,244 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5976,
+  "title": "Fix require() of botframework-webchat-fluent-theme",
+  "body": "> `require('botframework-webchat-fluent-theme')` fails with `ERR_PACKAGE_PATH_NOT_EXPORTED` since 4.17.0.\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed `require()` failing to resolve `botframework-webchat-fluent-theme`, in PR [#5976](https://github.com/microsoft/BotFramework-WebChat/pull/5976), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThe `\".\"` export of `botframework-webchat-fluent-theme` used a misspelled `\"required\"` condition, so CommonJS consumers (Node.js `require()`, jest without mocks, TypeScript `node16`/`nodenext` in CommonJS) could not resolve the package. The condition is now `\"require\"`; ESM `import` and webpack 4 (which reads `main`) were not affected and resolve as before.\n\n## Specific Changes\n\n- `packages/fluent-theme/package.json`: `\"required\"` → `\"require\"`\n- `packages/fluent-theme/src/__tests__/packageExports.spec.js`: `require()` by package name resolves and loads the CommonJS entrypoint\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-28T22:33:46Z",
+  "merged_at": "2026-10-28T23:39:34Z",
+  "base": "main",
+  "head": "OEvgeny/fix-fluent-theme-require-export",
+  "base_sha": "78d436aa42a4ebf3061aceb087709198f8d9d483",
+  "head_sha": "fdc6a26757f3130cc4b9b72f69c028903037e0ad",
+  "merge_sha": "bd980b2a79f5377fadd92b911acc858c2e4519b6",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-28T23:03:57Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "f28a344b820472892c9233b7cf75e3f4c926c9f4",
+      "message": "Fix require() of botframework-webchat-fluent-theme",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "9177b80e46b9757ef05f4fd67621874a990a53bb",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "fdc6a26757f3130cc4b9b72f69c028903037e0ad",
+      "message": "Merge branch 'main' into OEvgeny/fix-fluent-theme-require-export",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5976-fix-fluent-theme-require-export.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/__tests__/packageExports.spec.js",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-28T22:56:02Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-28T23:04:06Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:39:02Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:39:32Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:37:30Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:37:31Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:38:10Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:38:54Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:37:59Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:37:11Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:38:04Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:37:45Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:36:55Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:37:50Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:37:02Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:37:47Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:37:54Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:37:49Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:36:42Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:37:17Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:38:09Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:30:40Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:31:46Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:31:10Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:24:34Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:23:52Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:24:43Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:25:09Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:25:10Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:28:22Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:24:23Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:25:03Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:24:58Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:25:11Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-28T23:24:42Z"
+    }
+  ]
+}

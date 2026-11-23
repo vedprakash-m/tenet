@@ -1,0 +1,157 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 25,
+  "title": "NFR-01 latency trims, and a fix for the writer-race admission retry",
+  "body": "## What changes\n1. **Git lookups run together.** `probe`, `inventory` and `repoLayout` start their independent read-only Git lookups concurrently instead of one after another.\n2. **One-pass duplicate-key scan.** Private-record admission finds duplicate keys in one pass over character codes instead of a regex plus `JSON.parse` per key: 66 ms → 30 ms cold on a 700 KB record. New tests cover escaped and quoted keys.\n3. **Admission parse reused once.** The next read of the same file version reuses admission's parse of the state file, once. No parsed object is shared between two readers.\n4. **Writer-race fix (CON-04, AGT-08).** A writer whose admission read hit a file being replaced gave up if the other writer had already released its lock. It now retries until the same deadline; a lock held by a dead process still stops it at once. This caused the `serializes competing writers` failure on main at `510e18a`, and on this branch at `2536832`.\n\n## Evidence\n- **Test suite (`untrusted`):** green on ubuntu, macOS and windows at `4d1b707`, both the push run and the PR run. Nothing reproduces the race deterministically; the three-writer test only hits it by chance.\n- **Paired benchmark:** `main` `510e18a` and this PR were alternated five times on the same Linux runner (throwaway branch `nfr01-profile2`, run 43145647209). Warm p95 medians:\n\n  | Fixture | main | PR |\n  |---|---|---|\n  | large | 278 ms | 278 ms |\n  | long-history | 268 ms | 254 ms |\n\n  The improvement is small. On that runner, `main` itself was under 300 ms in 9 of 10 attempts.\n- **Unpaired `system-budgets` runs:** across runners they ranged from 245 to 336 ms on large. Most of the NFR-01 failures in CI come from differences in runner speed, not from this code. NFR-01 is not established by this PR.\n\n## Not done\n- **Compile cache (~30 ms a call):** would need a loader file in front of the bundle, which conflicts with INS-07, \"one self-contained file\". That is a decision for the owner.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-12T01:49:13Z",
+  "merged_at": "2026-11-13T16:56:24Z",
+  "base": "main",
+  "head": "nfr01-git-parallel",
+  "base_sha": "510e18a9e0eab87ab6c4f4d27f88adcf02a23c5e",
+  "head_sha": "4d1b707a4dd63e1dc40bc4205a187e6a8dcfd343",
+  "merge_sha": "6462e5b953b4615026087599df450aa152dacdb3",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-13T16:56:20Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "19fd0b3e7fed59bfbe0f6f0b4abb2c566c0a106a",
+      "message": "Run independent Git lookups together in probe, inventory and layout",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "46d2c4afd1a81a5b41aeacf2a68b02c958b3b48f",
+      "message": "Find duplicate private-record keys in one pass over character codes",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "2536832e974391ec9557a7ceb76486f8353a17de",
+      "message": "Reuse admission's parse of the state file for the next read",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "4d1b707a4dd63e1dc40bc4205a187e6a8dcfd343",
+      "message": "Retry a changed admission read when the writer already released its lock",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/kernel/src/adapters/git-cli.ts",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/git-layout.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/private-record-fs.ts",
+      "status": "modified",
+      "additions": 38,
+      "deletions": 15,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/store-fs.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/unique-record.test.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:28:26Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:06:03Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:05:20Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:04:02Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:23:14Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:03:59Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-12T03:17:08Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-12T03:03:37Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:33:15Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:05:02Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:07:35Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:26:51Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:03:56Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T03:03:57Z"
+    }
+  ]
+}

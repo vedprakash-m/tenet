@@ -1,0 +1,1809 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5506,
+  "title": "feat: Collapsible activity",
+  "body": "> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n- Added collapsible activity and activity with abstract handling, in PR [#5506](https://github.com/microsoft/BotFramework-WebChat/pull/5506), by [@OEvgeny](https://github.com/OEvgeny)\r\n\r\n## Description\r\n\r\nThis pull request introduces collapsible activity along with abstract rendering in activity.\r\n  \r\nThis is the first step to CoT like UX.\r\n\r\n## Design\r\n\r\nThis feature is of moderate complexity, requiring:\r\n\r\n- Updates to the activity rendering engine to preserve the DOM state for each activity.\r\n- Refactoring core rendering logic to support the dynamic activity content.\r\n- Ensuring all changes remain compatible with existing extensibility points and theming, and are fully accessible.\r\n\r\n## Specific Changes\r\n\r\n- Refactored `StackedLayout` activity renderer to support collapsible sections\r\n- Updated styles and layouts to account for the new abstract/collapsible rendering\r\n- Updated Fluent styles to match updated activity layout\r\n- Updated test snapshots and added tests for collapsible\r\n- Reworked decorator middleware stack to allow injecting request\r\n- Exposed utilities for injecting the specific type of request\r\n- Added `composePipeline` utility as a short term solution for stabilizing rendering tree\r\n- Fixed /decorator export not being fully passed-through in bundle\r\n- Migrated `StackedLayout` to CSS modules\r\n- Added `CodeBlockContent` for rendering code block in attachments or collapsible activity areas\r\n- Added `CollapsibleContent` for rendering collapsible activities\r\n- Added `chevron` icon\r\n- Modified `LinkDefinitions` to use the new chevron icon and removed the old one\r\n- Activity middleware now is aware about abstract and doesn't treat an activity having only abstract as empty\r\n- Added custom properties for activity border and transition\r\n- Exposed `BorderFlair` and `BorderLoader` via `component/decorator`\r\n- Made `BorderFlair` and `BorderLoader` to produce stable render tree\r\n- Fixed error while bundling CodeBlock type definitions\r\n- Updated core activity to handle abstract\r\n- Made Fluent `ActivityLoade` to produce stable render tree\r\n- Fixed missing attachment-bubble setting in Fluent theme\r\n- Reworked Fluent decorator approach with the above changes\r\n- Updated classes where necessary to remove `webchat__` prefix\r\n\r\n## -\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [x] Browser and platform compatibilities reviewed\r\n-  [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] Internationalization reviewed (strings, unit formatting)\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] Security reviewed (no data URIs, check for nonce leak)\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-06-26T20:26:57Z",
+  "merged_at": "2025-07-04T07:22:20Z",
+  "base": "main",
+  "head": "feat/collapsible-activity",
+  "base_sha": "da7835641a370110f6f735e561375eae989652ff",
+  "head_sha": "ac63f7029fbd8e35e24fcad792e170939d45054a",
+  "merge_sha": "40736b1952628fa723c15c2c67319dfc83757ea8",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-07-02T23:06:26Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "f56286ccd3c35ee09f61a63818933c0f8ff0bc9a",
+      "message": "WIP",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "7aa39d952e5d4c9bec40be73ef2db12f16677c89",
+      "message": "Proper layout for avatar and attachment",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "b15bff8a44460edd9cd00a93476978d3c8eb8852",
+      "message": "fix dom integrity",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "81da0bf1b79a8f6e23ad3e7a8cdaf1704f268b34",
+      "message": "Fix more tests",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "951859a2fb36369b76b29f60a2f9a3364046cc00",
+      "message": "WIP more tests and fixes",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ffed3fac392ac2187d5d0e6faee216833c2f87a3",
+      "message": "Improve",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "b2de1a718d384f5f049463c52c5f99509dffa0e3",
+      "message": "Brign decorator back and update new citation tests",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f856ae587a457c9979d706f8663c1c11227438c3",
+      "message": "Better react render tree naming",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "b9cf74f090171d19d9915d15a9ec3584b3488beb",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "03dc153236937725a550a3dced77e6a4d3e095a7",
+      "message": "Fix review points",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "3bc236f19f879a0a17c744a95d2cf8fbdd4628a6",
+      "message": "Fix more comments",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "c72a86f163f6b0bba609e8a82d5c008f943f081d",
+      "message": "More preciesly",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "4e61020a8b517190975f1b32493fa72a02203c0a",
+      "message": "Fix collapsible summary selection cut for copilot",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "e1db3bf550ef733a63fa996d2e715141207a15ca",
+      "message": "Update packages/fluent-theme/src/private/FluentThemeProvider.tsx",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "9372f45afc485d6f119d094b722134833d55bc06",
+      "message": "Fix font",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ce9d4bcafd0f04752effc103609db9413f2c837c",
+      "message": "Merge branch 'main' into feat/collapsible-activity",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "8b3815ca57cc59cd6f4d1caa50db9d732f2b7716",
+      "message": "Fix snaps",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ac63f7029fbd8e35e24fcad792e170939d45054a",
+      "message": "Fix one more snap",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/avatar-empty-initials-js-avatar-with-empty-initials-should-leave-gutter-space-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/citation-accordion-js-citation-accordion-should-expand-and-collapse-on-click-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/citation-accordion-js-citation-accordion-should-expand-and-collapse-on-click-2-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/citation-accordion-js-citation-accordion-should-expand-and-collapse-on-click-3-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/citation-basic-js-citation-should-display-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/citation-show-modal-close-button-js-citation-modal-dialog-should-close-when-clicking-on-close-button-2-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/citation-show-modal-close-escape-js-citation-modal-dialog-should-close-when-escape-key-is-pressed-2-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/citation-show-modal-width-desktop-js-citation-modal-dialog-should-show-60-on-desktop-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/citation-show-modal-width-desktop-js-citation-modal-dialog-should-show-60-on-desktop-2-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/citation-show-modal-width-mobile-js-citation-modal-dialog-should-show-full-width-on-mobile-device-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/hooks-use-create-activity-renderer-js-use-create-activity-renderer-should-render-activity-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/identifier-as-string-js-link-definition-should-display-identifier-of-type-string-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/reference-js-link-definition-should-reference-sample-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/timestamp-prepend-text-js-timestamp-prepend-text-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/wrap-zero-width-space-js-link-definition-should-word-wrap-pure-identifier-to-next-line-but-not-text-content-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.activity.stackedLayoutRole.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/citation.longRef.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/citation.longRef.fluent.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/citation.longRef.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html",
+      "status": "added",
+      "additions": 377,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/copyButton/layout.copilot.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/copyButton/layout.copilot.light.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/copyButton/layout.fluent.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/copyButton/layout.fluent.light.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/copyButton/layout.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/fluentTheme.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/linkDefinition/badge.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/linkDefinition/badge.dark.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/linkDefinition/badge.dark.fluent.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/linkDefinition/badge.fluent.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/linkDefinition/badge.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/fluent.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/fluent.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/index.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/index.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-liner.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-liner.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/streaming.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/streaming.html",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/streaming.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-10.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-11.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-12.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-13.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-14.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-15.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-16.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-17.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.dark.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.dark.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.fluent.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-10.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-11.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-12.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-13.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-14.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-15.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-16.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-17.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityBorder/ActivityBorderDecorator.tsx",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityBorder/private/ActivityBorderDecoratorRequestContext.ts",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/useDecoratorRequest.ts",
+      "status": "added",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/module/exports-minimal.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/AttachmentRow.tsx",
+      "status": "added",
+      "additions": 56,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/CodeBlockContent.module.css",
+      "status": "added",
+      "additions": 38,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/CodeBlockContent.tsx",
+      "status": "added",
+      "additions": 42,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/CollapsibleContent.module.css",
+      "status": "added",
+      "additions": 29,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/CollapsibleContent.tsx",
+      "status": "added",
+      "additions": 68,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/StackedLayout.module.css",
+      "status": "added",
+      "additions": 135,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/StackedLayout.tsx",
+      "status": "modified",
+      "additions": 221,
+      "deletions": 131,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Attachment/Text/private/MarkdownTextContent.tsx",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Icon/ComponentIcon.module.css",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Icon/ComponentIcon.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/LinkDefinition/LinkDefinitions.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/LinkDefinition/private/Chevron.tsx",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 21,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/Activity/createCoreMiddleware.tsx",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/CustomPropertyNames.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/useCustomPropertiesClassName.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/decorator/index.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/decorator/private/BorderFlair.tsx",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/decorator/private/BorderLoader.tsx",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/customElements/CodeBlock.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/utils/getActivityLivestreamingMetadata.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityDecorator.module.css",
+      "status": "modified",
+      "additions": 101,
+      "deletions": 44,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityLoader.module.css",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityLoader.tsx",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/theme/Theme.module.css",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/FluentThemeProvider.tsx",
+      "status": "modified",
+      "additions": 33,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/composePipeline.tsx",
+      "status": "added",
+      "additions": 49,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/pageElements/activityStatuses.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-06-26T20:29:11Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-06-27T19:36:54Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-02T22:31:03Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T19:38:17Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T19:38:24Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T20:01:13Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T20:18:03Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T20:19:23Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T20:22:05Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T20:25:18Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T20:27:24Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T20:28:15Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T20:30:10Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-03T23:17:25Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T23:26:40Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T23:32:35Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T23:33:56Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-03T23:34:10Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-03T23:39:03Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-03T23:43:24Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-03T23:45:07Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-03T23:46:38Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-03T23:47:21Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-03T23:49:23Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-04T00:36:25Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-04T00:37:03Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-04T00:40:07Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-04T01:15:25Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2025-07-04T01:16:13Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-04T02:08:23Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-04T02:17:27Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-04T02:23:05Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-04T03:42:23Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2025-07-04T03:47:24Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-07-04T07:22:19Z"
+    }
+  ],
+  "check_runs": []
+}

@@ -1,0 +1,243 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5800,
+  "title": "Bump to Adaptive Cards 3.0.6",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n### Changed\r\n\r\n- Bumped to [`adaptivecards@3.0.6`](https://npmjs.com/package/adaptivecards/v/3.0.6) in PR [#5800](https://github.com/microsoft/BotFramework-WebChat/pull/5800) by [@compulim](https://github.com/compulim)\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\nBumped to Adaptive Cards 3.0.6.\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- `npm uninstall adaptivecards --workspace packages/bundle --workspace packages/repack/adaptivecards`\r\n- `npm install adaptivecards@3.0.6 --save-exact --workspace packages/bundle --workspace packages/repack/adaptivecards`\r\n- `npm dedupe`\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [x] ~I have added tests and executed them locally~\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n- [x] ~Browser and platform compatibilities reviewed~\r\n- [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n- [x] ~Documents reviewed (docs, samples, live demo)~\r\n- [x] ~Internationalization reviewed (strings, unit formatting)~\r\n- [x] `package.json` and `package-lock.json` reviewed\r\n- [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n- [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-04-07T20:06:59Z",
+  "merged_at": "2026-04-08T05:33:39Z",
+  "base": "main",
+  "head": "bump-ac-3.0.6",
+  "base_sha": "cd39b84090a4ea857a53ecd718f474ac5e3b6559",
+  "head_sha": "889b2678ade344336ac23736ccbdffcc41739aef",
+  "merge_sha": "cf3f743c930389aa57ba78015ad9fd87b6b89941",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-04-07T20:11:33Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "6497c7667cd2d984b73e7329336ec7d32d1581f0",
+      "message": "Bump to Adaptive Cards 3.0.6",
+      "author": "compulim"
+    },
+    {
+      "sha": "505fa2d46ec4e8f9efcfae8cca4b69d3d0079afc",
+      "message": "Update PR number",
+      "author": "compulim"
+    },
+    {
+      "sha": "073a08cc51fbc9a0c639394fd794c94a69ed852f",
+      "message": "Remove swiper overrides",
+      "author": "compulim"
+    },
+    {
+      "sha": "889b2678ade344336ac23736ccbdffcc41739aef",
+      "message": "Update CHANGELOG.md",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 110,
+      "deletions": 126,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/adaptivecards/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-04-07T20:16:16Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-04-07T21:00:34Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-04-08T05:33:46Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-04-08T05:34:06Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T20:57:15Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:37Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:02Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:26Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-08T05:33:36Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-08T05:33:24Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:23Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:09:56Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:09:57Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:54Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:35Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:48Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:27Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:13Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:18Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:34Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:09:20Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:06:04Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:06:33Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:10:10Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:04:31Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T20:57:14Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T20:57:17Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T20:58:12Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T20:56:53Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T21:01:17Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-04-07T20:56:13Z"
+    }
+  ]
+}

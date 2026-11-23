@@ -1,0 +1,183 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5477,
+  "title": "Add pre-chat message activity HTML test  and removed starterPromptCar…",
+  "body": "ADO issue: https://msazure.visualstudio.com/CCI/_workitems/edit/32481620/\r\n\r\n## Description\r\n\r\n* Design expectation of having no starter prompt during `blueprint` state. \r\n\r\n\r\n## Design\r\n\r\nhttps://www.figma.com/design/r8dKrVWy43ZFAMUQir2AgD/RS-Agent-Builder?node-id=3062-48739&m=dev\r\n\r\n## Specific Changes\r\n\r\n* Remove starter prompt card when the current ui state is `blueprint` state\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [ ] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [x] Browser and platform compatibilities reviewed\r\n-  [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] Internationalization reviewed (strings, unit formatting)\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] Security reviewed (no data URIs, check for nonce leak)\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "jcheung824",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-05-13T18:32:19Z",
+  "merged_at": "2025-07-18T18:06:58Z",
+  "base": "main",
+  "head": "jamescheung/bug-fix/remove-preview-loading-activities",
+  "base_sha": "5838525adb528fdc6cf2ca2f4d9c4c56c92ab28c",
+  "head_sha": "121de0884ff5cd9e1858c076f1e27d9adb58cc23",
+  "merge_sha": "5a404cf9f56fafaa96f977f41eae364bab18e492",
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "d7da17a8405c7a816351ef03006e99589147f28d",
+      "message": "Add pre-chat message activity HTML test  and removed starterPromptCard from StarterPromptsToolbar component",
+      "author": "jcheung824"
+    },
+    {
+      "sha": "2c5e0dcb1c5c273553a86186f9a35b20ed75b0fb",
+      "message": "update changelog",
+      "author": "jcheung824"
+    },
+    {
+      "sha": "25259332ced4a6562ca434f0de054e743de5aaac",
+      "message": "fix test and accessbility",
+      "author": "jcheung824"
+    },
+    {
+      "sha": "b52e2350fed73f4b6e1f328798ca35eef704f4ee",
+      "message": "fix test and update changelog",
+      "author": "jcheung824"
+    },
+    {
+      "sha": "e0a69686996417c856fdd969edb771af52e65ea3",
+      "message": "move change log to bottom/latest",
+      "author": "jcheung824"
+    },
+    {
+      "sha": "953f4d39459650a4e709f57474f69f8a1d1fd2d2",
+      "message": "update snapshots",
+      "author": "jcheung824"
+    },
+    {
+      "sha": "121de0884ff5cd9e1858c076f1e27d9adb58cc23",
+      "message": "update snapshots for uiState.dark theme images",
+      "author": "jcheung824"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/preChatMessageActivity/default.blue.print.state.html",
+      "status": "added",
+      "additions": 70,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/preChatMessageActivity/default.blue.print.state.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/uiState.blueprint.nonEnglish.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/uiState.blueprint.nonEnglish.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/uiState.blueprint.nonEnglish.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/uiState.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/uiState.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/uiState.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/uiState.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/uiState.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/preChatActivity/PreChatMessageActivity.module.css",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/preChatActivity/StarterPromptsToolbar.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 10,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-17T00:29:12Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-17T00:30:07Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2025-07-17T06:53:51Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-17T18:31:22Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-17T21:56:17Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-18T18:06:30Z"
+    }
+  ],
+  "check_runs": []
+}

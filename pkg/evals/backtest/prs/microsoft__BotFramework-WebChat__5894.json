@@ -1,0 +1,270 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5894,
+  "title": "Fix flaky html2 tests with deterministic waits",
+  "body": "## Changelog Entry\n\nNot required, development only.\n\n## Description\n\nSix html2 tests failed intermittently on CI or under load because they asserted or took a snapshot before asynchronous work had finished. Each test now waits for the state it checks, with `waitFor()` from `@testduet/wait-for` or existing page conditions. There are no retries and no sleeps. Snapshots are unchanged.\n\n| Test | Cause | Fix |\n| --- | --- | --- |\n| `fluentTheme/carousel.html` | The first snapshot waited for the outgoing message only. The bot response could arrive during the snapshot, so the card images were captured blank. | Wait for both activities and their images before the first snapshot |\n| `markdown/codeBlockCopyButton/behavior.denied.html` | The copy button calls `navigator.permissions.query()` before it sets `aria-disabled`, but the test asserted right after pressing <kbd>ENTER</kbd> | `waitFor()` on `aria-disabled` |\n| `attachment/adaptiveCard/custom.*.html` | `postActivity()` resolves before Web Chat renders the bot response. The snapshots only waited until the screen stopped changing, so the response could be missing if rendering was late. | Wait for the expected number of activities and for the transcript to scroll to the bottom before each snapshot. Wait for the response to each button click before the next click. |\n| `activity/viewCodeButton.scroll.html` | 2 <kbd>ARROW_DOWN</kbd> presses were sent back to back. Chrome sometimes drops a keyboard scroll that arrives while the previous smooth scroll is finishing. | Wait for `scrollend` after each key press |\n| `activity/legacy/unknownActivity.html` | The telemetry exception event is sent from an effect after the error box renders, but the test asserted right after `numActivitiesShown(2)` | `waitFor()` on the console error and on the exception event, as in `unknownAttachment.html` |\n\n## Design\n\n- `behavior.denied.html` was converted from a Babel script to a module script so that it can import `waitFor()`, as the `feedbackForm` tests do. The JSX is now `createElement()` and renders the same DOM.\n- `custom.*.html` uses the existing `pageConditions.scrollToBottomCompleted()`. This helper includes a 500 ms settle time. Locally, each variant took 17–20 s both before and after the change.\n- `unknownAttachment.html` asserted its telemetry exception event without waiting, which has the same race. It now waits too.\n- The existing wait for the 3 buttons in `custom.skip.html` returned a boolean, so `waitFor()` never retried. It now uses `expect()`.\n- The changed tests are formatted with Prettier in a separate commit (whitespace only).\n\nFollow-ups (not seen failing on CI, not changed here):\n\n- `markdown/codeBlockCopyButton/behavior.html`, `behavior.highlighted.html` and `adaptiveCards/behavior.html` take the \"Copied\" snapshot right after <kbd>ENTER</kbd>, but the \"Copied\" state is also set asynchronously. With the permission query delayed by 200 ms, the snapshot differs.\n\n## Specific Changes\n\n- `fluentTheme/carousel.html`: wait for `numActivitiesShown(2)` and `allImagesLoaded()` before the first snapshot\n- `markdown/codeBlockCopyButton/behavior.denied.html`: module script, `waitFor()` on `aria-disabled`\n- `attachment/adaptiveCard/custom.skip.html` (shared by `custom.{copilot,fluent}[.dark].html`): `numActivitiesShown()` and `scrollToBottomCompleted()` before each snapshot and after each click, `expect()` in the existing `waitFor()`\n- `activity/viewCodeButton.scroll.html`: wait for `scrollend` after each <kbd>ARROW_DOWN</kbd>\n- `activity/legacy/unknownActivity.html`, `unknownAttachment.html`: `waitFor()` on the console error and the telemetry exception event\n\n- [x] I have added tests and executed them locally\n- [ ] I have updated `CHANGELOG.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-17T16:06:25Z",
+  "merged_at": "2026-10-18T05:55:10Z",
+  "base": "main",
+  "head": "OEvgeny/fix-flaky-html2-tests",
+  "base_sha": "dfd49afaa864e8b84ef612ca142f7a7b5e77d4c3",
+  "head_sha": "ad0c402bb06423755a4c9faf097b45729e569a24",
+  "merge_sha": "2ec2e9f1856c35a13e303e4c6830e6c53a8c82c0",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-17T22:01:31Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "1430e6067bcab2ecc931a56febcab76847f0b1aa",
+      "message": "Fix flaky html2 tests with deterministic waits",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4f8f2d3b5d2180f707940fb09f1f7f34a7884404",
+      "message": "Format changed tests with Prettier",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "ad0c402bb06423755a4c9faf097b45729e569a24",
+      "message": "Merge branch 'main' into OEvgeny/fix-flaky-html2-tests",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "__tests__/html2/activity/legacy/unknownActivity.html",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/legacy/unknownAttachment.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/viewCodeButton.scroll.html",
+      "status": "modified",
+      "additions": 24,
+      "deletions": 17,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/adaptiveCard/custom.skip.html",
+      "status": "modified",
+      "additions": 175,
+      "deletions": 168,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/carousel.html",
+      "status": "modified",
+      "additions": 70,
+      "deletions": 74,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.denied.html",
+      "status": "modified",
+      "additions": 37,
+      "deletions": 20,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-17T22:01:38Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:47:41Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:49:42Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-18T01:14:52Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:55:28Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:55:00Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:54:38Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:53:45Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:54:34Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:53:56Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:54:04Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:53:47Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:54:47Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:54:16Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:54:27Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:53:47Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:53:01Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:54:44Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:53:55Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:54:00Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:54:55Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:54:39Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:53:13Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:49:56Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:49:28Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:48:36Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:42:14Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:41:35Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:42:56Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:42:46Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:42:24Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:42:40Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:46:04Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:41:58Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:42:33Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T05:42:21Z"
+    }
+  ]
+}

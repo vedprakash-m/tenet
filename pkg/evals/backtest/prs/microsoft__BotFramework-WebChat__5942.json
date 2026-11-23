@@ -1,0 +1,242 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5942,
+  "title": "Cancel superseded pull request validation runs and retry transient CI failures",
+  "body": "> Pull request validation fails on transient infrastructure errors.\n\n## Changelog Entry\n\n### Changed\n\n- 👷🏻 Pull request validation now cancels superseded runs, retries `npm clean-install` and `docker compose build`, bounds the Selenium Grid wait and HTML test jobs, keeps build artifacts for 3 days for re-runs, and no longer fails merging test results on re-run, in PR [#5942](https://github.com/microsoft/BotFramework-WebChat/pull/5942), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nIn 285 runs, 11 jobs failed on registry errors, expired artifacts or empty re-runs, and superseded runs kept running. Only `pull-request-validation.yml` changes.\n\n## Specific Changes\n\n- `concurrency` per pull request, `cancel-in-progress`: 55 superseded runs, 17 pushes ran twice (e.g. 39513974960, 39513975524)\n- `npm clean-install`: up to 3 attempts, E502/ECONNRESET: 117897688457, 118276587417, 118822867621\n- `docker compose build`: up to 3 attempts, mcr.microsoft.com 503: 118981881108\n- Selenium Grid wait: `timeout-minutes: 3`, unbounded today (max 6 s)\n- HTML test job: `timeout-minutes: 30`, default 6 hours (max 639 s)\n- `docker` and `tarballs` artifacts: `retention-days: 3`, re-run after 27 hours failed: 118947250337, 118947570638, 118948571058\n- \"Merge test result artifacts\": `continue-on-error` like \"Merge test snapshots\", re-runs found no `test-result-*`: 118947327636, 118947639621, 118948631608, 118946942025\n\n- [ ] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-21T03:44:16Z",
+  "merged_at": "2026-10-21T06:48:40Z",
+  "base": "main",
+  "head": "OEvgeny/dev-ci-workflow-hardening",
+  "base_sha": "21a4c3e404d87f7e732d8b3557c46665b468aa38",
+  "head_sha": "0eb5c403f1c1b04f7f7391f76b573e1e4db14d3f",
+  "merge_sha": "9aea9a83d53ded4f83e3783deec40854bd195a68",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-21T03:45:52Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "7a15d5912235aa79ee318fb6e4e55750b17a07df",
+      "message": "Harden pull request validation against transient infrastructure failures",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "3dc24d6a644ecbc5cd10338ec9a4f98076c6ce9c",
+      "message": "Add the PR number to the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "0eb5c403f1c1b04f7f7391f76b573e1e4db14d3f",
+      "message": "Merge branch 'main' into OEvgeny/dev-ci-workflow-hardening",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5942-dev-ci-workflow-hardening.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/pull-request-validation.yml",
+      "status": "modified",
+      "additions": 34,
+      "deletions": 5,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-21T03:45:58Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-21T06:00:01Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-21T06:00:12Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:48:25Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:48:51Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:48:04Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:47:15Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:45:53Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:46:44Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:46:54Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:45:47Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:46:47Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:46:02Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:47:28Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:48:16Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:47:21Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:48:09Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:45:52Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:47:15Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:46:58Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:47:05Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:47:43Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:40:41Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:42:12Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:40:33Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:34:25Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:33:39Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:35:01Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:34:38Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:34:12Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:35:38Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:34:54Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:34:33Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:38:13Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:34:54Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T06:34:33Z"
+    }
+  ]
+}

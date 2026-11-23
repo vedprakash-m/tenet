@@ -1,0 +1,356 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5892,
+  "title": "Show the code block copy confirmation for 5 seconds, like the message Copy button",
+  "body": "> Related to #5857: the \"Copied\" confirmation of the copy button of code blocks disappears after half a second.\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed the \"Copied\" confirmation of the copy button of code blocks disappearing too quickly: it is now shown for 5 seconds in all themes, like the Copy button of messages; the button is no longer an assertive live region, which announced \"Copied\" on top of its new name and \"Copy\" again when the confirmation ended, related to [#5857](https://github.com/microsoft/BotFramework-WebChat/issues/5857), in PR [#5892](https://github.com/microsoft/BotFramework-WebChat/pull/5892), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\n#5872 fixed the Copy button of messages. The copy button of code blocks had the same problem: its checkmark and its \"Copied\" name were driven by a 0.5 second CSS animation, in the default, Fluent, and Copilot themes. It also had `aria-live=\"assertive\"` and `aria-pressed` on the button itself. In Edge, each press raised a live region event and a name change for \"Copied\", then a live region event and a name change for \"Copy\" when the animation ended.\n\nThe confirmation now uses the same timer as the Copy button of messages: 5 seconds, restarted when copying again, not affected by hiding Web Chat. The button is a plain button: its name is \"Copied\" while confirmed, and the focus indicator stays visible, as before.\n\nMeasured in Edge 155:\n\n| | Before | After |\n| --- | --- | --- |\n| Checkmark and \"Copied\" name | ~0.5 s in all themes | 5.0 s in all themes |\n| Button semantics while confirmed | assertive live region, toggle button (pressed) | button |\n| Screen reader events per press | live region \"Copied\" + name \"Copied\", then live region \"Copy\" + name \"Copy\" | name \"Copied\", then name \"Copy\" after 5 s |\n| Hiding Web Chat while confirmed | replays the animation | no effect |\n\n## Design\n\nThe 5 second timer of the Copy button of messages is moved into a shared internal hook, `useAutoResetState(initialValue, resetIntervalInMS, ponyfill)`, used by both buttons. It works like `useState()`, but the value goes back to `initialValue` after the interval, and setting it again restarts the interval. The ponyfill is a parameter because the code block copy button is a custom element rendered in its own React root, so it cannot call `usePonyfill()`. `CustomElementsComposer` now creates its class with `useReactCodeBlockCopyButtonClass()`, which returns `[class]` and passes the ponyfill down. This mirrors `useReactCodeBlockClass()`, which passes the code highlighter and the localized strings to the code block. With the ponyfill, the confirmation follows the host's clock, and tests can use a fake clock.\n\n`aria-live` is removed from the button. \"Copied\" reaches screen readers through the name of the button, which is spoken while the button has the focus, such as after pressing it with the keyboard (see the open question for mouse clicks in Safari). The Copy button of messages uses this channel too, and also queues \"Copied\" to Web Chat's live region (see below). The live region on the button raised a second event for \"Copied\", and another for \"Copy\" when the confirmation ended. With a 5 second confirmation, that would be an assertive \"Copy\" 5 seconds after the press, interrupting whatever the user does next.\n\nThe shared live region that the Copy button of messages also uses is not used here, for two reasons:\n\n- The custom element's React root has no access to it.\n- The same button is used in the \"View code\" dialog, which is a modal `<dialog>`. Everything outside the dialog is inert. In Edge, a bot message added to the shared live region while the dialog was open raised no live region event.\n\n`aria-pressed` is removed, so the button is not exposed as a toggle button, like the Copy button of messages.\n\nOpen question: in Safari, clicking a button does not focus it, so VoiceOver users who click with the mouse may not hear the name change. I have not verified whether VoiceOver announces the name change of the focused button. Before this change, the live region on the button covered that case. A host-independent announcement, such as `ariaNotify()`, would cover both copy buttons. #5872 already listed it as a separate change.\n\nFollow-up after #5893 merges: `behavior.highlighted.html` will move to the fake clock too. With a fake clock the message arrives before Shiki has loaded, and only #5893's highlighter fix keeps that code block from staying empty.\n\n## Specific Changes\n\n- Added `hooks/internal/useAutoResetState.ts`: the timer of the 5 second \"Copied\" state, extracted from `ActivityCopyButton` and made general: `[value, setValue]` that resets after an interval. Both copy buttons use it with `false` and 5 seconds\n- `CodeBlockCopyButton.tsx`: uses `useAutoResetState()`; removed `aria-live`, `aria-pressed` and the `animationend` handler; props validated with valibot and typed with `InferReactProps`; the default export is now `useReactCodeBlockCopyButtonClass()`, which returns `[class]` and passes the ponyfill to the custom element. The global class `code-block-copy-button--copied` is still set while confirmed, for host styling, like `activity-copy-button--copied`\n- `CodeBlockCopyButton.module.css`: removed the 0.5 second animation, and the `opacity: 0` of the element that carries the \"Copied\" name: it is empty, so the rule only mattered for the animation\n- `CustomElementsComposer.tsx`: registers the class from `useReactCodeBlockCopyButtonClass()`\n- `__tests__/html2/markdown/codeBlockCopyButton/behavior.html`: fake clock via `ponyfill`. It asserts \"Copied\" at 4.999 seconds and \"Copy\" at 5 seconds, that hiding Web Chat does not change it, the pasted code, and, with `getAccessibilityNode()`, the button's name and role without a live region or pressed state. The snapshots are unchanged.\n- `adaptiveCards/behavior.html`: fake clock; wait for \"Copied\", advance the clock by 5 seconds, and wait for \"Copy\", instead of a 500 ms sleep and an unstable snapshot. `behavior.highlighted.html` keeps the real clock until #5893 is merged. `behavior.highlighted.html` also waits for the Python code to be highlighted. The snapshots are unchanged.\n- The 3 tests stay JSX; they load `@babel/standalone@7.26.5` (already used by `copyButton/behavior.hideAndShow.html`), whose `data-type=\"module\"` lets them import `waitFor()`.\n\n- [x] I have added tests and executed them locally\n- [x] I have updated `CHANGELOG.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [x] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [x] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-17T11:36:15Z",
+  "merged_at": "2026-10-18T06:47:14Z",
+  "base": "main",
+  "head": "OEvgeny/fix-code-block-copy-confirmation",
+  "base_sha": "0041a3899b2093ba94e85f94b133eac9e52ce425",
+  "head_sha": "0f40185765ede19e818d173fda62d066f79407ee",
+  "merge_sha": "3391f910f42e27df41a92c003bc3c96212cbb472",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-17T15:19:18Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "5a2d23849f7af36e3c71779af2ee023095e9071e",
+      "message": "Extract the copied state of the Copy button into useCopiedState()",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "fddc124aacc12054e0a8308f868a457a8e67f967",
+      "message": "Show the code block copy confirmation for 5 seconds, without a live region",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "fc9fa5440e7328647e1a291a246f0e901bd4add5",
+      "message": "Add PR number to changelog",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "ab7244cd185e254b166e1df1d665a0b288df0242",
+      "message": "Address review: useAutoResetState(), InferReactProps, property hook returns an array",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "9727716dde6743ad1a4631905b560212ec836b08",
+      "message": "Merge branch 'main' into OEvgeny/fix-code-block-copy-confirmation",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "0f40185765ede19e818d173fda62d066f79407ee",
+      "message": "Merge branch 'main' into OEvgeny/fix-code-block-copy-confirmation",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/adaptiveCards/behavior.html",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.highlighted.html",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.html",
+      "status": "modified",
+      "additions": 66,
+      "deletions": 20,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Attachment/Text/private/ActivityCopyButton.tsx",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/useAutoResetState.ts",
+      "status": "added",
+      "additions": 39,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/CustomElementsComposer.tsx",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/customElements/CodeBlockCopyButton.module.css",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 17,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/customElements/CodeBlockCopyButton.tsx",
+      "status": "modified",
+      "additions": 120,
+      "deletions": 85,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-17T15:19:24Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:34:05Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:34:52Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:38:08Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:39:30Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:42:31Z"
+    },
+    {
+      "state": "CHANGES_REQUESTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:43:32Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-18T01:40:20Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-18T01:40:22Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-18T01:40:24Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-18T01:40:26Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-18T01:40:28Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T06:36:26Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-18T07:03:17Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:47:41Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:47:14Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:37:30Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:45:38Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:45:18Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:44:49Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:46:19Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:45:01Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:44:10Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:45:52Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:45:25Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:46:22Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:45:56Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:47:07Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:45:04Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:44:26Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:45:12Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:46:39Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:45:55Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:45:49Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:40:50Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:39:41Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:41:02Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:33:29Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:35:00Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:34:05Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:33:30Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:37:24Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:33:54Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:34:13Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:33:35Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:33:56Z"
+    }
+  ]
+}

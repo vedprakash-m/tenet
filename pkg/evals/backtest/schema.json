@@ -1,0 +1,247 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tenet backtest pull request record",
+  "type": "object",
+  "required": [
+    "repo",
+    "number",
+    "title",
+    "body",
+    "author",
+    "created_at",
+    "merged_at",
+    "base",
+    "head",
+    "base_sha",
+    "head_sha",
+    "merge_sha",
+    "labels",
+    "draft_history",
+    "commits",
+    "files",
+    "reviews",
+    "check_runs"
+  ],
+  "properties": {
+    "repo": {
+      "type": "string"
+    },
+    "number": {
+      "type": "integer"
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "body": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "author": {
+      "type": "object",
+      "required": [
+        "login",
+        "type",
+        "copilot_coding_agent"
+      ],
+      "properties": {
+        "login": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "enum": [
+            "User",
+            "Bot"
+          ]
+        },
+        "copilot_coding_agent": {
+          "type": "boolean"
+        }
+      }
+    },
+    "created_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "merged_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "base": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "head": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "base_sha": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "head_sha": {
+      "type": "string"
+    },
+    "merge_sha": {
+      "type": "string"
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "draft_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "event",
+          "at"
+        ],
+        "properties": {
+          "event": {
+            "enum": [
+              "converted_to_draft",
+              "ready_for_review"
+            ]
+          },
+          "at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "commits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "sha",
+          "message",
+          "author"
+        ],
+        "properties": {
+          "sha": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "author": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "status",
+          "additions",
+          "deletions",
+          "previous_path"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "additions": {
+            "type": "integer"
+          },
+          "deletions": {
+            "type": "integer"
+          },
+          "previous_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "state",
+          "author",
+          "submitted_at"
+        ],
+        "properties": {
+          "state": {
+            "type": "string"
+          },
+          "author": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submitted_at": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "check_runs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "conclusion",
+          "completed_at"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "conclusion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "completed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

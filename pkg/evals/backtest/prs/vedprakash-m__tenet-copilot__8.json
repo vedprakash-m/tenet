@@ -1,0 +1,121 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 8,
+  "title": "AGT-12: prioritize interface-change review context",
+  "body": "## Scope\nImplement only AGT-12 (PRD §3.8.7 / TS §8.7). Review investigation paths now prioritize changed sources and linked acceptance/boundary tests, including unchanged tests, ahead of unrelated changed tests. Stable deduplication and model exclusions apply before selection.\n\nFull, recheck and stateless packets carry candidate-bound `interfaceContext` guidance: resolve direct importers and callers of changed non-private interfaces/symbols with native `usages`, or disclose text-search fallback, before unrelated adjacent reads. Focused and native rubrics follow the same priority. Resolution is native/cooperative and remains unknown until evidenced; packet tests do not prove observed host execution or complete static/runtime coverage. No import scanner, schema, verdict, permissions or context-ceiling changes.\n\n## Evidence\nIndependent local spec review completed; both findings dispositioned before implementation. Four distinguishing behavior cases failed before runtime edits; all five [AGT-12] tests now pass. Local typecheck, all lints, M0 coverage, build (783 KB under unchanged 800 KB), complete payload verification and reproducible-build checks pass. Staged and outgoing-range privacy scans found no likely leaks; these scans are not proof of absence.\n\nExact head `db009d16d14d6a8799c957ba322db170b5a94c2a` passed [untrusted run 42408244433](https://github.com/vedprakash-m/tenet/actions/runs/42408244433): Ubuntu and macOS full `npm run ci` each passed 1,752 tests with zero failures; built scratch-repository UAT passed on Node 24 and 22.12.0 on both platforms; Windows portability passed. The AGT-12 built scenario proves unchanged linked acceptance-test priority ahead of an unrelated changed test and unknown-resolution metadata, not observed native caller execution.\n\nThe first hosted run passed full CI but exposed a UAT fixture attribution error. `db009d1` declares both intentionally changed files in the existing comma-separated `--touched` option; no kernel semantics or assertion was weakened. This green run supersedes the changelog's publication-time pending validation note. Windows kernel mutations are unsupported by design; native-host resolution remains unobserved.\n\n## Review and release\nOne feature PR on a non-main branch. Owner merges; no auto-merge. Preserve the solo 72-hour review window for executable/effects changes, with that limitation disclosed in release notes. Local feature spec is archived; review records and plan remain ignored and unpublished.\n\nA read-only preview predicts a CHANGELOG conflict with capacity #9. No immediate branch rewrite: after the owner merges the prerequisite and explicitly authorizes an update, preserve all feature entries and corrected capacity disclosure without rebasing or force-pushing, then validate the resulting exact head.",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-07T19:40:23Z",
+  "merged_at": "2026-11-09T18:03:24Z",
+  "base": "main",
+  "head": "vedprakash-m-interface-context-priority",
+  "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
+  "head_sha": "db009d16d14d6a8799c957ba322db170b5a94c2a",
+  "merge_sha": "e9c50635951af1fc62ff650946762d4079463683",
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "20e68519ace68532dd1d0fab03f924e1bb46e765",
+      "message": "feat: prioritize interface-change review context [AGT-12]",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "684d05223f0a56b518276f26190496a921923764",
+      "message": "docs: describe AGT-12 native context priority",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "db009d16d14d6a8799c957ba322db170b5a94c2a",
+      "message": "test: attribute both AGT-12 UAT candidate changes",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/review.ts",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/interface-context.test.ts",
+      "status": "added",
+      "additions": 98,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-review/SKILL.md",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet/resources/focused-review.md",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "specs/tech-spec.md",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/uat.mjs",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T19:55:37Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:35:06Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:14:04Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:31:23Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:08:01Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T19:54:29Z"
+    }
+  ]
+}

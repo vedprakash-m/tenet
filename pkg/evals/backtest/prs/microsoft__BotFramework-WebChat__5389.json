@@ -1,0 +1,1107 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5389,
+  "title": "feat: add syntax highlighting into markdown code block",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n### Added\r\n- Introduced syntax highlighting for markdown code blocks, in PR [#5389](https://github.com/microsoft/BotFramework-WebChat/pull/5389), by [@OEvgeny](https://github.com/OEvgeny)\r\n\r\n## Description\r\n\r\nThis enhances code block rendering in markdown by leveraging custom elements architecture to provide better integration between React components and markdown output. This enables direct property binding and updates to \r\n custom elements (code block, copy button).\r\n\r\nKey improvements:\r\n- Decouple code block rendering from HTML transform middleware, enabling direct property updates\r\n- Provide foundation for custom syntax highlighters and theme customization\r\n- Use copy button as independent component from code block custom element\r\n- Introduce `useUpdater` hook to handle communication between React and custom elements\r\n\r\n## Design\r\n\r\nThe implementation follows Web Chat's composer pattern for consistency:\r\n\r\n1. `CodeBlock` custom element handles the core rendering and updates\r\n2. `ShikiComposer` manages highlighting configuration\r\n3. `useUpdater` hook provides synchronization between React state and custom element updates\r\n\r\nMoving highlights configuration to bundle package to align with Web Chat's architecture.\r\n\r\n## Specific Changes\r\n\r\n- Introduced `CodeBlock` custom element with support for theme and language attributes\r\n- Added `ShikiComposer` to bundle package for centralized highlight management\r\n- Created `useUpdater` hook for managing React-to-custom-element state updates\r\n- Updated HTML transform middleware to work with new code block architecture\r\n- Updated snapshots and add more tests\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [ ] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n-  [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [x] Browser and platform compatibilities reviewed\r\n-  [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] Internationalization reviewed (strings, unit formatting)\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] Security reviewed (no data URIs, check for nonce leak)\r\n-  [x] Tests reviewed (coverage, legitimacy)",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2024-11-30T03:56:59Z",
+  "merged_at": "2025-01-07T21:16:46Z",
+  "base": "main",
+  "head": "feature/code-block",
+  "base_sha": "5289ce35394183c17727611d1b9087f83b61f3d8",
+  "head_sha": "046f194f32fac6b1f870001117deab162ae66359",
+  "merge_sha": "ad222ddd059bcbefb70951a3df6c6d8946c403dc",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2024-12-05T18:10:42Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "ccab7a892274756b2aa957437c94b4d7733bc211",
+      "message": "WIP",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "44aa1871192bf0e229d85a444408a1e8e3e1a5a6",
+      "message": "Progress",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "395f751a52dcdb824ac910dcc7e9aeeb3613aefe",
+      "message": "Minor cleanup",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "7f1da363b6a48fea3699a13a953320ebd1d6e86e",
+      "message": "Fix and improve",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "1954bf79429bc5c07a0e7947564353155cc33f3a",
+      "message": "Fix nit",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "99962c3e613ac35308c613c9aebf8202584fe5ce",
+      "message": "Update on attribute change",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "6995316fa78cf3d44b64a35d808df7f9e41e91f5",
+      "message": "Update snaps",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "b8a493cf6f8becc5f4098dbe5749e5b61f09e1ad",
+      "message": "More snapshots",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "64a52a33f3d36b87933f317fc0207a692126cd29",
+      "message": "Fix snapshot",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "8a9758200cc10f59c1b2a05f6e85eed1b394af69",
+      "message": "Fix the thing",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "54167e7a182034c234197c2224c652b3d1bbbc61",
+      "message": "Fix d.ts",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "7762b46e1cad4f36397d2c948470c0d061353f90",
+      "message": "Snapshots",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "7c43323b49da2672729c35e557278baafb17e162",
+      "message": "Migrate failing toast test",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ca2f16da79d907bf1497ebdbebebb94e6336a93f",
+      "message": "Improve copy code button in various contexts",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "c9e6f63ecff0e4796994afcb97d88cd1eec9dedf",
+      "message": "Snaps and nits",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "88adf65e96c04d345b6eaf98116432678d72ff63",
+      "message": "Self review",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "a0ab92d93b41263195a60f33babc71bfe81abaa4",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "6dff1d2d7fe17b66803c84451d0e2ad6ccb6c542",
+      "message": "Polish and adress review",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "1a1bcb51a33c408745ace2903ad6b379790a638c",
+      "message": "Fix missing super call",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "a43f87e7761ecea13093a9954230fa12655aca8c",
+      "message": "Reimplement without refs",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "12ab82cc36b6c161d921b0d482c310a55d269a54",
+      "message": "Revert to data-value",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "1dc8d6d44c2548448ea7fc9673096f7a199d2224",
+      "message": "Some fresh air",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "de66bf2d1421f606ac77f00451b37761ce073bee",
+      "message": "Add Set polyfill",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "000a9a18a7f482e4c868dec1a97d1b4860274aa8",
+      "message": "Update packages/component/src/providers/CustomElements/customElements/CodeBlock.ts",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "19df0f5b488a2b33df9a05387c276cbaa0e7aaf9",
+      "message": "Address feedback",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f289ad9081d1d37865f423e9f5c3e4de85290ab2",
+      "message": "Rework to refs",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "88e9e8ca06f97af72835cc5031a391fea113d1e1",
+      "message": "Fix nit",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ef13173bad1fea22606ebda290626c9dc82124e4",
+      "message": "Merge branch 'main' into feature/code-block",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "046f194f32fac6b1f870001117deab162ae66359",
+      "message": "Update styling",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": ".eslintrc.react.yml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/chrome-docker/adaptive-cards-js-inputs-card-with-custom-style-options-and-submit-action-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/chrome-docker/suggested-actions-js-should-show-response-from-bot-and-no-text-from-user-on-messageback-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/chrome-docker/suggested-actions-js-should-show-response-from-bot-and-text-from-user-on-messageback-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/chrome-docker/suggested-actions-js-should-show-response-from-bot-and-text-from-user-on-postback-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/chrome-docker/use-send-message-back-js-calling-send-message-back-should-send-a-message-back-activity-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/chrome-docker/use-send-post-back-js-calling-send-post-back-should-send-a-post-back-activity-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/accessibility-adaptive-card-disabled-inputs-js-accessibility-requirement-disabling-adaptive-card-with-inputs-field-3-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/auto-scroll-with-suggested-actions-submit-adaptive-cards-js-auto-scroll-with-suggested-actions-shown-should-stick-to-bottom-if-submitting-an-adaptive-card-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/conversation-start-properties-no-locale-is-sent-js-conversation-start-properties-with-no-locale-is-sent-should-get-hello-and-welcome-message-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/conversation-start-properties-send-en-us-js-conversation-start-properties-with-locale-of-en-us-should-get-hello-and-welcome-message-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/conversation-start-properties-send-invalid-type-js-conversation-start-properties-with-locale-of-invalid-type-should-get-hello-and-welcome-message-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/conversation-start-properties-send-non-existing-js-conversation-start-properties-with-non-existing-locale-should-get-hello-and-welcome-message-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/conversation-start-properties-send-non-iso-format-js-conversation-start-properties-with-non-iso-format-locale-should-get-hello-and-welcome-message-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/conversation-start-properties-send-zh-cn-js-conversation-start-properties-with-locale-of-zh-cn-should-get-hello-and-welcome-in-simplified-chinese-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/hero-card-actions-js-hero-card-actions-message-back-display-text-text-value-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/hero-card-actions-js-hero-card-actions-message-back-value-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/hero-card-actions-js-hero-card-actions-post-back-json-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/scroll-to-end-button-tab-order-js-scroll-to-end-button-should-have-correct-tab-order-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-codeblock-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-codeblock-2-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-codeblock-3-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-codeblock-4-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-codeblock-5-snap.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-codeblock-dark-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-codeblock-dark-2-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-codeblock-dark-3-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-codeblock-dark-4-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-codeblock-dark-5-snap.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-codeblock-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-codeblock-2-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-codeblock-3-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-codeblock-4-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-codeblock-5-snap.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-codeblock-dark-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-codeblock-dark-2-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-codeblock-dark-3-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-codeblock-dark-4-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-codeblock-dark-5-snap.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/transcript-activity-grouping-js-transcript-with-activity-grouping-test-43-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/transcript-activity-grouping-js-transcript-with-activity-grouping-test-44-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/transcript-activity-grouping-js-transcript-with-activity-grouping-test-45-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/transcript-activity-grouping-js-transcript-with-activity-grouping-test-46-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/fluentTheme/side-by-side.wide.dark.html",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/fluentTheme/side-by-side.wide.html",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/toast.customizeDebounceTimeout.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/viewCodeButton.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/layout.code-block-dark.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/layout.code-block-dark.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/layout.html",
+      "status": "added",
+      "additions": 68,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/layout.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/adaptiveCards/behavior.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/adaptiveCards/behavior.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/adaptiveCards/behavior.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/adaptiveCards/layout.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.denied.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.denied.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.denied.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.highlighted.html",
+      "status": "added",
+      "additions": 115,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.highlighted.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.highlighted.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.highlighted.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/behavior.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/fluent/layout.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlockCopyButton/layout.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.spec.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.spec.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.spec.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/toast/customDebounceTimeout.html",
+      "status": "renamed",
+      "additions": 5,
+      "deletions": 23,
+      "previous_path": "__tests__/html/toast.customizeDebounceTimeout.html"
+    },
+    {
+      "path": "__tests__/html2/toast/customDebounceTimeout.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/toast/customDebounceTimeout.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/toast/customDebounceTimeout.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 28,
+      "deletions": 28,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/AddFullBundle.tsx",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/bundle/index.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/bundle/modern-polyfill.ts",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/codeHighlighter/ShikiComposer.tsx",
+      "status": "added",
+      "additions": 35,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/codeHighlighter/shiki.ts",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "packages/component/src/Attachment/Text/private/shiki.ts"
+    },
+    {
+      "path": "packages/bundle/src/markdown/createHTMLContentTransformMiddleware.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/middleware/createCodeBlockCopyButtonMiddleware.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 28,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/middleware/createCodeBlockMiddleware.ts",
+      "status": "added",
+      "additions": 21,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/codeBlockCopyButtonDocumentMod.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 34,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/codeBlockDocumentMod.ts",
+      "status": "added",
+      "additions": 24,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/renderMarkdown.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/tsup.config.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Attachment/Text/private/CodeContent.tsx",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 64,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/CustomPropertyNames.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/CodeBlock.ts",
+      "status": "added",
+      "additions": 39,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/RenderMarkdown.ts",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/ViewCodeDialog.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/createStyleSet.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/codeHighlighter/index.ts",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/codeHighlighter/private/CodeHighlighterComposer.tsx",
+      "status": "added",
+      "additions": 32,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/codeHighlighter/private/createCodeHighlighterComposer.tsx",
+      "status": "added",
+      "additions": 32,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/codeHighlighter/private/defaultHighlightCode.tsx",
+      "status": "added",
+      "additions": 22,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/internal.ts",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/CustomElementsComposer.tsx",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/customElements/CodeBlock.ts",
+      "status": "added",
+      "additions": 224,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/customElements/wrapAsCustomElement.ts",
+      "status": "modified",
+      "additions": 29,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/private/CustomElementsContext.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/useCodeBlockTagName.ts",
+      "status": "added",
+      "additions": 19,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/HTMLContentTransformCOR/private/HTMLContentTransformContext.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/HTMLContentTransformCOR/useTransformHTMLContent.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 18,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/tsup.config.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/theme/Theme.module.css",
+      "status": "modified",
+      "additions": 76,
+      "deletions": 50,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2024-12-04T19:37:09Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2024-12-04T19:38:12Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T19:16:01Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T19:25:33Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T19:31:43Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T19:34:36Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T19:34:58Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T19:35:53Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T19:36:52Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T19:37:28Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T19:50:30Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2024-12-05T19:52:47Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T20:06:53Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2024-12-05T20:13:06Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2024-12-05T20:18:12Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2024-12-05T20:38:00Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T21:22:03Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-05T21:26:28Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2024-12-05T23:17:12Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-06T09:35:55Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-11T19:10:16Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-11T19:42:34Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-11T20:06:35Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-11T20:07:16Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-11T20:08:30Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-11T20:45:11Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2024-12-11T22:51:20Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2024-12-12T02:52:45Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2024-12-12T03:06:01Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2024-12-12T03:06:28Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2024-12-12T03:09:12Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-01-07T20:43:15Z"
+    }
+  ],
+  "check_runs": []
+}

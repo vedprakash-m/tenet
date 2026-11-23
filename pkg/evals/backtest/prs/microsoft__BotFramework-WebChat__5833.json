@@ -1,0 +1,299 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5833,
+  "title": "Fix polymiddleware error should not propagate to React runtime",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n### Fixed\r\n\r\n- Fixed polymiddleware error should not propagate to React runtime if `<DebugProvider>` is not mounted, by [@compulim](https://github.com/compulim), in PR [#5833](https://github.com/microsoft/BotFramework-WebChat/pull/5833)\r\n\r\n## Description\r\n\r\n`<ErrorBoxPolymiddlewareProxy>` and `useBuildRenderErrorBoxCallback` should have \"catchall\". Without`<DebugProvider>`, rendering those component should not throw.\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Added a catchall which will null-render if `<DebugProvider>` or any error box polymiddleware is not added\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [x] I have added tests and executed them locally\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n- [x] ~Browser and platform compatibilities reviewed~\r\n- [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n- [x] ~Documents reviewed (docs, samples, live demo)~\r\n- [x] ~Internationalization reviewed (strings, unit formatting)~\r\n- [x] ~`package.json` and `package-lock.json` reviewed~\r\n- [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n- [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-05-22T07:14:57Z",
+  "merged_at": "2026-05-22T17:14:32Z",
+  "base": "main",
+  "head": "fix-polymiddleware-error",
+  "base_sha": "c138220e433a062180dc94bbb3cede8bb5e54e82",
+  "head_sha": "db3dc02c08991bbf252f7faccac216764038ccb1",
+  "merge_sha": "4c60bbe09b0d3ecb21d6c9488ca9d25e56829628",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-05-22T07:32:39Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "a71bd9ca4be8e642cb6741240870e13b4111b0dd",
+      "message": "Fix polymiddleware error should not propagate to React runtime",
+      "author": "compulim"
+    },
+    {
+      "sha": "a1b90a9b9029ddc7745cc0d133830cfb9782e3b1",
+      "message": "Add PR number",
+      "author": "compulim"
+    },
+    {
+      "sha": "d2e92ede767655f5957c40a2b70d12f2854dadd3",
+      "message": "Fix flakiness",
+      "author": "compulim"
+    },
+    {
+      "sha": "db3dc02c08991bbf252f7faccac216764038ccb1",
+      "message": "Add tests",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/adaptiveCard/renderError.withoutDebug.html",
+      "status": "added",
+      "additions": 96,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/adaptiveCard/renderError.withoutDebug.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/errorBox/proxy.html",
+      "status": "added",
+      "additions": 109,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/errorBox/proxy.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/middleware/errorBox/simple.html.snap-1.png"
+    },
+    {
+      "path": "__tests__/html2/middleware/errorBox/proxy.noDebugProvider.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html2/middleware/errorBox/simple.noDebugProvider.html"
+    },
+    {
+      "path": "__tests__/html2/middleware/errorBox/proxy.noDebugProvider.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/errorBox/useBuildRenderCallback.html",
+      "status": "renamed",
+      "additions": 22,
+      "deletions": 1,
+      "previous_path": "__tests__/html2/middleware/errorBox/simple.html"
+    },
+    {
+      "path": "__tests__/html2/middleware/errorBox/useBuildRenderCallback.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/errorBox/useBuildRenderCallback.noDebugProvider.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/errorBox/useBuildRenderCallback.noDebugProvider.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/middleware/errorBox/simple.noDebugProvider.html.snap-1.png"
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/src/errorBoxPolymiddleware.tsx",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 3,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-05-22T07:40:05Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-05-22T15:42:21Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:17:11Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:17:40Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:09Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:08Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:42Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:16Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:16:18Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:40Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:43Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:13Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:11Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:08Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:06Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:30Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:08Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:16:03Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:49Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:35Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:15:23Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:12:03Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:10:12Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:11:13Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T10:54:39Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:00:18Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T11:03:35Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T10:59:10Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T10:59:23Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T10:59:12Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-05-22T10:58:49Z"
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5614,
+  "title": "Fix: citation links matching edge cases",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n- Fixed citation links are not properly matched against markdown links, in PR [#5614](https://github.com/microsoft/BotFramework-WebChat/pull/5614), by [@OEvgeny](https://github.com/OEvgeny)\r\n\r\n## Description\r\n\r\nLinks are sanitized by micromark before we're matching them to citations. This PR adds a logic to apply the same sanitization for the citation links.\r\n\r\n## Design\r\n\r\nWe're reusing `micromark-util-sanitize-uri` which the engine is using to process links.\r\n\r\n## Specific Changes\r\n\r\n- [renderMarkdown.ts](https://github.com/microsoft/BotFramework-WebChat/compare/fix/citation?expand=1#diff-e98f3b7c6b74fd9cf7304f40e6cdc721f26afaf736ce4252a54bb0f069be4721) to update link handling logic\r\n- added tests: `citation/url.html` and `citation/url.fluent.html`\r\n- updated `package.json` for bundle\r\n\r\n## -\r\n\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [ ] Browser and platform compatibilities reviewed\r\n-  [ ] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [ ] Documents reviewed (docs, samples, live demo)\r\n-  [ ] Internationalization reviewed (strings, unit formatting)\r\n-  [ ] `package.json` and `package-lock.json` reviewed\r\n-  [ ] Security reviewed (no data URIs, check for nonce leak)\r\n-  [ ] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-10-13T18:01:46Z",
+  "merged_at": "2025-10-13T20:03:59Z",
+  "base": "main",
+  "head": "fix/citation",
+  "base_sha": "713c1ff180f200dbebf2167380978c064cd8ea68",
+  "head_sha": "00dea1335ac3dc9416612b53e6c6c18547061caa",
+  "merge_sha": "7671e32bd6f69389a6272f76d15ebb9f94a9b95b",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-10-13T18:32:36Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "8c6ea2f7f410048dc7a68fcdb17626dd17522632",
+      "message": "Fix: citation matching in edge cases",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "00dea1335ac3dc9416612b53e6c6c18547061caa",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/url.fluent.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/url.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/url.html",
+      "status": "added",
+      "additions": 343,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/url.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/renderMarkdown.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 5,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-10-13T19:37:04Z"
+    }
+  ],
+  "check_runs": []
+}

@@ -1,0 +1,1750 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5471,
+  "title": "Supports multi-dimenstional grouping",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n### Breaking changes\r\n\r\n- `useGroupActivities` hook is being deprecated in favor of the `useGroupActivitiesByName` hook. The hook will be removed on or after 2027-05-04\r\n\r\n### Added\r\n\r\n- Added multi-dimensional grouping, `styleOptions.groupActivitiesBy`, and `useGroupActivitiesByName` hook, in PR [#5471](https://github.com/microsoft/BotFramework-WebChat/pull/5471), by [@compulim](https://github.com/compulim)\r\n   - Existing behavior will be kept and activities will be grouped by `sender` followed by `status`\r\n   - `useGroupActivitiesByName` is favored over the existing `useGroupActivities` hook for performance reason\r\n   - Middleware which support the new grouping name init argument should only compute the grouping if they match the grouping name, or the grouping name is not specified, otherwise, should do nothing and call the downstream middleware\r\n\r\n## Description\r\n\r\nToday, despite Web Chat support custom grouping, it is limited to two dimensions (sender followed by status.)\r\n\r\nTomorrow, we will support multi-dimensional grouping with custom grouping and grouping order.\r\n\r\nIn the future, we should consider moving the timestamp and send status from activity into activity grouping component.\r\n\r\n## Design\r\n\r\n### New `styleOptions.groupActivitiesBy`\r\n\r\n`styleOptions.groupActivitiesBy` is an array containing name of groupings in its respective order, default to `['sender', 'status']`.\r\n\r\n### `groupActivitiesMiddleware` enhancement\r\n\r\n`groupActivitiesMiddleware` will support initialization argument to indicate what grouping name is supported by the said middleware. The new signature is:\r\n\r\n```ts\r\n(name: string | undefined) =>\r\n  next =>\r\n    ({ activities: WebChatActivity[] }) =>\r\n      {\r\n        [key: string]: WebChatActivity[][]\r\n      }\r\n```\r\n\r\nNotes: as this is middleware, the computation should always look at result from upstream and propagate it as needed to downstream.\r\n\r\nIf `name` is `undefined`, the middleware should always compute the grouping. Otherwise, it should match the `name`.\r\n\r\nIf `name` is not interesting to the targeting middleware, the middleware can simply return `undefined` to indicate that it is not participating in the said grouping name.\r\n\r\n```ts\r\n(name: string) => undefined\r\n```\r\n\r\n### `<DecoratorComposer>` to support \"activity grouping\" type\r\n\r\n`<DecoratorComposer>` will support new decorator type `\"activity grouping\"`. The middleware signature is:\r\n\r\n```ts\r\ntype ActivityGroupingDecoratorMiddleware =\r\n  (type: 'activity grouping') => \r\n    next => \r\n      React.ComponentType<{ \r\n        activities: WebChatActivity[],\r\n        children?: ReactNode | undefined,\r\n        groupingName: string\r\n      }>\r\n```\r\n\r\n### New `useGroupActivitiesByName` hook\r\n\r\n`useGroupActivitiesByName` is a new hook for running grouping middleware by name, instead of running all grouping middleware at once. The signature is:\r\n\r\n```ts\r\nuseGroupActivitiesByName():\r\n  (activities: WebChatActivity[], groupingName: string) => WebChatActivity[][]\r\n```\r\n\r\nUnlike `useGroupActivities` which does not validate its result, the new `useGroupActivitiesByName` will perform validation and make sure all activities are grouped and no extraneous activities will appear in the grouping. If violation is detected, it will automatically fallback to activities group by themselves.\r\n\r\nCurrent `useGroupActivities` will be deprecated in favor of the new `useGroupActivitiesByName` hook.\r\n\r\n### Internal: new `RenderingActivities` and `GroupedRenderingActivities` context\r\n\r\n`RenderingActivities` will compute what activities need to be rendered using `activityMiddleware`. The result can be retrieved by the `useGetRenderActivityCallback` hook.\r\n\r\n`GroupedRenderingActivities` extends the `RenderingActivities` by returning a tree structure with grouping information, including activities, child tree, key (of first activity) and grouping name.\r\n\r\n### Internal: new `ChatHistoryDOM` context\r\n\r\nThe existing `activityElementRef` used in `<BasicTranscript>` is replaced by a new context. To get what rendered DOM element of an activity, use the `useActivityElementMapRef` hook. The key of the map is activity key and the value is DOM element.\r\n\r\n```ts\r\nuseActivityElementMapRef(): RefObject<Map<string, HTMLElement>>\r\n```\r\n\r\n## Specific Changes\r\n\r\n(Please refers to the [design](#design) section.)\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-05-01T10:26:22Z",
+  "merged_at": "2025-05-05T18:21:44Z",
+  "base": "main",
+  "head": "feat-multi-dimension-grouping",
+  "base_sha": "5e127987c6ae2a5e8a1c6dd9eace8bffc74a600e",
+  "head_sha": "907a74ca5ca2d663326ec78b3b813ef2b4effbfa",
+  "merge_sha": "488ce7246687f57e8e15f2f9443d0ad64debca70",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-05-05T09:56:12Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "794f8d307ed847a016afd5c20bdfa3038f536b09",
+      "message": "Upgrade avatar tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "d6e69e49e5d0e65044a247311a4dc77ba07fa483",
+      "message": "Refactor RenderingElements",
+      "author": "compulim"
+    },
+    {
+      "sha": "8740abb92ae0ede61853808ed04d9ed9fd279235",
+      "message": "Refactor Sender/StatusGrouping",
+      "author": "compulim"
+    },
+    {
+      "sha": "2656017a734244448bb819a865398395480ca3f7",
+      "message": "Fix infinite loop",
+      "author": "compulim"
+    },
+    {
+      "sha": "f4c0dc04f511fbc722abd9eaeef1002d65ead94e",
+      "message": "Remove break",
+      "author": "compulim"
+    },
+    {
+      "sha": "348daced0ab0775b785af25d26abea7389467cb3",
+      "message": "Fix grouping and remove comment",
+      "author": "compulim"
+    },
+    {
+      "sha": "5227a1b4453ce84f54ae721050560bb771823f60",
+      "message": "Refactor logics to TranscriptActivity",
+      "author": "compulim"
+    },
+    {
+      "sha": "48449e00840b67766696cf12a626d43bf5a5ed4b",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "6a51060d7e5ef59575a544c416b680be845309bc",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "b235498e59a469c9642f407c14f6bbf73270d5fb",
+      "message": "Allow non-standard group name",
+      "author": "compulim"
+    },
+    {
+      "sha": "23eaad35ac14455bba6682c9683138213c2f5549",
+      "message": "Rename",
+      "author": "compulim"
+    },
+    {
+      "sha": "d9519a7debcd7e6baea012fce0be147fd7b06b99",
+      "message": "Fix wrong activityElementMapRef",
+      "author": "compulim"
+    },
+    {
+      "sha": "4b70c90b3e5b0640eed29b2feb61e231fed33ab9",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "21cf051af5eacac834f78a8fade246c19ea15982",
+      "message": "FIx livestream",
+      "author": "compulim"
+    },
+    {
+      "sha": "6a8307f605018001356f631d5d6dcd7a68a303b9",
+      "message": "Fix performance",
+      "author": "compulim"
+    },
+    {
+      "sha": "c742c98ead93653b651f5e2dc534d95e95dbdcac",
+      "message": "Move to useRenderingActivityKeys",
+      "author": "compulim"
+    },
+    {
+      "sha": "0eecf312ba4654332dc965b9b16982113583aeed",
+      "message": "Remove obsoleted ActivityTree context",
+      "author": "compulim"
+    },
+    {
+      "sha": "2ee4cb0d8e5709425ce7b8deb74bb0498447d4c1",
+      "message": "Move ActivityTree down the tree",
+      "author": "compulim"
+    },
+    {
+      "sha": "e297eaaf24ad176e3ab7611ab490f72608787597",
+      "message": "Add new <TranscriptDOMComposer>",
+      "author": "compulim"
+    },
+    {
+      "sha": "c1c46f95b7547200b6a4201d74de1382858d52c1",
+      "message": "Rename composer",
+      "author": "compulim"
+    },
+    {
+      "sha": "847a6d896a2fe23b3af0a4197501e2cd69fbd58f",
+      "message": "Refactor createContextAndHook",
+      "author": "compulim"
+    },
+    {
+      "sha": "9514adc5831335f9a129f07f7c53660a7b672f3e",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "f218eaa9793dcdd69578416371b1a000328fb941",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "4b6971852cc711207c484119735e0a3fdddb709c",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "9c5bf793026963f127934755948e8c9e73409d56",
+      "message": "Refactor to ActivitiesWithGroupContainer",
+      "author": "compulim"
+    },
+    {
+      "sha": "1ba6658011ba51bc78998e2d15713784c462a230",
+      "message": "Simplify",
+      "author": "compulim"
+    },
+    {
+      "sha": "ddb232502b2084b5be7331a55a165969f68789c5",
+      "message": "Simplify",
+      "author": "compulim"
+    },
+    {
+      "sha": "aa7b4527b3db95a9d0bd0674dec46a4ce773a6b7",
+      "message": "Clean up error message",
+      "author": "compulim"
+    },
+    {
+      "sha": "4a5a2a27fbdebb4344978d4de0780d0f5fd07b43",
+      "message": "Prepare for group container middleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "8fb24e2e370dbca996abe956f9ae3f2f83308db4",
+      "message": "Add activity grouping middleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "4f1a71d85536875618e832ffcec330399e79966b",
+      "message": "Add `useGetRenderActivtiyCallback` instead of exposing `activityWithRenderer`",
+      "author": "compulim"
+    },
+    {
+      "sha": "a603f9e9cb145d609559ba758e869ba86cf4ca56",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "1deee50ca537c79dfff3620dc8f75d774550ef20",
+      "message": "Add groupActivitiesBy",
+      "author": "compulim"
+    },
+    {
+      "sha": "fffdf7264dc76bbd9826a8b78ff57d3b8b1389b5",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "cdf39d962c0e28d28a1de68dfa83288baed69747",
+      "message": "Add test of disabling sender/status",
+      "author": "compulim"
+    },
+    {
+      "sha": "5ef992d0dfb6d5b922b747b0918900440be0d6fb",
+      "message": "Add tests for groupActivitiesBy",
+      "author": "compulim"
+    },
+    {
+      "sha": "312674cc3f39173de9a1374e09f45b8bc86c8191",
+      "message": "Typo",
+      "author": "compulim"
+    },
+    {
+      "sha": "fd06afd6c663262ae02222dc460b05d65bcc6205",
+      "message": "Fix undefined activityGroupingDecorationMiddleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "5999311e7d1f94cc0b67952f527e491a8e7a1c44",
+      "message": "Fix BasicTranscript should not render if no activities",
+      "author": "compulim"
+    },
+    {
+      "sha": "e2ca38dd5a989bffb80811b16deac5e945439a65",
+      "message": "Fix flaky tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "e71ceea41b235265c559bc4f550a2ef4a371dd31",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "562510ea438b2cc886c82ab6b06c52eb48080e23",
+      "message": "Add tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "143ddb7f3176ee37d43fdd12330f8a2e1fab8dbb",
+      "message": "Update label position",
+      "author": "compulim"
+    },
+    {
+      "sha": "a2c468ea55d3d2a2ecbe6490f4082fc0fdbd4a0c",
+      "message": "Move to the unified decorator middleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "709bf7ee153d42e7e173b45ec7f8c3228bc6ae62",
+      "message": "Ignore errors",
+      "author": "compulim"
+    },
+    {
+      "sha": "65f03a7f9c94ac41b9b0ff31c8a573de0f0e208b",
+      "message": "Fix test",
+      "author": "compulim"
+    },
+    {
+      "sha": "c9779d822ce2d635a5eeaffe5a424a8bcdd9fc82",
+      "message": "Concatenate middleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "0113c0b13fa2de12bb5d123d366a0364360fffd0",
+      "message": "Add init",
+      "author": "compulim"
+    },
+    {
+      "sha": "801341defd8fe59838e450e0b7d3859dbfca311d",
+      "message": "Flip the decorator order",
+      "author": "compulim"
+    },
+    {
+      "sha": "7b17f4470f429055b9ac87e8dfb165ac1ad18c16",
+      "message": "Flip order",
+      "author": "compulim"
+    },
+    {
+      "sha": "39532e7f6ebc7c3e6f4e163031df9abb8d89197f",
+      "message": "Flip decorator order",
+      "author": "compulim"
+    },
+    {
+      "sha": "6d865fd95fd3f8b83429a7826df5b440b85497cd",
+      "message": "Remove commented code",
+      "author": "compulim"
+    },
+    {
+      "sha": "574928c70a45ec874c495dc890174cdadc3cba7c",
+      "message": "Allow removal of key",
+      "author": "compulim"
+    },
+    {
+      "sha": "7a41a2331a66b56ec35baf000d8ee19071f674d7",
+      "message": "Allow removal of sender/status",
+      "author": "compulim"
+    },
+    {
+      "sha": "0e30abe0af5d53a5ee9e546f0333b220d7bfa26a",
+      "message": "Prettier",
+      "author": "compulim"
+    },
+    {
+      "sha": "a30f7317dd4d36885845a70bc32c5d7e91f9d146",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "63497afb8544f9a0f94d9717ab87b2d5950ea4d4",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "d4ad89398243c2334c2bc71cf5cced695b03c7da",
+      "message": "Add test",
+      "author": "compulim"
+    },
+    {
+      "sha": "aea100cf3e942b2806cd73288213afd4db7babfa",
+      "message": "Use valibot",
+      "author": "compulim"
+    },
+    {
+      "sha": "2b40c12dd642d89c840e2d422ebed0d824659193",
+      "message": "Remove as map for simplicity",
+      "author": "compulim"
+    },
+    {
+      "sha": "79b32224602fefd199ab35a654200102413c7c5d",
+      "message": "Add type",
+      "author": "compulim"
+    },
+    {
+      "sha": "4e720e7b1fc9882fb06fe53ef003e8dfe92f7ccc",
+      "message": "Add exports",
+      "author": "compulim"
+    },
+    {
+      "sha": "fcb2d8d0abd7e5057a6e5f446595e1b15ce14582",
+      "message": "Use fat arrow",
+      "author": "compulim"
+    },
+    {
+      "sha": "53923723785efd84fbac6fedb8ee69e689b14aee",
+      "message": "Simplify",
+      "author": "compulim"
+    },
+    {
+      "sha": "43c7225d39e68c7a513f7a9462617045782697c6",
+      "message": "Add priority to DecoratorComposer",
+      "author": "compulim"
+    },
+    {
+      "sha": "94338d6e23e7253a05a37451db6434ee5361c744",
+      "message": "Add built-in",
+      "author": "compulim"
+    },
+    {
+      "sha": "2803a17435765d56fbd716fda6321d2531ab8d31",
+      "message": "Rectify undefined groupActivities",
+      "author": "compulim"
+    },
+    {
+      "sha": "764222c92836100c41108abdd10c3e7cd7762293",
+      "message": "Add internal/LowPriorityDecoratorComposer",
+      "author": "compulim"
+    },
+    {
+      "sha": "362e4968fa758ddd6e6b8520dbaee0a61a9acacb",
+      "message": "Rename decorators",
+      "author": "compulim"
+    },
+    {
+      "sha": "9c554e4df742ab5df5765233b4f0553abc69b45e",
+      "message": "Rename to groupingName",
+      "author": "compulim"
+    },
+    {
+      "sha": "5480ea6d7bb6d051e07561a94f99a589dbf1ed3d",
+      "message": "Move <DecoratorComposer> after Fluent",
+      "author": "compulim"
+    },
+    {
+      "sha": "a46e6d313587cade1bcb0416a9a4fdf3533e8dc8",
+      "message": "Wait for scroll stabilize",
+      "author": "compulim"
+    },
+    {
+      "sha": "1c5b7b4e4710e516a5d4fc60898a59864b33b893",
+      "message": "Use emulator",
+      "author": "compulim"
+    },
+    {
+      "sha": "b5bb84c2c2fe8350fcc173769586a7e126cde72d",
+      "message": "Refactor useGroupActivities into its own context",
+      "author": "compulim"
+    },
+    {
+      "sha": "0220c91e9bc7e6a3f4fe38b8cc620d7cbcdc1ed3",
+      "message": "Run groupActivities recursively",
+      "author": "compulim"
+    },
+    {
+      "sha": "cbc4e6841603d3b679faff074663d8bd41345d64",
+      "message": "Nested grouping",
+      "author": "compulim"
+    },
+    {
+      "sha": "ab1993151b837de3cd6a9a6b624b2aae0ba42e7e",
+      "message": "Nested grouping",
+      "author": "compulim"
+    },
+    {
+      "sha": "ccaf6d6fa4035c211a8ed7c3fb4957c0f48827a7",
+      "message": "Allow middleware to return undefined",
+      "author": "compulim"
+    },
+    {
+      "sha": "d8bbc2b68f17b86740dfbbca0ff7b0af4f0134b1",
+      "message": "Add docs",
+      "author": "compulim"
+    },
+    {
+      "sha": "f58d95428075ebaa453f2cb8ff277338d85e3c96",
+      "message": "Remove unneeded coalesce",
+      "author": "compulim"
+    },
+    {
+      "sha": "1130f725ef3c29801420887830189744d4bba29f",
+      "message": "Add readonly",
+      "author": "compulim"
+    },
+    {
+      "sha": "5266a602fd3aa4cabf328032483ffe73393f9763",
+      "message": "Move default middleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "e0600941a2da942dd84046a0ac1b1338d9c93cc3",
+      "message": "Add entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "f15641833131a8b8c17d5c6cd5e208d1c18c828c",
+      "message": "Allow middleware to opt out after setup",
+      "author": "compulim"
+    },
+    {
+      "sha": "d3e7378962f20211000f3501c223b7f83b02f614",
+      "message": "Verbosity on entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "1f0022cb881f1bc15be9fd0cf040e950842d643e",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "022433e9a466475977569b91b5017a301120d8b8",
+      "message": "Update test",
+      "author": "compulim"
+    },
+    {
+      "sha": "407e8557563eae78dac6fcada4626667c0c4a966",
+      "message": "Fix flaky",
+      "author": "compulim"
+    },
+    {
+      "sha": "127984c56ac935f74f03fdcfa9de170fd7d308ba",
+      "message": "Use newer version of groupActivitiesMiddleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "d99c642d02c3b4afce6f0463bb9ac5e4fe406f5d",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "ce93c46e023fcdcf8c3183acded008ca737a1e10",
+      "message": "Use <DecoratorComposer>",
+      "author": "compulim"
+    },
+    {
+      "sha": "affb969ecd51ff2ceaaa557ce0a8607a4e9bc301",
+      "message": "Rename types",
+      "author": "compulim"
+    },
+    {
+      "sha": "59701054bba504487480f74bbc64c29a01d09bd7",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "ca34ef86338cbd87e2693e0622aea84ccdea6d7a",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "1a23fb67e5795f62226f2041a28489c5b01e204b",
+      "message": "Style",
+      "author": "compulim"
+    },
+    {
+      "sha": "44921864280f5a0f8c369973e0efb95006d19d3e",
+      "message": "Merge branch 'main' into feat-multi-dimension-grouping",
+      "author": "compulim"
+    },
+    {
+      "sha": "907a74ca5ca2d663326ec78b3b813ef2b4effbfa",
+      "message": "Merge branch 'main' into feat-multi-dimension-grouping",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/customizableAvatar.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 347,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/hooks/useTypingIndicatorVisible/getter.botTyping.html",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/renderActivity.profiling.html",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/sendAttachmentOn/useSendFiles.binary.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload.image.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload/uploadPlainTextFile.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload/uploadZipFile.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload/uploadZipFileWithContentURL.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload/uploadZipFileWithoutContentURL.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload/withWebWorker/customThumbnailQuality.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload/withWebWorker/customThumbnailSize.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload/withWebWorker/withTelemetry.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload/withWebWorker/withoutThumbnail.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload/withoutWebWorker/customThumbnailQuality.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload/withoutWebWorker/customThumbnailSize.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/upload/withoutWebWorker/simple.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.customSizeAndRoundness.html",
+      "status": "added",
+      "additions": 56,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.customSizeAndRoundness.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customize-size-and-roundness-of-avatar-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.html",
+      "status": "added",
+      "additions": 76,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.oneSide.html",
+      "status": "added",
+      "additions": 66,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.oneSide.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-only-on-one-side-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.oneSide.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-only-on-one-side-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.oneSide.rtl.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.oneSide.rtl.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-only-on-one-side-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.oneSide.rtl.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-only-on-one-side-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.rtl.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.rtl.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.default.rtl.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.html",
+      "status": "added",
+      "additions": 75,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-bubble-nub-and-round-bubble-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-bubble-nub-and-round-bubble-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.oneSide.html",
+      "status": "added",
+      "additions": 66,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.oneSide.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-bubble-nub-and-round-bubble-only-on-one-side-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.oneSide.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-bubble-nub-and-round-bubble-only-on-one-side-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.oneSide.rtl.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.oneSide.rtl.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-bubble-nub-and-round-bubble-only-on-one-side-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.oneSide.rtl.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-bubble-nub-and-round-bubble-only-on-one-side-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.rtl.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.rtl.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-bubble-nub-and-round-bubble-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/layout.fullCustomized.rtl.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-bubble-nub-and-round-bubble-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/avatar/setup.js",
+      "status": "added",
+      "additions": 59,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/customGrouping.html",
+      "status": "added",
+      "additions": 133,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/customGrouping.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/disableAll.html",
+      "status": "added",
+      "additions": 112,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/disableAll.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/disableSender.html",
+      "status": "added",
+      "additions": 110,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/disableSender.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/disableStatus.html",
+      "status": "added",
+      "additions": 110,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/disableStatus.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/disableStatus.perSender.html",
+      "status": "added",
+      "additions": 111,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/disableStatus.perSender.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/extraneousGroup.html",
+      "status": "added",
+      "additions": 112,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/extraneousGroup.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/fluentTheme.html",
+      "status": "added",
+      "additions": 125,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/fluentTheme.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/grouping.css",
+      "status": "added",
+      "additions": 37,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/groupingBorder.html",
+      "status": "added",
+      "additions": 109,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/groupingBorder.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/noSuchGroup.html",
+      "status": "added",
+      "additions": 102,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/noSuchGroup.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/HOOKS.md",
+      "status": "modified",
+      "additions": 173,
+      "deletions": 140,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 26,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/StyleOptions.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator.ts",
+      "status": "added",
+      "additions": 16,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityBorder/ActivityBorderDecorator.tsx",
+      "status": "added",
+      "additions": 48,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityBorder/private/ActivityBorderDecoratorMiddleware.ts",
+      "status": "added",
+      "additions": 51,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityBorder/types.ts",
+      "status": "added",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityGrouping/ActivityGroupingDecorator.tsx",
+      "status": "added",
+      "additions": 31,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityGrouping/private/ActivityGroupingDecoratorMiddleware.ts",
+      "status": "added",
+      "additions": 38,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityGrouping/types.ts",
+      "status": "added",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/DecoratorComposer.tsx",
+      "status": "added",
+      "additions": 22,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/index.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/internal/InternalDecoratorComposer.tsx",
+      "status": "added",
+      "additions": 61,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/internal/LowPriorityDecoratorComposer.tsx",
+      "status": "added",
+      "additions": 19,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/ActivityBorderDecoratorMiddleware.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 33,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/ActivityDecorator.tsx",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 38,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/DecoratorComposer.tsx",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/DecoratorComposerContext.ts",
+      "status": "added",
+      "additions": 16,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/PassthroughFallback.tsx",
+      "status": "added",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/activityDecoratorRequest.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 23,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/createDecoratorComposer.tsx",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 36,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/templateMiddleware.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/types.ts",
+      "status": "added",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/defaultStyleOptions.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/Composer.tsx",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 34,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/index.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/SendBoxMiddleware.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/SendBoxToolbarMiddleware.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/middleware/concatMiddleware.spec.js",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/middleware/concatMiddleware.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/useGroupActivities.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/internal.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/GroupActivities/GroupActivitiesComposer.tsx",
+      "status": "added",
+      "additions": 115,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/GroupActivities/private/GroupActivitiesContext.ts",
+      "status": "added",
+      "additions": 23,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/GroupActivities/private/createDefaultGroupActivitiesMiddleware.ts",
+      "status": "renamed",
+      "additions": 26,
+      "deletions": 13,
+      "previous_path": "packages/api/src/hooks/middleware/createDefaultGroupActivitiesMiddleware.ts"
+    },
+    {
+      "path": "packages/api/src/providers/GroupActivities/private/isGroupingValid.ts",
+      "status": "added",
+      "additions": 41,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/GroupActivities/private/useGroupActivitiesContext.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/GroupActivities/useGroupActivities.ts",
+      "status": "added",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/GroupActivities/useGroupActivitiesByName.ts",
+      "status": "added",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/types/GroupActivitiesMiddleware.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/tsup.config.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/module/exports-minimal.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/StackedLayout.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/BasicTranscript.tsx",
+      "status": "modified",
+      "additions": 64,
+      "deletions": 137,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/BuiltInDecorator.tsx",
+      "status": "added",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ChatHistory/private/ScrollToEndButton.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 16,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Composer.tsx",
+      "status": "modified",
+      "additions": 37,
+      "deletions": 36,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/createDefaultActivityGroupingDecoratorMiddleware.tsx",
+      "status": "added",
+      "additions": 22,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/RenderActivityGrouping.tsx",
+      "status": "added",
+      "additions": 33,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/SenderGrouping/SenderGrouping.tsx",
+      "status": "added",
+      "additions": 49,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/SenderGrouping/private/SenderGroupingContext.ts",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/SenderGrouping/private/useSenderGroupingContext.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/SenderGrouping/useFirstActivity.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/SenderGrouping/useLastActivity.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/StatusGrouping/StatusGrouping.tsx",
+      "status": "added",
+      "additions": 49,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/StatusGrouping/private/StatusGroupingContext.ts",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/StatusGrouping/private/useStatusGroupingContext.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/StatusGrouping/useFirstActivity.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/StatusGrouping/useLastActivity.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/ActivityTree.tsx",
+      "status": "added",
+      "additions": 35,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptActivity.tsx",
+      "status": "added",
+      "additions": 105,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/TranscriptActivity.tsx",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 64,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/decorator/index.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/decorator/private/WebChatDecorator.tsx",
+      "status": "renamed",
+      "additions": 10,
+      "deletions": 8,
+      "previous_path": "packages/component/src/decorator/private/Decorator.tsx"
+    },
+    {
+      "path": "packages/component/src/decorator/private/WebChatTheme.tsx",
+      "status": "added",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/useMemoWithPrevious.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityTree/ActivityTreeComposer.tsx",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 96,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityTree/private/Context.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityTree/private/types.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityTree/private/useActivitiesWithRenderer.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 40,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityTree/private/useActivityTreeWithRenderer.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 140,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityTree/private/useContext.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 15,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityTree/useActivityTreeWithRenderer.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 16,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ChatHistoryDOM/ChatHistoryDOMComposer.tsx",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ChatHistoryDOM/private/ChatHistoryDOMContext.ts",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ChatHistoryDOM/useActivityElementRef.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/GroupedRenderingActivities.ts",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/GroupedRenderingActivitiesComposer.tsx",
+      "status": "added",
+      "additions": 87,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/private/GroupedRenderingActivitiesContext.ts",
+      "status": "added",
+      "additions": 14,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/private/group.spec.ts",
+      "status": "added",
+      "additions": 29,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/private/group.ts",
+      "status": "added",
+      "additions": 19,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/private/pick.spec.ts",
+      "status": "added",
+      "additions": 33,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/private/pick.ts",
+      "status": "added",
+      "additions": 22,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/useGroupedRenderingActivities.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/useNumRenderingActivities.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/RenderingActivities/RenderingActivitiesComposer.tsx",
+      "status": "added",
+      "additions": 84,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/RenderingActivities/private/RenderingActivitiesContext.ts",
+      "status": "added",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/RenderingActivities/private/useInternalActivitiesWithRenderer.ts",
+      "status": "added",
+      "additions": 78,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/RenderingActivities/useGetRenderActivityCallback.ts",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/RenderingActivities/useRenderingActivities.ts",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/RenderingActivities/useRenderingActivityKeys.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/Theme/ThemeProvider.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/TranscriptFocus/TranscriptFocusComposer.tsx",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 27,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/createContextAndHook.ts",
+      "status": "added",
+      "additions": 23,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/types/internal/mutableRefObject.ts",
+      "status": "added",
+      "additions": 33,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/types/internal/reactNode.ts",
+      "status": "added",
+      "additions": 16,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/FluentThemeProvider.tsx",
+      "status": "modified",
+      "additions": 41,
+      "deletions": 27,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/harness/src/host/common/host/snapshot.js",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/harness/src/host/dev/hostOverrides/snapshot.js",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-02T01:53:47Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-02T07:13:04Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-02T07:17:00Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-02T21:54:05Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-02T22:11:04Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-05T00:10:15Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-05T00:11:34Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-05T00:18:30Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-05T09:14:14Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-05T17:16:29Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-05T17:20:03Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-05T17:27:06Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-05-05T17:32:24Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-05T18:18:34Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-05T18:19:58Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-05T18:21:34Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-05-05T18:21:40Z"
+    }
+  ],
+  "check_runs": []
+}

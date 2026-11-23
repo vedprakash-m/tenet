@@ -1,0 +1,167 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 26,
+  "title": "Undo confirmation tests that run on every platform",
+  "body": "Brings the uncommitted work from 2026-11-08/09 in the old main checkout onto current `main`, keeping only what still applies.\r\n\r\n**Kept**\r\n- `undo-confirm-simulated.test.ts` (new, 22 tests): `undo` and `decide undo-confirm` with real Git and an in-memory store, so the GIT-04 confirmation checks run on Windows too. Uses the existing `enableUndoForTests` seam; undo stays disabled in the shipped kernel.\r\n- `undo.test.ts`: two added cases (same-label commit in merged history after preview; same-label vs differently labeled empty commits after preview). Conflicting edits to an existing case kept `main`'s version.\r\n- `model-record.test.ts`: two titles reworded to claim no more than the assertions show.\r\n\r\n- `tools/uat/uat.mjs`: the filter stop/kill step now waits until `run.json` holds `pid` and `procStart`. Before, it read the file as soon as the filter's marker appeared, and the filter can start before the kernel writes them (Ubuntu failure on this PR).\r\n\r\n**Dropped as superseded**\r\n- README, SECURITY, CONTRIBUTING, plugin README and user-doc warnings. They described cleanup as accepting an unchecked confirmation; `main` now refuses cleanup removal and undo outright and documents that. Merging them would make the docs wrong.\r\n- Tech-spec, `lint-quality` and baseline changes that raised the store ceiling to 60,209; `main` is at 55,863.\r\n- The `readme`/`release-checklist` test additions that checked the dropped doc text.\r\n\r\n**Evidence**\r\n- Local (Windows): the 22 simulated tests pass against this branch; typecheck, lint-arch, lint-skills, lint-quality and coverage pass. The `model-record` and `undo.test.ts` cases need Linux/macOS and are unverified until CI runs.\r\n\r\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\r\n",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-12T20:00:25Z",
+  "merged_at": "2026-11-13T17:34:36Z",
+  "base": "main",
+  "head": "safety-limit-docs",
+  "base_sha": "6462e5b953b4615026087599df450aa152dacdb3",
+  "head_sha": "9e8f506d7a4d78adc241d62e2bd1a488765c9736",
+  "merge_sha": "9c5638f190b3b67bb54f23309938c1550e03e517",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-13T17:34:32Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "d2e18d5331797402c898cc3947a43c96df075553",
+      "message": "test: run undo confirmation checks on every platform",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "cb9645f14fc8b673562339f78eef56c26391a1b5",
+      "message": "test: compare the branch before and after in the merged-history undo case",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "ba19ea8ae308e8a44a92433f3df22088deab6866",
+      "message": "test: restore the applied assertion in the merged-history undo case",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "c82c0e79a7aca0bf8415e2e433615f34c807dbbc",
+      "message": "test: keep the ownership message check in the merged-history undo case",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "8a5cb6c2a405d925dddbf7ea5f349cb0256fa88e",
+      "message": "test(uat): wait for the recorded process identity, not only the filter marker",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "9e8f506d7a4d78adc241d62e2bd1a488765c9736",
+      "message": "Merge remote-tracking branch 'origin/main' into safety-limit-docs",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/model-record.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/undo-confirm-simulated.test.ts",
+      "status": "added",
+      "additions": 571,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/undo.test.ts",
+      "status": "modified",
+      "additions": 94,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/uat.mjs",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T17:13:21Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T16:57:47Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-13T16:59:04Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T17:00:54Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T16:57:37Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-13T17:08:48Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T17:34:07Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-13T16:57:12Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T17:31:46Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T17:23:03Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T16:59:36Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T16:57:31Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T16:58:32Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T16:57:37Z"
+    }
+  ]
+}

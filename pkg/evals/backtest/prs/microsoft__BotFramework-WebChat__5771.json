@@ -1,0 +1,536 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5771,
+  "title": "feat: Add style option to configure default group and references open state",
+  "body": "> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n- Added collapsible activity and activity with abstract handling, in PR [#5506](https://github.com/microsoft/BotFramework-WebChat/pull/5506), in PR [#5513](https://github.com/microsoft/BotFramework-WebChat/pull/5513), in PR [#5771](https://github.com/microsoft/BotFramework-WebChat/pull/5771), by [@OEvgeny](https://github.com/OEvgeny)\r\n   - Added `styleOptions.partGroupDefaultOpen` to configure whether part groups are open by default, defaults to `true`\r\n   - Added `styleOptions.referenceListDefaultOpen` to configure whether references are open by default, defaults to `true`\r\n   - In the Fluent theme \"copilot\" variant, part groups and references now default to closed\r\n\r\n## Description\r\n\r\nAdds a new style options `referenceListDefaultOpen` and `partGroupDefaultOpen`  that controls whether references and/or collapsible \"part\" activity groups start open or closed. Default to open, preserving existing behavior. The Fluent theme \"copilot\" variant overrides this to closed/collapsed.\r\n\r\n---\r\n\r\n- [x] I have added tests and executed them locally\r\n- [x] I have updated CHANGELOG.md\r\n- [ ] I have updated documentation\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-03-06T21:33:11Z",
+  "merged_at": "2026-03-19T20:19:18Z",
+  "base": "main",
+  "head": "feat/default-group-state-style-option",
+  "base_sha": "4fc8b960be46a4006cfcf9ffa7345f96afd4e46c",
+  "head_sha": "67161e8053d9fbd439225585c67be6cf2edae4c6",
+  "merge_sha": "d004a157ab1f1d3b58d3238dcff25bd33b2f4bf5",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-03-19T17:59:34Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "89551187118585c668b9b4f27694cdb5d9bb61c0",
+      "message": "WIP: Add style option to configure default group open state",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "cc18d611922b6f85bcac978e665f78098086e95c",
+      "message": "Add \"open group\" step to copilot variant tests; revert for flaky adaptive card test (#5772)",
+      "author": "Copilot"
+    },
+    {
+      "sha": "7317dc9cbf385cf7781c422602110116a39a0d10",
+      "message": "Merge branch 'main' into feat/default-group-state-style-option",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "3320b85b566fcdd1faa80969d1cf70c853758ab9",
+      "message": "Merge branch 'main' into feat/default-group-state-style-option",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "e2cc809a80caa1bab534091b20bf392c68017468",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f231b54c93e191393e51b050d98f888545ff5bf2",
+      "message": "Fix tests",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "7351b1ced1e73e8a99bb9c9cbd7e0e827c252262",
+      "message": "Add references visibility style option",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "0b251ad77917314de0134dbd0d51cc53ab3694f4",
+      "message": "Better naming",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ca9749bbc142128bcf5d2d9c09d952fc2146e765",
+      "message": "Fix tests",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "5afef9f65aba265e8e8dfa69523d88282dc2f1d8",
+      "message": "Rename to referenceListDefaultOpen",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "67161e8053d9fbd439225585c67be6cf2edae4c6",
+      "message": "fix remaining",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/citation.longRef.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/citation.longRef.copilot.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/citation.longRef.html",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/accordion.copilot.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/accordion.copilot.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/accordion.copilot.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/accordion.copilot.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/accordion.html",
+      "status": "modified",
+      "additions": 52,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/showModal.linkDefinitions.copilot.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/showModal.linkDefinitions.copilot.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/showModal.linkDefinitions.copilot.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/showModal.linkDefinitions.copilot.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/showModal.linkDefinitions.html",
+      "status": "modified",
+      "additions": 60,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/copyButton/layout.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/linkDefinition/badge.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/linkDefinition/badge.dark.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/linkDefinition/badge.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-10.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-10.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.skip.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.copilot.dark.html.snap-10.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.copilot.dark.html.snap-11.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.copilot.dark.html.snap-12.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.copilot.dark.html.snap-13.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.copilot.dark.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.html",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/index.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/StyleOptions.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/defaultStyleOptions.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/LinkDefinition/LinkDefinitions.tsx",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/PartGrouping/private/PartGroupingActivity.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/FluentThemeProvider.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2026-03-19T08:09:02Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2026-03-19T18:42:01Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-03-19T19:31:48Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-03-19T20:01:31Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-19T20:09:07Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-03-19T20:18:21Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T20:18:13Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T20:17:56Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:47:01Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:46:26Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:58:49Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:59:01Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:59:28Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:59:26Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:58:52Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T20:17:31Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:58:56Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:59:02Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:59:09Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:59:46Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:58:51Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:59:38Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:59:36Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:59:07Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:58:54Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:53:38Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:58:46Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:48:01Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:58:35Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:55:34Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:54:49Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:50:58Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:46:46Z"
+    },
+    {
+      "name": "Verify build-browser (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T22:09:46Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T20:08:18Z"
+    },
+    {
+      "name": "Cleanup artifacts",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T20:01:52Z"
+    },
+    {
+      "name": "Upload results",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T20:01:08Z"
+    },
+    {
+      "name": "Agent",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T20:00:29Z"
+    },
+    {
+      "name": "Prepare",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:56:50Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:47:29Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:47:46Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-03-19T19:47:38Z"
+    }
+  ]
+}

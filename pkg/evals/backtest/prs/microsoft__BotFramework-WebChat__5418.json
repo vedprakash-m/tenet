@@ -1,0 +1,136 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5418,
+  "title": "feat: add activity related fields into the form data",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n### Added\r\n\r\n- Added support for including activity ID and key into form data indicated by corresponding data attributes, in PR [#5418](https://github.com/microsoft/BotFramework-WebChat/pull/5418), by [@OEvgeny](https://github.com/OEvgeny)\r\n\r\n## Description\r\n\r\nThis PR enhances form handling within activities by including activity-related information (ID and/or key) in the form data when submitted upon developer ask.\r\n\r\n## Design\r\n\r\nData is injected through FormData event only when asked for, preventing direct DOM access\r\n\r\n## Specific Changes\r\n\r\n- Added `data-webchat-include-activity-id` and `data-webchat-include-activity-key` data attributes handling for extending FormData\r\n- Implemented FormData event handler in `ActivityRow` component\r\n- Updated ref handling to support form data injection\r\n- Added a test  for form data injection scenarios:\r\n  - Verification of activity ID/key presence in form submissions\r\n  - Testing hijacked form behavior\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [x] I have added tests and executed them locally\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n- [ ] Browser and platform compatibilities reviewed\r\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\r\n- [ ] Documents reviewed (docs, samples, live demo)\r\n- [ ] Internationalization reviewed (strings, unit formatting)\r\n- [ ] `package.json` and `package-lock.json` reviewed\r\n- [ ] Security reviewed (no data URIs, check for nonce leak)\r\n- [ ] Tests reviewed (coverage, legitimacy)",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-02-05T01:06:13Z",
+  "merged_at": "2025-02-06T20:22:49Z",
+  "base": "main",
+  "head": "feat/activity-related-formdata",
+  "base_sha": "ab274ed7f6c108d3276e97af132868d0265f6da7",
+  "head_sha": "08c50d31d55c3b073bcf53c78f56e3aab32e17d6",
+  "merge_sha": "d7695749f3b505c92fd2a28e036801c5b6e4e5c0",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-02-06T19:49:07Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "4fa88a63bfc470b4bfcea07dd506b929c92509ba",
+      "message": "feat: add acitivty related fields into the form data",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "59e5cef1297853945e015d890058a8e9cc029afa",
+      "message": "Polish",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ff509f1a18812f8f889aea969c90112db1d47e97",
+      "message": "fix space",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "3c2a5f41fcd223cff2dc89f001e032ece9cf09b7",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "08c50d31d55c3b073bcf53c78f56e3aab32e17d6",
+      "message": "Clarify changelog entry",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/htmlTransform/customElement.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/markdown/customElement.html"
+    },
+    {
+      "path": "__tests__/html2/markdown/htmlTransform/customElement.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/markdown/customElement.html.snap-1.png"
+    },
+    {
+      "path": "__tests__/html2/markdown/htmlTransform/form.html",
+      "status": "added",
+      "additions": 98,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/htmlTransform/form.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/htmlTransform/form.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/ActivityRow.tsx",
+      "status": "modified",
+      "additions": 43,
+      "deletions": 2,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-06T19:46:53Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-02-06T20:02:58Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2025-02-06T20:03:50Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-02-06T20:04:24Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-06T20:10:17Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-02-06T20:14:28Z"
+    }
+  ],
+  "check_runs": []
+}

@@ -1,0 +1,94 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5540,
+  "title": "Remove unnecessary files",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n(No changelog for non-production-impacting changes.) \r\n\r\n## Description\r\n\r\nRemoving files that are either obsoleted or extraneous.\r\n\r\nWe could not totally get rid of `string_decoder`, it's used by `readable-stream` <- `jszip` <- `selenium-webdriver`. Many ZIP implementations use `readable-stream` thus they depends on `string_decoder`.\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Removed extraneous files\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] ~I have added tests and executed them locally~\r\n-  [x] ~I have updated `CHANGELOG.md`~\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] ~`package.json` and `package-lock.json` reviewed~\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-08-07T10:28:41Z",
+  "merged_at": "2025-08-07T17:44:30Z",
+  "base": "main",
+  "head": "feat-cleanup-2",
+  "base_sha": "4e98b61237eab6fee3c8492d2baceb18b5a7c777",
+  "head_sha": "17f929666e40420efdf8332753cc57a9ad892e1e",
+  "merge_sha": "4ff15c6beb4502edd1743655595521bfbbe6f4fa",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-08-07T10:28:50Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "79a4e97c01ed84baf15aed9162149b3d1a2fa925",
+      "message": "Remove unnecessary files",
+      "author": "compulim"
+    },
+    {
+      "sha": "2cf8e4adb28acdeaff4d6e6225b4d92561c3ba02",
+      "message": "Merge branch 'main' into feat-cleanup-2",
+      "author": "compulim"
+    },
+    {
+      "sha": "17f929666e40420efdf8332753cc57a9ad892e1e",
+      "message": "Remove package-lock.json from archived sample",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "azure-pipelines.yml",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 63,
+      "previous_path": null
+    },
+    {
+      "path": "minecraftdungeons.jpg",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/src/build/index.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/tsup.config.bundled_v4r48gmlmya.mjs",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 199,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/k.direct-line-token/javascript/web/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 2457,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/PushBitsToGithub.ps1",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 58,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-08-07T17:30:49Z"
+    }
+  ],
+  "check_runs": []
+}

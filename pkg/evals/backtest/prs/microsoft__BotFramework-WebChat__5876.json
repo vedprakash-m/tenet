@@ -1,0 +1,274 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5876,
+  "title": "Show keyboard focus indicator on carousel flippers",
+  "body": "> Fixes #5704\n> Fixes #5744\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed the keyboard focus indicator of the \"Previous\" and \"Next\" flipper buttons in carousel layout: they now show a visible focus ring, and the focused flipper is shown even at the start or end of the carousel, fixes [#5704](https://github.com/microsoft/BotFramework-WebChat/issues/5704) and [#5744](https://github.com/microsoft/BotFramework-WebChat/issues/5744), in PR [#5876](https://github.com/microsoft/BotFramework-WebChat/pull/5876), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThe carousel flippers had `outline: 0`. On focus they only got a slightly darker background, the same as on hover, so keyboard users could not tell when a flipper had focus. Also, the flipper at the edge (for example \"Previous\" at the start) stayed in the tab order but was slid out of view, so its focus was invisible.\n\nOn `:focus-visible`, the flipper now has a two-tone ring and is always shown. This applies to both the default theme and the Fluent theme. The ring has an inner band in the flipper foreground color (white) and an outer outline that uses the transcript keyboard indicator style options (2px solid black by default). It has at least 3:1 contrast against the flipper and against the content behind it.\n\n## Design\n\nreact-film 4.0.0 renders the flipper `<button>` itself and does not let Web Chat set `tabIndex`, `disabled`, or `aria-disabled`. So the flipper at the edge stays focusable. Hiding it with CSS would make things worse: when a keyboard user presses \"Next\" until the end, the focused button would disappear and focus would drop to `<body>`. Instead, the focused flipper is kept visible. The proper follow-up is in react-film: set `aria-disabled=\"true\"` on the flipper at the edge. `CarouselLayout.module.css` already styles that state.\n\nOpen question: should the Fluent theme map the ring color to its focus token (`--webchat-colorStrokeFocus2`) instead of `transcriptVisualKeyboardIndicatorColor`?\n\n## Specific Changes\n\n- `CarouselLayout.module.css`: added `:focus-visible` styles to `.react-film__flipper`: a ring on the flipper body (`box-shadow` + `outline`), and the slider is moved into view with no transition delay\n- Added `__tests__/html2/carousel/flipperButton.focusVisible.html` and a `.fluent.html` variant: they Tab to \"Next\", then to the hidden \"Previous\", and assert focus, visibility, and the computed ring. Snapshots are taken after the flippers settle.\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have updated `CHANGELOG.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-17T00:48:54Z",
+  "merged_at": "2026-10-17T01:55:44Z",
+  "base": "main",
+  "head": "OEvgeny/fix-5704-carousel-flipper-focus",
+  "base_sha": "2474cd2336c61d415b26079e64f1f790db2c7007",
+  "head_sha": "c52a01e27d4350d9f3bbe3826d81945491d8317b",
+  "merge_sha": "a191a10e6e76b7b327987855784337b5e23ddbaa",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-17T01:39:44Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "39c33893d44d4f0a416c31d786a17489f1452f43",
+      "message": "Show keyboard focus indicator on carousel flippers (#5704, #5744)",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "c52a01e27d4350d9f3bbe3826d81945491d8317b",
+      "message": "Add PR number to changelog",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.fluent.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.fluent.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.html",
+      "status": "added",
+      "additions": 130,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/carousel/flipperButton.focusVisible.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/CarouselLayout.module.css",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-17T01:41:12Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-17T01:42:03Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:40:07Z"
+    },
+    {
+      "name": "copilot-pull-request-reviewer",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:42:02Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:04:21Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:04:46Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:02:40Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:03:35Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:03:08Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:02:43Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:03:12Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:03:12Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:02:58Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:02:20Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:02:52Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:01:27Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:58:42Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:04:13Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:03:07Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:03:15Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:02:12Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:03:06Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:02:31Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T01:02:35Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:57:56Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:56:28Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:49:50Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:50:20Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:51:20Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:54:38Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:50:55Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:49:53Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:49:42Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:50:26Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T00:49:58Z"
+    }
+  ]
+}

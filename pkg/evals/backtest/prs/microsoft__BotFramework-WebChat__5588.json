@@ -1,0 +1,1031 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5588,
+  "title": "Unify and improve named exports",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n### Added\r\n\r\n- Improved bundling, in PR [#5588](https://github.com/microsoft/BotFramework-WebChat/pull/5588), by [@compulim](https://github.com/compulim)\r\n   - New named exports\r\n      - `api`: `botframework-webchat-api/hook`\r\n      - `bundle`: `botframework-webchat/component`, `botframework-webchat/decorator` (internal-use), `botframework-webchat/hook`\r\n      - `component`: `botframework-webchat-component/component`, `botframework-webchat-component/hook`\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\nThis PR pave the way to improve the bundling scenario for \"fat\" module: `<script type=\"module\">`.\r\n\r\n## Design\r\n\r\n### `/bundle/boot/`\r\n\r\nThe folder has these designs in mind:\r\n\r\n- Less prone to bug due to missing exports on one format but available on another format\r\n   - IIFE is based on CJS/ESM exports for consistencies\r\n- \"Full\" is enhancement of \"minimal\"\r\n   - Cascading where possible: \"full\" re-exports \"minimal\" with overrides and adds\r\n\r\nImplementation:\r\n\r\n- `/actual/` contains building blocks\r\n   - `/actual/(component|hook)/(full|minimal)` some blocks may have 2 flavors: full and minimal\r\n      - Cascading fashion: `full` in based on `minimal`\r\n- `/exports/` imports from `/actual/` to form named exports\r\n   - `/exports/` do not exports minimal (because treeshaking should work), however, for convenience reasons, `/exports/minimal` do exists and is the base of `/exports/index`\r\n   - For backward compatibility, `/exports/index/` will export `Components` and `hooks`, they are imported from `/exports/(component|hook)`\r\n- `/iife/` imports from `/exports/` to form IIFE\r\n   - `/iife/webchat-es5` is based on `/iife/webchat`\r\n   - However, `/iife/webchat` is not based on minimal\r\n   - `/iife/(webchat|webchat-minimal)` is based on `/exports/(index|minimal)`\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Updated some import/export into re-export\r\n- Unified some packages to export from `/boot/`\r\n- Reinstall `microsoft-cognitiveservices-speech-sdk@1.45.0`, previous was picking up `1.17.0`\r\n- `api`: Exported `hooks` via `botframework-webchat-api/hook`\r\n- `bundle`: Exported `Components` via `botframework-webchat/component`\r\n- `bundle`: Exported `decorator` via `botframework-webchat/decorator`\r\n- `bundle`: Exported `hooks` via `botframework-webchat/hook`\r\n- `bundle`: Cleaned up and unified `/boot/` for IIFE and CJS/ESM\r\n- `component`: Exported `Components` via `botframework-webchat-component/component`\r\n- `component`: Exported `hooks` via `botframework-webchat-component/hook`\r\n- `component`: Fixed some typing issues in JS\r\n   - `AbsoluteTime`, `RelativeTime`, `UITracker`, `useForceRenderAtInterval`, `useNonce`, `BasicConnectivityStatus`, `BasicToaster`\r\n- `fluent-theme`: Imported from `botframework-webchat/decorator` instead of `botframework-webchat/internal` when available\r\n- `styles`: Slightly better code splitting support\r\n- `esbuild`: Support `outDirWithTemp` for output folder other than `dist`\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] ~I have added tests and executed them locally~\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-09-19T06:51:53Z",
+  "merged_at": "2025-09-20T07:00:55Z",
+  "base": "main",
+  "head": "feat-rebundling",
+  "base_sha": "0f286705c2e80b4f70dbb549a1bd1641a6556814",
+  "head_sha": "e46315bda92e82f60158e9290aad63519761ebf0",
+  "merge_sha": "e48fbd9da3a3462aefff568926e312bb7b77d541",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-09-20T05:21:35Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "bcb88c1af47bfc633b67dcfb5c5589c619f45087",
+      "message": "Fix npm start",
+      "author": "compulim"
+    },
+    {
+      "sha": "e49f3520bba3a92c0dcfc34f0c2cb4e2dbabc2bb",
+      "message": "Add outDirWithTemp",
+      "author": "compulim"
+    },
+    {
+      "sha": "5d3193d18b6f6bd46e18d8767a57261f4af5e02e",
+      "message": "Update to Speech SDK 1.45.0",
+      "author": "compulim"
+    },
+    {
+      "sha": "b47a2571864fde4a305c1bcf1b6c55a0f70b0a84",
+      "message": "Remove unused compile result",
+      "author": "compulim"
+    },
+    {
+      "sha": "b2ce3adb2e9557c385bc53b566aba73526ba2bf9",
+      "message": "Transform Speech SDK",
+      "author": "compulim"
+    },
+    {
+      "sha": "79cde24cee2a0a71fb46a4f9bdadf8aa4d722783",
+      "message": "Simplify exports",
+      "author": "compulim"
+    },
+    {
+      "sha": "26227ef07a4355cb15b404e3c6f16dda89f72ba7",
+      "message": "Fold actual layer into exports",
+      "author": "compulim"
+    },
+    {
+      "sha": "c5fbcd0a62547559460068deff8433ae984e73ee",
+      "message": "Exports internal",
+      "author": "compulim"
+    },
+    {
+      "sha": "ddea14fb0a0c1330f204fb0dcb08f951d1b58fc8",
+      "message": "Revert \"Fold actual layer into exports\"",
+      "author": "compulim"
+    },
+    {
+      "sha": "51dabb5f4391cabe3b3dab28bde5616451d0609e",
+      "message": "Rename bundle to iife",
+      "author": "compulim"
+    },
+    {
+      "sha": "cc6a9f6233b7a909079a9ee05c76261c23cf42b9",
+      "message": "Rename path",
+      "author": "compulim"
+    },
+    {
+      "sha": "856ed0bbddeed3c26f9f7eb1322bb7c8e3a39ab9",
+      "message": "Update api boot",
+      "author": "compulim"
+    },
+    {
+      "sha": "3c74e4c49e0d6119a2326c46050eb7ca25539cb3",
+      "message": "Redo bundle boot",
+      "author": "compulim"
+    },
+    {
+      "sha": "9d3be99b89752aaf26bd6b6f5c6ed0078cc5baab",
+      "message": "Redo component boot",
+      "author": "compulim"
+    },
+    {
+      "sha": "81ac26cdb18f98604473849acd092fb2e85e91ee",
+      "message": "Redo bundle boot",
+      "author": "compulim"
+    },
+    {
+      "sha": "d6ce7be411ca32b115455af9bf8fa2e3558e3440",
+      "message": "Include component hooks",
+      "author": "compulim"
+    },
+    {
+      "sha": "4579314f929d9b798e5795f4e9775bf76c398e38",
+      "message": "Change to \"set\" philosophy",
+      "author": "compulim"
+    },
+    {
+      "sha": "906e7e58f65f944c72f12c477c48a0b65c871cf3",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "79c9523098ea7045c7e9592adceb227be1b67f5f",
+      "message": "Add more fullSet/minimalSet",
+      "author": "compulim"
+    },
+    {
+      "sha": "4542d5e3ed0d3a2a153233212619cd951b6a6657",
+      "message": "Remove old code and rename *set to *",
+      "author": "compulim"
+    },
+    {
+      "sha": "f2ce77c1cab1a737766b4c4b8cdf29d6e6b243e3",
+      "message": "Skip tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "3590a5db21eb21d57c0706427ee3289ceac6d536",
+      "message": "Fix default export",
+      "author": "compulim"
+    },
+    {
+      "sha": "1466d30a6546af8a02c9faa2d164308026178f25",
+      "message": "Fix default export",
+      "author": "compulim"
+    },
+    {
+      "sha": "8df2ca6048465b41f84516a271111a4a1610a042",
+      "message": "Fix tsd",
+      "author": "compulim"
+    },
+    {
+      "sha": "0291ee395084e055b1204e49393ebdaa9f3fba6e",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "aa21547419d68a2732e806efb8c2b2b314ae6fa7",
+      "message": "Fix nonce",
+      "author": "compulim"
+    },
+    {
+      "sha": "d6d826c518919811784ad143f7a8d4c1d807512e",
+      "message": "Export middleware in IIFE",
+      "author": "compulim"
+    },
+    {
+      "sha": "cb167ea55fed47de7697f31ce2deda1532d5c966",
+      "message": "Comment out UMD resolve",
+      "author": "compulim"
+    },
+    {
+      "sha": "62bc044eb01e7848100d38ca1e3909bfed0283db",
+      "message": "Add more UMD",
+      "author": "compulim"
+    },
+    {
+      "sha": "f0b675997f6e936aece443759bef9a1066f09392",
+      "message": "Inject CSS for code splitting",
+      "author": "compulim"
+    },
+    {
+      "sha": "0631b4104662cafe255375a4f4839a12c8f4835c",
+      "message": "Use re-export",
+      "author": "compulim"
+    },
+    {
+      "sha": "1dc22f4c85f6d3f1dda63eedfd992731895bfe93",
+      "message": "Clean up typing",
+      "author": "compulim"
+    },
+    {
+      "sha": "5234c874b885d500a3d892b9ffd2e9e8f539e2ca",
+      "message": "Freeze state",
+      "author": "compulim"
+    },
+    {
+      "sha": "bd17c1df1e2fbd43a11704db18889ca78f184b25",
+      "message": "Add comment",
+      "author": "compulim"
+    },
+    {
+      "sha": "6b3e126fb507308736b88089a04bdd856fd55f09",
+      "message": "Use re-export",
+      "author": "compulim"
+    },
+    {
+      "sha": "a45d1d10f4256cc269a5471d0ffea78e59187311",
+      "message": "Use re-export",
+      "author": "compulim"
+    },
+    {
+      "sha": "b7947d095bc6a46c2c8be8dcd8dd8b0f6bba9571",
+      "message": "Fix minimal import",
+      "author": "compulim"
+    },
+    {
+      "sha": "6fb94078fc71609d582161aaf12b50a187f8e1a8",
+      "message": "Use re-export and cleanup",
+      "author": "compulim"
+    },
+    {
+      "sha": "baa0c58ba7f152899716959f3484a6647c575239",
+      "message": "Remove minimal exports",
+      "author": "compulim"
+    },
+    {
+      "sha": "d3c2b2cce8e929a6f61365afddb89205eea41af0",
+      "message": "Merge branch 'main' into feat-rebundling",
+      "author": "compulim"
+    },
+    {
+      "sha": "8224cd7f460f6b0640bac1e9bced3a952d2648fd",
+      "message": "Use re-export",
+      "author": "compulim"
+    },
+    {
+      "sha": "52ea2a8651f2fc5f03729eb2415000daf7a8185d",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "87773720376281902e986ac86b55714585635d33",
+      "message": "Add exports",
+      "author": "compulim"
+    },
+    {
+      "sha": "4b4b11e9854a60c6bb81a427e760ec3e01c6fed1",
+      "message": "Use bundle/decorator",
+      "author": "compulim"
+    },
+    {
+      "sha": "f5e40238a3348ff0d2c0f51846ce962cc0291c0f",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "e46315bda92e82f60158e9290aad63519761ebf0",
+      "message": "Add entry",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/simple/fatModule/fluentTheme.skip.html",
+      "status": "added",
+      "additions": 102,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/simple/fatModule/simple.skip.html",
+      "status": "added",
+      "additions": 48,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/simple/fatModule/supportPolymiddleware.reactDOMRender.skip.html",
+      "status": "added",
+      "additions": 79,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/simple/fatModule/supportPolymiddleware.renderWebChat.skip.html",
+      "status": "added",
+      "additions": 80,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/simple/simple.emulator.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/simple.emulator.html"
+    },
+    {
+      "path": "__tests__/html2/simple/simple.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/simple.html"
+    },
+    {
+      "path": "__tests__/html2/simple/simple.offline.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/simple.offline.html"
+    },
+    {
+      "path": "jest.legacy.config.js",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 166,
+      "deletions": 172,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/hook.js",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/package.json",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/boot/decorator.ts",
+      "status": "renamed",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": "packages/api/src/decorator.ts"
+    },
+    {
+      "path": "packages/api/src/boot/hook.ts",
+      "status": "added",
+      "additions": 77,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/boot/internal.ts",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/boot/middleware.ts",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "packages/api/src/middleware.ts"
+    },
+    {
+      "path": "packages/api/src/hooks/Composer.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/index.ts",
+      "status": "modified",
+      "additions": 41,
+      "deletions": 79,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/internal.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/tsup.config.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/tsup.config.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/component.js",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/hook.js",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 32,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/component/full.ts",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/component/minimal.ts",
+      "status": "added",
+      "additions": 38,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/decorator.ts",
+      "status": "added",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/full-es5.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 36,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/full.ts",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 97,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/hook/full.ts",
+      "status": "added",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/hook/minimal.ts",
+      "status": "added",
+      "additions": 99,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/internal.ts",
+      "status": "added",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/minimal.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 61,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/private/createDirectLine.ts",
+      "status": "added",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/private/createDirectLineAppServiceExtension.ts",
+      "status": "added",
+      "additions": 14,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/private/getBotAgent.ts",
+      "status": "added",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/renderWebChat/full.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/renderWebChat/minimal.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/styleOptions/full.ts",
+      "status": "added",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/styleOptions/minimal.ts",
+      "status": "added",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/bundle/full-es5.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 16,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/component.ts",
+      "status": "added",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/decorator.ts",
+      "status": "added",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/full-es5.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/full.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/hook.ts",
+      "status": "added",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/index.ts",
+      "status": "added",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/internal.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/exports/minimal.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/iife/polyfill/es5.ts",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "packages/bundle/src/boot/bundle/polyfill/es5.ts"
+    },
+    {
+      "path": "packages/bundle/src/boot/iife/polyfill/modern.ts",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "packages/bundle/src/boot/bundle/polyfill/modern.ts"
+    },
+    {
+      "path": "packages/bundle/src/boot/iife/webchat-es5.ts",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/iife/webchat-minimal.ts",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 5,
+      "previous_path": "packages/bundle/src/boot/bundle/minimal.ts"
+    },
+    {
+      "path": "packages/bundle/src/boot/iife/webchat.ts",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 7,
+      "previous_path": "packages/bundle/src/boot/bundle/full.ts"
+    },
+    {
+      "path": "packages/bundle/test-d/fail-once/create-direct-line-invalid-bot-agent.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/fail-once/create-direct-line-invalid-option.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/fail-once/invalid-prop-type-dir.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/fail-once/invalid-style-options-suggested-actions-stacked-overflow.test-d.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/fail-once/invalid-type-for-use-style-options.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/fail-once/no-children-for-react-web-chat-in-minimal.test-d.tsx",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 20,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/fail-once/no-children-for-react-web-chat.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/fail-once/no-full-bundle-style-options-in-minimal-for-hooks.test-d.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/fail-once/no-full-bundle-style-options-in-minimal.test-d.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/additional-style-options-in-full.test-d.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/composition-with-store.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/correct-type-dir.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/import-component-send-text-box.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/import-create-direct-line.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/render-with-minimal-bundle.test-d.tsx",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/render-with-store.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/render-with-style-options.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/render-with-style-set.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/render.test-d.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/use-style-options-with-full-bundle.test-d.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/valid-style-options-suggested-actions-stacked-overflow.test-d.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/tsup.config.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 21,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/component.js",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/hook.js",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 26,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityStatus/AbsoluteTime.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 32,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityStatus/AbsoluteTime.tsx",
+      "status": "added",
+      "additions": 37,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityStatus/private/RelativeTime.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 31,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/ActivityStatus/private/RelativeTime.tsx",
+      "status": "added",
+      "additions": 43,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/BasicConnectivityStatus.js",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/BasicToaster.js",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/useCustomPropertiesClassName.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/boot/component.ts",
+      "status": "added",
+      "additions": 45,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/boot/decorator.ts",
+      "status": "added",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/boot/hook.ts",
+      "status": "added",
+      "additions": 111,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/boot/internal.ts",
+      "status": "added",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/UITracker.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/WebChatUIContext.ts",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/useForceRenderAtInterval.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/useNonce.ts",
+      "status": "renamed",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": "packages/component/src/hooks/internal/useNonce.js"
+    },
+    {
+      "path": "packages/component/src/index.ts",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 132,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/internal.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 26,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/CustomElements/customElements/CodeBlock.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/tsconfig.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/tsup.config.ts",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/external.umd/botframework-webchat-api/middleware.ts",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/external.umd/botframework-webchat-component/component.ts",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/external.umd/botframework-webchat-component/hook.ts",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/FluentThemeProvider.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/tsup.config.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/react-valibot/tsup.config.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/build/private/injectCSSPlugin.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "tsup.base.config.ts",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 10,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-20T01:08:11Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-09-20T01:47:50Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-20T03:11:02Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-09-20T06:28:21Z"
+    }
+  ],
+  "check_runs": []
+}

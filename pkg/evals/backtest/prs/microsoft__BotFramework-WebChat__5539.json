@@ -1,0 +1,623 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5539,
+  "title": "Centralize tsconfig.json",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n### Changed\r\n\r\n- Added internal package `@msinternal/botframework-webchat-tsconfig` to centralize TypeScript configuration files, in PR [#5539](https://github.com/microsoft/BotFramework-WebChat/pull/5539), by [@compulim](https://github.com/compulim)\r\n\r\n## Description\r\n\r\nAdded new `@msinternal/botframework-webchat-tsconfig` for centralizing TypeScript configuration files and pave way for convergence.\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n### Naming\r\n\r\nInstead of naming the current config as \"strictest\", prefer \"current\" because the configuration is not \"purely strict\", it's \"strict plus some Web Chat-specific configurations.\"\r\n\r\n### Setting `types` to empty array\r\n\r\nBy default, TypeScript will [load all `node_modules/@types/*`](https://www.typescriptlang.org/tsconfig/#types). It would allow `before/test/after` in production code.\r\n\r\nWe are setting `types: []` to explicitly setting the types to empty. The package would need to set their types library accordingly. For example, `core` is empty, while `component` is `dom-speech-recognition`.\r\n\r\nHowever, we would add types using triple reference to test files.\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Added new `@msinternal/botframework-webchat-tsconfig` package\r\n- Unified all production-related `tsconfig.json` to the new package\r\n- Added new `features/cssModules` configuration file\r\n- Added `<reference types=\"jest\" />` to test files\r\n- Added `<reference types=\"node\" />` to CommonJS files\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] ~I have added tests and executed them locally~\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-08-07T05:06:06Z",
+  "merged_at": "2025-08-08T06:19:02Z",
+  "base": "main",
+  "head": "feat-tsconfig",
+  "base_sha": "4ff15c6beb4502edd1743655595521bfbbe6f4fa",
+  "head_sha": "1fde8cee67535ff729b0b944bef55122f7da8f74",
+  "merge_sha": "6c94bd4d8440540b596d9e619ad22c733655dae8",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-08-07T05:09:59Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "6d878bdfc2e0d1e41decec774c8715ebd1ac6ef0",
+      "message": "Centralize tsconfig.json",
+      "author": "compulim"
+    },
+    {
+      "sha": "27ce55b8134adb5f33c5ade2ac8ef23ca2c388fb",
+      "message": "Add entry for tsconfig",
+      "author": "compulim"
+    },
+    {
+      "sha": "7b7d121e7c431aa5fabb216ca768b6e2f6e66b14",
+      "message": "Fix package name",
+      "author": "compulim"
+    },
+    {
+      "sha": "822909ca65288a3cb460dc6fcd35fd5c6c8bb9a3",
+      "message": "Remove tsconfig export",
+      "author": "compulim"
+    },
+    {
+      "sha": "5f58fca955fe2aecc16ffbe1d7c5de726df6ebbd",
+      "message": "Add module ESNext",
+      "author": "compulim"
+    },
+    {
+      "sha": "d0ff7b6511ac6c730d88f20360fc0497c4a57c1e",
+      "message": "Add no checkJs",
+      "author": "compulim"
+    },
+    {
+      "sha": "236a4bf5b54dfda23ff10c801992004a33d4f9d9",
+      "message": "Add @tsconfig/strictest to dependencies",
+      "author": "compulim"
+    },
+    {
+      "sha": "c9a4eef42b7f9736dbc455a2c46f2830ef8facae",
+      "message": "Fix component",
+      "author": "compulim"
+    },
+    {
+      "sha": "3f128d2c55c07ce5ed829b128f5769e4c90a3dd6",
+      "message": "Add plugin to component",
+      "author": "compulim"
+    },
+    {
+      "sha": "fefc89861c83386a8c0a874895038e799434f478",
+      "message": "Refactor CSS Modules configuration",
+      "author": "compulim"
+    },
+    {
+      "sha": "707cdea277ec43ecfd9baa2b3a967a0263aa6d05",
+      "message": "Rename to tsconfig.json",
+      "author": "compulim"
+    },
+    {
+      "sha": "df066d5db5f0db8de1d228b149e6ea4df41c93c1",
+      "message": "Install typescript-plugin-css-modules",
+      "author": "compulim"
+    },
+    {
+      "sha": "498aada9ddcea62292cd26bf9562c1a4203d7689",
+      "message": "Simplify",
+      "author": "compulim"
+    },
+    {
+      "sha": "38a154be02fc9007b6bf2b6d9920727927ead4a0",
+      "message": "Add dummy fields",
+      "author": "compulim"
+    },
+    {
+      "sha": "ac89d93d6bb58904b6cacbe93c3565063cb09a31",
+      "message": "Add files",
+      "author": "compulim"
+    },
+    {
+      "sha": "fed6b47da0302a469c6579e4891a949027872002",
+      "message": "Exclude test files",
+      "author": "compulim"
+    },
+    {
+      "sha": "4b7e9a55aa57f9ac6ce0cde6b2d64c178a0f577d",
+      "message": "Platform neutrality",
+      "author": "compulim"
+    },
+    {
+      "sha": "70a42c6c4d900bfc1c2d3ad892412ca6ab0c1606",
+      "message": "Move @jest-environment to top",
+      "author": "compulim"
+    },
+    {
+      "sha": "5eb20b6ee998fa1250eabd78bb1accb045935d10",
+      "message": "Keep @jest-environment at the top",
+      "author": "compulim"
+    },
+    {
+      "sha": "1fde8cee67535ff729b0b944bef55122f7da8f74",
+      "message": "Add CSS Modules features",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 1382,
+      "deletions": 127,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/__tests__/addMetaTag.spec.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/__tests__/addMetaTag.spec.mjs",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/env.d.ts",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/index.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/ActivityTyping/private/useReduceActivities.spec.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/tsconfig.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/src/tsconfig.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/createCognitiveServicesSpeechServicesPonyfillFactory.spec.js",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.ariaLabel.spec.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.asButton.spec.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.className.spec.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.iconClassName.spec.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.rel.spec.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.selector.spec.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.target.spec.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.title.spec.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.wrapZeroWidthSpace.spec.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/tsconfig.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/LinkDefinition/private/extractHostnameWithSubdomain.spec.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Utils/JSONLinkedData/dereferenceBlankNodes.spec.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Utils/JSONLinkedData/isUnconnectedBlankNode.spec.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/env.d.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/createWaitUntilable.spec.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/private/createOnEventShim.spec.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/private/group.spec.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/private/pick.spec.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/tsconfig.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/__tests__/activityFromBot.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/__tests__/addMetaTag.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/__tests__/addMetaTag.spec.mjs",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/__tests__/connectSaga.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/__tests__/deleteKey.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/__tests__/detectSlowConnectionSaga.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/__tests__/observeOnce.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/__tests__/speakableActivity.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/__tests__/uniqueID.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/env.d.ts",
+      "status": "added",
+      "additions": 14,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/tsconfig.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/env.d.ts",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/external.umd/botframework-webchat-api/decorator.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/external.umd/botframework-webchat-api/index.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/external.umd/botframework-webchat-component/decorator.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/external.umd/botframework-webchat-component/internal.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/external.umd/react.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/index.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/tsconfig.json",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": "packages/react-valibot/package.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/react-valibot/src/tsconfig.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/redux-store/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/redux-store/src/tsconfig.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/package.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/build/tsconfig.json",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/src/tsconfig.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/tsconfig/.eslintrc.yml",
+      "status": "added",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/tsconfig/.gitignore",
+      "status": "added",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/tsconfig/package.json",
+      "status": "added",
+      "additions": 40,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/tsconfig/src/current/tsconfig.json",
+      "status": "added",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/tsconfig/src/features/cssModules/tsconfig.json",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "packages/styles/src/ts-config/config.json"
+    },
+    {
+      "path": "packages/tsconfig/src/legacy/tsconfig.json",
+      "status": "added",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-08-07T18:20:14Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-08-07T19:56:44Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-08-07T22:28:37Z"
+    }
+  ],
+  "check_runs": []
+}

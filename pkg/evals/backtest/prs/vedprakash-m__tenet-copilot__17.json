@@ -1,0 +1,187 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 17,
+  "title": "Dirty-file choices: wait, include, leave out",
+  "body": "Implements the UX J-03b choices for a file you have changed but not committed that Tenet needs to edit. Owner decision (2026-11-09): **allow consented include.** PRD §5.12 now lets Tenet commit whole files the user expressly named for inclusion, which matches the UX and Tech specs (P47).\n\n## Behavior\n- **`wait`** (recommended): nothing is recorded and the question closes. At the next check, a file the user committed or set aside in the meantime is no longer treated as having the user's uncommitted edits, and Tenet edits it without asking again. A file that is still dirty is asked about again.\n- **`include`**: the files named in the question are committed together with Tenet's work.\n- **`leave-out`**: Tenet neither edits nor commits the file. If a check finds the file declared as touched or with changed bytes, it refuses with `attribution-mixed-file` (exit 2), and the user's bytes are kept.\n- **Legacy answer:** `keep-out` is still accepted, so questions already pending don't break.\n- **Question text:** it names every file and mentions \"don't commit\".\n- **Fix found while testing:** if the work's scope no longer covers the files, the question now closes without recording a decision. Before, it stayed pending, and every check refused to run until it was answered.\n\n## Files\n`verbs/dirty.ts`, `verbs/check.ts`, `decisions/simple.ts`, `core/schemas.ts` (optional `leaveOut`), `plugin/skills/tenet/SKILL.md`, `README.md`, `specs/PRD.md`, `CHANGELOG.md`.\n\nTests: `dirty-overlap-bind.test.ts` (8 unit tests) and two real-repository tests in `scenarios.test.ts`, one for wait and one for leave-out.\n\n## CI on `feb46b9`\n`untrusted` passes on ubuntu, macOS and windows-portability, and all the new GIT-10 tests ran on both POSIX jobs. `system-budgets` passed on this run, including frozen fixtures. Earlier runs failed there, so treat NFR-01 as variable, not fixed.\n\nAn earlier push of this branch had one ubuntu failure in `store.test.ts` (the CON-04 writer race). This change doesn't touch that code, and the failure did not repeat.\n\nNot qualified. Real-host behavior is unobserved.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-10T01:18:34Z",
+  "merged_at": "2026-11-10T01:29:44Z",
+  "base": "main",
+  "head": "dirty-choices",
+  "base_sha": "bca2092b780692358f6447d422a53e2da1259c57",
+  "head_sha": "feb46b9eedf33baa64a1f46ebad42aa882b24535",
+  "merge_sha": "d48971924e17994829d8b6a73031b3db4307c291",
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "cdb2fb673bf21e2952e4d27e4087274e7cb04f90",
+      "message": "Offer the specified dirty-file choices: wait, include, leave out",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "43787ebf27903ee06ba9f33c22b63e4ae819b40d",
+      "message": "Wrap wide lines in the dirty-file question and check refusal",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "2d4ce47a3951245844d15f51ac333885aa5126d7",
+      "message": "Answer the leave-out question before the basis narrows scope in its test",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "feb46b9eedf33baa64a1f46ebad42aa882b24535",
+      "message": "Close a dirty-file question the work no longer needs instead of leaving it stuck",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/schemas.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/simple.ts",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/dirty.ts",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/dirty-overlap-bind.test.ts",
+      "status": "modified",
+      "additions": 57,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/scenarios.test.ts",
+      "status": "modified",
+      "additions": 41,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet/SKILL.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "specs/PRD.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T01:41:50Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T01:52:29Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T01:21:59Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T01:32:32Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T01:18:58Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T01:19:07Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T01:20:38Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T01:09:07Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T01:18:05Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T00:49:57Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-10T00:46:20Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T00:46:37Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T00:47:55Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T00:46:46Z"
+    }
+  ]
+}

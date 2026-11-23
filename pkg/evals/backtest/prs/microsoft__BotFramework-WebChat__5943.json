@@ -1,0 +1,324 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5943,
+  "title": "Fix flaky waits in 6 HTML tests and wait for images in shadow roots",
+  "body": "> Seven HTML tests failed CI intermittently and passed on rerun.\n\n## Changelog Entry\n\n### Fixed\n\n- 👷🏻 Fixed 7 flaky HTML tests that snapshot or assert before the state settles, in PR [#5943](https://github.com/microsoft/BotFramework-WebChat/pull/5943), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThese tests asserted or took snapshots before the state settled. Each now waits for the state it checks (CI run/job of a failure in parentheses), snapshots unchanged.\n\n## Specific Changes\n\n- `suggestedActions.noAccessKey.html`: live region faded (1 s) before the assert → `internalLiveRegionFadeAfter: 60000` (39502280172/118904934723)\n- `typeInChatHistorySendFocusToSendBox.html`: echo arrived before the ack, \"Sending\" in snapshot → `allOutgoingActivitiesSent()` (39239542866/118018569673)\n- `inputCard.withStyleOptions.html`: snapshot before the \"You posted\" reply → `await` keys, wait for 3 activities (39491695942/118868437264)\n- `useScrollTo.activityID.html`: 200 ms sleep before the scroll event → `waitFor()` (39331959732/118334391318)\n- `bargeIn/behavior.html`: abort/new recognition run in effects after the click → `waitFor()` (39317650226/118285925793)\n- `useRelativeTimeFormatter.html`: exact 24/48 h slipped by 1 ms → fake clock (39176636909/117821601872)\n- Harness `allImagesCompleted`: skipped shadow roots, `customElement/shadowRoot.html` missed its image → walk open shadow roots (39496453747/118884450183)\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-21T04:00:13Z",
+  "merged_at": "2026-10-21T10:09:54Z",
+  "base": "main",
+  "head": "OEvgeny/dev-fix-ci-flakes",
+  "base_sha": "b26279bde230ab1a36dd1ea3714e86b7fc38423f",
+  "head_sha": "98ce9048a15fe5f092aadf232dda3e64c8100934",
+  "merge_sha": "b7898e7c71377c8ae2e2fd620c7e0ae28ddc84b0",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-21T07:06:35Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "4368aa3fb858c3c78f97cab3e7d3a6ce4912d060",
+      "message": "Keep live region entries in suggestedActions.noAccessKey.html until asserted",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "f7dba74ce8f9db4abd9b1d1590055d575f4bec55",
+      "message": "Wait for the outgoing message to be sent in typeInChatHistorySendFocusToSendBox.html",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "c14d4180ad4c33cd6452c0fbaeca9908603fed21",
+      "message": "Wait for the bot reply in inputCard.withStyleOptions.html",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "feba1a1a211035ea01b82446a0c72d81cde22c96",
+      "message": "Wait for the scroll position in useScrollTo.activityID.html instead of sleeping",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "580a009b7f5ca09161b6a6c027e2a2045c2bc393",
+      "message": "Wait for speech recognition effects after clicks in bargeIn/behavior.html",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "ec47da6ed74f93c910a2134c8e95058a677d89bf",
+      "message": "Use a fake clock in useRelativeTimeFormatter.html",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "c92ea89902eef7eb86fed500d64cef603179fe56",
+      "message": "Wait for images inside open shadow roots before snapshots",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7f84fa02d1e2ef1db554219f69ef176579348f41",
+      "message": "Add changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4d0faa79694a4ecd4b101156243d82fb759ce14c",
+      "message": "Add the PR number to the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "b141763ab4aecfc7cfe520709d7ffd757e1bab6d",
+      "message": "Add the PR number to the changelog fragment link",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "3179f324c806359c5a3318f8ecdc556b8c918738",
+      "message": "Merge branch 'main' into OEvgeny/dev-fix-ci-flakes",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "98ce9048a15fe5f092aadf232dda3e64c8100934",
+      "message": "Merge branch 'main' into OEvgeny/dev-fix-ci-flakes",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5943-dev-fix-ci-flakes.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/focusManagement/focusSink/typeInChatHistorySendFocusToSendBox.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/hooks/useRelativeTimeFormatter.html",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/hooks/useScrollTo.activityID.html",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/inputCard.withStyleOptions.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/speech/bargeIn/behavior.html",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/suggestedActions.noAccessKey.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/harness/src/host/common/allImagesCompleted.js",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 4,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-21T07:06:42Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-21T09:25:03Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T10:09:31Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T10:09:21Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:58:03Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:45:01Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:53:30Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:49:15Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:44:47Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:58:41Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:56:52Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:57:57Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:57:48Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:58:31Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:57:42Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:59:04Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:58:21Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:59:05Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:58:34Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T10:09:11Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:58:06Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:58:31Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:51:44Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:58:44Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:58:44Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:52:41Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:58:38Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:45:27Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:44:39Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:44:09Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:44:14Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:43:40Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:44:45Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:44:40Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T09:44:21Z"
+    }
+  ]
+}

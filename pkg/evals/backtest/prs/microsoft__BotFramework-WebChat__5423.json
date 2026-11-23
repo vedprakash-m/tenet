@@ -1,0 +1,147 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5423,
+  "title": "Fluent: add dedicated loader animation",
+  "body": "### Changelog Entry\r\n\r\n### Added\r\n- Added dedicated loading animation for messages in preparing state for Fluent theme, in PR [#5423](https://github.com/microsoft/BotFramework-WebChat/pull/5423), by [@OEvgeny](https://github.com/OEvgeny)\r\n\r\n## Description\r\nThis PR introduces a dedicated loading animation for messages in the preparing state in the Fluent theme.\r\n\r\n## Design\r\n\r\n- Uses SVG-based animation with gradient colors that match Fluent theme\r\n- Implements loader through decorator middleware and dedicated composer\r\n\r\n## Specific Changes\r\n- Added new `ActivityLoader` component with custom SVG animation\r\n- Created CSS modules for loader styling and positioning\r\n- Extended `ActivityDecorator` styles to handle loader presentation\r\n- Added decorator middleware to render loader during \"preparing\" livestream state\r\n- Integrated loader with `DecoratorComposer` in FluentThemeProvider\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n- [x] I have added tests and executed them locally\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n- [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n- [x] Browser and platform compatibilities reviewed\r\n- [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n- [x] Documents reviewed (docs, samples, live demo)\r\n- [x] Internationalization reviewed (strings, unit formatting)\r\n- [x] `package.json` and `package-lock.json` reviewed\r\n- [x] Security reviewed (no data URIs, check for nonce leak)\r\n- [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-02-10T23:38:53Z",
+  "merged_at": "2025-02-11T23:39:29Z",
+  "base": "main",
+  "head": "feat/fluent-loader",
+  "base_sha": "ae4a98f8913d13e750988fba8a0bd37f6e095701",
+  "head_sha": "4675db0619f74c79964d3fc4e68ff0d851a4c4df",
+  "merge_sha": "409110093d2868018ab12dac920c3d48ce52c8eb",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-02-11T00:06:31Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "6e99b5d0593b611b9571e6ca4656db0dcde3fa03",
+      "message": "Fluent: add dedicated loader animation",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "25db2e56f777184e269ac48fc98d67b1d9726051",
+      "message": "Fix failing",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "a638b5718b9c0b10b390d3ad2898a108782ca88f",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "3f60780d94eb3490572573b172073070f9a7295c",
+      "message": "Fix import order",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "4675db0619f74c79964d3fc4e68ff0d851a4c4df",
+      "message": "Merge branch 'main' into feat/fluent-loader",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-streaming-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-streaming-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/with-builtin-decorator-js-fluent-theme-applied-with-decorators-1-snap.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/fluentTheme/side-by-side.wide.dark.html",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/fluentTheme/side-by-side.wide.html",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityDecorator.module.css",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityLoader.module.css",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityLoader.tsx",
+      "status": "added",
+      "additions": 27,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/FluentThemeProvider.tsx",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-02-11T00:41:07Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-02-11T00:43:32Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2025-02-11T00:43:50Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-02-11T00:48:00Z"
+    }
+  ],
+  "check_runs": []
+}

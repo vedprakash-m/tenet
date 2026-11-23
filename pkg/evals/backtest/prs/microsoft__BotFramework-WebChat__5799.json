@@ -1,0 +1,576 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5799,
+  "title": "feat: markdown streaming",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n- 🧪 Added incremental streaming Markdown renderer for livestreaming, in PR [#5799](https://github.com/microsoft/BotFramework-WebChat/pull/5799), by [@OEvgeny](https://github.com/OEvgeny)\r\n\r\n## Description\r\n\r\nAdds an incremental streaming Markdown renderer that re-parses only the active (trailing) block during livestreaming, instead of re-rendering the entire Markdown document on every chunk. When streaming is not available, the component falls back to the existing full-render path for backward compatibility.\r\n\r\n## Design\r\n\r\n- `createStreamingRenderer` is exposed as a static method on `renderMarkdown` so consumers can opt in to streaming\r\n- The renderer uses `micromark`'s event-level API to identify top-level block boundaries; committed blocks are frozen in the DOM and only the last (active) block is replaced on each chunk\r\n- A sentinel `Comment` node in the wrapper `<div>` separates committed content from the active zone for efficient DOM reconciliation\r\n- On `finalize()`, the entire document is re-parsed to extract link definitions and apply final decorations\r\n- `useStreamingMarkdownWithDefinitions` detects append-only updates and sends only the new chunk to the renderer; if the markdown is replaced (not appended), it resets the renderer\r\n\r\n## Specific Changes\r\n\r\n- Added `packages/bundle/src/markdown/createStreamingRenderer.ts` incremental streaming renderer using `micromark` parse/compile events\r\n- Extracted `packages/bundle/src/markdown/private/createDecorate.ts` shared link decoration factory (previously inlined in `renderMarkdown`)\r\n- Extracted `packages/bundle/src/markdown/private/extractDefinitionsFromEvents.ts` extracts link definitions from `micromark` events\r\n- Simplified `packages/bundle/src/markdown/renderMarkdown.ts` — delegates decoration to `createDecorate`, exposes `createStreamingRenderer`\r\n- Added `packages/component/src/hooks/useStreamingMarkdownWithDefinitions.ts` React hook that drives the streaming renderer or falls back to full render\r\n- Updated `packages/component/src/Attachment/Text/private/MarkdownTextContent.tsx` uses `useStreamingMarkdownWithDefinitions` instead of `dangerouslySetInnerHTML`\r\n- Updated `packages/component/src/hooks/useRenderMarkdownAsHTML.ts` extracted `RenderMarkdownAsHTMLFn` type alias\r\n- Added `__tests__/html2/livestream/html-chunk.html` end-to-end test for streaming chunks with image snapshots\r\n- Added `__tests__/html2/livestream/html-chunk.no-streaming.html` variant test with streaming support disabled\r\n\r\n---\r\n\r\n- [x] I have added tests and executed them locally\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n- [ ] Browser and platform compatibilities reviewed\r\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\r\n- [ ] Documents reviewed (docs, samples, live demo)\r\n- [ ] Internationalization reviewed (strings, unit formatting)\r\n- [ ] `package.json` and `package-lock.json` reviewed\r\n- [ ] Security reviewed (no data URIs, check for nonce leak)\r\n- [ ] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-04-03T20:50:30Z",
+  "merged_at": "2026-04-09T18:47:31Z",
+  "base": "main",
+  "head": "feat/markdown-streaming",
+  "base_sha": "b64f7a31381c072f4e5d3d553ffc82052d64194d",
+  "head_sha": "eea1a2e6c7b0b5ed76ec878824fa5388efca14fa",
+  "merge_sha": "7f6d94b8ba08a8a7dddd167410d27ba32a0ae50c",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-04-03T22:50:13Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "02a980d8d79e06d554e4f42934acfda78e665442",
+      "message": "feat: markdown streaming",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "1478e1e129961fc1a4b389a72679989951567ec0",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "11b312300ca2aa7e19ba8101cd9bdf342857d0ed",
+      "message": "Add event-stream-adapter element",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "cfac4a86d964f4c559b1e0dbe9862e9ed0aaede5",
+      "message": "Fix candidate for missing definitions",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "c77bd12246d3a30293ace1907251cba5114664e1",
+      "message": "Add test",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "728607bc62367d105a7f08f45b4ea7e4df48697d",
+      "message": "Flaky",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "773b75e29e2ece428d8b3b5ebbf76b5813aecaf7",
+      "message": "Add actual streaming test",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "300ec1ce8d712c87fb075820349fb23ee26c228b",
+      "message": "Update packages/bundle/src/markdown/private/createDecorate.ts",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "c48c4a67245f5ae6b36ee18ae7d5bd6f35d3083a",
+      "message": "Update __tests__/html2/markdown/vnext/markdownStreaming.html",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "55d1cc9978f5ca58d3332c25b0d1f42173a8a4e0",
+      "message": "fix: split committed/active blocks at micromark-event level instead of DOM lastElementChild",
+      "author": "Copilot"
+    },
+    {
+      "sha": "4779b84bbc0da295b757ae1ab66fe88957dd426e",
+      "message": "Revert \"fix: split committed/active blocks at micromark-event level instead of DOM lastElementChild\"",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f2e1d7f3ed4d15529b6c6788a17f695df39fc93c",
+      "message": "Fix schemas",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "3fb12160d36fafefdd5af6366af0c414169428db",
+      "message": "Fix comments",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "9ba7d4b26ee6a4df3b43d88b958511291e50fc6c",
+      "message": "fix print stats",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f7c40953bf39272dffa3ad9b7ecc4b50a03bda38",
+      "message": "Rework and small test",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "d591b5640f7919cb86e50f5411fd400c832fd03d",
+      "message": "Improve",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "38119bb148c2db7272fda0ad338b15f72687d92a",
+      "message": "Merge branch 'main' into feat/markdown-streaming",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "e92468b6295252a51af828975429872f23fae1dc",
+      "message": "Bring back trim() for the old path",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "eea1a2e6c7b0b5ed76ec878824fa5388efca14fa",
+      "message": "Fix more edges with spacing and hopefully stabilize snaps",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/assets/custom-element/event-stream-adapter.ce.html",
+      "status": "added",
+      "additions": 236,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/assets/esm/adapter/LivestreamSession.js",
+      "status": "added",
+      "additions": 54,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/assets/esm/adapter/LivestreamSessionManager.js",
+      "status": "added",
+      "additions": 80,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/assets/esm/adapter/createStreamCoalescer.js",
+      "status": "added",
+      "additions": 104,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/assets/esm/adapter/demuxChainOfThought.js",
+      "status": "added",
+      "additions": 121,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/assets/esm/adapter/findAllCopilotStudioThoughtEntity.js",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/html-chunk.html",
+      "status": "added",
+      "additions": 218,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/html-chunk.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/html-chunk.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/html-chunk.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/html-chunk.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/html-chunk.no-streaming.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/html-chunk.no-streaming.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/html-chunk.no-streaming.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/html-chunk.no-streaming.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/html-chunk.no-streaming.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/vnext/markdownStreaming.html",
+      "status": "added",
+      "additions": 87,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/vnext/markdownStreaming.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/vnext/stream-12k.txt",
+      "status": "added",
+      "additions": 36571,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/vnext/stream.txt",
+      "status": "added",
+      "additions": 1715,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/vnext/streamingRenderer.html",
+      "status": "added",
+      "additions": 96,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/vnext/streamingRenderer.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdownRenderHTML/default.messageActivity.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/createStreamingRenderer.spec.ts",
+      "status": "added",
+      "additions": 362,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/createStreamingRenderer.ts",
+      "status": "added",
+      "additions": 365,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/createDecorate.ts",
+      "status": "added",
+      "additions": 82,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/extractDefinitionsFromEvents.ts",
+      "status": "added",
+      "additions": 67,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/renderMarkdown.ts",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 74,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Attachment/Text/private/MarkdownTextContent.tsx",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 26,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Utils/serializeDocumentFragmentIntoString.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/useRenderMarkdownAsHTML.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/useStreamingMarkdownWithDefinitions.ts",
+      "status": "added",
+      "additions": 191,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/printCommitStats.mjs",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-04-03T22:59:16Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-04-03T23:02:02Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-04-03T23:02:56Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-04-03T23:03:13Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-swe-agent[bot]",
+      "submitted_at": "2026-04-03T23:10:20Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-04-03T23:51:11Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-04-03T23:52:07Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2026-04-08T07:19:40Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-04-09T05:54:31Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-04-09T18:11:29Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T06:03:44Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T06:03:56Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:42:11Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:49:52Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:50:11Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:50:05Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:49:44Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T06:03:32Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:50:29Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:49:56Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:49:37Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:49:52Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:50:38Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:50:41Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:49:56Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:50:09Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:50:05Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:49:52Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:49:15Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:44:21Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:46:32Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:38:01Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:50:03Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:38:04Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:37:42Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:39:04Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:45:44Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:38:13Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:37:57Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:37:09Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:38:07Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-04-09T05:38:31Z"
+    }
+  ]
+}
