@@ -1,0 +1,186 @@
+{
+  "fixture": "node-service",
+  "project_kind": "service",
+  "obligations": [
+    {
+      "id": "OB-1",
+      "view": "requirements",
+      "text": "Gateway timeouts retry at most once, never twice.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/payments/retry.js",
+          "start": 2,
+          "end": 11
+        },
+        {
+          "kind": "test",
+          "file": "test/retry.test.js",
+          "name": "retries once on ETIMEDOUT"
+        }
+      ]
+    },
+    {
+      "id": "OB-2",
+      "view": "requirements",
+      "text": "Incoming webhooks verify HMAC-SHA256 signatures with timing-safe comparison.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/security/hmac.js",
+          "start": 3,
+          "end": 9
+        },
+        {
+          "kind": "test",
+          "file": "test/webhook.test.js",
+          "name": "verifies sha256 webhook signature"
+        }
+      ]
+    },
+    {
+      "id": "OB-3",
+      "view": "requirements",
+      "text": "Raw card numbers and CVVs are always redacted before logging.",
+      "scope": "global",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/security/redact.js",
+          "start": 1,
+          "end": 6
+        },
+        {
+          "kind": "doc",
+          "file": "CLAUDE.md",
+          "heading": "Rules"
+        },
+        {
+          "kind": "test",
+          "file": "test/redact.test.js",
+          "name": "masks cardNumber and cvv"
+        }
+      ]
+    },
+    {
+      "id": "OB-4",
+      "view": "requirements",
+      "text": "HTTP requests exceeding 65,536 bytes are destroyed.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/config/limits.js",
+          "start": 1,
+          "end": 1
+        },
+        {
+          "kind": "code",
+          "file": "src/server.js",
+          "start": 12,
+          "end": 16
+        }
+      ]
+    },
+    {
+      "id": "OB-5",
+      "view": "requirements",
+      "text": "Health check route `/healthz` returns HTTP 200 with ok status.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/routes/health.js",
+          "start": 1,
+          "end": 3
+        },
+        {
+          "kind": "code",
+          "file": "src/server.js",
+          "start": 7,
+          "end": 11
+        }
+      ]
+    },
+    {
+      "id": "OB-6",
+      "view": "design",
+      "text": "Idempotency keys are held in memory with 24-hour TTL.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/payments/idempotency.js",
+          "start": 3,
+          "end": 14
+        },
+        {
+          "kind": "code",
+          "file": "src/config/limits.js",
+          "start": 2,
+          "end": 2
+        }
+      ]
+    },
+    {
+      "id": "OB-7",
+      "view": "design",
+      "text": "Working rules from CLAUDE.md require minimal diffs and running `node --test`.",
+      "sources": [
+        {
+          "kind": "doc",
+          "file": "CLAUDE.md",
+          "heading": "Rules"
+        }
+      ]
+    }
+  ],
+  "planted_conflicts": [
+    {
+      "kind": "stale-readme",
+      "description": "README claims up to 3 retries and 48h idempotency TTL, while code performs 1 retry and uses 24h TTL.",
+      "locations": [
+        "README.md",
+        "src/payments/retry.js",
+        "src/config/limits.js"
+      ]
+    },
+    {
+      "kind": "adr-vs-test",
+      "description": "ADR-0001 mandates HTTP 400 when Idempotency-Key is omitted, while test/webhook.test.js asserts HTTP 202.",
+      "locations": [
+        "docs/adr/0001-idempotency-ttl.md",
+        "test/webhook.test.js"
+      ]
+    },
+    {
+      "kind": "inactive-flag",
+      "description": "docs/architecture.md describes active async reconciliation, while ENABLE_ASYNC_RECONCILE is hardcoded false in src/config/flags.js.",
+      "locations": [
+        "docs/architecture.md",
+        "src/config/flags.js"
+      ]
+    },
+    {
+      "kind": "roadmap-issue",
+      "description": "docs/roadmap.md plans ISSUE-14 multi-currency settlement, with no implementation in src/.",
+      "locations": [
+        "docs/roadmap.md"
+      ]
+    }
+  ],
+  "interview_answers": [
+    {
+      "id": "Q-1",
+      "question": "What is LedgerGate for and who uses it?",
+      "answer": "Merchant checkout teams who need reliable payment webhook delivery without duplicate charges."
+    },
+    {
+      "id": "Q-2",
+      "question": "What must LedgerGate never do?",
+      "answer": "Never charge a card twice after a timeout and never log raw card numbers or CVV values."
+    },
+    {
+      "id": "Q-3",
+      "question": "Which outcomes matter most?",
+      "answer": "Zero duplicate charges per 10,000 requests and sub-3-second gateway timeout recovery."
+    }
+  ]
+}

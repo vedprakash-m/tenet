@@ -1,0 +1,142 @@
+{
+  "fixture": "go-cli",
+  "project_kind": "cli",
+  "obligations": [
+    {
+      "id": "OB-1",
+      "view": "requirements",
+      "text": "Reports never include raw secret values.",
+      "scope": "global",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "internal/scanner/rules.go",
+          "start": 5,
+          "end": 10
+        },
+        {
+          "kind": "code",
+          "file": "internal/scanner/scan.go",
+          "start": 33,
+          "end": 36
+        },
+        {
+          "kind": "doc",
+          "file": "GEMINI.md",
+          "heading": "Rules"
+        },
+        {
+          "kind": "test",
+          "file": "internal/scanner/scan_test.go",
+          "name": "TestWriteReportOmitsSecretValue"
+        }
+      ]
+    },
+    {
+      "id": "OB-2",
+      "view": "requirements",
+      "text": "Unknown CLI flags return exit code 2.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "internal/cli/run.go",
+          "start": 13,
+          "end": 15
+        },
+        {
+          "kind": "test",
+          "file": "internal/cli/run_test.go",
+          "name": "TestRunUnknownFlagExitsTwo"
+        }
+      ]
+    },
+    {
+      "id": "OB-3",
+      "view": "requirements",
+      "text": "Scanner skips .git, vendor, and node_modules directories and files over 1 MB.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "internal/scanner/rules.go",
+          "start": 12,
+          "end": 14
+        },
+        {
+          "kind": "code",
+          "file": "internal/scanner/scan.go",
+          "start": 14,
+          "end": 22
+        }
+      ]
+    },
+    {
+      "id": "OB-4",
+      "view": "requirements",
+      "text": "Findings sort deterministically by forward-slash file path then line number.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "internal/scanner/scan.go",
+          "start": 23,
+          "end": 29
+        },
+        {
+          "kind": "doc",
+          "file": "GEMINI.md",
+          "heading": "Rules"
+        }
+      ]
+    }
+  ],
+  "planted_conflicts": [
+    {
+      "kind": "stale-readme",
+      "description": "README documents `--format=csv`, while CLI only supports `text` and `json` and CHANGELOG 0.3.0 removed CSV.",
+      "locations": [
+        "README.md",
+        "internal/cli/run.go",
+        "CHANGELOG.md"
+      ]
+    },
+    {
+      "kind": "adr-vs-test",
+      "description": "ADR-0001 states warning findings exit 0, whereas internal/cli/run.go and run_test.go return exit 1 when findings exist.",
+      "locations": [
+        "docs/adr/0001-exit-codes.md",
+        "internal/cli/run.go",
+        "internal/cli/run_test.go"
+      ]
+    },
+    {
+      "kind": "inactive-flag",
+      "description": "EnableEntropyScan = false in internal/scanner/flags.go is unused.",
+      "locations": [
+        "internal/scanner/flags.go"
+      ]
+    },
+    {
+      "kind": "roadmap-issue",
+      "description": "docs/roadmap.md ISSUE-22 proposes GitHub SARIF upload not yet implemented.",
+      "locations": [
+        "docs/roadmap.md"
+      ]
+    }
+  ],
+  "interview_answers": [
+    {
+      "id": "Q-1",
+      "question": "What is EnvSeal for and who runs it?",
+      "answer": "Developers and CI checks catching unencrypted secrets before push."
+    },
+    {
+      "id": "Q-2",
+      "question": "What must never happen?",
+      "answer": "Matched secret strings must never appear in stdout, JSON reports, or CI logs."
+    },
+    {
+      "id": "Q-3",
+      "question": "Which outcomes matter most?",
+      "answer": "Zero secret leakage in scanner output and deterministic findings across CI runs."
+    }
+  ]
+}

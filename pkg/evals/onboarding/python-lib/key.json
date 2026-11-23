@@ -1,0 +1,141 @@
+{
+  "fixture": "python-lib",
+  "project_kind": "library",
+  "obligations": [
+    {
+      "id": "OB-1",
+      "view": "requirements",
+      "text": "PulseLimit has zero third-party runtime dependencies.",
+      "scope": "global",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "pyproject.toml",
+          "start": 5,
+          "end": 5
+        },
+        {
+          "kind": "doc",
+          "file": ".github/copilot-instructions.md",
+          "heading": "Rules"
+        }
+      ]
+    },
+    {
+      "id": "OB-2",
+      "view": "requirements",
+      "text": "TokenBucket rejects zero or negative capacity and refill rates with ValueError.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/pulselimit/bucket.py",
+          "start": 5,
+          "end": 7
+        },
+        {
+          "kind": "test",
+          "file": "tests/test_bucket.py",
+          "name": "test_rejects_non_positive_capacity"
+        }
+      ]
+    },
+    {
+      "id": "OB-3",
+      "view": "requirements",
+      "text": "TokenBucket updates remain thread-safe under a per-bucket lock.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/pulselimit/bucket.py",
+          "start": 13,
+          "end": 26
+        }
+      ]
+    },
+    {
+      "id": "OB-4",
+      "view": "requirements",
+      "text": "retry_after_seconds rounds positive deficits up via math.ceil and returns 0 when non-positive.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/pulselimit/headers.py",
+          "start": 3,
+          "end": 6
+        },
+        {
+          "kind": "test",
+          "file": "tests/test_headers.py",
+          "name": "test_retry_after_rounds_up"
+        }
+      ]
+    },
+    {
+      "id": "OB-5",
+      "view": "design",
+      "text": "Clock defaults to `time.monotonic()` in `now_monotonic`.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/pulselimit/clock.py",
+          "start": 3,
+          "end": 4
+        },
+        {
+          "kind": "test",
+          "file": "tests/test_bucket.py",
+          "name": "test_uses_monotonic_clock_not_wall_clock"
+        }
+      ]
+    }
+  ],
+  "planted_conflicts": [
+    {
+      "kind": "stale-readme",
+      "description": "README advertises AsyncLimiter, which was removed and does not exist in src/pulselimit.",
+      "locations": [
+        "README.md",
+        "src/pulselimit/__init__.py"
+      ]
+    },
+    {
+      "kind": "adr-vs-test",
+      "description": "ADR-0002 allows wall clock time.time(), whereas tests/test_bucket.py asserts now_monotonic.",
+      "locations": [
+        "docs/adr/0002-clock-source.md",
+        "tests/test_bucket.py"
+      ]
+    },
+    {
+      "kind": "inactive-flag",
+      "description": "BURST_BORROWING_ENABLED = False in config.py is unreferenced in bucket.py.",
+      "locations": [
+        "src/pulselimit/config.py"
+      ]
+    },
+    {
+      "kind": "roadmap-issue",
+      "description": "docs/issues/009-redis-backend.md describes a Redis backend not implemented in the package.",
+      "locations": [
+        "docs/issues/009-redis-backend.md"
+      ]
+    }
+  ],
+  "interview_answers": [
+    {
+      "id": "Q-1",
+      "question": "What is PulseLimit for and who uses it?",
+      "answer": "Python backend services needing an embeddable, stdlib-only in-process rate limiter."
+    },
+    {
+      "id": "Q-2",
+      "question": "What guarantees must hold across releases?",
+      "answer": "Public API never adds third-party runtime dependencies and never drops thread-safe refill semantics."
+    },
+    {
+      "id": "Q-3",
+      "question": "Which outcomes matter most?",
+      "answer": "Deterministic thread-safe throttling with zero third-party dependency overhead."
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+BURST_BORROWING_ENABLED = False
+DEFAULT_CLOCK = "monotonic"

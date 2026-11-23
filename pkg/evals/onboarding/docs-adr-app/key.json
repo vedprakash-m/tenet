@@ -1,0 +1,145 @@
+{
+  "fixture": "docs-adr-app",
+  "project_kind": "application",
+  "obligations": [
+    {
+      "id": "OB-1",
+      "view": "requirements",
+      "text": "Freeze overrides require an approver distinct from the requester.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/core/freeze.js",
+          "start": 1,
+          "end": 4
+        },
+        {
+          "kind": "test",
+          "file": "test/freeze.test.js",
+          "name": "blocks self-approval on freeze override"
+        }
+      ]
+    },
+    {
+      "id": "OB-2",
+      "view": "requirements",
+      "text": "Audit records are append-only and frozen once written.",
+      "scope": "global",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/core/audit.js",
+          "start": 1,
+          "end": 3
+        },
+        {
+          "kind": "doc",
+          "file": "docs/adr/0002-append-only-audit.md",
+          "heading": "Decision"
+        },
+        {
+          "kind": "doc",
+          "file": ".github/copilot-instructions.md",
+          "heading": "Rules"
+        }
+      ]
+    },
+    {
+      "id": "OB-3",
+      "view": "requirements",
+      "text": "Unacknowledged incidents past 15 minutes trigger SLA breach.",
+      "sources": [
+        {
+          "kind": "code",
+          "file": "src/core/sla.js",
+          "start": 1,
+          "end": 4
+        },
+        {
+          "kind": "doc",
+          "file": "docs/adr/0004-sla-threshold.md",
+          "heading": "Decision"
+        }
+      ]
+    },
+    {
+      "id": "OB-4",
+      "view": "design",
+      "text": "`src/core/` never imports `src/http/`.",
+      "scope": "global",
+      "sources": [
+        {
+          "kind": "doc",
+          "file": "docs/adr/0001-module-boundaries.md",
+          "heading": "Decision"
+        },
+        {
+          "kind": "doc",
+          "file": ".github/copilot-instructions.md",
+          "heading": "Rules"
+        }
+      ]
+    },
+    {
+      "id": "OB-5",
+      "view": "design",
+      "text": "Rollback follows docs/runbooks/rollback.md (freeze, revert tag, verify /readyz).",
+      "sources": [
+        {
+          "kind": "doc",
+          "file": "docs/runbooks/rollback.md",
+          "heading": "Steps"
+        }
+      ]
+    }
+  ],
+  "planted_conflicts": [
+    {
+      "kind": "stale-readme",
+      "description": "README claims PostgreSQL/SQLite storage, while src/store/jsonStore.js uses in-memory Map storage.",
+      "locations": [
+        "README.md",
+        "src/store/jsonStore.js"
+      ]
+    },
+    {
+      "kind": "adr-vs-test",
+      "description": "ADR-0003 forbids hard deletion, while test/retention.test.js tests MemoryJsonStore.purge hard-deleting expired records.",
+      "locations": [
+        "docs/adr/0003-soft-delete.md",
+        "test/retention.test.js"
+      ]
+    },
+    {
+      "kind": "inactive-flag",
+      "description": "FF_AUTO_ROLLBACK = false in src/config/flags.js is never wired into rollback or http routes.",
+      "locations": [
+        "src/config/flags.js"
+      ]
+    },
+    {
+      "kind": "roadmap-issue",
+      "description": "docs/issues/018-pagerduty-sync.md plans PagerDuty sync, with no implementation.",
+      "locations": [
+        "docs/issues/018-pagerduty-sync.md"
+      ]
+    }
+  ],
+  "interview_answers": [
+    {
+      "id": "Q-1",
+      "question": "What is HarborBoard for and who uses it?",
+      "answer": "Release managers tracking freeze overrides, SLA breaches, and rollback readiness."
+    },
+    {
+      "id": "Q-2",
+      "question": "What rules must never break?",
+      "answer": "Nobody approves their own freeze override, and audit entries are never mutated."
+    },
+    {
+      "id": "Q-3",
+      "question": "Which outcomes matter most?",
+      "answer": "Zero unapproved freeze overrides and complete audit traceability across incidents."
+    }
+  ]
+}
