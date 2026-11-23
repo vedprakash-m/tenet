@@ -23,28 +23,28 @@
 ## 2. Pull-request acceptance block
 
 ```text
-## Acceptance                          heading text exact; level 2 or 3
-Implements: R-12, R-14                  optional; IDs of blessed requirements
-- [AB-1] one retry after a timeout      one item per line; "- [ ] " checkbox prefix allowed
+## Acceptance
+Implements: R-12, R-14
+- [AB-1] one retry after a timeout
 ```
 
-Parsing: missing heading returns `{implements: [], items: [], digest, problems: []}`. Block ends at next heading or EOF; ignore code fences. `Implements:` matches `^Implements:\s*(.+)$`, splitting non-empty values on commas across lines (digest dedupes/sorts). Items match `^\s*[-*]\s*(\[[ xX]\]\s*)?\[(AB-\d+)\]\s+(.+)$` (`item.text` trimmed; digest collapses internal whitespace). Bullets missing `[AB-n]` emit `TN-ACC-MISSING-ID`; repeated IDs emit `TN-ACC-DUP-ID` and exclude duplicates after the first. `problems[]` sets `severity: "error", rule: null, file: null, line`. **Acceptance digest:** SHA-256 over RFC 8785 `{implements, items: [{id, text}]}` sorted by ASCII `id` (`a < b ? -1 : a > b ? 1 : 0`).
+Parsing: heading text exact (`## Acceptance` or `### Acceptance`); optional `Implements:` (IDs of blessed requirements); one item per line (`- [ ] ` checkbox prefix allowed). Missing heading returns `{implements: [], items: [], digest, problems: []}`. Block ends at next heading or EOF; ignore code fences. `Implements:` matches `^Implements:\s*(.+)$`, splitting non-empty values on commas across lines (digest dedupes/sorts). Items match `^\s*[-*]\s*(\[[ xX]\]\s*)?\[(AB-\d+)\]\s+(.+)$` (`item.text` trimmed; digest collapses internal whitespace). Bullets missing `[AB-n]` emit `TN-ACC-MISSING-ID`; repeated IDs emit `TN-ACC-DUP-ID` and exclude duplicates after the first. `problems[]` sets `severity: "error", rule: null, file: null, line`. **Acceptance digest:** SHA-256 over RFC 8785 `{implements, items: [{id, text}]}` sorted by ASCII `id` (`a < b ? -1 : a > b ? 1 : 0`).
 
 ## 3. Specification documents
 
 **Front matter** (YAML, first lines of the file):
 
 ```yaml
-tenet: {spec: 1, doc: intent, level: L1, version: "0.1", owner: ved, drafted_from: <commit>, drafted_at_rev: <commit>}
+tenet: {spec: 1, doc: intent, level: L1, version: "0.1", owner: ved, drafted_from: 9f3c2e1, drafted_at_rev: 9f3c2e1}
 # drafted_from: the inventory's revision (information only; onboarding drafts only); drafted_at_rev: the commit holding the agent's draft, set by `onboard --card` (ALG-13). Both optional before then
 sections:
   requirements:                     # section slug (ALG-02)
     level: L1                       # optional; defaults to the document's level
     state: blessed                  # draft | blessed | rejected | deferred
-    digest: sha256:<64 hex>         # current text (ALG-02); null until `tenet fix` computes it
-    blessed_digest: sha256:<64 hex> # text last blessed; null until blessed
-    blessed_at_rev: <commit>        # HEAD when blessed; null until blessed; information only, never required to exist
-    anchors: {"src/retry.ts:40-48": "sha256:<64 hex>"}   # one per citation, set when blessed; the cited text is kept beside the blessed copy (ALG-03)
+    digest: sha256:0dbd08e5ad469fb93440fa5489aae662f07dd294fd2dc68cbf202b6df6527bae         # current text (ALG-02); null until `tenet fix` computes it
+    blessed_digest: sha256:0dbd08e5ad469fb93440fa5489aae662f07dd294fd2dc68cbf202b6df6527bae # text last blessed; null until blessed
+    blessed_at_rev: 9f3c2e1         # HEAD when blessed; null until blessed; information only, never required to exist
+    anchors: {"src/retry.ts:40-48": "sha256:cb3a0834537f84c19727dce128035f7a9f16972c94a9253d457c0812e3e70328"}   # one per citation, set when blessed; the cited text is kept beside the blessed copy (ALG-03)
     applies_to: ["src/checkout/**"] # optional; prose sections reach context through it (ALG-10)
     blessed_copy: tenet/blessed/<doc>/<slug>.md   # text in force (ALG-03)
     flags: []                       # edited | sources-changed
@@ -163,12 +163,12 @@ Message and fix text for every code: [messages.md](messages.md).
 
 | Codes | Kind | Exit |
 |---|---|---|
-| `TN-USAGE-*`, `TN-BLESS-NO-TTY` | usage | 2 |
+| `TN-USAGE-*`, `TN-USAGE-REF`, `TN-USAGE-BUDGET`, `TN-BLESS-NO-TTY` | usage | 2 |
 | `TN-ENV-NODE`, `TN-ENV-GIT`, `TN-ENV-NO-COMMIT`, `TN-ENV-NOT-GIT`, `TN-POLICY-MISSING` | environment | 3 |
 | `TN-POLICY-LOOSEN`, `TN-POLICY-INCOMPATIBLE`, `TN-POLICY-RULE`, `TN-INIT-EXISTS`, `TN-BLESS-OPEN-CONFLICT`, `TN-BLESS-INFERRED` | policy refusal | 4 |
-| `TN-SCHEMA`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-SPEC-UNCOVERED-VISION`, `TN-KIT-EDITED`, `TN-EV-DUP`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID` | structural | 1 |
+| `TN-SCHEMA`, `TN-POLICY-SCHEMA`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-SPEC-UNCOVERED-VISION`, `TN-KIT-EDITED`, `TN-EV-DUP`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID` | structural | 1 |
 | `TN-CITE-FILE`, `TN-CITE-RANGE`, `TN-CITE-HEADING`, `TN-CITE-TEST` (rule `citations-valid`); `TN-BUDGET` (`budget`); `TN-WEAK-*` (`tests-not-weakened`); `TN-PROTECTED` (`protected-surfaces`); `TN-ACC-UNPASSED` (`acceptance-passed`); `TN-GATE-*` (the row's rule) | rule (`severity: "error"` in `enforce`, `"advise"` in `advise`) | 1 in `enforce`, else 0 |
-| `TN-REPORT-MISSING`, `TN-REPORT-MALFORMED`, `TN-RECORD-BUNDLE`, `TN-LOCK-MISMATCH`, `TN-POLICY-BRANCH`, `TN-POLICY-LEVEL-UNAVAILABLE`, `TN-BUDGET-WARN`, `TN-SUBJ-DIRTY`, `TN-EV-ORPHAN` | warning, shown as degraded | 0 |
+| `TN-REPORT-MISSING`, `TN-REPORT-MALFORMED`, `TN-RECORD-BUNDLE`, `TN-LOCK-MISMATCH`, `TN-POLICY-BRANCH`, `TN-POLICY-LEVEL-UNAVAILABLE`, `TN-POLICY-ALPHA0-CAP`, `TN-BUDGET-WARN`, `TN-SUBJ-DIRTY`, `TN-EV-ORPHAN` | warning, shown as degraded | 0 |
 
 ## 14. Loops
 

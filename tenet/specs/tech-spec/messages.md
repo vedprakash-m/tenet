@@ -46,12 +46,14 @@
 | `TN-KIT-EDITED` | Vendored kit digest differs from tenet.lock ({actual} != {expected}). | Restore .tenet/kit or run `tenet upgrade` to update tenet.lock. |
 | `TN-LOCK-MISMATCH` | Installed package {installed} differs from tenet.lock ({locked}). | Run `tenet upgrade` or reinstall @vedprakash-m/tenet@{locked}. |
 | `TN-PATH-ESCAPE` | Path {path} resolves outside the repository root. | Use a relative path inside the repository without symlink escapes. |
+| `TN-POLICY-ALPHA0-CAP` | The {rule} rule is capped at advise in alpha.0. | The configured mode will take effect when rule modes are available. |
 | `TN-POLICY-BRANCH` | Branch modifies protected policy file tenet.yaml. | Revert tenet.yaml on this branch or move policy changes to a separate change. |
 | `TN-POLICY-INCOMPATIBLE` | Claim requirements for {claim} have no compatible intersection. | Align conflicting claim methods or pass rules across policy layers. |
 | `TN-POLICY-LEVEL-UNAVAILABLE` | Policy level {level} is not yet available; running as observe. | Set an available level in tenet.yaml or wait for support for {level}. |
 | `TN-POLICY-LOOSEN` | Policy layer {layer} attempts to loosen {name}. | Remove the loosening override from {layer} so later layers only tighten. |
 | `TN-POLICY-MISSING` | Policy file tenet.yaml was not found. | Run `tenet init` to create tenet.yaml. |
 | `TN-POLICY-RULE` | Unknown policy rule or setting {name} in tenet.yaml. | Remove or fix {name} in tenet.yaml against the active pack. |
+| `TN-POLICY-SCHEMA` | tenet.yaml does not match the alpha.0 schema: {detail}. | Fix tenet.yaml or remove fields that are not available in alpha.0. |
 | `TN-PROTECTED` | Change modifies protected path {path}. | Revert edits to {path} or open a change-policy decision request via `tenet decide`. |
 | `TN-RECORD-BUNDLE` | Recorded CI bundle {run_id} failed verification: {reason}. | Re-run the CI verification workflow and check bundle integrity. |
 | `TN-REPORT-MALFORMED` | Test report {path} is not valid {kind} input. | Fix the {kind} report format, XML entity rules, or size/case limits for {path}. |
@@ -66,4 +68,6 @@
 | `TN-SPEC-UNCOVERED-VISION` | Blessed vision item {id} is not served by a blessed requirement or listed under ## Not yet in scope. | Add serves: {id} to a blessed requirement or list {id} under a blessed ## Not yet in scope section. |
 | `TN-SUBJ-DIRTY` | Working tree has uncommitted changes. | Commit or stash local changes before running `tenet {command}`. |
 | `TN-USAGE-*` | Invalid usage for `tenet {command}`: {detail}. | Run `tenet {command} --help` for valid arguments and flags. |
+| `TN-USAGE-BUDGET` | Context token budget {budget} must be a positive integer. | Pass a positive integer to `--budget-tokens` or `budget_tokens`. |
+| `TN-USAGE-REF` | The git ref is invalid. | Pass a repository ref. |
 | `TN-WEAK-*` | Possible test weakening ({finding}) in {file}: {names}. | Restore removed tests or remove skip markers in {file}, or ask for a waiver. |

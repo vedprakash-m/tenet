@@ -173,7 +173,7 @@ Each is Quick, limited to **4 hours** of work, and run by a capable model. Each 
   - Biome for `npm run lint`; `node:test`
   - `test/architecture.test.ts` (the TS §1 import table and dependency list)
   - `npm run check:examples`
-  - the licence; CI on three platforms; hooks
+  - the licence; CI on three platforms (the pre-commit hook ships in CP-0009)
   - the sandbox repository `vedprakash-m/tenet-sandbox`
 
 ## 4. Build contract
