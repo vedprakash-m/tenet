@@ -9,8 +9,8 @@ import { resolveCitations } from "../specs/citations.js";
 import { flags } from "../specs/flags.js";
 import { ladder } from "../specs/ladder.js";
 import {
-	parseDoc,
 	type ParsedDoc,
+	parseDoc,
 	type Requirement,
 	type SpecSection,
 } from "../specs/parse.js";
@@ -145,7 +145,11 @@ function asOf(options: BoardOptions): string {
 
 async function revision(
 	cwd: string,
-): Promise<{ full: string | null; short: string | null; branch: string | null }> {
+): Promise<{
+	full: string | null;
+	short: string | null;
+	branch: string | null;
+}> {
 	const [full, branch] = await Promise.all([
 		git(["rev-parse", "HEAD"], { cwd }).catch(() => ""),
 		git(["branch", "--show-current"], { cwd }).catch(() => ""),
@@ -244,7 +248,10 @@ function debtForBrokenCitations(
 ): SpecDebt[] {
 	if (section.state === "rejected") return [];
 	const result: SpecDebt[] = [];
-	const items: Requirement[] = [...section.requirements, ...section.vision_items];
+	const items: Requirement[] = [
+		...section.requirements,
+		...section.vision_items,
+	];
 	for (const item of items) {
 		for (const cite of item.cites) {
 			const isolated = {
@@ -292,7 +299,9 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 	const subject = await revision(cwd);
 	const readFileAt = readAt(cwd);
 	const configured = policy.specs.documents.map((document) => {
-		const filename = portable(path.posix.join(policy.paths.records, document.path));
+		const filename = portable(
+			path.posix.join(policy.paths.records, document.path),
+		);
 		return {
 			path: filename,
 			level: document.level,
@@ -331,7 +340,11 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 				entry.level ??
 				configured.find((document) => document.path === entry.path)?.level;
 			const state = section.state as State;
-			if (!rawLevel || !levelValues.has(rawLevel as Level) || !stateValues.has(state))
+			if (
+				!rawLevel ||
+				!levelValues.has(rawLevel as Level) ||
+				!stateValues.has(state)
+			)
 				continue;
 			const sectionFlags = flags(section, readFileAt);
 			const raw = sectionRecord(entry.doc, section.slug);
@@ -343,9 +356,7 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 				state,
 				flags: sectionFlags,
 				...(state === "blessed" &&
-				(recorded === "self" ||
-					recorded === "forge" ||
-					recorded === "signed")
+				(recorded === "self" || recorded === "forge" || recorded === "signed")
 					? { recorded }
 					: {}),
 			});
@@ -370,11 +381,7 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 					path: entry.path,
 					section: section.slug,
 					conflicts: unresolvedIds(entry.doc, section.slug, "conflicts"),
-					open_questions: unresolvedIds(
-						entry.doc,
-						section.slug,
-						"questions",
-					),
+					open_questions: unresolvedIds(entry.doc, section.slug, "questions"),
 				});
 			}
 			specDebt.push(...debtForBrokenCitations(entry.doc, section, readFileAt));
@@ -507,9 +514,9 @@ export function renderSpecsBoard(board: SpecsBoard): string {
 	if (sourcesChanged.length > 0) {
 		lines.push(`Sources changed (${sourcesChanged.length})`);
 		for (const spec of sourcesChanged) {
-			const source = details?.sections
-				.get(sectionKey(spec.path, spec.section))
-				?.changedSource;
+			const source = details?.sections.get(
+				sectionKey(spec.path, spec.section),
+			)?.changedSource;
 			lines.push(
 				source
 					? `  ${headingFor(spec, details)} › ${source.id} · ${source.path} changed after you blessed it; the blessed text still applies`

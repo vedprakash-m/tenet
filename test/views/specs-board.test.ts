@@ -254,7 +254,8 @@ test("board reports edited text and changed cited sources separately", async () 
 			1,
 		);
 		assert.equal(
-			result.pending_blessings.filter((item) => item.section === "limits").length,
+			result.pending_blessings.filter((item) => item.section === "limits")
+				.length,
 			1,
 		);
 	} finally {
@@ -303,8 +304,14 @@ test("board detects every independent spec-debt kind", async () => {
 			["broken-citation", "untested-requirement", "over-budget"],
 		);
 		assert.equal(result.spec_debt[1]?.id, "R-2");
-		assert.equal(result.spec_debt[0]?.message, "Requirements cites src/legacy/queue.ts, which no longer exists");
-		assert.equal(result.spec_debt[1]?.message, "Requirements › R-2 has no tagged test");
+		assert.equal(
+			result.spec_debt[0]?.message,
+			"Requirements cites src/legacy/queue.ts, which no longer exists",
+		);
+		assert.equal(
+			result.spec_debt[1]?.message,
+			"Requirements › R-2 has no tagged test",
+		);
 		assert.equal(result.spec_debt[2]?.id, null);
 		assert.match(
 			result.spec_debt[2]?.message ?? "",
