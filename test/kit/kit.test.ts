@@ -74,3 +74,12 @@ test("a blessed section must say how it was recorded and where its blessed copy 
   data.sections.vision.state = "blessed";
   assert.equal(validate("spec-front-matter", data).ok, false);
 });
+
+test("the minimal pack and every agent card validate through the schema registry", async () => {
+  const pack = validate("pack", parse(await read("packs", "minimal", "pack.yaml")));
+  assert.equal(pack.ok, true, JSON.stringify(pack.errors));
+  for (const name of ["drafter", "spec-reviewer"]) {
+    const card = validate("agent-card", frontMatter(await read("agents", `${name}.md`)));
+    assert.equal(card.ok, true, `${name}: ${JSON.stringify(card.errors)}`);
+  }
+});

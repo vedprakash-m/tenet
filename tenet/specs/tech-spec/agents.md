@@ -63,7 +63,7 @@ test, acceptance item or specification.
 These depend on the agent following them; the ones that can be checked are catalog ideas R-226 to R-230.
 
 **Agent card shape** (tooling R-206), YAML front matter of `kit/agents/<name>.md`, with `kit/agents/drafter.md` as the reference:
-- **Required:** `name`, `version`, `role`, `kind` (`creator` or `critic`), `purpose`, `inputs` `{spec_levels, sections, artifacts}`, `outputs` `{result_schema, writes}`.
+- **Required:** `name`, `version`, `role`, `kind` (`creator` or `critic`), `purpose`, `inputs` `{spec_levels, sections, artifacts}`, `outputs` `{result_schema, writes}` (`writes` for creators only; a critic returns findings and writes no files).
 - **Optional:** `tools[]`, `side_effects` `{filesystem, git, network}`, `paths` `{write, deny_read, deny_write}`, `acts_as`, `sponsor`, `stop_rules[]`, `eval_suite`.
 - **Critics add:** `criteria`, `independence`, `finding_schema`, `abstain_when`.
 
