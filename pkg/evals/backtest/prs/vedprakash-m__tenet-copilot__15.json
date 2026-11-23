@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-09T07:00:20Z",
   "merged_at": "2026-11-09T18:03:22Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "preview-integration",
   "head": "preview-integration",
   "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
   "head_sha": "d0f3aa32eed615798fa074860f37cd4cffc7e7f6",
@@ -888,5 +890,7 @@
       "conclusion": "failure",
       "completed_at": "2026-11-09T03:17:02Z"
     }
-  ]
+  ],
+  "diff_sha256": "eb10463aa0c02f9b74c1ae5149f4fd3fc89c197185816891e0503347ee282263",
+  "shas_resolved": true
 }

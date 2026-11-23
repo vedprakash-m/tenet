@@ -10,8 +10,9 @@ sources:
   - repo: Torus
     cases: 0
     reason: "no git history yet; first adopter after alpha.0 (L-0035)"
+agent_group_rule: "Bot author login Copilot merged through refs/pulls/*/head into any base branch in the 2025-01-01 through 2026-11-22 window"
 windows:
-  tenet-copilot: all history through 2026-11-23T19:05:39.949Z
+  tenet-copilot: all history through 2026-11-23T22:44:12.098Z
   BotFramework-WebChat: 2025-01-01 through 2026-11-22, inclusive
 eligibility:
   - merged
@@ -50,12 +51,25 @@ groups:
       - 26
       - 28
   webchat-agent:
-    eligible: 0
-    cohort: 0
+    eligible: 16
+    cohort: 13
     numbers:
+      - 6068
+      - 6067
+      - 6066
+      - 6065
+      - 6064
+      - 6063
+      - 6062
+      - 6061
+      - 6060
+      - 6059
+      - 6041
+      - 6038
+      - 6034
   webchat-human:
     eligible: 371
-    cohort: 78
+    cohort: 65
     reserve: 20
     cohort_numbers:
       - 6025
@@ -120,6 +134,8 @@ groups:
       - 6047
       - 5873
       - 5614
+  reserves:
+    numbers:
       - 5669
       - 6026
       - 5473
@@ -136,34 +152,16 @@ groups:
       - 5831
       - 5593
       - 5626
-  reserves:
-    numbers:
       - 6009
       - 5985
       - 5992
       - 5880
-      - 5428
-      - 5417
-      - 5507
-      - 5664
-      - 5913
-      - 5790
-      - 6005
-      - 5687
-      - 5653
-      - 5540
-      - 5660
-      - 5477
-      - 5915
-      - 5926
-      - 5799
-      - 5794
 per_source_counts:
   vedprakash-m/tenet-copilot:
     eligible: 22
     excluded: 7
   microsoft/BotFramework-WebChat:
-    eligible: 371
+    eligible: 387
     excluded: 0
 exclusions:
   - repo: vedprakash-m/tenet-copilot
@@ -187,7 +185,7 @@ exclusions:
   - repo: vedprakash-m/tenet-copilot
     number: 29
     reason: not_merged
-generated_at: 2026-11-23T19:05:39.949Z
+generated_at: 2026-11-23T22:44:12.098Z
 gh_version: "version 2.105.0 (2026-11-17)"
 cohort_cases:
   - repo: vedprakash-m/tenet-copilot
@@ -256,6 +254,45 @@ cohort_cases:
   - repo: vedprakash-m/tenet-copilot
     number: 28
     group: tenet-copilot
+  - repo: microsoft/BotFramework-WebChat
+    number: 6068
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6067
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6066
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6065
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6064
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6063
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6062
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6061
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6060
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6059
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6041
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6038
+    group: webchat-agent
+  - repo: microsoft/BotFramework-WebChat
+    number: 6034
+    group: webchat-agent
   - repo: microsoft/BotFramework-WebChat
     number: 6025
     group: webchat-human
@@ -451,6 +488,7 @@ cohort_cases:
   - repo: microsoft/BotFramework-WebChat
     number: 5473
     group: webchat-human
+reserve_cases:
   - repo: microsoft/BotFramework-WebChat
     number: 5835
     group: webchat-human
@@ -490,84 +528,15 @@ cohort_cases:
   - repo: microsoft/BotFramework-WebChat
     number: 5626
     group: webchat-human
-reserve_cases:
   - repo: microsoft/BotFramework-WebChat
     number: 6009
     group: webchat-human
-    hash: 355ff0360698b23089d038fb197c7ec08c3c3ed7835516cc855f984db0f5925f
   - repo: microsoft/BotFramework-WebChat
     number: 5985
     group: webchat-human
-    hash: 35b3aba72226627523e84cd6e82f586f3acd93b45c4afcf1befe04caa678c5b6
   - repo: microsoft/BotFramework-WebChat
     number: 5992
     group: webchat-human
-    hash: 3845b65c9212bc2bca6e769dfa4d7e67688467733031e769da80d28f05d40c11
   - repo: microsoft/BotFramework-WebChat
     number: 5880
     group: webchat-human
-    hash: 392490bb8ab4a1112bda7f8d5817e841df3a6f57b5e442bd9e400bd863db18b5
-  - repo: microsoft/BotFramework-WebChat
-    number: 5428
-    group: webchat-human
-    hash: 39c451771a3e4aa88486fe441fb07ddefe42abeacfb9c51ce25f87a8341f9215
-  - repo: microsoft/BotFramework-WebChat
-    number: 5417
-    group: webchat-human
-    hash: 3c2e6f25a093bb92b0219c39c65fd1801a035863622ee7e53cc25ef7be6c8115
-  - repo: microsoft/BotFramework-WebChat
-    number: 5507
-    group: webchat-human
-    hash: 3cc03fdd5f8ca36a23ff4e1c268a8dc06342190b0a95d15fc667eccc23cb20fe
-  - repo: microsoft/BotFramework-WebChat
-    number: 5664
-    group: webchat-human
-    hash: 3d9e6a8d49205bdbb6471fd5fb7b0e55149161ff5b7dfacaf1b40352189ffaed
-  - repo: microsoft/BotFramework-WebChat
-    number: 5913
-    group: webchat-human
-    hash: 3dc76122ea3854f2f9d34b1e9860fb08bf729f037883d58ed35f0fcb30cb1d39
-  - repo: microsoft/BotFramework-WebChat
-    number: 5790
-    group: webchat-human
-    hash: 3e28026aa5f2d6f5da7df770ee67aefe159a8af7a3241854abaf9189d85122be
-  - repo: microsoft/BotFramework-WebChat
-    number: 6005
-    group: webchat-human
-    hash: 40151c26dff70b4b6d4926b801721c62614b76cc246d682504a26f4266b3f648
-  - repo: microsoft/BotFramework-WebChat
-    number: 5687
-    group: webchat-human
-    hash: 40ac500c2ceafedcf2e22cae1592b39f17eeb54f02c37123482ab33ca03e4dae
-  - repo: microsoft/BotFramework-WebChat
-    number: 5653
-    group: webchat-human
-    hash: 42458754afb320dc58967e98a3b637730bd09379964f319c8f7d00f782f8aab7
-  - repo: microsoft/BotFramework-WebChat
-    number: 5540
-    group: webchat-human
-    hash: 429ddc83c64118599a51dc8bc48e0af15babd63b96cf871363e68496250183f0
-  - repo: microsoft/BotFramework-WebChat
-    number: 5660
-    group: webchat-human
-    hash: 42f8202e6f437d57a4dc6feb5ea97316c80a97790a8f78a7fa2626bc852e5df5
-  - repo: microsoft/BotFramework-WebChat
-    number: 5477
-    group: webchat-human
-    hash: 4460442bbe84b222f64ae06ce823665f2ffe4b663655c169042b2ecfe214c1bf
-  - repo: microsoft/BotFramework-WebChat
-    number: 5915
-    group: webchat-human
-    hash: 44acaa518cc2784ce05c1a8c18a80b36dfdaed749e86055f491bd2a16965a24f
-  - repo: microsoft/BotFramework-WebChat
-    number: 5926
-    group: webchat-human
-    hash: 44e15a26f0fad4277d4c6d534c9ab0ce2f7e1e3d8f5de29ecbfc26b50e680bfa
-  - repo: microsoft/BotFramework-WebChat
-    number: 5799
-    group: webchat-human
-    hash: 44fa841efec2434e8fbdd9fe9e4746bbd0886463a12dcd83784ea22238062bdf
-  - repo: microsoft/BotFramework-WebChat
-    number: 5794
-    group: webchat-human
-    hash: 4566081f7d1b970d87ef2030715034c2c05aa3f30394a18c9623d1067fffd8e7

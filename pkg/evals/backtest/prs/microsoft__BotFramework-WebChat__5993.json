@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-30T22:18:49Z",
   "merged_at": "2026-10-31T18:16:20Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-css-fluent-context",
   "head": "OEvgeny/fix-css-fluent-context",
   "base_sha": "9e50a576e107f635d361994423987271f94b53dd",
   "head_sha": "6f1fc063f53d32651041c9bb251160fb15666234",
@@ -582,5 +584,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-31T17:59:03Z"
     }
-  ]
+  ],
+  "diff_sha256": "2a01066beacc1116926fdba228d19571c803f14a7b5411ad686a433dc9e5d906",
+  "shas_resolved": true
 }

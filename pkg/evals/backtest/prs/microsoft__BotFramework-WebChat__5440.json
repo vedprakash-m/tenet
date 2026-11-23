@@ -10,7 +10,9 @@
   },
   "created_at": "2025-03-08T00:39:54Z",
   "merged_at": "2025-03-08T05:30:56Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "fix-batched-livestream",
   "head": "fix-batched-livestream",
   "base_sha": "e998c5698eb9b417566087e1964bf60dc4fc9a24",
   "head_sha": "c0d410e5b5672021a1c8785fa70dfd3868cdb3cf",
@@ -71,5 +73,7 @@
       "submitted_at": "2025-03-08T05:30:31Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "650779cc4e39f64eb38674f0462514f10b98946408bacca7dd1fd255427e482c",
+  "shas_resolved": true
 }

@@ -10,7 +10,9 @@
   },
   "created_at": "2025-12-10T08:46:45Z",
   "merged_at": "2025-12-10T23:01:26Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "feat-html2b",
   "head": "feat-html2b",
   "base_sha": "879dedf4ffa56ec350fee6a500c44098f28d4405",
   "head_sha": "d1401e501b8ba9878da5037d94f332dcf2c9bd1e",
@@ -1374,5 +1376,7 @@
       "submitted_at": "2025-12-10T23:01:24Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "6cfe91220fd973a0584e006af46ccd1daf0c678011d1037747beaa32fab6e73a",
+  "shas_resolved": true
 }

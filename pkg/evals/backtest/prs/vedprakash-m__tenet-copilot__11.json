@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-07T19:46:12Z",
   "merged_at": "2026-11-09T18:03:24Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "vedprakash-m-kernel-timing-fields",
   "head": "vedprakash-m-kernel-timing-fields",
   "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
   "head_sha": "c146269cdec6f52c2df296ed6a05c63dfbe11b2e",
@@ -254,5 +256,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-07T21:00:43Z"
     }
-  ]
+  ],
+  "diff_sha256": "239e425be3e6a38de12598bd55c7bf103c3655b06faecdf536d05d55fe148271",
+  "shas_resolved": true
 }

@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-03T23:59:12Z",
   "merged_at": "2026-11-04T02:14:16Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/dev-5781-sending",
   "head": "OEvgeny/dev-5781-sending",
   "base_sha": "be71cb455cda341d813800165d6ad4ffa4bcc28f",
   "head_sha": "6001bdd060c55f636dcb2f82a44f1ee59fb157f6",
@@ -621,5 +623,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-04T01:57:41Z"
     }
-  ]
+  ],
+  "diff_sha256": "bf5755d8410af6c4db727a5a9d5aa3c026524552069136412964e54d7bc027d1",
+  "shas_resolved": true
 }

@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-02T00:43:32Z",
   "merged_at": "2026-11-05T03:59:12Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/typescript-eslint-8.72.1",
   "head": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/typescript-eslint-8.72.1",
   "base_sha": "2986067fb3ce848624f71a5192c5ec35759d36e9",
   "head_sha": "c7d2bfa39951c18e6358f6fb761ceffb3340ce5a",
@@ -75,5 +77,7 @@
       "conclusion": "failure",
       "completed_at": "2026-11-02T00:45:59Z"
     }
-  ]
+  ],
+  "diff_sha256": "a9ca3b8c2f2b7719718f6a058de7a91c31187d45b03788424cff6c0072ec6ed4",
+  "shas_resolved": true
 }

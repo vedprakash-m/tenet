@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-10T22:52:36Z",
   "merged_at": "2026-11-12T00:15:21Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "claude/quirky-boyd-8c39d7",
   "head": "claude/quirky-boyd-8c39d7",
   "base_sha": "367e9f5d6350364288b2c956a987ea96e3f565b7",
   "head_sha": "0e0cc76438a6e81ad247158c14a17bc1540a75e1",
@@ -265,5 +267,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-11T00:14:09Z"
     }
-  ]
+  ],
+  "diff_sha256": "268b4e7c2f7eb802620fc285435b3c8a3aa0c64d2026504a33a7569d5837e3f1",
+  "shas_resolved": true
 }

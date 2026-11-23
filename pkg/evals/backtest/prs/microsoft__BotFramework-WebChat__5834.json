@@ -10,7 +10,9 @@
   },
   "created_at": "2026-05-23T07:16:14Z",
   "merged_at": "2026-05-25T20:12:05Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "bump-4.19.0",
   "head": "bump-4.19.0",
   "base_sha": "4c60bbe09b0d3ecb21d6c9488ca9d25e56829628",
   "head_sha": "b8e86b198e1771b10f2e04971a4016614e8b8f00",
@@ -210,5 +212,7 @@
       "conclusion": "success",
       "completed_at": "2026-05-23T07:16:26Z"
     }
-  ]
+  ],
+  "diff_sha256": "c7327c211b1239751b14302ebc21c9ccd65f5e23b7b41c5b030098956e3445ea",
+  "shas_resolved": true
 }

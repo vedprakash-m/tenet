@@ -10,7 +10,9 @@
   },
   "created_at": "2026-01-07T23:24:42Z",
   "merged_at": "2026-01-08T19:30:42Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "feat/css-modules/activity-related",
   "head": "feat/css-modules/activity-related",
   "base_sha": "550befa9a7db7ccac929af37e9139bd789646abc",
   "head_sha": "7cf9e171ae9c6dfa7c25bc90ff446f69c3d9d1c7",
@@ -300,5 +302,7 @@
       "conclusion": "success",
       "completed_at": "2026-01-08T17:31:28Z"
     }
-  ]
+  ],
+  "diff_sha256": "eaae2a281fa3445367118e9244d89c68a9b6087b650c69c05ddbff498f814155",
+  "shas_resolved": true
 }

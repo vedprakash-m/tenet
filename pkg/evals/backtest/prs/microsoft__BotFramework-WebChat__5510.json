@@ -10,7 +10,9 @@
   },
   "created_at": "2025-07-08T17:05:33Z",
   "merged_at": "2025-07-10T17:51:22Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "feat/template-decorator",
   "head": "feat/template-decorator",
   "base_sha": "40736b1952628fa723c15c2c67319dfc83757ea8",
   "head_sha": "ad70bb712d8b9733f2d5eedc2cfba295aacc3a42",
@@ -144,5 +146,7 @@
       "submitted_at": "2025-07-10T17:48:35Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "b2d694eefb5c53bd03f85427f1e435c3e3449d69321db618d068f481597e7b4e",
+  "shas_resolved": true
 }

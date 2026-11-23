@@ -10,7 +10,9 @@
   },
   "created_at": "2025-10-22T02:02:04Z",
   "merged_at": "2025-10-22T02:20:02Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "chore/update-rcor",
   "head": "chore/update-rcor",
   "base_sha": "7788726e285bbcc93016e5e3bc8c35bf150a1c27",
   "head_sha": "c8e5ebcdb1948ad61d759d488bb64f23980426c1",
@@ -90,5 +92,7 @@
       "submitted_at": "2025-10-22T02:07:37Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "666d7e569376abb3bb2e13e33edce4fbce439f86afe1ecbe44f5ec65ca99e061",
+  "shas_resolved": true
 }

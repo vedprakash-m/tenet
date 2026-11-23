@@ -10,7 +10,9 @@
   },
   "created_at": "2025-08-07T03:25:24Z",
   "merged_at": "2025-08-07T06:42:05Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "feat-bump-samples-3",
   "head": "feat-bump-samples-3",
   "base_sha": "3a004ca8e502978ac170d8da3960ff418c9dd7fa",
   "head_sha": "47bdd83a000aa202772428d029a34fefdf992849",
@@ -78,5 +80,7 @@
       "submitted_at": "2025-08-07T04:55:00Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "9718e77e9ff49367f40cf7ce716a8a5cb211b48a4b0aea5619b60fc766f77fbf",
+  "shas_resolved": true
 }

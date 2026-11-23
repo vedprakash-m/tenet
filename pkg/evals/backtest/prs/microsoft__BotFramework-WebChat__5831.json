@@ -10,7 +10,9 @@
   },
   "created_at": "2026-05-16T08:01:45Z",
   "merged_at": "2026-05-18T18:55:55Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "bump-sanitize-html",
   "head": "bump-sanitize-html",
   "base_sha": "2a3d1d3c98a653c0f15712f72d35e4388bde59eb",
   "head_sha": "cb0c69220d5f6aadd5eaf67a6bc6ed5251c974ad",
@@ -255,5 +257,7 @@
       "conclusion": "success",
       "completed_at": "2026-05-16T08:03:43Z"
     }
-  ]
+  ],
+  "diff_sha256": "47472fc9ea813a96906be63de069c5aa928d1526e87b79ca422a291110b877f2",
+  "shas_resolved": true
 }

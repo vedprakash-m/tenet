@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-17T16:06:25Z",
   "merged_at": "2026-10-18T05:55:10Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-flaky-html2-tests",
   "head": "OEvgeny/fix-flaky-html2-tests",
   "base_sha": "dfd49afaa864e8b84ef612ca142f7a7b5e77d4c3",
   "head_sha": "ad0c402bb06423755a4c9faf097b45729e569a24",
@@ -266,5 +268,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-18T05:42:21Z"
     }
-  ]
+  ],
+  "diff_sha256": "72d640a0424a4419d46d5d9ee4ae65d875b91fe64c3316267715fdd2f477a2e1",
+  "shas_resolved": true
 }

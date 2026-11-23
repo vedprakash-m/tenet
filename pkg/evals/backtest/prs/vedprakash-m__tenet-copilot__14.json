@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-07T20:06:39Z",
   "merged_at": "2026-11-09T18:03:24Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "vedprakash-m-schema-1-bridge",
   "head": "vedprakash-m-schema-1-bridge",
   "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
   "head_sha": "1af05109b0712ebd285a8382a9d4a818e12fb12a",
@@ -187,5 +189,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-07T21:28:30Z"
     }
-  ]
+  ],
+  "diff_sha256": "b4c908c97ff97cbd846acca484d0dcff9d5392648bd213419fe0524e3c847338",
+  "shas_resolved": true
 }

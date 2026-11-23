@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-06T23:23:38Z",
   "merged_at": "2026-11-08T22:54:48Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-lockfile-body-parser",
   "head": "OEvgeny/fix-lockfile-body-parser",
   "base_sha": "57ff234fda4646f1e7f1919611231121913a613e",
   "head_sha": "551b2030c1ece8f15425037219fd0663e4e7884c",
@@ -298,5 +300,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-08T22:39:34Z"
     }
-  ]
+  ],
+  "diff_sha256": "b053385e491568e2510bca7c93c9d7e904036773b785bc3e7ee187d14d639818",
+  "shas_resolved": true
 }

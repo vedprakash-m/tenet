@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-10T22:40:53Z",
   "merged_at": "2026-11-10T23:53:10Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "claude/git-09-shared-merge",
   "head": "claude/git-09-shared-merge",
   "base_sha": "c4e30498aada93c5975343616fc82903637863f1",
   "head_sha": "06a39011c24876a3d4cfed8d54d8d9d3adc829b1",
@@ -197,5 +199,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-10T22:43:16Z"
     }
-  ]
+  ],
+  "diff_sha256": "4c7812f862452add91d7617132c4b4960ce5de7d5aa755f5c595a7e013d19d33",
+  "shas_resolved": true
 }

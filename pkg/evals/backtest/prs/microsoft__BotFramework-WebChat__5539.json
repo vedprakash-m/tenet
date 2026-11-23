@@ -10,7 +10,9 @@
   },
   "created_at": "2025-08-07T05:06:06Z",
   "merged_at": "2025-08-08T06:19:02Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "feat-tsconfig",
   "head": "feat-tsconfig",
   "base_sha": "4ff15c6beb4502edd1743655595521bfbbe6f4fa",
   "head_sha": "1fde8cee67535ff729b0b944bef55122f7da8f74",
@@ -619,5 +621,7 @@
       "submitted_at": "2025-08-07T22:28:37Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "94bd3ef4570253af8b149c19d1b291ca09451bd5d0d3cd6c6cfb0efabd83e422",
+  "shas_resolved": true
 }

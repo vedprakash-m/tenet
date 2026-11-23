@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-02T00:43:07Z",
   "merged_at": "2026-11-05T03:59:12Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/fastify/cookie-11.1.5",
   "head": "dependabot/npm_and_yarn/plugin/skills/tenet-starter-ts-web-api/template/fastify/cookie-11.1.5",
   "base_sha": "2986067fb3ce848624f71a5192c5ec35759d36e9",
   "head_sha": "c54df1204237206ccc0686aafdf31806be2025bd",
@@ -72,5 +74,7 @@
       "conclusion": "failure",
       "completed_at": "2026-11-02T00:55:07Z"
     }
-  ]
+  ],
+  "diff_sha256": "38c7aa14a8f2789a4e3d8b3486d0442a492c838ca7897b53b05de7e775dafead",
+  "shas_resolved": true
 }

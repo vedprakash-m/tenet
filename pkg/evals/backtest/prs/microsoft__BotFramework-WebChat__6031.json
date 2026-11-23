@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-09T09:21:53Z",
   "merged_at": "2026-11-10T00:17:45Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-css-modules-toasts",
   "head": "OEvgeny/fix-css-modules-toasts",
   "base_sha": "d124c26b60e74e12b8488698a8b6784e5f6297c3",
   "head_sha": "04602c7c6b856d6807d016a3f820724aa9da96df",
@@ -401,5 +403,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-09T09:23:48Z"
     }
-  ]
+  ],
+  "diff_sha256": "d0a29774503b0c27eb59e766c608bda1e82844f388dd5c448568e127bec04308",
+  "shas_resolved": true
 }

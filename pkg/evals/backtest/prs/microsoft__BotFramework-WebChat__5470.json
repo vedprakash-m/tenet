@@ -10,7 +10,9 @@
   },
   "created_at": "2025-04-29T18:05:34Z",
   "merged_at": "2025-05-05T16:51:59Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "users/lexi-taylor/feedbackform/bugs",
   "head": "users/lexi-taylor/feedbackform/bugs",
   "base_sha": "41e8175880e39cd5afae6ec6cacfddfeba3817ba",
   "head_sha": "e71d567baeaf7931516e4cb2f91e9784676bb3c1",
@@ -1195,5 +1197,7 @@
       "submitted_at": "2025-05-05T16:41:32Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "bd4a67c56c107b44d2edd0882a6474551ac01f62e9951e2272944eb85fb636e4",
+  "shas_resolved": true
 }

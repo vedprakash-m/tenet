@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-10T02:41:40Z",
   "merged_at": "2026-11-12T19:04:52Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-css-modules-send-box",
   "head": "OEvgeny/fix-css-modules-send-box",
   "base_sha": "c7b16cad41e8c58333910a143809a2c8c380a02a",
   "head_sha": "9f2dca1f57a8805b59c81ea481c20bf0acbee08f",
@@ -446,5 +448,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-12T18:39:47Z"
     }
-  ]
+  ],
+  "diff_sha256": "34507a4ae9c4ad5e29adb961bd56fb4cc6f5bb8d56af5e0e7566fee49863ca86",
+  "shas_resolved": true
 }

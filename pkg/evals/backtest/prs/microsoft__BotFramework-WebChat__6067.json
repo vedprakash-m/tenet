@@ -1,0 +1,504 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6067,
+  "title": "Store: rename `NodeInit` → `UpsertNode`, `Identifier` → `NodeIdentifier`; keep children that joined a not-yet-existing parent",
+  "body": "## Changelog Entry\n\nNone. This builds on the non-shipping store in #6053, so label it `no-changelog`.\n\n## Description\n\nThis branch sits on top of `feat-new-store` (#6053). It renames two public types. It also fixes the bug that made `goldenStories/autoHasPart.test.ts` fail.\n\n**Bug.** Within one transaction, a child is upserted with `isPartOf: P` while `P` does not exist yet. `P` is then upserted. `P`'s updater receives `undefined`, so it cannot know about the child. `upsert()` still compared the returned `hasPart` with the child it had already recorded for `P`, and dropped the child as a removal.\n\n```ts\ncontroller.edit(transaction => {\n  transaction.upsert('_:m-1', () => ({ '@id': '_:m-1', '@type': new Set(['Message']), isPartOf: new Set([{ '@id': '_:c' }]) }));\n  transaction.upsert('_:c', () => ({ '@id': '_:c', '@type': new Set(['Conversation']) }));\n});\n\nstore.queryByIdentifier('_:c').hasPart; // before: undefined, after: Set { { '@id': '_:m-1' } }\n```\n\n## Design\n\nThe `hasPart` diff now starts from the children actually shown to the updater. For a node that does not exist yet, that is `EMPTY_IDS`. Children that joined through their own `isPartOf` are kept, and anything listed in `hasPart` is added. The `isPartOf` side already works this way: pending parents are always merged into a newly upserted child (`autoIsPartOf.test.ts`).\n\n> [!IMPORTANT]\n> **Review this.** An existing unit test in `Store.test.ts` asserted the opposite: a parent upserted later *replaces* `hasPart`, even with children it never saw. That test now expects them merged (`[m-1, m-2]`).\n>\n> The alternative is to merge only when the updater omits `hasPart`. That passes both tests, but `hasPart` would then behave differently from `isPartOf`.\n\n## Specific Changes\n\n- **Renames**\n   - `NodeInit<T>` → `UpsertNode<T>` (`node/Node.ts`, `Store.ts`, `index.ts`)\n   - `Identifier` → `NodeIdentifier` across `packages/store/src`\n   - `identifierSchema` and the error message strings are unchanged\n- **`Store.ts` `upsert()`**\n   - `getChildIds()` is now stored as `childIdsInGraph` and is still used for the dirty read\n   - `shownChildIds` is `node ? childIdsInGraph : EMPTY_IDS` and drives the `hasPart` diff\n- **`Store.test.ts`**: the \"one side declared\" scenario now expects merge semantics\n- **`private/deepFreeze.objectIs.test.ts`**: fixes an import of `../structure.ts`, which \"Remove structure entry point\" deleted\n- **Not changed, needs a human:** `goldenStories/AGENTS.md` forbids agent edits, so these files still use the old names and fail typecheck until updated:\n   - `goldenStories/upsertedNodeIsDifferentAndFrozen.test.ts` (`NodeInit`, `Identifier`)\n   - `goldenStories/validNodeIdentifier.ts` (`Identifier`)\n\n- [x] I have added tests and executed them locally\n- [x] ~I have added `.changelog/<PR#>-<slug>.md`~\n- [x] ~I have updated documentation~\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\n- [x] ~Browser and platform compatibilities reviewed~\n- [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\n- [ ] Documents reviewed (docs, samples, live demo)\n- [x] ~Internationalization reviewed (strings, unit formatting)~\n- [x] ~`package.json` and `package-lock.json` reviewed~\n- [x] ~Security reviewed (no data URIs, check for nonce leak)~\n- [ ] Tests reviewed (coverage, legitimacy)",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-11-22T01:55:00Z",
+  "merged_at": "2026-11-22T10:19:43Z",
+  "base_ref": "feat-new-store",
+  "base": "feat-new-store",
+  "head_ref": "copilot/6053-rebase-and-rename-classes",
+  "head": "copilot/6053-rebase-and-rename-classes",
+  "base_sha": "337f66540db8aa3edf1bd3fc95b6c9d7496d0dc9",
+  "head_sha": "179c3635fd8f7ea5645447a137fe7375e894b16f",
+  "merge_sha": "206a5a1e266168599291914acc721dd3d4d90f68",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-22T10:19:34Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "5efda36fa3c859cf68c677e2f6f5b6f16d5aec73",
+      "message": "Rename NodeInit to UpsertNode and Identifier to NodeIdentifier, keep children that joined a new parent via isPartOf",
+      "author": "compulim"
+    },
+    {
+      "sha": "2592cec41b48956df1b84341669eba7b61319a10",
+      "message": "Fix types",
+      "author": "compulim"
+    },
+    {
+      "sha": "294958ae1d5c574ea8fcde5159441471bf50bced",
+      "message": "Throw on conflicting hasPart/isPartOf for pending memberships in the same transaction",
+      "author": "compulim"
+    },
+    {
+      "sha": "8b4ec1c545a9521f3495e0e8969fbdaa659beeef",
+      "message": "Fix golden story",
+      "author": "compulim"
+    },
+    {
+      "sha": "df8ecda2e8db89372ff6b0a114f4d25ee830d016",
+      "message": "Treat omitted hasPart/isPartOf as dropping pending memberships, per golden stories",
+      "author": "compulim"
+    },
+    {
+      "sha": "e7b5e421a796a606d04d3057a09b128396fc7116",
+      "message": "Add some golden stories around auto-relationship conflicts",
+      "author": "compulim"
+    },
+    {
+      "sha": "3acdc2b6ef35ec70a7146edd2a44f105ae7e66b8",
+      "message": "Treat links made by the other side in the same transaction as pending, even for existing nodes",
+      "author": "compulim"
+    },
+    {
+      "sha": "002de2bf6069d9a0cc22da4c6af76010eb880284",
+      "message": "More test case",
+      "author": "compulim"
+    },
+    {
+      "sha": "1d9fc0e0bc9ced6c3ab1ad218166ced54e78b742",
+      "message": "Add test case",
+      "author": "compulim"
+    },
+    {
+      "sha": "3bcb964eab510c790c67402934dcac90a0246cd9",
+      "message": "Organize under folders",
+      "author": "compulim"
+    },
+    {
+      "sha": "f64c8e2d16b8064c6e94b9ce2d7f2279ef86ab0b",
+      "message": "Fix paths",
+      "author": "compulim"
+    },
+    {
+      "sha": "d089746d4b6c4264426f865a88b157fb50ddf2ab",
+      "message": "Add permutation helper",
+      "author": "compulim"
+    },
+    {
+      "sha": "9443d61482d099c9df7ae59b8351f70ad7d17d17",
+      "message": "Clean up comment",
+      "author": "compulim"
+    },
+    {
+      "sha": "a476e06d6a790a20b455d2b40361bac73cdd1ec1",
+      "message": "Fix hasPart and isPartOf golden story",
+      "author": "compulim"
+    },
+    {
+      "sha": "09b13108a14b0eab04984a5be93ea9cc40cded21",
+      "message": "Add no conflict tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "e3b72c8c4dca9e6cfa872fed0cce6b43cc3ac37e",
+      "message": "Run partial auto-fix",
+      "author": "compulim"
+    },
+    {
+      "sha": "fda1a0621e8c7973aa916c62b803c6d2f0482f5b",
+      "message": "Throw on part conflict when both sides are touched in the same transaction",
+      "author": "compulim"
+    },
+    {
+      "sha": "5771bb413d272c7813760da0e9488920bb99f1ad",
+      "message": "Add getSortedParts test",
+      "author": "compulim"
+    },
+    {
+      "sha": "10fa98b00371af68e590c534d4f3ed264ae8d26c",
+      "message": "Fix test",
+      "author": "compulim"
+    },
+    {
+      "sha": "15e6a50702a7285f2d19db2966b89c5404b48e83",
+      "message": "Add more golden stories",
+      "author": "compulim"
+    },
+    {
+      "sha": "275f1a12eb77f54a9c7e13f9c892420e05474d7f",
+      "message": "Add more tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "9d99f0f82b5433cf74dab3027579fa41799f6075",
+      "message": "Add a test case",
+      "author": "compulim"
+    },
+    {
+      "sha": "d186bf0332857af023d60ca2f925d4850ae46d58",
+      "message": "Better permutating function",
+      "author": "compulim"
+    },
+    {
+      "sha": "4f6697109c6eacc1e1f420cb39876b8e55cc1701",
+      "message": "Add onUpdate check",
+      "author": "compulim"
+    },
+    {
+      "sha": "a7c4bb9f12cce30e3c7c6aa199cb02134db033eb",
+      "message": "Rename",
+      "author": "compulim"
+    },
+    {
+      "sha": "ff0c43ef9f332d57b3b711e65f69355ad60a05c9",
+      "message": "Use as much assert as possible",
+      "author": "compulim"
+    },
+    {
+      "sha": "179c3635fd8f7ea5645447a137fe7375e894b16f",
+      "message": "Cleaner",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/store/src/OPINIONS.md",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/Store.test.ts",
+      "status": "modified",
+      "additions": 312,
+      "deletions": 76,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/Store.ts",
+      "status": "modified",
+      "additions": 147,
+      "deletions": 51,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertNoPartChangeToUpserted.ts",
+      "status": "added",
+      "additions": 74,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertNoPartConflict.ts",
+      "status": "added",
+      "additions": 39,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertNoPendingParts.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertReferencedNodesInGraph.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertUniqueIdentifier.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/benchmark.node.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/autoHasPart.test.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 42,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/autoIsPartOf.test.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 42,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/autoPart/hasPart.conflict.insert.test.ts",
+      "status": "added",
+      "additions": 77,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/autoPart/hasPart.conflict.update.test.ts",
+      "status": "added",
+      "additions": 82,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/autoPart/hasPart.happy.test.ts",
+      "status": "added",
+      "additions": 63,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/autoPart/isPartOf.conflict.insert.test.ts",
+      "status": "added",
+      "additions": 75,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/autoPart/isPartOf.conflict.update.test.ts",
+      "status": "added",
+      "additions": 78,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/autoPart/isPartOf.happy.test.ts",
+      "status": "added",
+      "additions": 75,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/autoPart/noConflict.insert.test.ts",
+      "status": "added",
+      "additions": 92,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/autoPart/noConflict.update.test.ts",
+      "status": "added",
+      "additions": 93,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/buildPermutatedFunction.ts",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/createStoreAndController.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/deleteNode.reAdd.test.ts",
+      "status": "added",
+      "additions": 68,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/deleteNode.test.ts",
+      "status": "added",
+      "additions": 54,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/idMustNotChange.ts",
+      "status": "added",
+      "additions": 51,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/sortByDateCreated/delete.test.ts",
+      "status": "added",
+      "additions": 60,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/sortByDateCreated/insert.test.ts",
+      "status": "added",
+      "additions": 50,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/sortByDateCreated/update.test.ts",
+      "status": "added",
+      "additions": 63,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/throwOnNonArrayCustomProperties.ts",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": "packages/store/src/goldenStories/allCustomPropertiesMustBeArray.test.ts"
+    },
+    {
+      "path": "packages/store/src/goldenStories/transactional/failingUpsertShouldNotBeCommitted.test.ts",
+      "status": "renamed",
+      "additions": 4,
+      "deletions": 3,
+      "previous_path": "packages/store/src/goldenStories/failingUpsertShouldNotBeCommitted.test.ts"
+    },
+    {
+      "path": "packages/store/src/goldenStories/updateIsReplace.test.ts",
+      "status": "added",
+      "additions": 82,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/upsertedNodeIsDifferentAndFrozen.test.ts",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/validNodeIdentifier.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/index.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/Node.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/NodeIdentifier.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/NodeReference.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/Draft.test.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/Draft.ts",
+      "status": "modified",
+      "additions": 27,
+      "deletions": 17,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/deepFreeze.objectIs.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/getPartIds.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/hiddenNodeState.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/hiddenNodeState.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/identifierIndex.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/sortedChildIds.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenNodeSet.test.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenNodeSet.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 7,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-22T10:19:25Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-22T10:19:41Z"
+    }
+  ],
+  "diff_sha256": "14e25a6dd2e535988bf5d4544f9dee2d534187fa22cc5773fa4a2a078c6c51d6",
+  "shas_resolved": true
+}

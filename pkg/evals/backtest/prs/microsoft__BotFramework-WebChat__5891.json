@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-17T10:44:35Z",
   "merged_at": "2026-10-18T06:14:44Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-5738-audio-keyboard-access",
   "head": "OEvgeny/fix-5738-audio-keyboard-access",
   "base_sha": "2ec2e9f1856c35a13e303e4c6830e6c53a8c82c0",
   "head_sha": "2717077c31e175b0c37b686b564e7e467a953ced",
@@ -841,5 +843,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-18T05:59:40Z"
     }
-  ]
+  ],
+  "diff_sha256": "9aa48b3694b68548c0b23a0ceb4f3947e22b6fc6cece28a965d811d0e1f65ce3",
+  "shas_resolved": true
 }

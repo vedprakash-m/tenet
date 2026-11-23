@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-22T21:09:42Z",
   "merged_at": "2026-10-22T22:33:00Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-replace-react-redux",
   "head": "OEvgeny/fix-replace-react-redux",
   "base_sha": "a19b06e37e2a52c8a782d2e92f02be0fc865884e",
   "head_sha": "18bb2523524470f2dc60110c479a32c0f832b961",
@@ -287,5 +289,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-22T22:19:13Z"
     }
-  ]
+  ],
+  "diff_sha256": "0180f55ebc546acbef4192cc6f6ecc6730d2f10f9e8b9e6cea9fcfecb04da758",
+  "shas_resolved": true
 }

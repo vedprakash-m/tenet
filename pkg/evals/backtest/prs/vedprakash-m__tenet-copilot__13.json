@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-07T19:55:29Z",
   "merged_at": "2026-11-09T18:03:24Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "vedprakash-m-capability-cache-keys",
   "head": "vedprakash-m-capability-cache-keys",
   "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
   "head_sha": "211958bbcadf17fded7f34aec707feb0216c3e0c",
@@ -256,5 +258,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-07T21:04:27Z"
     }
-  ]
+  ],
+  "diff_sha256": "d1a8c5189406ac62c3640616eddfd2731d6979c64661493becc821ecfc7c02e5",
+  "shas_resolved": true
 }

@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-21T04:00:13Z",
   "merged_at": "2026-10-21T10:09:54Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/dev-fix-ci-flakes",
   "head": "OEvgeny/dev-fix-ci-flakes",
   "base_sha": "b26279bde230ab1a36dd1ea3714e86b7fc38423f",
   "head_sha": "98ce9048a15fe5f092aadf232dda3e64c8100934",
@@ -320,5 +322,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-21T09:44:21Z"
     }
-  ]
+  ],
+  "diff_sha256": "2813a713c205c15aaae326f6af3862a4e3089ac05be9c585fb840a99eefafe4b",
+  "shas_resolved": true
 }

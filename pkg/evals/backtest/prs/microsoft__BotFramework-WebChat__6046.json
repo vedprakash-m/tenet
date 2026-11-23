@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-12T20:04:31Z",
   "merged_at": "2026-11-13T00:13:21Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-ci-lcov-ubuntu-26",
   "head": "OEvgeny/fix-ci-lcov-ubuntu-26",
   "base_sha": "c2080ea47f0c29138106656aa4e0f6f92ba9ed7e",
   "head_sha": "1ab288eeb1fa5677b7ea2ac08bca62b7b4cdb452",
@@ -298,5 +300,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-12T23:58:36Z"
     }
-  ]
+  ],
+  "diff_sha256": "51720f81f20eddefaf17858e13e7547d2b31a1003b0953fdb057bf03b8f6b9da",
+  "shas_resolved": true
 }

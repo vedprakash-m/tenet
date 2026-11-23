@@ -1,0 +1,205 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6060,
+  "title": "Store: fix the unresolved review comments from #6053",
+  "body": "This PR fixes the unresolved review comments from #6053 (new graph store) in `packages/store`. Each comment first got a failing test, then the source fix. Where there is a reference behaviour, the test shows it next to ours: `JSON.parse(JSON.stringify(value))` for JSON values, and native `Set` for set operations.\n\n### JSON values, `createNode`, `deepFreeze`\n- **`JSONValue.ts`:** `unbox` now detects boxed primitives by checking for their internal slot (`valueOf.call` inside try/catch), not with `instanceof`. Spoofed prototypes and boxes from other realms are now handled correctly.\n- **`createNode.ts`:** properties are read from own data descriptors, so user getters are never called. `toFrozenNodeSet` now takes the original value.\n- **`deepFreeze.ts`:** objects with a `null` prototype are copied into plain objects instead of being reused. This matches the JSON round-trip.\n\n### `SetView` / `FrozenSet` / `FrozenNodeSet`\n- Set-likes with a negative `size` now throw `RangeError`, as native `Set` does.\n- Equality is now based on a key function passed into the constructor. `FrozenNodeSet` keys by `@id`.\n- `union`, `symmetricDifference` and `intersection` de-duplicate values from the other set by that key.\n- `isSupersetOf` no longer returns early based on size. That shortcut was wrong when the other set held duplicates under key equality.\n\n### `VersionedStorage`\n- An `Overlay` now iterates live through `entries`/`keys`/`values`. If the overlay is committed mid-iteration, iteration continues on the committed version.\n- The writable overlays of `FrozenMap`/`FrozenSet` use this instead of copying everything through `toMap()`.\n\n### `dateCreated` precision\n- Sorting uses milliseconds only. Sub-millisecond digits are truncated, as `Date` does, and children in the same millisecond are sorted by `@id`.\n- The original `dateCreated` string is stored unchanged.\n\n```ts\nupsertDatedMessage(tx, '_:m-a', ['_:c-1'], '2026-01-01T00:00:00.0009Z');\nupsertDatedMessage(tx, '_:m-b', ['_:c-1'], '2026-01-01T00:00:00.0001Z');\n\ngetSortedPartIdsOf(store, '_:c-1'); // ['_:m-a', '_:m-b'] — same millisecond, sorted by @id\n```",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-11-19T23:48:33Z",
+  "merged_at": "2026-11-20T00:57:34Z",
+  "base_ref": "feat-new-store",
+  "base": "feat-new-store",
+  "head_ref": "copilot/6053-write-failing-test-cases",
+  "head": "copilot/6053-write-failing-test-cases",
+  "base_sha": "c0edad3c2a0b67ce436b10b11b14fae8a9a5cdc7",
+  "head_sha": "41e404ad58bc6e768788df19231d4b47db82254b",
+  "merge_sha": "6598cf58474464c6e39a5873e274f193cc0c7050",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-20T00:57:29Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "bcd5b68a135aed0b0994e2ab91875329643ad2b6",
+      "message": "Add failing tests for unresolved review comments on #6053",
+      "author": "compulim"
+    },
+    {
+      "sha": "04fd251cb3f87a4eb30658bbec7e73f616cdf6f4",
+      "message": "Show JSON.parse(JSON.stringify()) behavior side-by-side in failing tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "813ddd7b9827e1d6b2bc11223767536ca7725216",
+      "message": "Show native Set behavior side-by-side in SetView invalid size tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "ac70f70981077ac0da0e8745c0f8672cb72155a9",
+      "message": "Fix review comments from #6053 so all failing tests pass",
+      "author": "compulim"
+    },
+    {
+      "sha": "b6b517306e14a253220da134e3cb024dca8288fd",
+      "message": "Drop sub-millisecond precision of dateCreated",
+      "author": "compulim"
+    },
+    {
+      "sha": "7f83677eb1b5c93ae0ab265b8cd92b8fbb89df99",
+      "message": "Add TIL test",
+      "author": "compulim"
+    },
+    {
+      "sha": "9635592e9a114264d7dd75c3c1b6a41a1ed9bbf5",
+      "message": "Remove read-once tests, add tests for non-enumerable/accessor/inherited properties in createNode",
+      "author": "compulim"
+    },
+    {
+      "sha": "b5df2456e28832776aa9eaf0b30ab1cde9a4f8bd",
+      "message": "Add enum/non-enum and getter/value",
+      "author": "compulim"
+    },
+    {
+      "sha": "41e404ad58bc6e768788df19231d4b47db82254b",
+      "message": "createNode only reads own enumerable properties, like JSON.stringify()",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/store/src/Store.test.ts",
+      "status": "modified",
+      "additions": 65,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/JSONValue.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/JSONValueSchema.test.ts",
+      "status": "modified",
+      "additions": 96,
+      "deletions": 16,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/createNode.test.ts",
+      "status": "modified",
+      "additions": 115,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/createNode.ts",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 15,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/dateCreatedTime.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/deepFreeze.test.ts",
+      "status": "modified",
+      "additions": 54,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/deepFreeze.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenMap.test.ts",
+      "status": "modified",
+      "additions": 135,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenMap.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenNodeSet.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenSet.test.ts",
+      "status": "modified",
+      "additions": 63,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenSet.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/SetView.test.ts",
+      "status": "modified",
+      "additions": 97,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/SetView.ts",
+      "status": "modified",
+      "additions": 53,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/VersionedStorage.ts",
+      "status": "modified",
+      "additions": 88,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/til.test.ts",
+      "status": "added",
+      "additions": 41,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-20T00:57:37Z"
+    }
+  ],
+  "diff_sha256": "771e079ba006541c1aa64b54ba60858e2014a4fc1c59f882e9b46e6c92c58b9b",
+  "shas_resolved": true
+}

@@ -10,7 +10,9 @@
   },
   "created_at": "2025-05-01T17:29:21Z",
   "merged_at": "2025-05-01T18:18:16Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "fix/visibility",
   "head": "fix/visibility",
   "base_sha": "a6b3ad8276ff1aadfca9b9b9360279261156e62f",
   "head_sha": "93e8fab436a27ddc0a5177f89bfd622b357d6f22",
@@ -71,5 +73,7 @@
       "submitted_at": "2025-05-01T18:12:43Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "ac84bd593f7d444a02a6ee8e923d61c99134d58d77c785540ae172516a7dde6e",
+  "shas_resolved": true
 }

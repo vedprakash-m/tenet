@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-20T21:40:31Z",
   "merged_at": "2026-10-21T00:14:30Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-fluent-forced-suggested-action",
   "head": "OEvgeny/fix-fluent-forced-suggested-action",
   "base_sha": "2c28a27b73d625e20e1d5647862b3ab0c249f859",
   "head_sha": "8fa5dac69a814d51b6f6ee2c7af9b43ae6c07639",
@@ -271,5 +273,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-20T23:48:27Z"
     }
-  ]
+  ],
+  "diff_sha256": "3a74363f620745258710a8a70480a2380815e15e66cda5c313989496badbd15f",
+  "shas_resolved": true
 }

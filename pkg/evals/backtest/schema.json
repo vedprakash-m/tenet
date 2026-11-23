@@ -12,6 +12,8 @@
     "merged_at",
     "base",
     "head",
+    "base_ref",
+    "head_ref",
     "base_sha",
     "head_sha",
     "merge_sha",
@@ -90,6 +92,18 @@
         "null"
       ]
     },
+    "base_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "head_ref": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "base_sha": {
       "type": [
         "string",
@@ -101,6 +115,18 @@
     },
     "merge_sha": {
       "type": "string"
+    },
+    "diff_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "shas_resolved": {
+      "type": [
+        "boolean",
+        "null"
+      ]
     },
     "labels": {
       "type": "array",

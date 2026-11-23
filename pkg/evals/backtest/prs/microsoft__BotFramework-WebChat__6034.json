@@ -1,0 +1,771 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6034,
+  "title": "Store: transactional `upsert`/`delete` with rollback, reference tracking, and append performance work",
+  "body": "Reworks the transaction API in `packages/store`. A failed transactor now leaves the store untouched. `upsertNode` becomes `upsert(id, updater)`, and the node's ID cannot change. A new `delete(id)` removes references to the deleted node and returns the IDs of affected nodes. Tests use `@testduet/given-when-then`.\n\n### Transaction API\n\n```ts\nstore.commit(tx => {\n  tx.upsert('_:c-1', node => ({ ...node, '@id': '_:c-1', name: 'Hello' })); // the updater receives Node | undefined\n  const affectedIds = tx.delete('_:p-1'); // nodes that referenced `_:p-1`\n});\n```\n\n- **Rollback:** edits go to drafts and are applied only after the transactor returns. If it throws, nothing is published.\n- **`upsert`:** throws if the updater returns a node whose `@id` differs from `id`.\n- **`delete`:** removes the deleted node's ID from every node that references it, then returns those node IDs.\n\n### Internals\n- **Reference tracking:** forward and backward reference maps, so `delete` and the reverse lookups used for parts run in O(references) instead of scanning the graph.\n- **`VersionedStorage`:** persistent storage that is updated in place at the newest version and keeps undo logs, so older snapshots still read correctly after later commits.\n- **Overlays:** `FrozenMap`, `FrozenSet`, `FrozenNodeSet` and `FrozenSkipList` (sorted parts) are writable overlays on top of `VersionedStorage`.\n- **Node lifecycle:** `createNode()` validates and returns an `UnfrozenNode`; `freezeNode()` brands it `InternalNode`. `ReadWriteNode` drafts mean each changed node is validated and built once per transaction.\n- **Branding:** `InternalNode` is branded with a non-exported symbol, so the brand never appears in the public `.d.ts`.\n- **Assertion:** the pending-parts check moved into `assertion/assertNoPendingParts.ts`.\n- **Literals:** a JSON literal (`@value`) behaves exactly like `JSON.parse(JSON.stringify(value))`, except that dangerous keys such as `__proto__` are removed.\n\n### Performance (append/upsert hot paths)\n- **`FrozenSkipList#write`:** copies with spread instead of `slice()`, which V8 runs about 30× slower on frozen arrays. Append is about 15% faster and Random about 10–20% faster.\n- **`VersionedStorage` commit:** the overlay's change map is reused as the undo log, which removes one `Map` per commit (about 7 per append). This cuts allocations about 6% per append and makes Append up to about 5% faster at 100k nodes. Committing with no changes returns the base version.\n\nBenchmark: `npm run benchmark` in `packages/store` (Append, Random, Adopt, Pending, Delete parent, Iterate, Memory).\n\n### Review notes\n- **`VersionedStorage.#commit` takes ownership of `changes`:** it swaps each entry for its previous value in place. After commit, the overlay reads from the committed version and its change map is a shared empty map.\n- **Perf changes are deliberately few:** only changes with a measurable gain in the store benchmark are kept. A `custom()` identifier validator was tried and reverted, because it was faster in isolation but made no difference in the store benchmark.",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-11-10T01:02:28Z",
+  "merged_at": "2026-11-10T02:33:00Z",
+  "base_ref": "feat-new-store",
+  "base": "feat-new-store",
+  "head_ref": "copilot/change-upsert-to-upsert-node",
+  "head": "copilot/change-upsert-to-upsert-node",
+  "base_sha": "c73d63c9e7f743895a5346b878806923f3ce1a10",
+  "head_sha": "5342d37ec0124365379f4aa3be944eccbb302d4c",
+  "merge_sha": "f7aebeb9b4e1a3754a4cf2e9133400f76ec0bc8e",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-10T02:32:09Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "9d2a6787a90840b7bf672e82935c31f51bfd93fb",
+      "message": "Store: transactional edit, upsert(id, updater), delete with reference cleanup, tests",
+      "author": "Copilot"
+    },
+    {
+      "sha": "25c3d1b917b8b123bcac28119fff7f04586c3ede",
+      "message": "Store: track forward/backward node references, test node reference validation",
+      "author": "Copilot"
+    },
+    {
+      "sha": "7e60bf1202ae3ebd45a3c2b78543c8fca65e6c1c",
+      "message": "Store: delete returns void, deep freeze nodes, verify referenced blank nodes on commit",
+      "author": "Copilot"
+    },
+    {
+      "sha": "da5379c8674ec2e6f304961e46203dae2e8e3c8d",
+      "message": "Store: immutable Set via Proxy, require all referenced nodes to exist on commit",
+      "author": "Copilot"
+    },
+    {
+      "sha": "d3efa382b40bafd5b50e7defb9482fc2f096b75c",
+      "message": "Store: auto-fix hasPart/isPartOf on commit, disallow self part, unique position per part",
+      "author": "Copilot"
+    },
+    {
+      "sha": "fbfcc118e2bb2113c2f7104aeb5192a81d9b4632",
+      "message": "Store: make hasPart/isPartOf auto-fix opt-in via edit init, always validate inverse relationship",
+      "author": "Copilot"
+    },
+    {
+      "sha": "25e2e6cdc14fa45f464e3c7bc3e991778b66c533",
+      "message": "Store: split assertions/auto-relationship/deepFreeze into modules, notify listeners with affected node IDs",
+      "author": "Copilot"
+    },
+    {
+      "sha": "71fc9d357f955ede3d816f60522c48a9aafdcb4a",
+      "message": "Rename to Source and Controller",
+      "author": "compulim"
+    },
+    {
+      "sha": "e1af5ae2e20470e7b89325c16646412ba360af26",
+      "message": "Store: cache part IDs in a hidden Symbol property on each node via createNode()",
+      "author": "Copilot"
+    },
+    {
+      "sha": "0bd50c2263502274482d31010ca6b6a97391acb7",
+      "message": "Store: lazily build part IDs cache on first getPartIds() call, validated by reference equality",
+      "author": "Copilot"
+    },
+    {
+      "sha": "c3a2d8bab175aadb2157faf4efbf2286da836bb7",
+      "message": "Revert lazy part IDs cache, build cache up front in createNode()",
+      "author": "Copilot"
+    },
+    {
+      "sha": "6659f8e44abda797c9c3db8eb1f072da54799f5f",
+      "message": "Store: replace Proxy-based readonly Set with a class wrapping a private Set",
+      "author": "Copilot"
+    },
+    {
+      "sha": "74417d50c93d422b74abc17601234667789be8c6",
+      "message": "Store: move deepFreeze into createNode, attach part IDs before the single top-level freeze",
+      "author": "Copilot"
+    },
+    {
+      "sha": "60d177e65852ce3d50608538e016da793a298da1",
+      "message": "Store: batch part membership auto-fix right before commit, document and test inverse assertion",
+      "author": "Copilot"
+    },
+    {
+      "sha": "35d96dd34459c3da8166f087380d0c6406e122f3",
+      "message": "Store: replace autoRelationship init option with transaction.autoFixRelationship()",
+      "author": "Copilot"
+    },
+    {
+      "sha": "0ab06ac6bfd15bfc2c1e31dc12f02b55c184dc00",
+      "message": "Store: check inverse part relationship on changed links only, add createTrustedNode for auto-fix",
+      "author": "Copilot"
+    },
+    {
+      "sha": "83bb5b89b01762c13e23eeb6e4f2729bb394d85d",
+      "message": "Store: combine createNode and createTrustedNode into editNode",
+      "author": "Copilot"
+    },
+    {
+      "sha": "6c15295f686c1322854896969977138ecffb0817",
+      "message": "Store: revert editNode and createTrustedNode, auto-fix uses createNode again",
+      "author": "Copilot"
+    },
+    {
+      "sha": "a5c2735e8977eb776b28e355b98e94fa96cae848",
+      "message": "Store: use mutate/commit overlays instead of cloning state and reference maps",
+      "author": "Copilot"
+    },
+    {
+      "sha": "286d15bc49b63d14c761470977c8e20be742d457",
+      "message": "Store: derive hasPart from isPartOf, mirror parent hasPart to children, remove auto-fix",
+      "author": "Copilot"
+    },
+    {
+      "sha": "dd9393a7341e02c139704905a89569e1f917eaed",
+      "message": "Store: add getSortedChildren sorted by dateCreated",
+      "author": "Copilot"
+    },
+    {
+      "sha": "fcfe4c109cc8b21993b3db0e5177fdadaa23b157",
+      "message": "Store: sorted children as versioned skip list, getSortedChildren returns Iterable",
+      "author": "Copilot"
+    },
+    {
+      "sha": "96ddc6b46e51aa3678675c7ae1b2c503432b0d17",
+      "message": "Store: getSortedChildren takes parent ID",
+      "author": "Copilot"
+    },
+    {
+      "sha": "992d55984aa125f1af792134d01339221751cf44",
+      "message": "Store: getSortedChildren requires init with sortBy",
+      "author": "Copilot"
+    },
+    {
+      "sha": "7be4203231e7f090a38828ace09f3a26aa728a6a",
+      "message": "Store: allow duplicate position in the same part",
+      "author": "Copilot"
+    },
+    {
+      "sha": "df285848ae84796e83701fcfa414662dbd45ae2c",
+      "message": "Store: skip list follows mutate()/commit() pattern, remove position from Node",
+      "author": "Copilot"
+    },
+    {
+      "sha": "ff9259be3c83f0bf9d726d7fe684a4b16a096f12",
+      "message": "Store: store hasPart/isPartOf as ReadonlyNodeSet backed by IDs, getPartIds() is O(1)",
+      "author": "Copilot"
+    },
+    {
+      "sha": "056f08f7e14c0041c7e7e106860f171c2fa49cb1",
+      "message": "Store: createNode() reuses ReadonlyNodeSet and copies IDs via iterator",
+      "author": "Copilot"
+    },
+    {
+      "sha": "74f5370e656b0883ef2375450c98c15333463538",
+      "message": "Store: forbid nested edit(), move data structures to src/structure, rename getSortedChildren to getSortedParts",
+      "author": "Copilot"
+    },
+    {
+      "sha": "52a18832d5968945f625e38d923ebca98a744878",
+      "message": "Store: JSON value follows JSON.stringify(), honors toJSON() and rejects recursive values",
+      "author": "Copilot"
+    },
+    {
+      "sha": "278df99e77148defd0a31d0624a830fe09e146b2",
+      "message": "Store: JSON value allows plain objects/arrays only, no toJSON(), still rejects recursive",
+      "author": "Copilot"
+    },
+    {
+      "sha": "8e4c98b495fd8c294991c3b9e90c71f10588500d",
+      "message": "Store: dateCreated as ISO timestamp string, sorted as Date",
+      "author": "Copilot"
+    },
+    {
+      "sha": "957e85f4a9d3e1f0a1528446c16d7d4b5bee5670",
+      "message": "Store: cache parsed dateCreated on node to avoid parsing on every comparison",
+      "author": "Copilot"
+    },
+    {
+      "sha": "12f7c55740b8ccde8ad911dc0540648abc10d4fa",
+      "message": "Store: brand nodes from createNode() as InternalNode via valibot brand",
+      "author": "Copilot"
+    },
+    {
+      "sha": "9af4e9e885cedf8187f42dccf0622aeb43aed695",
+      "message": "Update",
+      "author": "compulim"
+    },
+    {
+      "sha": "8634429a1b91c6e05dbadaf4c7d3da4710578166",
+      "message": "Store: getSortedParts() supports order, rename sortBy to by",
+      "author": "Copilot"
+    },
+    {
+      "sha": "3d4550245f912d150693f8bf01bad5edec4af6e9",
+      "message": "Update JSON literal type to @json",
+      "author": "compulim"
+    },
+    {
+      "sha": "0d5e66814841787cd9099866ddbefa8d4026b61b",
+      "message": "Clarify IRI",
+      "author": "compulim"
+    },
+    {
+      "sha": "743fa933a69dec04b519d5a4311ccfcddae17b92",
+      "message": "Add performance characteristics",
+      "author": "compulim"
+    },
+    {
+      "sha": "095b6dea34598d6d97a3e001f461a788fc4f3543",
+      "message": "Typo",
+      "author": "compulim"
+    },
+    {
+      "sha": "a29eaea60a7b4d543229e51307d9e9681bb63439",
+      "message": "Typo",
+      "author": "compulim"
+    },
+    {
+      "sha": "ca94d105351878ef1b81dbc99ad42163f179f497",
+      "message": "Store: seal NodeReference with Exact, reuse deeply frozen values in createNode()",
+      "author": "Copilot"
+    },
+    {
+      "sha": "46ea592319298cacbc147c9390a794557c06e88b",
+      "message": "Store: add npm run benchmark with aligned Markdown table of average per node",
+      "author": "Copilot"
+    },
+    {
+      "sha": "9f59b156cf0888cd7c638718a90388ce6ca882fa",
+      "message": "Store: move deepFreeze to own file, transpose benchmark table",
+      "author": "Copilot"
+    },
+    {
+      "sha": "0e1184d5378257bb1d712bddce1d6e48667ffff7",
+      "message": "Store: add createCachedIterable (not yet used, slower than array in deepFreeze)",
+      "author": "Copilot"
+    },
+    {
+      "sha": "5b564a508fff3d2b103e867b1584d15cbf9a2513",
+      "message": "Store: single-pass deepFreeze, remove createCachedIterable, merge ExactNodeReference into NodeReference",
+      "author": "Copilot"
+    },
+    {
+      "sha": "d56ccc82694f98bbea07a253f3e071c7ee05111c",
+      "message": "Store: skip dangerous keys (__proto__, constructor, prototype) when deep freezing",
+      "author": "Copilot"
+    },
+    {
+      "sha": "956713520b96bca91cbaf14c20682bc7607907b4",
+      "message": "Store: VersionedStorage mutate()/commit() API, recursive deepFreeze",
+      "author": "Copilot"
+    },
+    {
+      "sha": "dca0478097f1d765a0a8e8f878410c38be205898",
+      "message": "More",
+      "author": "compulim"
+    },
+    {
+      "sha": "f40aba0794c0dafe4d159caff492172e7ff9610f",
+      "message": "Store: document why VersionedStorage uses undo log",
+      "author": "Copilot"
+    },
+    {
+      "sha": "bd8168e1d6dc094e80e7e6e49fac84012c31b7f7",
+      "message": "More",
+      "author": "compulim"
+    },
+    {
+      "sha": "5afc5f400d7599f974907afc1197c7eeb7d20239",
+      "message": "Plain object",
+      "author": "compulim"
+    },
+    {
+      "sha": "e699e36ad9fa47858be31f4fdef20c2568ac434f",
+      "message": "Store: add clone option to deepFreeze and upsert",
+      "author": "Copilot"
+    },
+    {
+      "sha": "db766b8c23d6d7e55beee1eada9bb4079684e763",
+      "message": "Store: benchmark clone vs no clone, faster extra-key check",
+      "author": "Copilot"
+    },
+    {
+      "sha": "2df9112aeb8c43035e67608140e414b1f67871b6",
+      "message": "Revert \"Store: benchmark clone vs no clone, faster extra-key check\"",
+      "author": "Copilot"
+    },
+    {
+      "sha": "02720ac5054aefe018f8e95a69cb5120b27c69cb",
+      "message": "Revert \"Store: add clone option to deepFreeze and upsert\"",
+      "author": "Copilot"
+    },
+    {
+      "sha": "5902d02f985d5a1da7672aa37916ffb9da41202d",
+      "message": "Store: validate JSON value by a single recursive check()",
+      "author": "Copilot"
+    },
+    {
+      "sha": "daf8bc9d9e0fed598b71d8f03b8effdda133146e",
+      "message": "Plan: JSON literal matches JSON.parse(JSON.stringify())",
+      "author": "Copilot"
+    },
+    {
+      "sha": "90d10b3ebc6c82e63350b57262e7d1c2fe153aef",
+      "message": "Store: JSON literal behaves as JSON.parse(JSON.stringify())",
+      "author": "Copilot"
+    },
+    {
+      "sha": "7a0b27819ea24a6d3cb725287108e1151ef47e93",
+      "message": "Store: use propertyValueSchema output for rest properties of node",
+      "author": "Copilot"
+    },
+    {
+      "sha": "793ceec62e38b1266bc2a447cdba342fc274a91c",
+      "message": "Store: consume readonly structures via `new ReadonlyMap()` etc. instead of `createReadonlyX()`",
+      "author": "Copilot"
+    },
+    {
+      "sha": "9149acbf169d9da6c94b5439bb5c691fd721415a",
+      "message": "Store: rename ReadonlyX structures to FrozenX to avoid clashing with built-in types",
+      "author": "Copilot"
+    },
+    {
+      "sha": "3bae1ec59c546c7667cf6f66b62753630b92766b",
+      "message": "Move DLJS to different entry, fix default entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "ed7a5bb100aef053c978687defb6e12c38ff8f3a",
+      "message": "Plan: drop exported isFrozenMap",
+      "author": "Copilot"
+    },
+    {
+      "sha": "a0ccd0bf693b6f2678e8160a5b640f79b0515b92",
+      "message": "Structure entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "5e89f3cfe1660e16c8f681f669ed01a0c2b790de",
+      "message": "Store: add adopt, pending, and delete parent benchmarks",
+      "author": "Copilot"
+    },
+    {
+      "sha": "40f24b32bcb60ed27177cef2b4ea008118bc5c2e",
+      "message": "Store: keep node changes in ReadWriteNode drafts, build each node once per transaction",
+      "author": "Copilot"
+    },
+    {
+      "sha": "430cad0139c86f44d7a8bddcb466d013b61472f0",
+      "message": "Store: createNode returns unfrozen node, freezeNode freezes in place",
+      "author": "Copilot"
+    },
+    {
+      "sha": "96b9867a0263b4f0e24c7ce6100ca1e14bbfb506",
+      "message": "Store: benchmark unfrozen createNode",
+      "author": "Copilot"
+    },
+    {
+      "sha": "d49baebbac1e84bdbd12d0567a8ae7a622bf350c",
+      "message": "Store: move pending parts check to assertNoPendingParts",
+      "author": "Copilot"
+    },
+    {
+      "sha": "4ca1d9988d864801d4334272b75a714228e9fe0f",
+      "message": "Store: type rest schema of Node via BaseSchema cast instead of transform",
+      "author": "Copilot"
+    },
+    {
+      "sha": "be3f40d012979f9ec2dcc9b1d3b2f367342161c7",
+      "message": "Store: validate identifier with a single custom() schema",
+      "author": "Copilot"
+    },
+    {
+      "sha": "cb08bd76fbe0284d2ed42dbe27e57e8cff4db200",
+      "message": "Store: revert identifierSchema to union() and pipe() for readability",
+      "author": "Copilot"
+    },
+    {
+      "sha": "1a58dc44b1531a48d85b1368e7379371edb5f587",
+      "message": "Store: brand InternalNode with a non-exported symbol",
+      "author": "Copilot"
+    },
+    {
+      "sha": "462f39c49d935ddb55cd19e2d569af1cc1b56214",
+      "message": "Store: copy skip list links by spread, slice() of frozen arrays is slow",
+      "author": "Copilot"
+    },
+    {
+      "sha": "81766afffaba09680fc3c4bdf9d36cdff2d1290b",
+      "message": "Apply remaining changes",
+      "author": "Copilot"
+    },
+    {
+      "sha": "b6eece2f1bc9f54ea2c4b3e9afd2b94a17278229",
+      "message": "Store: reuse overlay changes as undo log in VersionedStorage commit",
+      "author": "Copilot"
+    },
+    {
+      "sha": "27c94bd0521f202645b6e5b277df453f4141aefc",
+      "message": "Add design choice",
+      "author": "compulim"
+    },
+    {
+      "sha": "5342d37ec0124365379f4aa3be944eccbb302d4c",
+      "message": "Add clarification",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/package.json",
+      "status": "modified",
+      "additions": 27,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/OPINIONS.md",
+      "status": "modified",
+      "additions": 109,
+      "deletions": 24,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/Store.test.ts",
+      "status": "added",
+      "additions": 2360,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/Store.ts",
+      "status": "modified",
+      "additions": 507,
+      "deletions": 33,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertNoPendingParts.ts",
+      "status": "added",
+      "additions": 22,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertNotSelfPart.ts",
+      "status": "added",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertReferencedNodesInGraph.ts",
+      "status": "added",
+      "additions": 25,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/benchmark.ts",
+      "status": "added",
+      "additions": 313,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/directLineJS.ts",
+      "status": "added",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/directLineJS/createDirectLineJSStore.test.ts",
+      "status": "renamed",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": "packages/store/src/createDirectLineStore.test.ts"
+    },
+    {
+      "path": "packages/store/src/directLineJS/createDirectLineJSStore.ts",
+      "status": "renamed",
+      "additions": 6,
+      "deletions": 5,
+      "previous_path": "packages/store/src/createDirectLineStore.ts"
+    },
+    {
+      "path": "packages/store/src/index.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/JSONValue.ts",
+      "status": "modified",
+      "additions": 144,
+      "deletions": 46,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/JSONValueSchema.test.ts",
+      "status": "modified",
+      "additions": 244,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/Node.ts",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/NodeIdentifier.test.ts",
+      "status": "added",
+      "additions": 38,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/NodeReference.test.ts",
+      "status": "added",
+      "additions": 48,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/NodeReference.ts",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/InternalNode.ts",
+      "status": "added",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/ReadWriteNode.test.ts",
+      "status": "added",
+      "additions": 234,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/ReadWriteNode.ts",
+      "status": "added",
+      "additions": 194,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/UnfrozenNode.ts",
+      "status": "added",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/createNode.test.ts",
+      "status": "added",
+      "additions": 350,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/createNode.ts",
+      "status": "added",
+      "additions": 55,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/dateCreatedTime.ts",
+      "status": "added",
+      "additions": 38,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/deepFreeze.test.ts",
+      "status": "added",
+      "additions": 215,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/deepFreeze.ts",
+      "status": "added",
+      "additions": 217,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/freezeNode.test.ts",
+      "status": "added",
+      "additions": 71,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/freezeNode.ts",
+      "status": "added",
+      "additions": 37,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/getPartIds.ts",
+      "status": "added",
+      "additions": 25,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/sortedChildIds.ts",
+      "status": "added",
+      "additions": 55,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure.ts",
+      "status": "added",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenMap.test.ts",
+      "status": "added",
+      "additions": 264,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenMap.ts",
+      "status": "added",
+      "additions": 185,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenNodeSet.test.ts",
+      "status": "added",
+      "additions": 88,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenNodeSet.ts",
+      "status": "added",
+      "additions": 77,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenSet.test.ts",
+      "status": "added",
+      "additions": 284,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenSet.ts",
+      "status": "added",
+      "additions": 184,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenSkipList.test.ts",
+      "status": "added",
+      "additions": 258,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenSkipList.ts",
+      "status": "added",
+      "additions": 260,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/MapView.ts",
+      "status": "added",
+      "additions": 33,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/SetView.ts",
+      "status": "added",
+      "additions": 66,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/SkipListView.ts",
+      "status": "added",
+      "additions": 90,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/VersionedStorage.test.ts",
+      "status": "added",
+      "additions": 158,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/VersionedStorage.ts",
+      "status": "added",
+      "additions": 312,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/tsup.config.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-10T02:32:48Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T02:32:19Z"
+    }
+  ],
+  "diff_sha256": "4a8dea6f6f7f4fde8b059b936ac23b986c5ea44a6ed968b94498b0dfc49d8982",
+  "shas_resolved": true
+}

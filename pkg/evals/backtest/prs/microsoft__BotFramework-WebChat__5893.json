@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-17T12:39:12Z",
   "merged_at": "2026-10-18T06:32:13Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-code-block-contrast",
   "head": "OEvgeny/fix-code-block-contrast",
   "base_sha": "a9b871b9601b9d49128b8e4ec3e8d1629491c41e",
   "head_sha": "2cfeeee0129dc4a51238045b3b16cc3410e5f0da",
@@ -471,5 +473,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-18T06:17:36Z"
     }
-  ]
+  ],
+  "diff_sha256": "b93c6a209e8455069a0d6ee03ae2c7f7c0e050ea411029ac3bcfdea4e959fd1b",
+  "shas_resolved": true
 }

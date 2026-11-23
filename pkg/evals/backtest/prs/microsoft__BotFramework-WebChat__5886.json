@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-17T07:23:35Z",
   "merged_at": "2026-10-17T08:18:32Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-5696-receipt-card-text-spacing",
   "head": "OEvgeny/fix-5696-receipt-card-text-spacing",
   "base_sha": "99a73f5704b88cd5b84ca081beef08c241c6feb6",
   "head_sha": "ef4f91faa8a92c1f3225baef01ba5d70edc34637",
@@ -472,5 +474,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-17T08:04:07Z"
     }
-  ]
+  ],
+  "diff_sha256": "8bb50e46d9027e39d14b64aa685f59ad9fe1a892cb5c4a5d67223b7764c60d4a",
+  "shas_resolved": true
 }

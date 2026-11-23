@@ -10,7 +10,9 @@
   },
   "created_at": "2026-01-26T11:59:49Z",
   "merged_at": "2026-01-28T08:35:45Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "feature/pull-based-capabilities-from-adapter",
   "head": "feature/pull-based-capabilities-from-adapter",
   "base_sha": "46a12f8a014a57e9ce699d1292716afae3c94da7",
   "head_sha": "7853b4bc3c172d763c1b43ecea43be61d2b21a16",
@@ -382,5 +384,7 @@
       "conclusion": "success",
       "completed_at": "2026-01-28T06:12:45Z"
     }
-  ]
+  ],
+  "diff_sha256": "9603422cbc92a7b60c7898ff093542a82c6b48e63a5d1715cd2bbe3304b5f921",
+  "shas_resolved": true
 }

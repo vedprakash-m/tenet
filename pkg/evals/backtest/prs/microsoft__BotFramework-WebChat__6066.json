@@ -1,0 +1,79 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6066,
+  "title": "Store: reject non-plain property value arrays and arrays with `toJSON()`",
+  "body": "## Changelog Entry\n\nNot needed: this is a follow-up to #6053, and that store doesn't ship yet (`no-changelog`).\n\n## Description\n\n`assertPlainNode()` already checked that nodes and the items inside property values are plain objects. It never checked the array that holds each property value, so two kinds of array slipped through:\n\n- **Arrays with `toJSON()`.** These were stored as their items, but `JSON.stringify` serializes them as whatever `toJSON()` returns, so the stored node no longer matches `JSON.parse(JSON.stringify(node))`.\n- **`Array` subclasses, `null`-prototype arrays and arrays from other realms.** valibot quietly copied these into a plain array instead of rejecting them, the way non-plain objects already are.\n\n```ts\n// Both now throw instead of being accepted\ntransaction.upsert('_:m-1', () => ({\n  '@id': '_:m-1',\n  '@type': new Set(['Message']),\n  text: Object.assign(['Hello'], { toJSON: () => ['Aloha'] }) // toJSON() is not supported…\n}));\n\ntransaction.upsert('_:m-1', () => ({\n  '@id': '_:m-1',\n  '@type': new Set(['Message']),\n  text: MyArray.from(['Hello']) // Property values must be plain arrays…\n}));\n```\n\n## Design\n\n- A property-value array is plain only if its prototype is exactly `Array.prototype`. That prototype has no `toJSON`, so only an own or added `toJSON` can trip that check.\n- `assertPlainObject()` still rejects arrays. An array can never be a node or an item in a property value, and accepting one would let an array carrying extra `@id` keys pass valibot's `object()`.\n- `Set` values (`@type`, `identifier`, `hasPart`, `isPartOf`) are not covered by this check.\n\n## Specific Changes\n\n- **`private/createDraftNode.ts`**\n   - Added `assertPlainArray()` and call it for every array property value in `assertPlainNode()`.\n   - Moved the `toJSON()` check into a shared `assertNoToJSON()`, used by both the object and array checks.\n- **`OPINIONS.md`**: documents the plain-array rule.\n- **Tests**\n   - **Behaviour change:** \"a frozen array with a subclass prototype\" used to be copied and now throws, so the case moved into a new \"should throw\" group.\n   - New cases throw for subclass, frozen subclass and `null`-prototype arrays, and for arrays with an own or inherited `toJSON()`.\n   - `Store.test.ts` checks that both kinds of array throw on upsert and leave the store unchanged.\n\n- [x] I have added tests and executed them locally\n- [x] ~I have added `.changelog/<PR#>-<slug>.md`~\n- [x] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\n- [x] ~Browser and platform compatibilities reviewed~\n- [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\n- [ ] Documents reviewed (docs, samples, live demo)\n- [x] ~Internationalization reviewed (strings, unit formatting)~\n- [x] ~`package.json` and `package-lock.json` reviewed~\n- [x] ~Security reviewed (no data URIs, check for nonce leak)~\n- [ ] Tests reviewed (coverage, legitimacy)",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-11-21T22:13:28Z",
+  "merged_at": "2026-11-21T23:17:51Z",
+  "base_ref": "feat-new-store",
+  "base": "feat-new-store",
+  "head_ref": "copilot/6053-check-plain-object-logic",
+  "head": "copilot/6053-check-plain-object-logic",
+  "base_sha": "d45739e9c8a09ec04670d2b8165c0376b4157295",
+  "head_sha": "7b0df194c15b01024064c55c9236177545e663f3",
+  "merge_sha": "abeb1953698144580270dd67a260b60f4ca03689",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-21T23:11:30Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "d61a2578343cc5983afa315496cd36b85e8c463c",
+      "message": "Require property value arrays to be plain arrays without toJSON()",
+      "author": "compulim"
+    },
+    {
+      "sha": "7b0df194c15b01024064c55c9236177545e663f3",
+      "message": "Merge branch 'feat-new-store' into copilot/6053-check-plain-object-logic",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/store/src/OPINIONS.md",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/Store.test.ts",
+      "status": "modified",
+      "additions": 31,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/createDraftNode.test.ts",
+      "status": "modified",
+      "additions": 63,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/createDraftNode.ts",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 5,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T23:11:52Z"
+    }
+  ],
+  "diff_sha256": "76866973f0c8562b54e7a2854cd1f559f69adbc37997e0c8830a5c147c881fd7",
+  "shas_resolved": true
+}

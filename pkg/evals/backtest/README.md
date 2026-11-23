@@ -6,9 +6,10 @@ This directory contains the frozen backtest data collection for the Owner's deci
 The collection has two WebChat groups:
 
 - **Agent:** every eligible WebChat pull request in the window whose author is the
-  `Copilot` coding agent (`login: Copilot`, `type: Bot`).
+  `Copilot` coding agent (`login: Copilot`, `type: Bot`), merged into any base branch.
 - **Human:** every other eligible WebChat pull request, ranked by
-  `sha256("tenet-backtest-2026-11-23:" + number)` in ascending order.
+  `sha256("tenet-backtest-2026-11-23:" + number)` in ascending order. Human cases
+  merge into the repository's default branch.
 
 The final cohort contains all eligible tenet-copilot pull requests, all WebChat agent
 pull requests, and enough top-ranked WebChat human pull requests to reach exactly 100
@@ -21,16 +22,22 @@ Prerequisites: Node.js 22 and an authenticated GitHub CLI (`gh auth login`).
 
 ```sh
 node pkg/evals/backtest/collect.mjs
+node pkg/evals/backtest/replay.mjs
 node pkg/evals/backtest/collect.mjs --verify
 ```
 
-Rerunning replaces the per-PR records and manifest in this directory. The GitHub API is read-only.
+Rerunning collection replaces the per-PR records and manifest. Replay clones are stored outside
+the repository at `Q:\Ved\Pers\backtest-clones` and fetched without a shallow clone. Replay
+replaces unresolved cohort cases from the reserves and writes the data sheet and gzip diffs.
+The GitHub API is read-only.
 
 ## Files
 
 - `cohort.yaml` is the manifest: sources, windows, eligibility, ranking seed and ranked candidate list.
 - `schema.json` describes the fields in each per-PR record.
 - `prs/<owner>__<repo>__<number>.json` is one pull request snapshot.
+- `diffs/<owner>__<repo>__<number>.diff.gz` is the gzip-compressed zero-context diff.
+- `data-sheet.csv` is the 100-row replay data sheet.
 
 ## PR fields
 
@@ -38,8 +45,10 @@ Rerunning replaces the per-PR records and manifest in this directory. The GitHub
 - `author`: author login, GitHub account type (`User` or `Bot`), and a best-effort
   `copilot_coding_agent` indicator based on the author identity and head branch.
 - `created_at`, `merged_at`: pull request timestamps.
-- `base`, `head`: base and head branch names.
+- `base`, `head`, `base_ref`, `head_ref`: base and head branch names and recorded refs.
 - `base_sha`, `head_sha`, `merge_sha`: revision identities.
+- `diff_sha256`: SHA-256 of the uncompressed replay diff.
+- `shas_resolved`: whether base, head, and merge SHAs all resolved in the replay clone.
 - `labels`: label names.
 - `draft_history`: available `converted_to_draft` and `ready_for_review` timeline events.
 - `commits`: SHA, first-line message, and author login or name.

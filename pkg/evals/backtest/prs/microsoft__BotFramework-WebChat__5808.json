@@ -10,7 +10,9 @@
   },
   "created_at": "2026-04-15T23:21:49Z",
   "merged_at": "2026-04-16T18:59:26Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "fix/stabilize-streaming-parser",
   "head": "fix/stabilize-streaming-parser",
   "base_sha": "482cb4cb2658f13d16e3cd9fc128e3d8010f10e9",
   "head_sha": "2d6cc8828c57e98a8392dc6d33622bea5f4602b6",
@@ -285,5 +287,7 @@
       "conclusion": "success",
       "completed_at": "2026-04-16T08:18:18Z"
     }
-  ]
+  ],
+  "diff_sha256": "a5479cd97496a7a069f4889695f92ff90fefd6762d88496462fdbedb795e9535",
+  "shas_resolved": true
 }

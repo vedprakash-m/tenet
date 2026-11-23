@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-09T21:11:07Z",
   "merged_at": "2026-11-09T21:11:57Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "safety-today",
   "head": "safety-today",
   "base_sha": "20337f646d41292a5d425cf376d91970f697fe0c",
   "head_sha": "cb104ac27899be38e55fcd2645cc641e4720ed70",
@@ -231,5 +233,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-09T21:10:04Z"
     }
-  ]
+  ],
+  "diff_sha256": "18704c93b6838f27e326c4d2c50a6a23ccba6f7de47872120b5aacd66b740fac",
+  "shas_resolved": true
 }

@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, unlink, writeFile } from "node:fs/promises";
+import { gunzipSync } from "node:zlib";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -104,6 +105,22 @@ async function listPulls(owner, repo) {
   return ghApiPages(`repos/${owner}/${repo}/pulls?state=all&per_page=100&sort=created&direction=asc`);
 }
 
+async function listCopilotAgentPulls() {
+  return ghJson([
+    "search",
+    "prs",
+    "--repo",
+    "microsoft/BotFramework-WebChat",
+    "--author",
+    "app/copilot-swe-agent",
+    "--merged",
+    "--limit",
+    "100",
+    "--json",
+    "number,author",
+  ]);
+}
+
 async function collectOne(owner, repo, summary) {
   const number = summary.number;
   try {
@@ -159,7 +176,9 @@ async function collectOne(owner, repo, summary) {
       },
       created_at: pr.created_at,
       merged_at: pr.merged_at,
+      base_ref: pr.base?.ref || null,
       base: pr.base?.ref || null,
+      head_ref: pr.head?.ref || null,
       head: pr.head?.ref || null,
       base_sha: pr.base?.sha || null,
       head_sha: headSha,
@@ -225,6 +244,7 @@ async function writeCohort(cohort) {
     "  - repo: Torus",
     "    cases: 0",
     '    reason: "no git history yet; first adopter after alpha.0 (L-0035)"',
+    'agent_group_rule: "Bot author login Copilot merged through refs/pulls/*/head into any base branch in the 2025-01-01 through 2026-11-22 window"',
     "windows:",
     `  tenet-copilot: all history through ${cohort.generated_at}`,
     `  BotFramework-WebChat: ${webchatWindowStart} through ${webchatWindowEnd}, inclusive`,
@@ -299,7 +319,7 @@ async function writeSchema() {
     type: "object",
     required: [
       "repo", "number", "title", "body", "author", "created_at", "merged_at",
-      "base", "head", "base_sha", "head_sha", "merge_sha", "labels",
+      "base", "head", "base_ref", "head_ref", "base_sha", "head_sha", "merge_sha", "labels",
       "draft_history", "commits", "files", "reviews", "check_runs",
     ],
     properties: {
@@ -320,9 +340,13 @@ async function writeSchema() {
       merged_at: { type: ["string", "null"] },
       base: { type: ["string", "null"] },
       head: { type: ["string", "null"] },
+      base_ref: { type: ["string", "null"] },
+      head_ref: { type: ["string", "null"] },
       base_sha: { type: ["string", "null"] },
       head_sha: { type: "string" },
       merge_sha: { type: "string" },
+      diff_sha256: { type: ["string", "null"] },
+      shas_resolved: { type: ["boolean", "null"] },
       labels: { type: "array", items: { type: "string" } },
       draft_history: {
         type: "array",
@@ -465,7 +489,11 @@ async function verify() {
   const cohortCases = parseCaseBlock("cohort_cases");
   const reserveCases = parseCaseBlock("reserve_cases");
   if (cohortCases.length !== 100) throw new Error(`cohort_cases=${cohortCases.length}; expected 100`);
-  if (reserveCases.length !== 20) throw new Error(`reserve_cases=${reserveCases.length}; expected 20`);
+  if (reserveCases.length > 20) throw new Error(`reserve_cases=${reserveCases.length}; expected at most 20`);
+
+  const diffsDir = path.join(__dirname, "diffs");
+  await mkdir(diffsDir, { recursive: true });
+  let diffTotalSize = 0;
 
   function fileName(repo, number) {
     const [owner, name] = repo.split("/", 2);
@@ -484,8 +512,42 @@ async function verify() {
     if (!names.includes(name)) throw new Error(`missing prs file: ${name}`);
   }
 
+  for (const item of [...cohortCases, ...reserveCases]) {
+    const [owner, name] = item.repo.split("/", 2);
+    const prName = `${owner}__${name}__${item.number}.json`;
+    const record = JSON.parse(await readFile(path.join(prsDir, prName), "utf8"));
+    if (typeof record.diff_sha256 !== "string") throw new Error(`${prName}: missing diff_sha256`);
+    if (typeof record.shas_resolved !== "boolean") throw new Error(`${prName}: missing shas_resolved`);
+    const diffName = `${owner}__${name}__${item.number}.diff.gz`;
+    let gz;
+    try {
+      gz = await readFile(path.join(diffsDir, diffName));
+    } catch {
+      throw new Error(`missing diff: ${diffName}`);
+    }
+    let diff;
+    try {
+      diff = gunzipSync(gz);
+    } catch {
+      throw new Error(`invalid gzip diff: ${diffName}`);
+    }
+    const hash = createHash("sha256").update(diff).digest("hex");
+    if (hash !== record.diff_sha256) throw new Error(`diff sha mismatch: ${diffName}`);
+    diffTotalSize += gz.length;
+  }
+  if (diffTotalSize >= 25 * 1024 * 1024) {
+    throw new Error(`diff directory size=${diffTotalSize} bytes; expected less than 25 MB`);
+  }
+
+  const dataSheet = await readFile(path.join(__dirname, "data-sheet.csv"), "utf8");
+  const dataSheetRows = dataSheet.split(/\r?\n/).filter((line) => line.length > 0);
+  if (dataSheetRows.length !== 101) {
+    throw new Error(`data-sheet rows=${Math.max(0, dataSheetRows.length - 1)}; expected 100`);
+  }
+
   const sourceCounts = {};
   const groupCounts = {};
+  let agentCohortCount = 0;
   for (const name of names) {
     const record = JSON.parse(await readFile(path.join(prsDir, name), "utf8"));
     sourceCounts[record.repo] = (sourceCounts[record.repo] || 0) + 1;
@@ -500,6 +562,9 @@ async function verify() {
 
   for (const name of cohortCases.map((item) => fileName(item.repo, item.number))) {
     if (name.includes("__tenet-copilot__")) groupCounts["tenet-copilot"] = (groupCounts["tenet-copilot"] || 0) + 1;
+    if (!name.startsWith("microsoft__")) continue;
+    const record = JSON.parse(await readFile(path.join(prsDir, name), "utf8"));
+    if (record.author.copilot_coding_agent) agentCohortCount += 1;
   }
   for (const name of names) {
     if (!name.startsWith("microsoft__BotFramework-WebChat__")) continue;
@@ -510,6 +575,8 @@ async function verify() {
     }
   }
   groupCounts["reserves"] = reserveCases.length;
+  if (agentCohortCount < 0) throw new Error(`webchat-agent cohort=${agentCohortCount}`);
+  console.log(`diff_total_bytes=${diffTotalSize}`);
 
   console.log(`verified_files=${names.length}`);
   console.log("cohort_cases=100");
@@ -564,17 +631,28 @@ async function main() {
 
   const agentCases = [];
   const humanCases = [];
+  const agentSearch = await listCopilotAgentPulls();
+  for (const summary of agentSearch) {
+    if (summary.author?.login !== "Copilot" || summary.author?.type !== "Bot") continue;
+    const result = await collectOne("microsoft", "BotFramework-WebChat", summary);
+    if (result.kind === "eligible" && inWebChatWindow(result.record.merged_at)) {
+      perSource["microsoft/BotFramework-WebChat"].eligible += 1;
+      agentCases.push({ repo: "microsoft/BotFramework-WebChat", number: summary.number, group: "webchat-agent" });
+    } else if (result.kind === "excluded") {
+      exclusions.push({ repo: "microsoft/BotFramework-WebChat", number: summary.number, reason: result.reason, detail: result.detail });
+      perSource["microsoft/BotFramework-WebChat"].excluded += 1;
+    }
+  }
+
+  const agentNumbers = new Set(agentCases.map((item) => item.number));
   const webchatPulls = await listPulls("microsoft", "BotFramework-WebChat");
   for (const summary of webchatPulls) {
     if (!summary.merged_at || summary.base?.ref !== "main" || !inWebChatWindow(summary.merged_at)) continue;
+    if (agentNumbers.has(summary.number)) continue;
     const result = await collectOne("microsoft", "BotFramework-WebChat", summary);
     if (result.kind === "eligible") {
       perSource["microsoft/BotFramework-WebChat"].eligible += 1;
-      if (isCopilotCodingAgent(result.record ? { user: { login: result.record.author.login, type: result.record.author.type } } : {})) {
-        agentCases.push({ repo: "microsoft/BotFramework-WebChat", number: summary.number, group: "webchat-agent" });
-      } else {
-        humanCases.push({ record: result.record, repo: "microsoft/BotFramework-WebChat", number: summary.number, group: "webchat-human" });
-      }
+      humanCases.push({ record: result.record, repo: "microsoft/BotFramework-WebChat", number: summary.number, group: "webchat-human" });
     } else {
       exclusions.push({ repo: "microsoft/BotFramework-WebChat", number: summary.number, reason: result.reason, detail: result.detail });
       perSource["microsoft/BotFramework-WebChat"].excluded += 1;
@@ -589,6 +667,7 @@ async function main() {
   });
 
   const fixedCases = [...copilotCases, ...agentCases];
+  if (agentCases.length !== 16) throw new Error(`webchat-agent eligible=${agentCases.length}; expected 16`);
   const humanCohortCount = cohortLimit - fixedCases.length;
   if (humanCohortCount < 0) throw new Error(`fixed cohort cases=${fixedCases.length}; exceeds 100`);
   const humanCohort = humanCases.slice(0, humanCohortCount);
@@ -632,7 +711,6 @@ async function main() {
     reserveCases: reserveManifestCases,
   });
 
-  await verify();
   console.log(`generated_at=${generatedAt}`);
 }
 

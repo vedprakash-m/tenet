@@ -10,7 +10,9 @@
   },
   "created_at": "2025-09-25T13:08:15Z",
   "merged_at": "2025-09-26T20:40:25Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "feat-fat-module-fluent-theme",
   "head": "feat-fat-module-fluent-theme",
   "base_sha": "1898c00b3b47fde47cddf50bcc4259e85f6779ce",
   "head_sha": "ef2a684c93a59e69e75e9bbe763c98e3f3233857",
@@ -295,5 +297,7 @@
       "submitted_at": "2025-09-26T20:06:29Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "7a32a2e61dd6365f11429009ebab308b6c34d9e5ee435ee916101a7766453320",
+  "shas_resolved": true
 }

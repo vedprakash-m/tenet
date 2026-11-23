@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-05T17:00:17Z",
   "merged_at": "2026-11-05T19:53:24Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/bump-samples-webchat-nightly",
   "head": "OEvgeny/bump-samples-webchat-nightly",
   "base_sha": "a2d0be51567352b339e901994ebc037dee9bfba2",
   "head_sha": "6c855c316608804c487890068b232cf2ef67ac68",
@@ -361,5 +363,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-05T19:25:07Z"
     }
-  ]
+  ],
+  "diff_sha256": "2e064a2d00848edc7086625010266ed3bbc8ea4a54e255861e0ed805202daef7",
+  "shas_resolved": true
 }

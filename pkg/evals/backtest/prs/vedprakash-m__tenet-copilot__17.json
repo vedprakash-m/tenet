@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-10T01:18:34Z",
   "merged_at": "2026-11-10T01:29:44Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "dirty-choices",
   "head": "dirty-choices",
   "base_sha": "bca2092b780692358f6447d422a53e2da1259c57",
   "head_sha": "feb46b9eedf33baa64a1f46ebad42aa882b24535",
@@ -183,5 +185,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-10T00:46:46Z"
     }
-  ]
+  ],
+  "diff_sha256": "7f766127622c602717fe9d204be978cab897e2eb2cb74ef083837688b6cad31e",
+  "shas_resolved": true
 }

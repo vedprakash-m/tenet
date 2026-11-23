@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-21T23:22:51Z",
   "merged_at": "2026-10-22T06:26:03Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-4940-markdown-heading-levels",
   "head": "OEvgeny/fix-4940-markdown-heading-levels",
   "base_sha": "39e165e164d6888a6ec7e6f240dd945bfe865187",
   "head_sha": "06382fa93d06b760fda277f6c54220632c3ca4b7",
@@ -450,5 +452,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-22T06:08:06Z"
     }
-  ]
+  ],
+  "diff_sha256": "33dd4e25666b3ec6ce147654e93374bb2e3416f39a4095b61a87389d9342e758",
+  "shas_resolved": true
 }

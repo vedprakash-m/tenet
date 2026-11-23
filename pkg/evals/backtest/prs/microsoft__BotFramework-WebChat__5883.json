@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-17T04:29:17Z",
   "merged_at": "2026-10-17T05:41:52Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/dev-cleanup-min-age-finite",
   "head": "OEvgeny/dev-cleanup-min-age-finite",
   "base_sha": "be8266aa16e06e62b3d0a3e22ed605d26950f306",
   "head_sha": "98472ab8cb2019767d256e3a587463f27bf1660c",
@@ -216,5 +218,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-17T04:29:59Z"
     }
-  ]
+  ],
+  "diff_sha256": "a1f4adda1b06bbd6cc3a9d5aa72bd293475ed191ce868040b00837c0722e31cf",
+  "shas_resolved": true
 }

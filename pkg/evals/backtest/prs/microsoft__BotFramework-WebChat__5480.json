@@ -10,7 +10,9 @@
   },
   "created_at": "2025-05-16T20:36:17Z",
   "merged_at": "2025-05-19T22:49:07Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "fix-feedback-form-with-copy-button",
   "head": "fix-feedback-form-with-copy-button",
   "base_sha": "4c7400adaede2a427af6d46a53f631d27e98663e",
   "head_sha": "bed66d7e04f1dc7bf4d451fffb13e2c177b9a428",
@@ -1369,5 +1371,7 @@
       "submitted_at": "2025-05-19T22:47:11Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "ff28279c5683719fedf5494580b69898095ccef6b810d44a4ae4153d71fbd5fd",
+  "shas_resolved": true
 }

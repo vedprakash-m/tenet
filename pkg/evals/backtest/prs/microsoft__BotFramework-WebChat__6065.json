@@ -1,0 +1,289 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6065,
+  "title": "Convert `deepFreeze` `Memo` from a type to a class",
+  "body": "## Changelog Entry\n\nNone. This is an internal refactor of an unreleased package, so it should get the `no-changelog` label.\n\n## Description\n\nFollow-up to #6053. In `packages/store/src/private/deepFreeze.ts`, `Memo` is now a class instead of a plain object type with two free helper functions. Behavior is unchanged.\n\n> This branch is stacked on `feat-new-store` (#6053). It should target that branch, or be rebased after #6053 merges.\n\n## Design\n\n`Memo` now owns both of its stacks and the lookup through private fields. Before this change, `deepFreezeWithMemo()` read `memo.values` and `memo.frozenValues` directly and checked the `IN_PROGRESS` marker itself. That logic is now inside the class.\n\n`get()` returns `undefined` when the value is not an ancestor. A real ancestor never maps to a falsy value: it maps to either a frozen object/array or `IN_PROGRESS`. So a truthy check at the call site is enough.\n\n```ts\nconst ancestorFrozenValue = memo.get(value); // throws on a recursive Set\n\nif (ancestorFrozenValue) {\n  return ancestorFrozenValue;\n}\n```\n\n## Specific Changes\n\n- **`Memo` class**\n   - Uses the private fields `#frozenValues` and `#values`. Linear search over arrays is kept.\n   - `push(value, frozenValue)` / `pop()` replace `pushAncestor()` / `popAncestor()`.\n   - `get(value)` returns the ancestor's frozen value, or `undefined` if the value is not an ancestor. It still throws `TypeError('Recursive Set cannot be frozen')` when the ancestor is a `Set` that is still being frozen.\n- **Call sites**\n   - `deepFreezeArray()`, `deepFreezeObject()`, and the `Set` branch of `deepFreezeWithMemo()` call `memo.push()` / `memo.pop()`.\n   - `deepFreeze()` creates the memo with `new Memo()`.\n\n- [ ] ~I have added tests and executed them locally~ (existing `deepFreeze` tests cover this; no new behavior)\n- [ ] ~I have added `.changelog/<PR#>-<slug>.md`~\n- [ ] ~I have updated documentation~\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\n- [ ] ~Browser and platform compatibilities reviewed~\n- [ ] ~CSS styles reviewed (minimal rules, no `z-index`)~\n- [ ] ~Documents reviewed (docs, samples, live demo)~\n- [ ] ~Internationalization reviewed (strings, unit formatting)~\n- [ ] ~`package.json` and `package-lock.json` reviewed~\n- [ ] ~Security reviewed (no data URIs, check for nonce leak)~\n- [ ] Tests reviewed (coverage, legitimacy)",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-11-21T22:01:30Z",
+  "merged_at": "2026-11-21T22:52:03Z",
+  "base_ref": "feat-new-store",
+  "base": "feat-new-store",
+  "head_ref": "copilot/6053-convert-deepfreeze-to-class",
+  "head": "copilot/6053-convert-deepfreeze-to-class",
+  "base_sha": "5a97d65760ceb3c79802aef6e5be6c9a312f4912",
+  "head_sha": "3d85d07def7989dce9f82b198b0f733cbb29ebc6",
+  "merge_sha": "d45739e9c8a09ec04670d2b8165c0376b4157295",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-21T22:02:32Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "3d85d07def7989dce9f82b198b0f733cbb29ebc6",
+      "message": "Convert deepFreeze Memo from type to class",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/store/src/private/deepFreeze.ts",
+      "status": "modified",
+      "additions": 42,
+      "deletions": 27,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-21T22:12:22Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:22:43Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:22:21Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:17:00Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:20:11Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:20:56Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:21:38Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:21:40Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:18:59Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:19:31Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:22:14Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:21:17Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:21:52Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:21:23Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:19:12Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:19:35Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:21:51Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:20:55Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:21:37Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:20:21Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:20:40Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:13:07Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:12:55Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:12:51Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:12:17Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:12:15Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:13:11Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:13:04Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:12:19Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:12:19Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:12:17Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:12:36Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:12:12Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:15:13Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:14:21Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "failure",
+      "completed_at": "2026-11-21T22:15:51Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "failure",
+      "completed_at": "2026-11-21T22:07:19Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:11:12Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:05:50Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:05:59Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:07:28Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:08:19Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:07:04Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:07:22Z"
+    },
+    {
+      "name": "copilot",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:16:50Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:02:23Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:03:13Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T22:02:18Z"
+    }
+  ],
+  "diff_sha256": "d32cdd6ff2a98f33eff89c7293f1b6f12b4fe86aa707eec531e2816f7992183b",
+  "shas_resolved": true
+}

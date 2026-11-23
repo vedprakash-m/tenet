@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-22T10:59:23Z",
   "merged_at": "2026-10-22T18:16:33Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/dev-selected-action-tests",
   "head": "OEvgeny/dev-selected-action-tests",
   "base_sha": "00137fa1367766b7656e6592039f6a5ee7400c59",
   "head_sha": "15e1ca8dfecd2b7567611ec51045d525f37e6b3c",
@@ -244,5 +246,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-22T11:05:39Z"
     }
-  ]
+  ],
+  "diff_sha256": "645cbe8ce6f11b2b56166e8e29e421441ff1b98470c3e811c74e952c79ece5e1",
+  "shas_resolved": true
 }

@@ -10,7 +10,9 @@
   },
   "created_at": "2025-09-19T03:13:16Z",
   "merged_at": "2025-09-19T03:26:21Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "fix-npm-start",
   "head": "fix-npm-start",
   "base_sha": "eb439cc36d6449a0ee21654ab84956fda00dd4de",
   "head_sha": "bcb88c1af47bfc633b67dcfb5c5589c619f45087",
@@ -52,5 +54,7 @@
       "submitted_at": "2025-09-19T03:15:11Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "6e02530918b4a0e149d13c3d044025ec203c504a88e36c3455250404fa281bee",
+  "shas_resolved": true
 }

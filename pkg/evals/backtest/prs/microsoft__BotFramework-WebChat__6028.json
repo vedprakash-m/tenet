@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-07T00:20:35Z",
   "merged_at": "2026-11-08T23:16:15Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-css-modules-avatars",
   "head": "OEvgeny/fix-css-modules-avatars",
   "base_sha": "00cb1d3023f68d1b24341eee01fb3614e506ab6a",
   "head_sha": "f40a0b9f436e8cf23af548c2ba7ade0c18dc2e6d",
@@ -406,5 +408,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-08T23:01:14Z"
     }
-  ]
+  ],
+  "diff_sha256": "f4261a7eb100c1a019bb0ba2bceadb6bc2e2934f05265a21a4ceabed9b6ab2c4",
+  "shas_resolved": true
 }

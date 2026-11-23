@@ -10,7 +10,9 @@
   },
   "created_at": "2026-03-27T01:57:57Z",
   "merged_at": "2026-03-27T03:09:02Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "feat-audit-fix",
   "head": "feat-audit-fix",
   "base_sha": "d004a157ab1f1d3b58d3238dcff25bd33b2f4bf5",
   "head_sha": "a080b9c806605576c4b19a0dd357627c7daafe37",
@@ -245,5 +247,7 @@
       "conclusion": "success",
       "completed_at": "2026-03-27T02:03:34Z"
     }
-  ]
+  ],
+  "diff_sha256": "6cc1639bc5ae0bf020b465dbc521499b03daf86d460031adbbfd93ff58242ada",
+  "shas_resolved": true
 }

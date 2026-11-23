@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-22T19:36:28Z",
   "merged_at": "2026-10-28T23:23:29Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-aria-notify-transport",
   "head": "OEvgeny/fix-aria-notify-transport",
   "base_sha": "0178f8d4142386ebe6d9916415b8f11e4c75f014",
   "head_sha": "03947e7bf86b3075879262643def14edf45bfcf6",
@@ -535,5 +537,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-28T23:09:50Z"
     }
-  ]
+  ],
+  "diff_sha256": "5f75dfb99292af0acd5434c9e3f05cae52e71c42ea6fb252ec5a66d0f1d48c08",
+  "shas_resolved": true
 }

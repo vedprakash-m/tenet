@@ -10,7 +10,9 @@
   },
   "created_at": "2026-02-19T09:13:24Z",
   "merged_at": "2026-03-06T06:54:17Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "directline-null-check-capabilities",
   "head": "directline-null-check-capabilities",
   "base_sha": "fb2716830fec0abd0e7516ee63d76e8a1ee72383",
   "head_sha": "097baad35a3fa8db93719bb8bbc4fa83e1b3a791",
@@ -211,5 +213,7 @@
       "conclusion": "success",
       "completed_at": "2026-03-06T06:22:16Z"
     }
-  ]
+  ],
+  "diff_sha256": "d78254126c1d88565aac4723083db3d67674f0e07cceefbedfb27626375e2ac9",
+  "shas_resolved": true
 }

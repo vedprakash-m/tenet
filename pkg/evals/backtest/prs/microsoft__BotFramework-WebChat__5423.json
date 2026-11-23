@@ -10,7 +10,9 @@
   },
   "created_at": "2025-02-10T23:38:53Z",
   "merged_at": "2025-02-11T23:39:29Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "feat/fluent-loader",
   "head": "feat/fluent-loader",
   "base_sha": "ae4a98f8913d13e750988fba8a0bd37f6e095701",
   "head_sha": "4675db0619f74c79964d3fc4e68ff0d851a4c4df",
@@ -143,5 +145,7 @@
       "submitted_at": "2025-02-11T00:48:00Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "1865704fd0decacc3fd300da308c88a34ad900e996b742fc61cbc449aed889d8",
+  "shas_resolved": true
 }

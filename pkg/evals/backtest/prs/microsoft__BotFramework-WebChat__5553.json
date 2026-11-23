@@ -10,7 +10,9 @@
   },
   "created_at": "2025-08-19T15:12:29Z",
   "merged_at": "2025-09-09T20:33:23Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "feat/part-grouping-final",
   "head": "feat/part-grouping-final",
   "base_sha": "c87202f0d44927f26b3778afdaa947edbd29da18",
   "head_sha": "85456a0d625bcaf046a75bd2043cbb241e6591d4",
@@ -2803,5 +2805,7 @@
       "submitted_at": "2025-09-09T20:05:34Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "719483225953b7b9381c8d3faa9eb4fa92344181f6067657e795bef076da2fb7",
+  "shas_resolved": true
 }

@@ -10,7 +10,9 @@
   },
   "created_at": "2025-05-01T10:26:22Z",
   "merged_at": "2025-05-05T18:21:44Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "feat-multi-dimension-grouping",
   "head": "feat-multi-dimension-grouping",
   "base_sha": "5e127987c6ae2a5e8a1c6dd9eace8bffc74a600e",
   "head_sha": "907a74ca5ca2d663326ec78b3b813ef2b4effbfa",
@@ -1746,5 +1748,7 @@
       "submitted_at": "2025-05-05T18:21:40Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "diff_sha256": "60730289fa278b343a10ba47e5145aef8e73a714c1177b8023f540ed1683177e",
+  "shas_resolved": true
 }

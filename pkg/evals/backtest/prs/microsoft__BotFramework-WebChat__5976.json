@@ -10,7 +10,9 @@
   },
   "created_at": "2026-10-28T22:33:46Z",
   "merged_at": "2026-10-28T23:39:34Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-fluent-theme-require-export",
   "head": "OEvgeny/fix-fluent-theme-require-export",
   "base_sha": "78d436aa42a4ebf3061aceb087709198f8d9d483",
   "head_sha": "fdc6a26757f3130cc4b9b72f69c028903037e0ad",
@@ -240,5 +242,7 @@
       "conclusion": "success",
       "completed_at": "2026-10-28T23:24:42Z"
     }
-  ]
+  ],
+  "diff_sha256": "9ecbee36df46decb12386c43a630743cdb903ad75c3a3510f0d93bdd1e3b4b01",
+  "shas_resolved": true
 }

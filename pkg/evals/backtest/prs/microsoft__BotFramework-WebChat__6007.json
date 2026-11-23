@@ -10,7 +10,9 @@
   },
   "created_at": "2026-11-03T04:42:48Z",
   "merged_at": "2026-11-04T00:20:21Z",
+  "base_ref": "main",
   "base": "main",
+  "head_ref": "OEvgeny/fix-file-attachment-no-name",
   "head": "OEvgeny/fix-file-attachment-no-name",
   "base_sha": "4f8dc5979b65a756842c739f3a4a8db70e6e1632",
   "head_sha": "5e16a6c1c44a113b169a069fb47b8babddeb226e",
@@ -471,5 +473,7 @@
       "conclusion": "success",
       "completed_at": "2026-11-03T23:52:30Z"
     }
-  ]
+  ],
+  "diff_sha256": "c070201ad108b190935a205b1c6ccef1b4e0663ad91ed7c2ba8b3dceb008885c",
+  "shas_resolved": true
 }
