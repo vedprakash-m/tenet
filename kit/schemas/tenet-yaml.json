@@ -1,0 +1,356 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/tenet-yaml.json",
+  "title": "Tenet governance file",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^x-": {}
+  },
+  "properties": {
+    "standard": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kit_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "records": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "level": {
+      "enum": [
+        "observe",
+        "protect",
+        "verify",
+        "assure"
+      ]
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {},
+        "^(?!x-).+": {
+          "enum": [
+            "observe",
+            "advise",
+            "enforce"
+          ]
+        }
+      }
+    },
+    "specs": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "id_prefix": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*$"
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "level": {
+                "enum": [
+                  "L0",
+                  "L1",
+                  "L2",
+                  "L3",
+                  "L4"
+                ]
+              },
+              "owner": {
+                "type": "string",
+                "minLength": 1
+              },
+              "budget": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "path",
+              "level"
+            ]
+          }
+        }
+      }
+    },
+    "owners": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^x-": {}
+              },
+              "properties": {
+                "public_key": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "added": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "revoked": {
+                  "type": "string",
+                  "format": "date"
+                }
+              },
+              "required": [
+                "public_key",
+                "added"
+              ]
+            }
+          },
+          "forge_accounts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {},
+        "^(?!x-).+": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^x-": {}
+          },
+          "properties": {
+            "setup": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "run": {
+              "type": "string",
+              "minLength": 1
+            },
+            "report": {
+              "enum": [
+                "junit",
+                "ctrf",
+                "go-test-json",
+                "jest-json",
+                "none"
+              ]
+            },
+            "report_from": {
+              "enum": [
+                "file",
+                "stdout"
+              ]
+            },
+            "report_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "owner": {
+              "type": "string",
+              "minLength": 1
+            },
+            "timeout_minutes": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "run",
+            "report"
+          ]
+        }
+      }
+    },
+    "ci": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "mode": {
+          "enum": [
+            "tenet-workflow",
+            "existing-job"
+          ]
+        },
+        "test_workflow": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "mode"
+      ]
+    },
+    "stop": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "failing_evaluations": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "failing_evaluations"
+      ]
+    },
+    "onboard": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "exclude": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "agents": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "working_rules": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "working_rules"
+      ]
+    },
+    "protect": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "areas": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {},
+        "^(?!x-).+": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^x-": {}
+          },
+          "properties": {
+            "paths": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "owners": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "decision_rights": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "wip": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

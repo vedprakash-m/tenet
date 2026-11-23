@@ -1,0 +1,72 @@
+{
+  "evaluation_id": "0123456789abcdef",
+  "tested": {
+    "commit": "0123456789abcdef0123456789abcdef01234567",
+    "kind": "merge-candidate",
+    "head": "0123456789abcdef0123456789abcdef01234567",
+    "base": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "acceptance_digest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "requirements": [
+    {
+      "id": "R-12",
+      "excerpt": "Retry once.",
+      "state": "blessed",
+      "recorded": "signed",
+      "flags": [],
+      "why": "implements",
+      "tests": {
+        "expected": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "not_run": 0
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "AB-1",
+      "text": "one retry after a timeout",
+      "result": "passed",
+      "coverage": "confirmed",
+      "tests": {
+        "expected": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "not_run": 0
+      },
+      "names": [
+        "retries once [AB-1]"
+      ],
+      "authorship": "written-here"
+    }
+  ],
+  "tests": {
+    "report": "ok",
+    "total": 1,
+    "passed": 1,
+    "failed": 0,
+    "skipped": 0,
+    "failing": []
+  },
+  "weakening": {
+    "found": false,
+    "by": [],
+    "not_checked": []
+  },
+  "workflow_changed": false,
+  "protected": [],
+  "blessings_changed": [],
+  "deltas": [],
+  "rules": [],
+  "badge": "verified-on-ci",
+  "why": [
+    {
+      "text": "The case passed on the tested commit.",
+      "class": "checked"
+    }
+  ],
+  "degraded": []
+}

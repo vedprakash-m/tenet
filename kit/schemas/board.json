@@ -1,0 +1,492 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/board.json",
+  "title": "Tenet board",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^x-": {}
+  },
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "read": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "main": {
+          "type": "string",
+          "minLength": 1
+        },
+        "branches": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "records": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "main",
+        "branches",
+        "records"
+      ]
+    },
+    "pack": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "phases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "specs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1
+          },
+          "level": {
+            "enum": [
+              "L0",
+              "L1",
+              "L2",
+              "L3",
+              "L4"
+            ]
+          },
+          "state": {
+            "enum": [
+              "draft",
+              "blessed",
+              "rejected",
+              "deferred"
+            ]
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "recorded": {
+            "enum": [
+              "self",
+              "forge",
+              "signed"
+            ]
+          }
+        },
+        "required": [
+          "path",
+          "section",
+          "level",
+          "state",
+          "flags",
+          "recorded"
+        ]
+      }
+    },
+    "pending_blessings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "section": {
+            "type": "string",
+            "minLength": 1
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "open_questions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "path",
+          "section",
+          "conflicts",
+          "open_questions"
+        ]
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lane": {
+            "enum": [
+              "express",
+              "quick",
+              "careful",
+              "deep"
+            ]
+          },
+          "station": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          },
+          "branch": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "age": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "replay": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lease": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "next_actions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^x-": {}
+              },
+              "properties": {
+                "who": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "action": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "reason": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "command": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "dispatch": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "who",
+                "action",
+                "reason",
+                "command"
+              ]
+            }
+          },
+          "claims": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "properties": {
+              "applicable": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "satisfied": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "waived": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "unsatisfied": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "applicable",
+              "satisfied",
+              "waived",
+              "unsatisfied"
+            ]
+          },
+          "guarantee": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cost": {
+            "type": "object",
+            "additionalProperties": false,
+            "patternProperties": {
+              "^x-": {}
+            },
+            "properties": {
+              "amount": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "unit": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "known",
+                  "estimated",
+                  "unavailable"
+                ]
+              },
+              "source": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "amount",
+              "unit",
+              "status",
+              "source"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "lane",
+          "station",
+          "status",
+          "branch",
+          "age",
+          "depends_on",
+          "replay",
+          "lease",
+          "next_actions",
+          "claims",
+          "guarantee",
+          "cost"
+        ]
+      }
+    },
+    "decision_queue": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "review_queue": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "campaigns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "active_runs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "areas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "patternProperties": {
+          "^x-": {}
+        },
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "owner": {
+            "type": "string",
+            "minLength": 1
+          },
+          "promises": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "health": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "readiness": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quarantined": {
+            "type": "boolean"
+          },
+          "waivers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "name",
+          "owner",
+          "promises",
+          "health",
+          "readiness",
+          "quarantined",
+          "waivers"
+        ]
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "flow": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {}
+    },
+    "escalations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "as_of",
+    "read",
+    "specs",
+    "pending_blessings"
+  ]
+}

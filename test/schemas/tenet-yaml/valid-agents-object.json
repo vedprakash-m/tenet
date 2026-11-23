@@ -1,0 +1,6 @@
+{
+  "agents": {
+    "working_rules": "tenet/working-rules.md",
+    "x-review": true
+  }
+}

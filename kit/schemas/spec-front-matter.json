@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/spec-front-matter.json",
+  "title": "Specification front matter",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^x-": {}
+  },
+  "properties": {
+    "tenet": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "spec": {
+          "const": 1
+        },
+        "doc": {
+          "enum": [
+            "intent",
+            "vision",
+            "requirements",
+            "design",
+            "experience",
+            "plan",
+            "prd",
+            "tech-spec",
+            "ux-spec"
+          ]
+        },
+        "level": {
+          "enum": [
+            "L0",
+            "L1",
+            "L2",
+            "L3",
+            "L4"
+          ]
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "drafted_from": {
+          "type": "string",
+          "minLength": 1
+        },
+        "drafted_at_rev": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "spec",
+        "doc",
+        "level",
+        "version",
+        "owner",
+        "drafted_from",
+        "drafted_at_rev"
+      ]
+    },
+    "sections": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {},
+        "^(?!x-).+": {
+          "type": "object",
+          "additionalProperties": false,
+          "patternProperties": {
+            "^x-": {}
+          },
+          "properties": {
+            "level": {
+              "enum": [
+                "L0",
+                "L1",
+                "L2",
+                "L3",
+                "L4"
+              ]
+            },
+            "state": {
+              "enum": [
+                "draft",
+                "blessed",
+                "rejected",
+                "deferred"
+              ]
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "blessed_digest": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "blessed_at_rev": {
+              "type": "string",
+              "minLength": 1
+            },
+            "anchors": {
+              "type": "object",
+              "additionalProperties": false,
+              "patternProperties": {
+                "^x-": {},
+                "^(?!x-).+": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                }
+              }
+            },
+            "applies_to": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "blessed_copy": {
+              "type": "string",
+              "minLength": 1
+            },
+            "flags": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "edited",
+                  "sources-changed"
+                ]
+              },
+              "uniqueItems": true
+            },
+            "recorded": {
+              "enum": [
+                "self",
+                "forge",
+                "signed"
+              ]
+            },
+            "owner": {
+              "type": "string",
+              "minLength": 1
+            },
+            "blessed_by": {
+              "type": "string",
+              "minLength": 1
+            },
+            "blessed_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": [
+            "state",
+            "digest",
+            "flags",
+            "recorded"
+          ]
+        }
+      }
+    }
+  },
+  "required": [
+    "tenet",
+    "sections"
+  ]
+}

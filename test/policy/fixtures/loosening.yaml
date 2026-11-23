@@ -1,0 +1,4 @@
+standard: 0.1.0-alpha.0
+level: observe
+rules:
+  tests-not-weakened: observe

@@ -1,0 +1,27 @@
+{
+  "run": {
+    "id": "20261123-1",
+    "attempt": 1,
+    "workflow": "test",
+    "job": "test",
+    "index": 0
+  },
+  "pr": 42,
+  "tested": {
+    "commit": "0123456789abcdef0123456789abcdef01234567",
+    "kind": "merge-candidate",
+    "head": "0123456789abcdef0123456789abcdef01234567",
+    "base": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "checks": [
+    {
+      "name": "test",
+      "exit_code": 0,
+      "outcome": "passed",
+      "duration_ms": 120,
+      "report": "reports/test.xml",
+      "report_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "inputs": []
+    }
+  ]
+}

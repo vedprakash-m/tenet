@@ -1,10 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://tenet.dev/schemas/packet/0.json",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/packet.json",
   "title": "Tenet change packet (packet.yaml)",
   "description": "Draft 0.1. Standard §4.4. The host in $id is provisional (CP-0002).",
   "type": "object",
   "additionalProperties": false,
+  "patternProperties": {"^x-": {}},
   "required": ["id", "title", "type", "stage", "status", "history"],
   "properties": {
     "id": {"type": "string", "pattern": "^CP-\\d{4}$"},

@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "inventory": ".tenet/onboard/inventory.json",
+  "skill": "draft-specs",
+  "project_kind": "library",
+  "views": [
+    "vision",
+    "requirements",
+    "design",
+    "experience",
+    "plan"
+  ],
+  "layout": "separate",
+  "units": [
+    {
+      "id": "core",
+      "paths": [
+        "src/core/**"
+      ],
+      "views": [
+        "design"
+      ]
+    }
+  ],
+  "question_limit": 10,
+  "output": {
+    "paths": [
+      "tenet/specs/intent.md"
+    ]
+  },
+  "rules": [
+    "no intent from code alone",
+    "every observed or documented statement cites",
+    "never resolve a conflict",
+    "never bless"
+  ],
+  "x-source": "fixture"
+}
