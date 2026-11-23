@@ -77,3 +77,25 @@ Applied after Round 3 without running a fourth trial round; Round 3 outputs are 
 ## Remaining Open / Out-of-Scope Proposals
 
 Proposals for files outside Track 2's write boundary (`tech-spec.md` §§ 2, 10, 15 and `plan.md` §1 #5 / §3 `CP-0058`) are recorded in [escalations/proposals.md](../escalations/proposals.md).
+
+---
+
+## Round 4 (`r4-a` / `r4-b` — with `messages.md`)
+
+| Metric | Round 4 (`r4-a` / `r4-b`) |
+|---|---|
+| Session unit tests | 14 pass / 12 pass (0 fail) |
+| `tsc --noEmit` errors | 0 / 0 |
+| `QUESTIONS.md` items | 9 / 13 |
+| `// INVENTED:` markers | 9 / 17 (10 `reports.ts` + 7 `specs.ts`) |
+| Shared fixture errors | 0 / 0 |
+| `compare.mjs r4` | **100% byte-identical (`identical=true`, `25,818B == 25,818B`)** across all 6 groups (`reports`, `acceptance`, `specs`, `moved`, `renamed`, `pr`) |
+
+### Round 4 -> Round 5 Spec Fixes (Closing All `r4-a`/`r4-b` Inventions)
+- `tenet/specs/tech-spec/contracts.md`: broadened `tenet_` left boundary in §1 to `(?:^|[^A-Za-z0-9]|_)` (`suite > tenet_AB_1`); in §2 pinned `parseAcceptance` `item.text` trimming vs whitespace-collapsed digest, `implements` deduping/sorting in digest, and `problems[]` defaults (`severity: "error"`, `rule: null`, `file: null`, `line`); in §3 pinned `scope` optional string/nullable, repeated metadata keys overwrite, and `TN-SPEC-NO-FRONT` `line: null`.
+- `tenet/specs/tech-spec/messages.md`: defined `string[]` `{path}` formatting (`", "`-joined or `"[]"`) for both `TN-REPORT-MISSING` and `TN-REPORT-MALFORMED`.
+- `tenet/specs/tech-spec/evidence.md`: restricted JUnit `<property name="tenet.case">` lookup to `<testcase>` elements; required throwing `TN-REPORT-MALFORMED` on unrecognized `jest-json` statuses; defined CTRF `case.file` (`filePath ?? file`) and `duration_ms` (`Math.round(duration)` ms).
+- `tenet/specs/tech-spec/algorithms.md`: defined `via_describe` true iff enclosing `describe(` adds ≥1 absent tag; specified comment/string-aware brace depth for `end_line`; aligned `declaredTags` `requirement` authorship with `acceptance`; ordered `itemResults` tag stripping before pytest `[…]` suffix stripping; defined `ALG-09` `skip-added` `names` lookup (`line..end_line` enclosing or next 3 lines); defined `ALG-14` `text-changed` line-hunk fallback for normalized line edits and keyed `same-area` by pattern string (or `dir:<folder>`/`dir:.`).
+- `tenet/specs/plan/alpha.0.md`: made `opts.cwd` optional on `declaredTags` and `weakening`; documented `itemResults` title-only matching rule; defined `parseDoc` vs `parseRequirement` `V-` routing and duplicate ID exclusion in both `requirements` and `vision_items`; pinned `ladder` default recursive walk exclusions (`.git`, `.tenet`, `node_modules`, `dist`, `build`) and `deltas` `string[]` ID arrays sorted numerically then ASCII using `jcs` comparison.
+
+Post-Round-4 edit token counts: `contracts.md` `5,283` (`21,130B`), `messages.md` `2,005` (`8,019B`), `algorithms.md` `5,238` (`20,952B`), `evidence.md` `1,596` (`6,382B`), `alpha.0.md` `4,811` (`19,244B`), `tech-spec.md` `10,109` (`40,437B`). Proceeding to Round 5 to verify zero remaining inventions.
