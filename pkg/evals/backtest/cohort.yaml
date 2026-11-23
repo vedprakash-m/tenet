@@ -185,6 +185,18 @@ exclusions:
   - repo: vedprakash-m/tenet-copilot
     number: 29
     reason: not_merged
+  - repo: microsoft/BotFramework-WebChat
+    number: 5645
+    reason: unresolved_sha
+    sha: 6ba92fd63cc5beae7ddfed4b6e24a5740f58
+  - repo: microsoft/BotFramework-WebChat
+    number: 5684
+    reason: unresolved_sha
+    sha: c417014199369e3c25c857b178153dfef21299cf
+  - repo: microsoft/BotFramework-WebChat
+    number: 5772
+    reason: unresolved_sha
+    sha: cc18d611922b6f85bcac978e665f78098086e95c
 generated_at: 2026-11-23T22:44:12.098Z
 gh_version: "version 2.105.0 (2026-11-17)"
 cohort_cases:
