@@ -1,3 +1,4 @@
+import { registerCommand } from "../core/commands.js";
 import { contextSummary, contextWithFindings } from "../context/index.js";
 
 type CommandContext = {
@@ -46,4 +47,5 @@ const command = {
   },
 };
 
+registerCommand(command);
 export default command;

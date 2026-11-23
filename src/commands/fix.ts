@@ -1,4 +1,4 @@
-import { registerCommand } from "../cli.js";
+import { registerCommand } from "../core/commands.js";
 import { fail } from "../core/output.js";
 import { fix } from "../specs/fix.js";
 

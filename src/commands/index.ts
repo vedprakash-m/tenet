@@ -3,4 +3,3 @@ import "./check.js";
 import "./fix.js";
 import "./split.js";
 import "./context.js";
-import "./mcp.js";

@@ -1,4 +1,4 @@
-import { type CommandContext, registerCommand } from "../cli.js";
+import { type CommandContext, registerCommand } from "../core/commands.js";
 import { fail } from "../core/output.js";
 import { board, renderSpecsBoard } from "../views/specs-board.js";
 
