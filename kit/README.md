@@ -1,18 +1,18 @@
 # The Tenet kit
 
-This folder is the kit: everything here ships in the package and is vendored, one to one, into each project at `.tenet/kit/` (tech spec §3, §12). Agents read it there. Content the CLI needs but agents never read lives in [`../pkg/`](../pkg/) and is not vendored.
+This folder is the kit: everything here ships in `@vedprakash-m/tenet` (`kit/`) and is loaded from the installed package by `tenet.lock` (or copied into `.tenet/kit/` only with `init --vendor`). Content the CLI needs internally or for evaluation lives in [`../pkg/`](../pkg/) and is never vendored.
 
-| Path | What | State at 0.1.0-draft |
+| Path | What | State at 0.1.0-alpha.0 |
 |---|---|---|
-| [TENET.md](TENET.md) | The normative standard | Draft |
+| [TENET.md](TENET.md) | The normative standard | In transition (rewritten in M0) |
 | [CHANGELOG.md](CHANGELOG.md) | Added, changed, deprecated and removed rules per release | Started |
-| [schemas/](schemas/) | JSON Schemas (draft 2020-12) | `packet`, `agent`, `tenet-profile` drafted; the rest in CP-0004 |
-| [defaults/profile.yaml](defaults/profile.yaml) | Defaults merged under every `tenet.yaml` | Drafted |
-| [templates/](templates/) | Document templates | vision, definition, packet plan, escalation, ledger entry, holdout scenario, agent drafted; the rest in CP-0012 |
-| [agents/judge-protocol.md](agents/judge-protocol.md) | The shared review protocol | Drafted |
-| [agents/roles/](agents/roles/) | Reference agent definitions | shaper, builder, verifier, judge drafted; the rest of the roster in CP-0012 |
-| [agents/criteria/](agents/criteria/) | Specialist criteria for the judge | architecture, security, product, quality, experience drafted |
-| [loops/station-loop.yaml](loops/station-loop.yaml) | The engine-neutral station loop | Drafted |
+| [schemas/](schemas/) | JSON Schemas (draft 2020-12) | `packet`, `agent`, `tenet-profile` drafted; alpha.0 schemas arrive next |
+| [defaults/tenet.yaml](defaults/tenet.yaml) | Alpha.0 defaults merged under `tenet.yaml` | Alpha.0 |
+| [packs/minimal/pack.yaml](packs/minimal/pack.yaml) | Default pull-request native lifecycle pack | Alpha.0 subset |
+| [practices/default.md](practices/default.md) | Default working rules embedded in `AGENTS.md` | Alpha.0 |
+| [templates/](templates/) | Document and prompt templates (`intent`, `vision`, `requirements`, `design`, `experience`, `plan`, `pull-request`, `agents-block`, `escalation`) | Alpha.0 |
+| [agents/](agents/) | Reference agent cards (`drafter`, `spec-reviewer` in alpha.0; careful-lane cards later) | Alpha.0 |
+| [skills/](skills/) | Open agent-skills (`draft-specs`, `work-a-change`, `review-with-findings`) | Alpha.0 |
 | `kit.json` | Generated at release: version and SHA-256 of every file | Release build |
 
-Placeholders such as `<Owner>` and `<model-a>` are bound by each project's profile or overlays. `${records}` in agent path rules is the project's records folder (`tenet/` by default).
+Placeholders such as `<owner>` and `{records}` are filled by each project (`paths.records` defaults to `tenet`).
