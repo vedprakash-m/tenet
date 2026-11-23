@@ -2,13 +2,13 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import picomatch from "picomatch";
-import { git } from "../core/git.js";
+import { catFileBatch, git } from "../core/git.js";
 import { jcs, sha256 } from "../core/hash.js";
 import { loadPolicy, verifyLock, type Policy } from "../policy/index.js";
 import { declaredTags, itemResults, parseAcceptance, weakening, type TestReport } from "../reports/index.js";
 import type { Finding, ProofCard } from "../types/generated.js";
-import { decodeBundle, mergeMatrix, parseBundledReport, refusedBundle,
-  type BundleData, type CheckEntry, type Subject, type VerificationBundle, type VerifyDeps } from "./bundle.js";
+import { decodeBundle, mergeMatrix, parseBundledReport, refusedBundle, safeEntry,
+  type BundleData, type CheckEntry, type ParsedSpecification, type Subject, type VerificationBundle, type VerifyDeps } from "./bundle.js";
 import type { Conclusion, ForgeAdapter, PullRequest, WorkflowRun } from "./forge.js";
 import { keepRecord, type RecordsStore } from "./records.js";
 
@@ -135,6 +135,77 @@ type Evidence = Awaited<ReturnType<typeof readEvidence>>;
 const noEvidence = (): Evidence => ({
   report: mergeMatrix([]), missing: true, malformed: false, checkFailedAfterPass: false, timedOut: false,
 });
+
+function fields(input: unknown): Record<string, unknown> {
+  return input && typeof input === "object" && !Array.isArray(input) ? input as Record<string, unknown> : {};
+}
+
+async function specifications(
+  base: string, tested: string, policy: Policy, cwd: string, deps: VerifyDeps,
+): Promise<Pick<Subject, "blessed" | "requirements" | "blessings_changed">> {
+  const parse = deps.parseDoc;
+  const digest = deps.sectionDigest;
+  if (!parse || !digest) return { blessed: false, requirements: [], blessings_changed: [] };
+  const parseOptions = { prefix: policy.specs.id_prefix };
+  type Snapshot = {
+    docs: Map<string, ParsedSpecification>;
+    copies: Map<string, Buffer>;
+  };
+  async function read(ref: string): Promise<Snapshot> {
+    const names = (await git(["ls-tree", "-r", "--name-only", "-z", ref], { cwd }))
+      .split("\0").filter((name) => name.endsWith(".md"));
+    const blobs = await catFileBatch(ref, names, { cwd });
+    const docs = new Map<string, ParsedSpecification>();
+    const copies = new Set<string>();
+    for (const [filename, content] of blobs) {
+      const doc = parse?.(filename, content.toString("utf8"), parseOptions);
+      if (!doc || !fields(doc.front?.tenet).spec) continue;
+      docs.set(filename, doc);
+      for (const section of doc.sections) {
+        if (section.state === "blessed" && section.blessed_copy) {
+          try { copies.add(safeEntry(section.blessed_copy)); } catch { /* invalid blessed copy path */ }
+        }
+      }
+    }
+    return { docs, copies: await catFileBatch(ref, [...copies], { cwd }) };
+  }
+
+  const [before, after] = await Promise.all([read(base), read(tested)]);
+  const requirements = new Map<string, Subject["requirements"][number]>();
+  const blessings: Subject["blessings_changed"] = [];
+  let blessed = false;
+  for (const snapshot of [before, after]) {
+    for (const [filename, doc] of snapshot.docs) {
+      const sectionMetadata = fields(doc.front?.sections);
+      for (const section of doc.sections) {
+        if (section.state !== "blessed" || !section.blessed_copy || !section.blessed_digest) continue;
+        const bytes = snapshot.copies.get(section.blessed_copy);
+        if (!bytes || digest(bytes.toString("utf8")) !== section.blessed_digest) continue;
+        if (snapshot === after) blessed = true;
+        const metadata = fields(sectionMetadata[section.slug]);
+        const recorded = metadata.recorded === "forge" || metadata.recorded === "signed" ? metadata.recorded : "self";
+        const copy = parse(filename, bytes.toString("utf8"), parseOptions);
+        for (const parsed of copy.sections) {
+          for (const item of parsed.requirements) {
+            requirements.set(item.id, {
+              id: item.id, excerpt: item.text, state: "blessed", recorded, flags: section.flags,
+              blessed_digest: section.blessed_digest,
+            });
+          }
+        }
+        if (snapshot === after && typeof metadata.blessed_by === "string") {
+          const previous = fields(fields(before.docs.get(filename)?.front?.sections)[section.slug]);
+          if (previous.blessed_digest !== section.blessed_digest || previous.blessed_by !== metadata.blessed_by ||
+            previous.blessed_at !== metadata.blessed_at || previous.recorded !== metadata.recorded) {
+            const author = await git(["log", "-1", "--format=%an", tested, "--", filename], { cwd });
+            blessings.push({ doc: filename, section: section.slug, blessed_by: metadata.blessed_by, commit_author: author.trim() });
+          }
+        }
+      }
+    }
+  }
+  return { blessed, requirements: [...requirements.values()], blessings_changed: blessings };
+}
 
 async function changedSurfaces(tested: VerificationBundle["tested"], policy: Policy, cwd: string): Promise<Pick<Subject, "protected" | "workflow_changed">> {
   const workflow = policy.ci?.test_workflow;
@@ -285,7 +356,8 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
       ]);
       subject = {
         ...emptySubject,
-        ...await (deps.specification?.(tested.base, tested.commit, policy, snapshot.cwd)),
+        ...await (deps.specification ? deps.specification(tested.base, tested.commit, policy, snapshot.cwd)
+          : specifications(tested.base, tested.commit, policy, snapshot.cwd, deps)),
         ...await changedSurfaces(tested, policy, snapshot.cwd),
       };
     } finally { await snapshot?.close(); }
@@ -311,7 +383,7 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
   });
   const items = itemResults(acceptance.items, reports, declared).map(({ first_failure, ...item }) => ({
     id: item.id, text: acceptance.items.find((candidate) => candidate.id === item.id)?.text ?? "",
-    result: unavailable && item.result !== "no-test" ? "not-run" as const : item.result,
+    result: unavailable || evidence.missing || evidence.malformed || evidence.report.inconclusive ? "not-run" as const : item.result,
     coverage: item.coverage, tests: item.tests, names: item.names, authorship: item.authorship,
     ...(first_failure ? { first_failure: first_failure.full_name } : {}),
   }));

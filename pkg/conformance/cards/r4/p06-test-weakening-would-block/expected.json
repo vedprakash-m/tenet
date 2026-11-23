@@ -1,0 +1,99 @@
+{
+  "ok": true,
+  "conclusion": "neutral",
+  "wrote": true,
+  "card": {
+    "schema_version": 1,
+    "evaluation_id": "bc811a4f74ccff4b",
+    "tested": {
+      "commit": "9b41d00000000000000000000000000000000000",
+      "kind": "merge-candidate",
+      "head": "a111111111111111111111111111111111111111",
+      "base": "b222222222222222222222222222222222222222"
+    },
+    "acceptance_digest": "ecb0ca9c8c0d4ce5219b885c6e43faac874c66c2ae2ab8f2280e5da645358afa",
+    "requirements": [
+      {
+        "id": "C-1",
+        "excerpt": "A payment that times out is retried once, never twice.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "implements",
+        "tests": {
+          "expected": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
+        }
+      }
+    ],
+    "items": [
+      {
+        "id": "AB-1",
+        "text": "one retry after a timeout, never two",
+        "result": "passed",
+        "coverage": "confirmed",
+        "tests": {
+          "expected": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
+        },
+        "names": [
+          "test/checkout.retry.test.ts › checkout › [AB-1] one retry after timeout"
+        ],
+        "authorship": "written-here"
+      }
+    ],
+    "tests": {
+      "report": "ok",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "failing": []
+    },
+    "weakening": {
+      "found": true,
+      "by": [
+        {
+          "finding": "skip-added",
+          "file": "test/checkout.retry.test.ts",
+          "names": [
+            "test.skip(\"rejects third retry\", () => { assert.strictEqual(2, 2); });"
+          ]
+        }
+      ],
+      "not_checked": [
+        "rust"
+      ]
+    },
+    "workflow_changed": false,
+    "protected": [],
+    "blessings_changed": [],
+    "deltas": [],
+    "rules": [
+      {
+        "rule": "tests-not-weakened",
+        "mode": "advise",
+        "would_block": true,
+        "reason": "skip-added in test/checkout.retry.test.ts"
+      }
+    ],
+    "badge": "advisory",
+    "why": [
+      {
+        "text": "tests written in this change require reviewer judgment",
+        "class": "judge"
+      },
+      {
+        "text": "rust files not checked for test weakening",
+        "class": "not-tenet"
+      }
+    ],
+    "degraded": []
+  }
+}

@@ -28,7 +28,16 @@ export type Subject = {
   blessings_changed: ProofCard["blessings_changed"];
 };
 export type CommandRun = { exitCode: number | null; stdout: Buffer; timedOut: boolean };
+export type ParsedSpecification = {
+  front: Record<string, unknown> | null;
+  sections: Array<{
+    slug: string; state: string; flags: string[]; blessed_digest: string | null; blessed_copy: string | null;
+    requirements: Array<{ id: string; text: string }>;
+  }>;
+};
 export type VerifyDeps = {
+  parseDoc?(path: string, text: string, options?: { prefix?: string }): ParsedSpecification;
+  sectionDigest?(body: string): string;
   check(options: { cwd?: string; paths?: string[]; pack?: boolean; ci?: boolean; base?: string }): Promise<{ findings: Finding[]; summary: { errors: number; warnings: number; advises: number } }>;
   touched(base: string, head: string, ids: string[], options?: { cwd?: string; codeowners_path?: string }): Promise<Touched[]>;
   deltas(base: string, head: string, options?: { cwd?: string }): Promise<SpecDelta[]>;
