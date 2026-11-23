@@ -1,0 +1,30 @@
+{
+  "pack": "minimal",
+  "version": "0.1.0",
+  "description": "Pull-request native minimal pack.",
+  "phases": ["discover", "define", "build", "verify", "release"],
+  "stations": [
+    {"id": "intake", "phase": "discover"},
+    {"id": "build", "phase": "build"}
+  ],
+  "loop_backs": [
+    {"from": "verify", "to": "build"}
+  ],
+  "lanes": ["express", "quick", "careful", "deep"],
+  "human_touches": {
+    "express": 0,
+    "quick": 0,
+    "careful": 1,
+    "deep": 2
+  },
+  "work_types": ["feature", "defect", "explore"],
+  "rules_alpha0": [
+    {
+      "id": "tests-not-weakened",
+      "observe": "advise",
+      "protect": "enforce",
+      "verify": "enforce",
+      "assure": "enforce"
+    }
+  ]
+}

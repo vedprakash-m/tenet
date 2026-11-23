@@ -5,6 +5,7 @@ import { Ajv2020, type ValidateFunction } from "ajv/dist/2020.js";
 import formatsModule from "ajv-formats";
 
 const schemaNames = [
+  "agent-card",
   "assignment",
   "board",
   "bundle",
@@ -13,6 +14,7 @@ const schemaNames = [
   "inventory",
   "lock",
   "manifest",
+  "pack",
   "proof-card",
   "spec-front-matter",
   "tenet-yaml",
