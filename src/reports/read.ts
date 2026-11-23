@@ -15,39 +15,44 @@ export function readReport(
   if (kind === "none") {
     return { runner: "none", cases: [], teardown_failed: false, inconclusive: true };
   }
-  if (!Object.hasOwn(reportRegistry, kind)) {
-    throw malformedReport(String(kind), `unknown report kind ${String(kind)}`);
-  }
   const paths = Array.isArray(reportPath) ? reportPath : [reportPath];
-  if (paths.length === 0 || paths.some((item) => typeof item !== "string" || item.length === 0)) {
-    throw missingReport("(empty report path)");
-  }
-  const reports: TestReport[] = paths.map((filename) => {
-    const resolved = path.isAbsolute(filename) ? filename : path.resolve(options.cwd ?? process.cwd(), filename);
+  const display = paths.map((filename) => formatReportPath(filename, options.cwd));
+  const all = display.length ? display.join(", ") : "[]";
+  if (!Object.hasOwn(reportRegistry, kind)) throw malformedReport(all, kind);
+  if (paths.length === 0) throw missingReport(all);
+
+  const reports: TestReport[] = paths.map((filename, index) => {
+    const shown = display[index] ?? filename;
+    if (!filename) throw missingReport(shown);
+    const resolved = path.resolve(options.cwd ?? process.cwd(), filename);
     let contents: string;
     try {
       contents = readBounded(resolved);
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
-      if (code === "ENOENT" || code === "ENOTDIR") throw missingReport(filename);
-      if (error instanceof Error && error.message.startsWith("file exceeds")) {
-        throw malformedReport(filename, error.message);
-      }
-      throw malformedReport(filename, error instanceof Error ? error.message : "unable to read report");
+      if (code === "ENOENT" || code === "ENOTDIR") throw missingReport(shown);
+      throw malformedReport(shown, kind);
     }
     try {
       const parsed = reportRegistry[kind as ReportKind](contents, { ...options, prefix });
       if (parsed.cases.length > 20_000) throw new Error("report exceeds 20,000 cases");
       return { runner: kind as ReportKind, ...parsed };
-    } catch (error) {
-      if (error instanceof Error && (error as Error & { code?: string }).code === "TN-REPORT-MALFORMED") throw error;
-      throw malformedReport(filename, error instanceof Error ? error.message : "invalid report");
+    } catch {
+      throw malformedReport(shown, kind);
     }
   });
-  return mergeReports(reports);
+  return mergeReports(reports, all, kind);
 }
 
-function mergeReports(reports: TestReport[]): TestReport {
+function formatReportPath(filename: string, cwd?: string): string {
+  const forward = filename.replaceAll("\\", "/");
+  if (!cwd || !filename) return forward;
+  const relative = path.relative(cwd, path.resolve(cwd, filename));
+  if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) return forward;
+  return relative.replaceAll("\\", "/") || ".";
+}
+
+function mergeReports(reports: TestReport[], reportPath: string, kind: string): TestReport {
   const merged = new Map<string, TestCase>();
   for (const report of reports) {
     for (const testCase of report.cases) {
@@ -65,7 +70,7 @@ function mergeReports(reports: TestReport[]): TestReport {
   }
   const cases = [...merged.values()];
   if (cases.length > 20_000) {
-    throw malformedReport("(merged report)", "merged report exceeds 20,000 cases");
+    throw malformedReport(reportPath, kind);
   }
   return {
     runner: reports[0]?.runner ?? "none",

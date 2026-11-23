@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { parseDocument } from "yaml";
 import { readYaml } from "../core/yaml.js";
 import { git } from "../core/git.js";
+import { message } from "../core/messages.js";
 import { validate } from "../core/schema.js";
 import type { Finding, TenetYaml } from "../types/generated.js";
 import { finding, policyError } from "./errors.js";
@@ -74,7 +75,7 @@ function parseYamlText(text: string, filename: string): unknown {
   });
   if (document.errors.length > 0) {
     const cause = document.errors[0] ?? new Error(`cannot parse YAML: ${filename}`);
-    throw policyError("TN-POLICY-SCHEMA", `${filename} is not valid YAML: ${cause.message}`, "Fix the YAML syntax.");
+    throw policyError("TN-POLICY-SCHEMA", message("TN-POLICY-SCHEMA", { detail: `${filename} is not valid YAML: ${cause.message}` }));
   }
   return document.toJS({ maxAliasCount: 100 });
 }
@@ -115,8 +116,7 @@ function normalizePolicy(data: TenetYaml): Policy {
       finding(
         "TN-POLICY-LEVEL-UNAVAILABLE",
         "warning",
-        `The ${requestedLevel} level is not available for ${standard}; Tenet will run as observe.`,
-        "Choose an available level or pin a standard version that provides this level.",
+        message("TN-POLICY-LEVEL-UNAVAILABLE", { level: requestedLevel }),
         { file: "tenet.yaml" },
       ),
     );
@@ -130,16 +130,14 @@ function normalizePolicy(data: TenetYaml): Policy {
     if (!base || !isKnownRuleMode(override)) {
       throw policyError(
         "TN-POLICY-RULE",
-        `Unknown policy rule: ${rule}`,
-        "Use a rule from the rule registry or remove the override.",
+        message("TN-POLICY-RULE", { name: rule }),
         { rule, file: "tenet.yaml" },
       );
     }
     if (modeRank[override] < modeRank[base]) {
       throw policyError(
         "TN-POLICY-LOOSEN",
-        `The ${rule} override loosens ${base} to ${override}.`,
-        "Remove the override or choose a stricter mode.",
+        message("TN-POLICY-LOOSEN", { layer: "tenet.yaml", name: rule }),
         { rule, file: "tenet.yaml" },
       );
     }
@@ -154,8 +152,7 @@ function normalizePolicy(data: TenetYaml): Policy {
         finding(
           "TN-POLICY-ALPHA0-CAP",
           "advise",
-          `The ${rule} rule is capped at advise in alpha.0.`,
-          "The configured mode will take effect when rule modes are available.",
+          message("TN-POLICY-ALPHA0-CAP", { rule }),
           { rule, file: "tenet.yaml" },
         ),
       );
@@ -200,8 +197,7 @@ function mergeDocuments(
     if (existing && specLevelRank[document.level] > specLevelRank[existing.level]) {
       throw policyError(
         "TN-POLICY-LOOSEN",
-        `The ${document.path} document level loosens ${existing.level} to ${document.level}.`,
-        "Keep the default level or choose a stricter specification level.",
+        message("TN-POLICY-LOOSEN", { layer: "tenet.yaml", name: document.path }),
         { file: "tenet.yaml" },
       );
     }
@@ -216,15 +212,14 @@ function isKnownRuleMode(value: unknown): value is RuleMode {
 
 async function readPolicy(ref: string | undefined, cwd: string): Promise<unknown> {
   if (ref) {
-    if (ref.startsWith("-")) throw policyError("TN-USAGE-REF", "The git ref is invalid.", "Pass a repository ref.");
+    if (ref.startsWith("-")) throw policyError("TN-USAGE-REF", message("TN-USAGE-REF"));
     try {
       return parseYamlText(await git(["show", `${ref}:tenet.yaml`], { cwd }), "tenet.yaml");
     } catch (error) {
       if (typeof (error as { code?: unknown }).code === "string") throw error;
       throw policyError(
         "TN-POLICY-MISSING",
-        `tenet.yaml is missing at ${ref}.`,
-        "Add tenet.yaml to the target line or choose another ref.",
+        message("TN-POLICY-MISSING"),
         { file: "tenet.yaml" },
       );
     }
@@ -236,15 +231,13 @@ async function readPolicy(ref: string | undefined, cwd: string): Promise<unknown
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       throw policyError(
         "TN-POLICY-MISSING",
-        "tenet.yaml is missing.",
-        "Run tenet init or add tenet.yaml at the repository root.",
+        message("TN-POLICY-MISSING"),
         { file: "tenet.yaml" },
       );
     }
     throw policyError(
       "TN-POLICY-SCHEMA",
-      `tenet.yaml cannot be read: ${(error as Error).message}`,
-      "Fix the YAML syntax and file permissions.",
+      message("TN-POLICY-SCHEMA", { detail: `could not read tenet.yaml: ${(error as Error).message}` }),
       { file: "tenet.yaml" },
     );
   }
@@ -337,8 +330,7 @@ export async function loadPolicy(options: PolicyOptions = {}): Promise<Policy> {
     const detail = checked.errors.map((error) => `${error.pointer || "/"} ${error.message}`).join("; ");
     throw policyError(
       "TN-POLICY-SCHEMA",
-      `tenet.yaml does not match the alpha.0 schema: ${detail}`,
-      "Fix tenet.yaml or remove fields that are not available in alpha.0.",
+      message("TN-POLICY-SCHEMA", { detail }),
       { file: "tenet.yaml" },
     );
   }
@@ -351,8 +343,7 @@ export async function loadPolicy(options: PolicyOptions = {}): Promise<Policy> {
         finding(
           "TN-POLICY-BRANCH",
           "warning",
-          "The branch changes tenet.yaml, but policy is read from the target line.",
-          "Review the target policy separately; this change cannot set the policy for itself.",
+          message("TN-POLICY-BRANCH"),
           { file: "tenet.yaml" },
         ),
       );
@@ -377,8 +368,7 @@ export function ruleMode(policy: Pick<TenetYaml, "level" | "rules" | "standard">
   if (!defaults) {
     throw policyError(
       "TN-POLICY-RULE",
-      `Unknown policy rule: ${rule}`,
-      "Use a rule from the rule registry.",
+      message("TN-POLICY-RULE", { name: rule }),
       { rule },
     );
   }
@@ -462,8 +452,7 @@ export function areaFor(filename: string): string | undefined {
   if (hasConfiguredAreas(policy)) {
     throw policyError(
       "TN-GATE-UNKNOWN",
-      `No configured area matches ${filename}.`,
-      "Add a matching configured area or remove the areas override to use CODEOWNERS.",
+      message("TN-GATE-UNKNOWN", { missing: `an area matching ${filename}` }),
     );
   }
   const area = fallbackCodeowners(filename, context);
@@ -491,8 +480,7 @@ export function ownersFor(filename: string): string[] {
   if (hasConfiguredAreas(policy)) {
     throw policyError(
       "TN-GATE-UNKNOWN",
-      `No configured area matches ${portable}.`,
-      "Add a matching configured area or remove the areas override to use CODEOWNERS.",
+      message("TN-GATE-UNKNOWN", { missing: `an area matching ${portable}` }),
     );
   }
   if (codeowner?.owners.length) return [...codeowner.owners];

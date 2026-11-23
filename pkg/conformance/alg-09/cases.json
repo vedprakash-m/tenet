@@ -1,25 +1,95 @@
 {
   "delete-init": {
-    "removed":"init(\"fixture\");",
-    "expected":{"finding":null,"reason":"init is not a test declaration"}
+    "before": {
+      "source.ts": "init(\"fixture\");\n"
+    },
+    "after": {
+      "source.ts": "export const initialized = true;\n"
+    },
+    "expected": {
+      "found": false,
+      "by": [],
+      "notes": []
+    }
   },
   "move-between-files": {
-    "before":{"a.test.ts":"it(\"moves\", () => {});"},
-    "after":{"b.test.ts":"it(\"moves\", () => {});"},
-    "expected":{"found":false}
+    "before": {
+      "a.test.ts": "it(\"moves\", () => {});"
+    },
+    "after": {
+      "b.test.ts": "it(\"moves\", () => {});"
+    },
+    "expected": {
+      "found": false,
+      "by": [],
+      "notes": []
+    }
   },
   "fold-into-each": {
-    "before":["it(\"one\", () => {});","it(\"two\", () => {});","it(\"three\", () => {});"],
-    "after":["it.each([\"one\",\"two\",\"three\"])(\"%s\", () => {});"],
-    "expected":{"found":false,"note":"tests-consolidated"}
+    "before": {
+      "value.test.ts": "it(\"one\", () => {});\nit(\"two\", () => {});\nit(\"three\", () => {});\n"
+    },
+    "after": {
+      "value.test.ts": "it.each([\"one\",\"two\",\"three\"])(\"%s\", () => {});\n"
+    },
+    "expected": {
+      "found": false,
+      "by": [],
+      "notes": [
+        {
+          "note": "tests-consolidated",
+          "file": "value.test.ts",
+          "names": [
+            "one",
+            "two",
+            "three"
+          ]
+        }
+      ]
+    }
   },
   "skip-added": {
-    "after":"it.skip(\"disabled\", () => {});",
-    "expected":{"finding":"skip-added","names":["disabled"]}
+    "before": {
+      "README.md": "fixture\n"
+    },
+    "after": {
+      "README.md": "fixture\n",
+      "value.test.ts": "it.skip(\"disabled\", () => {});\n"
+    },
+    "expected": {
+      "found": true,
+      "by": [
+        {
+          "finding": "skip-added",
+          "file": "value.test.ts",
+          "names": [
+            "it.skip(\"disabled\", () => {});"
+          ]
+        }
+      ],
+      "notes": []
+    }
   },
   "file-deleted": {
-    "before":"old.test.ts",
-    "names":["old test"],
-    "expected":{"finding":"file-deleted","names":["old test"]}
+    "before": {
+      "README.md": "fixture\n",
+      "old.test.ts": "it(\"old test\", () => {});\n"
+    },
+    "after": {
+      "README.md": "fixture\n"
+    },
+    "expected": {
+      "found": true,
+      "by": [
+        {
+          "finding": "file-deleted",
+          "file": "old.test.ts",
+          "names": [
+            "old test"
+          ]
+        }
+      ],
+      "notes": []
+    }
   }
 }

@@ -1,10 +1,10 @@
+import type { DiagnosticText } from "../core/messages.js";
 import type { Finding } from "../types/generated.js";
 import type { PolicyError } from "./types.js";
 
 export function policyError(
   code: string,
-  message: string,
-  fix: string,
+  text: DiagnosticText,
   options: { file?: string | null; rule?: string | null; severity?: Finding["severity"] } = {},
 ): PolicyError {
   const finding: Finding = {
@@ -13,10 +13,9 @@ export function policyError(
     rule: options.rule ?? null,
     file: options.file ?? null,
     line: null,
-    message,
-    fix,
+    ...text,
   };
-  const error = new Error(`${code}: ${message}`) as PolicyError;
+  const error = new Error(text.message) as PolicyError;
   error.code = code;
   error.finding = finding;
   return error;
@@ -25,8 +24,7 @@ export function policyError(
 export function finding(
   code: string,
   severity: Finding["severity"],
-  message: string,
-  fix: string,
+  text: DiagnosticText,
   options: { file?: string; rule?: string } = {},
 ): Finding {
   return {
@@ -35,7 +33,6 @@ export function finding(
     rule: options.rule ?? null,
     file: options.file ?? null,
     line: null,
-    message,
-    fix,
+    ...text,
   };
 }

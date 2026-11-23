@@ -1,5 +1,8 @@
 import { readFileSync, statSync } from "node:fs";
+import path from "node:path";
 import { XMLParser } from "fast-xml-parser";
+import { extractTags, extractTokenTags } from "./tags.js";
+import type { TestCase, TestStatus } from "./types.js";
 import type { ReportReadOptions, ReportReader } from "./read-types.js";
 
 const parser = new XMLParser({
@@ -8,10 +11,9 @@ const parser = new XMLParser({
   parseAttributeValue: false,
   parseTagValue: false,
   trimValues: false,
-  processEntities: true,
+  preserveOrder: true,
+  processEntities: false,
   stopNodes: ["*.failure", "*.error", "*.system-out", "*.system-err", "*.flakyFailure", "*.rerunFailure"],
-  isArray: (name) =>
-    ["testsuite", "testcase", "property", "failure", "error", "skipped", "flakyFailure", "rerunFailure"].includes(name),
 });
 
 export const reportRegistry = {
@@ -24,7 +26,7 @@ export const reportRegistry = {
 
 export type ReportKind = keyof typeof reportRegistry;
 
-export function parseXmlDocument(text: string): unknown {
+function parseXmlDocument(text: string): unknown {
   if (/<!DOCTYPE|<!ENTITY/i.test(text)) throw new Error("XML document types and entities are not allowed");
   checkXmlDepth(text);
   return parser.parse(text);
@@ -77,96 +79,126 @@ export function sourceFile(value: string, options: ReportReadOptions): string {
   return relative || ".";
 }
 
-function parseJunit(
-  text: string,
-  options: ReportReadOptions,
-): { cases: ReturnType<typeof junitCase>[]; teardown_failed: boolean; inconclusive: boolean } {
-  const document = parseXmlDocument(text);
-  if (!isRecord(document) || !(hasKey(document, "testsuites") || hasKey(document, "testsuite"))) {
+type XmlNode = {
+  name: string;
+  attrs: Record<string, unknown>;
+  children: XmlNode[];
+  text: string;
+};
+
+function xmlNodes(value: unknown): XmlNode[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) return [];
+    const attrs = isRecord(entry[":@"]) ? entry[":@"] : {};
+    return Object.entries(entry).filter(([name]) => name !== ":@").map(([name, contents]) => ({
+      name,
+      attrs,
+      children: xmlNodes(contents),
+      text: typeof contents === "string" ? contents : "",
+    }));
+  });
+}
+
+const xmlEntities: Record<string, string> = { lt: "<", gt: ">", amp: "&", quot: '"', apos: "'" };
+
+function xmlAttr(node: XmlNode, name: string): string {
+  return stringValue(node.attrs[name]).replace(/&(lt|gt|amp|quot|apos|#\d+|#x[0-9a-fA-F]+);/g, (_, entity: string) => {
+    if (!entity.startsWith("#")) return xmlEntities[entity] ?? "";
+    const hex = entity.startsWith("#x");
+    const point = Number.parseInt(entity.slice(hex ? 2 : 1), hex ? 16 : 10);
+    if (point < 1 || point > 0x10ffff || (point >= 0xd800 && point < 0xe000)) {
+      throw new Error("Invalid XML character reference");
+    }
+    return String.fromCodePoint(point);
+  });
+}
+
+function parseJunit(text: string, options: ReportReadOptions) {
+  const document = xmlNodes(parseXmlDocument(text));
+  const roots = document.filter(({ name }) => name !== "#text" && !name.startsWith("?"));
+  if (roots.length !== 1 || !roots.some(({ name }) => name === "testsuites" || name === "testsuite")) {
     throw new Error("expected a JUnit testsuites or testsuite document");
   }
-  const caseNodes: Record<string, unknown>[] = [];
-  collectNodes(document, "testcase", caseNodes);
-  if (caseNodes.length > 20_000) throw new Error("report exceeds 20,000 cases");
-  const collapsed = new Map<string, ReturnType<typeof junitCase>>();
+  const collapsed = new Map<string, TestCase>();
+  let rawCases = 0;
   let teardownFailed = false;
-  for (const node of caseNodes) {
-    const parsed = junitCase(node, options);
-    const flaky = oneOrMany(node.flakyFailure).length;
-    const rerun = oneOrMany(node.rerunFailure).length;
-    if (flaky + rerun > 0) parsed.attempts.splice(0, 0, ...Array<TestStatus>(flaky + rerun).fill("fail"));
-    if (isTeardownCase(node, parsed)) teardownFailed = true;
-    const existing = collapsed.get(parsed.full_name);
-    if (existing) {
-      existing.status = parsed.status;
-      existing.attempts.push(...parsed.attempts);
-      existing.tags = unique([...existing.tags, ...parsed.tags]);
-      if (!existing.file && parsed.file) existing.file = parsed.file;
-      if (parsed.duration_ms !== undefined) existing.duration_ms = (existing.duration_ms ?? 0) + parsed.duration_ms;
-    } else {
-      collapsed.set(parsed.full_name, parsed);
+
+  function visit(nodes: XmlNode[], inheritedFile: string): void {
+    for (const node of nodes) {
+      if (node.name !== "testcase") {
+        const file = node.name === "testsuite" ? xmlAttr(node, "file") || inheritedFile : inheritedFile;
+        visit(node.children, file);
+        continue;
+      }
+      rawCases += 1;
+      if (rawCases > 20_000) throw new Error("report exceeds 20,000 cases");
+      const parsed = junitCase(node, options, inheritedFile);
+      teardownFailed ||= parsed.teardown;
+      const testCase = parsed.testCase;
+      const existing = collapsed.get(testCase.full_name);
+      if (!existing) {
+        collapsed.set(testCase.full_name, testCase);
+        continue;
+      }
+      existing.status = testCase.status;
+      existing.attempts.push(...testCase.attempts);
+      existing.tags = unique([...existing.tags, ...testCase.tags]);
+      if (!existing.file && testCase.file) existing.file = testCase.file;
+      if (testCase.duration_ms !== undefined) existing.duration_ms = (existing.duration_ms ?? 0) + testCase.duration_ms;
     }
   }
+
+  visit(roots, "");
   const cases = [...collapsed.values()];
   return { cases, teardown_failed: teardownFailed, inconclusive: cases.length === 0 };
 }
 
-import path from "node:path";
-import { extractTags, extractTokenTags } from "./tags.js";
-import type { TestCase, TestStatus } from "./types.js";
-
-function junitCase(node: Record<string, unknown>, options: ReportReadOptions): TestCase {
-  const name = stringValue(node.name);
-  const classname = stringValue(node.classname);
-  const fullName = !classname || classname === name ? name : `${classname} > ${name}`;
-  const failure = oneOrMany(node.failure);
-  const error = oneOrMany(node.error);
-  const skipped = oneOrMany(node.skipped);
+function junitCase(node: XmlNode, options: ReportReadOptions, inheritedFile: string) {
+  const name = xmlAttr(node, "name");
+  const classname = xmlAttr(node, "classname");
+  if (!name && !classname) throw new Error("JUnit test has no name or classname");
+  const fullName = name && classname && classname !== name ? `${classname} > ${name}` : name || classname;
+  const errors = node.children.filter((child) => child.name === "error");
+  const isTeardown = (error: XmlNode): boolean => {
+    const body = error.children.map(({ text }) => text).join("").trim();
+    const reason = xmlAttr(error, "message") || body.replace(/^<!\[CDATA\[([\s\S]*?)\]\]>$/, "$1").trim();
+    return reason.startsWith("failed on teardown with");
+  };
+  const failure = node.children.filter((child) => child.name === "failure");
+  const skipped = node.children.some((child) => child.name === "skipped");
   let status: TestStatus = "pass";
-  if (skipped.length > 0) status = "skip";
-  else if (error.length > 0 && !isTeardownError(node)) status = "error";
-  else if (failure.length > 0) status = "fail";
-  const properties: Record<string, unknown>[] = [];
-  collectNodes(node, "property", properties);
-  const tags = [...extractTags(fullName, options.prefix ?? "R")];
-  for (const property of properties) {
-    if (stringValue(property.name) !== "tenet.case") continue;
-    tags.push(...tokenTags(stringValue(property.value), options.prefix ?? "R"));
+  if (skipped) status = "skip";
+  else if (errors.some((error) => !isTeardown(error))) status = "error";
+  else if (failure.length) status = "fail";
+
+  const tags = extractTags(fullName, options.prefix);
+  for (const properties of node.children.filter((child) => child.name === "properties")) {
+    for (const property of properties.children) {
+      if (property.name === "property" && xmlAttr(property, "name") === "tenet.case") {
+        tags.push(...extractTokenTags(xmlAttr(property, "value"), options.prefix));
+      }
+    }
   }
-  const fileValue = stringValue(node.file);
-  const time = stringValue(node.time);
-  const duration = Number(time);
-  const result: TestCase = {
+
+  const retryCount = node.children.filter(({ name }) => name === "flakyFailure" || name === "rerunFailure").length;
+  const testCase: TestCase = {
     full_name: fullName,
     status,
-    attempts: [status],
+    attempts: [...Array<TestStatus>(retryCount).fill("fail"), status],
     tags: unique(tags),
   };
-  if (fileValue) result.file = sourceFile(fileValue, options);
-  else if (/[/\\]/.test(classname)) result.file = sourceFile(classname, options);
-  if (time.length > 0 && Number.isFinite(duration)) result.duration_ms = Math.round(duration * 1_000);
-  return result;
-}
+  const file = xmlAttr(node, "file");
+  const displayFile = Object.hasOwn(node.attrs, "file") ? file : inheritedFile;
+  if (displayFile) testCase.file = sourceFile(displayFile, options);
+  else if (/[/\\]/.test(classname)) testCase.file = sourceFile(classname, options);
+  const time = node.attrs.time;
+  if (time !== undefined && Number.isFinite(Number(time))) testCase.duration_ms = Math.round(Number(time) * 1_000);
 
-function isTeardownError(node: Record<string, unknown>): boolean {
-  return oneOrMany(node.error).some((entry) =>
-    isRecord(entry) && stringValue(entry.message).startsWith("failed on teardown with"),
-  );
-}
-
-function isTeardownCase(node: Record<string, unknown>, testCase: TestCase): boolean {
-  if (isTeardownError(node)) return true;
-  if (oneOrMany(node.failure).some((entry) =>
-    isRecord(entry) && stringValue(entry.type) === "hookFailed"
-  )) return true;
-  if (
-    (testCase.status === "fail" || testCase.status === "error") &&
-    stringValue(node.file) !== "" &&
-    stringValue(node.name) === stringValue(node.file)
-  ) return true;
-  const classname = stringValue(node.classname);
-  const name = stringValue(node.name);
-  return Boolean(classname && classname === name && (testCase.status === "fail" || testCase.status === "error"));
+  const failed = status === "fail" || status === "error";
+  const teardown = errors.some(isTeardown) || failure.some((entry) => xmlAttr(entry, "type") === "hookFailed") ||
+    (failed && Boolean(name) && (name === classname || name === file));
+  return { testCase, teardown };
 }
 
 function parseCtrf(text: string, options: ReportReadOptions) {
@@ -182,10 +214,10 @@ function parseCtrf(text: string, options: ReportReadOptions) {
     const raw = stringValue(entry.status);
     const status: TestStatus = raw === "passed" ? "pass" : raw === "failed" ? "fail" : "skip";
     const extraTags = isRecord(entry.extra) && Array.isArray(entry.extra.tenet_cases)
-      ? entry.extra.tenet_cases.flatMap((tag) => tokenTags(String(tag), options.prefix ?? "R"))
+      ? entry.extra.tenet_cases.flatMap((tag) => typeof tag === "string" ? extractTokenTags(tag, options.prefix) : [])
       : [];
-    const file = stringValue(entry.file) || stringValue(entry.filepath);
-    const duration = Number(entry.duration);
+    const file = stringValue(entry.filePath ?? entry.file);
+    const duration = numberValue(entry.duration);
     const result: TestCase = {
       full_name: name,
       status,
@@ -193,46 +225,52 @@ function parseCtrf(text: string, options: ReportReadOptions) {
       tags: unique([...extractTags(name, options.prefix ?? "R"), ...extraTags]),
     };
     if (file) result.file = sourceFile(file, options);
-    if (Number.isFinite(duration)) result.duration_ms = Math.round(duration);
+    if (duration !== undefined) result.duration_ms = Math.round(duration);
     return result;
   });
   return { cases, teardown_failed: false, inconclusive: cases.length === 0 };
 }
 
 function parseGo(text: string, options: ReportReadOptions) {
-  const terminals = new Map<string, { packageName: string; test: string; action: string }>();
-  const names = new Set<string>();
+  const terminals = new Map<string, TestCase>();
+  const parents = new Set<string>();
+  let rawCases = 0;
   for (const [index, raw] of text.replaceAll("\r\n", "\n").split("\n").entries()) {
     if (!raw.trim()) continue;
     let entry: unknown;
     try {
       entry = JSON.parse(raw);
     } catch {
-      throw new Error(`line ${String(index + 1)} is not JSON`);
+      throw new Error(`line ${index + 1} is not JSON`);
     }
-    if (!isRecord(entry)) throw new Error(`line ${String(index + 1)} is not an object`);
+    if (!isRecord(entry)) throw new Error(`line ${index + 1} is not an object`);
     const test = stringValue(entry.Test);
-    const action = stringValue(entry.Action);
+    const action = entry.Action;
+    if (!test || (action !== "pass" && action !== "fail" && action !== "skip")) continue;
+    rawCases += 1;
+    if (rawCases > 20_000) throw new Error("report exceeds 20,000 cases");
+
     const packageName = stringValue(entry.Package);
-    if (!test) continue;
-    names.add(`${packageName}\0${test}`);
-    if (["output", "run", "pause", "cont"].includes(action)) continue;
-    if (!["pass", "fail", "skip"].includes(action)) continue;
-    terminals.set(`${packageName}\0${test}`, { packageName, test, action });
-  }
-  const cases: TestCase[] = [];
-  for (const terminal of terminals.values()) {
-    if ([...names].some((name) => name.startsWith(`${terminal.packageName}\0${terminal.test}/`))) continue;
-    const status = terminal.action as TestStatus;
-    const fullName = terminal.packageName ? `${terminal.packageName} > ${terminal.test}` : terminal.test;
-    cases.push({
+    const key = `${packageName}\0${test}`;
+    for (let slash = test.indexOf("/"); slash !== -1; slash = test.indexOf("/", slash + 1)) {
+      parents.add(`${packageName}\0${test.slice(0, slash)}`);
+    }
+    const fullName = packageName ? `${packageName} > ${test}` : test;
+    const testCase = terminals.get(key) ?? {
       full_name: fullName,
-      status,
-      attempts: [status],
-      tags: extractTags(fullName, options.prefix ?? "R"),
-    });
-    if (cases.length > 20_000) throw new Error("report exceeds 20,000 cases");
+      status: action,
+      attempts: [],
+      tags: extractTags(fullName, options.prefix),
+    };
+    testCase.status = action;
+    testCase.attempts.push(action);
+    const elapsed = numberValue(entry.Elapsed);
+    if (elapsed !== undefined) testCase.duration_ms = Math.round(elapsed * 1_000);
+    else delete testCase.duration_ms;
+    terminals.set(key, testCase);
   }
+
+  const cases = [...terminals].filter(([key]) => !parents.has(key)).map(([, testCase]) => testCase);
   return { cases, teardown_failed: false, inconclusive: cases.length === 0 };
 }
 
@@ -257,10 +295,11 @@ function parseJest(text: string, options: ReportReadOptions) {
       const name = stringValue(assertion.fullName) || stringValue(assertion.title);
       if (!name) throw new Error("Jest assertion has no name");
       const raw = stringValue(assertion.status);
-      const status: TestStatus =
-        raw === "passed" ? "pass" : raw === "failed" ? "fail" : ["pending", "skipped", "todo"].includes(raw)
-          ? "skip"
-          : "skip";
+      let status: TestStatus;
+      if (raw === "passed") status = "pass";
+      else if (raw === "failed") status = "fail";
+      else if (raw === "pending" || raw === "skipped" || raw === "todo") status = "skip";
+      else throw new Error(`unknown Jest status ${raw}`);
       const invocations = numberValue(assertion.invocations);
       const reasons = Array.isArray(assertion.retryReasons)       ? assertion.retryReasons : [];
       const retries = invocations !== undefined ? Math.max(0, invocations - 1) : reasons.length;
@@ -285,39 +324,12 @@ function parseJson(text: string): Record<string, unknown> {
   return value;
 }
 
-function collectNodes(value: unknown, name: string, output: Record<string, unknown>[]): void {
-  if (Array.isArray(value)) {
-    for (const entry of value) collectNodes(entry, name, output);
-    return;
-  }
-  if (!isRecord(value)) return;
-  for (const [key, child] of Object.entries(value)) {
-    if (key === name) {
-      for (const entry of oneOrMany(child)) if (isRecord(entry)) output.push(entry);
-      continue;
-    }
-    collectNodes(child, name, output);
-  }
-}
-
-function tokenTags(text: string, prefix: string): string[] {
-  return extractTokenTags(text, prefix);
-}
-
 function unique<T>(items: T[]): T[] {
   return [...new Set(items)];
 }
 
-function oneOrMany(value: unknown): unknown[] {
-  return value === undefined ? [] : Array.isArray(value) ? value : [value];
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function hasKey(value: Record<string, unknown>, key: string): boolean {
-  return Object.hasOwn(value, key);
 }
 
 function stringValue(value: unknown): string {
