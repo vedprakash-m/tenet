@@ -1,0 +1,64 @@
+{
+  "evaluations": [
+    {
+      "id": "initial-waived",
+      "verdict": "advance",
+      "disposition": "records",
+      "next": {
+        "who": null,
+        "action": "advance",
+        "command": null
+      }
+    },
+    {
+      "id": "description-edited",
+      "verdict": "refuse",
+      "disposition": "advises",
+      "next": {
+        "who": "ci",
+        "action": "wait-for-evidence",
+        "command": null
+      }
+    },
+    {
+      "id": "waiver-expired",
+      "verdict": "refuse",
+      "disposition": "advises",
+      "next": {
+        "who": "ci",
+        "action": "wait-for-evidence",
+        "command": null
+      }
+    },
+    {
+      "id": "old-policy-pass",
+      "verdict": "advance",
+      "disposition": "records",
+      "next": {
+        "who": null,
+        "action": "advance",
+        "command": null
+      }
+    },
+    {
+      "id": "policy-changed",
+      "verdict": "refuse",
+      "disposition": "blocks",
+      "next": {
+        "who": "ci",
+        "action": "wait-for-evidence",
+        "command": null
+      }
+    },
+    {
+      "id": "fresh-evidence",
+      "verdict": "advance",
+      "disposition": "records",
+      "next": {
+        "who": null,
+        "action": "advance",
+        "command": null
+      }
+    }
+  ]
+}

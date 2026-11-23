@@ -1,0 +1,24 @@
+{
+  "evaluations": [
+    {
+      "id": "old-data",
+      "verdict": "refuse",
+      "disposition": "blocks",
+      "next": {
+        "who": "ci",
+        "action": "wait-for-evidence",
+        "command": null
+      }
+    },
+    {
+      "id": "new-data",
+      "verdict": "advance",
+      "disposition": "records",
+      "next": {
+        "who": null,
+        "action": "advance",
+        "command": null
+      }
+    }
+  ]
+}

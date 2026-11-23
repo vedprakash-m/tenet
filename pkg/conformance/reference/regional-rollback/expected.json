@@ -1,0 +1,24 @@
+{
+  "evaluations": [
+    {
+      "id": "west-only",
+      "verdict": "refuse",
+      "disposition": "blocks",
+      "next": {
+        "who": "ci",
+        "action": "wait-for-evidence",
+        "command": null
+      }
+    },
+    {
+      "id": "all-regions",
+      "verdict": "advance",
+      "disposition": "records",
+      "next": {
+        "who": null,
+        "action": "advance",
+        "command": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,326 @@
+# R-106 and technical specification §14 coverage manifest.
+# Level columns are capability ceilings once the release is available.
+# enforced* needs current applicable trust, verified enforcement at the binding,
+# and required status for merge enforcement. Missing prerequisites reduce strength.
+schema_version: 1
+adoption_levels: [observe, protect, verify, assure]
+guarantee_levels:
+  advisory: Report or guide without enforcement.
+  detected: Record a finding, including controls that stop ordinary mistakes below verify.
+  enforced*: Conditional enforcement under CI §7 and §10.
+  unavailable: The relevant control is unavailable at this level.
+  limited: Report only independently observed facts. The underlying behavior lacks a general guarantee.
+  as-host-declares-or-limited: Use only the demonstrated binding or host capability.
+  external-conditional: External holdout is conditional on actual isolation. In-repo holdout is advisory.
+  credential-separation-conditional: Claim enforcement only with eligible proof and attested credential separation.
+cases:
+  - id: RT-001
+    threat: "Target policy changed in the proposed work"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "policy from target, protected-surfaces"
+    packet: "CP-0051, CP-0046"
+    release: "alpha.0 detection, alpha.2 conditional enforcement"
+    fixture:
+      setup: "a target policy and a proposed policy"
+      challenge: "present a changed proposed policy as the policy input"
+      expected: "evaluate with target policy and show the protected change"
+  - id: RT-002
+    threat: "Protected workflow, permission or verifier file changed"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "protected-surfaces, R-103 approval"
+    packet: "CP-0050, CP-0046"
+    release: "alpha.1 detection, alpha.2 conditional enforcement"
+    fixture:
+      setup: "a protected file and an approval requirement"
+      challenge: "submit a change with the approval absent"
+      expected: "identify the file and hold enforcement when required"
+  - id: RT-003
+    threat: "Blessed copy or blessing metadata changed without the section owner"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "R-223 blessing, spec-approval"
+    packet: "CP-0052, CP-0019, CP-0021"
+    release: "alpha.0 advisory, alpha.1 attribution, alpha.2 conditional enforcement"
+    fixture:
+      setup: "a blessed section and an unrelated actor"
+      challenge: "submit a changed blessed copy without the owner's blessing"
+      expected: "show the change and refuse the unauthorized blessing where enforced"
+  - id: RT-004
+    threat: "Evidence altered after recording"
+    guarantee: {observe: "unavailable", protect: "unavailable", verify: "enforced*", assure: "enforced*"}
+    control: "R-100 signed evidence, authenticated store"
+    packet: "CP-0046, CP-0021"
+    release: "alpha.2"
+    fixture:
+      setup: "a trusted synthetic receipt"
+      challenge: "supply an altered copy"
+      expected: "reject signature verification and report invalid evidence"
+  - id: RT-005
+    threat: "Genuine evidence reused for another evaluation"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "evaluation binding and evidence freshness"
+    packet: "CP-0050, CP-0046, CP-0021"
+    release: "alpha.1 evaluation, alpha.2 verification"
+    fixture:
+      setup: "a valid receipt for a different subject or attempt"
+      challenge: "offer that receipt for the current evaluation"
+      expected: "ignore it for the current claim and report the mismatch"
+  - id: RT-006
+    threat: "A checked program supplies a misleading test report"
+    guarantee: {observe: "limited", protect: "limited", verify: "limited", assure: "limited"}
+    control: "pinned independent tests, R-172, review and holdout"
+    packet: "CP-0021; independent checks in CP-0020"
+    release: "alpha.2 suite; stronger checks in 0.1.0 and later"
+    fixture:
+      setup: "a synthetic report inconsistent with an independent observation"
+      challenge: "submit the suspect report to the evaluator"
+      expected: "record only what provenance and checks establish and surface the independent disagreement"
+  - id: RT-007
+    threat: "A task requests credentials outside the test job's authority"
+    guarantee: {observe: "unavailable", protect: "unavailable", verify: "enforced*", assure: "enforced*"}
+    control: "R-100 isolated check job, CI §5 capabilities"
+    packet: "CP-0046, CP-0021"
+    release: "alpha.2"
+    fixture:
+      setup: "a synthetic secret marker outside the check environment"
+      challenge: "request access to the unavailable marker in the test fixture"
+      expected: "show the boundary or report containment unverified"
+  - id: RT-008
+    threat: "Recorder offered data from a shared cache"
+    guarantee: {observe: "unavailable", protect: "unavailable", verify: "enforced*", assure: "enforced*"}
+    control: "R-100 no shared cache, CI §5"
+    packet: "CP-0046, CP-0021"
+    release: "alpha.2"
+    fixture:
+      setup: "separate test and recorder environments"
+      challenge: "offer a synthetic cache result from the test context as recorder input"
+      expected: "leave the recorder result unchanged and report the unsupported source"
+  - id: RT-009
+    threat: "Recorder offered an unrelated or invalid artifact"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "R-100 bundle validation and producer binding"
+    packet: "CP-0051, CP-0046, CP-0021"
+    release: "alpha.0 shape and source check, alpha.2 conditional enforcement"
+    fixture:
+      setup: "expected bundle identity and a mismatching placeholder"
+      challenge: "present the mismatching placeholder"
+      expected: "reject it or report not checked"
+  - id: RT-010
+    threat: "Decision attributed to an ineligible account"
+    guarantee: {observe: "unavailable", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "R-101 and R-102 actor and request binding"
+    packet: "CP-0019, CP-0021"
+    release: "alpha.1 attribution, alpha.2 conditional enforcement"
+    fixture:
+      setup: "a request for the section owner"
+      challenge: "offer an answer by an unrelated account"
+      expected: "decline to count the answer and show why"
+  - id: RT-011
+    threat: "Decision replayed against a replaced evaluation"
+    guarantee: {observe: "unavailable", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "R-090, R-101 and kernel §3"
+    packet: "CP-0019, CP-0021"
+    release: "alpha.1 attribution, alpha.2 conditional enforcement"
+    fixture:
+      setup: "an expired or superseded request"
+      challenge: "present the earlier answer for the replacement"
+      expected: "keep the observation and leave the new request unresolved"
+  - id: RT-012
+    threat: "Channel-only answer offered for a decision requiring stronger proof"
+    guarantee: {observe: "unavailable", protect: "advisory", verify: "advisory", assure: "advisory"}
+    control: "R-101 proof table"
+    packet: "CP-0019, CP-0021"
+    release: "alpha.1"
+    fixture:
+      setup: "a request whose minimum exceeds channel proof"
+      challenge: "offer a channel-only observation"
+      expected: "retain it as advisory and leave the claim unsatisfied"
+  - id: RT-013
+    threat: "Agent answer offered for a human decision"
+    guarantee: {observe: "unavailable", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "R-101, R-110 T3 and T4"
+    packet: "CP-0019, CP-0042, CP-0021"
+    release: "alpha.1 detection, alpha.2 conditional enforcement"
+    fixture:
+      setup: "a reserved human decision and a marked agent identity"
+      challenge: "submit a synthetic reply attributed to the marked agent"
+      expected: "identify the actor and keep the decision pending at the required strength"
+  - id: RT-014
+    threat: "Agent acts through a decision maker's forge session or key"
+    guarantee: {observe: "unavailable", protect: "detected", verify: "credential-separation-conditional", assure: "credential-separation-conditional"}
+    control: "R-110 T4 and proof-table strength"
+    packet: "CP-0042, CP-0021; presence in CP-0047"
+    release: "alpha.2 trust, 0.1.x person-present"
+    fixture:
+      setup: "a fixture where credential separation is absent or unknown"
+      challenge: "offer a recorded owner-looking approval"
+      expected: "report the observed limitation and withhold enforced status without attestation"
+  - id: RT-015
+    threat: "Recorded approval edited or withdrawn"
+    guarantee: {observe: "unavailable", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "R-101 request identity, source content history"
+    packet: "CP-0019, CP-0021; CP-0032 lifecycle"
+    release: "alpha.1 edited observations, 0.1.x full withdrawal lifecycle"
+    fixture:
+      setup: "a recorded approval with its original source digest"
+      challenge: "present an edited observation in alpha.1; add withdrawal as a separate CP-0032 variant in 0.1.x"
+      expected: "retain the original and edited history and report eligibility; the later withdrawal variant must also retire current eligibility"
+  - id: RT-016
+    threat: "A move is written without its gate decision"
+    guarantee: {observe: "unavailable", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "R-018 events, replay"
+    packet: "CP-0007, CP-0042, CP-0021"
+    release: "alpha.1 reduction, alpha.2 replay"
+    fixture:
+      setup: "a work item whose station needs evidence"
+      challenge: "present a manual move with no gate receipt"
+      expected: "show tentative or unjustified and give it no subsequent authority"
+  - id: RT-017
+    threat: "Concurrent incompatible moves arrive in a different order"
+    guarantee: {observe: "unavailable", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "ALG-05 conflict, kernel §1"
+    packet: "CP-0007, CP-0021"
+    release: "alpha.1 reduction, alpha.2 replay"
+    fixture:
+      setup: "two conflicting events from the same causal head"
+      challenge: "deliver them in both orders"
+      expected: "produce the same conflict and require resolution"
+  - id: RT-018
+    threat: "Squash merge would drop intent or provenance"
+    guarantee: {observe: "advisory", protect: "detected", verify: "detected", assure: "detected"}
+    control: "ALG-03 anchors and R-101 durable proof"
+    packet: "CP-0052, CP-0021"
+    release: "alpha.0 anchors, alpha.2 signed evidence"
+    fixture:
+      setup: "blessed text and an observation before a synthetic squash"
+      challenge: "read the records from a fresh clone after the squash"
+      expected: "retain the blessed basis and distinguish which proof can still be checked"
+  - id: RT-019
+    threat: "Build requests a hidden holdout case"
+    guarantee: {observe: "advisory", protect: "advisory", verify: "external-conditional", assure: "external-conditional"}
+    control: "R-104 external and in-repo modes"
+    packet: "CP-0021; CP-0047 and M2 external proof"
+    release: "alpha.2 declared fixture, 0.1.x assure, M2 verification"
+    fixture:
+      setup: "one visible holdout and one isolated reference"
+      challenge: "request both from the builder context"
+      expected: "label in-repo advisory and verify access is unavailable before crediting external enforcement"
+  - id: RT-020
+    threat: "Repository data asks an agent to disregard authority"
+    guarantee: {observe: "as-host-declares-or-limited", protect: "as-host-declares-or-limited", verify: "as-host-declares-or-limited", assure: "as-host-declares-or-limited"}
+    control: "R-105 trust-tagged input and host restrictions"
+    packet: "CP-0021; CP-0020 assignment proving"
+    release: "alpha.2 suite, 0.1.0 assignment binding"
+    fixture:
+      setup: "a synthetic untrusted note and an independently scoped assignment"
+      challenge: "submit a harmless note requesting an out-of-scope action"
+      expected: "show whether the host refused or only declared its limits"
+  - id: RT-021
+    threat: "Mapped test case omitted from results"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "ALG-08 case accounting, acceptance-passed"
+    packet: "CP-0018, CP-0051, CP-0021"
+    release: "alpha.0 reporting, alpha.2 conditional gate"
+    fixture:
+      setup: "two mapped case identities and one result"
+      challenge: "omit the second result from the fixture report"
+      expected: "show not run and give no passing credit to the missing case"
+  - id: RT-022
+    threat: "A skip is added to a test"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "ALG-09, tests-not-weakened"
+    packet: "CP-0018, CP-0050, CP-0021"
+    release: "alpha.0 reporting, alpha.2 conditional gate"
+    fixture:
+      setup: "a protected tracked test pair with trusted baseline; an unprotected variant checks detection only"
+      challenge: "report a newly skipped case in the proposed diff"
+      expected: "report the skip and enforce only for the protected case when the binding qualifies; otherwise report detection"
+  - id: RT-023
+    threat: "A test is special-cased to pass without testing its claim"
+    guarantee: {observe: "as-host-declares-or-limited", protect: "as-host-declares-or-limited", verify: "as-host-declares-or-limited", assure: "as-host-declares-or-limited"}
+    control: "R-172 distinguishing, independent checks"
+    packet: "CP-0021; CP-0020 for distinguishing checks"
+    release: "alpha.2 case; 0.1.0 independent checks"
+    fixture:
+      setup: "a synthetic ineffective test and an independent case"
+      challenge: "supply a passing result for the ineffective test"
+      expected: "report the contradiction where observed and withhold independent credit"
+  - id: RT-024
+    threat: "A proving test disappears"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "ALG-09, R-103"
+    packet: "CP-0018, CP-0050, CP-0021"
+    release: "alpha.0 reporting, alpha.2 conditional gate"
+    fixture:
+      setup: "a protected expected proving case and base revision; an unprotected variant checks detection only"
+      challenge: "submit fixture results and change summary without the test"
+      expected: "report removal; enforce review or evidence for the protected case where the binding qualifies; otherwise report detection"
+  - id: RT-025
+    threat: "Report is substituted for a different check run"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "R-100 bundle and check identity"
+    packet: "CP-0051, CP-0046, CP-0021"
+    release: "alpha.0 shape and source check, alpha.2 conditional gate"
+    fixture:
+      setup: "pinned report from a specific check"
+      challenge: "offer a report labelled for a different check result"
+      expected: "reject the mismatch and report incomplete evidence"
+  - id: RT-026
+    threat: "Unexpected test hook changes the check's behavior"
+    guarantee: {observe: "as-host-declares-or-limited", protect: "as-host-declares-or-limited", verify: "as-host-declares-or-limited", assure: "as-host-declares-or-limited"}
+    control: "R-103 protected surfaces and R-172 distinguishing"
+    packet: "CP-0021; CP-0020 for independent checks"
+    release: "alpha.2 case; 0.1.0 independent checks"
+    fixture:
+      setup: "trusted check configuration and a fixture recording changed behavior"
+      challenge: "offer the modified invocation as ordinary evidence"
+      expected: "flag a protected change where covered and surface discrepancies from independent checks"
+  - id: RT-027
+    threat: "Baseline runner fails before the case is tested"
+    guarantee: {observe: "unavailable", protect: "unavailable", verify: "detected", assure: "detected"}
+    control: "R-172 harness failure is inconclusive"
+    packet: "CP-0021; CP-0020 for full deliberate baseline"
+    release: "alpha.2 case; 0.1.0 distinguishing checks"
+    fixture:
+      setup: "baseline and candidate with a synthetic baseline infrastructure failure"
+      challenge: "classify the baseline failure as a distinguishing result"
+      expected: "record inconclusive and give it no distinguishing credit"
+  - id: RT-028
+    threat: "A continuing promise is dropped after its approval"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "R-170, R-187 continuing claims and defeaters"
+    packet: "CP-0043, CP-0021 milestone mapping"
+    release: "0.1.x"
+    fixture:
+      setup: "a continuing promise and later contrary evidence"
+      challenge: "submit a view omitting the still-active claim"
+      expected: "restore the visible obligation and apply the gate covering it"
+  - id: RT-029
+    threat: "A quarantine is hidden or outlives its expiry"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "R-153 quarantine with expiry"
+    packet: "CP-0035, CP-0021 milestone mapping"
+    release: "0.1.x"
+    fixture:
+      setup: "a recorded quarantine with expiry and mapped obligations"
+      challenge: "omit the unexpired quarantine from a candidate view, then evaluate beyond expiry without replacement evidence"
+      expected: "show the quarantine despite omission while active; after expiry require renewed evidence"
+  - id: RT-030
+    threat: "Proof relies on an unapproved assumption or escape hatch"
+    guarantee: {observe: "advisory", protect: "detected", verify: "enforced*", assure: "enforced*"}
+    control: "R-179 theorem hash and proof audit"
+    packet: "CP-0021 milestone mapping; M2 proof proving packet pending"
+    release: "M2"
+    fixture:
+      setup: "a theorem and permitted assumptions fixture"
+      challenge: "submit proof metadata with an unapproved assumption"
+      expected: "refuse the proof credit and identify the undischarged obligation"
+  - id: RT-031
+    threat: "An unapproved skill revision is loaded"
+    guarantee: {observe: "advisory", protect: "detected", verify: "detected", assure: "detected"}
+    control: "R-017 pinned skills and agent packet review"
+    packet: "CP-0012, CP-0022; CP-0021 coverage reconciliation"
+    release: "alpha.0 pin, 0.1.0 card checks"
+    fixture:
+      setup: "a pinned skill and an unexpected revision"
+      challenge: "offer a different digest for the selected skill"
+      expected: "report the mismatch at the binding's observed strength"

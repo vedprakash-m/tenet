@@ -1,0 +1,14 @@
+{
+  "evaluations": [
+    {
+      "id": "install-unknown",
+      "verdict": "refuse",
+      "disposition": "blocks",
+      "next": {
+        "who": "ci",
+        "action": "wait-for-evidence",
+        "command": null
+      }
+    }
+  ]
+}

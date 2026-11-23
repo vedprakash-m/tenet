@@ -1,6 +1,6 @@
 # Tenet technical specification
 
-> Level L2 · Version 0.12 · Status: **draft, awaiting the Owner's approval** · Implements [prd.md](prd.md) and its parts · Parts: [contracts](tech-spec/contracts.md) (formats and interfaces), [algorithms](tech-spec/algorithms.md), [CI and authority](tech-spec/ci.md), [agents](tech-spec/agents.md), [evidence](tech-spec/evidence.md), [onboarding](tech-spec/onboarding.md) · Normative until CP-0015 writes the kernel: this specification, its parts and the PRD; `kit/TENET.md` is superseded except where its banner says · Sections marked `<!-- provisional -->` are intended invariants: they need the Owner to change, and become `<!-- invariant -->` once the spikes (CP-0017, CP-0040, CP-0041) and the first implementation confirm them · Budget: 12,000 tokens · Previous version: `archive/specs/tech-spec.md@0.11.md`
+> Level L2 · Version 0.13 · Status: **draft, awaiting the Owner's approval** · Implements [prd.md](prd.md) and its parts · Parts: [kernel](tech-spec/kernel.md) (kernel algorithms and interfaces), [contracts](tech-spec/contracts.md) (formats and interfaces), [algorithms](tech-spec/algorithms.md), [CI and authority](tech-spec/ci.md), [agents](tech-spec/agents.md), [evidence](tech-spec/evidence.md), [onboarding](tech-spec/onboarding.md) · Normative until CP-0015 writes the kernel: this specification, its parts and the PRD; `kit/TENET.md` is superseded except where its banner says · Sections marked `<!-- provisional -->` are intended invariants: they need the Owner to change, and become `<!-- invariant -->` once the spikes (CP-0017, CP-0040, CP-0041) and the first implementation confirm them · Budget: 12,000 tokens · Previous version: `archive/specs/tech-spec.md@0.12.md`
 
 **Context card.** Tenet is a spec process (§6.3) made checkable by seven record types and one container (§3) and one gate rule (§4). Every feature in the catalog is a standard type of one of them, declared by a pack (§6). The CLI and SDK append events, the CI verifier produces evidence (§7), and every view is a reduction over events (§8). How strict any of this is depends on the project's `level` and each rule's mode (§6.1). Policy always comes from the target line and is judged against the snapshot recorded at decision time. Every rule states its guarantee and the trust assumptions behind it.
 
@@ -96,7 +96,7 @@ Payloads and completion rules per kind (check, measurement, attestation, observa
 
 <!-- provisional --> **A transition of a work item is allowed when every claim the policy makes applicable to its subject at that station is satisfied or waived.**
 
-- **Satisfied:** fresh evidence (same subject digest) using one of the claim's methods, at or above the policy's minimum on every strength axis, whose mapped cases executed and passed, with a passing pass rule; or, for an **approval claim** (such as the definition approval), a fresh `approve` at the proof table's strength.
+- **Satisfied:** fresh evidence (matching subject and applicable evaluation inputs, within its validity window, per kernel §2) using one of the claim's methods, at or above the policy's minimum on every strength axis, whose mapped cases executed and passed, with a passing pass rule; or, for an **approval claim** (such as the definition approval), a fresh `approve` at the proof table's strength.
 - **Waived:** a fresh `waive` of that claim at the proof table's strength, within its scope and unexpired, by an actor other than the one whose change broke it; unwaivable claims cannot be waived.
 - **Applicable:** every claim whose selector matches the work item (pack claims, area policy, the packet's acceptance items) and every continuing claim whose paths, or whose area's declared dependencies, the change touches (the whole area when none are declared). Merging only tightens: the most restrictive method set, strength minimum and pass rule win. A selector that cannot be evaluated (unknown area, missing input) refuses with `TN-GATE-UNKNOWN` and names what is missing.
 
@@ -153,7 +153,7 @@ Reduction, the conflict table per event family and duplicate handling are [ALG-0
 |---|---|---|---|---|---|---|
 | `tests-not-weakened` | No test deleted or skipped (ALG-09) | alpha.0 | advise | enforce | enforce | enforce |
 | `protected-surfaces` | Trust-surface files change only with `change-policy` | alpha.0 | advise | enforce | enforce | enforce |
-| `acceptance-proven` | Every acceptance item proven on the tested commit | alpha.0 | advise | advise | enforce | enforce |
+| `acceptance-passed` | Every required acceptance item has a passing result on the tested commit | alpha.0 | advise | advise | enforce | enforce |
 | `citations-valid` | Every citation resolves (ALG-04) | alpha.0 | advise | advise | enforce | enforce |
 | `budget` | Documents within budget (§9) | alpha.0 | advise | advise | advise | enforce |
 | `stop-threshold` | A stop threshold met (R-036) | alpha.1 | advise | enforce | enforce | enforce |
@@ -259,17 +259,19 @@ In [tech-spec/onboarding.md](tech-spec/onboarding.md) §2.
 
 ## 14. Security
 
+The [red-team catalog](../../pkg/conformance/red-team/catalog.yaml) maps R-106 and the threats below to their adoption levels and proving packets. [CI §7](tech-spec/ci.md#7-trust-observations-and-guarantee-levels) sets the trust and binding conditions for the levels shown here. Below verify, the host-driven CI binding reports findings at advisory or detected strength. Required merge status and current trust are separate prerequisites for enforced merge protection.
+
 | Threat | Control | Level |
 |---|---|---|
 | Policy rewritten on the branch | Policy from the target; protected workflow source | enforced* |
 | Forged or stolen evidence | Two jobs; evidence signed with the protected workflow's identity (fallback: a store only the attest job writes) | enforced* |
 | Cache poisoning or artifact injection between jobs | No shared cache; bundle parsed as data; hardened reference workflow; red-team cases | enforced* |
-| Code under test faking its result | Independent pinned tests, distinguishing evidence, review, external holdout | mitigated |
+| Code under test faking its result | Independent pinned tests, distinguishing evidence, review, external holdout | Mitigated. The check job alone provides no general guarantee of report truth |
 | Gaming the checks (inserted skips, special-cased or deleted tests, substituted reports, planted test hooks) | Protected paths; case manifests (zero executed is inconclusive); report parsed from the check job only; red-team cases | enforced* for protected files; detected otherwise |
 | Agent using the Owner's key or forge session | T4 declared and spot-checked; `bots[]` identities; replies bound to the evaluation the latest card showed; `person-present` for policy, permission, vision and deep-lane release | enforced* where a host binding attests separation; else detected |
 | Hand-written or concurrent moves | `prev` chain, replay, conflict | enforced* |
 | Earlier promises silently dropped | Continuing claims; protected proving cases; defeaters (0.1.x) | enforced* |
-| Holdout leakage | External holdout | enforced* if external |
+| Holdout leakage | External holdout with demonstrated access isolation | In-repo advisory. External holdout can be enforced* when the binding prevents builder access |
 | Prompt injection | Rule of Two; trust-tagged inputs; read-only intake | as the host declares |
 | Proof cheating | Theorem hash match, axiom allowlist, escape-hatch audit (M2) | enforced* |
 | Malicious skill | Pinned by hash; reviewed in an agent packet | detected |
