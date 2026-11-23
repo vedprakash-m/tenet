@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "code": "TN-LOCK-MISMATCH",
+      "severity": "warning",
+      "message": "Installed package 0.1.0-alpha.1 differs from tenet.lock (0.1.0-alpha.0).",
+      "fix": "Run `tenet upgrade` or reinstall @vedprakash-m/tenet@0.1.0-alpha.0."
+    }
+  ],
+  "summary": {
+    "$assert": "present"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "blessed": [
+    {
+      "id": "R-9",
+      "text": "Keep keys off disk."
+    }
+  ],
+  "omitted": [
+    "R-1"
+  ],
+  "truncated": true
+}

@@ -1,0 +1,12 @@
+{
+  "findings": [
+    {
+      "code": "TN-KIT-EDITED",
+      "message": "Vendored kit digest differs from tenet.lock (69ebdd7a1e9c497fcd4cd012e46ed7077cd63b84d97ff97511f3407c546a1d95 != e6f6a0aca2965b80b2c407d482e7df6636355a33a49a8bcf308edc96e30c1705).",
+      "fix": "Restore .tenet/kit or run `tenet upgrade` to update tenet.lock."
+    }
+  ],
+  "summary": {
+    "$assert": "present"
+  }
+}

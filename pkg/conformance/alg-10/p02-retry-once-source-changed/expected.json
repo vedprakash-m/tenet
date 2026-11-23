@@ -1,0 +1,15 @@
+{
+  "blessed": [
+    {
+      "id": "R-1",
+      "section": "requirements",
+      "text": "Retry once.",
+      "owner": "checkout",
+      "flags": [
+        "sources-changed"
+      ]
+    }
+  ],
+  "omitted": [],
+  "truncated": false
+}

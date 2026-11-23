@@ -1,0 +1,15 @@
+{
+  "findings": [
+    {
+      "code": "TN-CITE-RANGE",
+      "severity": "error",
+      "rule": "citations-valid",
+      "line": 7,
+      "message": "Citation src/retry.ts:1-3 has an invalid line range or format.",
+      "fix": "Fix src/retry.ts:1-3 to use a valid path:line or path:start-end within file length."
+    }
+  ],
+  "summary": {
+    "$assert": "present"
+  }
+}

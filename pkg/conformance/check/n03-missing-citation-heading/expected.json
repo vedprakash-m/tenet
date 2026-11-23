@@ -1,0 +1,15 @@
+{
+  "findings": [
+    {
+      "code": "TN-CITE-HEADING",
+      "severity": "error",
+      "rule": "citations-valid",
+      "line": 7,
+      "message": "Cited heading #retired was not found in docs/retry.md.",
+      "fix": "Update the doc: citation to an existing heading slug in docs/retry.md."
+    }
+  ],
+  "summary": {
+    "$assert": "present"
+  }
+}

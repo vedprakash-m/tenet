@@ -1,0 +1,15 @@
+{
+  "findings": [
+    {
+      "code": "TN-CITE-TEST",
+      "severity": "error",
+      "rule": "citations-valid",
+      "line": 7,
+      "message": "Cited test retries twice was not found in test/retry.test.ts.",
+      "fix": "Update the test: citation to match a declared test in test/retry.test.ts."
+    }
+  ],
+  "summary": {
+    "$assert": "present"
+  }
+}

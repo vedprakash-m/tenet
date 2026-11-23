@@ -1,0 +1,24 @@
+{
+  "operation": "context",
+  "options": {
+    "paths": [
+      "src/retry.ts"
+    ],
+    "include_drafts": true
+  },
+  "repo": {
+    "repository": "checkout",
+    "now": "2026-11-23T10:00:00Z",
+    "read": {
+      "main": "9f3c2e1123456789012345678901234567890123",
+      "branches": [],
+      "records": null
+    },
+    "installedVersion": "0.1.0-alpha.0",
+    "files": {
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ]\n}\n",
+      "kit/TENET.md": "# Fixture kit\n",
+      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  experience: {\"state\":\"rejected\",\"digest\":\"sha256:b6fb4228d98d9946dd1d8277f92549008fe5685103bc5653caa577fa3799d7e2\",\"flags\":[],\"applies_to\":[\"src/**\"]}\n---\n## Experience\nExpose the recovery key in checkout.\n"
+    }
+  }
+}

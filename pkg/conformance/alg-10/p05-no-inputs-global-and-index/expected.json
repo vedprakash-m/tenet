@@ -1,0 +1,16 @@
+{
+  "blessed": [
+    {
+      "id": "R-1",
+      "text": "Keep keys off disk."
+    }
+  ],
+  "index": [
+    {
+      "id": "R-2",
+      "title": "Show retry count."
+    }
+  ],
+  "omitted": [],
+  "truncated": false
+}

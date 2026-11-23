@@ -1,0 +1,7 @@
+{
+  "blessed": [],
+  "drafts": {
+    "$assert": "size",
+    "value": 1
+  }
+}
