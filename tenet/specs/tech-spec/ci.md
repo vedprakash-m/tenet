@@ -254,15 +254,15 @@ One table decides what every situation concludes. "Advisory" means the item, rul
 | Situation | `observe`, `protect` | `verify`, `assure` | CLI `check` exit | Badge or line |
 |---|---|---|---|---|
 | No acceptance block, or an empty one | advisory; `acceptance-passed` would have blocked | `failure` unless the lane needs no items (`explore`) | 0 | "no acceptance items" |
-| Malformed acceptance block | advisory | `failure` | 1 (structural) | the parse error |
-| Report missing, malformed, or with zero cases | advisory; the items become `not-run` | `failure` | 0 | "not checked" |
+| Malformed acceptance block | advisory (`degraded`: `"<code>: <message>"`) | `failure` | 1 (structural) | the parse error |
+| Report missing, malformed, or with zero cases | advisory; the items become `not-run` (`degraded`: `"not checked: test report <missing\|malformed>"` or `"not checked: 0 test cases discovered"`) | `failure` | 0 | "not checked" |
 | Only skipped cases | advisory; the items become `skipped` | `failure` | 0 | the skipped cases |
 | Coverage not confirmed | advisory | `failure` for that item | 0 | "coverage not confirmed" |
-| Non-zero exit with a passing report | the check fails; items keep their case results | `failure` | 0 | "check failed after its tests passed" |
-| CI unavailable, a check timed out, or the bundle was refused | `neutral`, "not checked" | `failure` | — | "not checked" |
+| Non-zero exit with a passing report | the check fails; items keep their case results (`degraded`: `"check failed after its tests passed"`) | `failure` | 0 | "check failed after its tests passed" |
+| CI unavailable, a check timed out, or the bundle was refused | `neutral`, "not checked" (`degraded`: `"not checked: bundle refused (TN-RECORD-BUNDLE)"` or `"not checked: check timed out"`) | `failure` | — | "not checked" |
 | Signature or key unavailable | not applicable | `failure` (evidence `unsigned`) | — | "unsigned" |
-| Records not kept | `neutral`, "results not kept" | `failure` | — | "results not kept" |
-| Policy or kit fails to load | `neutral`; the previous policy is used and named | `failure` | 3 | the reason |
+| Records not kept | `neutral`, "results not kept" (`degraded` includes `"results not kept"`) | `failure` | — | "results not kept" |
+| Policy or kit fails to load | `neutral`; the previous policy is used and named (`degraded`: `"policy failed to load at head; using previous policy from base (tenet.yaml)"`) | `failure` | 3 | the reason |
 | Review or decision unobservable | recorded as `unknown` | the decision is asked again | — | "decision needed" |
 | An enforced rule refuses (alpha.1 on) | `failure` | `failure` | 1 | "blocked" |
 | Otherwise | `success`, or `neutral` when something would have blocked | `success` | 0 | the result |

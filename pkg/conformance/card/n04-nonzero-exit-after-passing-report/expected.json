@@ -5,9 +5,34 @@
   "card": {
     "schema_version": 1,
     "evaluation_id": "1da83ac09e4d1440",
+    "tested": {
+      "commit": "9b41d00000000000000000000000000000000000",
+      "kind": "merge-candidate",
+      "head": "a111111111111111111111111111111111111111",
+      "base": "b222222222222222222222222222222222222222"
+    },
+    "acceptance_digest": "ecb0ca9c8c0d4ce5219b885c6e43faac874c66c2ae2ab8f2280e5da645358afa",
+    "requirements": [
+      {
+        "id": "C-1",
+        "excerpt": "A payment that times out is retried once, never twice.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "implements",
+        "tests": {
+          "expected": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
+        }
+      }
+    ],
     "items": [
       {
         "id": "AB-1",
+        "text": "one retry after a timeout, never two",
         "result": "passed",
         "coverage": "confirmed",
         "tests": {
@@ -16,7 +41,11 @@
           "failed": 0,
           "skipped": 0,
           "not_run": 0
-        }
+        },
+        "names": [
+          "test/checkout.retry.test.ts › checkout › [AB-1] one retry after timeout"
+        ],
+        "authorship": "written-here"
       }
     ],
     "tests": {
@@ -27,8 +56,29 @@
       "skipped": 0,
       "failing": []
     },
-    "degraded": {
-      "$assert": "present"
-    }
+    "weakening": {
+      "found": false,
+      "by": [],
+      "not_checked": []
+    },
+    "workflow_changed": false,
+    "protected": [],
+    "blessings_changed": [],
+    "deltas": [],
+    "rules": [],
+    "badge": "advisory",
+    "why": [
+      {
+        "text": "tests written in this change require reviewer judgment",
+        "class": "judge"
+      },
+      {
+        "text": "check failed after its tests passed",
+        "class": "host"
+      }
+    ],
+    "degraded": [
+      "check failed after its tests passed"
+    ]
   }
 }

@@ -5,11 +5,21 @@
   "card": {
     "schema_version": 1,
     "evaluation_id": "b475e18645f2ba2e",
-    "items": [
+    "tested": {
+      "commit": "9b41d00000000000000000000000000000000000",
+      "kind": "merge-candidate",
+      "head": "a111111111111111111111111111111111111111",
+      "base": "b222222222222222222222222222222222222222"
+    },
+    "acceptance_digest": "ecb0ca9c8c0d4ce5219b885c6e43faac874c66c2ae2ab8f2280e5da645358afa",
+    "requirements": [
       {
-        "id": "AB-1",
-        "result": "not-run",
-        "coverage": "not-confirmed",
+        "id": "C-1",
+        "excerpt": "A payment that times out is retried once, never twice.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "implements",
         "tests": {
           "expected": 2,
           "passed": 1,
@@ -19,18 +29,52 @@
         }
       }
     ],
-    "rules": {
-      "$assert": "contains",
-      "value": [
-        {
-          "rule": "acceptance-passed",
-          "mode": "advise",
-          "would_block": true,
-          "reason": {
-            "$assert": "present"
-          }
-        }
-      ]
-    }
+    "items": [
+      {
+        "id": "AB-1",
+        "text": "one retry after a timeout, never two",
+        "result": "not-run",
+        "coverage": "not-confirmed",
+        "tests": {
+          "expected": 2,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 1
+        },
+        "names": [
+          "test/checkout.retry.test.ts › checkout › [AB-1] one retry after timeout"
+        ],
+        "authorship": "written-here"
+      }
+    ],
+    "tests": {
+      "report": "ok",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "failing": []
+    },
+    "weakening": {
+      "found": false,
+      "by": [],
+      "not_checked": []
+    },
+    "workflow_changed": false,
+    "protected": [],
+    "blessings_changed": [],
+    "deltas": [],
+    "rules": [
+      {
+        "rule": "acceptance-passed",
+        "mode": "advise",
+        "would_block": true,
+        "reason": "AB-1 coverage not confirmed"
+      }
+    ],
+    "badge": "advisory",
+    "why": [],
+    "degraded": []
   }
 }
