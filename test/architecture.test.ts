@@ -44,7 +44,7 @@ const allowedImports = new Map<string, string[]>([
   ["views", ["types", "core", "policy", "specs", "reports", "kernel"]],
   ["mcp", ["types", "core", "policy", "specs", "context", "views"]],
   ["install", ["types", "core", "policy", "specs", "onboard", "context", "reports", "kernel", "views", "mcp"]],
-  ["commands", ["types", "core", "policy", "specs", "onboard", "context", "reports", "kernel", "verify", "views", "install"]],
+  ["commands", ["types", "core", "policy", "specs", "onboard", "context", "reports", "kernel", "verify", "views", "install", "all"]],
   ["all", ["types", "core", "policy", "specs", "onboard", "context", "reports", "kernel", "verify", "views", "mcp", "install", "commands"]],
 ]);
 

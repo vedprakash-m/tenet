@@ -1,12 +1,18 @@
-import { registerCommand } from "../cli.js";
-import type { CommandSpec } from "../cli.js";
-import { serveMcp } from "../mcp/index.js";
+import { serveMcp } from "../cli.js";
 
-const command: CommandSpec = {
+type CommandContext = {
+  cwd: string;
+  stdin: NodeJS.ReadableStream;
+  stdout: { write(value: string | Uint8Array): unknown };
+  stderr: { write(value: string | Uint8Array): unknown };
+  now: () => Date;
+};
+
+const command = {
   name: "mcp",
   description: "Serve the Tenet MCP tools over stdio",
   usage: "tenet mcp",
-  async run(context) {
+  async run(context: CommandContext) {
     await serveMcp({
       cwd: context.cwd,
       stdin: context.stdin,
@@ -18,5 +24,4 @@ const command: CommandSpec = {
   },
 };
 
-registerCommand(command);
 export default command;

@@ -4,7 +4,6 @@ import path from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
-import type { Writable } from "../cli.js";
 import { version } from "../core/output.js";
 import { ulid } from "../core/hash.js";
 import { writeAtomic } from "../core/fs.js";
@@ -19,8 +18,8 @@ import { check } from "../specs/check.js";
 export type McpIo = {
   cwd?: string;
   stdin?: NodeJS.ReadableStream;
-  stdout?: Writable;
-  stderr?: Writable;
+  stdout?: { write(value: string | Uint8Array): unknown };
+  stderr?: { write(value: string | Uint8Array): unknown };
   now?: () => Date;
 };
 
@@ -148,7 +147,7 @@ function resultResponse(id: JsonRpcId, result: unknown): JsonObject {
   return { jsonrpc: "2.0", id, result };
 }
 
-function line(io: { stdout: Writable }, value: unknown): void {
+function line(io: { stdout: { write(value: string | Uint8Array): unknown } }, value: unknown): void {
   io.stdout.write(`${JSON.stringify(value)}\n`);
 }
 
@@ -171,7 +170,6 @@ function parseContextArguments(value: unknown, cwd: string): ContextInput {
   if (args.budget_tokens !== undefined &&
     (typeof args.budget_tokens !== "number" ||
       !Number.isFinite(args.budget_tokens) ||
-      !Number.isInteger(args.budget_tokens) ||
       args.budget_tokens <= 0)
   ) {
     throw new Error("budget_tokens must be positive and finite");

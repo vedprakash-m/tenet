@@ -143,9 +143,7 @@ function asOf(options: BoardOptions): string {
 	return now.toISOString().replace(".000Z", "Z");
 }
 
-async function revision(
-	cwd: string,
-): Promise<{
+async function revision(cwd: string): Promise<{
 	full: string | null;
 	short: string | null;
 	branch: string | null;
@@ -196,6 +194,7 @@ function changedSource(
 	section: SpecSection,
 	readFile: (filename: string) => string | null,
 ): SectionDetail["changedSource"] {
+	const changed: Array<{ id: string; path: string }> = [];
 	for (const cite of section.requirements.flatMap((item) => item.cites)) {
 		const expected = section.anchors[cite];
 		if (expected === undefined) continue;
@@ -210,9 +209,16 @@ function changedSource(
 		);
 		const parsed = citationParts(cite);
 		if (!requirement || !parsed) continue;
-		return { id: requirement.id, path: parsed.path };
+		changed.push({ id: requirement.id, path: parsed.path });
 	}
-	return null;
+	const unique = changed.filter(
+		(source, index) =>
+			changed.findIndex(
+				(candidate) =>
+					candidate.id === source.id && candidate.path === source.path,
+			) === index,
+	);
+	return unique.length === 1 ? (unique[0] ?? null) : null;
 }
 
 function citationMessage(
@@ -285,11 +291,13 @@ function debtOrder(left: SpecDebt, right: SpecDebt): number {
 		"untested-requirement": 1,
 		"over-budget": 2,
 	};
+	const compare = (a: string, b: string): number =>
+		a < b ? -1 : a > b ? 1 : 0;
 	return (
 		kinds[left.kind] - kinds[right.kind] ||
-		left.path.localeCompare(right.path, "en") ||
-		(left.id ?? "").localeCompare(right.id ?? "", "en") ||
-		left.message.localeCompare(right.message, "en")
+		compare(left.path, right.path) ||
+		compare(left.id ?? "", right.id ?? "") ||
+		compare(left.message, right.message)
 	);
 }
 

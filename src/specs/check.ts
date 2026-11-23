@@ -242,7 +242,7 @@ function visionOf(doc: ParsedDoc): Array<{ section: SpecSection; item: Requireme
 }
 
 function duplicateIdFindings(entries: LadderEntry[]): Finding[] {
-  const occurrences = new Map<string, Array<{ path: string; line: number | null; state: string }>>();
+  const occurrences = new Map<string, Array<{ path: string; line: number | null }>>();
   const rank = (level: string | null) => level && /^L\d$/.test(level) ? Number(level.slice(1)) : 5;
   const ordered = [...entries].sort((left, right) =>
     rank(left.level) - rank(right.level) ||
@@ -251,24 +251,24 @@ function duplicateIdFindings(entries: LadderEntry[]): Finding[] {
     for (const section of entry.doc.sections) {
       for (const item of [...section.vision_items, ...section.requirements]) {
         const list = occurrences.get(item.id) ?? [];
-        list.push({ path: entry.path, line: itemLine(item), state: section.state });
+        list.push({ path: entry.path, line: itemLine(item) });
         occurrences.set(item.id, list);
       }
     }
   }
-  const result: Finding[] = [];
-  for (const [id, items] of [...occurrences.entries()].sort(([left], [right]) => left.localeCompare(right))) {
-    for (const duplicate of items.slice(1)) {
-      result.push(makeFinding("TN-SPEC-DUP-ID", "error", duplicate.path, duplicate.line, { id }));
+  const findings: Finding[] = [];
+  for (const [id, items] of occurrences) {
+    for (const later of items.slice(1)) {
+      findings.push(makeFinding("TN-SPEC-DUP-ID", "error", later.path, later.line, { id }));
     }
   }
-  return result;
+  return findings;
 }
 
 function visionCoverage(entries: LadderEntry[]): Finding[] {
   const blessedVision = entries.flatMap((entry) => visionOf(entry.doc)
     .filter(({ section }) => section.state === "blessed")
-    .map(({ section, item }) => ({ path: entry.path, line: itemLine(item), id: item.id, section })));
+    .map(({ item }) => ({ path: entry.path, line: itemLine(item), id: item.id })));
   const covered = new Set(entries.flatMap((entry) => requirementsOf(entry.doc))
     .filter(({ section }) => section.state === "blessed")
     .flatMap(({ item }) => item.serves));
@@ -486,13 +486,25 @@ async function duplicateIdsOnOtherBranches(
     return [{ ref, commit }];
   });
   if (refs.length === 0) return [];
-  const all = new Map<string, Array<{ state: string; source: string; signature: string }>>();
+  const all = new Map<string, Array<{
+    state: string;
+    source: string;
+    signature: string;
+    file: string;
+    line: number | null;
+  }>>();
   const collect = (entries: LadderEntry[], source: string) => {
     for (const entry of entries) {
       for (const section of entry.doc.sections) {
         for (const item of [...section.vision_items, ...section.requirements]) {
           const list = all.get(item.id) ?? [];
-          list.push({ state: section.state, source: `${source}:${entry.path}`, signature: jcs(item) });
+          list.push({
+            state: section.state,
+            source: `${source}:${entry.path}`,
+            signature: jcs(item),
+            file: entry.path,
+            line: itemLine(item),
+          });
           all.set(item.id, list);
         }
       }
@@ -522,9 +534,9 @@ async function duplicateIdsOnOtherBranches(
       new Set(blessed.map((item) => item.signature)).size < 2 ||
       occurrences.every((item) => item.source.startsWith("working-tree:"))
     ) continue;
-    const source = blessed.find((item) => item.source.startsWith("working-tree:")) ?? blessed[0];
-    const file = source?.source.split(":").slice(1).join(":") ?? null;
-    result.push(makeFinding("TN-SPEC-DUP-ID", "error", file, null, { id }));
+    const source = blessed.find((item) => item.source.startsWith("working-tree:"));
+    if (!source) continue;
+    result.push(makeFinding("TN-SPEC-DUP-ID", "error", source.file, source.line, { id }));
   }
   return result;
 }

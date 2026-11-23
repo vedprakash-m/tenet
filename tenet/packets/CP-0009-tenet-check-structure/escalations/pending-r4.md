@@ -14,4 +14,7 @@ One integration contradiction remains:
   that import `src/cli.ts`. Resolving that conflict requires a change to
   CP-0005-owned `src/cli.ts` or the existing architecture test, neither of which
   is in CP-0009's Owns. The expected CP-0009 full-suite result is that this
-  architecture assertion is the sole blocker.
+  architecture assertion is the sole blocker. This is a shared blocker for the
+  A0-4 command packets: changing the registration design requires a coordinated
+  CP-0005 amendment or an approved architecture-test clarification, not a
+  hidden dynamic-import or global-registry workaround.

@@ -247,7 +247,10 @@ test("board reports edited text and changed cited sources separately", async () 
 			"edited",
 		);
 		assert.match(renderSpecsBoard(result), /Sources changed \(1\)/);
-		assert.match(renderSpecsBoard(result), /Edited \(1\)/);
+		assert.match(
+			renderSpecsBoard(result),
+			/Edited \(1\)\n {2}Limits · edited since blessing; the blessed text still applies/,
+		);
 		assert.equal(
 			result.pending_blessings.filter((item) => item.section === "requirements")
 				.length,
@@ -285,6 +288,12 @@ test("board detects every independent spec-debt kind", async () => {
 					state: "blessed",
 					body: `- R-1 Use the queue. {origin: asked; cites: src/legacy/queue.ts:1}
 - R-2 Bound retries. {origin: asked}`,
+				},
+				{
+					slug: "future",
+					heading: "Future",
+					state: "draft",
+					body: "- R-3 Try a different queue. {origin: asked}",
 				},
 			]),
 		);
@@ -346,6 +355,46 @@ test("board result validates against its owned result schema", async () => {
 		assert.equal(
 			validate({
 				...result,
+				specs: [
+					{
+						path: "tenet/intent.md",
+						section: "requirements",
+						level: "L1",
+						state: "blessed",
+						flags: [],
+						recorded: "self",
+					},
+				],
+				spec_debt: [
+					{
+						kind: "over-budget",
+						path: "tenet/intent.md",
+						id: null,
+						message:
+							"tenet/intent.md is over its token budget (201 > 200 tokens)",
+					},
+				],
+			}),
+			true,
+		);
+		assert.equal(
+			validate({
+				...result,
+				specs: [
+					{
+						path: "tenet/intent.md",
+						section: "requirements",
+						level: "L1",
+						state: "blessed",
+						flags: [],
+					},
+				],
+			}),
+			false,
+		);
+		assert.equal(
+			validate({
+				...result,
 				spec_debt: [
 					{
 						kind: "over-budget",
@@ -397,6 +446,12 @@ test("board renders the UX Part 2 example deterministically", async () => {
 					heading: "Design",
 					state: "deferred",
 					body: "- C-5 Use the checkout queue. {origin: asked; cites: src/legacy/queue.ts:1}",
+				},
+				{
+					slug: "rejected",
+					heading: "Rejected",
+					state: "rejected",
+					body: "- C-6 Ignore the checkout queue. {origin: asked; cites: src/rejected.ts:1}",
 				},
 			]),
 		);

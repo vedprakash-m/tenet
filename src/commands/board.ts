@@ -20,9 +20,9 @@ const command = {
 			all: context.options["--all"] === true,
 			now: context.now(),
 		});
-		return context.json
-			? { result: value }
-			: { value: renderSpecsBoard(value) };
+		if (context.json) return { result: value };
+		if (!context.quiet) context.stdout.write(renderSpecsBoard(value));
+		return { value: null };
 	},
 };
 

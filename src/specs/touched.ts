@@ -260,7 +260,7 @@ function textChanged(
   hunks: Hunk[],
 ): boolean {
   if (!base) {
-    if (!head || head.section.state !== "blessed") return false;
+    if (head?.section.state !== "blessed") return false;
     const line = itemLine(head.requirement);
     return line !== null && hunks.some((hunk) =>
       hunk.newPath === head.path && overlaps(line, line, hunk, false)

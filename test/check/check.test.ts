@@ -420,6 +420,91 @@ test("paths scope omits repository-wide and lock checks", async () => {
   }
 });
 
+test("citation rule mode controls severity", async () => {
+  const repo = await tmpRepo("check-citation-mode");
+  try {
+    await seed(repo);
+    await repo.write(
+      "tenet/specs/prd.md",
+      spec(
+        "tenet/specs/prd.md",
+        "requirements",
+        "- R-1 Broken. {origin: asked; cites: missing.ts:1}",
+      ),
+    );
+    const advice = (await check({ cwd: repo.path })).findings.find((finding) =>
+      finding.code === "TN-CITE-FILE");
+    assert.equal(advice?.severity, "advise");
+  } finally {
+    await repo.cleanup();
+  }
+});
+
+test("kit and lock failures are independent and use tenet.lock location", async () => {
+  const repo = await tmpRepo("check-kit-lock");
+  try {
+    await seed(repo);
+    const vendored = structuredClone(policy);
+    vendored.kit_path = ".tenet/kit";
+    await repo.write("tenet.yaml", JSON.stringify(vendored, null, 2));
+    await repo.write(".tenet/kit/TENET.md", "# Edited\n");
+    await repo.write("tenet.lock", JSON.stringify({
+      schema_version: 1,
+      package: "@vedprakash-m/tenet",
+      version: "9.9.9",
+      integrity: `sha512-${"A".repeat(86)}==`,
+      kit_sha256: "0".repeat(64),
+    }, null, 2));
+    const findings = (await check({
+      cwd: repo.path,
+      installedVersion: "8.8.8",
+    })).findings.filter((finding) =>
+      finding.code === "TN-KIT-EDITED" || finding.code === "TN-LOCK-MISMATCH");
+    assert.deepEqual(findings.map((finding) => [
+      finding.code,
+      finding.severity,
+      finding.file,
+    ]), [
+      ["TN-KIT-EDITED", "error", "tenet.lock"],
+      ["TN-LOCK-MISMATCH", "warning", "tenet.lock"],
+    ]);
+  } finally {
+    await repo.cleanup();
+  }
+});
+
+test("one-file layout requires intent instead of the configured ladder", async () => {
+  const repo = await tmpRepo("check-one-file");
+  try {
+    await seed(repo);
+    const oneFilePolicy = {
+      standard: policy.standard,
+      kit_path: policy.kit_path,
+      paths: policy.paths,
+      level: policy.level,
+      owners: policy.owners,
+    };
+    await repo.write("tenet.yaml", JSON.stringify(oneFilePolicy, null, 2));
+    for (const filename of [
+      "vision.md",
+      "specs/prd.md",
+      "specs/tech-spec.md",
+      "specs/ux-spec.md",
+      "specs/plan.md",
+    ]) {
+      await (await import("node:fs/promises")).rm(`${repo.path}/tenet/${filename}`);
+    }
+    await repo.write(
+      "tenet/intent.md",
+      spec("tenet/intent.md", "requirements", "- R-1 One file. {origin: asked}"),
+    );
+    assert.ok(!(await check({ cwd: repo.path })).findings.some((finding) =>
+      finding.code === "TN-SCHEMA" && finding.message.includes("spec-ladder")));
+  } finally {
+    await repo.cleanup();
+  }
+});
+
 test("required ladder documents are reported and findings are stably ordered", async () => {
   const repo = await tmpRepo("check-required");
   try {

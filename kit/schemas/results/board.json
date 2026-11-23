@@ -86,6 +86,11 @@
               "required": ["state"]
             },
             "then": {
+              "properties": {
+                "recorded": {
+                  "enum": ["self", "forge", "signed"]
+                }
+              },
               "required": ["recorded"]
             }
           }

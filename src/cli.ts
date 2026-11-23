@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { git } from "./core/git.js";
 import { exitCodeFor, fail, result, version, type Finding } from "./core/output.js";
+export { serveMcp } from "./mcp/index.js";
 
 export type Writable = {
   write(value: string | Uint8Array): unknown;

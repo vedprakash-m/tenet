@@ -237,7 +237,7 @@ async function collect(
 ): Promise<Collected> {
   const cwd = path.resolve(input.cwd ?? process.cwd());
   const budget = input.budget_tokens ?? 4_000;
-  if (!Number.isFinite(budget) || !Number.isInteger(budget) || budget <= 0) {
+  if (!Number.isFinite(budget) || budget <= 0) {
     throw fail(
       "TN-USAGE-BUDGET",
       `Invalid token budget: ${String(input.budget_tokens)}`,

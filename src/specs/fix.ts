@@ -33,6 +33,7 @@ type IdOccurrence = {
   line: number;
   state: string;
   signature: string;
+  occurrenceIndex: number;
   authoredAt?: number;
 };
 
@@ -122,12 +123,23 @@ function frontFor(entry: LadderEntry, current: Front | null, policy: Policy, hea
 
 function occurrences(entries: LadderEntry[], prefix: string): IdOccurrence[] {
   const result: IdOccurrence[] = [];
+  const counts = new Map<string, number>();
   for (const entry of entries) {
     for (const section of entry.doc.sections) {
       for (const item of [...section.vision_items, ...section.requirements]) {
         const line = itemLine(item);
         if (line === null || !item.id.startsWith(`${prefix}-`)) continue;
-        result.push({ id: item.id, path: entry.path, line, state: section.state, signature: jcs(item) });
+        const key = `${entry.path}\0${item.id}`;
+        const occurrenceIndex = counts.get(key) ?? 0;
+        counts.set(key, occurrenceIndex + 1);
+        result.push({
+          id: item.id,
+          path: entry.path,
+          line,
+          state: section.state,
+          signature: jcs(item),
+          occurrenceIndex,
+        });
       }
     }
   }
@@ -172,6 +184,7 @@ async function otherBranchOccurrences(cwd: string, prefix: string): Promise<IdOc
             state: section.state,
             signature: jcs(item),
             authoredAt: timestamp,
+            occurrenceIndex: 0,
           });
         }
       }
@@ -249,7 +262,7 @@ function replaceOccurrenceId(
   const candidates = parsed.sections
     .flatMap((section) => [...section.vision_items, ...section.requirements])
     .filter((item) => item.id === occurrence.id && jcs(item) === occurrence.signature);
-  const target = candidates[0];
+  const target = candidates[occurrence.occurrenceIndex ?? 0] ?? candidates[0];
   const line = target ? itemLine(target) : occurrence.line;
   if (line === null) return text;
   return replaceId(text, line, occurrence.id, to);
@@ -376,15 +389,23 @@ export async function fix(options: FixOptions = {}): Promise<FixResult> {
   }
   const entries = [...known.values()].sort((left, right) => left.path.localeCompare(right.path));
   const requirementIds = occurrences(entries, prefix).filter((item) => item.id.startsWith(`${prefix}-`));
-  const visionIds = entries.flatMap((entry) => entry.doc.sections.flatMap((section) =>
-    section.vision_items.map((item) => ({
-      id: item.id,
-      path: entry.path,
-      line: itemLine(item),
-      state: section.state,
-      signature: jcs(item),
-    }))
-  )).filter((item): item is IdOccurrence => item.line !== null);
+  const visionCounts = new Map<string, number>();
+  const visionIds: IdOccurrence[] = entries.flatMap((entry) => entry.doc.sections.flatMap((section) =>
+    section.vision_items.flatMap((item) => {
+      const key = `${entry.path}\0${item.id}`;
+      const occurrenceIndex = visionCounts.get(key) ?? 0;
+      visionCounts.set(key, occurrenceIndex + 1);
+      const line = itemLine(item);
+      return line === null ? [] : [{
+        id: item.id,
+        path: entry.path,
+        line,
+        state: section.state,
+        signature: jcs(item),
+        occurrenceIndex,
+      }];
+    })
+  ));
   const branchIds = await otherBranchOccurrences(cwd, prefix);
   let nextRequirement = Math.max(0, ...requirementIds.map((item) => idNumber(item.id)),
     ...branchIds.filter((item) => item.id.startsWith(`${prefix}-`)).map((item) => idNumber(item.id))) + 1;
