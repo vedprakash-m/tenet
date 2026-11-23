@@ -22,6 +22,7 @@
 | `TN-BLESS-NO-TTY` | Interactive terminal required to bless specifications. | Run `tenet bless` in an interactive terminal session. |
 | `TN-BLESS-OPEN-CONFLICT` | Section {slug} has unresolved conflicts or open questions ({ids}). | Resolve {ids} in Conflicts or Open questions, then run `tenet bless`. |
 | `TN-BUDGET` | File {path} is over its token budget ({tokens} > {limit} tokens). | Trim {path} or run `tenet split` to extract a section into a part. |
+| `TN-BUDGET-WARN` | File {path} is at or over 90% of its token budget ({tokens} / {limit} tokens). | Trim {path} or run `tenet split` to extract a section into a part. |
 | `TN-CITE-FILE` | Cited file {path} was not found. | Update the citation path or restore {path}. |
 | `TN-CITE-HEADING` | Cited heading #{slug} was not found in {path}. | Update the doc: citation to an existing heading slug in {path}. |
 | `TN-CITE-RANGE` | Citation {cite} has an invalid line range or format. | Fix {cite} to use a valid path:line or path:start-end within file length. |
@@ -62,6 +63,7 @@
 | `TN-SPEC-MISSING-ID` | Specification line needs an ID. | Run `tenet fix` or prefix the line with an unused ID. |
 | `TN-SPEC-NO-FRONT` | Specification file has no valid YAML front matter. | Add YAML front matter (`---`) with `tenet` and `sections`, or run `tenet fix`. |
 | `TN-SPEC-REQ-META` | Requirement metadata is malformed: check closing braces, allowed keys, and origin. | Fix the `{…}` metadata block with allowed keys and valid origin. |
+| `TN-SPEC-UNCOVERED-VISION` | Blessed vision item {id} is not served by a blessed requirement or listed under ## Not yet in scope. | Add serves: {id} to a blessed requirement or list {id} under a blessed ## Not yet in scope section. |
 | `TN-SUBJ-DIRTY` | Working tree has uncommitted changes. | Commit or stash local changes before running `tenet {command}`. |
 | `TN-USAGE-*` | Invalid usage for `tenet {command}`: {detail}. | Run `tenet {command} --help` for valid arguments and flags. |
 | `TN-WEAK-*` | Possible test weakening ({finding}) in {file}: {names}. | Restore removed tests or remove skip markers in {file}, or ask for a waiver. |

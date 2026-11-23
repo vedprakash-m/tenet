@@ -125,7 +125,7 @@ Moved to [ci.md](ci.md) under the rollover rule: the test job and recorder, runn
 | `import` | 0.1.x | packets | |
 | `conform` | M4 | — | |
 
-Global flags: `--json`, `--cwd`, `--quiet`, `--verbose`, `--offline`. Under `--json` stdout holds exactly one JSON object `{ok, command, version, result, errors: [finding]}`; human text goes to stderr. A **finding** is `{code, severity: error|warning|advise, rule, file, line, message, fix}`, with `rule`, `file` and `line` nullable; `check` returns `result: {findings: [finding], summary}`, and `tenet_check` the same. **Results by command:** `init` `{plan, wrote, findings}`; `onboard` `{preflight, inventory_path, assignment_path, findings}`; `bless` `{blessed, confirmed, rejected, deferred, minutes}`; `context` the `tenet_context` result; `fix` `{changes}`; `split` `{moved, pointer}`; `board` `board.json`; `upgrade` `{from, to, changed}`; `remove` `{removed, kept}`; `doctor` `{checks: [{name, ok, detail}]}`; `verify --record` `{evaluation_id, conclusion, wrote}`. Each command's packet owns `kit/schemas/results/<command>.json`. Exit codes in precedence order: 2 usage, 3 environment, 4 policy refusal, 1 gate or check failed, 0 success; each error code's exit code is in §13. Each command's `result` follows `kit/schemas/results/<command>.json` (CP-0004). Pull-request replies (`/tenet approve`, `pick`, `bless`, `not-useful`) arrive in alpha.1 (ci.md §6).
+Global flags: `--json`, `--cwd`, `--quiet`, `--verbose`, `--offline`. Under `--json` stdout holds exactly one JSON object `{ok, command, version, result, errors: [finding]}`; human text goes to stderr. A **finding** is `{code, severity: error|warning|advise, rule, file, line, message, fix}`, with `rule`, `file` and `line` nullable; `check` returns `result: {findings: [finding], summary: {errors, warnings, advises}}` (counts by `severity`, with `findings` sorted by `file ?? ""`, numeric `line ?? 0`, `code`, `message`), and `tenet_check` the same. **Results by command:** `init` `{plan, wrote, findings}`; `onboard` `{preflight, inventory_path, assignment_path, findings}`; `bless` `{blessed, confirmed, rejected, deferred, minutes}`; `context` the `tenet_context` result; `fix` `{changes}`; `split` `{moved, pointer}`; `board` `board.json`; `upgrade` `{from, to, changed}`; `remove` `{removed, kept}`; `doctor` `{checks: [{name, ok, detail}]}`; `verify --record` `{evaluation_id, conclusion, wrote}`. Each command's packet owns `kit/schemas/results/<command>.json`. Exit codes in precedence order: 2 usage, 3 environment, 4 policy refusal, 1 gate or check failed, 0 success; each error code's exit code is in §13. Each command's `result` follows `kit/schemas/results/<command>.json` (CP-0004). Pull-request replies (`/tenet approve`, `pick`, `bless`, `not-useful`) arrive in alpha.1 (ci.md §6).
 
 ## 9. MCP
 
@@ -145,17 +145,7 @@ Newline-delimited JSON-RPC 2.0 over stdio; logs on stderr only; no network. Prot
 
 ## 10. Install manifest and hosts
 
-`.tenet/manifest.json`: `{schema_version, version, created: [{path, sha256}], blocks: [{path, kind: markdown|yaml, marker}], keys: [{path, pointer, previous, installed}]}`; `.tenet/manifest.pending.json` holds the full plan before the first write (ALG-12). Markdown blocks: `<!-- tenet:begin v<version> -->` … `<!-- tenet:end -->`; YAML: `# tenet:begin` … `# tenet:end`. JSON files are owned by key (`/mcpServers/tenet`, `/servers/tenet` in `.vscode/mcp.json`), with the previous value kept.
-
-| Host marker | Writes |
-|---|---|
-| `.claude/` or `CLAUDE.md` | `.mcp.json` key; skills in `.claude/skills/tenet-*/SKILL.md`; a block in `CLAUDE.md` pointing to `AGENTS.md` |
-| `.cursor/` | `.cursor/mcp.json` key |
-| `.github/copilot-instructions.md` | a marked block pointing to `AGENTS.md` |
-| `.vscode/` | `.vscode/mcp.json` key |
-| always | the `AGENTS.md` block ([agents.md](agents.md) §1); skills in `.agents/skills/tenet-*/SKILL.md`; a `.gitignore` block (`.tenet/*`, `!.tenet/manifest.json`, `!.tenet/kit/`); an `## Acceptance` block in `.github/pull_request_template.md`; a `.gitattributes` block marking every file Tenet writes `text eol=lf` (on Windows with `core.autocrlf=true` and `core.safecrlf=true`, `git add` otherwise refuses LF files, as Spike B hit) |
-
-MCP entries run `npx -y @vedprakash-m/tenet@<locked version> mcp` in the committed file; where a Windows host needs `cmd /c`, `init` writes that form into the user's local host settings, never the shared file (CP-0045 tests both). `upgrade` rewrites the pinned version in every entry it owns.
+In [onboarding.md §2](onboarding.md#2-install-and-upgrade), moved under the rollover rule.
 
 ## 11. Determinism
 
@@ -176,9 +166,9 @@ Message and fix text for every code: [messages.md](messages.md).
 | `TN-USAGE-*`, `TN-BLESS-NO-TTY` | usage | 2 |
 | `TN-ENV-NODE`, `TN-ENV-GIT`, `TN-ENV-NO-COMMIT`, `TN-ENV-NOT-GIT`, `TN-POLICY-MISSING` | environment | 3 |
 | `TN-POLICY-LOOSEN`, `TN-POLICY-INCOMPATIBLE`, `TN-POLICY-RULE`, `TN-INIT-EXISTS`, `TN-BLESS-OPEN-CONFLICT`, `TN-BLESS-INFERRED` | policy refusal | 4 |
-| `TN-SCHEMA`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-KIT-EDITED`, `TN-EV-DUP`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID` | structural | 1 |
-| `TN-CITE-FILE`, `TN-CITE-RANGE`, `TN-CITE-HEADING`, `TN-CITE-TEST` (rule `citations-valid`); `TN-BUDGET` (`budget`); `TN-WEAK-*` (`tests-not-weakened`); `TN-PROTECTED` (`protected-surfaces`); `TN-ACC-UNPASSED` (`acceptance-passed`); `TN-GATE-*` (the row's rule) | rule | 1 in `enforce`, else 0 |
-| `TN-REPORT-MISSING`, `TN-REPORT-MALFORMED`, `TN-RECORD-BUNDLE`, `TN-LOCK-MISMATCH`, `TN-POLICY-BRANCH`, `TN-POLICY-LEVEL-UNAVAILABLE`, `TN-SUBJ-DIRTY`, `TN-EV-ORPHAN` | warning, shown as degraded | 0 |
+| `TN-SCHEMA`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-SPEC-UNCOVERED-VISION`, `TN-KIT-EDITED`, `TN-EV-DUP`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID` | structural | 1 |
+| `TN-CITE-FILE`, `TN-CITE-RANGE`, `TN-CITE-HEADING`, `TN-CITE-TEST` (rule `citations-valid`); `TN-BUDGET` (`budget`); `TN-WEAK-*` (`tests-not-weakened`); `TN-PROTECTED` (`protected-surfaces`); `TN-ACC-UNPASSED` (`acceptance-passed`); `TN-GATE-*` (the row's rule) | rule (`severity: "error"` in `enforce`, `"advise"` in `advise`) | 1 in `enforce`, else 0 |
+| `TN-REPORT-MISSING`, `TN-REPORT-MALFORMED`, `TN-RECORD-BUNDLE`, `TN-LOCK-MISMATCH`, `TN-POLICY-BRANCH`, `TN-POLICY-LEVEL-UNAVAILABLE`, `TN-BUDGET-WARN`, `TN-SUBJ-DIRTY`, `TN-EV-ORPHAN` | warning, shown as degraded | 0 |
 
 ## 14. Loops
 

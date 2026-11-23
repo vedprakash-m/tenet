@@ -48,7 +48,7 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
 - **Flags**, recomputed by `check` and `board` at the current revision (return `[]` when `section.state !== "blessed"`):
   - `edited`: the section's digest differs from `blessed_digest`
   - `sources-changed`: an anchored range's lines no longer hash to its anchor, or the file or test is gone. If the same lines appear **exactly once** elsewhere in the file (a sliding-window hash scan; files over 50,000 lines are not scanned and are flagged), they moved: `check` doesn't flag them and `fix` updates the range. Zero or several matches flag `sources-changed` ("matched N places").
-- **Integrity:** the blessed copy's digest must equal `blessed_digest` (`TN-SPEC-BLESSED-COPY`); a copy that fails is served as a draft with a warning.
+- **Integrity:** the blessed copy's digest must equal `blessed_digest` (`TN-SPEC-BLESSED-COPY`, `file: doc.path`, `line`: 1-based `## ` heading line or `null` for `_preamble`); a copy that fails is served as a draft with a warning.
 - **Text in force** is always the blessed copy. Re-blessing replaces it.
 - **Owner:** the section's `owner`, else the document's `tenet.owner`, else the owners on the last CODEOWNERS line matching the document (GitHub's rule), else the Owner. `parseDoc` resolves the first two; callers apply the rest through `ownersFor`.
 - **Fixtures:**
@@ -67,7 +67,7 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
 - `doc: path#slug`: a heading with that slug exists (missing `#slug` is `TN-CITE-RANGE`).
 - `test: file > name`: `file` exists (missing ` > ` is `TN-CITE-RANGE`) and each segment split on ` > ` appears in order (`indexOf` advancing cursor) in `file` as written, `def <seg>` or `func <seg>`.
 
-Errors, at most one per citation, checked as syntax, then file, then range, heading or test: `TN-CITE-FILE`, `TN-CITE-RANGE` (also every malformed citation: `doc:` without `#slug`, `test:` without ` > `, a range that isn't integer `start-end`; message "citation is malformed"), `TN-CITE-HEADING`, `TN-CITE-TEST` (carrying `severity: "error"`, `rule: "citations-valid"`, and 1-based `line` of the citing statement, else `null`). Resolving says nothing about whether the source supports the statement; that judgment is the spec reviewer's, labelled advisory. Fixtures: a nested `describe > it` name resolves; a renamed test fails.
+Errors, at most one per citation, checked as syntax, then file, then range, heading or test: `TN-CITE-FILE`, `TN-CITE-RANGE` (also every malformed citation: `doc:` without `#slug`, `test:` without ` > `, a range that isn't integer `start-end`, using the `TN-CITE-RANGE` template in `messages.md`), `TN-CITE-HEADING`, `TN-CITE-TEST` (carrying `severity: "error"`, `rule: "citations-valid"`, `file: doc.path`, and 1-based `line` of the citing statement, else `null`). Resolving says nothing about whether the source supports the statement; that judgment is the spec reviewer's, labelled advisory. Fixtures: a nested `describe > it` name resolves; a renamed test fails.
 
 ## ALG-05
 

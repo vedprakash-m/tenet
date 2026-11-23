@@ -126,9 +126,9 @@
 **CP-0009 · Check, fix and split** · R-008, R-033, R-038, R-054 (lock mismatch), R-219
 1. *Needs:* CP-0044; TS §9–§10; C §1, §8, §13; ALG-02 (rename), ALG-03 (integrity, relocation).
 2. *Owns:* `src/specs/{check,fix,split}.ts`, the commands `check`, `fix`, `split` with their result schemas, `kit/hooks/pre-commit`, `test/check/`.
-3. *Exports:* `check({paths?, pack?, ci?, base?}) → {findings, summary}`; `fix({dryRun}) → {changes}`; `split(doc, section)`.
+3. *Exports:* `check({paths?, pack?, ci?, base?}) → {findings, summary: {errors, warnings, advises}}`; `fix({dryRun}) → {changes}`; `split(doc, section)`.
 4. *Behavior:*
-   - **Findings:** required files, schemas, links and anchors, citations, origin present, section states and flags, blessed-copy integrity, unique IDs, vision coverage (TS §6.3), budgets, kit integrity, and a package version that differs from the lock.
+   - **Findings** (sorted by `file ?? ""`, numeric `line ?? 0`, `code`, `message`): required files (`tenet.yaml`; `<records>/intent.md` in one-file layout else every `policy.specs.documents` path, missing → `TN-SCHEMA`; `tenet.lock` and vendored `kit_path` when `kit_path !== "kit"`), schemas, links and anchors, citations (`file: doc.path`), origin present, section states and flags, blessed-copy integrity (`TN-SPEC-BLESSED-COPY`, `file: doc.path`, `line`: heading line), unique IDs across `ladder` order (`TN-SPEC-DUP-ID` on each later duplicate's `file` and `line`), vision coverage (`TN-SPEC-UNCOVERED-VISION`, TS §6.3), budgets (`TN-BUDGET-WARN` locally at `≥ Math.ceil(limit * 0.9)`; `TN-BUDGET` with `--ci --base` when `head > limit` and `base <= limit`), kit integrity (`TN-KIT-EDITED`, `file: "tenet.lock"`), and package version vs lock (`TN-LOCK-MISMATCH`, `file: "tenet.lock"`, coexisting with `TN-KIT-EDITED`). `--paths` scopes per-document checks and skips cross-document and lock/kit checks.
    - **Exit codes** follow C §13: `budget` is a rule finding only with `--ci --base` on a change that crosses 100%.
    - **`fix`:** assigns IDs (C §1), numbers `V-` items, writes front matter, section entries, digests and `drafted_from`, moves renamed entries and copies, updates uniquely relocated anchors, and normalizes citation paths. It never changes meaning, states or blessings.
    - **`split`:** moves a section into a part, leaving a pointer and updated links.
