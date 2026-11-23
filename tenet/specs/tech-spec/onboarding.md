@@ -78,7 +78,19 @@ The **last blessed text stays in force** (the blessed copy):
 - the `AGENTS.md` block (agents.md §1)
 - the recorder workflow, and either Tenet's test workflow or the existing-CI step
 - the pull-request template block and the `.gitignore` block
-- the detected hosts' skills and MCP entries (contracts §10)
+- the detected hosts' skills and MCP entries (below)
+
+`.tenet/manifest.json`: `{schema_version, version, created: [{path, sha256}], blocks: [{path, kind: markdown|yaml, marker}], keys: [{path, pointer, previous, installed}]}`; `.tenet/manifest.pending.json` holds the full plan before the first write (ALG-12). Markdown blocks: `<!-- tenet:begin v<version> -->` … `<!-- tenet:end -->`; YAML: `# tenet:begin` … `# tenet:end`. JSON files are owned by key (`/mcpServers/tenet`, `/servers/tenet` in `.vscode/mcp.json`), with the previous value kept.
+
+| Host marker | Writes |
+|---|---|
+| `.claude/` or `CLAUDE.md` | `.mcp.json` key; skills in `.claude/skills/tenet-*/SKILL.md`; a block in `CLAUDE.md` pointing to `AGENTS.md` |
+| `.cursor/` | `.cursor/mcp.json` key |
+| `.github/copilot-instructions.md` | a marked block pointing to `AGENTS.md` |
+| `.vscode/` | `.vscode/mcp.json` key |
+| always | the `AGENTS.md` block ([agents.md](agents.md) §1); skills in `.agents/skills/tenet-*/SKILL.md`; a `.gitignore` block (`.tenet/*`, `!.tenet/manifest.json`, `!.tenet/kit/`); an `## Acceptance` block in `.github/pull_request_template.md`; a `.gitattributes` block marking every file Tenet writes `text eol=lf` (on Windows with `core.autocrlf=true` and `core.safecrlf=true`, `git add` otherwise refuses LF files, as Spike B hit) |
+
+MCP entries run `npx -y @vedprakash-m/tenet@<locked version> mcp` in the committed file; where a Windows host needs `cmd /c`, `init` writes that form into the user's local host settings, never the shared file (CP-0045 tests both). `upgrade` rewrites the pinned version in every entry it owns.
 
 It then prints the first findings and offers onboarding. Existing files are edited only inside marked blocks or owned JSON keys. Integrity is checked by hash; files are not made read-only. `owners[]` starts from `git config user.name` and the CODEOWNERS handles, confirmed once (with `--yes`: the git user only). The lock's `kit_sha256` is SHA-256 over the sorted lines `<path>\0<sha256 of file>` for every file under `kit/`.
 

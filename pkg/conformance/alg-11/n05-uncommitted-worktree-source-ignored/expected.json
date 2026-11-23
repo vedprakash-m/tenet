@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "inventory": {
+    "schema_version": 1,
+    "revision": "56789abcdef0123456789abcdef0123456789abc",
+    "sources": {
+      "files": [
+        {
+          "path": "src/version.ts",
+          "kind": "source",
+          "sha256": "920bb679b1057d30ee293eef1b7f6a6a385c7162294c0c8059f164cc20b8cf04",
+          "lines": 1
+        },
+        {
+          "path": "tenet.yaml",
+          "kind": "config",
+          "sha256": "bf2e6da3dcd662003bad47b1988163b36f58b16b76795cfba63256fc4359d747",
+          "lines": 19
+        }
+      ],
+      "skipped": []
+    },
+    "size": {
+      "source_lines": 1,
+      "areas": 0
+    },
+    "layout": "one-file"
+  }
+}

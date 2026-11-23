@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "conclusion": "neutral",
+  "wrote": true,
+  "card": {
+    "schema_version": 1,
+    "evaluation_id": "909a83064f638a4b",
+    "degraded": {
+      "$assert": "present"
+    }
+  }
+}

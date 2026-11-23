@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "conclusion": "success",
+  "wrote": true,
+  "card": {
+    "schema_version": 1,
+    "evaluation_id": "7d7d9c1fde5f14e9",
+    "blessings_changed": [
+      {
+        "doc": "intent",
+        "section": "requirements",
+        "blessed_by": "priya",
+        "commit_author": "priya"
+      }
+    ],
+    "deltas": [
+      {
+        "doc": "intent",
+        "added": 1,
+        "modified": 1,
+        "removed": 1
+      }
+    ]
+  }
+}

@@ -25,10 +25,10 @@ Updated 2026-11-23 by the M0 session after round 2 merged (L-0034, L-0035, L-003
 | CP-0015 kernel and every contract | **done and merged**; Owner decisions (L-0032); proposals applied | CP-0001 ratification reads Part I, `kernel.md` and the later contracts |
 | CP-0058 medium-model trial | **done** (E-0002 accepted, L-0037): rounds 4 and 5 byte-identical; checklist item 5 holds | — |
 | CP-0001 ratify | **ready**: every other checklist item holds | the Owner, one sitting |
-| Alpha.0 build, started early at the Owner's direction (L-0034) | **done:** waves A0-1 and A0-2: CP-0003, CP-0004, CP-0005, CP-0006, CP-0012, CP-0018, each independently reviewed (round 2) and fixed | **CP-0044** next (its questions answered and applied, independent suites ready), then A0-4 |
+| Alpha.0 build, started early at the Owner's direction (L-0034) | **done:** A0-1 and A0-2 (CP-0003–0006, CP-0012, CP-0018). CP-0044 built, its 46 independent cases pass, awaiting commit. Round 3 review: CP-0018 has 5 blockers against the post-trial spec | round 4: fix CP-0018; build A0-4 (CP-0009, CP-0045, CP-0053); answer the A0-4 spec questions; write independent A0-5 cases |
 | Sandbox | `vedprakash-m/tenet-sandbox` (private) exists | used by CP-0051 and later proving |
-| Rounds 1 and 2 | **merged** into `main` (L-0034, L-0036); pull requests #1–#3 | — |
-| 100-PR backtest cohort | **collected** on `r2/backtest-data`: tenet-copilot plus WebChat; Torus contributes 0 (L-0035) | add WebChat's Copilot-agent pull requests as their own group, then freeze |
+| Rounds 1–3 | **merged** into `main` (L-0034, L-0036); pull requests #1–#5 | — |
+| 100-PR backtest cohort | frozen on `r2/backtest-data`, but its agent group is empty: WebChat's 16 agent pull requests merge into feature branches, not `main` | round 4: take agent pull requests merged into any branch; re-freeze; add replay inputs |
 | M0 checklist items 6–8 | **done**: `blocked_by` matches §2; `npm run check:examples` passes; red-team list (31 cases) matches ci.md §7 after its three corrections | — |
 
 ## 1. Milestones
@@ -173,7 +173,7 @@ Each is Quick, limited to **4 hours** of work, and run by a capable model. Each 
   - Biome for `npm run lint`; `node:test`
   - `test/architecture.test.ts` (the TS §1 import table and dependency list)
   - `npm run check:examples`
-  - the licence; CI on three platforms; hooks
+  - the licence; CI on three platforms (the pre-commit hook ships in CP-0009)
   - the sandbox repository `vedprakash-m/tenet-sandbox`
 
 ## 4. Build contract

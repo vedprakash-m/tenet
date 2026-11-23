@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "inventory": {
+    "schema_version": 1,
+    "revision": "e5f6012345678901234567890123456789012345",
+    "size": {
+      "source_lines": 3,
+      "areas": 0
+    },
+    "layout": "separate"
+  },
+  "assignment": {
+    "schema_version": 1,
+    "layout": "separate",
+    "output": {
+      "paths": [
+        "tenet/vision.md",
+        "tenet/specs/prd.md",
+        "tenet/specs/tech-spec.md",
+        "tenet/specs/ux-spec.md",
+        "tenet/specs/plan.md"
+      ]
+    }
+  }
+}

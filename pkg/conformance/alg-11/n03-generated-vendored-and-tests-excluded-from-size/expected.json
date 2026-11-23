@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "inventory": {
+    "schema_version": 1,
+    "revision": "3456789abcdef0123456789abcdef0123456789a",
+    "size": {
+      "source_lines": 3,
+      "areas": 0
+    },
+    "layout": "one-file"
+  }
+}

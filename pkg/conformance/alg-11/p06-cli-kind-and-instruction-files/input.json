@@ -1,0 +1,18 @@
+{
+  "operation": "onboard",
+  "options": {
+    "inventoryOnly": true
+  },
+  "repo": {
+    "revision": "f601234567890123456789012345678901234567",
+    "files": {
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"core\",\n      \"name\": \"Core\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ]\n}\n",
+      "package.json": "{\n  \"name\": \"@acme/tool\",\n  \"version\": \"1.0.0\",\n  \"bin\": {\n    \"acme\": \"./src/cli.ts\"\n  }\n}\n",
+      "src/cli.ts": "export function main(): void {}\n",
+      "CLAUDE.md": "# Claude instructions\nFollow repository conventions.\n",
+      ".github/copilot-instructions.md": "# Copilot instructions\nRun tests before committing.\n",
+      ".windsurfrules": "Always write TypeScript.\n",
+      "AGENTS.md": "# Custom guidance\nNever call external services in unit tests.\n<!-- tenet:begin -->\nManaged by Tenet.\n<!-- tenet:end -->\n"
+    }
+  }
+}

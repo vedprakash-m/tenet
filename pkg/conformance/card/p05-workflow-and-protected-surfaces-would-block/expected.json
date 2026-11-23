@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "conclusion": "neutral",
+  "wrote": true,
+  "card": {
+    "schema_version": 1,
+    "evaluation_id": "b59ea98efe73aa16",
+    "workflow_changed": true,
+    "protected": {
+      "$assert": "contains",
+      "value": [
+        "tenet.yaml",
+        ".github/workflows/tenet-tests.yml"
+      ]
+    },
+    "rules": {
+      "$assert": "contains",
+      "value": [
+        {
+          "rule": "protected-surfaces",
+          "mode": "advise",
+          "would_block": true,
+          "reason": {
+            "$assert": "present"
+          }
+        }
+      ]
+    },
+    "badge": "advisory"
+  }
+}

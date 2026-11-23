@@ -1,0 +1,17 @@
+{
+  "operation": "onboard",
+  "options": {
+    "inventoryOnly": true
+  },
+  "repo": {
+    "revision": "0123456789abcdef0123456789abcdef01234567",
+    "files": {
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"core\",\n      \"name\": \"Core\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ]\n}\n",
+      "src/math.ts": "export const double = (n: number) => n * 2;\n",
+      "test/math.test.ts": "import { test } from \"node:test\";\ntest(\"double\", () => {});\n"
+    },
+    "worktreeOnly": {
+      ".tenet/reports/junit.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites>\n  <testsuite name=\"math\" tests=\"1\" failures=\"0\" skipped=\"0\">\n    <testcase classname=\"test/math.test.ts\" name=\"double\" time=\"0.01\"/>\n  </testsuite>\n</testsuites>\n"
+    }
+  }
+}
