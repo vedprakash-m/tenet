@@ -237,15 +237,27 @@ test("does not infer body tags from comments or strings", async () => {
 });
 
 test("tag and weakening APIs default options from the current repository", async () => {
-  const tags = await reports.declaredTags("HEAD", "HEAD", "R");
-  const weak = await reports.weakening("HEAD", "HEAD");
-  assert.deepEqual(tags, { acceptance: {}, requirement: {} });
-  assert.deepEqual(weak, {
-    found: false,
-    by: [],
-    notes: [],
-    not_checked: [],
-  });
+  // Run in a clean repository so the result never depends on this project's own test files.
+  const repository = await tmpRepo("reports-defaults");
+  const previous = process.cwd();
+  try {
+    await repository.write("README.md", "clean\n");
+    repository.git(["add", "."]);
+    repository.git(["commit", "-m", "init"]);
+    process.chdir(repository.path);
+    const tags = await reports.declaredTags("HEAD", "HEAD", "R");
+    const weak = await reports.weakening("HEAD", "HEAD");
+    assert.deepEqual(tags, { acceptance: {}, requirement: {} });
+    assert.deepEqual(weak, {
+      found: false,
+      by: [],
+      notes: [],
+      not_checked: [],
+    });
+  } finally {
+    process.chdir(previous);
+    await repository.cleanup();
+  }
 });
 
 test("weakening ignores init deletion and moves but notes consolidation", async () => {
