@@ -6,7 +6,7 @@
   "author": {
     "login": "OEvgeny",
     "type": "User",
-    "copilot_coding_agent": true
+    "copilot_coding_agent": false
   },
   "created_at": "2025-11-20T21:35:18Z",
   "merged_at": "2025-11-20T23:59:08Z",

@@ -3,6 +3,18 @@
 This directory contains the frozen backtest data collection for the Owner's decisions in
 `tenet/ledger/L-0033-backtest-cohort.md` and `tenet/packets/CP-0016-problem-validation-and-baselines/evidence/backtest-method.md`.
 
+The collection has two WebChat groups:
+
+- **Agent:** every eligible WebChat pull request in the window whose author is the
+  `Copilot` coding agent (`login: Copilot`, `type: Bot`).
+- **Human:** every other eligible WebChat pull request, ranked by
+  `sha256("tenet-backtest-2026-11-23:" + number)` in ascending order.
+
+The final cohort contains all eligible tenet-copilot pull requests, all WebChat agent
+pull requests, and enough top-ranked WebChat human pull requests to reach exactly 100
+cases. The next 20 ranked human pull requests are reserves; they are used in order only
+if a cohort case later proves unassessable.
+
 ## Rerun
 
 Prerequisites: Node.js 22 and an authenticated GitHub CLI (`gh auth login`).
@@ -39,5 +51,6 @@ The collection does not preserve patch text.
 
 ## Freeze status
 
-The cohort is frozen only after the Owner confirms Torus, including its repository location.
-Torus is currently recorded as pending in `cohort.yaml`.
+The collection is frozen on `2026-11-23`. The freeze applies to the final 100-case cohort
+and its 20 reserves. Torus has no cases because it has no git history yet and will become
+a first adopter after alpha.0.

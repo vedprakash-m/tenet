@@ -1,0 +1,365 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6019,
+  "title": "Bump the samples to Web Chat 4.19.3-main.20261105.058fca6",
+  "body": "> Clears 8 Dependabot alerts on `samples/package-lock.json`, which pins `botframework-webchat@4.19.1-main.20260529`.\n\n## Changelog Entry\n\n### Changed\n\n- 🏫 Samples: bumped [`botframework-webchat@4.19.3-main.20261105.058fca6`](https://npmjs.com/package/botframework-webchat/v/4.19.3-main.20261105.058fca6), clearing `sanitize-html`, `valibot` and `katex` security alerts, in PR [#6019](https://github.com/microsoft/BotFramework-WebChat/pull/6019), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThe samples' pinned May nightly still resolves `sanitize-html@2.17.4`, `valibot@1.3.1` and `katex@0.16.45`. They now pin `4.19.3-main.20261105.058fca6`, which has #5987 and #6001.\n\n## Design\n\n- Bumped the pin instead of adding `overrides`, which the next `npm run bump` would drop anyway.\n- Resolved with `--min-release-age=7`, exempting only the Web Chat packages and `@angular/*` (Speech SDK 1.17.0 peers, kept at 22.2.4), so the nightly is the only new version under 7 days old.\n\n## Specific Changes\n\n- 9 sample `package.json` files: `botframework-webchat` (and `botframework-webchat-api` in `f.selectable-activity`) on `4.19.3-main.20261105.058fca6`\n- `samples/package-lock.json`: `sanitize-html@2.18.1`, `valibot@1.4.2`, `katex@0.19.1`; drops `deepmerge`\n\n- [ ] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-05T17:00:17Z",
+  "merged_at": "2026-11-05T19:53:24Z",
+  "base": "main",
+  "head": "OEvgeny/bump-samples-webchat-nightly",
+  "base_sha": "a2d0be51567352b339e901994ebc037dee9bfba2",
+  "head_sha": "6c855c316608804c487890068b232cf2ef67ac68",
+  "merge_sha": "83ae34a24fd8e623920a6e317c8d5ae57f26101a",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-05T18:01:46Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "d0a66ca1f8c9a37febf3605fa26d481f0c874882",
+      "message": "Bump the samples to Web Chat 4.19.3-main.20261105.058fca6",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "e86eec4db3ef3d9e4c791c99b96fdae9fa80f11d",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "6c855c316608804c487890068b232cf2ef67ac68",
+      "message": "Merge branch 'main' into OEvgeny/bump-samples-webchat-nightly",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6019-bump-samples-webchat-nightly.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/e.piping-to-redux/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/f.selectable-activity/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/g.chat-send-history/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/h.clear-after-idle/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/a.minimizable-web-chat/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/b.speech-ui/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/c.smart-display/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/d.plain-ui/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/e.extending-ui/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/package-lock.json",
+      "status": "modified",
+      "additions": 289,
+      "deletions": 162,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-05T18:01:57Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-05T19:19:35Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:49:55Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:52:47Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:24:33Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:25:42Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:24:56Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:37:26Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:39:03Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:38:15Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:39:40Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:38:56Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:39:09Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:39:52Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:38:30Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:37:30Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:39:59Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:31:53Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:49:42Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:30:53Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:38:05Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:38:37Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:31:18Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:37:13Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:33:16Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:38:27Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:31:11Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:30:30Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:31:09Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:32:36Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:31:09Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:30:31Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:30:26Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:30:23Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:30:25Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:30:37Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:26:07Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:37:08Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:32:15Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:39:39Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:26:13Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:25:36Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:29:17Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:24:58Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:24:15Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:25:38Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:25:14Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-05T19:25:07Z"
+    }
+  ]
+}

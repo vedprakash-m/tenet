@@ -1,0 +1,302 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6026,
+  "title": "Bump body-parser to 2.4.0 in the lockfile",
+  "body": "> Clears Dependabot alerts [#2554](https://github.com/microsoft/BotFramework-WebChat/security/dependabot/2554) (GHSA-27r3-jxmh-p828, high) and [#2387](https://github.com/microsoft/BotFramework-WebChat/security/dependabot/2387) (GHSA-v422-hmwv-36x6, low): the lockfile resolves `body-parser@2.2.1`.\n\n## Changelog Entry\n\n### Changed\n\n- 👷🏻 Test servers: bumped [`body-parser@2.4.0`](https://npmjs.com/package/body-parser/v/2.4.0), clearing 2 security alerts, in PR [#6026](https://github.com/microsoft/BotFramework-WebChat/pull/6026), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\n`body-parser` comes only from `express@5.2.1` in the private `test-harness` and `test-web-server` packages, which mount no body parser. `npm update body-parser` moves it to 2.4.0, which `express`'s `^2.2.1` already allows, so no `package.json` changes.\n\n## Design\n\n- Lockfile only, instead of bumping `express` to 5.3.0 in 2 `package.json` files or adding `overrides`.\n- `minimatch` (GHSA-g3hv-75wg-m249) is not part of this PR: it is only patched in 11.x, a rewrite that `glob@10` (used by `test-exclude` and `cldr-data`) cannot use, as it no longer returns RegExp parts.\n\n## Specific Changes\n\n- `package-lock.json`: `body-parser` 2.2.1 → 2.4.0, its `iconv-lite` 0.7.2 → 0.7.3, `type-is` 2.0.1 → 2.1.0, and `content-type@2.1.0` nested under both\n\n- [ ] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-06T23:23:38Z",
+  "merged_at": "2026-11-08T22:54:48Z",
+  "base": "main",
+  "head": "OEvgeny/fix-lockfile-body-parser",
+  "base_sha": "57ff234fda4646f1e7f1919611231121913a613e",
+  "head_sha": "551b2030c1ece8f15425037219fd0663e4e7884c",
+  "merge_sha": "00cb1d3023f68d1b24341eee01fb3614e506ab6a",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-07T04:11:00Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "74cda1dc0a871955227b057edcbcfa83b50b09ee",
+      "message": "Bump body-parser to 2.4.0 in the lockfile",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "05712fa15215361ba15c0fd624e02974b9c7c7d0",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "551b2030c1ece8f15425037219fd0663e4e7884c",
+      "message": "Merge branch 'main' into OEvgeny/fix-lockfile-body-parser",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6026-fix-lockfile-body-parser.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 48,
+      "deletions": 15,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-07T04:11:09Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-08T22:35:39Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:54:23Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:54:47Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:44:20Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:44:06Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:52:50Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:52:11Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:51:22Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:53:07Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:51:04Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:50:22Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:51:42Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:52:05Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:53:47Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:53:33Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:52:34Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:45:00Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:53:16Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:44:52Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:51:40Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:52:33Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:53:14Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:44:58Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:53:21Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:44:09Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:44:10Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:54:16Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:44:17Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:44:57Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:44:42Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:44:42Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:44:21Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:47:14Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:45:20Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:45:53Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:39:28Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:38:58Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:39:15Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:43:06Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:41:02Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:39:56Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:39:42Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:39:44Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:39:34Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:39:55Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:40:13Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T22:39:34Z"
+    }
+  ]
+}

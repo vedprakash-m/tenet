@@ -7,9 +7,10 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const prsDir = path.join(__dirname, "prs");
 const seed = "tenet-backtest-2026-11-23";
-const webchatLimit = 120;
+const cohortLimit = 100;
+const reserveLimit = 20;
 const webchatWindowStart = "2025-01-01";
-const webchatWindowEnd = "2026-10-31";
+const webchatWindowEnd = "2026-11-22";
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -35,10 +36,28 @@ async function gh(args) {
     } catch (error) {
       lastError = error;
       const text = `${error.stderr || ""}\n${error.stdout || ""}\n${error.message || ""}`.toLowerCase();
-      const rateLimited = text.includes("rate limit") || text.includes("secondary rate") || text.includes("403") || text.includes("429");
-      if (!rateLimited || attempt === delays.length) break;
+      const transient =
+        /\bhttp\s*5\d\d\b/.test(text) ||
+        /\b5\d\d\b/.test(text) ||
+        text.includes("server error") ||
+        text.includes("rate limit") ||
+        text.includes("secondary rate") ||
+        text.includes("429");
+      if (!transient || attempt === delays.length) break;
       await sleep(delays[attempt]);
     }
+  }
+
+  if (lastError) {
+    const text = `${lastError.stderr || ""}\n${lastError.stdout || ""}\n${lastError.message || ""}`.toLowerCase();
+    const transient =
+      /\bhttp\s*5\d\d\b/.test(text) ||
+      /\b5\d\d\b/.test(text) ||
+      text.includes("server error") ||
+      text.includes("rate limit") ||
+      text.includes("secondary rate") ||
+      text.includes("429");
+    if (transient) lastError.transientAfterRetries = true;
   }
 
   throw lastError;
@@ -77,10 +96,8 @@ function firstLine(message) {
   return message.split(/\r?\n/, 1)[0];
 }
 
-function isCopilotAuthor(pr) {
-  const login = (pr.user?.login || "").toLowerCase();
-  const headRef = (pr.head?.ref || "").toLowerCase();
-  return login.includes("copilot") || headRef.includes("copilot");
+function isCopilotCodingAgent(pr) {
+  return pr.user?.login === "Copilot" && pr.user?.type === "Bot";
 }
 
 async function listPulls(owner, repo) {
@@ -138,7 +155,7 @@ async function collectOne(owner, repo, summary) {
       author: {
         login: pr.user?.login || null,
         type: pr.user?.type === "Bot" ? "Bot" : "User",
-        copilot_coding_agent: isCopilotAuthor(pr),
+        copilot_coding_agent: isCopilotCodingAgent(pr),
       },
       created_at: pr.created_at,
       merged_at: pr.merged_at,
@@ -184,7 +201,7 @@ async function collectOne(owner, repo, summary) {
   } catch (error) {
     return {
       kind: "excluded",
-      reason: "data_unretrievable",
+      reason: error.transientAfterRetries ? "transient_error_after_retries" : "data_unretrievable",
       detail: error.message || String(error),
     };
   }
@@ -197,6 +214,7 @@ function yamlString(value) {
 async function writeCohort(cohort) {
   const lines = [
     "cohort_id: tenet-backtest-2026-11-23",
+    "frozen: 2026-11-23",
     "sources:",
     "  - repo: vedprakash-m/tenet-copilot",
     "    window: all_history",
@@ -205,10 +223,11 @@ async function writeCohort(cohort) {
     `    window: ${webchatWindowStart}_through_${webchatWindowEnd}`,
     "    mode: merged_into_default_branch",
     "  - repo: Torus",
-    '    status: "pending: location to be confirmed by the Owner"',
+    "    cases: 0",
+    '    reason: "no git history yet; first adopter after alpha.0 (L-0035)"',
     "windows:",
     `  tenet-copilot: all history through ${cohort.generated_at}`,
-    `  BotFramework-WebChat: ${webchatWindowStart} to ${webchatWindowEnd}, inclusive`,
+    `  BotFramework-WebChat: ${webchatWindowStart} through ${webchatWindowEnd}, inclusive`,
     "eligibility:",
     "  - merged",
     "  - at least one changed file",
@@ -217,16 +236,34 @@ async function writeCohort(cohort) {
     "ranking:",
     '  algorithm: sha256("tenet-backtest-2026-11-23:" + number)',
     "  direction: ascending",
-    "  webchat_limit: 120",
     "  ci_and_contents_not_used: true",
-    "per_source_counts:",
+    "groups:",
+    "  tenet-copilot:",
+    `    eligible: ${cohort.groups["tenet-copilot"].eligible}`,
+    `    cohort: ${cohort.groups["tenet-copilot"].cohort}`,
+    "    numbers:",
   ];
 
+  for (const number of cohort.groups["tenet-copilot"].numbers) lines.push(`      - ${number}`);
+  lines.push("  webchat-agent:");
+  lines.push(`    eligible: ${cohort.groups["webchat-agent"].eligible}`);
+  lines.push(`    cohort: ${cohort.groups["webchat-agent"].cohort}`);
+  lines.push("    numbers:");
+  for (const number of cohort.groups["webchat-agent"].numbers) lines.push(`      - ${number}`);
+  lines.push("  webchat-human:");
+  lines.push(`    eligible: ${cohort.groups["webchat-human"].eligible}`);
+  lines.push(`    cohort: ${cohort.groups["webchat-human"].cohort}`);
+  lines.push(`    reserve: ${cohort.groups["webchat-human"].reserve}`);
+  lines.push("    cohort_numbers:");
+  for (const number of cohort.groups["webchat-human"].cohort_numbers) lines.push(`      - ${number}`);
+  lines.push("  reserves:");
+  lines.push("    numbers:");
+  for (const number of cohort.reserveNumbers) lines.push(`      - ${number}`);
+  lines.push("per_source_counts:");
   for (const [source, counts] of Object.entries(cohort.perSource)) {
     lines.push(`  ${source}:`);
     lines.push(`    eligible: ${counts.eligible}`);
     lines.push(`    excluded: ${counts.excluded}`);
-    lines.push(`    ranked_candidates: ${counts.ranked_candidates}`);
   }
 
   lines.push("exclusions:");
@@ -238,10 +275,17 @@ async function writeCohort(cohort) {
   }
   lines.push(`generated_at: ${cohort.generated_at}`);
   lines.push(`gh_version: ${yamlString(cohort.ghVersion)}`);
-  lines.push("ranked_candidate_list:");
-  for (const candidate of cohort.rankedCandidates) {
+  lines.push("cohort_cases:");
+  for (const candidate of cohort.cohortCases) {
     lines.push(`  - repo: ${candidate.repo}`);
     lines.push(`    number: ${candidate.number}`);
+    lines.push(`    group: ${candidate.group}`);
+  }
+  lines.push("reserve_cases:");
+  for (const candidate of cohort.reserveCases) {
+    lines.push(`  - repo: ${candidate.repo}`);
+    lines.push(`    number: ${candidate.number}`);
+    lines.push(`    group: webchat-human`);
     lines.push(`    hash: ${candidate.hash}`);
   }
 
@@ -348,9 +392,8 @@ async function writeSchema() {
 
 async function verify() {
   const schema = JSON.parse(await readFile(path.join(__dirname, "schema.json"), "utf8"));
-  const required = schema.required;
   const names = (await readdir(prsDir)).filter((name) => name.endsWith(".json")).sort();
-  const counts = {};
+  const manifest = await readFile(path.join(__dirname, "cohort.yaml"), "utf8");
 
   function requireShape(record, properties, prefix) {
     for (const key of properties.required || []) {
@@ -380,21 +423,100 @@ async function verify() {
     return true;
   }
 
+  function parseCaseBlock(label) {
+    const lines = manifest.split(/\r?\n/);
+    const start = lines.findIndex((line) => line === `${label}:`);
+    if (start < 0) throw new Error(`cohort.yaml missing ${label}`);
+    const block = [];
+    for (let index = start + 1; index < lines.length; index += 1) {
+      const line = lines[index];
+      if (line && !line.startsWith(" ")) break;
+      block.push(line);
+    }
+    const text = block.join("\n");
+    const cases = [];
+    for (const match of text.matchAll(/  - repo: ([^\n]+)\n    number: (\d+)/g)) {
+      cases.push({ repo: match[1], number: Number(match[2]) });
+    }
+    return cases;
+  }
+
   for (const name of names) {
     const record = JSON.parse(await readFile(path.join(prsDir, name), "utf8"));
     requireShape(record, schema, name);
     for (const [key, spec] of Object.entries(schema.properties)) {
-      if (Object.prototype.hasOwnProperty.call(record, key)) {
-        if (spec.type) checkType(record[key], spec.type, `${name}.${key}`);
-        if (spec.enum) checkType(record[key], spec, `${name}.${key}`);
+      if (!Object.prototype.hasOwnProperty.call(record, key)) continue;
+      if (spec.type) checkType(record[key], spec.type, `${name}.${key}`);
+      if (spec.enum) checkType(record[key], spec, `${name}.${key}`);
+      if (spec.type === "object" && spec.properties) requireShape(record[key], spec, `${name}.${key}`);
+      if (spec.type === "array" && spec.items?.type === "object") {
+        for (let index = 0; index < record[key].length; index += 1) {
+          requireShape(record[key][index], spec.items, `${name}.${key}[${index}]`);
+          for (const [childKey, childSpec] of Object.entries(spec.items.properties || {})) {
+            if (!Object.prototype.hasOwnProperty.call(record[key][index], childKey)) continue;
+            if (childSpec.type) checkType(record[key][index][childKey], childSpec.type, `${name}.${key}[${index}].${childKey}`);
+            if (childSpec.enum) checkType(record[key][index][childKey], childSpec, `${name}.${key}[${index}].${childKey}`);
+          }
+        }
       }
     }
-    counts[record.repo] = (counts[record.repo] || 0) + 1;
   }
 
+  const cohortCases = parseCaseBlock("cohort_cases");
+  const reserveCases = parseCaseBlock("reserve_cases");
+  if (cohortCases.length !== 100) throw new Error(`cohort_cases=${cohortCases.length}; expected 100`);
+  if (reserveCases.length !== 20) throw new Error(`reserve_cases=${reserveCases.length}; expected 20`);
+
+  function fileName(repo, number) {
+    const [owner, name] = repo.split("/", 2);
+    return `${owner}__${name}__${number}.json`;
+  }
+
+  const expectedNames = new Set([
+    ...cohortCases.map((item) => fileName(item.repo, item.number)),
+    ...reserveCases.map((item) => fileName(item.repo, item.number)),
+  ]);
+  if (names.length !== expectedNames.size) throw new Error(`prs file count=${names.length}; expected ${expectedNames.size}`);
+  for (const name of names) {
+    if (!expectedNames.has(name)) throw new Error(`unexpected prs file: ${name}`);
+  }
+  for (const name of expectedNames) {
+    if (!names.includes(name)) throw new Error(`missing prs file: ${name}`);
+  }
+
+  const sourceCounts = {};
+  const groupCounts = {};
+  for (const name of names) {
+    const record = JSON.parse(await readFile(path.join(prsDir, name), "utf8"));
+    sourceCounts[record.repo] = (sourceCounts[record.repo] || 0) + 1;
+  }
+
+  const cohortText = manifest;
+  const lines = cohortText.split(/\r?\n/);
+  const tenetStart = lines.findIndex((line) => line === "  tenet-copilot:");
+  const agentStart = lines.findIndex((line) => line === "  webchat-agent:");
+  const humanStart = lines.findIndex((line) => line === "  webchat-human:");
+  if (tenetStart < 0 || agentStart < 0 || humanStart < 0) throw new Error("cohort.yaml missing group counts");
+
+  for (const name of cohortCases.map((item) => fileName(item.repo, item.number))) {
+    if (name.includes("__tenet-copilot__")) groupCounts["tenet-copilot"] = (groupCounts["tenet-copilot"] || 0) + 1;
+  }
+  for (const name of names) {
+    if (!name.startsWith("microsoft__BotFramework-WebChat__")) continue;
+    if (cohortCases.some((item) => fileName(item.repo, item.number) === name)) {
+      const record = JSON.parse(await readFile(path.join(prsDir, name), "utf8"));
+      const group = record.author.copilot_coding_agent ? "webchat-agent" : "webchat-human";
+      groupCounts[group] = (groupCounts[group] || 0) + 1;
+    }
+  }
+  groupCounts["reserves"] = reserveCases.length;
+
   console.log(`verified_files=${names.length}`);
-  for (const [repo, count] of Object.entries(counts).sort()) {
-    console.log(`source=${repo} count=${count}`);
+  console.log("cohort_cases=100");
+  console.log(`reserve_cases=${reserveCases.length}`);
+  for (const [repo, count] of Object.entries(sourceCounts).sort()) console.log(`source=${repo} count=${count}`);
+  for (const group of ["tenet-copilot", "webchat-agent", "webchat-human", "reserves"]) {
+    console.log(`group=${group} count=${groupCounts[group] || 0}`);
   }
   return names.length;
 }
@@ -408,16 +530,21 @@ async function main() {
     return;
   }
 
+  for (const name of await readdir(prsDir)) {
+    if (name.endsWith(".json")) await unlink(path.join(prsDir, name)).catch(() => {});
+  }
+
   await writeSchema();
   const ghVersionOutput = await gh(["--version"]);
   const ghVersion = ghVersionOutput.split(/\r?\n/, 1)[0].replace(/^gh\s+/, "");
   const generatedAt = new Date().toISOString();
   const exclusions = [];
   const perSource = {
-    "vedprakash-m/tenet-copilot": { eligible: 0, excluded: 0, ranked_candidates: 0 },
-    "microsoft/BotFramework-WebChat": { eligible: 0, excluded: 0, ranked_candidates: 0 },
+    "vedprakash-m/tenet-copilot": { eligible: 0, excluded: 0 },
+    "microsoft/BotFramework-WebChat": { eligible: 0, excluded: 0 },
   };
 
+  const copilotCases = [];
   const copilotPulls = await listPulls("vedprakash-m", "tenet-copilot");
   for (const summary of copilotPulls) {
     if (!summary.merged_at) {
@@ -428,57 +555,85 @@ async function main() {
     const result = await collectOne("vedprakash-m", "tenet-copilot", summary);
     if (result.kind === "eligible") {
       perSource["vedprakash-m/tenet-copilot"].eligible += 1;
-      perSource["vedprakash-m/tenet-copilot"].ranked_candidates += 1;
+      copilotCases.push({ repo: "vedprakash-m/tenet-copilot", number: summary.number, group: "tenet-copilot" });
     } else {
       exclusions.push({ repo: "vedprakash-m/tenet-copilot", number: summary.number, reason: result.reason, detail: result.detail });
       perSource["vedprakash-m/tenet-copilot"].excluded += 1;
     }
   }
 
+  const agentCases = [];
+  const humanCases = [];
   const webchatPulls = await listPulls("microsoft", "BotFramework-WebChat");
-  const webchatCandidates = [];
   for (const summary of webchatPulls) {
     if (!summary.merged_at || summary.base?.ref !== "main" || !inWebChatWindow(summary.merged_at)) continue;
     const result = await collectOne("microsoft", "BotFramework-WebChat", summary);
     if (result.kind === "eligible") {
-      webchatCandidates.push({ record: result.record, number: summary.number, repo: "microsoft/BotFramework-WebChat" });
       perSource["microsoft/BotFramework-WebChat"].eligible += 1;
+      if (isCopilotCodingAgent(result.record ? { user: { login: result.record.author.login, type: result.record.author.type } } : {})) {
+        agentCases.push({ repo: "microsoft/BotFramework-WebChat", number: summary.number, group: "webchat-agent" });
+      } else {
+        humanCases.push({ record: result.record, repo: "microsoft/BotFramework-WebChat", number: summary.number, group: "webchat-human" });
+      }
     } else {
       exclusions.push({ repo: "microsoft/BotFramework-WebChat", number: summary.number, reason: result.reason, detail: result.detail });
       perSource["microsoft/BotFramework-WebChat"].excluded += 1;
     }
   }
 
-  webchatCandidates.sort((a, b) => {
+  humanCases.sort((a, b) => {
     const hashA = rankNumber(a.number);
     const hashB = rankNumber(b.number);
     const hashOrder = hashA.localeCompare(hashB);
     return hashOrder || a.number - b.number;
   });
-  const rankedCandidates = webchatCandidates.slice(0, webchatLimit).map((candidate) => ({
+
+  const fixedCases = [...copilotCases, ...agentCases];
+  const humanCohortCount = cohortLimit - fixedCases.length;
+  if (humanCohortCount < 0) throw new Error(`fixed cohort cases=${fixedCases.length}; exceeds 100`);
+  const humanCohort = humanCases.slice(0, humanCohortCount);
+  const reserveCases = humanCases.slice(humanCohortCount, humanCohortCount + reserveLimit);
+  if (fixedCases.length + humanCohort.length !== 100) {
+    throw new Error(`eligible cases produce cohort size ${fixedCases.length + humanCohort.length}; expected 100`);
+  }
+
+  const cohortCases = [...fixedCases, ...humanCohort];
+  const cohortNumbers = new Set(cohortCases.map((item) => `${item.repo}:${item.number}`));
+  for (const candidate of humanCases) {
+    const key = `${candidate.repo}:${candidate.number}`;
+    if (!cohortNumbers.has(key) && !reserveCases.includes(candidate)) {
+      await unlink(path.join(prsDir, `microsoft__BotFramework-WebChat__${candidate.number}.json`)).catch(() => {});
+    }
+  }
+
+  const reserveManifestCases = reserveCases.map((candidate) => ({
     repo: candidate.repo,
     number: candidate.number,
     hash: rankNumber(candidate.number),
   }));
-  perSource["microsoft/BotFramework-WebChat"].ranked_candidates = rankedCandidates.length;
-
-  for (const candidate of webchatCandidates.slice(webchatLimit)) {
-    await unlink(
-      path.join(prsDir, `microsoft__BotFramework-WebChat__${candidate.number}.json`),
-    ).catch(() => {});
-  }
 
   await writeCohort({
     generated_at: generatedAt,
     ghVersion,
     perSource,
     exclusions,
-    rankedCandidates,
+    groups: {
+      "tenet-copilot": { eligible: copilotCases.length, cohort: copilotCases.length, numbers: copilotCases.map((item) => item.number) },
+      "webchat-agent": { eligible: agentCases.length, cohort: agentCases.length, numbers: agentCases.map((item) => item.number) },
+      "webchat-human": {
+        eligible: humanCases.length,
+        cohort: humanCohort.length,
+        reserve: reserveCases.length,
+        cohort_numbers: humanCohort.map((item) => item.number),
+      },
+    },
+    reserveNumbers: reserveCases.map((item) => item.number),
+    cohortCases,
+    reserveCases: reserveManifestCases,
   });
 
   await verify();
   console.log(`generated_at=${generatedAt}`);
-  console.log(`ranked_webchat_candidates=${rankedCandidates.length}`);
 }
 
 main().catch((error) => {

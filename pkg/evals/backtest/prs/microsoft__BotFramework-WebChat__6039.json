@@ -1,0 +1,383 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6039,
+  "title": "Prepare the build for tsdown",
+  "body": "> Prepares the build for tsdown; no behavior change in the published packages.\n\n## Changelog Entry\n\n### Changed\n\n- 👷🏻 Build checks and tests accept tsdown output as well as tsup, and the CSS placeholder check also finds template literals, in PR [#6039](https://github.com/microsoft/BotFramework-WebChat/pull/6039), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nSome build checks and tests assume today's tsup/esbuild output, so switching to tsdown would fail them, and the `css-inject` check also misses a placeholder written as a template literal. This PR makes them correct for both tools and moves the Lightning CSS options into a shared file; the emitted CSS is byte-identical.\n\n## Design\n\n- The CSS pipeline stays ours (unplugin-lightningcss + `injectCSSPlugin`) rather than `@tsdown/css`, so both bundlers can import `lightningCSSOptions.mjs`. It has one user today; moving it now keeps the tsdown pull request to new configs only.\n\n## Specific Changes\n\n- `vibe-grep` `css-inject.yaml`: also matches template literals (no source writes one today, but `` `@--X--@` `` would survive an unminified build: `injectCSSPlugin` only replaces `\"…\"`)\n- `lightningCSSOptions.mjs`: Lightning CSS options and `removePreserveReason()`, used by `esbuildPlugins.mjs`\n- `api/src/boot/middleware.ts`: `type` on the `AvatarPolymiddlewareProxyProps` re-export\n- `vibe-grep` `lightning-css.yaml`: accepts `:has( > …)` as well as `:has(> …)`\n- `boot/bundle.html`, `fluentTheme/simple.html`, `preact/fluentTheme/simple.html`: build tool may be `tsup` or `tsdown`\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-10T03:47:42Z",
+  "merged_at": "2026-11-10T05:53:05Z",
+  "base": "main",
+  "head": "OEvgeny/prep-tsdown",
+  "base_sha": "042a4959a940b2bf5d59693b5a8f0c17e129e536",
+  "head_sha": "7e5bf39f17f08aa4a1c56c32a15981f3f3c96115",
+  "merge_sha": "cae85c69dce7a4878a8724aef180e171a20b8ccb",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-10T04:13:17Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "b06a5df885219991c915284a2527fc75a970043a",
+      "message": "Match template literals in the css-inject placeholder rule",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "d9fc06d512b0b2f89ca2313663c8306d973629ff",
+      "message": "Move the Lightning CSS options of CSS modules to lightningCSSOptions.mjs",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "c3c608f00549ec360e4590fd407a3edc23c3e09c",
+      "message": "Re-export AvatarPolymiddlewareProxyProps as a type",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "2d97a23b6fa2ac3c1d58bbcfcc5d66f13109008e",
+      "message": "Allow a space after :has( in the lightning-css selector rule",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "e68e19920cbbf6d3de87da19e59b5db25ff9991b",
+      "message": "Accept tsup or tsdown in the build-tool assertions",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "f8321fa73a903d6552f2d254bcccf947ef9d9da4",
+      "message": "Check for the preserve reason declaration in one place",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "416214b2eea553cbbe117df0a4c95725515c4d96",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7e5bf39f17f08aa4a1c56c32a15981f3f3c96115",
+      "message": "Merge branch 'main' into OEvgeny/prep-tsdown",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6039-prep-tsdown.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/boot/bundle.html",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/simple.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/preact/fluentTheme/simple.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "esbuildPlugins.mjs",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 38,
+      "previous_path": null
+    },
+    {
+      "path": "lightningCSSOptions.mjs",
+      "status": "added",
+      "additions": 49,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/boot/middleware.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/fluentCSSModuleTheme.spec.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/vibe-grep/src/rules/css-inject.yaml",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/vibe-grep/src/rules/lightning-css.yaml",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-10T04:13:26Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-10T04:54:49Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:52:19Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:57:39Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:50:55Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:49:52Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:50:12Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:52:12Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:48:54Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:51:21Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:51:13Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:49:44Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:50:44Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:50:23Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:51:21Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:49:45Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:50:54Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:48:40Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:51:16Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:48:48Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:50:07Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:42:14Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:42:34Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:42:22Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:41:54Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:42:29Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:42:55Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:43:20Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:41:51Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:42:48Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:42:01Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:42:49Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:42:10Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:41:55Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:44:11Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:43:11Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:38:19Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:37:42Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:39:22Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:38:34Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:40:53Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:38:32Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:39:04Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:37:53Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:38:12Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:38:24Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:38:52Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T05:38:26Z"
+    }
+  ]
+}

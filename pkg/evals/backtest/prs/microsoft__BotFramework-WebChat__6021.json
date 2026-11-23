@@ -1,0 +1,393 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6021,
+  "title": "Describe Adaptive Card input errors instead of naming the input with them",
+  "body": "> Fixes #5613\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed [#5613](https://github.com/microsoft/BotFramework-WebChat/issues/5613), Adaptive Card input errors read as part of the input's name, in PR [#6021](https://github.com/microsoft/BotFramework-WebChat/pull/6021), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nAdaptive Cards puts the validation error's ID in the input's `aria-labelledby`, so screen readers read \"Role Please select the role Project Manager\" as its name; it never sets `aria-invalid` and keeps the ID after the error is gone. A new card mod moves the error to `aria-describedby`, sets `aria-invalid=\"true\"` while it is shown, and drops IDs that point to nothing. Not yet checked with Narrator or NVDA.\n\n## Design\n\n- The long-term fix is upstream, in `Input.getAllLabelIds()` (still in adaptivecards 3.0.6); the mod does nothing once the error is no longer in the name.\n- Not `aria-errormessage`: screen reader support is still uneven; `aria-describedby` is read everywhere.\n- Undo restores an attribute only if Adaptive Cards has not rewritten it (validation rewrites `aria-labelledby` in place).\n- Runs like the other mods: after render and on card DOM changes, one query per input.\n\n## Specific Changes\n\n- `useInputErrorShouldBeDescriptionModEffect.ts`: new mod, used by `AdaptiveCardRenderer.tsx`\n- `setOrRemoveAttributeIfFalseWithUndoIfUnchanged.ts`: compare-and-restore undo\n- `hack.inputErrorShouldBeDescriptionMod.*.html`, text, toggle, multi-select: snapshot 1 error (label is the name, error the description, invalid), 2 cleared (no dangling ID); `text` submits 2×\n- `….choiceSet.filtered.html`: snapshot 1, text box described by the error, invalid\n\n- [x] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-05T21:31:35Z",
+  "merged_at": "2026-11-06T22:14:57Z",
+  "base": "main",
+  "head": "OEvgeny/fix-ac-input-error-describedby",
+  "base_sha": "61f0e76dcf224ffe47dd821295913931d9cc808f",
+  "head_sha": "8b0d1d6d2fe568cc10b60d480c7e4be148b582ec",
+  "merge_sha": "8e46c97f215ce03c6eaf79c0999b337c11c271f1",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-06T06:49:06Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "e03438278675ab6dd27c4c1a64ee48878a59ac88",
+      "message": "Describe Adaptive Card input errors instead of naming the input with them",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "8ec3b15d5db43cf151d78496d513e009737a1600",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "8b0d1d6d2fe568cc10b60d480c7e4be148b582ec",
+      "message": "Merge branch 'main' into OEvgeny/fix-ac-input-error-describedby",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6021-fix-ac-input-error-describedby.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.inputErrorShouldBeDescriptionMod.choiceSet.filtered.html",
+      "status": "added",
+      "additions": 99,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.inputErrorShouldBeDescriptionMod.choiceSet.filtered.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.inputErrorShouldBeDescriptionMod.choiceSet.multiSelect.html",
+      "status": "added",
+      "additions": 129,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.inputErrorShouldBeDescriptionMod.choiceSet.multiSelect.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.inputErrorShouldBeDescriptionMod.choiceSet.multiSelect.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.inputErrorShouldBeDescriptionMod.text.html",
+      "status": "added",
+      "additions": 123,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.inputErrorShouldBeDescriptionMod.text.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.inputErrorShouldBeDescriptionMod.text.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.inputErrorShouldBeDescriptionMod.toggle.html",
+      "status": "added",
+      "additions": 115,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.inputErrorShouldBeDescriptionMod.toggle.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.inputErrorShouldBeDescriptionMod.toggle.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AdaptiveCardHacks/useInputErrorShouldBeDescriptionModEffect.ts",
+      "status": "added",
+      "additions": 84,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AdaptiveCardRenderer.tsx",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/DOMManipulationWithUndo/setOrRemoveAttributeIfFalseWithUndoIfUnchanged.ts",
+      "status": "added",
+      "additions": 40,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-06T06:49:15Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-06T21:52:51Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:14:40Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:14:08Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:09:22Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:09:01Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:09:58Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:09:43Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:08:15Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:09:42Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:09:46Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:09:40Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:13:59Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:01:36Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:09:22Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:08:02Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:01:40Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:07:36Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:10:12Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:09:08Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:10:01Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:01:11Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:00:56Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:01:34Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:09:28Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:01:45Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:01:01Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:00:51Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:01:51Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:09:55Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:01:37Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:00:54Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:01:04Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:03:35Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:02:11Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T22:02:31Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:56:51Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:56:17Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:58:55Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:59:52Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:57:58Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:57:33Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:56:48Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:57:26Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:56:33Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:57:24Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:56:57Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T21:57:37Z"
+    }
+  ]
+}

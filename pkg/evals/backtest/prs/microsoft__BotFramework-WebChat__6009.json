@@ -1,0 +1,625 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6009,
+  "title": "Announce \"Sending message.\" when a message takes over 3 seconds to send",
+  "body": "> Fixes #5700. Continues #5781 by @isherstneva, with @compulim's rework.\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed [#5700](https://github.com/microsoft/BotFramework-WebChat/issues/5700), screen readers not announcing that a message is still being sent, in PR [#6009](https://github.com/microsoft/BotFramework-WebChat/pull/6009), by [@isherstneva](https://github.com/isherstneva), [@compulim](https://github.com/compulim), and [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nScreen readers said nothing while a message was still being sent, such as a slow upload (the issue is closed, but no release fixes it). Now the live region announces \"Sending message.\" once after 3 seconds of sending; faster sends stay silent.\n\n## Design\n\n- Once until nothing is sending, not every 3 seconds as in #5781's last commit: other announcements are said once, and an attachment (120-second timeout) would be announced up to 39 times.\n- `useIsSending()` stays internal (`botframework-webchat-api/internal.js`) until a host needs it. A `role=\"status\"` on the visible \"Sending\" would announce every send at once.\n\n## Specific Changes\n\n- `ActivitySendStatusComposer`: `useIsSending()`, true while a visible activity is sending; `isPresentational` moved to core\n- `LongSend`: announces \"Sending message.\" once after 3 seconds of sending, also via `ariaNotify()`\n- `SendFailed`: skips failed sends without an activity\n- `activityStatus.longSend.html`: fake clock; snapshots 1–3, nothing at 2.999 s, announced at 3 s, still once after the ack\n- `.fast`, `.sendFailed`, `.event`: snapshot 1, nothing for an ack at 2.999 s, a failure, an event\n- `.language`: snapshot 1, a text change does not announce again, the next send uses the new text\n- `ariaNotify/longSend.html`: announced once via `ariaNotify()`\n\n- [x] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-03T23:59:12Z",
+  "merged_at": "2026-11-04T02:14:16Z",
+  "base": "main",
+  "head": "OEvgeny/dev-5781-sending",
+  "base_sha": "be71cb455cda341d813800165d6ad4ffa4bcc28f",
+  "head_sha": "6001bdd060c55f636dcb2f82a44f1ee59fb157f6",
+  "merge_sha": "f211d9dadf2d78bfe1be98d12841a27b28442545",
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-04T01:36:17Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "385f011d87d1de56f81b10cc5cff3b332dc79679",
+      "message": "fix: announce sending status to screen readers via live region",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "65230360c7697c501d38015818088b2b21fa0ae9",
+      "message": "fix: use React.Fragment instead of fragment shorthand",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "98695bbfa88a6cc9c4fb7157607069f5b6447e87",
+      "message": "test: advance clock past live region fade before final snapshot",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "6b936e5799966c2fe31935605b1a9831bfc41941",
+      "message": "revert: restore original test, snapshot needs regeneration",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "a37c870b7bb2ecc0b37808504419b72933552903",
+      "message": "test: update snapshots to include sending live region announcement",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "c4a883b4e60e79ff9cf2f5051060d5ed3dd627ec",
+      "message": "test: update snapshots for sending live region announcement",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "0e46c917e3f085dcf3e52ffb2833c8d77f461772",
+      "message": "test: fix assertion tests for sending live region announcement",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "6c24bc63ed82a20238c31d62574c5f148d920379",
+      "message": "test: wait for async telemetry exception event in unknownActivity test",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "41bd39b34c4617f0903f097491660a1740f329d1",
+      "message": "test: stabilize snapshot tests with missing image/scroll waits",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "533fe1747a8aa296b8ba00eed9d8421dec55baa0",
+      "message": "fix: delay sending announcement to 3 seconds to avoid noise on fast sends",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "a48a1b54add16debc701866bd6eb7847af28f636",
+      "message": "test: regenerate snapshots after 3s sending announcement delay",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "9c843272c93bc93e2e6a614aeff49a277ef79a3e",
+      "message": "fix: add required curly braces to if statements (curly lint rule)",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "66cee213bc4772be0ad1c9741b8dfe2803244ad9",
+      "message": "refactor: rename SendSending to LongSend; revert unrelated test changes",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "fb9fb48c961a30f2f1004f0eaf49947651f4e535",
+      "message": "test: rename sendSending test to longSend",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "b274a2828d713f06c0aa9ecaa631069edf77b90d",
+      "message": "ci: retrigger",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "ae3cfd384bf0050955d2fad576be7ca934d36dc5",
+      "message": "ci: retrigger",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "0f23db2a66a8d2415b6f685ec95a3284a66e7f90",
+      "message": "ci: retrigger",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "5fc301c6613a60517dcf1265c6ebb4589f517390",
+      "message": "ci: retrigger",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "26e9a2d34cab1580ef413a3777ad3c83afdcc8dd",
+      "message": "refactor: extract useActivityKeysOfSendStatus hook to eliminate duplication",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "a7d57db5391a487b375718ce7c167411c97e8228",
+      "message": "refactor: return readonly tuple from useActivityKeysOfSendStatus per hook convention",
+      "author": "isherstneva"
+    },
+    {
+      "sha": "36f7844a3a37327ef94e4c2993c37f6738488bbb",
+      "message": "Add `useIsSending`",
+      "author": "compulim"
+    },
+    {
+      "sha": "26dad7ac270722485d8601fef8b3df13a940414d",
+      "message": "Merge branch 'main' into OEvgeny/dev-5781-sending",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "24423f773bf251fcd875ed34ac2c9fe897e14d7d",
+      "message": "Fix the build after adding `useIsSending`",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "05f5d031f5054dfb2059a88607a20c6f6166db4f",
+      "message": "Use `iteratorSome` instead of iterator helpers",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "c5c34403ccf8a7ce96828413e510836ece362d86",
+      "message": "Memoize `useIsSending` on the boolean",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "d9eb03eca6d7c329a73ebb152b882bfdffd9d009",
+      "message": "Export `useIsSending` from `botframework-webchat` and document it",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7870a603984775a47f1fa57741055a721116eb24",
+      "message": "Move the changelog entry to a fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "1b6fce5f9795f98ea2db88147e0aac91e51ce8ed",
+      "message": "Keep `useIsSending` internal",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "246736a7b518016975e84e446b91c34cf3a590e3",
+      "message": "Announce \"Sending message.\" once per send",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7cfde0d70b55c5c6cf383df47e75e906c7518855",
+      "message": "Test the \"Sending message.\" announcement with a fake clock",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "92136cb7e40b4f66162135d617b16ac071c43426",
+      "message": "Remove the changelog fragment of #5781",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "2441fb13f3ea77ec5c0b80deea6dfc7bd02eaa2c",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "e0589f786dae40f4c56af7f5a248bd16bf3c6ee5",
+      "message": "Credit @isherstneva and @compulim in the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "6001bdd060c55f636dcb2f82a44f1ee59fb157f6",
+      "message": "Merge branch 'main' into OEvgeny/dev-5781-sending",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6009-dev-5781-sending.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/longSend.html",
+      "status": "added",
+      "additions": 104,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/ariaNotify/longSend.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.event.html",
+      "status": "added",
+      "additions": 71,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.event.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.fast.html",
+      "status": "added",
+      "additions": 77,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.fast.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.html",
+      "status": "added",
+      "additions": 111,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.language.html",
+      "status": "added",
+      "additions": 110,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.language.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.sendFailed.html",
+      "status": "added",
+      "additions": 86,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.sendFailed.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/boot/internal.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/localization/en-US.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/ActivitySendStatus/ActivitySendStatusComposer.tsx",
+      "status": "modified",
+      "additions": 34,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/ActivitySendStatus/private/Context.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/ActivitySendStatus/private/SubContext.ts",
+      "status": "added",
+      "additions": 22,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/ActivitySendStatus/useIsSending.ts",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/LiveRegion/LongSend.tsx",
+      "status": "added",
+      "additions": 47,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/LiveRegion/SendFailed.tsx",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/LiveRegionTranscript.tsx",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/boot/internal.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/utils/isPresentational.ts",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "packages/component/src/Transcript/LiveRegion/isPresentational.ts"
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-04T01:42:00Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-04T01:52:55Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-11-04T02:56:46Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:13:28Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:13:05Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:09Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:11:35Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:12:01Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:10:19Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:12:40Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:12:11Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:05Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:10:37Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:41Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:11:31Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:11:46Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:12:00Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:12:00Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:11:18Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:12:00Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:12:39Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:10:14Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:12:06Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:10:28Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:03Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:36Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:45Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:12:57Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:06Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:50Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:39Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:45Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:18Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:03:11Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:05:56Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:04:49Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:06:42Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T01:57:35Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T01:56:54Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T01:58:09Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T01:58:19Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T02:01:56Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T01:58:57Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T01:57:27Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T01:57:59Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T01:58:30Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T01:58:16Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T01:57:41Z"
+    }
+  ]
+}
