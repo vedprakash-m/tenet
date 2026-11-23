@@ -28,10 +28,10 @@ test("loads every alpha.0 level with defaults and caps", async () => {
       assert.equal(policy.level, effective);
       assert.equal(policy.paths.records, "tenet");
       assert.equal(policy.specs.id_prefix, "R");
-      assert.equal(ruleMode(policy, "tests-not-weakened"), level === "verify" || level === "assure" ? "observe" : "advise");
+      assert.equal(ruleMode(policy, "tests-not-weakened"), "advise");
       if (level === "verify" || level === "assure") {
         assert.ok(policy.findings.some((item) => item.code === "TN-POLICY-LEVEL-UNAVAILABLE"));
-        assert.equal(ruleMode(policy, "tests-not-weakened"), "observe");
+        assert.equal(ruleMode(policy, "tests-not-weakened"), "advise");
       }
       if (level === "protect") {
         assert.ok(policy.findings.some((item) => item.code === "TN-POLICY-ALPHA0-CAP"));
@@ -42,6 +42,45 @@ test("loads every alpha.0 level with defaults and caps", async () => {
   }
 });
 
+test("unavailable levels behave as explicit observe with one extra warning", async () => {
+  const { loadPolicy, ruleMode } = await api;
+  const repository = await tmpRepo("policy-fallback");
+  const standard = "0.1.0-alpha.0";
+  try {
+    for (const overrides of [{}, { "signed-evidence": "enforce" }] as const) {
+      const rulesYaml = Object.entries(overrides)
+        .map(([rule, mode]) => `  ${rule}: ${mode}\n`)
+        .join("");
+      const config = (level: string) =>
+        `standard: ${standard}\nlevel: ${level}\n${rulesYaml ? `rules:\n${rulesYaml}` : ""}`;
+      await repository.write("tenet.yaml", config("observe"));
+      const explicit = await loadPolicy({ cwd: repository.path });
+      for (const level of ["verify", "assure"] as const) {
+        await repository.write("tenet.yaml", config(level));
+        const { findings: actualFindings, ...actual } = await loadPolicy({ cwd: repository.path });
+        const unavailable = actualFindings.filter((item) => item.code === "TN-POLICY-LEVEL-UNAVAILABLE");
+        assert.equal(unavailable.length, 1);
+        assert.equal(unavailable[0]?.severity, "warning");
+        assert.deepEqual(
+          { ...actual, findings: actualFindings.filter((item) => item !== unavailable[0]) },
+          explicit,
+        );
+        for (const rule of Object.keys(explicit.rules)) {
+          const raw = { standard, rules: overrides };
+          assert.equal(ruleMode({ ...raw, level }, rule), ruleMode({ ...raw, level: "observe" }, rule));
+          assert.equal(ruleMode(actual, rule), ruleMode(explicit, rule));
+        }
+      }
+    }
+    for (const level of ["observe", "verify", "assure"]) {
+      await repository.write("tenet.yaml", "standard: " + standard + "\nlevel: " + level
+        + "\nrules:\n  tests-not-weakened: observe\n");
+      await assert.rejects(loadPolicy({ cwd: repository.path }), { code: "TN-POLICY-LOOSEN" });
+    }
+  } finally {
+    await repository.cleanup();
+  }
+});
 test("rejects missing config, unknown rules, schema errors, and loosening", async () => {
   const { loadPolicy } = await api;
   const repository = await tmpRepo("policy-invalid");

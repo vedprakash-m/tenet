@@ -39,13 +39,25 @@ function encodeBytesBase32(bytes: Uint8Array): string {
   return output;
 }
 
+function canonicalString(value: string): string {
+  for (const character of value) {
+    // The string iterator keeps each valid surrogate pair together.
+    const code = character.charCodeAt(0);
+    if (character.length === 1 && code >= 0xd800 && code <= 0xdfff) {
+      throw Object.assign(new TypeError("RFC 8785 does not allow unpaired surrogates"), {
+        code: "TN-SCHEMA",
+      });
+    }
+  }
+  return JSON.stringify(value);
+}
 function canonicalize(value: unknown, active: WeakSet<object>): string {
   if (value === null || typeof value === "boolean") return JSON.stringify(value);
   if (typeof value === "number") {
     if (!Number.isFinite(value)) throw new TypeError("RFC 8785 does not allow non-finite numbers");
     return JSON.stringify(value);
   }
-  if (typeof value === "string") return JSON.stringify(value);
+  if (typeof value === "string") return canonicalString(value);
   if (typeof value !== "object") throw new TypeError(`RFC 8785 does not allow ${String(value)}`);
 
   if (active.has(value)) throw new TypeError("RFC 8785 does not allow cycles");
@@ -61,7 +73,7 @@ function canonicalize(value: unknown, active: WeakSet<object>): string {
     }
     const record = value as Record<string, unknown>;
     const keys = Object.keys(record).sort();
-    return `{${keys.map((key) => `${JSON.stringify(key)}:${canonicalize(record[key], active)}`).join(",")}}`;
+    return `{${keys.map((key) => `${canonicalString(key)}:${canonicalize(record[key], active)}`).join(",")}}`;
   } finally {
     active.delete(value);
   }
