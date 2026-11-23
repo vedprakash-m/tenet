@@ -121,3 +121,28 @@ Post-Round-4 edit token counts: `contracts.md` `5,283` (`21,130B`), `messages.md
 - `tenet/specs/plan/alpha.0.md`: documented ignoring reserved/empty prefixes (`AB`, `CF`, `Q`, `V`) in `CP-0018`, first-seen deduped document-order `implements` and `items` returns in `parseAcceptance`, `{…}`-then-column precedence for `OB §1` table rows, front matter carrying `tenet` defaulting missing `sections` to `{}`, exact `Requirements`/`L0`/`Vision` heading/level matching rules, non-citation-stripped line-normalized `texts` for `doc:` citations, and `tenet.doc ?? path` fallback in `deltas`.
 
 Post-Round-5 edit token counts: `contracts.md` `5,293` (`21,170B`), `messages.md` `2,079` (`8,317B`), `algorithms.md` `5,360` (`21,438B`), `evidence.md` `1,679` (`6,716B`), `alpha.0.md` `4,952` (`19,806B`), `tech-spec.md` `10,109` (`40,437B`). Proceeding to Round 6.
+
+---
+
+## Round 6 (`r6-a` / `r6-b`)
+
+| Metric | Round 6 (`r6-a` / `r6-b`) |
+|---|---|
+| Session unit tests | 10 pass / 9 pass (0 fail) |
+| `tsc --noEmit` errors | 0 / 0 |
+| `QUESTIONS.md` items | 6 / 9 |
+| `// INVENTED:` markers | 6 (`4+2`) / 13 (`8+5`) |
+| Shared fixture errors | 0 / 0 |
+| `compare.mjs r6` | **DIFF** (`23,654B` vs `24,814B`): `reports` **MATCH**, `acceptance` **MATCH**, `renamed` **MATCH**; `specs` (`5,518B` vs `5,820B`), `moved` (`1,169B` vs `1,315B`), `pr` (`1,513B` vs `1,577B`) **DIFF** |
+
+### Root Causes of Round 6 Diff (`r6-a` vs `r6-b`)
+1. **`parseDoc` `Requirements` routing regression (`specs`, `moved`, `pr.touched`):** `r6-a` read R5->R6's "`identifies Requirements via ...`" wording in `CP-0044` as skipping `<prefix>-\d+` requirement parsing in sections not matching `Requirements` (so `## 日本語セクション — Retry Rules`, `## Rules`, `## Retry`, and `tenet/specs/prd.md` `## Retry` produced empty `requirements[]` and `touched: []`).
+2. **`section.text` trailing newline (`specs`, `moved`):** `r6-a` trimmed trailing `\n` from non-empty section bodies while `r6-b` (and R2–R5) retained the normalized `\n` line ending.
+
+### Post-Round-6 Fixes & Escalation `E-0002`
+Stopped after Round 6 under the stop rule and recorded [escalations/E-0002.md](../escalations/E-0002.md), while applying targeted spec fixes so the Round 6 regression is not left on disk:
+- `tenet/specs/plan/alpha.0.md`: clarified `parseDoc` parses `<prefix>-\d+` in every non-`L0`/Vision section (`Requirements` heading governs only bare-bullet `TN-SPEC-MISSING-ID`), keeps CRLF->LF normalized `section.text` ending with `\n` when non-empty, shares one per-file seen-ID set across `requirements`/`vision_items`/`conflicts`/`questions`, allows empty `- R-1` text `""` and excludes metadata columns from table text fallback, extracts trailing `(\d+)$` for `deltas` sort, and deduplicates `itemResults.names[]` in encounter order.
+- `tenet/specs/tech-spec/evidence.md`: added JUnit fallback to `classname` when `name` is empty, pytest `<error>` body fallback when `message` is empty, `jest-json` `duration_ms` & `go-test-json` `Elapsed` `duration_ms` + repeated terminal event collapse, and shard-merge `inconclusive: mergedCases.length === 0`.
+- `tenet/specs/tech-spec/algorithms.md`: separated per-declaration `declaredTags` authorship vs `itemResults` aggregation, excluded `.py` `#` comments in `ALG-09` `skip-added` with innermost enclosing selection and explicit `tests-consolidated` scope, and clarified `ALG-14` deleted-doc `text-changed` and `codeowners:<pattern>` key format.
+
+Post-Round-6 token counts: `contracts.md` `5,293` (`21,170B`), `messages.md` `2,079` (`8,317B`), `algorithms.md` `5,377` (`21,507B`), `evidence.md` `1,775` (`7,101B`), `alpha.0.md` `5,016` (`20,064B`), `tech-spec.md` `10,109` (`40,437B`). All files within budget (`<= 90%`) and LF-terminated.
