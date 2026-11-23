@@ -28,7 +28,7 @@ Implements: R-12, R-14                  optional; IDs of blessed requirements
 - [AB-1] one retry after a timeout      one item per line; "- [ ] " checkbox prefix allowed
 ```
 
-Parsing: the block ends at the next heading or end of text. `Implements:` matches `^Implements:\s*(.+)$` and splits on commas. An item matches `^\s*[-*]\s*(\[[ xX]\]\s*)?\[(AB-\d+)\]\s+(.+)$`. An item line without an ID is reported "needs an ID"; a repeated ID is an error. **Acceptance digest:** SHA-256 over RFC 8785 JSON of `{implements: [IDs sorted], items: [{id, text}] sorted by id}`, with whitespace in `text` collapsed to single spaces; changing `Implements:` changes it.
+Parsing: missing heading returns `{implements: [], items: [], digest, problems: []}`. Block runs until next heading or EOF; ignore lines in code fences. `Implements:` matches `^Implements:\s*(.+)$`, splits non-empty values on commas and concatenates multiple lines. Items match `^\s*[-*]\s*(\[[ xX]\]\s*)?\[(AB-\d+)\]\s+(.+)$` (trimmed). Bullets without `[AB-n]` emit `TN-ACC-MISSING-ID` ("needs an ID"); repeated IDs emit `TN-ACC-DUP-ID` and are excluded from `items`. **Acceptance digest:** SHA-256 over RFC 8785 `{implements, items: [{id, text}]}` sorted by ASCII/UTF-16 `id` order (`a < b ? -1 : a > b ? 1 : 0`), whitespace in `text` collapsed.
 
 ## 3. Specification documents
 
@@ -60,7 +60,7 @@ sections:
 - R-12 A payment that times out is retried once, never twice. {origin: observed; cites: src/retry.ts:40-48, test: checkout.retry.test.ts > retries once; serves: V-2}
 ```
 
-Braces close the line. A requirement may also be a table row (onboarding §1). `origin` is `observed`, `documented`, `asked` or `inferred`; `asked` may add `adopted_by: <owner id>`; optional `scope: global` marks a cross-cutting rule (ALG-10). **Citations** inside `cites:`, separated by commas: `path:start-end`, `path:line`, `test: <file> > <name>`, `doc: path#heading-slug`. Paths are relative to the repository root with forward slashes.
+Braces close the line (`- <ID> <text> {…}`; table rows in onboarding §1). `{…}` fields split on `;` (`origin:`, `cites:`, `serves:`, `scope:`, `adopted_by:`); `cites:`/`serves:` split on `,`. Parsed item: `{id, text, origin, cites, serves, scope, adopted_by}` (scalars nullable). `origin` is `observed|documented|asked|inferred`; `scope: global` optional. `_preamble` has `heading: ""`; `section.level` defaults to `sections[slug].level ?? tenet.level ?? null`; omitted `applies_to` defaults to `[]`. Citations: `path:start-end`, `path:line`, `test: <file> > <name>`, `doc: path#slug` (forward slashes). Missing front matter emits `TN-SPEC-NO-FRONT` (treat sections as `draft`). Unclosed braces, metadata outside braces, unknown keys, or invalid `origin` emit `TN-SPEC-REQ-META`. Bullets lacking an ID inside `Requirements`/`Vision`/`L0` sections, bullets with `{…}`, or empty Requirement/Vision table ID cells emit `TN-SPEC-MISSING-ID` ("needs an ID"; normal prose bullets elsewhere never emit it). Duplicate IDs emit `TN-SPEC-DUP-ID`.
 
 **Conflicts and open questions** (sections named exactly `Conflicts` and `Open questions`):
 
@@ -69,7 +69,7 @@ Braces close the line. A requirement may also be a table row (onboarding §1). `
 - [x] Q-2 (section: vision) Who are the primary users? answer: returning shoppers
 ```
 
-An open item (`[ ]`) blocks blessing its named section until it is checked with `resolution:` or `answer:`, or the section is deferred.
+Parsed entries: `{id, checked: bool, section: string|null, text, resolution?: string, answer?: string}` (stripping trailing `| 1: …`, `resolution: …`, `answer: …` from `text`). An open item (`[ ]`) blocks blessing its named section until checked with `resolution:`/`answer:`, or deferred.
 
 ## 4. Onboarding files
 
@@ -89,18 +89,19 @@ An open item (`[ ]`) blocks blessing its named section until it is checked with 
 
 `init` writes the runner's own command with these flags (never `npm test -- …`):
 
-| Runner | `checks.<name>.run` | `report`, `report_from` |
+| Runner / kind | `checks.<name>.run` | `report`, `report_from` |
 |---|---|---|
 | vitest | `npx vitest run --reporter=default --reporter=junit --outputFile.junit=.tenet/reports/<name>.xml` | `junit`, file |
 | jest | `npx jest --ci --json --outputFile=.tenet/reports/<name>.json` | `jest-json`, file |
 | node:test | `node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=.tenet/reports/<name>.xml` | `junit`, file |
 | pytest | `python -m pytest --junitxml=.tenet/reports/<name>.xml` | `junit`, file |
 | go | `go test -json ./...` | `go-test-json`, stdout |
+| ctrf | runner's CTRF command writing `.tenet/reports/<name>.json` | `ctrf`, file |
 | other | the user's own command | `none`: per-test results unavailable |
 
 Real reports differ from these formats in ways every reader must handle: [evidence.md §2](evidence.md#2-real-test-reports).
 
-Every reader produces one model: `{runner, cases: [{full_name, file?, status: pass|fail|skip|error, attempts: [status], tags: [id], duration_ms?}]}` (ALG-08).
+Every reader produces one `TestReport` model (`runner` equals `kind`: `junit` | `ctrf` | `go-test-json` | `jest-json` | `none`): `{runner, cases: [{full_name, file?, status: pass|fail|skip|error, attempts: [status], tags: [id], duration_ms?}], teardown_failed: bool, inconclusive: bool}` (ALG-08). Missing reports throw `TN-REPORT-MISSING`; malformed reports throw `TN-REPORT-MALFORMED`. When `file` is present, store it with forward slashes, relativized to `cwd` if supplied. `duration_ms`, when present, is rounded to the nearest integer millisecond (`Math.round`).
 
 ## 7. CI
 
@@ -173,7 +174,7 @@ Every error carries its code, plain words and a fix (R-083). What each situation
 | `TN-USAGE-*`, `TN-BLESS-NO-TTY` | usage | 2 |
 | `TN-ENV-NODE`, `TN-ENV-GIT`, `TN-ENV-NO-COMMIT`, `TN-ENV-NOT-GIT`, `TN-POLICY-MISSING` | environment | 3 |
 | `TN-POLICY-LOOSEN`, `TN-POLICY-INCOMPATIBLE`, `TN-POLICY-RULE`, `TN-INIT-EXISTS`, `TN-BLESS-OPEN-CONFLICT`, `TN-BLESS-INFERRED` | policy refusal | 4 |
-| `TN-SCHEMA`, `TN-PATH-ESCAPE`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-KIT-EDITED`, `TN-EV-DUP`, `TN-ACC-DUP-ID` | structural | 1 |
+| `TN-SCHEMA`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-KIT-EDITED`, `TN-EV-DUP`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID` | structural | 1 |
 | `TN-CITE-FILE`, `TN-CITE-RANGE`, `TN-CITE-HEADING`, `TN-CITE-TEST` (rule `citations-valid`); `TN-BUDGET` (`budget`); `TN-WEAK-*` (`tests-not-weakened`); `TN-PROTECTED` (`protected-surfaces`); `TN-ACC-UNPASSED` (`acceptance-proven`); `TN-GATE-*` (the row's rule) | rule | 1 in `enforce`, else 0 |
 | `TN-REPORT-MISSING`, `TN-REPORT-MALFORMED`, `TN-RECORD-BUNDLE`, `TN-LOCK-MISMATCH`, `TN-POLICY-BRANCH`, `TN-POLICY-LEVEL-UNAVAILABLE`, `TN-SUBJ-DIRTY`, `TN-EV-ORPHAN` | warning, shown as degraded | 0 |
 
