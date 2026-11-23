@@ -161,12 +161,12 @@ For `not_checked`: map changed code extensions at `head` (`.rb` ruby, `.cs` csha
   1. **global**: requirements marked `scope: global`, within a reserved 25% of the budget
   2. requirements whose ID is named
   3. requirements citing a path equal to, inside or containing an input path
-  4. prose sections whose `applies_to` matches an input path
-  5. requirements whose text contains the query, case-insensitive
-- **Ordering:** within a group, by level (L0, L1, L2) then ID; duplicates are dropped.
-- **Budget:** in estimated tokens (characters ÷ 4, not any model's tokenizer). Add whole items while they fit. Global rules beyond their 25% share still come first; what no longer fits goes to `omitted`. An item named in `ids` always comes back whole, flagged `over_budget` if it alone exceeds the budget, so asking for an omitted item by ID always ends. Every item that does not fit goes into `omitted` by ID, and `truncated` is set. Then add an index of the remaining blessed requirements (ID and first 80 characters) up to 20% of the budget.
-- **Each item carries** its flags, its owner and `reason` (the group that chose it).
-- **Drafts:** only with `include_drafts`, in `drafts`.
+  4. **`applies_to`**: prose sections whose `applies_to` matches an input path (`id: "<doc>#<slug>"`)
+  5. **`query`**: requirements (`text`) or sections (`heading`) containing the query, case-insensitive
+- **Ordering:** within a group, by level (L0, L1, L2) then numeric/ASCII ID; duplicates are dropped.
+- **Budget:** `tokens(s) = Math.ceil(s.length / 4)` (`budget_tokens <= 0` refuses with `TN-USAGE-BUDGET`). Walk candidates in group order: add whole items while `used + tokens(item.text) <= budget_tokens` (global rules beyond their 25% share still precede Groups 2–5); if a non-explicit item doesn't fit, push its `id` to `omitted`, set `truncated = true`, and keep scanning smaller items. An item named in `ids` always comes back whole (never `omitted`), clamping `used` at `budget_tokens` and setting `over_budget: true` if `tokens(item.text) > budget_tokens` (`truncated` is `omitted.length > 0`). Then build `index` from remaining blessed requirements not in `blessed` or `omitted` (`title: item.text.slice(0, 80)`, cost `tokens(id + " " + title)`) up to `Math.floor(budget_tokens * 0.20)`.
+- **Each item carries** its `flags`, single-string `owner` (joining multiple CODEOWNERS with `", "`) and `reason` (`global|id|path|applies_to|query`).
+- **Drafts:** `include_drafts` populates `drafts` with `draft`/`deferred` sections (never `rejected`); a blessed copy failing `ALG-03` integrity is excluded from `blessed` and served in `drafts` (`integrity_failed: true`).
 - **No inputs:** group 1 plus the index.
 
 Fixtures: a global rule survives a budget filled by one long local requirement; the omitted IDs match between CLI and MCP.

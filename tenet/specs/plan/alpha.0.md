@@ -142,7 +142,7 @@
 1. *Needs:* CP-0044; C §9; ALG-10.
 2. *Owns:* `src/context/`, `src/mcp/`, the commands `context` and `mcp` with their result schemas, `test/context/`, `test/mcp/`.
 3. *Exports:* `context(input) → {blessed, drafts, index, omitted, truncated, rules}`; `serveMcp(io)`.
-4. *Behavior:* ALG-10 and C §9 exactly, reading blessed copies; `tenet_status` gives the level and spec states; `tenet_next` gives the pending blessings; `tenet_propose` writes into the named work item's packet folder.
+4. *Behavior:* ALG-10 and C §9 exactly, reading blessed copies; `rules` lists the five alpha.0 pack rules with their effective capped modes; when nothing is blessed, human CLI and MCP `content[0].text` print `"nothing blessed yet; run tenet bless"` while keeping the 6-key JSON result; a blessed copy failing integrity emits `TN-SPEC-BLESSED-COPY` (in CLI `--json` `errors[]` and human/MCP text) and is served in `drafts` (`integrity_failed: true`); `tenet_status` gives the level and spec states; `tenet_next` gives the pending blessings; `tenet_propose` writes into the named work item's packet folder.
 5. *Edge cases:*
    - nothing blessed ("nothing blessed yet; run tenet bless")
    - global rules over their reserved share; an item asked for by ID that alone exceeds the budget (`over_budget`)

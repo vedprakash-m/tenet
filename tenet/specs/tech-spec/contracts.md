@@ -114,7 +114,7 @@ Moved to [ci.md](ci.md) under the rollover rule: the test job and recorder, runn
 | `init` | alpha.0 | files in the preflight, `.tenet/manifest.json` | `--yes`, `--vendor`, `--force`; idempotent |
 | `onboard` | alpha.0 | `.tenet/onboard/*`, drafted documents via the agent | `--inventory-only`, `--refresh` |
 | `bless` | alpha.0 | front matter, `<records>/blessed/*` and its `log.jsonl` | refuses without a terminal (exit 2); per section: bless, confirm (`sources-changed`), edit, reject, defer |
-| `context` | alpha.0 | — | `--paths`, `--ids`, `--query` (titles only), `--include-drafts` |
+| `context` | alpha.0 | — | `--paths`, `--ids`, `--query`, `--include-drafts` |
 | `check`, `fix`, `split` | alpha.0 | `fix` and `split`: local files | `check --pack` |
 | `board` | alpha.0 | — | `--all`; `--open`, `--since`, `--fetch` from alpha.1 |
 | `upgrade`, `remove`, `doctor`, `mcp` | alpha.0 | lock, block, keys; nothing for `doctor`, `mcp` | |
@@ -132,12 +132,12 @@ Global flags: `--json`, `--cwd`, `--quiet`, `--verbose`, `--offline`. Under `--j
 Newline-delimited JSON-RPC 2.0 over stdio; logs on stderr only; no network. Protocol revision `2025-11-25`, also accepting `2025-06-18`.
 - `initialize`: answer `{protocolVersion, capabilities: {tools: {listChanged: false}}, serverInfo: {name: "tenet", version}}`, where `protocolVersion` is the client's requested revision if supported, else `2025-11-25`.
 - Notifications (`notifications/initialized` and any other message without an `id`) get no reply. `ping` returns `{}`.
-- `tools/list` gives each tool's `inputSchema` and `outputSchema` (from its result schema). `tools/call` returns `{content: [{type: "text", text: <markdown>}], structuredContent: <result>, isError}`.
-- Errors: -32700 parse, -32600 invalid request, -32601 unknown method, -32602 bad parameters or unknown tool.
+- `tools/list` gives each tool's `inputSchema` and `outputSchema` (from its result schema). `tools/call` returns `{content: [{type: "text", text: <markdown>}], structuredContent: <result>, isError}` (`content[0].text` uses the CLI human summary).
+- Errors: -32700 `"Parse error"`, -32600 `"Invalid Request"`, -32601 `"Method not found"`, -32602 `"Invalid params"`.
 
 | Tool | Input | Result |
 |---|---|---|
-| `tenet_context` | `{paths?, ids?, query?, include_drafts?, budget_tokens?}` | `{blessed: [{id, section, text, flags, owner, reason, over_budget?}], drafts, index: [{id, title}], omitted: [id], truncated, rules: [{rule, mode}]}`; an item asked for by ID always comes back whole, flagged `over_budget` if it alone exceeds the budget |
+| `tenet_context` | `{paths?, ids?, query?, include_drafts?, budget_tokens?}` | `{blessed: [{id, section, text, flags, owner, reason: global\|id\|path\|applies_to\|query, over_budget?}], drafts: [{id?, section, path, state, text, integrity_failed?}], index: [{id, title}], omitted: [id], truncated, rules: [{rule, mode}]}` (`owner` joins multiple CODEOWNERS with `", "`; `rules` lists the five alpha.0 pack rules in pack order; an explicit `id` item always comes back whole, flagged `over_budget` if `tokens > budget_tokens`) |
 | `tenet_check` | `{paths?}` | `{findings, summary}`, as `check` |
 | `tenet_status` | `{work?}` | level, spec states, work item status |
 | `tenet_next` | `{work?}` | `next_actions` |
