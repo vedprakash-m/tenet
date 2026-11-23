@@ -41,7 +41,7 @@ Every SDK function takes `{cwd, stdin, stdout, now}` so tests are deterministic.
 ```text
 tenet/  README.md LICENSE CONTRIBUTING.md AGENTS.md CLAUDE.md package.json tsconfig.json tenet.yaml
   kit/   SHIPPED AND VENDORED: TENET.md, CHANGELOG.md, schemas/, defaults/, templates/, packs/,
-         agents/, criteria/, skills/, loops/, workflows/, hooks/; kit.json generated at release
+         agents/, criteria/, skills/, loops/, workflows/, hooks/, practices/; kit.json generated at release
   pkg/   SHIPPED, NOT VENDORED: migrations/, conformance/ (red-team, reference cases), hosts/;
          evals/ stays in the repository and is never published
   src/ test/ docs/ examples/minimal/
@@ -169,7 +169,7 @@ The alpha.0 schema accepts only the fields alpha.0 reads (`standard`, `kit_path`
 
 ### 6.2 Packs
 
-A pack (`kit/packs/<name>/pack.yaml`) declares phases and stations, lanes, its claims with selectors, accepted methods per claim class, work types, decision defaults, loops and roles. **Pack-authoring contract:** every station names its exit claims; every claim has a selector, methods and a pass rule; every human gate names its decision and strength; a pack validates against `kit/schemas/pack.json` and passes `tenet check --pack`. Projects may only tighten it.
+A pack (`kit/packs/<name>/pack.yaml`) declares phases and stations, lanes, its claims with selectors, accepted methods per claim class, work types, decision defaults, loops and roles. **Pack-authoring contract:** every station names its exit claims; every claim has a selector, methods and a pass rule; every human gate names its decision and strength; a pack validates against `kit/schemas/pack.json` and passes `tenet check --pack`. Projects may only tighten it. **Pack file shape (alpha.0):** `pack`, `version`, `description`, `phases[]`, `stations[]` of `{id, phase}`, `loop_backs[]` of `{from, to}`, `lanes[]`, `human_touches` (lane → count), `work_types[]`, and `rules_alpha0[]` of `{id, observe, protect, verify, assure}`; `kit/packs/minimal/pack.yaml` is the reference. Claims, methods, strengths and loops join with CP-0049 and CP-0050.
 
 **The `minimal` pack.** <!-- provisional --> Stations `intake → define → build → verify → integrate → close` (phases: define, build, verify, release); loop-backs `verify → build`, `integrate → build`. **Pull-request native** (catalog R-186): a quick change needs nothing from Tenet but its pull request; for careful or deep work `tenet new` creates the branch `tenet/<alias>-<slug>` and the packet folder and prints the command that opens the draft pull request (Tenet makes no network call, R-080; a host binding or engine may open it). A draft is Define, ready for review is Verify, merge is Integrate. Lanes: `quick`, `careful`, `deep` (set by risk or policy) and `express` (0.1.x, granted by CI). `explore` is a work type: no claims, and it cannot merge as production. Human touches: quick 0 (or 1 where policy requires), careful 1 (the definition approval, of acceptance items in plain words; merge is allowed by policy once claims hold), deep 2.
 
@@ -234,7 +234,7 @@ Global: `--json`, `--cwd`, `--quiet`, `--verbose`, `--offline`. Exit codes 0 suc
 
 Every command, its release, inputs, writes, `--json` schema, exit codes and idempotence: [contracts §8](tech-spec/contracts.md#8-commands). The README and UX spec take their release labels from that table.
 
-`tenet check` covers structure, schemas, links, and the spec ladder's change control and traceability (§6.3), plus: kit integrity, generated drift, overlay narrowing, roster bound, separation of duties, deprecated use, citations and section states, event immutability, budgets, pinned skills, replay labels, alias uniqueness. Output follows R-083: plain words first, then `why:` with the rule ID, then `→` the fix; `--json` carries `{file, line, rule, message, fix}`. Structural findings (schemas, parsing, front matter, blessed-copy integrity) always exit 1; a registry rule's finding exits 1 only when that rule is in `enforce`; `budget` errors only in CI, on a change that takes a document past 100% (contracts §13).
+`tenet check` covers structure, schemas, links, and the spec ladder's change control and traceability (§6.3), plus: kit integrity, generated drift, overlay narrowing, roster bound, separation of duties, deprecated use, citations and section states, event immutability, budgets, pinned skills, replay labels, alias uniqueness. Output follows R-083: plain words first, then `why:` with the rule ID, then `→` the fix; `--json` carries `errors: [{code, severity, rule, file, line, message, fix}]`, and `check` returns `result: {findings, summary}` (contracts §8). Structural findings (schemas, parsing, front matter, blessed-copy integrity) always exit 1; a registry rule's finding exits 1 only when that rule is in `enforce`; `budget` errors only in CI, on a change that takes a document past 100% (contracts §13).
 
 ## 11. Loops and bindings
 
@@ -278,4 +278,4 @@ The [red-team catalog](../../pkg/conformance/red-team/catalog.yaml) maps R-106 a
 
 ## 15. Testing
 
-Unit tests per module; property tests of the evaluator (§13); golden boards byte-identical across platforms; end to end with a real git history and a real GitHub repository (`vedprakash-m/tenet-sandbox`) for the test job and recorder from alpha.0 plus a simulated CI; the red-team suite in CI; Windows, macOS and Linux; the R-082 workload including 10,000 event files on Windows; dogfooding from 0.1.0.
+Unit tests per module; `npm run check:examples` over every published example; property tests of the evaluator (§13); golden boards byte-identical across platforms; end to end with a real git history and a real GitHub repository (`vedprakash-m/tenet-sandbox`) for the test job and recorder from alpha.0 plus a simulated CI; the red-team suite in CI; Windows, macOS and Linux; the R-082 workload including 10,000 event files on Windows; dogfooding from 0.1.0.

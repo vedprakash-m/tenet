@@ -85,6 +85,7 @@ Errors: `TN-CITE-FILE`, `TN-CITE-RANGE` (including malformed syntax), `TN-CITE-H
 
    Disjoint field changes merge, and note events never conflict.
 6. A `resolve` whose `prev` includes every conflicting head keeps the event it names. A later incompatible event starts a new conflict.
+7. A cycle, a self-link or a predecessor from another work item is a structural finding: those events and their dependents are held, and the rest still reduces ([kernel §1](kernel.md#1-state-reduction-and-replay)).
 
 Fixtures: every arrival order of the same set gives one state; a resolution delivered twice applies once.
 
@@ -126,7 +127,7 @@ Each applicable claim's result is `satisfied`, `waived`, `failed`, `unsatisfied`
 - **Lead reason and next action:** the first matching row with the verdict's value. All matching reasons are listed.
 - Property: adding an applicable claim that is enforced and unsatisfied never yields a more permissive verdict or disposition.
 
-**Output:** `{claims: [{id, result, reason}], verdict, disposition: blocks|advises|records, lead, reasons, next: {who, action, command}, evaluated_at, snapshot}`.
+**Output:** `{claims: [{id, result, reason}], verdict, disposition: blocks|advises|records, lead, reasons, next: {who, action, command}, blocking?, evaluated_at, snapshot}`. When the disposition is `blocks`, `blocking` names the earliest enforcing match, by row and then claim ID (L-0032).
 
 Fixtures: one per row; an advisory review (row 7) beside an enforced failed claim (row 8): verdict refuse, disposition blocks; an advisory failure beside an enforced pass; a stop threshold with all claims passing.
 
@@ -210,15 +211,7 @@ Fixtures: a global rule survives a budget filled by one long local requirement; 
 
 ## ALG-13
 
-**Onboarding measures** (V-M12).
-- **A statement** is one requirement line, or one sentence in a vision, design, experience or plan section.
-- **Kept:** its text, with whitespace collapsed and the `{…}` metadata removed, is identical in the drafted text and the blessed text. Anything else is a substantive edit. `bless` computes this when it blesses, comparing with the section's text at `drafted_at_rev`, the commit holding the agent's draft (still on the branch when blessing happens), and writes it to `<records>/blessed/log.jsonl`. Without `drafted_at_rev` the measure is recorded as unavailable, never computed against later text.
-- **Denominator:** statements in sections blessed or rejected; deferred sections are reported separately.
-- **Recall:** answer-key obligations matched by a kept or edited statement, judged by a human scorer.
-- **Invented:** statements the scorer finds in neither the sources nor the answer key.
-- **Blessing minutes:** from the session's start and end, in the log.
-- **Automatic checks:** every citation resolves; every planted conflict in the fixture key appears as a `CF` item; every `asked` statement has an answer in `.tenet/onboard/interview.json` (fixtures only).
-- **Each run records** agent, model, effort and fixture revision.
+**Onboarding measures** (V-M12): in [onboarding.md §3](onboarding.md#3-onboarding-measures-alg-13).
 
 ## ALG-14
 

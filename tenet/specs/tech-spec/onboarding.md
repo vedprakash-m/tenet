@@ -85,3 +85,14 @@ It then prints the first findings and offers onboarding. Existing files are edit
 `tenet remove` reverses the manifest (ALG-12), keeps specifications, records and values the user changed, and reminds the user to remove the branch rule if the Tenet status was made required. `tenet check` reports a package version that differs from the lock ("run tenet upgrade").
 
 **Upgrade** (alpha.0 on): update the lock, regenerate the `AGENTS.md` block, workflows and skills, report what changed, and run `tenet check`. It never changes the level or starts a new rule beyond `observe`. From M4: stage, migrate with a restricted file API, regenerate, swap atomically; classify from structured fields; a scheduled pull request.
+
+## 3. Onboarding measures (ALG-13)
+
+- **A statement** is one requirement line, or one sentence in a vision, design, experience or plan section.
+- **Kept:** its text, with whitespace collapsed and the `{…}` metadata removed, is identical in the drafted text and the blessed text. Anything else is a substantive edit. `bless` computes this when it blesses, comparing with the section's text at `drafted_at_rev`, the commit holding the agent's draft (still on the branch when blessing happens), and writes it to `<records>/blessed/log.jsonl`. Without `drafted_at_rev` the measure is recorded as unavailable, never computed against later text.
+- **Denominator:** statements in sections blessed or rejected; deferred sections are reported separately.
+- **Recall:** answer-key obligations matched by a kept or edited statement, judged by a human scorer.
+- **Invented:** statements the scorer finds in neither the sources nor the answer key.
+- **Blessing minutes:** from the session's start and end, in the log.
+- **Automatic checks:** every citation resolves; every planted conflict in the fixture key appears as a `CF` item; every `asked` statement has an answer in `.tenet/onboard/interview.json` (fixtures only).
+- **Each run records** agent, model, effort and fixture revision.

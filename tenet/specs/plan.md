@@ -12,7 +12,7 @@
 
 ## 0. Status and next actions
 
-Updated 2026-11-23 by the M0 session (L-0029, L-0030).
+Updated 2026-11-23 by the M0 session after round 1 merged (L-0029, L-0030, L-0034).
 
 | Item | State | Next action and who |
 |---|---|---|
@@ -22,15 +22,14 @@ Updated 2026-11-23 by the M0 session (L-0029, L-0030).
 | CP-0040 Spike B | **done** on one account, GitHub Free (L-0030) | deferred by the Owner to before alpha.2: fork pull request from a second account; `neutral` vs `failure` under a required check |
 | CP-0017 Spike A | partly done (L-0030) | deferred by the Owner to before alpha.1: a security-key signature; replies and spot checks run in alpha.1 |
 | CP-0002 licence and schema host | **decided** (L-0031): Apache-2.0 code, CC BY 4.0 text, `$id` on GitHub Pages | publish the schemas to GitHub Pages at the first release (CI §9) |
-| CP-0015 kernel and every contract | **submitted** on `m0/track-1-kernel`, reviewed; Owner decisions taken (L-0032) | merge with the other tracks; then apply its 13 proposals |
-| CP-0058 medium-model trial | after CP-0015 | a capable model runs it with two medium-model sessions and scores them |
+| CP-0015 kernel and every contract | **done and merged**; Owner decisions (L-0032); proposals applied | CP-0001 ratification reads Part I, `kernel.md` and the later contracts |
+| CP-0058 medium-model trial | rounds 1–3 run (Track 2): 5 of 6 outputs byte-identical, but invented rules remain | **round 4** after a message table keyed by error code; done when nothing is invented |
 | CP-0001 ratify | after CP-0058 | the Owner, one sitting |
-| CP-0003 bootstrap, then waves A0-1 onward | after CP-0001 and CP-0002 | medium-effort models, each from its build contract; a capable model reviews each; the Owner approves per wave |
+| Alpha.0 build, started early at the Owner's direction (L-0034) | **done:** CP-0003, CP-0005, CP-0006 (Track 3) and CP-0012 (Track 2); CP-0004 done except `pack.json` and `agent-card.json` (E-0001, shapes now in TS §6.2 and AG §1). 59 tests pass on Windows | round 2: finish CP-0004, build CP-0018; independent review of round 1's builds; CP-0044 waits for CP-0058 round 4 |
 | Sandbox | `vedprakash-m/tenet-sandbox` (private) exists | used by CP-0051 and later proving |
-| Track 4 (docs, red-team catalog, evidence kit) | **submitted** on `m0/track-4-docs`, reviewed | merge with the other tracks |
-| Track 2 (CP-0058 trial, CP-0012 kit, CP-0052 eval fixtures, examples check) | **submitted** on `m0/track-2-trial-kit`, reviewed; merges cleanly with Track 4 | merge; trial residue: round 3 still had 9 and 15 invented rules and 1 of 6 outputs differing on message text, clarified but not re-run (CP-0058 scorer log) |
-| 100-PR backtest cohort | **decided** (L-0033): this repository, Torus, tenet-copilot, then microsoft/BotFramework-WebChat | collect and freeze the dataset (a high-volume model) |
-| M0 checklist item 8 (red-team list matches guarantees) | drafted: `pkg/conformance/red-team/` (31 cases), with a cross-check | close after merge, once ci.md §7 takes its two corrections |
+| Round 1 tracks 1–4 | **merged** into `main` (L-0034); every proposal applied | — |
+| 100-PR backtest cohort | **decided** (L-0033): this repository, Torus, tenet-copilot, then microsoft/BotFramework-WebChat | round 2: collect and freeze the dataset (a high-volume model) |
+| M0 checklist items 6–8 | **done**: `blocked_by` matches §2; `npm run check:examples` passes; red-team list (31 cases) matches ci.md §7 after its three corrections | — |
 
 ## 1. Milestones
 
@@ -38,9 +37,9 @@ Updated 2026-11-23 by the M0 session (L-0029, L-0030).
 |---|---|---|---|---|
 | M0 | — | CP-0001–0003, CP-0015, CP-0017, CP-0040, CP-0041, CP-0056, CP-0058 | The ready-for-pilot checklist holds; the Owner signs `vision.md` v1 and approves the specifications, at named versions and digests | in progress |
 | M1 | 0.1.0-alpha.0 | CP-0004, CP-0005, CP-0006, CP-0009, CP-0010, CP-0012, CP-0018, CP-0044, CP-0045, CP-0048, CP-0051, CP-0052, CP-0053, CP-0054, CP-0057 | First findings in ≤10 minutes on the fixture repositories; the onboarding evaluation (≥90% kept and recalled, none invented, ALG-13) and the scenario suite pass; the fresh-session check passes; the packed artifact installs and runs both UX Part 1 journeys on three platforms; this repository passes its own `tenet check` | not started |
-| M1 | 0.1.0-alpha.1 | CP-0049, CP-0007, CP-0050, CP-0019, CP-0008 | A **backtest** over 100 past pull requests (this repository, Torus and one public repository) shows under 2 false blocks per 100 and under 2 minutes of record overhead per change; alpha.0 golden records still read | not started |
+| M1 | 0.1.0-alpha.1 | CP-0049, CP-0007, CP-0050, CP-0019, CP-0008 | A **backtest** over the fixed 100-PR cohort (L-0033) shows under 2 false blocks per 100, and an average of under 2 active Tenet minutes per pull request, counting zero-work cases; incomplete timing reports incomplete coverage; alpha.0 golden records still read | not started |
 | M1 | 0.1.0-alpha.2 | CP-0042, CP-0046, CP-0021 | Red-team cases pass at their levels; the sandbox repository runs the signed path end to end, including CI §10's `failure` outcomes | not started |
-| M1 | 0.1.0 | CP-0022, CP-0056, CP-0020, CP-0055, CP-0013, CP-0014, CP-0024 | Quick start passes on three platforms; the reference runner takes a careful change to a pull request in the sandbox repository, stopping only for the approval, with two host adapters (or one plus `command`); both jobs run on a real repository | not started |
+| M1 | 0.1.0 | CP-0022, CP-0020, CP-0055, CP-0013, CP-0014, CP-0024 | Quick start passes on three platforms; the reference runner takes a careful change to a pull request in the sandbox repository, stopping only for the approval, with two host adapters (or one plus `command`); both jobs run on a real repository | not started |
 | M1 | 0.1.x | See [plan/0.1.x.md](plan/0.1.x.md) | Each point release: its packets' proving and the red-team suite | not started |
 
 **Evidence track** (never blocks building; gates announcement and horizon claims):
@@ -60,7 +59,7 @@ Updated 2026-11-23 by the M0 session (L-0029, L-0030).
 2. The kernel (Part I) is written within 8,000 tokens and cross-checked against the specifications; `kit/TENET.md`'s old text is archived.
 3. Every change from L-0013 to L-0030 is applied.
 4. The contracts for **every** release (the tech-spec parts and all release parts, all eight fields) are frozen.
-5. **Medium-model trial (CP-0058):** in a scratch repository, two fresh sessions of a medium-effort model each build CP-0018 and CP-0044's pure functions (`parseDoc`, `parseRequirement`, `sectionDigest`, `resolveCitations`, `flags`) from their contracts alone, against stubs of CP-0005's exports. A scorer who did not run them logs every rule they had to invent; each is fixed in the specification, and the trial repeats until nothing is invented.
+5. **Medium-model trial (CP-0058):** in a scratch repository, two fresh sessions of a medium-effort model each build CP-0018's exports and CP-0044's pure functions (`parseDoc`, `parseRequirement`, `sectionDigest`, `anchorsFor`, `resolveCitations`, `flags`, `relocate`, `matchRenamed`, `touched`) from their contracts alone, against stubs of CP-0005's exports. A scorer who did not run them logs every rule they had to invent; each is fixed in the specification, and the trial repeats until nothing is invented.
 6. `blocked_by` in every `packet.yaml` matches §2, with no cycles (checked by script).
 7. Every example in the README, UX spec and tech-spec parts (YAML, cards, acceptance blocks, tags, commands) parses under the contracts, checked by a scratch script that becomes `npm run check:examples` in CP-0003.
 8. The red-team list matches the guarantee table.
@@ -147,7 +146,7 @@ Each is Quick, limited to **4 hours** of work, and run by a capable model. Each 
 
 ### CP-0058 · experiment · Medium-model trial
 
-- **Needs:** CP-0015 · **Limit:** 6 hours · **Do:** checklist item 5. **Done when:** two fresh sessions invent nothing and their machine results match byte for byte; the scorer's log is in the ledger.
+- **Needs:** CP-0015 · **Limit:** 6 hours · **Do:** checklist item 5. **Done when:** two fresh sessions invent nothing and their machine results match byte for byte; the scorer's log is in the packet's evidence, summarized in a ledger entry.
 
 ### CP-0016 · experiment · Problem validation and baselines (alongside M1)
 
@@ -190,10 +189,10 @@ Every packet entering build has, in its release part:
 7. **Fixtures**, positive and negative, by name.
 8. **Proving:** the exact command, and what must pass.
 
-Alpha.0 contracts are complete now. CP-0015 writes the rest for every later release before building starts, so no release waits on a design stop; **no packet is dispatched to a builder without all eight**. **Reviews and approvals:** a capable model reviews each packet against its contract as soon as it is built; the Owner approves once per wave, as a batch. Two trials guard the freezes:
+Alpha.0, alpha.1, alpha.2 and 0.1.0 contracts are complete. 0.1.x point releases stay planning rows; each gets its eight fields from a capable model while 0.1.0 is built (L-0032); **no packet is dispatched to a builder without all eight**. **Reviews and approvals:** a capable model reviews each packet against its contract as soon as it is built; the Owner approves once per wave, as a batch. Two trials guard the freezes:
 - In M0, CP-0058 tries the alpha.0 contracts on stubs.
 - Before A0-3, a full CP-0044 trial runs on the real codebase.
-- Before alpha.1 is frozen, an **evaluator trial**: two fresh sessions get the same history (a description edit, an expired waiver, a missing tagged test, a policy change) and must produce byte-identical verdicts, dispositions and next actions.
+- Before alpha.1 is frozen, an **evaluator trial**: two fresh sessions get only `pkg/conformance/evaluator-trial/history.yaml` (a description edit, an expired waiver, a missing tagged test, a policy change). The scorer compares each session's output with `expected.json` and with the other session, byte for byte after RFC 8785 serialization, and records every rule or input either had to invent.
 
 A missing product decision goes back to its owner, never to the builder. Each later part lists what its contracts must cover (L-0027).
 

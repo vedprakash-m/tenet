@@ -151,7 +151,7 @@ Both install the locked version with `npm install --no-save` and check it agains
 5. **Post the check run** `Tenet` on the **head** SHA, found by name and head. Its conclusion follows §10. The summary is cut at 60,000 characters in this order: same-area requirements first, then passing items' test lists, then passing requirements. Failing items, weakening, protected files and "would have blocked" are never cut.
 6. **Append records** (§4).
 
-From alpha.1 the recorder also handles review, `/tenet` reply, ready-for-review, conversion to draft, closing and `merge_group` events. CP-0040's event table fixes the trigger and token for each.
+From alpha.1 the recorder also handles review, `/tenet` reply, ready-for-review, conversion to draft and closing events. **Merge queues** (L-0032): alpha.1 records merge-group candidates as observations; alpha.2 verifies the exact tested candidate before publishing its required status (kernel §5); full merge-queue evidence and quarantine come in 0.1.x. CP-0040's event table fixes the trigger and token for each.
 
 ## 4. Records ref
 
@@ -224,11 +224,12 @@ Separately, the attest job observes **whether merging requires the Tenet status*
 | Rule | Mode A (deterministic engine) | Mode B (host-driven) with CI |
 |---|---|---|
 | Gate holds before advancing | enforced | detected locally; enforced* by replay and required status |
-| Evidence not from the claimant | enforced* | enforced* |
+| Evidence produced by a protected verifier (provenance) | enforced* | enforced* |
+| The check written apart from the claimant (independence, tech spec §3.1) | as recorded | as recorded; a signature never establishes it |
 | Code under test cannot fake its check | not guaranteed | not guaranteed |
-| Decisions made by a person | at the proof-table strength | at that strength; `forge-verified` enforced* only under T4; `key`, `channel` advisory |
+| Decisions made by a person | at the proof-table strength | at that strength; `forge-verified` enforced* only under T4; `key`, `channel` advisory. A forge session or key alone never shows that agents and decision-makers are separate |
 | Protected paths unchanged | enforced* | enforced* (detected below `verify`) |
-| Holdout hidden | enforced* if external | enforced* if external; advisory in-repo |
+| Holdout hidden | enforced* if the binding shows builders can't read the external holdout | the same; advisory in-repo |
 | Agent tools, paths, network | as the adapter declares | as the host binding declares |
 
 ## 8. Safe failure

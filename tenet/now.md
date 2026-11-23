@@ -1,6 +1,6 @@
 # Now
 
-> Generated view of the factory floor. **Written by hand at M0** until `tenet board` exists (CP-0008); from then on, never edit by hand. As of 2026-11-23 11:00.
+> Generated view of the factory floor. **Written by hand at M0** until `tenet board` exists (CP-0008); from then on, never edit by hand. As of 2026-11-23, after round 1 merged ([L-0034](ledger/L-0034-round-1-merged.md)); see [plan §0](specs/plan.md#0-status-and-next-actions) for the live status.
 
 ## Waiting for you
 
@@ -17,14 +17,14 @@ Options:
 | Phase | Packet | Station | Status | Lane | Next |
 |---|---|---|---|---|---|
 | Define | CP-0001 Ratify vision v1 and approve the M0 documents | commit | waiting-owner | deep | the Owner |
-| Define | CP-0002 Namespace and licence (before bootstrap) | shape | active | quick | the Owner |
-| Define | CP-0003 Repository bootstrap | shape | blocked by CP-0001 | quick | — |
-| Define | CP-0015 Kernel and contract freeze (then the medium-model trial) | shape | active | careful | shaper |
+| Define | CP-0002 Namespace and licence (before bootstrap) | shape | decided (L-0031) | quick | — |
+| Define | CP-0003 Repository bootstrap | build | built early (L-0034) | quick | review |
+| Define | CP-0015 Kernel and contract freeze (then the medium-model trial) | build | merged (L-0034) | careful | the Owner (ratify) |
 | Define | CP-0016 Problem validation and baselines | shape | active | careful | the Owner (interviews) |
-| Define | CP-0058 Medium-model trial (after CP-0015) | shape | parked | quick | the Owner |
-| Define | CP-0017 Spike A: identity and decisions (runs first) | shape | active | quick | builder |
-| Define | CP-0040 Spike B: signed evidence and two-job CI (runs first) | shape | active | quick | builder |
-| Define | CP-0041 Spike C: events, replay and performance (runs first) | shape | active | quick | builder |
+| Define | CP-0058 Medium-model trial (after CP-0015) | build | round 4 next | quick | trial runner |
+| Define | CP-0017 Spike A: identity and decisions (runs first) | verify | done (L-0030) | quick | — |
+| Define | CP-0040 Spike B: signed evidence and two-job CI (runs first) | verify | done (L-0030) | quick | — |
+| Define | CP-0041 Spike C: events, replay and performance (runs first) | verify | done (L-0030) | quick | — |
 
 Parked until the M0 gate, in [wave order](specs/plan.md#2-waves): release 0.1.0-alpha.0 (intent and proof) CP-0004, CP-0005, CP-0012, CP-0006, CP-0018, CP-0044, CP-0009, CP-0045, CP-0053, CP-0048, CP-0051, CP-0054, CP-0010, CP-0052, CP-0057; alpha.1 (protect) CP-0049, CP-0007, CP-0050, CP-0019, CP-0008; alpha.2 (verify) CP-0042, CP-0046, CP-0021; 0.1.0 CP-0022, CP-0056, CP-0020, CP-0055, CP-0013, CP-0014, CP-0024; 0.1.x CP-0011, CP-0023, CP-0025 … CP-0039, CP-0043, CP-0047.
 

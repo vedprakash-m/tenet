@@ -49,6 +49,6 @@ work_types:
 rules_alpha0:
   - {id: tests-not-weakened, observe: advise, protect: enforce, verify: enforce, assure: enforce}
   - {id: protected-surfaces, observe: advise, protect: enforce, verify: enforce, assure: enforce}
-  - {id: acceptance-proven, observe: advise, protect: advise, verify: enforce, assure: enforce}
+  - {id: acceptance-passed, observe: advise, protect: advise, verify: enforce, assure: enforce}
   - {id: citations-valid, observe: advise, protect: advise, verify: enforce, assure: enforce}
   - {id: budget, observe: advise, protect: advise, verify: advise, assure: enforce}

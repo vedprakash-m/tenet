@@ -30,7 +30,7 @@ let lastContext: PolicyContext | undefined;
 const registry: Record<string, RuleDefaults> = {
   "tests-not-weakened": { observe: "advise", protect: "enforce", verify: "enforce", assure: "enforce" },
   "protected-surfaces": { observe: "advise", protect: "enforce", verify: "enforce", assure: "enforce" },
-  "acceptance-proven": { observe: "advise", protect: "advise", verify: "enforce", assure: "enforce" },
+  "acceptance-passed": { observe: "advise", protect: "advise", verify: "enforce", assure: "enforce" },
   "citations-valid": { observe: "advise", protect: "advise", verify: "enforce", assure: "enforce" },
   budget: { observe: "advise", protect: "advise", verify: "advise", assure: "enforce" },
   "stop-threshold": { observe: "advise", protect: "enforce", verify: "enforce", assure: "enforce" },

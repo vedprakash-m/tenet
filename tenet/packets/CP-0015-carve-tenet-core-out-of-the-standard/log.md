@@ -9,3 +9,4 @@
 - 2026-11-23 Plan v0.14 ([L-0029](../../ledger/L-0029-two-tracks-no-calendar-waits.md)): dependencies updated for the two-track plan.
 
 - 2026-11-23 Draft standard, conformance histories, release contracts and proposed profile submitted on Track 1. Sources rechecked against the merged main baseline at `dcb95bb`. Independent reviews raised fixture isolation, runner recovery and release-contract discrepancies. Repairs and remaining Owner proposals are recorded in this packet. CP-0058 owns execution of the model trial.
+- 2026-11-23 Merged into `main`; proposals 1–13 applied with the Owner's choices (L-0032, L-0034).

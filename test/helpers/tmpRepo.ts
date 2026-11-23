@@ -30,6 +30,8 @@ export async function tmpRepo(label = "repo"): Promise<TemporaryRepository> {
   run(["init", "--quiet"], directory);
   run(["config", "user.name", "Tenet Test"], directory);
   run(["config", "user.email", "tenet-test@example.invalid"], directory);
+  run(["config", "core.autocrlf", "false"], directory);
+  run(["config", "core.safecrlf", "false"], directory);
 
   return {
     path: directory,
@@ -40,11 +42,11 @@ export async function tmpRepo(label = "repo"): Promise<TemporaryRepository> {
       await writeFile(filename, contents);
     },
     async cleanup() {
-      await rm(directory, { recursive: true, force: true });
+      await rm(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
     },
   };
 }
 
 export async function cleanupTestRoot(): Promise<void> {
-  await rm(testRoot, { recursive: true, force: true });
+  await rm(testRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 }

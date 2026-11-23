@@ -14,7 +14,7 @@
 ## A0-1
 
 **CP-0004 · Schemas for alpha.0** · R-010 (part), R-205, R-206 (agent card schema)
-1. *Needs:* CP-0003; C §1–§6, §8, §10; CI §2; TS §6.1.
+1. *Needs:* CP-0003; C §1–§6, §8, §10; CI §2; TS §6.1–§6.2 (pack shape); AG §1 (agent card shape).
 2. *Owns:*
    - `kit/schemas/` (new: `tenet-yaml` with the alpha.0 fields only (TS §6.1), `lock`, `pack`, `agent-card`, `spec-front-matter`, `inventory`, `interview`, `assignment`, `test-report`, `bundle`, `proof-card`, `board`, `manifest`, `finding`)
    - `src/core/schema.ts`; `src/types/` (generated with the pinned generator); the `gen:types` script entry; `test/schemas/`
