@@ -1,0 +1,15 @@
+{
+  "findings": [
+    {
+      "code": "TN-CITE-FILE",
+      "severity": "error",
+      "rule": "citations-valid",
+      "line": 7,
+      "message": "Cited file src/missing.ts was not found.",
+      "fix": "Update the citation path or restore src/missing.ts."
+    }
+  ],
+  "summary": {
+    "$assert": "present"
+  }
+}

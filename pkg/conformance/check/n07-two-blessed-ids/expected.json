@@ -1,0 +1,12 @@
+{
+  "findings": [
+    {
+      "code": "TN-SPEC-DUP-ID",
+      "message": "Duplicate specification ID R-1.",
+      "fix": "Run `tenet fix` to assign a new ID, or remove the duplicate R-1."
+    }
+  ],
+  "summary": {
+    "$assert": "present"
+  }
+}

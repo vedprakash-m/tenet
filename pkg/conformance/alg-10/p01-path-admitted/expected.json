@@ -1,0 +1,14 @@
+{
+  "blessed": [
+    {
+      "id": "R-1",
+      "section": "requirements",
+      "text": "Retry once.",
+      "owner": "payments",
+      "flags": []
+    }
+  ],
+  "drafts": [],
+  "omitted": [],
+  "truncated": false
+}

@@ -1,0 +1,20 @@
+{
+  "blessed": [
+    {
+      "id": "R-1",
+      "section": "requirements",
+      "text": "Retry once.",
+      "owner": "payments",
+      "flags": []
+    }
+  ],
+  "rules": {
+    "$assert": "contains",
+    "value": [
+      {
+        "rule": "tests-not-weakened",
+        "mode": "advise"
+      }
+    ]
+  }
+}

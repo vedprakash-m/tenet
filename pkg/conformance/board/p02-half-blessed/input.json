@@ -1,0 +1,25 @@
+{
+  "operation": "board",
+  "options": {
+    "all": true
+  },
+  "repo": {
+    "repository": "checkout",
+    "now": "2026-11-23T10:00:00Z",
+    "read": {
+      "main": "9f3c2e1123456789012345678901234567890123",
+      "branches": [],
+      "records": null
+    },
+    "installedVersion": "0.1.0-alpha.0",
+    "files": {
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ]\n}\n",
+      "kit/TENET.md": "# Fixture kit\n",
+      "tenet/blessed/tenet__intent.md/requirements.md": "- R-1 Keep retries bounded. {origin: asked; serves: V-1}\n",
+      "tenet/blessed/tenet__intent.md/requirements.md.anchors.json": "{}\n",
+      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:8c8a03d584175af0a9021329f7e7a12dc13ddab7b780cfb560bc6a75053b7e95\",\"flags\":[],\"blessed_digest\":\"sha256:8c8a03d584175af0a9021329f7e7a12dc13ddab7b780cfb560bc6a75053b7e95\",\"blessed_at_rev\":\"9f3c2e1123456789012345678901234567890123\",\"blessed_copy\":\"tenet/blessed/tenet__intent.md/requirements.md\",\"recorded\":\"self\",\"blessed_by\":\"payments\",\"blessed_at\":\"2026-11-23T10:00:00Z\",\"anchors\":{}}\n  experience: {\"state\":\"draft\",\"digest\":\"sha256:97175a15832cb96a5b9fcbf2b920983a0b3780b011dca85e4fe37dd12b97a2dd\",\"flags\":[]}\n---\n## Requirements\n- R-1 Keep retries bounded. {origin: asked; serves: V-1}\n## Experience\nShow the result of checkout.\n",
+      "test/retry.test.js": "import { test } from \"node:test\";\n\ntest(\"[R-1] named check\", () => {});\n"
+    }
+  },
+  "markdownMode": "fragments"
+}

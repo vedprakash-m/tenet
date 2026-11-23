@@ -1,0 +1,6 @@
+{
+  "findings": [],
+  "summary": {
+    "$assert": "present"
+  }
+}

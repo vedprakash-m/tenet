@@ -1,0 +1,11 @@
+{
+  "blessed": [
+    {
+      "id": "R-1",
+      "section": "retry",
+      "text": "Retry once."
+    }
+  ],
+  "omitted": [],
+  "truncated": false
+}
