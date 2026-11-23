@@ -20,7 +20,7 @@ Symlinks and submodules (mode `160000`) are included as listed; LFS files as the
 - Skip front matter. A section runs from a line starting `## ` to the next such line or end of file; non-empty text before the first `## ` is `_preamble` (omitted when empty/whitespace). Fences follow CommonMark: 3+ backticks or tildes close only with the same char at least as long; headings inside fences don't count.
 - **Slug:** lowercase; keep Unicode letters and digits (categories L and N), spaces and `-`; drop everything else; spaces to `-`; collapse repeated `-`; trim `-`. Empty slugs become `section-<n>` (1-based non-preamble position). Duplicate slugs emit `TN-SPEC-DUP-SECTION` and stay in `sections[]`.
 - **Digest:** `sha256:` over section **body** (without `## ` line): CRLF→LF, trim trailing `[ \t]` per line, strip trailing blank lines (keep leading newlines), normalize path citations `[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)+:\d+(?:-\d+)?` (or `[A-Za-z0-9._-]+\.[A-Za-z][A-Za-z0-9]*:\d+(?:-\d+)?`, never after `://`/`sha256:`, excluding trailing punctuation) to the path.
-- **Rename:** when a front-matter entry's slug no longer exists and one new section (not `_preamble`, `conflicts`, `open-questions`) matches its `digest` or `blessed_digest`, `fix` moves the entry, blessed copy and `.anchors.json`; `≥2` candidates go to `ambiguous`. Split/merge is a new section and needs blessing.
+- **Rename:** when a front-matter entry's slug no longer exists and one new section (not `_preamble`, `conflicts`, `open-questions`) matches it, `fix` moves the entry, blessed copy and `.anchors.json`. Match by current `digest` first; only when that finds no candidate, by `blessed_digest`. `≥2` candidates in the deciding tier go to `ambiguous`; the result's `digest` is the value that matched. Split/merge is a new section and needs blessing.
 
 Fixtures: CRLF and LF give one digest; editing one section leaves the others unchanged; a `## ` inside a code fence is not a heading; a Japanese heading keeps its slug; a renamed heading keeps its blessing.
 
@@ -50,7 +50,7 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
   - `sources-changed`: an anchored range's lines no longer hash to its anchor, or the file or test is gone. If the same lines appear **exactly once** elsewhere in the file (a sliding-window hash scan; files over 50,000 lines are not scanned and are flagged), they moved: `check` doesn't flag them and `fix` updates the range. Zero or several matches flag `sources-changed` ("matched N places").
 - **Integrity:** the blessed copy's digest must equal `blessed_digest` (`TN-SPEC-BLESSED-COPY`); a copy that fails is served as a draft with a warning.
 - **Text in force** is always the blessed copy. Re-blessing replaces it.
-- **Owner:** front matter, else the owners on the last CODEOWNERS line matching the document (GitHub's rule), else the Owner.
+- **Owner:** the section's `owner`, else the document's `tenet.owner`, else the owners on the last CODEOWNERS line matching the document (GitHub's rule), else the Owner. `parseDoc` resolves the first two; callers apply the rest through `ownersFor`.
 - **Fixtures:**
   - "retry once": bless, change the code to retry twice; context still returns "retry once" with `sources-changed`
   - squash-merge the blessing, then clone with `--depth 1`; flags still compute
@@ -67,7 +67,7 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
 - `doc: path#slug`: a heading with that slug exists (missing `#slug` is `TN-CITE-RANGE`).
 - `test: file > name`: `file` exists (missing ` > ` is `TN-CITE-RANGE`) and each segment split on ` > ` appears in order (`indexOf` advancing cursor) in `file` as written, `def <seg>` or `func <seg>`.
 
-Errors: `TN-CITE-FILE`, `TN-CITE-RANGE` (including malformed syntax), `TN-CITE-HEADING`, `TN-CITE-TEST` (carrying `severity: "error"`, `rule: "citations-valid"`, and 1-based `line` of the citing statement, else `null`). Resolving says nothing about whether the source supports the statement; that judgment is the spec reviewer's, labelled advisory. Fixtures: a nested `describe > it` name resolves; a renamed test fails.
+Errors, at most one per citation, checked as syntax, then file, then range, heading or test: `TN-CITE-FILE`, `TN-CITE-RANGE` (also every malformed citation: `doc:` without `#slug`, `test:` without ` > `, a range that isn't integer `start-end`; message "citation is malformed"), `TN-CITE-HEADING`, `TN-CITE-TEST` (carrying `severity: "error"`, `rule: "citations-valid"`, and 1-based `line` of the citing statement, else `null`). Resolving says nothing about whether the source supports the statement; that judgment is the spec reviewer's, labelled advisory. Fixtures: a nested `describe > it` name resolves; a renamed test fails.
 
 ## ALG-05
 
@@ -133,23 +133,7 @@ Fixtures: one per row; an advisory review (row 7) beside an enforced failed clai
 
 ## ALG-08
 
-**Test reports and items.**
-
-| Format | Case name | Status | Tags |
-|---|---|---|---|
-| JUnit (any `testsuite` nesting) | `classname > name` | failure → fail, error → error, skipped → skip | from the name plus `tenet.case` properties |
-| CTRF | `tests[].name` | passed, failed, skipped (pending and other count as skip) | from the name plus `extra.tenet_cases` |
-| `go-test-json` | `Package > Test`; a subtest (`Test/sub`) is its own case, and its parent doesn't count twice | the final pass, fail or skip action | from the name |
-| `jest-json` | `assertionResults[].fullName` | its status | from the name |
-
-- **Readers:** see `evidence.md §2`.
-- **Tagged declarations** (`ALG-09` patterns): multi-line `it`/`test` title within next 3 lines; `def test_…`; `t.Run(`; `@Test` or `#[test]` with method/fn within next 3 lines; `record_property("tenet.case", "<tag>")` in test body. Exclude `describe(` from `declarations[]`; its tag propagates across its `{…}` body with `via_describe: true` iff an enclosing `describe(` contributes ≥1 tag absent on the declaration. `end_line` = closing brace (ignoring comments/strings in brace languages), closing `)` of expression-arrow tests, or last non-blank indented body line. Strip `_?tenet_(?:AB|<prefix>)_\d+` (and trailing `_` if leading), collapsing spaces/`__` and trimming `_`/whitespace for `name`.
-- **Which tags count:** `AB-n` counts when its source line or enclosing `describe(`-inherited inner declaration line is added in `git diff -U0 <base>..<tested>`; requirement tags count anywhere. Unknown/reserved tokens ignored (contracts §1).
-- **Matching:** strip tags/`case.tags` from case name first, drop any trailing pytest `[…]` suffix, then match suffix against tagless declaration title/fn; placeholders (`%s %d %i %f %j %o %p %#`, `$name`, `${…}`) match `.+`. `coverage` is `confirmed` iff `declarations.length > 0` and every declaration has `≥1` case (else `not-confirmed`).
-- **Item result & counts:** `failed` (any fail/error) > `not-run` (0 cases or any declaration unmatched) > `skipped` (all cases skipped) > `passed` > `no-test` (0 declarations). `tests.expected` = declaration count; `passed`/`failed`/`skipped` = counts over deduplicated matched cases; `not_run` = unmatched declarations. `first_failure` = `{full_name, status}` of first matched case whose final `status` is `fail`/`error`, else `null`.
-- **Authorship:** per-declaration in `declaredTags`: `written-here` if tagless title was absent in that `file` (or `-M` source) at `base`, `unknown` if `via_describe`, else `tag-added-here`; `itemResults` aggregates (`unknown` if empty or any `unknown`; else `written-here` if all `written-here`; else `tag-added-here`).
-- **Check vs cases:** non-zero check exit or `teardown_failed` fails the check; items keep case results.
-- **Fixtures:** missing second declaration → `not-run`; old `[AB-1]` ignored; newly tagged test → `tag-added-here`; fail-then-pass retry; matrix shard; teardown failure; all runner declaration forms.
+**Test evidence matching:** in [evidence.md §3](evidence.md#3-test-evidence-matching-alg-08) (moved under the rollover rule, L-0036).
 
 ## ALG-09
 
@@ -215,10 +199,10 @@ Fixtures: a global rule survives a budget filled by one long local requirement; 
 
 ## ALG-14
 
-**Requirements a change touches.** Scan `.md` files with `tenet.spec` front matter at `head` (`base` fallback for deleted docs). Input: base and tested commits, `Implements:`. Output: blessed requirements with `why` (first-reason wins, ordered below then sorted by numeric ID):
+**Requirements a change touches.** Scan `.md` files with `tenet.spec` front matter at `head` (`base` fallback for deleted docs). Input: base and tested commits, `Implements:`. Output: blessed requirements with `why` (first-reason wins, ordered below, then sorted by numeric ID, then by the full ID in ASCII order):
 1. `implements`: named in `Implements:`
 2. `cited-code-changed`: path range, `test:` block, or `doc:` section's 1-based range at `base` overlaps a `git diff -U0` old-side hunk (`oldCount > 0` intersects `[start, end]`; `@@ -L,0` overlaps iff `start <= L && L < end`), cited section digest changed, or cited file/section/test deleted or renamed
-3. `text-changed`: blessed doc/section deleted at head, section digest changed, or line overlaps a `git diff -U0` head hunk
+3. `text-changed`: blessed doc/section deleted at head, section digest changed, line overlaps a `git diff -U0` head hunk, or a requirement blessed at base is gone at head or its section is no longer `blessed` (record read from base)
 4. `same-area`: cites a file sharing the same area key (`codeowners:<pattern>` from last matching rule in first existing `.github/CODEOWNERS`, `CODEOWNERS`, `docs/CODEOWNERS` at head, else `dir:<top-level>` or `dir:.`) as a changed file, sorted by numeric ID then capped at 10, shown collapsed as "may be affected"
 
 Fixtures: changing `src/retry.ts:42` → `cited-code-changed`; sibling file → `same-area`.

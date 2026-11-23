@@ -98,9 +98,9 @@
 
 **CP-0044 · Specification formats** · R-207–R-210, R-212, R-213, R-220
 1. *Needs:* CP-0006; C §1, §3, §8, §13; ALG-02, ALG-03 (anchors, flags, owner), ALG-04, ALG-14; OB §1 (table form).
-2. *Owns:* `src/specs/{parse,sections,citations,anchors,flags,ladder,deltas,touched}.ts`, `test/specs/`, `pkg/conformance/alg-02/`, `alg-04/`, `alg-14/`.
+2. *Owns:* `src/specs/{parse,sections,citations,anchors,flags,ladder,deltas,touched}.ts`, `test/specs/`, and new cases it adds under `pkg/conformance/alg-02/`, `alg-03/`, `alg-04/`, `alg-14/` (never the independent cases, `pkg/conformance/INDEPENDENT.md`).
 3. *Exports:*
-   - sync `parseDoc(path, text, opts?: {prefix?: string}) → {path, front: Record | null, sections: [{slug, heading, level, text, digest, requirements, vision_items, conflicts, questions, applies_to, state, blessed_digest, blessed_at_rev, anchors, blessed_copy, flags}], problems: Finding[]}`
+   - sync `parseDoc(path, text, opts?: {prefix?: string}) → {path, front: Record | null, sections: [{slug, heading, level, text, digest, requirements, vision_items, conflicts, questions, applies_to, state, blessed_digest, blessed_at_rev, anchors, blessed_copy, flags, owner}], problems: Finding[]}` (`owner`: section, else document front matter, else `null`)
    - sync `parseRequirement(line | row: Record<string, string>, opts?: {prefix?: string, line?: number, file?: string}) → {id, text, origin, cites, serves, scope, adopted_by} | Finding`
    - sync `sectionDigest(body) → string`
    - sync `anchorsFor(section, readFile: (path) => string | null) → {anchors: Record<string, string>, texts: Record<string, string>}` (`texts` stores normalized `\n`-joined lines)
@@ -118,8 +118,8 @@
    - lines shifted above an anchor; the same cited lines appearing twice; a cited file deleted
    - a PRD table with extra columns; grouped vision IDs (`V-P18`)
 6. *Out of scope:* `bless` (CP-0052); the `check` command (CP-0009); context (CP-0045).
-7. *Fixtures:* ALG-02, ALG-04 and ALG-14 fixtures.
-8. *Proving:* `npm test -- test/specs`; every fixture's output equals its expected JSON byte for byte.
+7. *Fixtures:* its own ALG-02, ALG-04 and ALG-14 fixtures, plus the independent suites in `pkg/conformance/alg-02/`, `alg-03/`, `alg-04/`, `alg-14/`.
+8. *Proving:* `npm test -- test/specs`, which runs all four conformance suites; every fixture's output equals its expected JSON byte for byte.
 
 ## A0-4
 

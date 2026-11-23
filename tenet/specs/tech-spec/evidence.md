@@ -2,7 +2,7 @@
 
 > Level L2 · Version 0.12 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Split from `contracts.md` §6 and §12 under the rollover rule (L-0030)
 
-**Context card.** What each kind of evidence carries and when it is complete, and how real test reports differ from their formats. Readers are ALG-08; the report model is contracts §6.
+**Context card.** What each kind of evidence carries and when it is complete, and how real test reports differ from their formats. Readers are ALG-08, in §3; the report model is contracts §6.
 
 ## 1. Evidence payloads
 
@@ -37,3 +37,23 @@ Every reader enforces `ci.md §3` limits (`50 * 1024 * 1024` bytes per file; `20
 - **go-test-json:** read NDJSON `Test` events (ignoring `Action: "output"`, empty `Test`, or incomplete tests without a terminal `pass`/`fail`/`skip`); 0 lines or 0 terminal cases returns `cases: [], inconclusive: true`. Collapse repeated terminal events for the same `(Package, Test)` into `attempts` keeping the final status; `duration_ms` is `Math.round(Elapsed * 1000)` when finite. Subtests (`Test` with `/`) emit their own case and suppress duplicate counting of their parent `Test`. When `Package` is empty, `full_name` is `Test`.
 - **ctrf:** map `passed → pass`, `failed → fail`, and `skipped`, `pending`, `other` or any unrecognized status to `"skip"`; read `case.file` from `filePath ?? file` and `duration_ms` from `Math.round(duration)` (milliseconds) when finite; tags come from `name` plus normalized tokens in `extra.tenet_cases` (deduplicated).
 - **XML:** refuse `<!DOCTYPE` or `<!ENTITY` with `TN-REPORT-MALFORMED`; decode standard XML entities (`&lt;`, `&gt;`, `&amp;`, `&quot;`, `&apos;` and numeric character references); treat `<failure>`, `<error>`, `<system-out>` and `<system-err>` bodies as unparsed character data (`stopNodes`) so angle-bracket tokens like `<work>` or `<anonymous>` inside stack traces never break parsing.
+
+## 3. Test evidence matching (ALG-08)
+
+**Test reports and items.**
+
+| Format | Case name | Status | Tags |
+|---|---|---|---|
+| JUnit (any `testsuite` nesting) | `classname > name` | failure → fail, error → error, skipped → skip | from the name plus `tenet.case` properties |
+| CTRF | `tests[].name` | passed, failed, skipped (pending and other count as skip) | from the name plus `extra.tenet_cases` |
+| `go-test-json` | `Package > Test`; a subtest (`Test/sub`) is its own case, and its parent doesn't count twice | the final pass, fail or skip action | from the name |
+| `jest-json` | `assertionResults[].fullName` | its status | from the name |
+
+- **Readers:** see `evidence.md §2`.
+- **Tagged declarations** (`ALG-09` patterns): multi-line `it`/`test` title within next 3 lines; `def test_…`; `t.Run(`; `@Test` or `#[test]` with method/fn within next 3 lines; `record_property("tenet.case", "<tag>")` in test body. Exclude `describe(` from `declarations[]`; its tag propagates across its `{…}` body with `via_describe: true` iff an enclosing `describe(` contributes ≥1 tag absent on the declaration. `end_line` = closing brace (ignoring comments/strings in brace languages), closing `)` of expression-arrow tests, or last non-blank indented body line. Strip `_?tenet_(?:AB|<prefix>)_\d+` (and trailing `_` if leading), collapsing spaces/`__` and trimming `_`/whitespace for `name`.
+- **Which tags count:** `AB-n` counts when its source line or enclosing `describe(`-inherited inner declaration line is added in `git diff -U0 <base>..<tested>`; requirement tags count anywhere. Unknown/reserved tokens ignored (contracts §1).
+- **Matching:** strip tags/`case.tags` from case name first, drop any trailing pytest `[…]` suffix, then match suffix against tagless declaration title/fn; placeholders (`%s %d %i %f %j %o %p %#`, `$name`, `${…}`) match `.+`. `coverage` is `confirmed` iff `declarations.length > 0` and every declaration has `≥1` case (else `not-confirmed`).
+- **Item result & counts:** `failed` (any fail/error) > `not-run` (0 cases or any declaration unmatched) > `skipped` (all cases skipped) > `passed` > `no-test` (0 declarations). `tests.expected` = declaration count; `passed`/`failed`/`skipped` = counts over deduplicated matched cases; `not_run` = unmatched declarations. `first_failure` = `{full_name, status}` of first matched case whose final `status` is `fail`/`error`, else `null`.
+- **Authorship:** per-declaration in `declaredTags`: `written-here` if tagless title was absent in that `file` (or `-M` source) at `base`, `unknown` if `via_describe`, else `tag-added-here`; `itemResults` aggregates (`unknown` if empty or any `unknown`; else `written-here` if all `written-here`; else `tag-added-here`).
+- **Check vs cases:** non-zero check exit or `teardown_failed` fails the check; items keep case results.
+- **Fixtures:** missing second declaration → `not-run`; old `[AB-1]` ignored; newly tagged test → `tag-added-here`; fail-then-pass retry; matrix shard; teardown failure; all runner declaration forms.

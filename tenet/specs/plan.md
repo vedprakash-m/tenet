@@ -12,7 +12,7 @@
 
 ## 0. Status and next actions
 
-Updated 2026-11-23 by the M0 session after round 1 merged (L-0029, L-0030, L-0034).
+Updated 2026-11-23 by the M0 session after round 2 merged (L-0034, L-0035, L-0036). Home: `vedprakash-m/tenet` (private until alpha.0); tracks merge through pull requests with three-platform CI.
 
 | Item | State | Next action and who |
 |---|---|---|
@@ -23,12 +23,12 @@ Updated 2026-11-23 by the M0 session after round 1 merged (L-0029, L-0030, L-003
 | CP-0017 Spike A | partly done (L-0030) | deferred by the Owner to before alpha.1: a security-key signature; replies and spot checks run in alpha.1 |
 | CP-0002 licence and schema host | **decided** (L-0031): Apache-2.0 code, CC BY 4.0 text, `$id` on GitHub Pages | publish the schemas to GitHub Pages at the first release (CI §9) |
 | CP-0015 kernel and every contract | **done and merged**; Owner decisions (L-0032); proposals applied | CP-0001 ratification reads Part I, `kernel.md` and the later contracts |
-| CP-0058 medium-model trial | rounds 1–3 run (Track 2): 5 of 6 outputs byte-identical, but invented rules remain | **round 4** after a message table keyed by error code; done when nothing is invented |
+| CP-0058 medium-model trial | rounds 4 and 5 **byte-identical** with `messages.md`; round 6 regressed on a wording change, since fixed; stopped under the stop rule (E-0002) | **the Owner:** accept E-0002 (done = byte-identical results and no divergent inventions), which closes checklist item 5 |
 | CP-0001 ratify | after CP-0058 | the Owner, one sitting |
-| Alpha.0 build, started early at the Owner's direction (L-0034) | **done:** CP-0003, CP-0005, CP-0006 (Track 3) and CP-0012 (Track 2); CP-0004 done except `pack.json` and `agent-card.json` (E-0001, shapes now in TS §6.2 and AG §1). 59 tests pass on Windows | round 2: finish CP-0004, build CP-0018; independent review of round 1's builds; CP-0044 waits for CP-0058 round 4 |
+| Alpha.0 build, started early at the Owner's direction (L-0034) | **done:** waves A0-1 and A0-2: CP-0003, CP-0004, CP-0005, CP-0006, CP-0012, CP-0018, each independently reviewed (round 2) and fixed | **CP-0044** next (its questions answered and applied, independent suites ready), then A0-4 |
 | Sandbox | `vedprakash-m/tenet-sandbox` (private) exists | used by CP-0051 and later proving |
-| Round 1 tracks 1–4 | **merged** into `main` (L-0034); every proposal applied | — |
-| 100-PR backtest cohort | **decided** (L-0033): this repository, Torus, tenet-copilot, then microsoft/BotFramework-WebChat | round 2: collect and freeze the dataset (a high-volume model) |
+| Rounds 1 and 2 | **merged** into `main` (L-0034, L-0036); pull requests #1–#3 | — |
+| 100-PR backtest cohort | **collected** on `r2/backtest-data`: tenet-copilot plus WebChat; Torus contributes 0 (L-0035) | add WebChat's Copilot-agent pull requests as their own group, then freeze |
 | M0 checklist items 6–8 | **done**: `blocked_by` matches §2; `npm run check:examples` passes; red-team list (31 cases) matches ci.md §7 after its three corrections | — |
 
 ## 1. Milestones
