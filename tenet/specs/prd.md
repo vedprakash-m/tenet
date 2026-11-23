@@ -1,10 +1,10 @@
 # Tenet product requirements
 
-> Level L1 · Version 0.7 · Status: **draft, awaiting the Owner's approval** · Serves [vision.md](../vision.md) · Normative standard: [kit/TENET.md](../../kit/TENET.md) · Catalog: [prd/catalog.md](prd/catalog.md) · Budget: 9,000 tokens · Previous version: `archive/specs/prd.md@0.6.md`
+> Level L1 · Version 0.11 · Status: **draft, awaiting the Owner's approval** · Serves [vision.md](../vision.md) · Normative standard: [kit/TENET.md](../../kit/TENET.md) · Catalog: [prd/catalog.md](prd/catalog.md) · Tooling: [prd/tooling.md](prd/tooling.md) · Budget: 9,000 tokens · Previous version: `archive/specs/prd.md@0.10.md`
 
 ## 1. Scope and positioning
 
-**Tenet is the decision and evidence layer of a software factory.** It is a small kernel of seven primitives and one gate rule (§4.1), packs that make it usable on day one, and the minimum deterministic tooling to adopt, enforce and stay current with it. Everything else (acceptance items, earlier promises, health indicators, quarantines, campaigns, approvals by risk) is a **standard claim, evidence kind or decision** built on the kernel and listed in the [catalog](prd/catalog.md). Trackers, orchestrators, factory platforms, spec tools, coding hosts and dashboards keep doing their jobs and read from and write to Tenet's records.
+**Tenet is a ready-to-use spec-driven development system for software factories, built on an open standard: agents build what you meant, and you can see that they did.** Intent is written in levelled specifications that people own and agents work from; every change traces to them; changing them is itself governed (§4.0); and "done" is proven against them with evidence agents cannot fake. It ships as a working toolkit that any coding agent, any model and any engine that works through pull requests can use as-is (a command, a CI workflow, agent skills and a local MCP server, templates, reference agents), built on that spec process, a small kernel of seven primitives and one gate rule that makes it checkable (§4.1), and packs. Tenet governs the work; agents and engines do it. Every other feature is a standard claim, evidence kind or decision listed in the [catalog](prd/catalog.md). Spec tools, trackers, orchestrators, factory platforms, hosts and dashboards keep their jobs and read and write Tenet's records; tools that draft per-change specs feed the ladder rather than replace it. **Adoption is progressive** (tooling §3): projects start where nothing blocks, and each rule earns the right to block on evidence.
 
 | In scope | Out of scope |
 |---|---|
@@ -14,18 +14,18 @@
 | A factory definition Tenet validates, records and governs | Executing it (engines and platforms do this) |
 | Bindings to forges, hosts and engines through open contracts; a conformance kit | Certifying third parties; paid support |
 
-**Assumptions stated honestly.** The kernel needs a content-addressed history whose records can be signed; git is the reference binding, and records scale in three tiers up to an external append-only store (catalog R-167). The first forge binding is GitHub. Configuration has two planes: `tenet.yaml` (policy) and the optional `factory.yaml` (execution).
+**Assumptions.** The kernel needs a content-addressed, signable history; git is the reference binding, and records scale in three tiers up to an external append-only store (catalog R-167). The first forge binding is GitHub. Configuration has two planes: `tenet.yaml` (policy) and the optional `factory.yaml` (execution).
 
-**Relationship to other repositories.** Tenet for Copilot (`tenet-copilot`) is an implementation that will declare conformance. govaut supplied the agent-governance patterns. Torus is the first subscribing project after this repository.
+**Relationship to other repositories.** Tenet for Copilot (`tenet-copilot`) is an implementation that will declare conformance. Torus is the first subscribing project after this repository.
 
 ## 2. Users
 
 | Persona | Needs | Primary deliverables |
 |---|---|---|
-| **Owner** (one person or a team with named decision rights) | First verified change in an afternoon; decide only what needs them; trust what the floor says | `minimal` pack, CLI, CI verifier, board |
+| **Owner** (one person or a team with named decision rights) | Write intent once at the right level; a useful result in ten minutes and nothing blocked until they choose; decide only what needs them; trust what the floor says | Spec templates and ladder, `minimal` pack, CLI, CI verifier, board |
 | **Maintainer** | Know which earlier promises still hold and that the next change stays affordable | Continuing claims, health ratchet, board |
 | **Factory operator** | Declare the factory, see readiness and cost per outcome, change it on evidence | Factory definition, campaigns, metrics |
-| **Agent** | An unambiguous assignment, the skills for its station, a way to propose results that the tooling accepts or refuses | Agent definitions, skills, assignment and result contracts, SDK |
+| **Agent** | The specification sections that apply, an unambiguous assignment, the skills for its station, a way to propose results that the tooling accepts or refuses | Agent definitions, skills, assignment and result contracts, SDK |
 | **Implementer** | Seven primitives, one gate rule, stable schemas, conformance per claim | Kernel, schemas, conformance kit, catalog |
 | **Steward** | Propose, test and release changes safely | This repository run under its own rules |
 
@@ -35,10 +35,10 @@
 
 | ID | Deliverable | Ships as | Release |
 |---|---|---|---|
-| D1 | **Kernel standard**: seven primitives, the gate rule, guarantee levels, trust assumptions, conformance classes | `kit/TENET.md` Part I | Draft M0; 1.0 at M4 |
-| D2 | **Kit**: schemas, defaults, templates, packs (with their standard claims), reference agents, skills, loops, criteria | `kit/`, vendored into `.tenet/kit/`; checksummed archive | 0.1.0 (`minimal`); 0.2 (standard pack) |
+| D1 | **Standard**: the spec process (document ladder, ownership, governed change, traceability, escalation), seven primitives, the gate rule, guarantee levels, trust assumptions, conformance classes | `kit/TENET.md` Part I | Draft M0; 1.0 at M4 |
+| D2 | **Kit**: schemas, defaults, a template for every level, packs (with their standard claims), reference agents, skills, loops, criteria | `kit/` in the package, pinned by the project's lock (copied in only with `--vendor`); checksummed archive | 0.1.0 (`minimal`); 0.2 (standard pack) |
 | D3 | **CLI and SDK** `tenet` | One npm package | 0.1.0 onward |
-| D4 | **CI verifier**: a no-secrets check job and an attest job that never runs the change | `tenet verify --run-checks` / `--attest`, plus a workflow template | 0.1.0 |
+| D4 | **CI**: a proof job that posts an advisory proof card; from `verify`, a no-secrets check job and an attest job that never runs the change | A CI action and workflow templates | 0.1.0 |
 | D5 | **Host and engine bindings** behind open contracts | `tenet build --target <id>`, `tenet run` | 0.1.0 (`agents-md`); 0.1.x; M3 |
 | D6 | **Factory definition** schema and platform mappings | `kit/schemas/factory.json`, `docs/mappings/` | 0.1.x |
 | D7 | **Conformance kit**: red-team cases, reference cases, fixtures, an independent reader | `tenet conform`, `pkg/conformance/` | 0.1.0 onward |
@@ -46,116 +46,47 @@
 
 ## 4. Requirements
 
-Status: `proposed`, `approved`, `built`, or `reported`. **Guarantee** is the strongest level a requirement may claim in host-driven mode: `enforced`, `enforced*` (only while the trust assumptions are observed to hold, R-110), `detected`, `advisory`, or `—`. `0.1.x` means a point release after 0.1.0. Standard claims, evidence kinds and decisions are in the [catalog](prd/catalog.md).
+Status (`proposed`, `approved`, `built`, `reported`) is this repository's own planning column until CP-0044 converts its specifications to the R-210 format. **Guarantee** is the strongest level a requirement may claim in host-driven mode: `enforced`, `enforced*` (only while the trust assumptions hold as observed or attested, R-110; rules block only in `enforce` mode, tooling R-215), `detected`, `advisory`, or `—`. `0.1.x` means a point release after 0.1.0. Standard claims, evidence kinds and decisions are in the [catalog](prd/catalog.md).
+
+### 4.0 The spec process
+
+| ID | Requirement | Serves | Release | Guarantee | Status |
+|---|---|---|---|---|---|
+| R-207 | **Document ladder.** Intent lives in levelled documents: vision (L0); product requirements and the adopted standard (L1); system and experience specifications and the plan (L2); change packets or pull requests (L3); code and tests (L4); plus holdout scenarios, an append-only ledger and a generated floor view. A project may start with one `intent.md` (purpose, users, boundaries, requirements) or with existing documents imported by reference; `tenet split` promotes a section to its own document when its budget or owners call for it; level rules apply to sections, so a starter project keeps the same governance. Document sets vary by project type. In the kernel each document is a subject | V-P18, V-V2, V-P7 | 0.1.0 | detected | proposed |
+| R-208 | **Ownership gradient.** L0 changes only by its decision-makers, ratified from version 1 (twice at `assure`). L1 sections and L2 sections marked invariant need their owner's approval. Other L2 sections need review and passing checks, with the owner notified. L3 is written by shaping and planning agents and reviewed; L4 by builders through gates. A change touching sections with different owners needs every one of them; one person may cover several where authorized. Builders never change L0–L2 without that approval and never read holdout. One table (tech spec §6.3) states who approves what | V-P1, V-B2, V-P18 | 0.1.0 | detected; enforced* with CI | proposed |
+| R-209 | **Governed spec change.** A change to L1 or L2 rides in the pull request that needs it, or in a `spec` work item of its own; its deltas (added, modified, removed, with IDs) are shown at the top of the pull request and need the approval R-208 sets for each section; a vision change needs its decision-makers' approval; a clarification with no change in behavior is labelled `clarification` and needs only review | V-P9, V-P18 | 0.1.0 | detected; enforced* with CI | proposed |
+| R-210 | **Requirements, origin and traceability.** Every requirement has an ID (`R-<n>`, prefix configurable, assigned by `tenet fix`, never reused), the vision items it serves, an **origin** (`observed` in code, configuration or tests, citing a file and lines or a test; `documented`, citing a document section; `asked`, the Owner's answer or an inferred statement a person explicitly adopted; `inferred`, flagged) and the state of its section (R-223). Whether it is proven comes from evidence, never from a stored status. A pull request's acceptance items have globally unique IDs `AB-<pull request>-<n>`; tests carry item or requirement tags. Every pull request or work item names what it implements; commits need no trailers. `tenet check` proves the chain: IDs unique and resolved, every citation resolving at its recorded revision, every active vision item covered or marked not yet in scope. Formats: tech-spec/contracts.md | V-P2, V-M1, V-P18 | 0.1.0 | detected | proposed |
+| R-211 | **Agents work from blessed specifications.** `tenet context` returns the **last blessed text** of each section that applies (ALG-10: the paths a task touches through each requirement's citations, the IDs it names, cross-cutting `asked` rules, then a compact index the agent scans), with a note when the section is `edited` or `sources-changed` and who can change it; draft sections come back labelled as hints, never as truth; it says why each section was chosen. Agents reach it through skills and the local MCP server. `AGENTS.md` stays a short map, never a generated overview. An agent that finds a specification wrong proposes a delta in the same pull request or escalates (R-036) | V-P10, V-P18 | 0.1.0 | detected | proposed |
+| R-223 | **Onboarding and blessing.** `tenet onboard` writes a deterministic inventory of the project after showing what it will read, what it skips and that drafting sends content to the user's own agent; it can stop at the inventory. The user's agent, through the `draft-specs` skill, asks the Owner what only they can answer (purpose, users, never-dos, priorities), then drafts all five logical views (vision, requirements, design, experience, plan) for the chosen scope, as one `intent.md` or separate documents (ALG-11); "undecided, needs the Owner" is valid; conflicts are listed, never resolved by the agent. The onboarding card is rendered by `tenet onboard` into the pull request description, because the target has no workflow yet. Each section is `draft`, `blessed`, `rejected` or `deferred`. A blessed section keeps its **last blessed text in force** until a successor is blessed; it is flagged `edited` (its text changed: the change is an unblessed proposal) or `sources-changed` (cited code changed: a review is requested). Only a person blesses, and every blessing records its strength: `self` (`tenet bless` in a terminal, 0.1.0-alpha.0; advisory), `forge` (a review action, alpha.1), `signed` (alpha.2). An inferred statement becomes intent only when a person explicitly adopts it. A change touching sections with different owners needs each owner. Re-running keeps IDs, human edits and rejections | V-P18, V-P1, V-V3, V-M12 | 0.1.0 | advisory (`self`); detected (`forge`); enforced* (`signed`) | proposed |
+| R-220 | **Living specifications.** Each pull request shows the requirements and spec sections it affects; agents propose deltas when code shows a spec is wrong or incomplete; a declared gardening loop (run by any engine) proposes fixes for sections with changed sources, broken references and blessed requirements with no proving cases; the board shows this spec debt | V-P18, V-P9 | 0.1.0; 0.1.x | advisory | proposed |
+| R-008 | Every document type has a token budget and rollover (archive, then compact or split); `tenet check` warns at 90% and `tenet split` proposes the rollover; only CI errors, on a change that takes a document over budget; assignments carry sections, not whole files | V-P7, V-V2 | 0.1.0; M2 | detected | proposed |
+| R-011 | A template for every level and document type the standard and shipped packs define, each with a worked example and a completeness checklist | V-V3, V-P18 | 0.1.0 | — | proposed |
+| R-033 | `tenet check` runs structure, traceability and citation (R-210), change-control (R-209), section-state, event, alias and budget checks; findings block only for rules in `enforce` mode (tooling R-215); `tenet fix` repairs the mechanical ones | V-P2, V-M2 | 0.1.0 | detected | proposed |
+| R-036 | When work and its specifications conflict, or a stop threshold is met (sessions, repeated failure, appetite, cost or tokens), the work stops; the escalation report quotes the conflicting sentences with their IDs and names the lowest level that can resolve it; `tenet escalate` writes it | V-P6, V-P18 | 0.1.0; 0.1.x | detected | proposed |
 
 ### 4.1 The kernel
 
 | ID | Requirement | Serves | Release | Guarantee | Status |
 |---|---|---|---|---|---|
-| R-200 | **Seven primitives and one gate rule.** Subject, Actor, Claim, Evidence, Decision, Event and Policy are the only normative record types; a work item (packet) groups the claims, evidence and decisions for one intent. **Gate rule:** a transition is allowed when every claim the policy makes applicable to the subject is satisfied by fresh evidence at the required strength, or waived by a fresh decision at the required strength; nothing else advances work | V-P2, V-P4, V-V4 | 0.1.0 | enforced* | proposed |
-| R-201 | **Subjects** are content-addressed (`{kind, digest}`); their kinds are pack data (git tree and file set in 0.1.0; artifact, deployment, configuration, data, flag, platform object and multi-repository later); a claim, evidence or decision is fresh only while its subject's digest is current | V-P2, V-B9 | 0.1.0 | enforced* | proposed |
-| R-202 | **Claims** state what must hold: scope, claim class, method, pass rule (binary, baseline-relative or probabilistic), lifetime (`packet` or `continuing`) and owner. Acceptance items, earlier promises, health indicators, protected paths, size limits, review convergence and readiness are standard claim types (catalog) | V-P2, V-P9, V-M10 | 0.1.0 | enforced* | proposed |
-| R-034 | **Evidence** is an observation about a subject: kind (check, measurement, attestation, observation, review, proof, simulation, differential), dimension, method, the claims it addresses, the cases expected, executed and passed, result, strength and producer. It comes only from checks pinned in the target's policy; each method has a completion rule; a suite that found none of its expected cases is inconclusive | V-P2, V-M2 | 0.1.0 | enforced* | proposed |
-| R-203 | **Decisions** have five kinds: `approve`, `waive` (a claim, with scope, reason and expiry), `choose` (an option of a request), `delegate` (a right, with expiry) and `resolve` (a conflict). Every named decision in the catalog is one of these | V-V1, V-P1 | 0.1.0 | enforced | proposed |
-| R-101 | **Decisions carry proof**: strengths `person-present`, `forge-verified`, `key` and `channel`; the policy's proof table sets what each decision needs (default `forge-verified`; `person-present` for policy, permission and vision changes). Every answer binds request, subject, choice, actor and policy version; signatures survive squash, rebase and shallow clones | V-B2, V-P12 | 0.1.0 | enforced at the required strength | proposed |
+| R-200 | **Seven primitives, one container and one gate rule.** Subject, Actor, Claim, Evidence, Decision, Event and Policy are the only normative record types; the work item (packet) groups the claims, evidence and decisions for one intent. Every other record (lease, run, assignment, result, escalation, ledger entry) maps onto them (tech spec §3.2). **Gate rule:** a transition is allowed when every applicable claim is satisfied (by fresh evidence at the required strength, or, for an approval claim, by a fresh `approve` at the required proof strength) or waived (by a fresh `waive` where waiving is allowed); nothing else advances work | V-P2, V-P4, V-V4 | 0.1.0 | enforced* | proposed |
+| R-201 | **Subjects** are content-addressed (`{kind, digest}`); their kinds are pack data (git tree, file set, section and area in 0.1.0; artifact, deployment, configuration, data, flag, platform object and multi-repository later); a claim, evidence or decision is fresh only while its subject's digest is current. A `git-tree` subject covers code only; check inputs (definition, runner image, lockfile) are recorded on the evidence, so every check and decision on one commit share one subject (ALG-01) | V-P2, V-B9 | 0.1.0 | enforced* | proposed |
+| R-202 | **Claims** state what must hold: a **selector** (`station`, `lane`, `work_type`, `paths`, `areas`; globs and enums), class, accepted methods (any one satisfies), pass rule (binary, baseline-relative or probabilistic), lifetime (`packet` or `continuing`), owner and whether it may be waived. Several claims are all required. **Applicability:** policies only tighten and the most restrictive requirement wins; a continuing claim applies when a change touches its paths or the dependencies its area declares (the whole area when none are declared); applicability that cannot be computed refuses with a reason | V-P2, V-P9, V-M10 | 0.1.0 | enforced* | proposed |
+| R-034 | **Evidence** is an observation about a subject: kind (check, measurement, attestation, observation, review, proof, simulation, differential), method, the claims it addresses, the cases expected, executed and passed, result, producer, input digests and, for observations, `valid_until`. **Strength has two ordered axes:** provenance (local < CI < CI with trust observed) and independence (`self` never satisfies < `same-definition` < `different-definition` < `different-model-family` < `person`); a missing value counts as the lowest. Methods are not ranked: a pack lists which methods are admissible for each claim class. Policy sets a minimum per axis by claim class and lane. Evidence comes only from checks pinned in the target's policy; each method has a completion rule; a suite finding none of its expected cases is inconclusive | V-P2, V-M2 | 0.1.0 | enforced* | proposed |
+| R-203 | **Decisions** have five kinds: `approve`, `waive`, `choose` (an option of a request), `delegate` (a right, with expiry) and `resolve` (a conflict). Every named decision in the catalog is one of these. **A `waive`** names its claim, scope, reason and expiry (an expired waive re-blocks); the actor whose change broke a claim, or an agent acting for them, cannot waive it; below `verify` a self-waive is allowed and labelled `self-waived`; claims marked unwaivable (the trust surface; safety and security claims in the deep lane) need an `approve`; retiring a continuing promise is an `approve` by its owner, never a waive | V-V1, V-P1 | 0.1.0 | enforced | proposed |
+| R-101 | **Decisions carry proof**, in strict order `person-present` > `forge-verified` > `key` > `channel`; the policy's proof table sets what each decision needs (default `forge-verified`; `person-present` only at the `assure` level, for policy, permission, vision and deep-lane release). `forge-verified` means *attributable to the decision-maker's forge account*: it counts as enforced* only where trust assumption 4 is attested (R-110), otherwise as detected, and the forge's two-factor status is recorded as `enforced`, `not-enforced` or `unobservable`. A native review approval binds the reviewed commit and is the primary path; a decision reply (`/tenet approve`, `/tenet pick 2`) binds the commit the latest proof card showed and is refused only if commits landed after that card; naming the digest is optional (required at `assure`). Answers bind request, subject, choice, actor and policy version; signatures survive squash, rebase and shallow clones | V-B2, V-P12 | 0.1.0 | enforced at the required strength | proposed |
 | R-102 | **Decision requests** are durable: subject, question, options with stop first, recommendation, who may decide, deadline, default stop; delivered on the pull request from 0.1.0. An option that changes scope cannot approve the current subject | V-V1, V-V8 | 0.1.0 | enforced | proposed |
 | R-124 | **Actors** are people, agents and services; every run records its actor chain (initiator → agent → subagent → tool) with scope and expiry, credential policy, environment, harness, model, factory-definition version and usage with cost source | V-P11 | 0.1.0 | detected | proposed |
-| R-039 | **Events** are the source of truth: one immutable file each, carrying `prev`; about eight types (work created, changed, moved, claim stated, evidence recorded, decision requested or made, run started or ended, closed). CI replays each changed packet and labels every state change justified, pending evidence or unjustified; incompatible concurrent state changes create a conflict a `resolve` decision settles | V-P2, V-P10 | 0.1.0 | enforced* | proposed |
+| R-039 | **Events** are the source of truth: one immutable file each, carrying `prev` (the IDs of every event the writer saw as latest, so a `resolve` names both branches), in eight families (`work.*`, `claim.stated`, `evidence.recorded`, `decision.*`, `run.*`, `gate`, `lease.*`); station and holding status are separate fields. Gate events record which pack rule linked each piece of evidence to each claim (the argument). CI replays each changed work item and labels every state change justified, pending evidence (**tentative**: never counted by a later gate; unjustified after a timeout) or unjustified; incompatible concurrent state changes create a conflict a `resolve` settles; gate events record their evaluation instant, so replay is reproducible; forge state and decisions read from forge reviews are recorded by the proof job (unsigned, from alpha.1) and the attest job (signed, from alpha.2) | V-P2, V-P10 | 0.1.0 | enforced* | proposed |
 | R-109 | **Policy comes from the target, judged at decision time.** The verifier reads `tenet.yaml`, the lock, packs and the Tenet version from the target line, never from the change; every gate evaluation records the policy, evidence-store and trust-observation revisions it used, and replay uses that snapshot | V-P10 | 0.1.0 | enforced* | proposed |
 | R-204 | **Policy declares** which claims apply where (packs, stations, lanes, areas, work types), the proof table, approvals by risk, owners and keys, pinned checks, budgets and the protected claims; projects may only tighten what a pack sets | V-P7, V-P12 | 0.1.0 | enforced* | proposed |
 | R-006 | Every kernel rule declares its **guarantee level** per execution mode and the trust assumptions it depends on; the board shows the level in effect for each change | V-P12, V-B8 | 0.1.0 | — | proposed |
 | R-030 | Work items get a ULID identity and a 6-character alias; duplicate aliases are refused at merge; every existing `CP-NNNN` stays valid | V-P5 | 0.1.0 | detected | proposed |
 | R-031 | `tenet move` appends an event and refuses a move the gate rule refuses, naming each unsatisfied claim and the next command | V-P2, V-H1 | 0.1.0 | enforced* | proposed |
+| R-205 | **Minimal valid records.** Each primitive has three to five required fields and everything else is optional with a stated default; a producer conforms at the `minimal` level by writing only those. A record missing a field a claim needs (cases, independence, inputs) is valid but cannot satisfy that claim, and the gate names the missing field | V-V4, V-P7 | 0.1.0 | — | proposed |
 
-### 4.2 Trust and verification
+### 4.2–4.5 Trust, work, views, kit, agents, conformance and adoption
 
-| ID | Requirement | Serves | Release | Guarantee | Status |
-|---|---|---|---|---|---|
-| R-100 | **Two-job verifier**: a check job runs pinned checks with no secrets or write access, detects checks that edit tracked files, passes only on exit code 0 with a valid report, and writes its bundle outside the working tree; an attest job never runs the change, verifies the bundle, checks protected claims, replays events and writes evidence to the evidence store | V-P2, V-B7 | 0.1.0 | enforced* | proposed |
-| R-110 | The attest job observes and records the trust assumptions (protected verifier source, evidence store written only by it, merging requires it); `enforced*` counts as enforced only while a fresh observation says they hold | V-P12, V-B8 | 0.1.0 | — | proposed |
-| R-104 | `holdout.mode` is `external` (outside the build repository) or `in-repo` (always advisory) | V-P11, V-P12 | 0.1.0 (declared); M2 | advisory; enforced* if external | proposed |
-| R-105 | A run with both untrusted input and sensitive data gets no network and may change only its worktree; assignment inputs carry source, trust and hash, and the evaluator refuses an assignment that combines all three properties | V-P11, V-B5 | 0.1.0 | advisory (declared); as the host enforces | proposed |
-| R-106 | A **red-team suite** runs in CI: forged or misattributed evidence, policy edited on a branch, protected files edited, code under test faking reports or reading credentials, impersonated, replayed or channel-only decisions, agent-answered gates, hand-written or conflicting moves, squash merges keeping signatures, holdout reads, prompt-injected issues, skipped mapped cases, harness-failed baselines, broken earlier promises, quarantines hiding obligations, and (M2) proof escape hatches | V-M2, V-H1 | 0.1.0 | — | proposed |
-| R-107 | Run records keep summaries, hashes and costs, not transcripts, unless opted in; secrets are never written | V-B5 | 0.1.0 | detected | proposed |
-| R-080 | Tenet's tooling never calls a model; its only network use is fetching a package, reading a configured issue source, and in CI the attest job reading forge protection and reviews, posting decision requests and writing the evidence store | V-B4, V-B5 | 0.1.0 | enforced | proposed |
-
-### 4.3 Work, views and operations
-
-| ID | Requirement | Serves | Release | Guarantee | Status |
-|---|---|---|---|---|---|
-| R-032 | `tenet board` reduces events from the main line, matching packet lines and the evidence store, for a named as-of time, into `board.json` (refs read, pack phases, typed next actions) and `now.md`; generated views are never committed | V-V2 | 0.1.0 | — | proposed |
-| R-033 | `tenet check` runs structure, traceability, event, alias and budget checks and exits non-zero on any error | V-P2, V-M2 | 0.1.0 | detected | proposed |
-| R-035 | `tenet close` computes the endpoint, writes a ledger entry, and turns the packet's preservation items into continuing claims with their proving cases | V-P2, V-P9 | 0.1.0 | enforced* | proposed |
-| R-036 | When a stop threshold is met (sessions, repeated failure, appetite, cost or tokens), the refused move also records a stop event; `tenet escalate` writes the escalation | V-P6 | 0.1.0; 0.1.x | detected | proposed |
-| R-037 | **Leases** (exclusive work locks) are advisory in a working copy and exclusive only where an engine provides an atomic update; strength is shown | V-P5, V-P12 | 0.1.0; M3 | advisory | proposed |
-| R-038 | Hooks catch violations early; CI reruns the same checks | V-P2 | 0.1.0 | detected | proposed |
-| R-072 | `tenet metrics` computes vision and diagnostic metrics with units, sample sizes and bounds | V-M3, V-M4 | M2 | — | proposed |
-| R-073 | The board shows flow from 0.1.0: verified changes per week by lane, lead time (median, 85th percentile), work in progress, decision wait, cost per outcome with source, autonomy share beside escapes | V-V2, V-M3, V-M4, V-M7, V-M9 | 0.1.0 | — | proposed |
-| R-074 | `tenet audit sample` draws a random sample of verified changes for independent rerun or review and reports the rate with its bound | V-M2 | M2 | — | proposed |
-| R-075 | The decision-reconstruction exercise is a published procedure run in every pilot | V-M1 | M0; 0.1.x | — | proposed |
-
-### 4.4 Standard, kit, install and upgrade
-
-| ID | Requirement | Serves | Release | Guarantee | Status |
-|---|---|---|---|---|---|
-| R-001 | A normative kernel (Part I) of at most 8,000 tokens; reference packs and practices (Part II) are non-normative | V-P4, V-P7 | M0 | — | proposed |
-| R-002 | Every kernel "must" rule has a rule ID: provisional from 0.1.0, stable from 1.0 | V-V4 | 0.1.0; M4 | — | proposed |
-| R-003 | The standard names no tool, model or vendor as a requirement | V-P4, V-B1 | M0 | — | proposed |
-| R-004 | Each release has a changelog and its migrations | V-V3, V-B6 | 0.1.0 | — | proposed |
-| R-005 | A rule or field is deprecated for one minor version before removal | V-B6 | 0.1.0 | — | proposed |
-| R-007 | Conformance classes: producer, evaluator, executor, renderer, project; a claimed pack's claims become testable for that claim | V-V4 | 0.1.0 | — | proposed |
-| R-008 | Every document type has a token budget and rollover (archive, then compact or split); assignments carry sections, not whole files | V-P7, V-V2 | 0.1.0; M2 | detected | proposed |
-| R-009 | The kernel is checked against four reference cases: a library with unobservable installs, a regional rollback, a migration with a point of no return, an ML change with no code change | V-V5, V-P4 | M0 | — | proposed |
-| R-010 | JSON Schemas with fixtures for the seven primitives, the work item, policy, lock, pack, agent, loop, assignment, result, criteria and board | V-V4, V-P2 | 0.1.0 | — | proposed |
-| R-011 | A template for every document type the kernel and shipped packs define | V-V3 | 0.1.0 | — | proposed |
-| R-012 | Reference agents for every role a shipped pack binds: builder and judge (0.1.0), shaper and verifier (0.1.x), the rest with the standard pack | V-V1, V-P2 | 0.1.0; 0.1.x; M2 | — | proposed |
-| R-013 | One judge protocol; criteria as structured data; critics differ by criteria and required inputs | V-P2 | 0.1.0 | — | proposed |
-| R-014 | Loops `station` and `fix` (0.1.0); `triage`, `upgrade`, `qualify` later; tunable by narrowing | V-P4 | 0.1.0 | — | proposed |
-| R-015 | Reviewers that can unblock a gate pass a 5-case activation test; smoke suites at M3; qualification at M5 | V-P2, V-H4 | 0.1.0; M3; M5 | enforced | proposed |
-| R-016 | Packs are data: `minimal` (intake, define, build, verify, integrate, close; quick and standard lanes, express in 0.1.x) by default; `software-standard` at M2. Each pack lists its standard claims, work types and methods | V-P7 | 0.1.0; M2 | — | proposed |
-| R-017 | A skills library in the open agent-skills format; project skills pinned by hash | V-P4, V-V1 | 0.1.0 | detected | proposed |
-| R-018 | Agents change state only through commands that write events | V-P10 | 0.1.0 | detected | proposed |
-| R-020 | `tenet init` creates a project on `minimal` and reports readiness for advisory or verified work | V-V3 | 0.1.0 | — | proposed |
-| R-021 | `tenet adopt` adds the same files without touching existing ones and writes a discovery packet | V-V3 | 0.1.x | — | proposed |
-| R-022 | `init` and `adopt` are idempotent and repair only with `--repair` | V-B6 | 0.1.0 | — | proposed |
-| R-023 | Every file written by `init`, `adopt` or `upgrade` is listed in the output and an `ops` packet | V-B3 | 0.1.0 | — | proposed |
-| R-024 | Base footprint: `tenet.yaml`, `tenet.lock`, an `AGENTS.md` block, `.tenet/`, the records folder; other integrations offered one by one | V-V3, V-P7 | 0.1.0 | — | proposed |
-| R-025 | `tenet eject` removes what Tenet installed, keeping policy, records and user overlays | V-V3 | M2 | — | proposed |
-| R-026 | `tenet doctor` reports kit integrity, hand-edited generated files and the latest trust observation, offline | V-B6, V-B8 | 0.1.0 | — | proposed |
-| R-027 | Behavior found at adoption is `reported`, never `built` | V-B7 | 0.1.x | — | proposed |
-| R-028 | Records from other tools enter as packets keeping a reference to their source | V-P4 | 0.1.x | — | proposed |
-| R-050 | The lock records version, integrity and file hashes; local kit edits fail `tenet check` | V-V3, V-B6 | 0.1.0 | enforced* | proposed |
-| R-051 | `tenet upgrade` stages, migrates, regenerates and opens an `ops` packet; interrupted upgrades resume or roll back | V-V3 | M4 | — | proposed |
-| R-052 | Upgrades classify themselves from structured fields; below 1.0 every minor needs review | V-B6 | M4 | enforced* | proposed |
-| R-053 | Overlays may only narrow | V-B2 | 0.1.0 | detected | proposed |
-| R-054 | A scheduled CI job opens the upgrade pull request | V-V3 | M4 | — | proposed |
-| R-055 | A changed reference agent stays inactive until it requalifies | V-H4 | M5 | enforced | proposed |
-
-### 4.5 Agents, execution, conformance and quality
-
-| ID | Requirement | Serves | Release | Guarantee | Status |
-|---|---|---|---|---|---|
-| R-040 | `tenet agent check` validates definitions, skills, rosters and generated files; widening fails | V-B2 | 0.1.0 | detected | proposed |
-| R-041 | Engine adapters implement an open contract: compile, start, status, cancel, workspaces, usage, suspend and resume, next work | V-P4 | M3 | — | proposed |
-| R-042 | `--target agents-md` (0.1.0) and host targets (0.1.x, M3) declare per capability whether the host enforces it | V-P4, V-P12 | 0.1.0; 0.1.x; M3 | as declared | proposed |
-| R-043 | `tenet run` writes the assignment, invokes the adapter and records the run | V-H2 | M3 | — | proposed |
-| R-044 | Loops are checked statically: rounds only rise within a cap; inspection follows creation; refusals outrank convergence; human gates list stop first | V-P2, V-P6 | 0.1.0 | enforced | proposed |
-| R-045 | `tenet freeze` / `thaw`; revoking in-flight authority is separate and recorded | V-B2 | M3 | — | proposed |
-| R-046 | Critics run after deterministic checks where the lane calls for them; findings are introduced, exposed, inherited or uncertain, and count only once substantiated; invalid findings make a review incomplete, which never converges | V-P2 | 0.1.0 | enforced | proposed |
-| R-047 | Runs record independence facts; packets record who wrote their tests | V-P2 | 0.1.0 | detected | proposed |
-| R-048 | The package exports an SDK with the CLI's functions | V-V4 | 0.1.0 | — | proposed |
-| R-049 | A local MCP server exposes the SDK, with no network access | V-V4 | M3 | — | proposed |
-| R-060 | `tenet-conformance.yaml` declares version, classes, packs, mode and guarantee levels | V-V4 | M4 | — | proposed |
-| R-061 | `tenet conform` runs the tests for each declared claim | V-V4 | M4 | — | proposed |
-| R-062 | Implementations are tested on their outputs, not their source | V-P4 | M4 | — | proposed |
-| R-063 | Fixtures cover positive, refusal, overlapping, concurrent, late-arriving and interrupted cases | V-H3 | 0.1.0; M4 | — | proposed |
-| R-064 | An independent reader written from the kernel text alone reaches the same decisions | V-H3, V-V4 | 0.1.x | — | proposed |
-| R-070 | `tenet agent qualify` scores an adapter-run suite deterministically | V-H4 | M5 | — | proposed |
-| R-071 | `tenet agent promote` stages versions only when thresholds hold | V-H4 | M5 | — | proposed |
-| R-081 | Every command runs on Windows, macOS and Linux with Node 22+ | V-V3 | 0.1.0 | — | proposed |
-| R-082 | `board` and `check` within 3 s warm and 10 s cold for 500 packets, 10,000 event files and 5,000 commits | V-V2 | 0.1.0; M2 | — | proposed |
-| R-083 | Every error names the file, the rule ID and the fix | V-V1 | 0.1.0 | — | proposed |
-| R-084 | Every command supports `--json` with the same facts | V-V4 | 0.1.0 | — | proposed |
+Moved to [prd/tooling.md](prd/tooling.md) under the rollover rule: trust and verification (R-080, R-100, R-104–R-107, R-110), adoption and friction (R-214–R-219, R-222), work and views (R-032, R-035, R-037, R-038, R-072–R-075), and R-001–R-005, R-007, R-009, R-010, R-012–R-028, R-040–R-055, R-060–R-064, R-070, R-071, R-081–R-084 and R-206. IDs are unchanged.
 
 ## 5. Versioning and release policy
 
@@ -171,43 +102,76 @@ A release is cut from an `ops` release packet with a `release` decision. **Relea
 
 | ID | Release | Delivers | Release gate | Horizon measured |
 |---|---|---|---|---|
-| M0 | — | Revised documents; the kernel written as Part I; feasibility spike; problem validation started | The Owner signs the vision and approves the specs and kernel | — |
-| M1 | **0.1.0** | **The kernel** (seven primitives, gate rule, replay, snapshots), the `minimal` pack with its standard claims (acceptance items, continuing promises, protected paths, size limits, review convergence), the two-job verifier and evidence store, forge-verified decisions on pull requests, the board, `init`, `check`, `doctor`, `agents-md`, builder and judge, `station` and `fix`, red-team suite, quick start | Red-team cases pass at their levels; quick start on three platforms; a real GitHub run; this repository and Torus each close ≥5 verified changes | — |
-| M1 | 0.1.x | Catalog entries marked 0.1.x: adopt, express, campaigns, areas and readiness, approvals by risk, merge queue, quarantine, health ratchet, factory definition, attribution, host bindings, independent reader, external pilot | Each point release: its packets' checks and the red-team suite | V-H1 |
+| M0 | — | Revised documents; three feasibility spikes; the kernel written as Part I and the alpha.0 contracts frozen from their results, then tried on a medium-effort model; problem validation started | The ready-for-pilot checklist (plan §1) holds; the Owner signs the vision and approves the specs and kernel | — |
+| M1 | 0.1.0-alpha.0 (intent and proof) | Install from npm; `init` with preflight; onboarding (inventory, drafted and grounded specifications, `tenet bless`); `tenet context` with skills and the local MCP server; `check`, `fix`, `split`, `upgrade`, `remove`; the advisory proof card with three built-in rules; a board of specifications and blessings | First useful finding in ≤10 minutes; a small project's baseline blessed in ≤30 minutes with ≥90% of drafted statements kept and none invented; a fresh agent session acts on the blessed intent; the packaged install works on three platforms; two outside maintainers succeed without help | — |
+| M1 | 0.1.0-alpha.1 (protect) | Events, rule modes, decisions on pull requests, blessing by review, the board of pull requests and its HTML view, "not useful" marks | False blocks under 2 per 100 changes; record overhead under 2 minutes per change | — |
+| M1 | 0.1.0-alpha.2 (verify) | Signed evidence, the hardened two jobs, trust observations, the red-team cases | This repository closes ≥3 verified changes on it; red-team cases pass at their levels | — |
+| M1 | **0.1.0** | The careful lane (independent tests, an advisory critic, activation tests), agent cards with builder and judge, `agents-md`, `station` and `fix` loops, quick start | Quick start on three platforms; a real GitHub run; this repository and Torus each close ≥5 verified changes | — |
+| M1 | 0.1.x | The `assure` level, continuing promises with defeaters and the health ratchet, and the catalog entries marked 0.1.x | Each point release: its packets' checks and the red-team suite | V-H1 |
 | M2 | 0.2.0 | `software-standard` pack and catalog entries marked M2 | 30 days in 3 projects on the standard pack | V-H2 (part) |
-| M3 | 0.3.0 | Engine adapters, MCP server, more hosts, exclusive leases, catalog entries marked M3 | Same packets on 2 engines with the same decisions | V-H2 |
+| M3 | 0.3.0 | Engine adapters, more hosts, exclusive leases, catalog entries marked M3 | Same packets on 2 engines with the same decisions | V-H2 |
 | M4 | 1.0.0 | Upgrade and migrations; stable rule IDs; conformance kit; open proposal process | 3 releases reach 3 projects; 2 implementations agree on every kernel fixture | V-H3 |
 | M5 | 1.x | Qualification, staged agent release, scorecards | V-H4 criteria | V-H4 |
 
 ## 7. Decisions
 
-| ID | Decision | Why |
+| ID | Decision | Ledger |
 |---|---|---|
-| DEC-32 | **The kernel is seven primitives and one gate rule** (L-0012); every feature is a standard claim, evidence kind or decision in the catalog | One small thing to implement and verify; features stop adding concepts |
-| DEC-33 | "Claim" means something that must hold; exclusive work locks are **leases** | One word, one meaning |
-| DEC-01–DEC-31 | Unchanged in substance; the full table is kept in `archive/specs/prd.md@0.6.md`. In short: one package with kit, CLI and SDK; vendored kit with a lock; narrowing overlays; neutral loops; no model calls; TypeScript on Node 22; self-hosting; events as truth; two-job verifier and off-branch evidence; content-signed decisions with a proof table (`forge-verified` default); collision-free IDs; declared guarantee strengths; `minimal` default; open formats; rules from the target; decision and evidence layer; GitHub first; release gates apart from horizons; governed factory definition and factory changes; two configuration planes; campaign approval inheritance; approvals by risk; nothing outside Tenet's role; continuing promises; health ratchet on touched scope; one method list; staged self-verification | Decided across L-0002 to L-0011 |
+| DEC-01 | Tenet is the standard; the VS Code implementation is Tenet for Copilot | L-0001 |
+| DEC-02–04 | One package holds kit, CLI and SDK; the kit is pinned by a lock (vendored only on request, DEC-41); overlays only narrow | L-0002, L-0005 |
+| DEC-05 | Loops are an engine-neutral format | L-0003 |
+| DEC-06–09 | No model calls; TypeScript on Node 22; self-hosting; a small core plus packs | L-0004 |
+| DEC-10–14 | Replayed events; two-job verifier; off-branch evidence; content-signed decisions; ULID aliases; declared strengths | L-0007, L-0008 |
+| DEC-15–20 | `minimal` default; open formats; rules from the target; a layer beside other tools (DEC-18, amended by DEC-39); GitHub first; release gates apart from horizons | L-0007, L-0008 |
+| DEC-21–22 | The factory definition is part of the standard and never executed by Tenet; factory changes are packets with a stated purpose | L-0009 |
+| DEC-23–27 | `forge-verified` default; two configuration planes; campaign approval; approvals by risk; judging and platforms stay outside | L-0010 |
+| DEC-28–31 | Continuing promises; health ratchet on touched scope; one method list; staged self-verification | L-0011 |
+| DEC-32 | **Seven primitives and one gate rule**; every feature is a catalog entry | L-0012 |
+| DEC-33 | "Claim" means something that must hold; exclusive work locks are **leases** | L-0012 |
+| DEC-34 | Gate rule counts `approve`; selectors with tighten-only merge; three strength axes; limited waivers | L-0013 |
+| DEC-35 | `forge-verified` means attributable to an account; trust assumption 4 is declared and spot-checked | L-0013 |
+| DEC-36 | `minimal` is pull-request native, one human touch in the careful lane | L-0013 |
+| DEC-37 | Continuing promises move to 0.1.x with defeaters and the ratchet | L-0013 |
+| DEC-39 | **Spec-driven first**: the spec process is the first value; evidence enforces it; spec tools feed the ladder | L-0014 |
+| DEC-40 | **One adoption setting**, `observe` by default; rules promoted on evidence; keys and twice-ratified visions at `assure` | L-0016 |
+| DEC-41 | First release is **intent and proof**; signing arrives with `verify`; the kit is not vendored | L-0016 |
+| DEC-42 | **People do no bookkeeping**: no commit trailers, no packet folder for quick changes, spec deltas ride with code, decisions use native reviews | L-0016 |
+| DEC-43 | A **ready-to-use system built on a standard**, usable as-is with any agent, model and pull-request engine | L-0021 |
+| DEC-44 | **Onboarding end to end**: inventory, cited drafts of five views, conflicts listed, blessing only by a person, drafts as hints | L-0022 |
+| DEC-45 | Releases promise only what they ship; the verify release is `0.1.0-alpha.2`; the npm package is `@vedprakash-m/tenet` | L-0022 |
+| DEC-46 | **Contracts before build**: formats and algorithms are frozen in tech-spec parts, and each packet has a build contract, before its build starts | L-0023 |
+| DEC-47 | **Blessed intent survives drift**: the last blessed text stays in force; changes and changed sources raise flags, never remove authority | L-0023 |
+| DEC-38 | Scope is frozen until the ready-for-pilot checklist holds; new ideas enter the catalog as `idea` | L-0013 |
 
 ## 8. Risks
 
 | ID | Risk | Mitigation |
 |---|---|---|
-| RK-01 | The standard grows too large | Seven primitives; kernel budget of 8,000 tokens; new features must be catalog entries |
+| RK-01 | The standard grows too large | Seven primitives; kernel budget of 8,000 tokens; scope freeze; new ideas are catalog `idea` entries |
+| RK-02 | Hosts and forges change faster than bindings | Bindings versioned apart; stale ones marked unsupported |
+| RK-03 | Auto-merged updates break a project | Structured classification; review below 1.0 |
+| RK-04 | The name is taken | CP-0002 |
 | RK-05 | People assume stronger guarantees than they have | Guarantee levels, observed trust assumptions, `doctor` |
-| RK-07 | Setup puts people off | `forge-verified` decisions need no hardware; readiness report names what is missing |
+| RK-06 | One steward | Time-boxed packets; ledger; open proposal process before 1.0 |
+| RK-07 | Setup or defaults punish honest users | `observe` default; no hardware, bot or paid plan until `verify`; friction budget (R-216); rules promoted on evidence |
 | RK-08 | LLM critics are biased | Checks first; activation test; incomplete reviews never converge |
 | RK-09 | The problem is not the one adopters feel | Reconstruction exercise; external pilot before V-H1 |
 | RK-10 | The trust model depends on forge features | Observed and shown; one forge first |
 | RK-11 | Presence may not be provable from signatures | CP-0017 tests it |
 | RK-12 | Declaring the factory pulls Tenet toward being a platform | Tenet validates, records and governs only |
+| RK-13 | Factory platforms see no reason to conform | The Warp mapping (R-131) shows which advisory gates become enforced |
 | RK-14 | The kernel is too abstract for users | Users see claim types by their own names (acceptance item, promise, health indicator); the generic words appear only in the kernel |
+| RK-15 | Agents act through a decision-maker's forge session | Fourth trust assumption declared and spot-checked; bot identities from `verify`; red-team case; `person-present` at `assure` |
+| RK-16 | Specs grow without feedback from use | Ready-for-pilot checklist; spikes first; review running software |
+| RK-17 | Trust mechanics crowd out the spec process again | The spec process is §4.0 and Part I's first section; it ships first; every review checks it |
+| RK-18 | Drafted specifications sound right but are wrong | Origin and citations checked by `tenet check`; asked statements never inferred; conflicts listed; blessing by a person; onboarding evaluation suite and V-M12 |
 
-Other risks (RK-02, RK-03, RK-04, RK-06, RK-13) are unchanged; see the archived version.
 
 ## 9. Open questions
 
 | ID | Question | Needed by |
 |---|---|---|
-| OQ-01 | Package name: unscoped or scoped | 0.1.0 |
+| OQ-01 | Package name: settled as `@vedprakash-m/tenet` (L-0022); revisit only if the plain name becomes available | — |
 | OQ-02 | Which issue sources `adopt` reads first | 0.1.x |
 | OQ-03 | Whether the conformance kit is also a separate package | M4 |
 | OQ-04 | Licence for the standard text versus the code | 0.1.0 |

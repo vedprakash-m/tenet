@@ -10,17 +10,17 @@ It is not Tenet for Copilot (the VS Code implementation, in the `tenet-copilot` 
 
 ## Where things are
 
-Three groups: **`kit/`** is the product content that ships and is vendored into projects; **`src/`, `test/`, `pkg/`, `docs/`, `examples/`** are the tool and its supporting files; **`tenet/`** holds this repository's own records, exactly as any project keeps them.
+Three groups: **`kit/`** is the product content that ships and that projects load, pinned by their lock; **`src/`, `test/`, `pkg/`, `docs/`, `examples/`** are the tool and its supporting files; **`tenet/`** holds this repository's own records, exactly as any project keeps them.
 
 | Path | Level | What | You may |
 |---|---|---|---|
 | `tenet/vision.md` | L0 | Purpose, north star, horizons, metrics, boundaries | Read only. Only the Owner changes it |
-| `tenet/specs/prd.md`, `tenet/specs/prd/catalog.md` | L1 | Kernel and product requirements; the catalog of standard claims, evidence and decisions (R-nnn) | Read; propose changes through a `spec` packet |
+| `tenet/specs/prd.md`, `tenet/specs/prd/catalog.md`, `tenet/specs/prd/tooling.md` | L1 | The spec process, kernel, trust and adoption requirements; the catalog of standard claims, evidence and decisions; work, views, kit, agent, conformance and adoption requirements (R-nnn) | Read; propose changes through a `spec` packet |
 | `kit/TENET.md` | L1 | **The normative standard.** This project's process | Read; propose changes through a `spec` packet |
-| `tenet/specs/tech-spec.md` | L2 | Architecture, formats, commands; `<!-- invariant -->` sections need the Owner | Read; propose changes through a `spec` packet |
+| `tenet/specs/tech-spec.md`, `tenet/specs/tech-spec/{contracts,algorithms,onboarding}.md` | L2 | Architecture; exact formats, interfaces and CI (contracts); algorithms with error codes and fixtures (ALG-nn); onboarding; `<!-- provisional -->` and `<!-- invariant -->` sections need the Owner | Read; propose changes through a `spec` packet |
 | `tenet/specs/ux-spec.md` | L2 | CLI output, board, onboarding, wording | Read; propose changes through a `spec` packet |
-| `tenet/specs/plan.md` | L2 | Milestones and packets | Read; the planner updates it through spec packets |
-| `kit/` (schemas, templates, agents, loops, defaults) | Kit | Ships and is vendored, file for file, into `.tenet/kit/` of subscribing projects | Change only inside an assigned packet |
+| `tenet/specs/plan.md`, `tenet/specs/plan/{alpha.0,alpha.1,alpha.2,0.1.0,0.1.x}.md` | L2 | Milestones, waves and gates; one build contract per packet in its release part. A builder reads its contract and the sections it names | Read; the planner updates it through spec packets |
+| `kit/` (schemas, templates, agents, loops, defaults) | Kit | Ships in the package; subscribing projects load it pinned by their lock, or vendor it into `.tenet/kit/` | Change only inside an assigned packet |
 | `pkg/` | Kit | Ships in the package but is never vendored: migrations, conformance, evals, host formats | Change only inside an assigned packet; agents under test never read `pkg/evals/` |
 | `tenet/packets/CP-nnnn-*/` | L3 | One folder per change | Work only in your assigned packet |
 | `src/`, `test/`, `examples/` | L4 | CLI source, tests and the example project (from M1) | Change only inside your assignment's scope |
@@ -35,7 +35,7 @@ Three groups: **`kit/`** is the product content that ships and is vendored into 
 1. Every change is a **packet** (standard §4) in `tenet/packets/` moving through stations: intake, triage, shape, commit, design, plan, build, verify, review, validate, integrate, release, observe, close (§5).
 2. A packet moves only through `tenet move` once the CLI exists (M1). Until then, the Owner moves packets by appending to `history` in `packet.yaml`. Record paths in the standard and specs (`specs/`, `packets/`, `ledger/`…) are relative to `tenet/`.
 3. Gates (§6) decide moves. "Done" is computed from fresh evidence (§6.2, §6.4); never claim it.
-4. Spec changes are `spec` packets (§9). Typos and broken links are clarifications with a `Tenet-Clarification:` trailer.
+4. Spec changes ride in the pull request that needs them, or in a `spec` packet, with the document owner's approval (PRD R-209). Typos and broken links are clarifications and need only review.
 
 ## Rules you must follow
 
@@ -45,7 +45,7 @@ Three groups: **`kit/`** is the product content that ships and is vendored into 
 - The CLI must never call a model or make network requests except those PRD R-080 allows.
 - The standard must not name a tool, model or vendor as a requirement (PRD R-003); examples and mappings are marked non-normative.
 - Use plain words (UX spec §8). Refer to the Owner as "the Owner" or "Ved", with they/them pronouns.
-- Commit only when asked. Commit trailers: `Tenet-Task`, `Tenet-Req`, `Tenet-Agent`, `Tenet-Run`, `Tenet-Amendment`, `Tenet-Clarification`.
+- Commit only when asked. Work is linked through its pull request or packet (DEC-42); the trailers `Tenet-Task`, `Tenet-Req`, `Tenet-Agent`, `Tenet-Run`, `Tenet-Amendment` and `Tenet-Clarification` are optional.
 
 ## When to stop
 

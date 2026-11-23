@@ -1,18 +1,18 @@
 id: CP-0012
-title: "Kit content review"
+title: "Kit content"
 type: spec
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L2, L3]
 serves: [V-V1, V-P2]
-implements: [R-011, R-014, R-016, R-017, R-142, R-171, R-174]
+implements: [R-011, R-012, R-016, R-017, R-142, R-171, R-174, R-188]
 milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: []
-unblocks: []
+blocked_by: [CP-0004]
+unblocks: [CP-0044, CP-0048]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 6, sessions: 6}

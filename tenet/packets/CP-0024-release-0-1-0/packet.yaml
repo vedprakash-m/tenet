@@ -1,18 +1,18 @@
 id: CP-0024
 title: "Release 0.1.0"
 type: ops
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L3, L4]
 serves: [V-V3]
-implements: [R-004, R-005]
+implements: [R-004, R-005, R-054, R-221]
 milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: []
-unblocks: []
+blocked_by: [CP-0013, CP-0014]
+unblocks: [CP-0011, CP-0023, CP-0025, CP-0026, CP-0027, CP-0028, CP-0029, CP-0030, CP-0031, CP-0032, CP-0033, CP-0034, CP-0035, CP-0036, CP-0037, CP-0038, CP-0039, CP-0043, CP-0047]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 4, sessions: 2}

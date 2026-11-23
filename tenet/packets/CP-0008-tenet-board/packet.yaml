@@ -1,18 +1,18 @@
 id: CP-0008
-title: "tenet board"
+title: "Full board"
 type: feature
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L3, L4]
 serves: [V-V2]
-implements: [R-032, R-073, R-082]
+implements: [R-032, R-073, R-082, R-216]
 milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: []
-unblocks: []
+blocked_by: [CP-0050]
+unblocks: [CP-0042]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 6, sessions: 6}

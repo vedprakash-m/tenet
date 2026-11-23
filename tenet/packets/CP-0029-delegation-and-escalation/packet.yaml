@@ -1,7 +1,7 @@
 id: CP-0029
 title: "Delegation and escalation"
 type: feature
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L3, L4]
@@ -11,7 +11,7 @@ milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: []
+blocked_by: [CP-0024]
 unblocks: []
 owner_role: null
 claimed_by: null

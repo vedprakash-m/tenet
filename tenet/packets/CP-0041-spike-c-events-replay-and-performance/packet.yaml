@@ -1,0 +1,25 @@
+id: CP-0041
+title: "Spike C: events, replay and performance"
+type: experiment
+lane: quick
+priority: standard
+due: null
+levels: [L3]
+serves: [V-P2, V-P10]
+implements: []
+milestone: M0
+source: "specs/plan.md"
+stage: shape
+status: active
+blocked_by: []
+unblocks: [CP-0015]
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 4, sessions: 2}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-23T02:00Z, to: intake, by: Ved, reason: "seeded from plan v0.8 (L-0013)"}
+  - {at: 2026-11-23T02:00Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-23T02:00Z, from: triage, to: shape, by: Ved, lane: quick}

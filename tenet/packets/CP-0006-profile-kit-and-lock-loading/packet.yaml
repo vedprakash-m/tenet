@@ -1,18 +1,18 @@
 id: CP-0006
-title: "Profile, kit and lock loading"
+title: "Policy, levels, kit and lock"
 type: feature
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L3, L4]
 serves: [V-V3, V-B6]
-implements: [R-050, R-053, R-104, R-109, R-204]
+implements: [R-050, R-053, R-104, R-109, R-204, R-214]
 milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: []
-unblocks: []
+blocked_by: [CP-0004, CP-0005]
+unblocks: [CP-0044, CP-0051]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 6, sessions: 6}

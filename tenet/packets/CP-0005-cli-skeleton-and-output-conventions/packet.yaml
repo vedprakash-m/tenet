@@ -1,18 +1,18 @@
 id: CP-0005
-title: "CLI skeleton and output conventions"
+title: "CLI, core and packaging"
 type: feature
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L3, L4]
 serves: [V-V1]
-implements: [R-048, R-081, R-083, R-084, R-080]
+implements: [R-048, R-080, R-081, R-083, R-084]
 milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: []
-unblocks: []
+blocked_by: [CP-0002, CP-0003]
+unblocks: [CP-0006, CP-0018]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 6, sessions: 6}

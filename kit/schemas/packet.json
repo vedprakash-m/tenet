@@ -10,7 +10,7 @@
     "id": {"type": "string", "pattern": "^CP-\\d{4}$"},
     "title": {"type": "string", "minLength": 3, "maxLength": 120},
     "type": {"enum": ["feature", "defect", "risk", "debt", "spec", "experiment", "ops", "agent"]},
-    "lane": {"enum": ["quick", "standard", "deep", null]},
+    "lane": {"enum": ["express", "quick", "careful", "deep", null]},
     "intent_kind": {"enum": ["deliver", "prototype", "findings-only"], "default": "deliver"},
     "risk": {
       "type": "object",
@@ -79,7 +79,7 @@
         "to": {"anyOf": [{"$ref": "#/$defs/station"}, {"enum": ["blocked", "waiting-owner", "parked", "active", "cancelled", "superseded"]}]},
         "by": {"type": "string", "description": "The Owner's name, agent@version, or 'policy'"},
         "reason": {"type": "string"},
-        "lane": {"enum": ["quick", "standard", "deep"]},
+        "lane": {"enum": ["express", "quick", "careful", "deep", "standard"], "description": "standard is the legacy name of careful, kept for append-only history"},
         "skipped": {"type": "array", "items": {"$ref": "#/$defs/station"}},
         "receipts": {"type": "integer", "minimum": 0},
         "gate": {"type": "array", "items": {"type": "string"}},

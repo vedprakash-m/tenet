@@ -1,5 +1,5 @@
 id: CP-0017
-title: "Feasibility spike"
+title: "Spike A: identity and decisions"
 type: experiment
 lane: quick
 priority: standard
@@ -12,7 +12,7 @@ source: "specs/plan.md"
 stage: shape
 status: active
 blocked_by: []
-unblocks: []
+unblocks: [CP-0015]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 4, sessions: 2}

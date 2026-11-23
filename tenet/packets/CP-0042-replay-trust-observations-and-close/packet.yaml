@@ -1,0 +1,25 @@
+id: CP-0042
+title: "Replay, trust observations, safe failure and close"
+type: feature
+lane: careful
+priority: standard
+due: null
+levels: [L3, L4]
+serves: [V-P2, V-P12]
+implements: [R-026, R-035, R-036, R-110, R-217]
+milestone: M1
+source: "specs/plan.md"
+stage: triage
+status: parked
+blocked_by: [CP-0008, CP-0019]
+unblocks: [CP-0046]
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 8, sessions: 4}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-23T02:00Z, to: intake, by: Ved, reason: "seeded from plan v0.8 (L-0013), release 0.1.0-alpha"}
+  - {at: 2026-11-23T02:00Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-23T02:00Z, to: parked, by: Ved, reason: "revisit when the M0 gate closes"}

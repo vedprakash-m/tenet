@@ -1,7 +1,7 @@
 id: CP-0016
 title: "Problem validation and baselines"
 type: experiment
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L3]
@@ -12,7 +12,7 @@ source: "specs/plan.md"
 stage: shape
 status: active
 blocked_by: []
-unblocks: []
+unblocks: [CP-0023]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 6, sessions: 3}

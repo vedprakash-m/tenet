@@ -1,0 +1,4 @@
+# CP-0047 log
+
+- 2026-11-23 Seeded from [specs/plan/0.1.x.md](../../specs/plan/0.1.x.md) v0.9 (L-0016).
+- 2026-11-23 Plan v0.11 ([L-0023](../../ledger/L-0023-contracts-frozen-before-build.md)): dependencies set from the waves; lane `standard` renamed `careful`; scope and requirements per the release part.

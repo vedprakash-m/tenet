@@ -1,7 +1,7 @@
 id: CP-0015
-title: "Carve Tenet Core out of the standard"
+title: "Kernel and contract freeze"
 type: spec
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L1]
@@ -11,8 +11,8 @@ milestone: M0
 source: "specs/plan.md"
 stage: shape
 status: active
-blocked_by: []
-unblocks: []
+blocked_by: [CP-0017, CP-0040, CP-0041]
+unblocks: [CP-0001]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 8, sessions: 4}

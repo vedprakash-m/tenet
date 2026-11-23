@@ -1,0 +1,25 @@
+id: CP-0044
+title: "Specification formats"
+type: feature
+lane: careful
+priority: standard
+due: null
+levels: [L3, L4]
+serves: [V-P18, V-P9, V-P2]
+implements: [R-207, R-208, R-209, R-210, R-212, R-213, R-220]
+milestone: M1
+source: "specs/plan.md"
+stage: triage
+status: parked
+blocked_by: [CP-0006, CP-0012]
+unblocks: [CP-0009, CP-0045, CP-0051, CP-0053]
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 8, sessions: 4}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-23T03:00Z, to: intake, by: Ved, reason: "seeded from plan v0.8 (L-0014), release 0.1.0-alpha.0"}
+  - {at: 2026-11-23T03:00Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-23T03:00Z, to: parked, by: Ved, reason: "revisit when the M0 gate closes"}

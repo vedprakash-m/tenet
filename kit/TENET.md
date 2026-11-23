@@ -1,5 +1,7 @@
 # Tenet: a standard for governed, spec-driven software factories
 
+> **Draft in transition.** Until CP-0015 rewrites this document: §3 (documents, levels and ownership), §9 (change control for specifications), §10 (traceability) and §11 (escalation) remain the authoritative description of the spec process; for everything else, the current specifications (`tenet/specs/prd.md` and its parts, `tenet/specs/tech-spec.md`) take precedence where they differ (L-0013 to L-0016).
+
 > Version 0.1.0-draft · Status: draft, awaiting the Owner's approval · A tool-neutral standard for building software with a human Owner and a governed fleet of agents · Adopted by a project through its `tenet.yaml` profile ([§17](#17-adoption)) · Delivered as described in [§18](#18-deliverables-distribution-and-execution)
 
 ## 0. About this document

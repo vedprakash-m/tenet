@@ -1,0 +1,25 @@
+id: CP-0046
+title: "Signed evidence and the two-job verifier"
+type: feature
+lane: careful
+priority: standard
+due: null
+levels: [L3, L4]
+serves: [V-P2, V-B7]
+implements: [R-100]
+milestone: M1
+source: "specs/plan.md"
+stage: triage
+status: parked
+blocked_by: [CP-0042]
+unblocks: [CP-0021]
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 8, sessions: 4}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-23T05:00Z, to: intake, by: Ved, reason: "seeded from plan v0.9 (L-0016), release 0.1.0-alpha"}
+  - {at: 2026-11-23T05:00Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-23T05:00Z, to: parked, by: Ved, reason: "revisit when the M0 gate closes"}

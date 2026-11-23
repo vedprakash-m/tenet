@@ -1,18 +1,18 @@
 id: CP-0007
-title: "tenet new, move (state only), status"
+title: "Events and reduction"
 type: feature
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L3, L4]
 serves: [V-P5, V-P2]
-implements: [R-018, R-030, R-031, R-037, R-039, R-091, R-185, R-200, R-201, R-202, R-203]
+implements: [R-018, R-030, R-037, R-039, R-091, R-185, R-186, R-200, R-201, R-203]
 milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: []
-unblocks: []
+blocked_by: [CP-0049]
+unblocks: [CP-0050]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 6, sessions: 6}

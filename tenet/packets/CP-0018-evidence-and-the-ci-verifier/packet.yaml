@@ -1,18 +1,18 @@
 id: CP-0018
-title: "Evidence and the CI verifier"
+title: "Reports, acceptance and weakening"
 type: feature
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L3, L4]
 serves: [V-P2, V-M2]
-implements: [R-026, R-034, R-035, R-036, R-100, R-103, R-110, R-146, R-170, R-172]
+implements: [R-034, R-172, R-188]
 milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: []
-unblocks: []
+blocked_by: [CP-0005]
+unblocks: [CP-0051]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 12, sessions: 6}

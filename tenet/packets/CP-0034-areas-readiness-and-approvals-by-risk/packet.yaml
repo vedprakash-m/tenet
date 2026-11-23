@@ -1,7 +1,7 @@
 id: CP-0034
 title: "Areas, readiness and approvals by risk"
 type: feature
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L3, L4]
@@ -11,8 +11,8 @@ milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: []
-unblocks: []
+blocked_by: [CP-0024]
+unblocks: [CP-0033]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 10, sessions: 5}

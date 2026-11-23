@@ -1,18 +1,18 @@
 id: CP-0019
-title: "Decisions"
+title: "Decisions on pull requests"
 type: feature
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L3, L4]
 serves: [V-V1, V-B2]
-implements: [R-090, R-101, R-102, R-108, R-123]
+implements: [R-090, R-101, R-102, R-108, R-123, R-177, R-203]
 milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: []
-unblocks: []
+blocked_by: [CP-0050]
+unblocks: [CP-0042]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 8, sessions: 4}

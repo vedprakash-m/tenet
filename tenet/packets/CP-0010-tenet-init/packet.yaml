@@ -1,18 +1,18 @@
 id: CP-0010
-title: "tenet init"
+title: "Init, upgrade, remove"
 type: feature
-lane: standard
+lane: careful
 priority: standard
 due: null
 levels: [L3, L4]
 serves: [V-V3]
-implements: [R-020, R-022, R-023, R-024]
+implements: [R-020, R-022, R-023, R-024, R-025, R-051, R-221, R-222]
 milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: []
-unblocks: []
+blocked_by: [CP-0045, CP-0051, CP-0052]
+unblocks: [CP-0049]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 6, sessions: 6}

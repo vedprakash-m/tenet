@@ -12,7 +12,7 @@ source: "specs/plan.md"
 stage: commit
 status: waiting-owner
 blocked_by: [CP-0015]
-unblocks: []
+unblocks: [CP-0003]
 owner_role: owner
 claimed_by: null
 appetite: {agent_hours: 6, sessions: 6}

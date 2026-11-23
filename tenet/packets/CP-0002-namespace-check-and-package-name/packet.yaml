@@ -12,7 +12,7 @@ source: "specs/plan.md"
 stage: shape
 status: active
 blocked_by: []
-unblocks: []
+unblocks: [CP-0003, CP-0005]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 2, sessions: 2}
