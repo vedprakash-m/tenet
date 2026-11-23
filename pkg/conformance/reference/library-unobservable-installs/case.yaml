@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "work": {"id":"pr-1","title":"Publish a library","station":"operate","lane":"careful","subject":{"kind":"artifact","digest":"sha256:1111111111111111111111111111111111111111111111111111111111111111"}},
+  "policy": {"level":"verify","evaluation_inputs":{"requirement_digest":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_digest":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","check_definition_digest":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","runner_image_digest":"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","lock_digest":"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"},"rules":{"operation.install":"enforce"}},
+  "claims": [
+    {"id":"operation.install","type":"outcome","selector":{"station":"operate"},"class":"outcome","methods":["production-observation"],"pass_rule":{"kind":"binary"},"lifetime":"packet","owner":"operator","waivable":false}
+  ],
+  "evidence": [
+    {"id":"E-unobservable","subject":{"kind":"artifact","digest":"sha256:1111111111111111111111111111111111111111111111111111111111111111"},"claims":["operation.install"],"kind":"observation","method":"production-observation","result":"unknown","strength":{"provenance":"ci-observed","independence":"different-definition"},"producer":{"source":"ci","policy_revision":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},"cases":{"expected":["case-1"],"executed":[],"passed":[],"skipped":[]},"inputs":{"requirement_digest":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_digest":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","check_definition_digest":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","runner_image_digest":"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","lock_digest":"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"},"payload":{"outcome":"unknown","scope":"consenting consumer installs","window":{"start":"2026-11-23T12:00:00Z","end":"2026-11-23T12:05:00Z"}},"valid_until":"2026-11-23T12:25:00Z"}
+  ],
+  "decisions": [],
+  "events": [
+    {"id":"00000000000000000000000001","prev":[],"type":"work.created","work":"pr-1","time":"2026-11-23T12:00:00Z","by":"recorder","data":{"title":"Publish a library","station":"operate","lane":"careful"}},
+    {"id":"00000000000000000000000002","prev":["00000000000000000000000001"],"type":"claim.stated","work":"pr-1","time":"2026-11-23T12:00:00Z","by":"operator","data":{"claim":{"id":"operation.install","type":"outcome","selector":{"station":"operate"},"class":"outcome","methods":["production-observation"],"pass_rule":{"kind":"binary"},"lifetime":"packet","owner":"operator","waivable":false}}},
+    {"id":"00000000000000000000000003","prev":["00000000000000000000000002"],"type":"evidence.recorded","work":"pr-1","time":"2026-11-23T12:05:00Z","by":"recorder","data":{"evidence":"E-unobservable"}}
+  ],
+  "evaluations": [
+    {"id":"install-unknown","evaluated_at":"2026-11-23T12:05:00Z","subject":{"kind":"artifact","digest":"sha256:1111111111111111111111111111111111111111111111111111111111111111"},"inputs":{"requirement_digest":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","policy_digest":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","check_definition_digest":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","runner_image_digest":"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","lock_digest":"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"},"heads":["00000000000000000000000003"],"applicable_claims":["operation.install"],"evidence":["E-unobservable"],"decisions":[],"modes":{"operation.install":"enforce"}}
+  ]
+}

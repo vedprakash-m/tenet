@@ -1,0 +1,24 @@
+{
+  "evaluations": [
+    {
+      "id": "before-authorization",
+      "verdict": "refuse",
+      "disposition": "blocks",
+      "next": {
+        "who": "owner",
+        "action": "request-decision",
+        "command": null
+      }
+    },
+    {
+      "id": "authorized-cutover",
+      "verdict": "advance",
+      "disposition": "records",
+      "next": {
+        "who": null,
+        "action": "advance",
+        "command": null
+      }
+    }
+  ]
+}
