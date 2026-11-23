@@ -1,0 +1,25 @@
+id: CP-0023
+title: "External pilot"
+type: experiment
+lane: standard
+priority: standard
+due: null
+levels: [L3]
+serves: [V-H1, V-M8, V-M1]
+implements: [R-075]
+milestone: M1
+source: "specs/plan.md"
+stage: triage
+status: parked
+blocked_by: []
+unblocks: []
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 6, sessions: 3}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-22T23:00Z, to: intake, by: Ved, reason: "seeded from the revised plan (L-0007)"}
+  - {at: 2026-11-22T23:00Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-22T23:00Z, to: parked, by: Ved, reason: "revisit when the M0 gate passes"}

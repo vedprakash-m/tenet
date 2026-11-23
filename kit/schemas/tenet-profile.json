@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tenet.dev/schemas/tenet-profile/0.json",
+  "title": "Tenet project profile (tenet.yaml)",
+  "description": "Draft 0.1. Standard §17.1 and tech spec §4.1. Keys starting with x- are allowed for project extensions.",
+  "type": "object",
+  "additionalProperties": false,
+  "patternProperties": {"^x-": {}},
+  "required": ["project", "owner", "standard"],
+  "properties": {
+    "project": {"type": "string"},
+    "owner": {"type": "string", "description": "A name, not an email"},
+    "standard": {"type": "string", "description": "Semver range of the standard this project accepts"},
+    "kit_path": {"type": "string"},
+    "paths": {"type": "object", "additionalProperties": false, "properties": {"records": {"type": "string", "description": "The records folder, relative to the repository root"}}},
+    "adoption_step": {"type": "integer", "minimum": 1, "maximum": 6},
+    "deploys": {"type": "boolean"},
+    "packet_size_limit": {"type": "object", "additionalProperties": false, "properties": {"agent_hours": {"type": "number", "exclusiveMinimum": 0}}},
+    "wip": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "define": {"type": "integer", "minimum": 1},
+        "construct": {"type": "integer", "minimum": 1},
+        "assure": {"type": "integer", "minimum": 1},
+        "deliver": {"type": "integer", "minimum": 1}
+      }
+    },
+    "lanes_default": {"$ref": "#/$defs/lane"},
+    "commit_delegation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lanes": {"type": "array", "items": {"$ref": "#/$defs/lane"}},
+        "max_agent_hours": {"type": "number", "minimum": 0},
+        "levels": {"type": "array", "items": {"enum": ["L2", "L3", "L4"]}}
+      }
+    },
+    "stop_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "failing_sessions": {"type": "integer", "minimum": 1},
+        "same_signature": {"type": "integer", "minimum": 1},
+        "flip_flops": {"type": "integer", "minimum": 1},
+        "review_rejections": {"type": "integer", "minimum": 1}
+      }
+    },
+    "checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quick": {"type": "array", "items": {"type": "string"}},
+        "standard": {"type": "array", "items": {"type": "string"}},
+        "deep": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "owner_queue_alert_days": {"type": "integer", "minimum": 1},
+    "claim_hours": {"type": "integer", "minimum": 1},
+    "heartbeat_minutes": {"type": "integer", "minimum": 1},
+    "release_stages": {"type": "array", "items": {"anyOf": [{"const": "internal"}, {"type": "integer", "minimum": 1, "maximum": 100}]}},
+    "observe": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {"healthy_exposures": {"type": "integer", "minimum": 0}, "published_artifact_days": {"type": "integer", "minimum": 0}}
+    },
+    "holdout_required_for": {"type": "array", "items": {"$ref": "#/$defs/lane"}},
+    "extra_checks": {"type": "array", "items": {"type": "string"}},
+    "requirement_id_pattern": {"type": "string", "format": "regex"},
+    "loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {"rounds": {"$ref": "#/$defs/perLane"}, "majors_allowed": {"$ref": "#/$defs/perLane"}}
+    },
+    "team": {"type": "object", "additionalProperties": {"anyOf": [{"type": "string"}, {"type": "object"}]}},
+    "excluded": {
+      "type": "array",
+      "items": {"type": "object", "additionalProperties": false, "required": ["role", "reason"], "properties": {"role": {"type": "string"}, "reason": {"type": "string"}}}
+    },
+    "agent_concurrency": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 1}},
+    "agent_release": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "canary_share": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "repeats": {"type": "integer", "minimum": 1},
+        "auto_promote": {"type": "boolean"}
+      }
+    },
+    "engine": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {"target": {"enum": ["conductor", "claude-code", "copilot"]}, "command": {"type": "string"}}
+    },
+    "issue_source": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {"kind": {"enum": ["github", "markdown"]}, "repo": {"type": "string"}, "path": {"type": "string"}}
+    }
+  },
+  "$defs": {
+    "lane": {"enum": ["quick", "standard", "deep"]},
+    "perLane": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "quick": {"type": "integer", "minimum": 0},
+        "standard": {"type": "integer", "minimum": 0},
+        "deep": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

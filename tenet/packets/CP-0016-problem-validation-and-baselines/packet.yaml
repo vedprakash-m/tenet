@@ -1,0 +1,25 @@
+id: CP-0016
+title: "Problem validation and baselines"
+type: experiment
+lane: standard
+priority: standard
+due: null
+levels: [L3]
+serves: [V-M1, V-M3, V-M4]
+implements: [R-075]
+milestone: M0
+source: "specs/plan.md"
+stage: shape
+status: active
+blocked_by: []
+unblocks: []
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 6, sessions: 3}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-22T23:00Z, to: intake, by: Ved, reason: "seeded from the revised plan (L-0007)"}
+  - {at: 2026-11-22T23:00Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-22T23:00Z, from: triage, to: shape, by: Ved, lane: standard}

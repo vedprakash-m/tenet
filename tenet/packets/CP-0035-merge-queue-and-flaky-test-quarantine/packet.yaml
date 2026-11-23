@@ -1,0 +1,25 @@
+id: CP-0035
+title: "Merge queue and flaky-test quarantine"
+type: feature
+lane: standard
+priority: standard
+due: null
+levels: [L3, L4]
+serves: [V-P2, V-B3]
+implements: [R-152, R-153]
+milestone: M1
+source: "specs/plan.md"
+stage: triage
+status: parked
+blocked_by: []
+unblocks: []
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 6, sessions: 3}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-23T00:10Z, to: intake, by: Ved, reason: "seeded from plan v0.5 (L-0010), release 0.1.x"}
+  - {at: 2026-11-23T00:10Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-23T00:10Z, to: parked, by: Ved, reason: "revisit when 0.1.0 is released"}

@@ -1,0 +1,25 @@
+id: CP-0034
+title: "Areas, readiness and approvals by risk"
+type: feature
+lane: standard
+priority: standard
+due: null
+levels: [L3, L4]
+serves: [V-P5, V-V1]
+implements: [R-143, R-144, R-145, R-147]
+milestone: M1
+source: "specs/plan.md"
+stage: triage
+status: parked
+blocked_by: []
+unblocks: []
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 10, sessions: 5}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-23T00:10Z, to: intake, by: Ved, reason: "seeded from plan v0.5 (L-0010), release 0.1.x"}
+  - {at: 2026-11-23T00:10Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-23T00:10Z, to: parked, by: Ved, reason: "revisit when 0.1.0 is released"}

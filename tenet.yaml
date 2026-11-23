@@ -1,9 +1,10 @@
 # Tenet's own profile: this repository runs under the standard it defines (PRD DEC-08).
-# Self-hosted: the kit is read from the working copy of standard/, not vendored (tech spec §2).
+# Self-hosted: the kit is read from the working copy of kit/, not vendored (tech spec §2).
 project: tenet
 owner: Ved
 standard: "0.1.0-draft"
-kit_path: standard
+kit_path: kit
+paths: {records: tenet}
 adoption_step: 1
 deploys: false                        # releases publish a package; Release means publishing with checksums and provenance
 packet_size_limit: {agent_hours: 12}
@@ -20,13 +21,13 @@ release_stages: [internal, 100]
 observe: {published_artifact_days: 14}
 holdout_required_for: [deep]
 extra_checks:
-  - "every requirement in specs/prd.md names a milestone"
-  - "every schema in standard/schemas has valid and invalid fixtures (from M1)"
+  - "every requirement in tenet/specs/prd.md names a milestone"
+  - "every schema in kit/schemas has valid and invalid fixtures (from M1)"
 requirement_id_pattern: "^R-\\d{3}$"
 loop:
   rounds: {quick: 2, standard: 3, deep: 4}
   majors_allowed: {quick: 2, standard: 1, deep: 0}
-team:                                 # reference definitions in standard/agents/roles; draft until qualified (M5)
+team:                                 # reference definitions in kit/agents/roles; draft until qualified (M5)
   shape: shaper@0
   build: {code: builder@0}
   verify: verifier@0
