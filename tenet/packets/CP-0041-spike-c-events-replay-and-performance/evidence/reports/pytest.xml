@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="6" time="0.223" timestamp="2026-11-23T07:51:39.598465-08:00" hostname="<host>"><testcase classname="py.test_retry.TestCheckoutRetry" name="test_retries_once_tenet_AB_1" time="0.001" /><testcase classname="py.test_retry.TestCheckoutRetry" name="test_backoff_tenet_AB_2[AB-2-a]" time="0.001" /><testcase classname="py.test_retry.TestCheckoutRetry" name="test_backoff_tenet_AB_2[b]" time="0.001" /><testcase classname="py.test_retry.TestCheckoutRetry" name="test_backoff_tenet_AB_2[c]" time="0.001" /><testcase classname="py.test_retry" name="test_property_style" time="0.002"><properties><property name="tenet.case" value="AB-3" /></properties></testcase><testcase classname="py.test_retry" name="test_handles_entities_tenet_AB_4" time="0.001"><error message="failed on teardown with &quot;RuntimeError: teardown boom&quot;">@pytest.fixture(scope="module", autouse=True)
+    def teardown_boom():
+        yield
+&gt;       raise RuntimeError("teardown boom")
+E       RuntimeError: teardown boom
+
+py\test_retry.py:17: RuntimeError</error></testcase></testsuite></testsuites>

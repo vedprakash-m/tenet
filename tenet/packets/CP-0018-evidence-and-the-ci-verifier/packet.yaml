@@ -12,7 +12,7 @@ source: "specs/plan.md"
 stage: triage
 status: parked
 blocked_by: [CP-0005]
-unblocks: [CP-0051]
+unblocks: [CP-0048, CP-0051, CP-0053]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 12, sessions: 6}

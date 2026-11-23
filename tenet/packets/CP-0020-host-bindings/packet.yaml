@@ -6,13 +6,13 @@ priority: standard
 due: null
 levels: [L3, L4]
 serves: [V-P4, V-P2]
-implements: [R-014, R-040, R-042, R-044, R-046, R-047, R-105, R-107, R-111, R-124, R-156]
+implements: [R-014, R-036, R-040, R-042, R-044, R-046, R-047, R-105, R-107, R-111, R-124, R-156]
 milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
 blocked_by: [CP-0022]
-unblocks: [CP-0013, CP-0014]
+unblocks: [CP-0055]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 12, sessions: 6}

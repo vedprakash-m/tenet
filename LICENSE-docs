@@ -1,0 +1,7 @@
+Tenet's specification and documentation text (the standard in kit/TENET.md, the
+documents under tenet/ and docs/) is licensed under the Creative Commons
+Attribution 4.0 International License (CC BY 4.0):
+https://creativecommons.org/licenses/by/4.0/legalcode
+
+Source code (src/, runner/, test/, scripts/ and the machine-readable files in
+kit/ and pkg/) is licensed under the Apache License, Version 2.0; see LICENSE.

@@ -1,0 +1,25 @@
+id: CP-0056
+title: "Spike D: headless agent hosts"
+type: experiment
+lane: quick
+priority: standard
+due: null
+levels: [L3, L4]
+serves: [V-P4, V-P2]
+implements: [R-041]
+milestone: M0
+source: "specs/plan.md"
+stage: triage
+status: parked
+blocked_by: []
+unblocks: [CP-0015]
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 4, sessions: 2}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-23T13:00Z, to: intake, by: Ved, reason: "split from CP-0020 in plan v0.12 (L-0026), release 0.1.0"}
+  - {at: 2026-11-23T13:00Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-23T13:00Z, to: parked, by: Ved, reason: "revisit when the M0 gate closes"}

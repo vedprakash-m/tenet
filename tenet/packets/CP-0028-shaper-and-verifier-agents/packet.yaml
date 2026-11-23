@@ -1,5 +1,5 @@
 id: CP-0028
-title: "Shaper and verifier agents"
+title: "Verifier agent and escalation skill"
 type: agent
 lane: careful
 priority: standard

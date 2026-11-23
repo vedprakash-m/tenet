@@ -11,8 +11,8 @@ milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: [CP-0006, CP-0012]
-unblocks: [CP-0009, CP-0045, CP-0051, CP-0053]
+blocked_by: [CP-0006]
+unblocks: [CP-0009, CP-0045, CP-0053]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 8, sessions: 4}

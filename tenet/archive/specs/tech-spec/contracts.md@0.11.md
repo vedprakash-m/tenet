@@ -1,0 +1,184 @@
+# Tenet technical specification: contracts
+
+> Level L2 · Version 0.11 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Added in L-0023 · Previous version: `archive/specs/tech-spec/contracts.md@0.10.md`
+
+**Context card.** Every format, identifier, grammar and interface a builder needs, so that two implementations produce the same files and outputs. Algorithms that act on these formats are in [algorithms.md](algorithms.md); onboarding behavior in [onboarding.md](onboarding.md); CI in [ci.md](ci.md); what agents are told in [agents.md](agents.md). Each format has a JSON Schema in `kit/schemas/` (CP-0004) with ≥2 valid and ≥3 invalid fixtures. Unknown keys are refused except `x-` keys. All files are UTF-8 with LF line endings.
+
+## 1. Files and identifiers
+
+| Item | Format |
+|---|---|
+| Requirement ID | `R-<n>` (prefix set by `specs.id_prefix`, default `R`); `n` is the next unused integer in the project; assigned by `tenet fix`; never reused |
+| Acceptance item ID | `AB-<n>`, numbered from 1 within its pull request; stored as `pr-<number>/AB-<n>` |
+| Work item | `pr-<number>` for a quick change; `CP-<6 Crockford Base32 chars>` alias for a packet, the first 6 characters of the base32 SHA-256 of its ULID, lengthened by one on collision; legacy `CP-NNNN` stays valid |
+| ULID | 26 uppercase Crockford Base32 characters, monotonic within one millisecond |
+| Test tag | `\[([A-Z][A-Z0-9]*-\d+)\]` in a test's full name, or `\btenet_([A-Z][A-Z0-9]*)_(\d+)\b` (`tenet_AB_1` means `AB-1`), or a JUnit `<property name="tenet.case" value="…">`, or a CTRF `extra.tenet_cases` array; a test may carry several; ALG-08 says which count |
+| Evaluation ID | First 16 hex characters of SHA-256 over RFC 8785 `{tested_commit, base, acceptance_digest, implemented: [{id, blessed_digest}], policy_blob, tenet_version}`; a reply or approval binds it (ci.md §6) |
+| `tenet.lock` | `{schema_version: 1, package: "@vedprakash-m/tenet", version, integrity: "sha512-…", kit_sha256, vendored: bool}` |
+| `.tenet/` | `manifest.json` (§10), `manifest.pending.json`, `onboard/` (§4), `proposals/` (MCP), `reports/`, `bundle/`, `cache/`; all git-ignored except `manifest.json` (`init` writes the `.gitignore` block) |
+| `<records>/blessed/` | Copies of blessed section text and `log.jsonl` (one line per blessing session: `{doc, section, by, at, minutes, statements: {drafted, kept, edited, adopted, added}}`), committed (ALG-03, ALG-13) |
+
+## 2. Pull-request acceptance block
+
+```text
+## Acceptance                          heading text exact; level 2 or 3
+Implements: R-12, R-14                  optional; IDs of blessed requirements
+- [AB-1] one retry after a timeout      one item per line; "- [ ] " checkbox prefix allowed
+```
+
+Parsing: the block ends at the next heading or end of text. `Implements:` matches `^Implements:\s*(.+)$` and splits on commas. An item matches `^\s*[-*]\s*(\[[ xX]\]\s*)?\[(AB-\d+)\]\s+(.+)$`. An item line without an ID is reported "needs an ID"; a repeated ID is an error. **Acceptance digest:** SHA-256 over RFC 8785 JSON of `{implements: [IDs sorted], items: [{id, text}] sorted by id}`, with whitespace in `text` collapsed to single spaces; changing `Implements:` changes it.
+
+## 3. Specification documents
+
+**Front matter** (YAML, first lines of the file):
+
+```yaml
+tenet: {spec: 1, doc: intent, level: L1, version: "0.1", owner: ved, drafted_from: <40-hex commit>}
+sections:
+  requirements:                     # section slug (ALG-02)
+    state: blessed                  # draft | blessed | rejected | deferred
+    digest: sha256:<64 hex>         # current text (ALG-02)
+    blessed_digest: sha256:<64 hex> # text last blessed; null until blessed
+    blessed_at_rev: <commit>        # HEAD when blessed; information only, never required to exist
+    anchors: {"src/retry.ts:40-48": "sha256:<64 hex>"}   # one per citation, set when blessed (ALG-03)
+    applies_to: ["src/checkout/**"] # optional; prose sections reach context through it (ALG-10)
+    blessed_copy: tenet/blessed/<doc>/<slug>.md   # text in force (ALG-03)
+    flags: []                       # edited | sources-changed
+    recorded: self                  # self | forge | signed
+    owner: payments                 # optional; else ALG-03 owner rule
+    blessed_by: ved
+    blessed_at: 2026-11-23T10:00:00Z
+```
+
+**Requirement line** (in a list item or a table's Requirement cell):
+
+```text
+- R-12 A payment that times out is retried once, never twice. {origin: observed; cites: src/retry.ts:40-48, test: checkout.retry.test.ts > retries once; serves: V-2}
+```
+
+Braces close the line. `origin` is `observed`, `documented`, `asked` or `inferred`; `asked` may add `adopted_by: <owner id>`; optional `scope: global` marks a cross-cutting rule (ALG-10). **Citations** inside `cites:`, separated by commas: `path:start-end`, `path:line`, `test: <file> > <name>`, `doc: path#heading-slug`. Paths are relative to the repository root with forward slashes.
+
+**Conflicts and open questions** (sections named exactly `Conflicts` and `Open questions`):
+
+```text
+- [ ] CF-1 (section: requirements) README says two retries; src/retry.ts:42 retries once. | 1: retry once | 2: retry twice
+- [x] Q-2 (section: vision) Who are the primary users? answer: returning shoppers
+```
+
+An open item (`[ ]`) blocks blessing its named section until it is checked with `resolution:` or `answer:`, or the section is deferred.
+
+## 4. Onboarding files
+
+`.tenet/onboard/inventory.json`: `{schema_version, revision, sources: {files: [{path, kind: source|config|test|doc|ci|adr|manifest, sha256, lines}], skipped: [{path, reason}]}, modules: [{id, roots, languages}], tests: [{path, runner, cases}], docs: [{path, title, sections, last_changed}], owners: [{pattern, owners}], ci: [{path, commands}], size: {source_lines, areas}, layout: one-file | separate, units: [{id, paths, views}], findings: [{kind: dead-path | skipped-tests | owners-unmatched | no-test-report, path, message}], observations: {reports: [{path, sha256, runner, cases}]}}`. Everything except `observations` comes from the repository at `revision` and is byte-identical for one commit; `observations` come from local reports and are named by digest.
+
+`.tenet/onboard/interview.json` (written by the agent): `{questions: [{id, text, answer, answered_at}]}`.
+
+`.tenet/onboard/assignment.json`: `{schema_version, inventory, skill: "draft-specs", project_kind, views: [vision, requirements, design, experience, plan], layout, units, question_limit: 10, output: {paths}, rules: [no intent from code alone, every observed or documented statement cites, never resolve a conflict, never bless]}`.
+
+## 5. Proof card and board models
+
+**Proof card** (`kit/schemas/proof-card.json`): `{schema_version, evaluation_id, tested: {commit, kind: merge-candidate|head, head, base}, acceptance_digest, requirements: [{id, excerpt, state, recorded, flags, why: implements|cited-code-changed|text-changed|same-area, tests: {expected, passed, failed, skipped, not_run}}], items: [{id, text, result: passed|failed|not-run|no-test|skipped, tests: {expected, passed, failed, skipped, not_run}, names: [full_name], written_in_change, first_failure?}], tests: {report: ok|missing|malformed, total, passed, failed, skipped, failing: [full_name]}, weakening: {found, by: [{finding, file, names}], not_checked: [language]}, workflow_changed, protected: [path], blessings_changed: [{doc, section, blessed_by, commit_author}], deltas: [{doc, added, modified, removed}], rules: [{rule, mode, would_block, reason}], badge: advisory|verified-on-ci|intent-not-yet-blessed, why: [{text, class: checked|judge|host|not-tenet}], degraded: [reason]}`. The markdown is rendered from it in this order: header; requirements touched (same-area ones collapsed); items; tests; weakening; protected files, workflow and blessings; deltas; would have blocked; why. With no acceptance block the items line reads "no acceptance items · add the block from the template". Golden cards live in `pkg/conformance/cards/`.
+
+**`board.json`** (`schema_version` 1; `--since <rev>` returns changed items only): `{schema_version, as_of, read: {main, branches, records}, pack: {phases}, specs: [{path, section, level, state, flags, recorded}], pending_blessings: [{path, section, conflicts, open_questions}], items: [{id, title, lane, station, status, branch, age, depends_on, replay, lease, next_actions: [{who, action, reason, command, dispatch?}], claims: {applicable, satisfied, waived, unsatisfied}, guarantee, cost: {amount, unit, status: known|estimated|unavailable, source}}], decision_queue, review_queue, campaigns, active_runs?, areas: [{name, owner, promises, health, readiness, quarantined, waivers}], conflicts, flow, escalations}`. In alpha.0 only `as_of`, `read`, `specs` and `pending_blessings` are filled.
+
+## 6. Test reports
+
+`init` writes the runner's own command with these flags (never `npm test -- …`):
+
+| Runner | `checks.<name>.run` | `report`, `report_from` |
+|---|---|---|
+| vitest | `npx vitest run --reporter=default --reporter=junit --outputFile.junit=.tenet/reports/<name>.xml` | `junit`, file |
+| jest | `npx jest --ci --json --outputFile=.tenet/reports/<name>.json` | `jest-json`, file |
+| node:test | `node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=.tenet/reports/<name>.xml` | `junit`, file |
+| pytest | `python -m pytest --junitxml=.tenet/reports/<name>.xml` | `junit`, file |
+| go | `go test -json ./...` | `go-test-json`, stdout |
+| other | the user's own command | `none`: per-test results unavailable |
+
+Every reader produces one model: `{runner, cases: [{full_name, file?, status: pass|fail|skip|error, attempts: [status], tags: [id], duration_ms?}]}` (ALG-08).
+
+## 7. CI
+
+Moved to [ci.md](ci.md) under the rollover rule: the test job and recorder, running checks, workflows, the records ref, verification, decisions, trust and the release procedure.
+
+## 8. Commands
+
+| Command | First | Writes | Notes |
+|---|---|---|---|
+| `init` | alpha.0 | files in the preflight, `.tenet/manifest.json` | `--yes`, `--vendor`, `--force`; idempotent |
+| `onboard` | alpha.0 | `.tenet/onboard/*`, drafted documents via the agent | `--inventory-only`, `--refresh` |
+| `bless` | alpha.0 | front matter, `<records>/blessed/*` and its `log.jsonl` | refuses without a terminal (exit 2); per section: bless, confirm (`sources-changed`), edit, reject, defer |
+| `context` | alpha.0 | — | `--paths`, `--ids`, `--query` (titles only), `--include-drafts` |
+| `check`, `fix`, `split` | alpha.0 | `fix` and `split`: local files | `check --pack` |
+| `board` | alpha.0 | — | `--all`; `--open`, `--since`, `--fetch` from alpha.1 |
+| `upgrade`, `remove`, `doctor`, `mcp` | alpha.0 | lock, block, keys; nothing for `doctor`, `mcp` | |
+| `level`, `rules` | alpha.1 | `tenet.yaml` | |
+| `verify --run-checks`, `verify --bundle`, `verify --record` | alpha.0 | `.tenet/bundle/`; the check run; the records ref | CI only (ci.md); `--record` signs from `verify` |
+| `new`, `move`, `status`, `task done`, `close`, `resume`, `decide`, `resolve`, `escalate`, `lease`, `release`, `assign`, `result`, `inspect`, `record`, `agent check`, `skill list`, `build --target agents-md` | 0.1.0 | packets and events | |
+| `tenet-runner start`, `status`, `stop`, `doctor` | 0.1.0 | worktrees under `.tenet/runs/`; run events | separate package (agents.md §6) |
+| `import` | 0.1.x | packets | |
+| `conform` | M4 | — | |
+
+Global flags: `--json`, `--cwd`, `--quiet`, `--verbose`, `--offline`. Under `--json` stdout holds exactly one JSON object `{ok, command, version, result, errors: [{file, line, rule, message, fix}]}`; human text goes to stderr. Exit codes in precedence order: 2 usage, 3 environment, 4 policy refusal, 1 gate or check failed, 0 success; each error code's exit code is in §13. Each command's `result` follows `kit/schemas/results/<command>.json` (CP-0004). Pull-request replies (`/tenet approve`, `pick`, `bless`, `not-useful`) arrive in alpha.1 (ci.md §6).
+
+## 9. MCP
+
+Newline-delimited JSON-RPC 2.0 over stdio; logs on stderr only; no network. Protocol revision `2025-11-25`, also accepting `2025-06-18`.
+- `initialize`: answer `{protocolVersion, capabilities: {tools: {listChanged: false}}, serverInfo: {name: "tenet", version}}`, where `protocolVersion` is the client's requested revision if supported, else `2025-11-25`.
+- Notifications (`notifications/initialized` and any other message without an `id`) get no reply. `ping` returns `{}`.
+- `tools/list` gives each tool's `inputSchema`. `tools/call` returns `{content: [{type: "text", text: <markdown>}], structuredContent: <result>, isError}`.
+- Errors: -32700 parse, -32600 invalid request, -32601 unknown method, -32602 bad parameters or unknown tool.
+
+| Tool | Input | Result |
+|---|---|---|
+| `tenet_context` | `{paths?, ids?, query?, include_drafts?, budget_tokens?}` | `{blessed: [{id, section, text, flags, owner, reason}], drafts, index: [{id, title}], omitted: [id], truncated, rules}` |
+| `tenet_check` | `{paths?}` | the `check --json` errors array |
+| `tenet_status` | `{work?}` | level, spec states, work item status |
+| `tenet_next` | `{work?}` | `next_actions` |
+| `tenet_propose` | `{kind: spec-delta \| acceptance \| escalation, work?, payload}` | `{path}` under `.tenet/proposals/`; never edits specifications |
+
+## 10. Install manifest and hosts
+
+`.tenet/manifest.json`: `{schema_version, version, created: [{path, sha256}], blocks: [{path, kind: markdown|yaml, marker}], keys: [{path, pointer, previous, installed}]}`; `.tenet/manifest.pending.json` holds the full plan before the first write (ALG-12). Markdown blocks: `<!-- tenet:begin v<version> -->` … `<!-- tenet:end -->`; YAML: `# tenet:begin` … `# tenet:end`. JSON files are owned by key (`/mcpServers/tenet`, `/servers/tenet` in `.vscode/mcp.json`), with the previous value kept.
+
+| Host marker | Writes |
+|---|---|
+| `.claude/` or `CLAUDE.md` | `.mcp.json` key; skills in `.claude/skills/tenet-*/SKILL.md`; a block in `CLAUDE.md` pointing to `AGENTS.md` |
+| `.cursor/` | `.cursor/mcp.json` key |
+| `.vscode/` | `.vscode/mcp.json` key |
+| always | the `AGENTS.md` block ([agents.md](agents.md) §1); skills in `.agents/skills/tenet-*/SKILL.md`; a `.gitignore` block (`.tenet/*`, `!.tenet/manifest.json`); an `## Acceptance` block in `.github/pull_request_template.md` |
+
+MCP entries run `npx -y @vedprakash-m/tenet@<locked version> mcp` (`cmd /c npx …` when `init` runs on Windows; CP-0045 tests both).
+
+## 11. Determinism
+
+Normalize CRLF to LF before hashing text; store paths with forward slashes; call git with `-c core.quotepath=false`; serialize JSON for hashing with RFC 8785 (keys in UTF-16 code-unit order; `NaN`, `Infinity` and `undefined` refused); timestamps UTC RFC 3339 with seconds; the clock is injected, never read inside algorithms.
+
+## 12. Evidence payloads
+
+| Kind | Payload | Completes when |
+|---|---|---|
+| `check` | report digest, log hash, fix hints `[{rule_id, path, hint}]` | Its expected cases were discovered and run (zero discovered is inconclusive); a static method reports the scope it analyzed |
+| `measurement` | `{metric, value, threshold, direction, samples, baseline_value, rule, scope, confidence}`; mutation counts (eligible, generated, executed, killed, survived, invalid, equivalent, timed out, excluded) | Samples meet the pass rule's minimum |
+| `attestation` | Artifact hashes (screenshots, recordings, traces) | The attested artifact is present |
+| `observation` | Outcome status (`recovered`, `partial`, `no-change`, `insufficient-exposure`, `unknown`), scope, window; trust observations | The window has closed or the exposure is sufficient |
+| `review` | `{round, judge, model_family, status, findings, invalid, resolved, requires_human}`; each finding is `introduced`, `exposed`, `inherited` or `uncertain`, and `located` or `substantiated` | Every finding is located or moved to `invalid`, which makes the review `incomplete` |
+| `proof` | `{prover, version, theorem_hash, obligations, audit: {escape_hatches, axioms_used, axioms_allowed, unsafe_added}}` | Every obligation is discharged, the audit is clean and `theorem_hash` matches the approved definition; a model-check timeout is `unknown` |
+| `simulation` | `{seed, fault_profile, steps, properties, replay, twin?}` | The replay command reproduces the result |
+| `differential` | `{reference, generator, cases, divergences}` | All cases ran |
+
+## 13. Error codes
+
+Every error carries its code, plain words and a fix (R-083). **Structural** codes always fail `check` (exit 1); **rule** codes fail only when their rule is in `enforce` (otherwise they print as "would have blocked" and exit 0).
+
+| Codes | Kind | Exit |
+|---|---|---|
+| `TN-USAGE-*`, `TN-BLESS-NO-TTY` | usage | 2 |
+| `TN-ENV-NODE`, `TN-ENV-GIT`, `TN-ENV-NO-COMMIT`, `TN-ENV-NOT-GIT`, `TN-POLICY-MISSING` | environment | 3 |
+| `TN-POLICY-LOOSEN`, `TN-POLICY-INCOMPATIBLE`, `TN-POLICY-RULE`, `TN-INIT-EXISTS`, `TN-BLESS-OPEN-CONFLICT`, `TN-BLESS-INFERRED` | policy refusal | 4 |
+| `TN-SCHEMA`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-KIT-EDITED`, `TN-EV-DUP`, `TN-ACC-DUP-ID` | structural | 1 |
+| `TN-CITE-FILE`, `TN-CITE-RANGE`, `TN-CITE-HEADING`, `TN-CITE-TEST` (rule `citations-valid`); `TN-BUDGET` (`budget`); `TN-WEAK-*` (`tests-not-weakened`); `TN-PROTECTED` (`protected-surfaces`); `TN-ACC-UNPASSED` (`acceptance-proven`); `TN-GATE-*` (the row's rule) | rule | 1 in `enforce`, else 0 |
+| `TN-REPORT-MISSING`, `TN-REPORT-MALFORMED`, `TN-RECORD-BUNDLE`, `TN-LOCK-MISMATCH`, `TN-POLICY-BRANCH`, `TN-POLICY-LEVEL-UNAVAILABLE`, `TN-SUBJ-DIRTY`, `TN-EV-ORPHAN` | warning, shown as degraded | 0 |
+
+## 14. Loops
+
+In [agents.md §5](agents.md#5-loops): the loop format, step kinds, assignment and result records, static checks and the worked `define` and `build` loops.

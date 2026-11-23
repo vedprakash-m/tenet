@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="11" failures="1" errors="0" time="0.0536992">
+    <testsuite name="vt/a.test.js" timestamp="2026-11-23T15:50:24.663Z" hostname="<host>" tests="9" failures="0" errors="0" skipped="0" time="0.0330689">
+        <testcase classname="vt/a.test.js" name="checkout retry &gt; [AB-1] retries once after a timeout" time="0.0040152">
+        </testcase>
+        <testcase classname="vt/a.test.js" name="checkout retry &gt; [AB-2] backoff 1" time="0.0008204">
+        </testcase>
+        <testcase classname="vt/a.test.js" name="checkout retry &gt; [AB-2] backoff 2" time="0.0026344">
+        </testcase>
+        <testcase classname="vt/a.test.js" name="checkout retry &gt; [AB-2] backoff 3" time="0.0003397">
+        </testcase>
+        <testcase classname="vt/a.test.js" name="checkout retry &gt; [AB-3] first of two" time="0.0004774">
+        </testcase>
+        <testcase classname="vt/a.test.js" name="checkout retry &gt; [AB-4] handles &lt;tags&gt; &amp; &quot;quotes&quot;" time="0.0012267">
+        </testcase>
+        <testcase classname="vt/a.test.js" name="checkout retry &gt; [AB-5] flaky then passes" time="0.0169887">
+        </testcase>
+        <testcase classname="vt/a.test.js" name="checkout retry &gt; test_ok_tenet_AB_6" time="0.0007669">
+        </testcase>
+        <testcase classname="vt/a.test.js" name="checkout retry &gt; [UTF-8] not a tag" time="0.001863">
+        </testcase>
+    </testsuite>
+    <testsuite name="vt/c.test.js" timestamp="2026-11-23T15:50:24.679Z" hostname="<host>" tests="2" failures="1" errors="0" skipped="0" time="0.0206303">
+        <testcase classname="vt/c.test.js" name="[AB-7] passes before teardown fails" time="0.0044238">
+        </testcase>
+        <testcase classname="vt/c.test.js" name="vt/c.test.js" time="0.0206303">
+            <failure message="teardown boom" type="Error">
+Error: teardown boom
+ ❯ vt/c.test.js:3:24
+            </failure>
+        </testcase>
+    </testsuite>
+</testsuites>

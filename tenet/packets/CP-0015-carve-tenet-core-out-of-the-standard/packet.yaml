@@ -11,8 +11,8 @@ milestone: M0
 source: "specs/plan.md"
 stage: shape
 status: active
-blocked_by: [CP-0017, CP-0040, CP-0041]
-unblocks: [CP-0001]
+blocked_by: [CP-0017, CP-0040, CP-0041, CP-0056]
+unblocks: [CP-0058]
 owner_role: null
 claimed_by: null
 appetite: {agent_hours: 8, sessions: 4}
