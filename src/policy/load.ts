@@ -93,6 +93,9 @@ function levelAvailable(level: Level, standard: string): boolean {
   return level === "verify";
 }
 
+function effectivePolicyLevel(level: Level, standard: string): Level {
+  return levelAvailable(level, standard) ? level : "observe";
+}
 function rawDefaults(level: Level): Record<string, RuleMode> {
   return Object.fromEntries(Object.entries(registry).map(([rule, defaults]) => [rule, defaults[level]]));
 }
@@ -105,10 +108,9 @@ function normalizePolicy(data: TenetYaml): Policy {
   const findings: Finding[] = [];
   const standard = data.standard ?? defaultStandard();
   const requestedLevel = data.level ?? "observe";
-  const available = levelAvailable(requestedLevel, standard);
-  const effectiveLevel: Level = available ? requestedLevel : "observe";
+  const effectiveLevel = effectivePolicyLevel(requestedLevel, standard);
 
-  if (!available) {
+  if (requestedLevel !== effectiveLevel) {
     findings.push(
       finding(
         "TN-POLICY-LEVEL-UNAVAILABLE",
@@ -120,7 +122,7 @@ function normalizePolicy(data: TenetYaml): Policy {
     );
   }
 
-  const defaults = available ? rawDefaults(requestedLevel) : rawDefaults("observe");
+  const defaults = rawDefaults(effectiveLevel);
   const merged: Record<string, RuleMode> = { ...defaults };
   for (const [rule, override] of Object.entries(data.rules ?? {})) {
     if (rule.startsWith("x-")) continue;
@@ -133,7 +135,7 @@ function normalizePolicy(data: TenetYaml): Policy {
         { rule, file: "tenet.yaml" },
       );
     }
-    if (available && modeRank[override] < modeRank[base]) {
+    if (modeRank[override] < modeRank[base]) {
       throw policyError(
         "TN-POLICY-LOOSEN",
         `The ${rule} override loosens ${base} to ${override}.`,
@@ -141,13 +143,13 @@ function normalizePolicy(data: TenetYaml): Policy {
         { rule, file: "tenet.yaml" },
       );
     }
-    if (available) merged[rule] = override;
+    merged[rule] = override;
   }
 
   for (const [rule, mode] of Object.entries(merged)) {
-    const capped = available ? capMode(mode) : "observe";
+    const capped = capMode(mode);
     merged[rule] = capped;
-    if (available && capped !== mode) {
+    if (capped !== mode) {
       findings.push(
         finding(
           "TN-POLICY-ALPHA0-CAP",
@@ -380,9 +382,7 @@ export function ruleMode(policy: Pick<TenetYaml, "level" | "rules" | "standard">
       { rule },
     );
   }
-  const level = policy.level ?? "observe";
-  const available = levelAvailable(level, policy.standard ?? defaultStandard());
-  if (!available) return "observe";
+  const level = effectivePolicyLevel(policy.level ?? "observe", policy.standard ?? defaultStandard());
   const override = policy.rules?.[rule];
   if (override && isKnownRuleMode(override)) return capMode(override);
   return capMode(defaults[level]);
