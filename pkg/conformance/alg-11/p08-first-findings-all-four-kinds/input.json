@@ -1,0 +1,20 @@
+{
+  "operation": "onboard",
+  "options": {
+    "inventoryOnly": true
+  },
+  "repo": {
+    "revision": "123456789abcdef0123456789abcdef012345678",
+    "committedDates": {
+      "docs/architecture.md": "2025-09-15T00:00:00Z"
+    },
+    "files": {
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"core\",\n      \"name\": \"Core\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ]\n}\n",
+      "src/app.ts": "export const ready = true;\n",
+      "docs/architecture.md": "# Architecture\n\n## Modules\nSee [legacy router](src/legacy/router.ts) for details.\n",
+      "test/app.test.ts": "import { test } from \"node:test\";\ntest.skip(\"handles timeout\", () => {});\n",
+      ".github/CODEOWNERS": "/src/nonexistent/ @ghost-team\n",
+      ".github/workflows/ci.yml": "name: CI\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - run: ./scripts/custom-harness.sh\n"
+    }
+  }
+}

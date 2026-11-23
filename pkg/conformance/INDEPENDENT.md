@@ -1,13 +1,11 @@
-# Independent CP-0044 fixtures
+# Independent Conformance Cases
 
-The round 2 reviewer authored the cases listed in the ALG-02, ALG-03, ALG-04 and ALG-14 README tables apart from CP-0044's builder, using main at `1225d8d` as the specification baseline. No CP-0044 implementation supplied their expected results.
+Cases in these folders are written from the specifications alone, before or apart from the packet's builder. A builder may run them as an oracle; it may not edit, weaken or delete them without an approved specification change.
 
-The builder may add cases. The builder must never change these independent case inputs, expected results or their README entries. If an independent case disagrees with the contract, send it to the reviewer or the Owner for resolution through the governed change process.
-
-Each case supplies input and an expected JSON projection. A projection compares every field present, exact list membership and order, and exact scalar values. Extra fields omitted by the projection are outside that case's assertion. Digest expectations are literal prefixed SHA-256 values over the explicitly normalized UTF-8 content. Git cases use synthetic snapshots and have no dependency on production records.
-
-# Independent wave A0-4 fixtures
-
-The round 3 reviewer authored the [check](check/README.md), [ALG-10 context and MCP](alg-10/README.md) and [specification board](board/README.md) suites against main at `1729379`, separately from the future builders of CP-0009, CP-0045 and CP-0053. The same ownership rule applies. A builder may add cases and must never change these inputs, expectations or README rows.
-
-Each suite README defines how to run and compare its cases. Where a field or complete rendering is undecided, a projection asserts only the specified behavior. The READMEs define the few reserved projection markers and link to the owning packet's proposals. The fixture snapshots and checked-in expected display files are synthetic conformance inputs and oracles.
+| Folder | Packet and subject | Cases | Spec questions |
+|---|---|---|---|
+| [check/](check/README.md) | `CP-0009` — `tenet check` structure, front matter, citations, budgets, rules | 8 positive, 6 negative | [proposals-r3.md](../../tenet/packets/CP-0009-tenet-check-structure/escalations/proposals-r3.md) |
+| [alg-10/](alg-10/README.md) | `CP-0045` — `ALG-10` context selection, `--for`, `--query`, `--budget`, MCP `tenet_context` | 8 positive, 5 negative | [proposals-r3.md](../../tenet/packets/CP-0045-agent-context/escalations/proposals-r3.md) |
+| [board/](board/README.md) | `CP-0053` — `tenet board`, `tenet board --all`, `tenet board --json` | 8 positive, 5 negative | [proposals-r3.md](../../tenet/packets/CP-0053-specification-board/escalations/proposals-r3.md) |
+| [alg-11/](alg-11/README.md) | `CP-0048` — `ALG-11` onboarding inventory, layout, units, findings, `assignment.json` | 8 positive, 5 negative | [proposals-r4.md](../../tenet/packets/CP-0048-onboarding/escalations/proposals-r4.md) |
+| [card/](card/README.md) | `CP-0051` — test job, recorder, proof-card JSON and rendered Markdown across `CI §10` | 8 positive, 6 negative | [proposals-r4.md](../../tenet/packets/CP-0051-proof-job-card-and-records-ref/escalations/proposals-r4.md) |

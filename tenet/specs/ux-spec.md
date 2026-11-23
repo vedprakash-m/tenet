@@ -197,7 +197,7 @@ Global: C-9 never store card numbers Â· index of other requirements: 12 titles Â
 Rules: tests-not-weakened (advise)
 ```
 
-Context always starts with your global rules, then what the task's paths touch (through citations and each section's `applies_to`) and the IDs it names, then an index the agent scans itself; Tenet says why it chose each section and lists anything it left out.
+Context always starts with your global rules, then the IDs the task names and what its paths touch (through citations and each section's `applies_to`), then an index the agent scans itself; Tenet says why it chose each section and lists anything it left out.
 
 | Host can | What you get |
 |---|---|

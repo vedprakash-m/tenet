@@ -1,0 +1,57 @@
+{
+  "operation": "record",
+  "markdownMode": "fragments",
+  "event": {
+    "tested_commit": "9b41d00000000000000000000000000000000000",
+    "tested_kind": "merge-candidate",
+    "head_sha": "a111111111111111111111111111111111111111",
+    "base_sha": "b222222222222222222222222222222222222222",
+    "acceptance_digest": "17913ea3950293c30f02c4812d498fd8a86d5d145662fdd067e51c50aee5ba24",
+    "policy_digest": "7b3e42c7cfce00603f9473cd45752863fbe3df98c055ea12b4ece6f7e8285494",
+    "check_run_ids": [
+      202
+    ],
+    "pr_body": "Fix checkout retries.\n\n## Acceptance\nImplements: C-1\n- one retry after a timeout without an ID tag\n",
+    "records_push": "ok"
+  },
+  "bundles": [
+    {
+      "check_id": "unit",
+      "tested_commit": "9b41d00000000000000000000000000000000000",
+      "tested_kind": "merge-candidate",
+      "head_sha": "a111111111111111111111111111111111111111",
+      "base_sha": "b222222222222222222222222222222222222222",
+      "exit_code": 0,
+      "timed_out": false,
+      "teardown_failed": false,
+      "duration_ms": 150,
+      "runner": "node-test",
+      "cases": [
+        {
+          "file": "test/checkout.retry.test.ts",
+          "suite": [
+            "checkout"
+          ],
+          "name": "retries once",
+          "full_name": "test/checkout.retry.test.ts › checkout › retries once",
+          "status": "pass",
+          "duration_ms": 7,
+          "tags": []
+        }
+      ]
+    }
+  ],
+  "repo": {
+    "baseFiles": {
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"C\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ],\n  \"ci\": {\n    \"checks\": [\n      {\n        \"id\": \"unit\",\n        \"command\": \"npm test\",\n        \"report\": \".tenet/reports/junit.xml\"\n      }\n    ]\n  }\n}\n",
+      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_by\":\"ved\",\"blessed_at\":\"2026-11-20T00:00:00Z\",\"recorded\":\"self\",\"flags\":[]}\n---\n## Requirements\n### C-1: Checkout retries\nA payment that times out is retried once, never twice. [src/checkout/retry.ts:1-10](src/checkout/retry.ts#L1-L10)\n\n### C-4: Checkout audit log\nEvery retry writes an audit entry in the same checkout folder. [src/checkout/audit.ts:1-8](src/checkout/audit.ts#L1-L8)\n",
+      "src/checkout/retry.ts": "export function retry() { return 1; }\n"
+    },
+    "headFiles": {
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"C\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ],\n  \"ci\": {\n    \"checks\": [\n      {\n        \"id\": \"unit\",\n        \"command\": \"npm test\",\n        \"report\": \".tenet/reports/junit.xml\"\n      }\n    ]\n  }\n}\n",
+      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_by\":\"ved\",\"blessed_at\":\"2026-11-20T00:00:00Z\",\"recorded\":\"self\",\"flags\":[]}\n---\n## Requirements\n### C-1: Checkout retries\nA payment that times out is retried once, never twice. [src/checkout/retry.ts:1-10](src/checkout/retry.ts#L1-L10)\n\n### C-4: Checkout audit log\nEvery retry writes an audit entry in the same checkout folder. [src/checkout/audit.ts:1-8](src/checkout/audit.ts#L1-L8)\n",
+      "src/checkout/retry.ts": "export function retry() { return 1; /* tuned */ }\n",
+      "test/checkout.retry.test.ts": "import { test } from \"node:test\";\ntest(\"retries once\", () => {});\n"
+    }
+  }
+}

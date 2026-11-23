@@ -1,0 +1,43 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "inventory": {
+    "schema_version": 1,
+    "revision": "123456789abcdef0123456789abcdef012345678",
+    "findings": {
+      "$assert": "contains",
+      "value": [
+        {
+          "kind": "dead-path",
+          "path": "docs/architecture.md",
+          "message": {
+            "$assert": "present"
+          }
+        },
+        {
+          "kind": "skipped-tests",
+          "path": "test/app.test.ts",
+          "message": {
+            "$assert": "present"
+          }
+        },
+        {
+          "kind": "owners-unmatched",
+          "path": ".github/CODEOWNERS",
+          "message": {
+            "$assert": "present"
+          }
+        },
+        {
+          "kind": "no-test-report",
+          "path": {
+            "$assert": "present"
+          },
+          "message": {
+            "$assert": "present"
+          }
+        }
+      ]
+    }
+  }
+}

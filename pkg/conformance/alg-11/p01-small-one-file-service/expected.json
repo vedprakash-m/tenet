@@ -1,0 +1,71 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "preflight": {
+    "ok": true,
+    "revision": "a1b2c3d4e5f60123456789012345678901234567"
+  },
+  "inventory": {
+    "schema_version": 1,
+    "revision": "a1b2c3d4e5f60123456789012345678901234567",
+    "sources": {
+      "files": {
+        "$assert": "contains",
+        "value": [
+          {
+            "path": "src/server.ts",
+            "kind": "source",
+            "sha256": "746dd1e843fb3fd3d595e7e0d8ef8a56a8a35e3876f0c1298a9abf3923e91a09",
+            "lines": 2
+          }
+        ]
+      },
+      "skipped": []
+    },
+    "size": {
+      "source_lines": 2,
+      "areas": 0
+    },
+    "layout": "one-file",
+    "units": {
+      "$assert": "size",
+      "value": 1
+    },
+    "findings": {
+      "$assert": "present"
+    },
+    "observations": {
+      "reports": []
+    }
+  },
+  "assignment": {
+    "schema_version": 1,
+    "inventory": "tenet/onboarding/inventory.json",
+    "skill": "draft-specs",
+    "project_kind": "service",
+    "views": [
+      "vision",
+      "requirements",
+      "design",
+      "experience",
+      "plan"
+    ],
+    "layout": "one-file",
+    "units": {
+      "$assert": "size",
+      "value": 1
+    },
+    "question_limit": 10,
+    "output": {
+      "paths": [
+        "tenet/intent.md"
+      ]
+    },
+    "rules": [
+      "no intent from code alone",
+      "every observed or documented statement cites",
+      "never resolve a conflict",
+      "never bless"
+    ]
+  }
+}

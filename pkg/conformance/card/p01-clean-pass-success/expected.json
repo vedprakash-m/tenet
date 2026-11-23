@@ -1,0 +1,78 @@
+{
+  "ok": true,
+  "conclusion": "success",
+  "wrote": true,
+  "card": {
+    "schema_version": 1,
+    "evaluation_id": "f0abfee711c89c96",
+    "tested": {
+      "commit": "9b41d00000000000000000000000000000000000",
+      "kind": "merge-candidate",
+      "head": "a111111111111111111111111111111111111111",
+      "base": "b222222222222222222222222222222222222222"
+    },
+    "acceptance_digest": "ecb0ca9c8c0d4ce5219b885c6e43faac874c66c2ae2ab8f2280e5da645358afa",
+    "requirements": {
+      "$assert": "contains",
+      "value": [
+        {
+          "id": "C-1",
+          "state": "blessed",
+          "recorded": "self",
+          "why": "implements",
+          "tests": {
+            "expected": 1,
+            "passed": 1,
+            "failed": 0,
+            "skipped": 0,
+            "not_run": 0
+          }
+        },
+        {
+          "id": "C-4",
+          "state": "blessed",
+          "recorded": "self",
+          "why": "same-area"
+        }
+      ]
+    },
+    "items": [
+      {
+        "id": "AB-1",
+        "text": "one retry after a timeout, never two",
+        "result": "passed",
+        "coverage": "confirmed",
+        "tests": {
+          "expected": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
+        },
+        "names": [
+          "test/checkout.retry.test.ts › checkout › [AB-1] one retry after timeout"
+        ],
+        "authorship": "written-here"
+      }
+    ],
+    "tests": {
+      "report": "ok",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "failing": []
+    },
+    "weakening": {
+      "found": false,
+      "by": [],
+      "not_checked": []
+    },
+    "workflow_changed": false,
+    "protected": [],
+    "blessings_changed": [],
+    "deltas": [],
+    "badge": "advisory",
+    "degraded": []
+  }
+}

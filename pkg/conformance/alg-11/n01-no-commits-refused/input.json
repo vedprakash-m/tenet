@@ -1,0 +1,13 @@
+{
+  "operation": "onboard",
+  "options": {
+    "inventoryOnly": true
+  },
+  "repo": {
+    "revision": null,
+    "files": {
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"core\",\n      \"name\": \"Core\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ]\n}\n",
+      "src/index.ts": "export const x = 1;\n"
+    }
+  }
+}
