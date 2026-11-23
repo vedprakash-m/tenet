@@ -22,11 +22,15 @@ Updated 2026-11-23 by the M0 session (L-0029, L-0030).
 | CP-0040 Spike B | **done** on one account, GitHub Free (L-0030) | deferred by the Owner to before alpha.2: fork pull request from a second account; `neutral` vs `failure` under a required check |
 | CP-0017 Spike A | partly done (L-0030) | deferred by the Owner to before alpha.1: a security-key signature; replies and spot checks run in alpha.1 |
 | CP-0002 licence and schema host | **decided** (L-0031): Apache-2.0 code, CC BY 4.0 text, `$id` on GitHub Pages | publish the schemas to GitHub Pages at the first release (CI §9) |
-| CP-0015 kernel and every contract | **next** | a capable model: Part I of `kit/TENET.md`; all eight fields for every alpha.1, alpha.2 and 0.1.0 packet; the R-009 cases; freeze |
+| CP-0015 kernel and every contract | **submitted** on `m0/track-1-kernel`, reviewed; Owner decisions taken (L-0032) | merge with the other tracks; then apply its 13 proposals |
 | CP-0058 medium-model trial | after CP-0015 | a capable model runs it with two medium-model sessions and scores them |
 | CP-0001 ratify | after CP-0058 | the Owner, one sitting |
 | CP-0003 bootstrap, then waves A0-1 onward | after CP-0001 and CP-0002 | medium-effort models, each from its build contract; a capable model reviews each; the Owner approves per wave |
 | Sandbox | `vedprakash-m/tenet-sandbox` (private) exists | used by CP-0051 and later proving |
+| Track 4 (docs, red-team catalog, evidence kit) | **submitted** on `m0/track-4-docs`, reviewed | merge with the other tracks |
+| Track 2 (CP-0058 trial, CP-0012 kit, CP-0052 eval fixtures, examples check) | **submitted** on `m0/track-2-trial-kit`, reviewed; merges cleanly with Track 4 | merge; trial residue: round 3 still had 9 and 15 invented rules and 1 of 6 outputs differing on message text, clarified but not re-run (CP-0058 scorer log) |
+| 100-PR backtest cohort | **decided** (L-0033): this repository, Torus, tenet-copilot, then microsoft/BotFramework-WebChat | collect and freeze the dataset (a high-volume model) |
+| M0 checklist item 8 (red-team list matches guarantees) | drafted: `pkg/conformance/red-team/` (31 cases), with a cross-check | close after merge, once ci.md §7 takes its two corrections |
 
 ## 1. Milestones
 
