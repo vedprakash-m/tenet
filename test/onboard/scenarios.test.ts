@@ -427,14 +427,16 @@ for (const name of names) {
               assert.deepEqual(JSON.parse(last), await readGolden(step.expectedLogEntry));
             }
             if (step.expectedTree === "before") assert.deepEqual(await tree(cwd), await tree(source));
-            if (expectedCard !== undefined) {
-              const rawCard = (result.json?.result as { card?: string } | undefined)?.card;
+            if (step.args[0] === "onboard" && step.args.includes("--card")) {
               const revision = git(cwd, "rev-parse", "HEAD");
               bindRevisionFields(expected, actual, revision, refs);
               expectedRefs = new Map(refs);
               for (const [gold, oid] of refs) {
                 expectedRefs.set(`drafted from ${gold.slice(0, 7)}`, `drafted from ${oid.slice(0, 7)}`);
               }
+            }
+            if (expectedCard !== undefined) {
+              const rawCard = (result.json?.result as { card?: string } | undefined)?.card;
               assert.equal(rawCard, replaceRefs(expectedCard, expectedRefs));
             }
             break;
