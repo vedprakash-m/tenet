@@ -1,3 +1,12 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.12", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:64432fcf9a607a02fa01925145bc157293ccfb5b174e4e87d5efa8bece34936b, flags: []}
+  1-onboarding-and-blessing-r-223: {state: draft, digest: sha256:dff6730c4fb8e3c5567c21be17552fda976994b647f796c63bb76ef5152c6d7c, flags: []}
+  2-install-and-upgrade: {state: draft, digest: sha256:56c2297a10f56338bfbe34c766bf81aa0f588f673f346fe978e671070b2ab9b4, flags: []}
+  3-onboarding-measures-alg-13: {state: draft, digest: sha256:19eede5e04dfb76d4907f9059fb090b8e28a071c60556923d232e7b34bd19b7b, flags: []}
+  4-release-procedure: {state: draft, digest: sha256:180901eb6fa30719465059730c7f4a2577c013f2eb07a389ed9177f75e79d990, flags: []}
+---
 # Tenet technical specification: onboarding, install and upgrade
 
 > Level L2 · Version 0.12 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Split from `tech-spec.md` §6.5 and §12 under the rollover rule (L-0022) · Previous version: `archive/specs/tech-spec/onboarding.md@0.11.md`
@@ -11,7 +20,7 @@
 - what it skips into `sources.skipped: [{path, reason}]` (sorted by `path`, first matching reason): `"env"` (`.env`, `.env.*`), `"credentials"` (`*.pem`, `*.key`, `id_*`, `*credentials*`, `*secret*`), `"vendored"` (`vendor/`, `node_modules/`, `dist/`, `build/`), `"generated"` (ALG-11), `"excluded"` (`onboard.exclude`), `"binary"` (NUL byte in first 8 KB or binary extension), `"oversize"` (`> 1_048_576` bytes); test files stay in `sources.files` (`kind: "test"`) and are excluded only from `size.source_lines`
 - that drafting sends content to the user's own agent and its model provider
 
-`--inventory-only` stops there. It writes `.tenet/onboard/inventory.json` and `.tenet/onboard/assignment.json` (`inventory: ".tenet/onboard/inventory.json"`, contracts §4, git-ignored via `init`; `onboard` writes them atomically without refusing missing ignore rules) from `HEAD`. Uncommitted source changes are left out, with a warning (`dirty_warning: true`); `tenet.yaml` is read from the working tree, so a just-written setup applies. CLI human output prints `Will read: …`, `Will skip: …`, `Drafting sends project content to your agent and its model provider.`, `Read <read_count> files at <revision> and skipped <skipped_count>.`, optional `Working tree has uncommitted changes.`, optional `First findings: …`, and `Drafting assignment: .tenet/onboard/assignment.json`. Running `onboard` twice gives the same result over `(HEAD, working tenet.yaml, .tenet/reports/*)`.
+`--inventory-only` stops there, writing `.tenet/onboard/inventory.json` and `.tenet/onboard/assignment.json` (`inventory: ".tenet/onboard/inventory.json"`, contracts §4, atomic even if un-ignored) from `HEAD`, flagging uncommitted code (`dirty_warning: true`) while reading working `tenet.yaml`. Human output prints `Will read: …`, `Will skip: …`, `Drafting sends project content to your agent and its model provider.`, `Read <read_count> files at <revision> and skipped <skipped_count>.`, optional `Working tree has uncommitted changes.`, optional `First findings: …`, and `Drafting assignment: .tenet/onboard/assignment.json`. Output is deterministic over `(HEAD, working tenet.yaml, .tenet/reports/*)`.
 - **Modules:** folders holding a manifest (`package.json`, `pyproject.toml`, `setup.py`, `setup.cfg`, `go.mod`, `Cargo.toml`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `Gemfile`, `composer.json`, `Package.swift`), else top-level source folders; languages map `ts/tsx → typescript`, `js/jsx/mjs/cjs → javascript`, `py → python`, `go → go`, `rs → rust`, `java → java`, `kt → kotlin`, `cs → csharp`, `rb → ruby`, `php → php`, `swift → swift`, `c/h → c`, `cc/cpp/hpp → cpp`, `scala → scala`.
 - **Project kind (first match wins):**
   - `cli`: a `bin` entry in `package.json` or `cmd/` folder
@@ -56,19 +65,11 @@ Repository facts and `assignment.json` are byte-identical over `(HEAD, working t
 - a template clone
 - a contributor without settings rights (the pull request waits for someone who has them)
 
-**Checks and blessing.** `tenet check` resolves every citation (ALG-04) and flags statements without an origin. `tenet bless` follows ALG-03:
-- interactive only; conflicts first, then each section with its reading time
-- actions: bless, confirm (for `sources-changed`), edit, reject, defer
-- the person picks who they are from `owners[]`; the card's last line tells them how to get the branch (`gh pr checkout <n>`)
-- each session is logged in `<records>/blessed/log.jsonl`
-- the blessing is recorded as `self` (advisory: anyone with write access could edit front matter, which is why the card lists blessings changed in each pull request); from alpha.1 a review action also blesses, recorded as `forge`; from alpha.2, `signed`
+**Checks and blessing.** `tenet check` resolves citations (ALG-04) and flags missing origins. `tenet bless` (ALG-03) runs interactively only: conflicts first, then sections with reading times (`bless`, `confirm`, `edit`, `reject`, `defer`); picker chooses from `owners[]` (last card line gives `gh pr checkout <n>`), appends to `<records>/blessed/log.jsonl`, and records `recorded: "self"` (advisory; cards list changed blessings; `forge` in alpha.1, `signed` in alpha.2).
 
-A conflict's resolution is written as `resolution:` on its `CF` item (case-insensitive `Resolution:` accepted on read). Open conflicts may name `(section: <slug|heading>)` or `null` (document-wide) and optional `(affects: ID1, ID2)`. When the chosen option contradicts a drafted statement ID, bless opens that statement for editing and requires its text to change or vanish before recording `resolution:` and allowing blessing.
+Conflict resolutions use `resolution:` on `CF` items (`Resolution:` accepted on read), optional `(section: <slug|heading>)` or `null` and `(affects: ID1, ID2)`. When the choice contradicts a drafted ID, `bless` opens it for editing and requires its text to change or vanish before writing `resolution:` and allowing blessing.
 
-The **last blessed text stays in force** (the blessed copy):
-- An edit to it is flagged `edited`: an unblessed proposal that rejecting keeps out.
-- A change to the cited lines is flagged `sources-changed`: confirm re-anchors.
-- Re-running `onboard --refresh` keeps IDs, edits, rejections and blessings, runs `check` (whose diagnostics return in the CLI envelope without blocking the write), unions `git diff` from every `drafted_at_rev` (failing if an anchor commit is missing; assigning all units when none exists), excludes spec outputs/`.tenet/`/skipped paths, and assigns units matching `within(root, file)` (or all units if any file outside all units changed).
+**Last blessed text stays in force** (blessed copy): `edited` marks unblessed proposals (rejecting keeps the blessed copy); `sources-changed` prompts `confirm` to re-anchor; `onboard --refresh` preserves IDs, edits, rejections and blessings, returns `check` diagnostics without blocking, diffs since each `drafted_at_rev` (failing on missing anchor commits; assigning all units if none exist), skips outputs/`.tenet/`/skipped paths, and assigns matching `within(root, file)` units (else all units).
 
 ## 2. Install and upgrade
 
