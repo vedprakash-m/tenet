@@ -262,7 +262,7 @@ test("loads vendored kits, verifies locks, and refuses edited kits", async () =>
       [
         "schema_version: 1",
         "package: \"@vedprakash-m/tenet\"",
-        "version: 0.0.0",
+        `version: ${(await import("../../dist/core/output.js")).version}`,
         `integrity: ${lockIntegrity}`,
         `kit_sha256: ${kit.sha256}`,
       ].join("\n"),

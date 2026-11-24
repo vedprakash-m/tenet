@@ -1,0 +1,120 @@
+{
+  "operation": "evaluate-health-waiver",
+  "policy": {
+    "standard": "0.1.1",
+    "level": "verify",
+    "rules": {
+      "health-ratchet": "enforce"
+    },
+    "owners": [
+      {
+        "id": "payments",
+        "name": "Payments owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "pay-owner"
+        ]
+      },
+      {
+        "id": "alternate",
+        "name": "Second payments owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "pay-alt"
+        ]
+      },
+      {
+        "id": "docs",
+        "name": "Documentation owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "docs-owner"
+        ]
+      }
+    ],
+    "checks": {
+      "check-payments": {
+        "run": "example-checker",
+        "report": "tenet-health-json",
+        "inputs": [
+          "checks/config.json"
+        ],
+        "tool": {
+          "name": "example-checker",
+          "version": "1.0.0",
+          "config_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      }
+    },
+    "areas": {
+      "payments": {
+        "paths": [
+          "src/payments/**"
+        ],
+        "owners": [
+          "payments",
+          "alternate"
+        ]
+      },
+      "docs": {
+        "paths": [
+          "docs/**"
+        ],
+        "owners": [
+          "docs"
+        ]
+      }
+    },
+    "health": {
+      "indicators": {
+        "payment-health": {
+          "area": "payments",
+          "check": "check-payments",
+          "mode": "enforce"
+        }
+      }
+    }
+  },
+  "subject": {
+    "base": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "tested": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "evaluation_id": "eval-health",
+    "author": "builder",
+    "committers": [
+      "builder"
+    ],
+    "bots": [
+      "build-bot"
+    ]
+  },
+  "claim": {
+    "id": "payment-health",
+    "area": "payments",
+    "status": "regressed"
+  },
+  "evaluated_at": "2026-11-24T12:00:00Z",
+  "decision": {
+    "kind": "waive",
+    "name": "accept-health-regression",
+    "evaluation_id": "eval-health",
+    "target": "payment-health",
+    "scope": {
+      "area": "payments",
+      "indicator": "payment-health"
+    },
+    "actor": {
+      "forge_account": "pay-alt"
+    },
+    "proof": {
+      "strength": "forge-verified"
+    },
+    "reason": "Expected one-off migration.",
+    "expiry": "2026-12-24T12:00:00Z"
+  }
+}

@@ -11,10 +11,8 @@ permissions:
 
 jobs:
   package:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,11 +22,35 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
-      - name: Verify packed package
-        run: >-
-          node --input-type=module -e "import assert from 'node:assert/strict'; import fs from 'node:fs'; import path from 'node:path'; import {spawnSync} from 'node:child_process'; const root=process.cwd(); const source=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')); assert.deepEqual(source.files,['dist','kit','pkg/migrations','pkg/conformance','pkg/hosts']); assert.deepEqual(source.bin,{tenet:'dist/cli.js'}); assert.deepEqual(source.exports,{'.':'./dist/sdk.js'}); assert.deepEqual(Object.keys(source.dependencies).sort(),['ajv','ajv-formats','commander','fast-xml-parser','picomatch','yaml']); const npmRoot=[path.join(path.dirname(process.execPath),'node_modules','npm','bin'),path.resolve(path.dirname(process.execPath),'../lib/node_modules/npm/bin')].find(value=>fs.existsSync(path.join(value,'npm-cli.js'))); assert.ok(npmRoot,'npm CLI location not found'); const npm=path.join(npmRoot,'npm-cli.js'); const npx=path.join(npmRoot,'npx-cli.js'); const runNpm=(args,cwd)=>spawnSync(process.execPath,[npm,...args],{cwd,encoding:'utf8'}); const packed=runNpm(['pack','--json'],root); if(packed.status!==0){process.stderr.write(packed.stderr??'npm pack failed');process.exit(packed.status??1)} const result=JSON.parse(packed.stdout); assert.equal(result.length,1); const item=result[0]; assert.equal(item.name,source.name); assert.equal(item.version,source.version); assert.equal(item.id,source.name+'@'+source.version); const entries=item.files.map(file=>file.path); const required=['package.json','dist/cli.js','dist/sdk.js','dist/commands/index.js','dist/core/fs.js','dist/core/yaml.js','dist/core/git.js','dist/core/hash.js','dist/core/output.js','dist/core/clock.js','kit/TENET.md']; for(const entry of required) assert.ok(entries.includes(entry),'missing tarball entry: '+entry); const forbidden=['src/','test/','tenet/','.github/','pkg/evals/','package-lock.json','LICENSE-docs']; for(const entry of forbidden) assert.equal(entries.some(value=>value===entry||value.startsWith(entry)),false,'forbidden tarball entry: '+entry); const allowed=value=>value==='LICENSE'||value==='README.md'||value==='package.json'||value.startsWith('dist/')||value.startsWith('kit/')||value.startsWith('pkg/migrations/')||value.startsWith('pkg/conformance/')||value.startsWith('pkg/hosts/'); assert.equal(entries.every(allowed),true,'tarball contains an entry outside package files'); const tgz=path.join(root,item.filename); const dir=path.join(root,'.release-install'); fs.rmSync(dir,{recursive:true,force:true}); fs.mkdirSync(dir); fs.writeFileSync(path.join(dir,'package.json'),JSON.stringify({name:'tenet-release-smoke',private:true,type:'module'})); const install=runNpm(['install','--ignore-scripts','--no-audit','--no-fund',tgz],dir); if(install.status!==0){process.stderr.write(install.stderr??'npm install failed');process.exit(install.status??1)} const installed=JSON.parse(fs.readFileSync(path.join(dir,'node_modules',...source.name.split('/'),'package.json'),'utf8')); assert.equal(installed.version,source.version); const version=spawnSync(process.execPath,[npx,'--no-install','tenet','--version'],{cwd:dir,encoding:'utf8'}); if(version.status!==0){process.stderr.write(version.stderr??'npx failed');process.exit(version.status??1)} assert.equal(version.stdout.trim(),source.version); const expected=['alias','catFileBatch','clockNow','confine','fail','git','jcs','lastChangedMap','readYaml','registerCommand','result','run','sha256','ulid','utcSeconds','writeAtomic','writeRefFiles']; const sdkCode='const sdk=await import('+JSON.stringify(source.name)+');const actual=Object.keys(sdk).sort();const expected='+JSON.stringify(expected)+ ';if(JSON.stringify(actual)!==JSON.stringify(expected)){throw new Error(\"SDK exports differ: \"+actual.join(\",\"))}'; const sdk=spawnSync(process.execPath,['--input-type=module','-e',sdkCode],{cwd:dir,encoding:'utf8'}); if(sdk.status!==0){process.stderr.write(sdk.stderr??'SDK import failed');process.exit(sdk.status??1)}"
+        env:
+          TENET_RELEASE_TARBALL_DIR: ${{ runner.temp }}/tenet-package
+      - name: Record the tarball digest
+        working-directory: ${{ runner.temp }}/tenet-package
+        run: sha256sum ./*.tgz > SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: tenet-${{ runner.os }}
-          path: "*.tgz"
+          name: tenet-release-package
+          path: ${{ runner.temp }}/tenet-package/
           if-no-files-found: error
+
+  packed-journey:
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/download-artifact@v4
+        with:
+          name: tenet-release-package
+          path: ${{ runner.temp }}/tenet-package
+      - run: node --experimental-strip-types --test test/release/packed.test.ts
+        env:
+          TENET_RELEASE_PACKED_DIR: ${{ runner.temp }}/tenet-package

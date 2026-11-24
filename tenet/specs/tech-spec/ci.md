@@ -45,7 +45,7 @@
 3. Run each check's `setup` commands, then `run`, from the repository root. CI runners use `bash -eo pipefail -c` (locally: `bash` where present, else the platform shell), within `timeout_minutes` (default 30).
 4. `report_from: stdout` captures standard output as UTF-8 into `.tenet/reports/<name>.<ext>`; `file` (default) reads `report_path` (default `.tenet/reports/<name>.xml` or `.json`).
 5. Read the report whatever the exit code (ALG-08 says how the exit code and the cases combine). With no report it is `TN-REPORT-MISSING` and the check fails.
-6. Write `tenet-bundle/` (not a dot-folder): `bundle.json` `{schema_version, run: {id, attempt, workflow, job, index}, pr?, tested: {commit, kind, head, base}, checks: [{name, exit_code, outcome, duration_ms, report, report_sha256, inputs}]}` plus the reports. `exit_code` and `duration_ms` may be null.
+6. Write `tenet-bundle/` (not a dot-folder): `bundle.json` `{schema_version, run: {id, attempt, workflow, job, index}, pr?, tested: {commit, kind, head, base}, checks: [{name, exit_code, outcome, duration_ms, report, report_sha256, inputs, config_digest?, complete?, missing_metadata?}]}` plus the reports (`tool` comes from `<base>` `tenet.yaml`; raw `lcov`/`cobertura` name `missing_metadata`). `exit_code` and `duration_ms` may be null.
 
 **What `init` writes.**
 - **The test command:** synthesized under `checks.test` ( picking the first matching runner in contracts §6 table order) with the reporter flags of contracts §6, never `npm test -- …`.
@@ -148,7 +148,7 @@ Both install the locked version with `npm install --no-save` and check it agains
    - run `tenet check --ci --base <base>`, ALG-08, ALG-09 and ALG-14
    - evaluate the rules (ALG-07)
    - compute the evaluation ID
-5. **Post the check run** `Tenet` on the **head** SHA, found by name and head. Its conclusion follows §10 (when $N > 1$ PRs share `head`, each card is headed `Pull request #<number>\n` with budget $\lfloor(60,000 - \text{overhead})/N\rfloor$ and the worst conclusion across the $N$ cards). The summary is cut at 60,000 characters in this order: same-area requirements first, then passing items' test lists, then passing requirements. Failing items, weakening, protected files and "would have blocked" are never cut (if those essential lines alone exceed the budget, `renderCheckSummary` throws `RangeError`, or the recorder keeps the full card in `refs/tenet/records` and posts a `neutral`/`failure` truncated pointer).
+5. **Post the check run** `Tenet` on the **head** SHA, found by name and head. Its conclusion follows §10 (when $N > 1$ PRs share `head`, each card is headed `Pull request #<number>\n` with budget $\lfloor(60,000 - \text{overhead})/N\rfloor$ and the worst conclusion across the $N$ cards). The summary is cut at 60,000 characters in this order: same-area requirements first, then passing items' test lists, then passing requirements. Failing items, weakening, protected files, blocking health lines ([health.md](health.md)) and "would have blocked" are never cut (if essential lines exceed the budget, `renderCheckSummary` throws `RangeError`, or the recorder stores the full card in `refs/tenet/records` (`overflow_ref`) preserving CI `conclusion`).
 6. **Append records** (§4).
 
 From alpha.1 the recorder also handles review, `/tenet` reply, ready-for-review, conversion to draft and closing events (in alpha.0, a pull request closed without merging records nothing beyond its last evaluation). **Merge queues** (L-0032): alpha.1 records merge-group candidates as observations; alpha.2 verifies the exact tested candidate before publishing its required status (kernel §5); full merge-queue evidence and quarantine come in 0.1.x. CP-0040's event table fixes the trigger and token for each.
@@ -196,7 +196,7 @@ Records live at `refs/tenet/evidence` under `<subject-digest>/<id>.json`, writte
 | Decision (name → kind) | Required strength |
 |---|---|
 | `change-policy`, `widen-permission`, `amend-vision`, deep-lane `release` (approve) | `person-present` at `assure`; `forge-verified` otherwise |
-| `approve-spec-change`, `approve-definition`, `replace-proving-case`, `retire-obligation` (by the promise's owner), `release`, campaign approval (approve); `accept-findings`, `accept-risk`, `override`, `quarantine-check`, `accept-health-regression` (waive); `resolve-conflict` (resolve); `delegate` | `forge-verified` |
+| `approve-spec-change`, `approve-definition`, `replace-proving-case`, `retire-obligation` (by the promise's owner), `release`, campaign approval (approve); `accept-findings`, `accept-risk`, `override`, `quarantine-check`, `accept-health-regression` (waive; `person-present` optional at `assure`, `30d` default `expiry`); `resolve-conflict` (resolve); `delegate` | `forge-verified` |
 
 **`forge-verified`** means **attributable to the decision-maker's forge account**:
 - either a native approving review whose commit is the current subject
@@ -205,7 +205,7 @@ Records live at `refs/tenet/evidence` under `<subject-digest>/<id>.json`, writte
 **Recording and limits.**
 - The recorder records two-factor status as `enforced`, `not-enforced` or `unobservable`.
 - A pull-request author can't approve their own pull request on most forges, so from `verify` agents open pull requests as a `bots[]` identity, or the decision-maker uses the comment form.
-- Below `verify` the Owner may accept their own work (`proof.self_accepted: true`), shown as `self-accepted` on the board after merge. `/tenet bless <doc>#<slug>` stores an attributed `approve` (`name: "bless-section"`, `recorded: "forge"`); `/tenet not-useful <finding>` writes an immutable `not-useful` observation (`decision: null`).
+- Below `verify` the Owner may accept their own work (`proof.self_accepted: true`), shown as `self-accepted` on the board after merge. `/tenet bless <doc>#<slug>` stores an attributed `approve` (`name: "bless-section"`, `recorded: "forge"`); `/tenet not-useful <finding>` writes an immutable `not-useful` observation (`decision: null`; rolling-30d deduped by `(work_id, indicator, fp_key)` with `minimum_sample`, `R-177`). `accept-health-regression` follows `R-203`: `verify`/`assure` self-waive refuses `TN-GATE-SELF-WAIVE`; below `verify` an owner self-waive is labelled `self-waived` (`Decision.expiry`, `0` verified credit).
 - A decision by an account on a pull request its own agent session opened is flagged. Unless a host binding attests credential separation (assumption 4), `forge-verified` counts as detected.
 
 `person-present` is an `ssh-keygen -Y` signature by a security key whose presence can be read from the signature (CP-0017). `key` and `channel` answers are advisory. An option that changes scope carries the replacement digest or returns to Define. Revoking a key is a policy change; earlier signatures stay valid.
@@ -239,6 +239,7 @@ One table decides what every situation concludes. "Advisory" means the item, rul
 | Records not kept | `neutral`, "results not kept" (`degraded` includes `"results not kept"`) | `failure` | — | "results not kept" |
 | Policy or kit fails to load | `neutral`; the previous policy is used and named (`degraded`: `"policy failed to load at head; using previous policy from base (tenet.yaml)"`) | `failure` | 3 | the reason |
 | Review or decision unobservable | recorded as `unknown` | the decision is asked again | — | "decision needed" |
+| Optional/inapplicable health input missing/incomplete | advisory (`unknown` / `not-applicable`) | advisory (`unknown` / `not-applicable`); `enforce` failure → `failure` | 0 / 1 | `"unknown"` / `"health regressed"` |
 | An enforced rule refuses (alpha.1 on) | `failure` | `failure` | 1 | "blocked" |
 | Otherwise | `success`, or `neutral` when something would have blocked | `success` | 0 | the result |
 

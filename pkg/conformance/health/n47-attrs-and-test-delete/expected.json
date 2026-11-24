@@ -1,0 +1,6 @@
+{
+  "rules": [
+    "protected-surfaces",
+    "tests-not-weakened"
+  ]
+}

@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtemp, rm, symlink } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { registerCommand, run } from "../../dist/cli.js";
 import { version } from "../../dist/core/output.js";
 import { fakeTty } from "../helpers/fakeTty.ts";
@@ -11,6 +16,18 @@ test("version and help use the public CLI entry points", async () => {
   const help = fakeTty();
   assert.equal(await run(["--help"], { ...help, checkEnvironment: false }), 0);
   assert.match(help.stdout.text, /Usage: tenet/);
+});
+
+test("the CLI starts when invoked through a filesystem link", async (t) => {
+  const scratch = await mkdtemp(path.join(os.tmpdir(), "tenet-cli-link-"));
+  t.after(() => rm(scratch, { recursive: true, force: true }));
+  const cli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
+  const link = path.join(scratch, "tenet");
+  const windows = process.platform === "win32";
+  // A Windows directory junction exercises the same entry guard without symlink privileges.
+  await symlink(windows ? path.dirname(cli) : cli, link, windows ? "junction" : "file");
+  const entry = windows ? path.join(link, path.basename(cli)) : link;
+  assert.equal(execFileSync(process.execPath, [entry, "--version"], { encoding: "utf8" }), `${version}\n`);
 });
 
 test("unknown flags exit with usage code 2", async () => {

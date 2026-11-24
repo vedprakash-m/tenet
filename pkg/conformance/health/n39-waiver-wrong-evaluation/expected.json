@@ -1,0 +1,17 @@
+{
+  "status": "regressed",
+  "claimResult": "failed",
+  "verdict": "refuse",
+  "disposition": "blocks",
+  "gateCredit": 0,
+  "reasons": [
+    "TN-GATE-CLAIM"
+  ],
+  "code": "TN-HEALTH-REGRESSED",
+  "diagnostics": [
+    {
+      "code": "TN-DEC-STALE",
+      "message": "Reply targets evaluation different-evaluation, but current evaluation is eval-health."
+    }
+  ]
+}

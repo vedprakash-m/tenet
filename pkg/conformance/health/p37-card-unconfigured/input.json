@@ -1,0 +1,12 @@
+{
+  "operation": "render-health-card",
+  "health": [],
+  "conclusion": "success",
+  "configured": false,
+  "seed": {
+    "model": "../../card/p01-clean-pass-success/expected.json",
+    "markdown": "../../card/p01-clean-pass-success/expected.md",
+    "modelField": "card"
+  },
+  "budget": 60000
+}

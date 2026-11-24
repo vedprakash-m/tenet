@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "coverage": {
+    "complete": true,
+    "analyzed_paths": [
+      "src/payments/a.ts"
+    ]
+  },
+  "scope_digest": "sha256:3b6cbef3e6249c73473035fcfa2f9c5d5171ad99d0dab0cb768cd6e9a34897b0",
+  "entries": [
+    {
+      "kind": "finding_set",
+      "area": "payments",
+      "indicator": "payment-health",
+      "findings": [
+        {
+          "rule_id": "no-stale",
+          "file": "src/payments/a.ts",
+          "line": 1,
+          "end_line": 1,
+          "symbol": "pay",
+          "snippet_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "hint": "Remove the stale branch.",
+          "referenced_paths": [
+            "shared/money.ts"
+          ]
+        },
+        {
+          "rule_id": "no-stale",
+          "file": "src/payments/a.ts",
+          "line": 2,
+          "end_line": 2,
+          "symbol": "pay",
+          "snippet_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "hint": "Remove the stale branch.",
+          "referenced_paths": [
+            "shared/money.ts"
+          ]
+        }
+      ]
+    }
+  ]
+}

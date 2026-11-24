@@ -1,0 +1,208 @@
+{
+  "operation": "evaluate-health",
+  "subject": {
+    "base": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "tested": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "policy": {
+    "standard": "0.1.1",
+    "level": "verify",
+    "rules": {
+      "health-ratchet": "enforce"
+    },
+    "owners": [
+      {
+        "id": "payments",
+        "name": "Payments owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "pay-owner"
+        ]
+      },
+      {
+        "id": "alternate",
+        "name": "Second payments owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "pay-alt"
+        ]
+      },
+      {
+        "id": "docs",
+        "name": "Documentation owner",
+        "roles": [
+          "owner"
+        ],
+        "forge_accounts": [
+          "docs-owner"
+        ]
+      }
+    ],
+    "checks": {
+      "check-payments": {
+        "run": "example-checker",
+        "report": "tenet-health-json",
+        "inputs": [
+          "checks/config.json"
+        ],
+        "tool": {
+          "name": "example-checker",
+          "version": "1.0.0",
+          "config_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+        }
+      }
+    },
+    "areas": {
+      "payments": {
+        "paths": [
+          "src/payments/**"
+        ],
+        "owners": [
+          "payments"
+        ]
+      },
+      "docs": {
+        "paths": [
+          "docs/**"
+        ],
+        "owners": [
+          "docs"
+        ]
+      },
+      "other": {
+        "paths": [
+          "src/other/**"
+        ],
+        "owners": [
+          "docs"
+        ]
+      }
+    },
+    "health": {
+      "indicators": {
+        "payment-health": {
+          "kind": "finding_set",
+          "area": "payments",
+          "check": "check-payments",
+          "mode": "enforce",
+          "scope_globs": [
+            "src/payments/**"
+          ],
+          "exclude_globs": [],
+          "scope": "touched_files",
+          "rule_scope": "lint",
+          "max_new": 0
+        },
+        "other-health": {
+          "kind": "finding_set",
+          "area": "other",
+          "check": "check-payments",
+          "mode": "observe",
+          "scope_globs": [
+            "src/other/**"
+          ],
+          "exclude_globs": [],
+          "scope": "touched_files",
+          "rule_scope": "lint",
+          "max_new": 0
+        }
+      }
+    }
+  },
+  "diff": [
+    {
+      "status": "R",
+      "old_path": "src/other/a.ts",
+      "path": "src/payments/a.ts",
+      "hunks": []
+    }
+  ],
+  "reports": [
+    {
+      "check": "check-payments",
+      "format": "tenet-health-json",
+      "exit_code": 0,
+      "file": "report.json"
+    }
+  ],
+  "lane_checks": [],
+  "evaluated_at": "2026-11-24T12:00:00Z",
+  "baseline": {
+    "schema_version": 1,
+    "entries": {
+      "payments::payment-health": {
+        "area": "payments",
+        "indicator": "payment-health",
+        "kind": "finding_set",
+        "tool": "example-checker",
+        "tool_version": "1.0.0",
+        "config_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "scope_digest": "sha256:3b6cbef3e6249c73473035fcfa2f9c5d5171ad99d0dab0cb768cd6e9a34897b0",
+        "allowed_counts": {}
+      },
+      "other::other-health": {
+        "area": "other",
+        "indicator": "other-health",
+        "kind": "finding_set",
+        "tool": "example-checker",
+        "tool_version": "1.0.0",
+        "config_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "scope_digest": "sha256:6eb312e72fd4108b565a3ea7318f9b835f49630f516a8a2b0c0397498a10d4ad",
+        "allowed_counts": {
+          "sha256:cd043c1e7b8494fde4c5d8363efb3202fff1dc72b9d49af8388dcb68a678ea18": 1
+        }
+      }
+    }
+  },
+  "digest_inputs": [
+    {
+      "digest": "sha256:3b6cbef3e6249c73473035fcfa2f9c5d5171ad99d0dab0cb768cd6e9a34897b0",
+      "object": {
+        "kind": "finding_set",
+        "area": "payments",
+        "area_paths": [
+          "src/payments/**"
+        ],
+        "area_source_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "scope_globs": [
+          "src/payments/**"
+        ],
+        "exclude_globs": [],
+        "scope": "touched_files",
+        "rule_scope": "lint",
+        "check": "check-payments"
+      }
+    },
+    {
+      "digest": "sha256:cd043c1e7b8494fde4c5d8363efb3202fff1dc72b9d49af8388dcb68a678ea18",
+      "object": {
+        "rule_id": "no-stale",
+        "file": "src/other/a.ts",
+        "symbol": "pay",
+        "snippet_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    },
+    {
+      "digest": "sha256:6eb312e72fd4108b565a3ea7318f9b835f49630f516a8a2b0c0397498a10d4ad",
+      "object": {
+        "kind": "finding_set",
+        "area": "other",
+        "area_paths": [
+          "src/other/**"
+        ],
+        "area_source_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "scope_globs": [
+          "src/other/**"
+        ],
+        "exclude_globs": [],
+        "scope": "touched_files",
+        "rule_scope": "lint",
+        "check": "check-payments"
+      }
+    }
+  ]
+}

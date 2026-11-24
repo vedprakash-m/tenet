@@ -34,3 +34,15 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run check:examples
+      - name: Generate health snapshot
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
+        run: |
+          npm run coverage
+          npm run health:snapshot
+      - name: Upload health snapshot
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tenet-health
+          path: .tenet/health/
+          if-no-files-found: error

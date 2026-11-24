@@ -1,6 +1,6 @@
 <!-- Summary of what changed and why. -->
 
-<!-- tenet:begin v0.0.0 -->
+<!-- tenet:begin v0.1.0-alpha.0 -->
 ## Acceptance
 Implements: R-1
 - [AB-1] <what must hold>

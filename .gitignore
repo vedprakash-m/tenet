@@ -3,3 +3,5 @@ dist/
 coverage/
 *.tsbuildinfo
 .test-tmp/
+.tenet/health/
+.tenet/health-suite-time.json
