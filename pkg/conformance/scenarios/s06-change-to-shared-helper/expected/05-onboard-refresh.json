@@ -5,7 +5,7 @@
   "result": {
     "preflight": {
       "revision": "8ffb49bcdda99986522292dc042d91b955261fe0",
-      "read_count": 13,
+      "read_count": 11,
       "skipped_count": 0,
       "dirty_warning": false
     },
@@ -14,18 +14,6 @@
       "revision": "8ffb49bcdda99986522292dc042d91b955261fe0",
       "sources": {
         "files": [
-          {
-            "path": ".tenet/onboard/assignment.json",
-            "kind": "config",
-            "sha256": "13591d9cc07f1c4a4e667a0cd1deb800fa727883c6230cd8a3d559561d969619",
-            "lines": 58
-          },
-          {
-            "path": ".tenet/onboard/inventory.json",
-            "kind": "config",
-            "sha256": "fbeea9d2464578f18e3cf1d17375f71d57251a34deace8f2db7d452f59b70cae",
-            "lines": 161
-          },
           {
             "path": "CODEOWNERS",
             "kind": "config",
@@ -260,24 +248,5 @@
       ]
     }
   },
-  "errors": [
-    {
-      "code": "TN-SCHEMA",
-      "severity": "error",
-      "rule": null,
-      "file": "tenet/intent.md",
-      "line": null,
-      "message": "File tenet/intent.md failed spec-front-matter schema validation at /sections/requirements/flags.",
-      "fix": "Update tenet/intent.md at /sections/requirements/flags to match the spec-front-matter schema."
-    },
-    {
-      "code": "TN-SPEC-BLESSED-COPY",
-      "severity": "error",
-      "rule": null,
-      "file": "tenet/intent.md",
-      "line": 6,
-      "message": "Blessed copy for section requirements is missing or changed on disk.",
-      "fix": "Run `tenet bless` to restore or re-bless section requirements."
-    }
-  ]
+  "errors": []
 }
