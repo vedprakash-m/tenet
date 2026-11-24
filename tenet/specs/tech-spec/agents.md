@@ -139,7 +139,7 @@ A loop is data in `kit/loops/<name>.yaml` (schema `kit/schemas/loop.json`, CP-00
 |---|---|
 | `loop`, `kind` | Name; `station` or `fix` |
 | `applies` | `{station, lanes}` |
-| `limits` | `{rounds}` (default 5; `tenet.yaml` may lower it) and `{steps}`, a total cap (default 40). A loop stops at agreement or at `limits.rounds`, whichever comes first: agreement means the critic step returns no blocking finding, so the route advances |
+| `limits` | `{rounds}` (default 5; `tenet.yaml` may lower it) and `{steps}`, a total cap (default 40). A loop ends at agreement (no blocking critic finding) or `limits.rounds` |
 | `steps[]` | In order; each has an `id` and a `kind` |
 
 | Step kind | Fields | Does |
