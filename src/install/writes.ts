@@ -1147,7 +1147,11 @@ export async function resumePendingPlan(
     cwd,
     version: pending.version,
     plan: {
-      created: pending.manifest.created.map((item) => item.path).concat(".tenet/manifest.json").sort(compareUtf16),
+      created: pending.writes
+        .filter((write) => write.kind === "file")
+        .map((write) => write.path)
+        .concat(".tenet/manifest.json")
+        .sort(compareUtf16),
       blocks: pending.manifest.blocks.map(({ path, kind }) => ({ path, kind })),
       keys: pending.manifest.keys.map(({ path, pointer }) => ({ path, pointer })),
       local_keys: fallback.local_keys,

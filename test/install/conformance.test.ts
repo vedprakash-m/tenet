@@ -413,6 +413,29 @@ test("resumed init keeps the clean local-integrity finding", async (t) => {
   assert.deepEqual(resumed.findings, expected.findings);
 });
 
+test("resumed init reconstructs created files separately from blocks", async (t) => {
+  const clean = await makeCase("p11-interrupted-install-resumes");
+  const interrupted = await makeCase("p11-interrupted-install-resumes");
+  t.after(async () => {
+    await dispose(clean);
+    await dispose(interrupted);
+  });
+  const expected = await init(clean.options);
+  const checked = await preflight(interrupted.options);
+  const planned = await planWriteSet(checked, interrupted.options);
+  const checkpoint = planned.writes.find((write) =>
+    write.kind === "block" && write.path === ".gitignore")?.id;
+  assert.ok(checkpoint);
+  await assert.rejects(
+    init({ ...interrupted.options, fault: { after: checkpoint } }),
+    (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+  );
+  const resumed = await init(interrupted.options);
+  assert.deepEqual(resumed.plan, expected.plan);
+  assert.ok(!resumed.plan.created.includes(".gitignore"));
+  assert.ok(!resumed.plan.created.includes(".gitattributes"));
+});
+
 test("p09 loader runs init, repeat, upgrade and byte-exact remove", async (t) => {
   const setup = await makeCase("p09-init-repeat-upgrade-remove");
   t.after(() => dispose(setup));
