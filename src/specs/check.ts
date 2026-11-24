@@ -1,18 +1,21 @@
-import { readFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFileSync, type Dirent } from "node:fs";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { parseDocument } from "yaml";
-import { jcs, sha256 } from "../core/hash.js";
+import { jcs } from "../core/hash.js";
+import { message } from "../core/messages.js";
 import { validate } from "../core/schema.js";
 import { version as installedPackageVersion } from "../core/output.js";
 import { catFileBatch, git } from "../core/git.js";
 import { loadKit, loadPolicy, ruleMode } from "../policy/index.js";
 import type { Policy } from "../policy/types.js";
 import type { Finding } from "../types/generated.js";
+import { citationParts } from "./anchors.js";
 import { resolveCitations } from "./citations.js";
 import { flags } from "./flags.js";
 import { ladder, type LadderEntry } from "./ladder.js";
 import { parseDoc, itemLine, sectionLocation, type ParsedDoc, type Requirement, type SpecSection } from "./parse.js";
+import { sectionDigest } from "./sections.js";
 
 export type CheckOptions = {
   cwd?: string;
@@ -34,67 +37,22 @@ export type CheckResult = {
   summary: CheckSummary;
 };
 
-const messages = {
-  "TN-BUDGET": {
-    rule: "budget",
-    message: "File {path} is over its token budget ({tokens} > {limit} tokens).",
-    fix: "Trim {path} or run `tenet split` to extract a section into a part.",
-  },
-  "TN-BUDGET-WARN": {
-    rule: "budget",
-    message: "File {path} is at or over 90% of its token budget ({tokens} / {limit} tokens).",
-    fix: "Trim {path} or run `tenet split` to extract a section into a part.",
-  },
-  "TN-CITE-HEADING#doc": {
-    rule: "citations-valid",
-    message: "Cited heading #{slug} was not found in {path}.",
-    fix: "Update the doc: citation to an existing heading slug in {path}.",
-  },
-  "TN-KIT-EDITED": {
-    rule: null,
-    message: "Vendored kit digest differs from tenet.lock ({actual} != {expected}).",
-    fix: "Restore .tenet/kit or run `tenet upgrade` to update tenet.lock.",
-  },
-  "TN-LOCK-MISMATCH": {
-    rule: null,
-    message: "Installed package {installed} differs from tenet.lock ({locked}).",
-    fix: "Run `tenet upgrade` or reinstall @vedprakash-m/tenet@{locked}.",
-  },
-  "TN-SCHEMA": {
-    rule: null,
-    message: "File {path} failed {schema} schema validation at {pointer}.",
-    fix: "Update {path} at {pointer} to match the {schema} schema.",
-  },
-  "TN-SPEC-BLESSED-COPY": {
-    rule: null,
-    message: "Blessed copy for section {slug} is missing or changed on disk.",
-    fix: "Run `tenet bless` to restore or re-bless section {slug}.",
-  },
-  "TN-SPEC-DUP-ID": {
-    rule: null,
-    message: "Duplicate specification ID {id}.",
-    fix: "Run `tenet fix` to assign a new ID, or remove the duplicate {id} item.",
-  },
-  "TN-SPEC-UNCOVERED-VISION": {
-    rule: null,
-    message: "Blessed vision item {id} is not served by a blessed requirement or listed under ## Not yet in scope.",
-    fix: "Add serves: {id} to a blessed requirement or list {id} under a blessed ## Not yet in scope section.",
-  },
-  "TN-SPEC-REQ-META": {
-    rule: null,
-    message: "Requirement metadata is malformed: check closing braces, allowed keys, and origin.",
-    fix: "Fix the `{…}` metadata block with allowed keys and valid origin.",
-  },
+const rules = {
+  "TN-BUDGET": "budget",
+  "TN-BUDGET-WARN": "budget",
+  "TN-KIT-EDITED": null,
+  "TN-LOCK-MISMATCH": null,
+  "TN-SCHEMA": null,
+  "TN-SPEC-BLESSED-COPY": null,
+  "TN-SPEC-DUP-ID": null,
+  "TN-SPEC-UNCOVERED-VISION": null,
+  "TN-SPEC-REQ-META": null,
 } as const;
 
-type MessageCode = keyof typeof messages;
+type MessageCode = keyof typeof rules;
 
 function portable(value: string): string {
   return value.replaceAll("\\", "/").replace(/^\.\/+/, "");
-}
-
-function fill(template: string, values: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (_, key: string) => values[key] ?? `{${key}}`);
 }
 
 function makeFinding(
@@ -104,15 +62,15 @@ function makeFinding(
   line: number | null,
   values: Record<string, string>,
 ): Finding {
-  const template = messages[code];
+  const words = message(code, values);
   return {
-    code: code === "TN-CITE-HEADING#doc" ? "TN-CITE-HEADING" : code,
+    code,
     severity,
-    rule: template.rule,
+    rule: rules[code],
     file,
     line,
-    message: fill(template.message, values),
-    fix: fill(template.fix, values),
+    message: words.message,
+    fix: words.fix,
   };
 }
 
@@ -241,28 +199,69 @@ function visionOf(doc: ParsedDoc): Array<{ section: SpecSection; item: Requireme
   );
 }
 
-function duplicateIdFindings(entries: LadderEntry[]): Finding[] {
+function specificationItems(entry: LadderEntry): Array<{ id: string; line: number | null }> {
+  return entry.doc.sections.flatMap((section) =>
+    [...section.vision_items, ...section.requirements, ...section.conflicts, ...section.questions]
+      .map((item) => ({ id: item.id, line: itemLine(item) })),
+  );
+}
+
+function localProblems(entry: LadderEntry): Finding[] {
+  return entry.doc.problems.flatMap((finding) => {
+    if (finding.code !== "TN-SPEC-DUP-ID") return [finding];
+    const id = /^Duplicate specification ID (.+)\.$/.exec(finding.message)?.[1];
+    if (!id || finding.line === null) return [];
+    const occurrence = specificationItems(entry).find((item) => item.id === id);
+    return occurrence?.line === finding.line
+      ? []
+      : [makeFinding("TN-SPEC-DUP-ID", "error", entry.path, finding.line, { id })];
+  });
+}
+
+function duplicateIdFindings(entries: LadderEntry[], crossDocument = true): Finding[] {
+  const groups = new Map<number, Map<string, Array<{ path: string; line: number | null }>>>();
   const occurrences = new Map<string, Array<{ path: string; line: number | null }>>();
   const rank = (level: string | null) => level && /^L\d$/.test(level) ? Number(level.slice(1)) : 5;
   const ordered = [...entries].sort((left, right) =>
     rank(left.level) - rank(right.level) ||
     (left.path < right.path ? -1 : left.path > right.path ? 1 : 0));
-  for (const entry of ordered) {
-    for (const section of entry.doc.sections) {
-      for (const item of [...section.vision_items, ...section.requirements]) {
-        const list = occurrences.get(item.id) ?? [];
-        list.push({ path: entry.path, line: itemLine(item) });
-        occurrences.set(item.id, list);
-      }
+  for (const [index, entry] of ordered.entries()) {
+    const local = groups.get(index) ?? new Map<string, Array<{ path: string; line: number | null }>>();
+    groups.set(index, local);
+    const destination = crossDocument ? occurrences : local;
+    for (const item of specificationItems(entry)) {
+      const list = destination.get(item.id) ?? [];
+      list.push({ path: entry.path, line: item.line });
+      destination.set(item.id, list);
     }
   }
   const findings: Finding[] = [];
-  for (const [id, items] of occurrences) {
+  for (const group of crossDocument ? [occurrences] : groups.values()) {
+    for (const [id, items] of group) {
     for (const later of items.slice(1)) {
       findings.push(makeFinding("TN-SPEC-DUP-ID", "error", later.path, later.line, { id }));
     }
+    }
   }
   return findings;
+}
+
+function deferredVisionIds(section: SpecSection): string[] {
+  const lines = section.text.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
+  const result: string[] = [];
+  let fence: string | null = null;
+  for (const line of lines) {
+    const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1];
+    if (marker) {
+      if (fence === null) fence = marker;
+      else if (marker[0] === fence[0] && marker.length >= fence.length) fence = null;
+      continue;
+    }
+    if (fence !== null) continue;
+    if (!/^\s*(?:[-*+]\s+|\|)/.test(line)) continue;
+    result.push(...line.match(/\bV-(?:[A-Z]+)?\d+\b/g) ?? []);
+  }
+  return result;
 }
 
 function visionCoverage(entries: LadderEntry[]): Finding[] {
@@ -274,7 +273,7 @@ function visionCoverage(entries: LadderEntry[]): Finding[] {
     .flatMap(({ item }) => item.serves));
   const deferred = new Set(entries.flatMap((entry) => entry.doc.sections
     .filter((section) => section.slug === "not-yet-in-scope" && section.state === "blessed")
-    .flatMap((section) => section.text.match(/\bV-(?:[A-Z]+)?\d+\b/g) ?? [])));
+    .flatMap(deferredVisionIds)));
   const uncovered = blessedVision.filter(({ id }) => !covered.has(id) && !deferred.has(id));
   if (uncovered.length === 0) return [];
   return uncovered.map(({ id, path: filename, line }) =>
@@ -293,7 +292,17 @@ function applyRuleMode(finding: Finding, policy: Policy): Finding | null {
 
 function sortedFindings(findings: Finding[]): Finding[] {
   const text = (left: string, right: string) => left < right ? -1 : left > right ? 1 : 0;
-  return [...findings].sort((left, right) => {
+  const unique = new Map<string, Finding>();
+  for (const finding of findings) {
+    unique.set(JSON.stringify([
+      finding.code,
+      finding.file,
+      finding.line,
+      finding.message,
+      finding.fix,
+    ]), finding);
+  }
+  return [...unique.values()].sort((left, right) => {
     const file = text(left.file ?? "", right.file ?? "");
     if (file !== 0) return file;
     const line = (left.line ?? 0) - (right.line ?? 0);
@@ -314,7 +323,7 @@ async function checkSections(
     return readOptional(path.join(cwd, ...normalized.split("/")));
   };
   for (const entry of entries) {
-    findings.push(...entry.doc.problems);
+    findings.push(...localProblems(entry));
     if (entry.doc.front) findings.push(...schemaFindings(entry.path, "spec-front-matter", entry.doc.front));
     for (const section of entry.doc.sections) {
       const computed = flags(section, (filename) => {
@@ -344,20 +353,20 @@ async function checkSections(
         continue;
       }
       const copyText = await reader(copy);
-      if (copyText === null || `sha256:${sha256(copyText.replace(/\n$/, ""))}` !== String(raw.blessed_digest)) {
+      if (copyText === null || sectionDigest(copyText) !== String(raw.blessed_digest)) {
         findings.push(makeFinding("TN-SPEC-BLESSED-COPY", "error", entry.path, section.slug === "_preamble"
           ? null
           : sectionLocation(section).heading, { slug: section.slug }));
       }
     }
-    findings.push(...resolveCitations(entry.doc, (filename) => {
+    findings.push(...canonicalCitationFindings(entry.doc, resolveCitations(entry.doc, (filename) => {
       const normalized = portable(filename);
       try {
         return readFileSync(path.join(cwd, ...normalized.split("/")), "utf8") as string;
       } catch {
         return null;
       }
-    }));
+    })));
     for (const { item } of [...requirementsOf(entry.doc), ...visionOf(entry.doc)]) {
       if (item.origin === null) {
         findings.push(makeFinding("TN-SPEC-REQ-META", "error", entry.path, itemLine(item), {}));
@@ -365,6 +374,47 @@ async function checkSections(
     }
   }
   return findings;
+}
+
+function canonicalCitationFindings(doc: ParsedDoc, inherited: Finding[]): Finding[] {
+  const malformed = new Map<number, string[]>();
+  for (const section of doc.sections) {
+    for (const item of [...section.requirements, ...section.vision_items]) {
+      const line = itemLine(item);
+      if (line === null) continue;
+      const cites = item.cites.filter((cite) => {
+        const malformedTest = /^test:\s*/.test(cite) && !/\s+>\s+/.test(cite);
+        const malformedDoc = /^doc:\s*/.test(cite) && !/.+#.+/.test(cite);
+        return !citationParts(cite) || malformedTest || malformedDoc;
+      });
+      if (cites.length > 0) malformed.set(line, cites);
+    }
+  }
+  const malformedIndexes = new Map<number, number>();
+  return inherited.map((finding) => {
+    let values: Record<string, string> | null = null;
+    if (finding.message === "citation is malformed" && finding.line !== null) {
+      const index = malformedIndexes.get(finding.line) ?? 0;
+      malformedIndexes.set(finding.line, index + 1);
+      const cite = malformed.get(finding.line)?.[index];
+      if (cite) values = { cite };
+    } else if (finding.code === "TN-CITE-FILE") {
+      const matchedPath = /^Cited file (.+) was not found\.$/.exec(finding.message)?.[1];
+      if (matchedPath) values = { path: matchedPath };
+    } else if (finding.code === "TN-CITE-RANGE") {
+      const cite = /^Citation (.+) has an invalid line range or format\.$/.exec(finding.message)?.[1];
+      if (cite) values = { cite };
+    } else if (finding.code === "TN-CITE-HEADING") {
+      const matched = /^Cited heading #(.+) was not found in (.+)\.$/.exec(finding.message);
+      if (matched?.[1] && matched[2]) values = { slug: matched[1], path: matched[2] };
+    } else if (finding.code === "TN-CITE-TEST") {
+      const matched = /^Cited test (.+) was not found in (.+)\.$/.exec(finding.message);
+      if (matched?.[1] && matched[2]) values = { name: matched[1], file: matched[2] };
+    }
+    if (!values) return finding;
+    const words = message(finding.code, values);
+    return { ...finding, message: words.message, fix: words.fix };
+  });
 }
 
 async function kitFindings(
@@ -417,10 +467,6 @@ async function packFindings(cwd: string, pack: CheckOptions["pack"]): Promise<Fi
   return schemaFindings(filename, "pack", parseYaml(text));
 }
 
-async function markdownEntries(cwd: string): Promise<LadderEntry[]> {
-  return ladder({ cwd });
-}
-
 function selectedEntries(entries: LadderEntry[], paths: string[] | undefined): LadderEntry[] {
   if (!paths || paths.length === 0) return entries;
   const selected = new Set(paths.map(portable));
@@ -430,11 +476,15 @@ function selectedEntries(entries: LadderEntry[], paths: string[] | undefined): L
 async function configuredEntries(
   cwd: string,
   policy: Policy,
-  discovered: LadderEntry[],
+  filenames: string[],
 ): Promise<LadderEntry[]> {
-  const entries = new Map(discovered.map((entry) => [entry.path, entry]));
+  const selected = new Set(filenames.map(portable));
+  const entries = new Map(
+    (await ladder({ cwd, files: filenames })).map((entry) => [entry.path, entry]),
+  );
   for (const document of policy.specs.documents) {
     const filename = portable(path.posix.join(policy.paths.records, document.path));
+    if (!selected.has(filename)) continue;
     if (entries.has(filename)) continue;
     const text = await readOptional(path.join(cwd, ...filename.split("/")));
     if (text === null) continue;
@@ -448,6 +498,43 @@ async function configuredEntries(
   return [...entries.values()].sort((left, right) =>
     rank(left.level) - rank(right.level) ||
     (left.path < right.path ? -1 : left.path > right.path ? 1 : 0));
+}
+
+async function activeDocumentPaths(
+  cwd: string,
+  policy: Policy,
+  hasConfiguredLadder: boolean,
+): Promise<{ files: string[]; roots: string[] }> {
+  const intent = portable(path.posix.join(policy.paths.records, "intent.md"));
+  const base = !hasConfiguredLadder &&
+    await readOptional(path.join(cwd, ...intent.split("/"))) !== null
+    ? [intent]
+    : policy.specs.documents.map((document) =>
+      portable(path.posix.join(policy.paths.records, document.path)));
+  const roots = base.map((filename) => filename.replace(/\.md$/, ""));
+  const files = [...base];
+  for (const root of roots) {
+    files.push(...await markdownBelow(cwd, root));
+  }
+  return { files: [...new Set(files)], roots: [...new Set([...base, ...roots])] };
+}
+
+async function markdownBelow(cwd: string, relativeRoot: string): Promise<string[]> {
+  const root = path.join(cwd, ...relativeRoot.split("/"));
+  let entries: Dirent[];
+  try {
+    entries = await readdir(root, { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+    throw error;
+  }
+  const files: string[] = [];
+  for (const entry of entries) {
+    const filename = path.posix.join(relativeRoot, entry.name);
+    if (entry.isDirectory()) files.push(...await markdownBelow(cwd, filename));
+    else if (entry.isFile() && entry.name.endsWith(".md")) files.push(filename);
+  }
+  return files;
 }
 
 async function requiredDocumentFindings(
@@ -475,6 +562,7 @@ async function requiredDocumentFindings(
 async function duplicateIdsOnOtherBranches(
   cwd: string,
   current: LadderEntry[],
+  pathspecs: string[],
 ): Promise<Finding[]> {
   const refsText = await git(["for-each-ref", "--format=%(refname)%09%(objectname)", "refs/heads", "refs/remotes"], { cwd })
     .catch(() => "");
@@ -512,7 +600,10 @@ async function duplicateIdsOnOtherBranches(
   };
   collect(current, "working-tree");
   for (const { ref } of refs) {
-    const listing = await git(["ls-tree", "-r", "-z", "--name-only", ref], { cwd }).catch(() => "");
+    const listing = await git(
+      ["ls-tree", "-r", "-z", "--name-only", ref, "--", ...pathspecs],
+      { cwd },
+    ).catch(() => "");
     const paths = listing.split("\0").filter((filename) => filename.endsWith(".md"));
     if (paths.length === 0) continue;
     const blobs = await catFileBatch(ref, paths, { cwd });
@@ -578,20 +669,26 @@ export async function check(options: CheckOptions = {}): Promise<CheckResult> {
     }
   }
   const policy = await loadPolicy({ cwd });
-  const allEntries = await configuredEntries(cwd, policy, await markdownEntries(cwd));
+  const activePaths = await activeDocumentPaths(cwd, policy, hasConfiguredLadder);
+  const selectedPaths = scoped
+    ? (options.paths ?? []).map(portable)
+    : activePaths.files;
+  const allEntries = await configuredEntries(cwd, policy, selectedPaths);
   const entries = selectedEntries(allEntries, options.paths);
   const findings: Finding[] = [...policy.findings];
   const sectionFindings = await checkSections(entries, cwd);
-  findings.push(...sectionFindings.flatMap((finding) => {
+  findings.push(...(options.ci && options.base ? sectionFindings.flatMap((finding) => {
     const updated = applyRuleMode(finding, policy);
     return updated ? [updated] : [];
-  }));
+  }) : sectionFindings));
   if (!scoped) {
     findings.push(...await requiredDocumentFindings(cwd, policy, hasConfiguredLadder));
     findings.push(...duplicateIdFindings(allEntries));
-    findings.push(...await duplicateIdsOnOtherBranches(cwd, allEntries));
+    findings.push(...await duplicateIdsOnOtherBranches(cwd, allEntries, activePaths.roots));
     findings.push(...visionCoverage(allEntries));
     findings.push(...await kitFindings(cwd, policy, options.installedVersion ?? installedPackageVersion));
+  } else {
+    findings.push(...duplicateIdFindings(entries, false));
   }
   findings.push(...await packFindings(cwd, options.pack));
 

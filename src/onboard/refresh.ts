@@ -1,6 +1,5 @@
 import { parse } from "yaml";
 import { git } from "../core/git.js";
-import { onboardText } from "../core/messages.js";
 import type { Finding } from "../core/output.js";
 import type { Assignment, Inventory } from "../types/generated.js";
 import { object, within, type Facts } from "./inventory.js";
@@ -53,7 +52,7 @@ async function changedPaths(facts: Facts, revision: string, output: Set<string>)
 }
 
 export async function refreshAssignment(facts: Facts, assignment: Assignment, deps: OnboardDeps): Promise<RefreshResult> {
-  if (!deps.check) throw new Error(onboardText.refreshPending);
+  if (!deps.check) throw new Error("Onboarding refresh requires a specification checker.");
   const { findings: diagnostics } = await deps.check({ cwd: facts.snapshot.cwd });
   const records = facts.policy.paths?.records ?? "tenet";
   const documents = new Set([

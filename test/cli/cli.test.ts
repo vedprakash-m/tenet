@@ -197,10 +197,9 @@ test("human findings include location, rule, why and fix", async () => {
     }),
   });
   assert.equal(await run(["finding-text"], { ...terminal, checkEnvironment: false }), 1);
-  assert.match(terminal.stderr.text, /TN-SCHEMA at tenet\/example\.md:12: missing title/);
-  assert.match(terminal.stderr.text, /rule: schema-valid/);
-  assert.match(terminal.stderr.text, /why: missing title/);
-  assert.match(terminal.stderr.text, /fix: add a title/);
+  assert.match(terminal.stderr.text, /missing title at tenet\/example\.md:12/);
+  assert.match(terminal.stderr.text, /why: schema-valid/);
+  assert.match(terminal.stderr.text, /→ add a title/);
 });
 
 test("unexpected exceptions are complete internal failures, not usage errors", async () => {
@@ -221,8 +220,8 @@ test("unexpected exceptions are complete internal failures, not usage errors", a
       rule: null,
       file: null,
       line: null,
-      message: "The command could not run",
-      fix: "boom",
+      message: "Internal failure: boom.",
+      fix: "Report this defect with the command and error details.",
     },
   ]);
 });

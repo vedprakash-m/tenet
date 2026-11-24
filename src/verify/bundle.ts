@@ -39,8 +39,8 @@ export type VerifyDeps = {
   parseDoc?(path: string, text: string, options?: { prefix?: string }): ParsedSpecification;
   sectionDigest?(body: string): string;
   check(options: { cwd?: string; paths?: string[]; pack?: boolean; ci?: boolean; base?: string }): Promise<{ findings: Finding[]; summary: { errors: number; warnings: number; advises: number } }>;
-  touched(base: string, head: string, ids: string[], options?: { cwd?: string; codeowners_path?: string }): Promise<Touched[]>;
-  deltas(base: string, head: string, options?: { cwd?: string }): Promise<SpecDelta[]>;
+  touched(base: string, head: string, ids: string[], options?: { cwd?: string; codeowners_path?: string; prefix?: string }): Promise<Touched[]>;
+  deltas(base: string, head: string, options?: { cwd?: string; prefix?: string }): Promise<SpecDelta[]>;
   execute?(command: string, options: { cwd: string; timeoutMs: number; ci: boolean }): Promise<CommandRun>;
   policy?(ref: string, cwd: string): Promise<Policy>;
   verifyLock?(ref: string, cwd: string): Promise<void>;

@@ -1,4 +1,5 @@
 import type { CommandContext } from "../core/commands.js";
+import { message } from "../core/messages.js";
 import { fail } from "../core/output.js";
 import { board, renderSpecsBoard } from "../views/specs-board.js";
 
@@ -9,10 +10,14 @@ const command = {
 	options: [{ flags: "--all" }],
 	async run(context: CommandContext) {
 		if (context.args.length > 0) {
+			const words = message("TN-USAGE-BOARD", {
+				command: "board",
+				detail: "unexpected positional arguments",
+			});
 			throw fail(
 				"TN-USAGE-BOARD",
-				"Invalid usage for tenet board.",
-				"Run tenet board --help for valid arguments and flags.",
+				words.message,
+				words.fix,
 			);
 		}
 		const value = await board({

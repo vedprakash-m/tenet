@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -238,6 +239,88 @@ test("selects prose by applies_to and matches query headings case-insensitively"
     const queryResult = await context({ cwd: target.cwd, query: "EXPERI" });
     assert.equal(queryResult.blessed[0]?.id, "intent#experience");
     assert.equal(queryResult.blessed[0]?.reason, "query");
+  } finally {
+    await rm(target.cwd, { recursive: true, force: true });
+  }
+});
+
+test("keeps mixed-section prose independently selectable by path and heading", async () => {
+  const target = await repo();
+  try {
+    await policy(target);
+    const body = [
+      "The checkout flow always shows the current total.",
+      "| ID | Requirement | Origin | Cites |",
+      "|---|---|---|---|",
+      "| R-1 | Retry the display once. | asked | src/ui/cart.ts:1 |",
+      "",
+    ].join("\n");
+    await blessed(target, body, { applies_to: ["src/ui/**"] });
+    await target.write("src/ui/cart.ts", "renderTotal();\n");
+
+    const pathResult = await context({ cwd: target.cwd, paths: ["src/ui/cart.ts"] });
+    assert.ok(pathResult.blessed.some((item) =>
+      item.id === "intent#requirements" &&
+      item.text.includes("The checkout flow always shows the current total.") &&
+      item.reason === "applies_to"
+    ));
+
+    const headingResult = await context({ cwd: target.cwd, query: "REQUIREMENTS" });
+    assert.ok(headingResult.blessed.some((item) =>
+      item.id === "intent#requirements" && item.reason === "query"
+    ));
+  } finally {
+    await rm(target.cwd, { recursive: true, force: true });
+  }
+});
+
+test("uses canonical usage text for invalid context budgets and selectors", async () => {
+  await assert.rejects(
+    context({ budget_tokens: 0 }),
+    (error: unknown) =>
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "TN-USAGE-BUDGET" &&
+      "message" in error &&
+      error.message === "Context token budget 0 must be a positive integer." &&
+      "fix" in error &&
+      error.fix === "Pass a positive integer to `--budget-tokens` or `budget_tokens`.",
+  );
+  await assert.rejects(
+    context({ paths: [1] as unknown as string[] }),
+    (error: unknown) =>
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "TN-USAGE-CONTEXT" &&
+      "message" in error &&
+      error.message === "Invalid usage for `tenet context`: paths must be strings.",
+  );
+});
+
+test("honors quiet and rejects context positional arguments", async () => {
+  const target = await repo();
+  try {
+    await policy(target);
+    const cli = path.join(process.cwd(), "dist", "cli.js");
+    const quiet = spawnSync(
+      process.execPath,
+      [cli, "--quiet", "--cwd", target.cwd, "context"],
+      { encoding: "utf8" },
+    );
+    assert.equal(quiet.status, 0, quiet.stderr);
+    assert.equal(quiet.stdout, "");
+
+    const positional = spawnSync(
+      process.execPath,
+      [cli, "--cwd", target.cwd, "context", "stray"],
+      { encoding: "utf8" },
+    );
+    assert.equal(positional.status, 2);
+    assert.equal(positional.stdout, "");
+    assert.match(positional.stderr, /TN-USAGE-CONTEXT/);
+    assert.match(positional.stderr, /unexpected positional arguments: stray/);
   } finally {
     await rm(target.cwd, { recursive: true, force: true });
   }
