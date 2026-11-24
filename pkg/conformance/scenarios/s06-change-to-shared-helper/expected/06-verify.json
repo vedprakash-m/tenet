@@ -1,0 +1,82 @@
+{
+  "conclusion": "neutral",
+  "wrote": false,
+  "card": {
+    "schema_version": 1,
+    "evaluation_id": "b8f97d14b26a4caf",
+    "tested": {
+      "commit": "8ffb49bcdda99986522292dc042d91b955261fe0",
+      "kind": "merge-candidate",
+      "head": "8ffb49bcdda99986522292dc042d91b955261fe0",
+      "base": "f1ac464fe94ea0487254469dd2d7ccd800b613e3"
+    },
+    "acceptance_digest": "a3ecf6606c52667c451232659a5fd8df453faddafe365ae531c0d67d227161f9",
+    "requirements": [
+      {
+        "id": "R-1",
+        "excerpt": "HTTP calls use the shared helper wrapper.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "cited-code-changed",
+        "tests": {
+          "expected": 0,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
+        }
+      }
+    ],
+    "items": [
+      {
+        "id": "AB-1",
+        "text": "shared helper includes header",
+        "result": "not-run",
+        "coverage": "not-confirmed",
+        "tests": {
+          "expected": 1,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 1
+        },
+        "names": [],
+        "authorship": "written-here"
+      }
+    ],
+    "tests": {
+      "report": "missing",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "failing": []
+    },
+    "weakening": {
+      "found": false,
+      "by": [],
+      "not_checked": []
+    },
+    "workflow_changed": false,
+    "protected": [],
+    "blessings_changed": [],
+    "deltas": [],
+    "rules": [],
+    "badge": "advisory",
+    "why": [
+      {
+        "text": "not checked: bundle refused (TN-RECORD-BUNDLE)",
+        "class": "host"
+      },
+      {
+        "text": "results not kept",
+        "class": "host"
+      }
+    ],
+    "degraded": [
+      "not checked: bundle refused (TN-RECORD-BUNDLE)",
+      "results not kept"
+    ]
+  }
+}

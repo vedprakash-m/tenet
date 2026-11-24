@@ -1,0 +1,97 @@
+{
+  "conclusion": "neutral",
+  "wrote": false,
+  "card": {
+    "schema_version": 1,
+    "evaluation_id": "dc71f775ccdfec48",
+    "tested": {
+      "commit": "2a290c843e9ac486a20ce40dbe769d8b8b62b225",
+      "kind": "merge-candidate",
+      "head": "2a290c843e9ac486a20ce40dbe769d8b8b62b225",
+      "base": "f83b7a69873d1ed3561e98c5888e735aabe5a61e"
+    },
+    "acceptance_digest": "aa86323ddce956a12d6d444dc1b9ced3a86d83b92fe477222fba7ddd754ba2bc",
+    "requirements": [
+      {
+        "id": "R-1",
+        "excerpt": "A payment that times out is retried once, never twice.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "implements",
+        "tests": {
+          "expected": 2,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 2
+        }
+      },
+      {
+        "id": "R-2",
+        "excerpt": "Failed payments are logged once for audit.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "same-area",
+        "tests": {
+          "expected": 0,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
+        }
+      }
+    ],
+    "items": [
+      {
+        "id": "AB-1",
+        "text": "one retry after timeout",
+        "result": "not-run",
+        "coverage": "not-confirmed",
+        "tests": {
+          "expected": 1,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 1
+        },
+        "names": [],
+        "authorship": "written-here"
+      }
+    ],
+    "tests": {
+      "report": "missing",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "failing": []
+    },
+    "weakening": {
+      "found": false,
+      "by": [],
+      "not_checked": []
+    },
+    "workflow_changed": false,
+    "protected": [],
+    "blessings_changed": [],
+    "deltas": [],
+    "rules": [],
+    "badge": "advisory",
+    "why": [
+      {
+        "text": "not checked: bundle refused (TN-RECORD-BUNDLE)",
+        "class": "host"
+      },
+      {
+        "text": "results not kept",
+        "class": "host"
+      }
+    ],
+    "degraded": [
+      "not checked: bundle refused (TN-RECORD-BUNDLE)",
+      "results not kept"
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "scenario": "s09-renamed-heading",
+  "spec_refs": [
+    "tenet/specs/tech-spec/algorithms.md#alg-02",
+    "tenet/specs/plan/alpha.0.md#a0-4"
+  ],
+  "steps": [
+    {
+      "id": "01-rename-heading",
+      "kind": "write",
+      "files": {
+        "tenet/specs/prd.md": "---\ntenet: {\"spec\":1,\"doc\":\"prd\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"ved\"}\nsections:\n  checkout-retries: {\"state\":\"blessed\",\"digest\":\"sha256:57a4e7f2ccfc6e7bfce9687c5ed4fb5288d306efb72526bd2fccf10a590da607\",\"flags\":[],\"blessed_digest\":\"sha256:57a4e7f2ccfc6e7bfce9687c5ed4fb5288d306efb72526bd2fccf10a590da607\",\"blessed_at_rev\":\"0000000000000000000000000000000000000001\",\"blessed_copy\":\"tenet/blessed/tenet__specs__prd.md/checkout-retries.md\",\"recorded\":\"self\",\"blessed_by\":\"ved\",\"blessed_at\":\"2026-11-23T10:00:00Z\",\"anchors\":{\"test: test/retry.test.ts > retries once\":\"sha256:5e57527187b360f6ca205b47fdabefac97f1376007045b9f76c35c9ff3219b5f\"},\"applies_to\":[\"src/retry.ts\"]}\n---\n## Payment retries\n- R-1 A payment that times out is retried once, never twice. {origin: observed; cites: test: test/retry.test.ts > retries once; serves: V-1}\n"
+      }
+    },
+    {
+      "id": "02-fix",
+      "kind": "cli",
+      "args": [
+        "fix",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJson": "expected/02-fix.json"
+    },
+    {
+      "id": "03-check",
+      "kind": "cli",
+      "args": [
+        "check",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJson": "expected/03-check.json"
+    },
+    {
+      "id": "04-board",
+      "kind": "cli",
+      "args": [
+        "board",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJson": "expected/04-board.json"
+    },
+    {
+      "id": "05-context",
+      "kind": "sdk",
+      "export": "context",
+      "input": {
+        "ids": [
+          "R-1"
+        ]
+      },
+      "expectedJson": "expected/05-context.json"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+- R-1 HTTP calls use the shared helper wrapper. {origin: observed; cites: src/shared/http.ts:1-3}
+- R-2 Billing charges post to /b. {origin: observed; cites: src/billing/charge.ts:1-2}

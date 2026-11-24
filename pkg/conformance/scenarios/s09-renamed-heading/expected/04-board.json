@@ -1,0 +1,56 @@
+{
+  "ok": true,
+  "command": "board",
+  "version": "0.0.0",
+  "result": {
+    "schema_version": 1,
+    "as_of": "2026-11-23T12:00:00Z",
+    "read": {
+      "main": "9ff08bef7feabdd96a5f52884e867ba24fc4efae",
+      "branches": [],
+      "records": null
+    },
+    "specs": [
+      {
+        "path": "tenet/vision.md",
+        "section": "vision",
+        "level": "L0",
+        "state": "blessed",
+        "flags": [],
+        "recorded": "self"
+      },
+      {
+        "path": "tenet/specs/prd.md",
+        "section": "payment-retries",
+        "level": "L1",
+        "state": "blessed",
+        "flags": [],
+        "recorded": "self"
+      },
+      {
+        "path": "tenet/specs/plan.md",
+        "section": "plan",
+        "level": "L2",
+        "state": "deferred",
+        "flags": []
+      },
+      {
+        "path": "tenet/specs/tech-spec.md",
+        "section": "design",
+        "level": "L2",
+        "state": "deferred",
+        "flags": []
+      },
+      {
+        "path": "tenet/specs/ux-spec.md",
+        "section": "experience",
+        "level": "L2",
+        "state": "deferred",
+        "flags": []
+      }
+    ],
+    "pending_blessings": [],
+    "spec_debt": []
+  },
+  "errors": []
+}

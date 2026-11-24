@@ -1,0 +1,17 @@
+{
+  "ok": false,
+  "command": "tenet",
+  "version": "0.0.0",
+  "result": null,
+  "errors": [
+    {
+      "code": "TN-USAGE-BUDGET",
+      "severity": "error",
+      "rule": null,
+      "file": null,
+      "line": null,
+      "message": "Invalid token budget: 0",
+      "fix": "Pass a finite positive --budget-tokens value."
+    }
+  ]
+}

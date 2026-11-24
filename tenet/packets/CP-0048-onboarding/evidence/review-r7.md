@@ -1,0 +1,32 @@
+# Independent round 7 review · CP-0048
+
+Reviewed `main` at `96eee9a` (GPT's `CP-0048` implementation) against `tenet/specs/plan/alpha.0b.md:50–63`, `tenet/specs/tech-spec/onboarding.md:7–35` (`OB §1`), `tenet/specs/tech-spec/contracts.md:74–81, 128` (`C §4`, `§8`), `tenet/specs/tech-spec/algorithms.md:174–176` (`ALG-11`), `tenet/specs/tech-spec/messages.md`, and `tenet/packets/CP-0048-onboarding/escalations/answers-r4.md`.
+
+## 1. Contract Verdict Table
+
+| Contract field | Verdict | Evidence |
+|---|---|---|
+| Needs | met | Imports only `CP-0005` (`src/core/{fs,git,hash,messages,output,schema,yaml}.ts`), `CP-0018` (`src/reports/{index,types}.ts`), `src/types/generated.js`, `picomatch`, and `yaml`, passing `test/architecture.test.ts`. `OnboardDeps` (`src/onboard/refresh.ts:22`) matches `CP-0009`'s `check` signature (`alpha.0b.md:12`). |
+| Owns | met | Touches `src/onboard/{preflight,inventory,findings,assignment,refresh}.ts`, `src/commands/onboard.ts`, `kit/schemas/results/onboard.json`, and `test/onboard/{command-and-refresh,conformance}.test.ts`. Does not edit `pkg/conformance/alg-11/`. |
+| Exports | met | `onboard({cwd, inventoryOnly, refresh, layout})` (`src/onboard/assignment.ts:113`) returns `{preflight: {revision, read_count, skipped_count, dirty_warning}, inventory, findings, assignment}`; `onboard` CLI command (`src/commands/onboard.ts:29–66`) registers `--inventory-only`, `--refresh`, and `--layout <layout>`, rejecting `--card` with exit `2` (`test/onboard/command-and-refresh.test.ts:142`). Result validates against `kit/schemas/results/onboard.json`. |
+| Behavior | met | Exact match with `OB §1`, `ALG-11`, `C §4`, and `answers-r4.md`: deterministic `HEAD`-based reads (`preflight.ts:132–150`), working-tree `tenet.yaml` read (`assignment.ts:49–60`), single `lastChangedMap` call for doc dates (`preflight.ts:115–130`), exact 7-category skip order (`inventory.ts:47–53, 91–125`), test files retained as `kind: "test"` (`inventory.ts:86`) and scanned via `scanTests` (`findings.ts:135–138`), `< 2,000`-line unit merging (`inventory.ts:162–184`), instruction files (`inventory.ts:78–83`), local report `observations` (`findings.ts:93–132`), sorted `findings[]` templates (`findings.ts:148–164`), and `refresh` preservation of unchanged drafts/IDs (`refresh.ts:55–81`). |
+| Edge cases | met | Unborn repository (`TN-ENV-NO-COMMIT`, exit `3`), non-git directory (`TN-ENV-NOT-GIT`, exit `3`), dirty working tree (`dirty_warning: true`), monorepo (`p03`, `p04`, `test/onboard/command-and-refresh.test.ts:88–110`), repeatable byte-identical writes (`assignment.ts:62–70`), and skip-reason precedence (`test/onboard/command-and-refresh.test.ts:158–176`) are all handled and tested. |
+| Out of scope | met | Agent drafting, `bless`, and `onboard --card` remain left to the agent skill and `CP-0052`. |
+| Fixtures | met | `test/onboard/conformance.test.ts:63–100` runs all 13 `pkg/conformance/alg-11/` cases unchanged (`p01`–`p08`, `n01`–`n05`), comparing serialized outputs byte-for-byte against `expected.json` and on-disk `.tenet/onboard/{inventory,assignment}.json`; `test/onboard/command-and-refresh.test.ts` covers empty, multi-language, refresh, skip precedence, and CLI error cases. |
+| Proving | met | `npm test -- test/onboard` passes on Windows (`19 pass, 0 fail`: 6 unit/integration tests + 13 `ALG-11` conformance tests). |
+
+## 2. Conformance Execution and Synthetic Revision Substitution (`test/onboard/conformance.test.ts`)
+
+- All 13 cases under `pkg/conformance/alg-11/` (`p01`–`p08`, `n01`–`n05`) remain completely unchanged on `main` and are executed verbatim by `test/onboard/conformance.test.ts:63–100`.
+- **Judgment on synthetic revision substitution (`test/onboard/conformance.test.ts:82–98`):** `materialize()` creates real Git commits in a temporary repository with deterministic commit timestamps matching `input.repo.committedDates` (`GIT_AUTHOR_DATE` / `GIT_COMMITTER_DATE`, defaulting to `2025-01-01T00:00:00Z`). Before comparing against `expected.json`, `conformance.test.ts:83–89` asserts `result.preflight.revision === head` and `result.inventory.revision === head` (the real `git rev-parse HEAD` OID), validates both `inventory` and `assignment` via `validate()`, and checks that `.tenet/onboard/{inventory,assignment}.json` on disk match the returned objects byte-for-byte. Only after those assertions pass does it rebind the two top-level revision strings (`rebound.preflight.revision` and `rebound.inventory.revision`) to `input.repo.revision`. This substitution is **sound, minimal, and honest**: the real commit OID is verified first, and all hashes, line counts, file classifications, doc commit dates, units, findings, and assignment fields are asserted unmodified against `expected.json`.
+
+## 3. Findings
+
+1. **should** · `src/commands/onboard.ts:65–66` (`onboardCommand = makeOnboardCommand({})`) vs. `tenet/specs/plan/alpha.0b.md:53, 59`. `onboardCommand` is still constructed with `{}` and throws `TN-INTERNAL` when `tenet onboard --refresh` is invoked from the CLI because `CP-0009` (`src/specs/check.ts`) had not landed when `CP-0048` was built. Now that `CP-0009` is on `main` (`96eee9a`), wiring `{ check }` and defining `--refresh` error handling (see `answers-r7.md` Q3) is ready to close in a follow-up integration change.
+2. **nit** · `src/onboard/inventory.ts:79` vs. `tenet/specs/tech-spec/onboarding.md:83`. When classifying `AGENTS.md`, `inventory.ts:79` strips `/<!-- tenet:begin -->[\s\S]*?<!-- tenet:end -->/g`, which does not match versioned markers written by `init` (`<!-- tenet:begin v<version> --> … <!-- tenet:end -->` per `onboarding.md:83`). A repository whose `AGENTS.md` contains only Tenet's versioned block would be classified as `kind: "instructions"` instead of `"config"`. **Fix:** allow optional attributes/version before `-->` (`/<!-- tenet:begin(?:\s+[^>]*)? -->[\s\S]*?<!-- tenet:end -->/g`).
+3. **nit** · `tenet/specs/tech-spec/contracts.md:128` vs. `kit/schemas/results/onboard.json` and `tenet/specs/plan/alpha.0b.md:53`. `contracts.md §8` line 128 still lists ``onboard` `{preflight, inventory_path, assignment_path, findings}`` instead of the contracted `{preflight, inventory, findings, assignment}` enforced by `kit/schemas/results/onboard.json` and `answers-r4.md` Q4 (fixed in `answers-r7.md`).
+
+## 4. Proving on Windows
+
+Ran on Windows (Node 24.22.1) against `96eee9a`:
+- `npm test -- test/onboard`: exited `0` (`19 pass, 0 fail`).

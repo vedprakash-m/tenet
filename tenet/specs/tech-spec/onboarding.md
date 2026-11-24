@@ -11,25 +11,25 @@
 - what it skips into `sources.skipped: [{path, reason}]` (sorted by `path`, first matching reason): `"env"` (`.env`, `.env.*`), `"credentials"` (`*.pem`, `*.key`, `id_*`, `*credentials*`, `*secret*`), `"vendored"` (`vendor/`, `node_modules/`, `dist/`, `build/`), `"generated"` (ALG-11), `"excluded"` (`onboard.exclude`), `"binary"` (NUL byte in first 8 KB or binary extension), `"oversize"` (`> 1_048_576` bytes); test files stay in `sources.files` (`kind: "test"`) and are excluded only from `size.source_lines`
 - that drafting sends content to the user's own agent and its model provider
 
-`--inventory-only` stops there. It writes `.tenet/onboard/inventory.json` and `.tenet/onboard/assignment.json` (`inventory: ".tenet/onboard/inventory.json"`, contracts §4, git-ignored) from `HEAD`. Uncommitted source changes are left out, with a warning; `tenet.yaml` is read from the working tree, so a just-written setup applies. Running `onboard` twice gives the same result.
-- **Modules** are the folders holding a package manifest, else top-level source folders.
-- **Project kind:**
-  - `cli`: a `bin` entry or `cmd/` folder
-  - `library`: a published package manifest without a server entry
-  - `service`: a server framework dependency or a `Dockerfile` exposing a port
-  - `data`: dbt, Airflow or notebooks
-  - `infrastructure`: Terraform, Helm or Kubernetes manifests
+`--inventory-only` stops there. It writes `.tenet/onboard/inventory.json` and `.tenet/onboard/assignment.json` (`inventory: ".tenet/onboard/inventory.json"`, contracts §4, git-ignored via `init`; `onboard` writes them atomically without refusing missing ignore rules) from `HEAD`. Uncommitted source changes are left out, with a warning (`dirty_warning: true`); `tenet.yaml` is read from the working tree, so a just-written setup applies. CLI human output prints `Will read: …`, `Will skip: …`, `Drafting sends project content to your agent and its model provider.`, `Read <read_count> files at <revision> and skipped <skipped_count>.`, optional `Working tree has uncommitted changes.`, optional `First findings: …`, and `Drafting assignment: .tenet/onboard/assignment.json`. Running `onboard` twice gives the same result over `(HEAD, working tenet.yaml, .tenet/reports/*)`.
+- **Modules:** folders holding a manifest (`package.json`, `pyproject.toml`, `setup.py`, `setup.cfg`, `go.mod`, `Cargo.toml`, `pom.xml`, `build.gradle`, `build.gradle.kts`, `Gemfile`, `composer.json`, `Package.swift`), else top-level source folders; languages map `ts/tsx → typescript`, `js/jsx/mjs/cjs → javascript`, `py → python`, `go → go`, `rs → rust`, `java → java`, `kt → kotlin`, `cs → csharp`, `rb → ruby`, `php → php`, `swift → swift`, `c/h → c`, `cc/cpp/hpp → cpp`, `scala → scala`.
+- **Project kind (first match wins):**
+  - `cli`: a `bin` entry in `package.json` or `cmd/` folder
+  - `service`: a server framework dependency or a `Dockerfile*` exposing a port
+  - `library`: a published non-private `package.json` (name + version) or `[project]`/`[package]` in `pyproject.toml`/`Cargo.toml`
+  - `data`: `dbt_project.yml`, `dags/`, or notebooks (`*.ipynb`)
+  - `infrastructure`: Terraform (`*.tf`), `Chart.yaml`, or Kubernetes manifests (`apiVersion:` + `kind:`)
   - `application`: otherwise
-- **Tests:** files matching ALG-09, with the names from its declaration patterns.
-- **Docs:** each doc's first `# ` heading, its `## ` slugs and its last change date.
+- **Tests:** files matching ALG-09; `inventory.tests[]` keeps `{path, runner, cases}` (declaration count from `scanTests`; names stay in test files, not duplicated in v1 JSON; `.py → pytest`, `.go → go`, `.java → junit`, `.rs → cargo`, JS/TS imports/config → `node:test`/`vitest`/`jest`).
+- **Docs:** each doc's first `# ` heading (fallback `basename(path)`), its `## ` slugs, and its `last_changed` commit date (fallback `revision`).
 - **Instruction files** (kind `instructions`): `.github/copilot-instructions.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/**`, `.windsurfrules`, and `AGENTS.md` outside Tenet's block. The drafter turns their project rules into cited `scope: global` requirements and their working rules into a design section (agents.md §2); once blessed, Tenet's block in those files points to the blessed text.
 
-The inventory is byte-identical for one commit. Results from local test reports go only in `observations`, named by digest.
+Repository facts and `assignment.json` are byte-identical over `(HEAD, working tenet.yaml)`. Local test reports under `.tenet/reports/*` and `checks[].report_path` go only in `observations.reports` (named by `sha256` digest; non-empty `observations.reports` suppresses `no-test-report`; tracked `.tenet/reports/*` remain in `sources.files`).
 
 **First findings** (the "first useful finding", V-V3). These are printed by `init` and `onboard --inventory-only`, deterministic, within ten minutes of install (sorted by `kind` order below, then `path`, then `message`):
-- `dead-path`: doc paths and links that name missing files (`path`: doc path; `message: "<doc.path> links missing path <target>"`)
+- `dead-path`: doc paths and links that name missing files (`./`/`../` resolve relative to `doc.path`; `/…` from root; bare names doc-relative first then repo-relative; `path`: doc path; `message: "<doc.path> links missing path <target>"`)
 - `skipped-tests`: skipped or focused tests present (`path`: test file; `message: "<count> skipped or focused test(s) in <test.path>"`)
-- `owners-unmatched`: CODEOWNERS patterns matching nothing (`path`: CODEOWNERS path; `message: "CODEOWNERS pattern <pattern> matches no tracked files"`)
+- `owners-unmatched`: CODEOWNERS patterns matching nothing (leading `/` root-anchored, trailing `/` subtree, bare name `**/…`; `path`: CODEOWNERS path; `message: "CODEOWNERS pattern <pattern> matches no tracked files"`)
 - `no-test-report`: whether a test report can be produced (`path`: first CI workflow path, else `"tenet.yaml"`; `message: "No machine-readable test report configured"`)
 
 **Drafting units and output paths.** The assignment (`.tenet/onboard/assignment.json`) lists units (ALG-11) in order, each with its slice of the inventory.
@@ -68,7 +68,7 @@ A conflict's resolution is written as `resolution:` on its `CF` item. When the c
 The **last blessed text stays in force** (the blessed copy):
 - An edit to it is flagged `edited`: an unblessed proposal that rejecting keeps out.
 - A change to the cited lines is flagged `sources-changed`: confirm re-anchors.
-- Re-running `onboard` keeps IDs, edits, rejections and blessings, and assigns only changed units.
+- Re-running `onboard --refresh` keeps IDs, edits, rejections and blessings, runs `check` (whose diagnostics return in the CLI envelope without blocking the write), unions `git diff` from every `drafted_at_rev` (failing if an anchor commit is missing; assigning all units when none exists), excludes spec outputs/`.tenet/`/skipped paths, and assigns units matching `within(root, file)` (or all units if any file outside all units changed).
 
 ## 2. Install and upgrade
 
