@@ -711,7 +711,7 @@ export async function planWriteSet(
         .replaceAll("<owner>", owner)
         .replaceAll("<Project>", project)
         .replace("Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
-          purpose)) 
+          purpose))
         .replace(/\r\n/g, "\n")
         .replace(/\n+$/, "")}\n`,
     });
