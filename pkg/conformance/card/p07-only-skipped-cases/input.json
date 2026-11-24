@@ -1,6 +1,5 @@
 {
   "operation": "record",
-  "markdownMode": "fragments",
   "event": {
     "tested_commit": "9b41d00000000000000000000000000000000000",
     "tested_kind": "merge-candidate",

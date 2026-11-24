@@ -31,6 +31,7 @@
 | `TN-ENV-NO-COMMIT` | Repository has no commits yet. | Make a first commit, then run `tenet onboard`. |
 | `TN-ENV-NODE` | Node.js {found} is below required version 22. | Install Node.js 22 LTS or newer and retry. |
 | `TN-ENV-NOT-GIT` | Directory {path} is not a Git repository. | Run `git init` or run from inside a Git repository. |
+| `TN-ENV-OFFLINE` | Command `tenet {command}` requires network access, which is disabled by `--offline`. | Re-run `tenet {command}` without `--offline`. |
 | `TN-EV-DUP` | Duplicate event ID {id} has conflicting content. | Keep one canonical event for {id} and remove the conflicting entry. |
 | `TN-EV-ORPHAN` | Event {id} references unknown predecessor {prev}. | Include or fetch event {prev} before reducing work item events. |
 | `TN-GATE-*` | Gate blocked or held by rule {rule}: {reason}. | Resolve {reason} and re-run the gate check. |
@@ -43,8 +44,13 @@
 | `TN-GATE-TRUST` | Protected trust-surface claim {claim} is not satisfied. | Open a change-policy decision request via `tenet decide`. |
 | `TN-GATE-UNKNOWN` | Policy applicability is unknown because {missing} is missing. | Define {missing} in tenet.yaml or CODEOWNERS and re-run. |
 | `TN-INIT-EXISTS` | File {path} already exists with different content. | Review {path} or rerun `tenet init --force` to overwrite managed blocks. |
+| `TN-INTERNAL` | Internal failure: {detail}. | Report this defect with the command and error details. |
 | `TN-KIT-EDITED` | Vendored kit digest differs from tenet.lock ({actual} != {expected}). | Restore .tenet/kit or run `tenet upgrade` to update tenet.lock. |
+| `TN-KIT-INVALID` | Kit at {path} is invalid: {detail}. | Restore {path} to regular kit files or run `tenet upgrade`. |
+| `TN-KIT-MISSING` | Kit directory {path} was not found. | Reinstall @vedprakash-m/tenet or fix kit_path in tenet.yaml. |
+| `TN-LOCK-INVALID` | Lock file tenet.lock is invalid: {detail}. | Fix tenet.lock or run `tenet init` to regenerate it. |
 | `TN-LOCK-MISMATCH` | Installed package {installed} differs from tenet.lock ({locked}). | Run `tenet upgrade` or reinstall @vedprakash-m/tenet@{locked}. |
+| `TN-LOCK-MISSING` | Lock file tenet.lock was not found. | Run `tenet init` to create and pin tenet.lock. |
 | `TN-PATH-ESCAPE` | Path {path} resolves outside the repository root. | Use a relative path inside the repository without symlink escapes. |
 | `TN-POLICY-ALPHA0-CAP` | The {rule} rule is capped at advise in alpha.0. | The configured mode will take effect when rule modes are available. |
 | `TN-POLICY-BRANCH` | Branch modifies protected policy file tenet.yaml. | Revert tenet.yaml on this branch or move policy changes to a separate change. |

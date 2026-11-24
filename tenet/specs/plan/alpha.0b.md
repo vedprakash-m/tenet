@@ -50,10 +50,10 @@
 **CP-0048 · Onboarding inventory and assignment** · R-021, R-027, R-223 (preflight, inventory, units, assignment, refresh), R-225 (instruction files)
 1. *Needs:* CP-0009, CP-0012, CP-0018; OB §1; C §4; ALG-11.
 2. *Owns:* `src/onboard/{preflight,inventory,findings,assignment,refresh}.ts`, the `onboard` command (without `--card`) and its result schema, `test/onboard/`.
-3. *Exports:* `onboard({inventoryOnly, refresh, layout}) → {preflight, inventory, findings, assignment}`.
+3. *Exports:* `onboard({inventoryOnly, refresh, layout}) → {preflight: {revision, read_count, skipped_count, dirty_warning}, inventory, findings, assignment}`.
 4. *Behavior:*
-   - **Preflight:** text as UX Part 1.
-   - **Inventory:** its first findings, project kind, units and output paths exactly as OB §1 and ALG-11. Test declarations and skips come from CP-0018's `scanTests`; doc dates come from one `lastChangedMap` call.
+   - **Preflight:** text as UX Part 1; returns `{revision, read_count: sources.files.length, skipped_count: sources.skipped.length, dirty_warning}`.
+   - **Inventory:** its first findings (sorted by `kind` order `dead-path`, `skipped-tests`, `owners-unmatched`, `no-test-report`, then `path`, then `message`, with the templates in OB §1; top-level `findings` equals `inventory.findings`), project kind, `sources.skipped` reasons (`env|credentials|vendored|generated|excluded|binary|oversize`), units (`one-file`: `[{id: "root", paths: ["."], views}]`; `separate`: CODEOWNERS areas else top-level source folders, merging `< 2,000`-line units into their preceding neighbor, or following neighbor at index `0`) and output paths (`assignment.inventory = ".tenet/onboard/inventory.json"`) exactly as OB §1 and ALG-11. Test declarations and skips come from CP-0018's `scanTests`; doc dates come from one `lastChangedMap` call.
    - **Instruction files:** listed with kind `instructions` (OB §1).
    - **Inputs:** repository facts are byte-identical for one commit, and report data goes only in `observations`. `tenet.yaml` is read from the working tree.
    - **Refresh:** keeps IDs, edits, rejections and blessings, and assigns only units whose sources changed since `drafted_at_rev`.
@@ -69,7 +69,12 @@
    - `verify --run-checks`, `--bundle` and `--record`, with their result schema
    - `kit/workflows/{tenet-tests.yml,tenet.yml,existing-ci-step.yml}`, `pkg/conformance/cards/`, `test/verify/`
 3. *Exports:* `runChecks(policy) → bundle`; `record(event) → {card, conclusion, wrote}`; `renderCard(model) → markdown`.
-4. *Behavior:* CI §2–§4 step for step: finding the pull request (forks and shared heads included), `refs/pull/<n>/*` fetches, bundle limits and matrix merging, keyed runs with a forward-only `latest`, and plumbing writes. The card model and order are C §5, built from `parseAcceptance`, `itemResults`, `weakening`, `touched`, `deltas`, `check` and the five alpha.0 rules. The forge conclusion follows CI §10. `evaluation_id` is per C §1. It reports blessings changed and whether the test workflow differs from the target's.
+4. *Behavior:* CI §2–§4 step for step: finding the pull request (forks and shared heads included), `refs/pull/<n>/*` fetches, bundle limits and matrix merging, keyed runs with a forward-only `latest`, and plumbing writes. The card model and order are C §5, built from `parseAcceptance`, `itemResults`, `weakening`, `touched`, `deltas`, `check` and the five alpha.0 rules (`card.rules` holds only rules with `would_block === true`, in pack order). The forge conclusion and `card.degraded` strings follow CI §10. `evaluation_id` is per C §1. It reports blessings changed and whether the test workflow differs from the target's. `renderCard(model)` produces exact LF-terminated Markdown matching UX Part 1A lines 102–111:
+   - Header: `### Tenet proof · <tested.commit.slice(0, 6)> (<merge candidate|head>) · <advisory|verified on CI|advisory · intent not yet blessed>`.
+   - `Your intent this change touches` (when `requirements.length > 0`): `  <id> <state> · "<excerpt>" · <why> · <n> tagged test(s) <passed|failed|not run>` for non-`same-area`, then `  <ids.join(", ")> blessed · may be affected (same area)`.
+   - `Acceptance`: `  ! no acceptance items · add the block from the template` when `items.length === 0`; else per item `  ✓ <id> · test passed on this commit · <written in this change|tag added here|existing test> · <names.join(", ")>` (`passed`), `  ✗ <id> · test failed on this commit · <authorship> · <first_failure>` (`failed`), `  ! <id> · no test · nothing tagged [<id>]` (`no-test`), `  ! <id> · skipped · <names.join(", ")>` (`skipped`), `  ! <id> · coverage not confirmed · <passed>/<expected> tagged tests ran` (`not-run` with `passed > 0`), or `  ! <id> · not run · <expected> tagged test(s) did not run` (`not-run` with `passed === 0`).
+   - Summary line: `Tests <passed> passed[, <failed> failed, <skipped> skipped] | not checked (report <missing|malformed>) · ✓ no weakening detected by these checks[(not checked: <langs>)] | ! weakening detected: <finding in file (names)>[ (not checked: <langs>)] · ✓ no protected files touched | ! protected files touched: <paths>[ (test workflow changed)]`.
+   - Optional lines (when non-empty): `Blessings changed: <doc>#<section> blessed by <blessed_by> (committed by <commit_author>)`; `Spec deltas: <doc> (+<added> ~<modified> -<removed>)`; `Would have blocked: <reasons joined by " · ">`; `Degraded: <degraded joined by " · ">`; `Why: <text [class] joined by " · ">`.
 5. *Edge cases:*
    - **Card inputs:** no or empty acceptance block; a description edit on the same commit (reuses the bundle); no blessed specifications (badge `intent-not-yet-blessed`).
    - **Test results:** a failing check; a missing report; an expired bundle; a refused bundle (`TN-RECORD-BUNDLE`).
@@ -98,18 +103,18 @@
 **CP-0010 · Init, upgrade, remove** · R-020, R-022, R-023, R-024, R-025, R-051, R-221, R-222, R-225 (rules in the block, Copilot pointer)
 1. *Needs:* CP-0045, CP-0048, CP-0051 (its workflow templates, loaded through the kit, never imported); OB §2; C §6, §10; CI §2–§3; AG §1; ALG-12.
 2. *Owns:* `src/install/` (with `hosts.ts`, a list of `HostDescriptor` entries: `detect`, `planWrites`, `capabilityLevel`), the commands `init`, `upgrade`, `remove`, `doctor` with their result schemas, `examples/starter/` (the `tenet-starter` contents), `test/install/`.
-3. *Exports:* `init({yes, vendor, force})`, `upgrade()`, `remove()`, `doctor()`.
+3. *Exports:* `init({yes, vendor, force}) → {plan, wrote, findings, cancelled?}`, `upgrade() → {from, to, changed: [{path, action: created|replaced|kept}]}`, `remove() → {removed: [{path, kind: file|block|key}], kept: [{path, reason: edited-by-you|spec-or-records}], reminder}`, `doctor() → {checks: [{name: node|git|ssh|gh|lock|workflows, ok, detail}]}`.
 4. *Behavior:*
-   - **Preflight:** as UX Part 1, with the host capability level (R-222) and where the tests will run (CI §2's rule, with the reason).
-   - **Writes (ALG-12, confined to the repository):**
-     - `tenet.yaml` at `observe` with the runner command and setup (C §6, CI §2)
-     - the lock, with `integrity` from the registry
-     - the recorder workflow, plus the chosen test path (Tenet's workflow, or the marked step and reporter edit)
-     - the `AGENTS.md` block with the working rules `agents.working_rules` selects, the pull-request template block and the `.gitignore` block
-     - host entries, with Windows local forms in local settings (C §10)
-     - owners (OB §2), then the manifest
-   - **After writing:** prints the first findings and offers onboarding. An empty repository gets two questions and `tenet/intent.md`; with `--yes`, kind `other`.
-   - **Other commands:** `upgrade` per OB §2, rewriting the pinned version in every owned entry; `remove` per ALG-12 with the branch-rule reminder; `doctor` checks Node, git, OpenSSH, `gh`, the lock and the workflows.
+   - **Preflight:** as UX Part 1, with the host capability level (`skills+mcp|mcp|instructions`, R-222) and where the tests will run (`ci_mode: existing-ci|tenet-workflow|none`, `ci_reason` per CI §2). Declining preflight writes nothing and exits 0 (`cancelled: true`).
+   - **Writes (ALG-12, confined to the repository; static `TN-PATH-ESCAPE` and `TN-INIT-EXISTS` checks run before writing `.tenet/manifest.pending.json`):**
+     - `tenet.yaml` at `observe` with synthesized check `checks.test`, runner command and shell `run:` setup (C §6, CI §2)
+     - the lock, with `integrity` from the registry and `kit_sha256` over `kit/`
+     - on GitHub remotes, the recorder workflow, plus the chosen test path (Tenet's workflow, or the marked step with synthesized `id: tenet-tests` and consented reporter edit; `--yes` without reporter consent or reusable workflows fall back to `tenet-workflow`); on non-GitHub remotes, omit `.github/**` (`ci_mode: "none"`)
+     - the `AGENTS.md` block with the working rules `agents.working_rules` selects, the pull-request template block (GitHub), `.gitignore` and `.gitattributes` blocks (preserving outside CRLF bytes)
+     - host entries (`.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json` always use portable `npx -y @vedprakash-m/tenet@<locked> mcp`; Windows `cmd /c` forms go in local host settings tracked in `local_keys`, C §10 / OB §2)
+     - owners (`id` stripped of `@` and lowercased, OB §2), then `.tenet/manifest.json` (recording `previous_block`/`prefix_sep` and `previous_raw` for byte-exact `remove`)
+   - **After writing:** prints the first findings and offers onboarding. An empty repository asks purpose and kind (with `--yes`: kind `other`, purpose `"Undecided · edit or run tenet onboard"`, seeding `tenet/intent.md` and finding `no-test-report`).
+   - **Other commands:** `upgrade` per OB §2, rewriting the pinned version in every owned repo and local entry while preserving `tenet.yaml`; `remove` per ALG-12, retiring `.tenet/manifest*.json` and printing the branch-rule reminder; `doctor` checks `node`, `git` (missing git executable emits `TN-ENV-GIT` with `found: "not installed"`, exit 3), `ssh` (optional), `gh` (optional), `lock` (`TN-LOCK-MISSING` / `TN-LOCK-INVALID` / `TN-KIT-EDITED` / `TN-KIT-MISSING`, exit 1) and `workflows`.
 5. *Edge cases:*
    - **Existing files:** an `AGENTS.md` block or pull-request template; `.mcp.json` with other servers.
    - **Interruption and repeats:** interrupted after each write; `init → init → upgrade → remove`; `--vendor` then a fresh clone.
