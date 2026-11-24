@@ -26,6 +26,7 @@ import type {
   InitPlan,
   InitResult,
   InitWrote,
+  InstallFinding,
   InstallManifest,
   ManifestBlock,
   ManifestKey,
@@ -39,7 +40,7 @@ import type {
   WriteSet,
 } from "./types.js";
 import { localProfileRoot, localProfileRoots } from "./environment.js";
-import { releaseIntegrity } from "./integrity.js";
+import { localIntegrityWarning, releaseIntegrity } from "./integrity.js";
 
 export type WritePlanOptions = PreflightOptions & {
   force?: boolean;
@@ -1048,6 +1049,30 @@ function emptyWrote(): InitWrote {
   return { created: [], blocks: [], keys: [], local_keys: [] };
 }
 
+function pendingIntegrityFinding(pending: PendingManifest): InstallFinding[] {
+  const lock = pending.writes.find((write) => write.path === "tenet.lock");
+  if (!lock?.content) return [];
+  try {
+    const value = JSON.parse(lock.content) as {
+      package?: unknown;
+      version?: unknown;
+      "x-integrity-source"?: unknown;
+    };
+    if (
+      value["x-integrity-source"] !== "local" ||
+      typeof value.package !== "string" ||
+      typeof value.version !== "string"
+    ) return [];
+    return [{
+      kind: "local-integrity",
+      path: "tenet.lock",
+      message: localIntegrityWarning(value.package, value.version),
+    }];
+  } catch {
+    return [];
+  }
+}
+
 export async function applyPlan(
   plan: WriteSet,
   options: ApplyPlanOptions = {},
@@ -1154,7 +1179,11 @@ export async function resumePendingPlan(
   wrote.created.push(".tenet/manifest.json");
   await rm(pendingPath, { force: true });
   sortWrote(wrote);
-  return { plan: plan.plan, wrote, findings: [] };
+  return {
+    plan: plan.plan,
+    wrote,
+    findings: pendingIntegrityFinding(pending),
+  };
 }
 
 export async function readPendingPlan(

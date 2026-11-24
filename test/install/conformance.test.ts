@@ -397,6 +397,22 @@ test("p11 interruption checkpoints replay to the clean tree", async (t) => {
   }
 });
 
+test("resumed init keeps the clean local-integrity finding", async (t) => {
+  const clean = await makeCase("p11-interrupted-install-resumes");
+  const interrupted = await makeCase("p11-interrupted-install-resumes");
+  t.after(async () => {
+    await dispose(clean);
+    await dispose(interrupted);
+  });
+  const expected = await init(clean.options);
+  await assert.rejects(
+    init({ ...interrupted.options, fault: { after: "pending" } }),
+    (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+  );
+  const resumed = await init(interrupted.options);
+  assert.deepEqual(resumed.findings, expected.findings);
+});
+
 test("p09 loader runs init, repeat, upgrade and byte-exact remove", async (t) => {
   const setup = await makeCase("p09-init-repeat-upgrade-remove");
   t.after(() => dispose(setup));
