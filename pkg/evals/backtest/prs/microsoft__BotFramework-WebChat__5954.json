@@ -19,7 +19,7 @@
   "merge_sha": "2ca5f3c6aa89853fe80837aa54e1a214045a25f6",
   "diff_sha256": "e5499b70626b84f1b117ef3076e547d65597dcb6c5f3aed89040d7508a37d8ed",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -294,5 +294,13 @@
       "conclusion": "success",
       "completed_at": "2026-10-22T03:37:20Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/fluentTheme/icons.forcedColors.dark.html.snap-1.png",
+    "__tests__/html2/fluentTheme/icons.forcedColors.dark.html.snap-2.png",
+    "__tests__/html2/fluentTheme/icons.forcedColors.html.snap-1.png",
+    "__tests__/html2/fluentTheme/icons.forcedColors.html.snap-2.png",
+    "__tests__/html2/fluentTheme/starterPrompts.forcedColors.dark.html.snap-1.png",
+    "__tests__/html2/fluentTheme/starterPrompts.forcedColors.html.snap-1.png"
   ]
 }

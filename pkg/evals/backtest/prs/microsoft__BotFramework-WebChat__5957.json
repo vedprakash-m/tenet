@@ -19,7 +19,7 @@
   "merge_sha": "011c7c5b388104f9de18157bb1f92ff05856ee2e",
   "diff_sha256": "645cbe8ce6f11b2b56166e8e29e421441ff1b98470c3e811c74e952c79ece5e1",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [
     "no-changelog"
   ],
@@ -249,5 +249,9 @@
       "conclusion": "success",
       "completed_at": "2026-10-22T11:05:39Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.validation.html.snap-1.png",
+    "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.validation.html.snap-2.png"
   ]
 }

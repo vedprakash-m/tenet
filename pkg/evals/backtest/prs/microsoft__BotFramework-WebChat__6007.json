@@ -19,7 +19,7 @@
   "merge_sha": "be71cb455cda341d813800165d6ad4ffa4bcc28f",
   "diff_sha256": "c070201ad108b190935a205b1c6ccef1b4e0663ad91ed7c2ba8b3dceb008885c",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -476,5 +476,9 @@
       "conclusion": "success",
       "completed_at": "2026-11-03T23:52:30Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/attachment/file.noName.fluent.html.snap-1.png",
+    "__tests__/html2/attachment/file.noName.html.snap-1.png"
   ]
 }

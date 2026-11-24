@@ -50,5 +50,6 @@
       "submitted_at": "2025-10-11T00:01:49Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "binary_paths": []
 }

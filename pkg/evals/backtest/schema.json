@@ -25,7 +25,8 @@
     "check_runs",
     "diff_sha256",
     "shas_resolved",
-    "applies_at_base"
+    "applies_at_base",
+    "binary_paths"
   ],
   "properties": {
     "repo": {
@@ -276,6 +277,12 @@
             ]
           }
         }
+      }
+    },
+    "binary_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
       }
     }
   }

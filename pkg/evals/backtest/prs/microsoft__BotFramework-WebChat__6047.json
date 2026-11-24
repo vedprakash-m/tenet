@@ -19,7 +19,7 @@
   "merge_sha": "7697bdfeec0ef9e0a0aed91f3518157467e3daca",
   "diff_sha256": "4014ea721e9166b723e1199928038b1143a5e5c55eefcc543d7801b04865ed5b",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -444,5 +444,18 @@
       "conclusion": "success",
       "completed_at": "2026-11-13T00:15:06Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/basic/twoWebChats.unmountOne.html.snap-1.png",
+    "__tests__/html2/basic/twoWebChats.unmountOne.html.snap-2.png",
+    "__tests__/html2/react19/activity.hideShow.fluent.html.snap-1.png",
+    "__tests__/html2/react19/activity.hideShow.fluent.html.snap-2.png",
+    "__tests__/html2/react19/activity.hideShow.html.snap-1.png",
+    "__tests__/html2/react19/activity.hideShow.html.snap-2.png",
+    "__tests__/html2/react19/activity.hideShow.sharedStyles.html.snap-1.png",
+    "__tests__/html2/react19/activity.hideShow.sharedStyles.html.snap-2.png",
+    "__tests__/html2/react19/activity.hideShow.styleOptions.html.snap-1.png",
+    "__tests__/html2/react19/strictMode.unmount.styles.html.snap-1.png",
+    "__tests__/html2/strictMode/unmount.styles.html.snap-1.png"
   ]
 }

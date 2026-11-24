@@ -329,5 +329,27 @@
       "submitted_at": "2025-08-14T16:08:49Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/{__image_snapshots__/html/toast-show-update-dismiss-js-notification-toast-show-a-notification-update-and-dismiss-it-3-snap.png => html2/toast/hideToaster.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toaster-hide-toaster-js-notification-toast-hide-toaster-2-snap.png => html2/toast/hideToaster.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toaster-hide-toaster-js-notification-toast-hide-toaster-1-snap.png => html2/toast/hideToaster.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/toast-js-notification-toast-should-show-privacy-policy-1-snap.png => html2/toast/layout.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toaster-move-recent-to-top-js-notification-toast-move-recently-updated-toast-to-the-top-1-snap.png => html2/toast/moveRecentToTop.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toaster-move-recent-to-top-js-notification-toast-move-recently-updated-toast-to-the-top-2-snap.png => html2/toast/moveRecentToTop.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toast-show-update-dismiss-js-notification-toast-show-a-notification-update-and-dismiss-it-1-snap.png => html2/toast/showUpdateDismiss.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toast-show-update-dismiss-js-notification-toast-show-a-notification-update-and-dismiss-it-2-snap.png => html2/toast/showUpdateDismiss.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toaster-hide-toaster-js-notification-toast-hide-toaster-3-snap.png => html2/toast/showUpdateDismiss.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-1-snap.png => html2/toast/twoNotifications.closeOne.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-2-snap.png => html2/toast/twoNotifications.closeOne.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-3-snap.png => html2/toast/twoNotifications.closeOne.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-4-snap.png => html2/toast/twoNotifications.closeOne.html.snap-4.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-expand-collapse-js-notification-toast-show-2-notifications-expand-and-collapse-1-snap.png => html2/toast/twoNotifications.expandCollapse.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-expand-collapse-js-notification-toast-show-2-notifications-expand-and-collapse-2-snap.png => html2/toast/twoNotifications.expandCollapse.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-expand-collapse-js-notification-toast-show-2-notifications-expand-and-collapse-3-snap.png => html2/toast/twoNotifications.expandCollapse.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/toast-two-very-long-notifications-js-notification-toast-show-two-very-long-notifications-1-snap.png => html2/toast/twoVeryLongNotifications.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toast-two-very-long-notifications-js-notification-toast-show-two-very-long-notifications-2-snap.png => html2/toast/twoVeryLongNotifications.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toast-two-very-long-notifications-js-notification-toast-show-two-very-long-notifications-3-snap.png => html2/toast/twoVeryLongNotifications.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/toast-undefined-js-notification-toast-should-not-break-when-showing-a-toast-with-undefined-content-1-snap.png => html2/toast/undefined.html.snap-1.png}"
+  ]
 }

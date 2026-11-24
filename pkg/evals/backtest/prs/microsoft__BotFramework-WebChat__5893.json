@@ -19,7 +19,7 @@
   "merge_sha": "0041a3899b2093ba94e85f94b133eac9e52ce425",
   "diff_sha256": "b93c6a209e8455069a0d6ee03ae2c7f7c0e050ea411029ac3bcfdea4e959fd1b",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -476,5 +476,26 @@
       "conclusion": "success",
       "completed_at": "2026-10-18T06:17:36Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.dark.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.dark.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.dark.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.dark.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.dark.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.dark.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/contrast.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/remount.html.snap-1.png"
   ]
 }

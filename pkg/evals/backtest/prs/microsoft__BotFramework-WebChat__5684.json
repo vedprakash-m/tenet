@@ -19,7 +19,7 @@
   "merge_sha": "c417014199369e3c25c857b178153dfef21299cf",
   "diff_sha256": "c140a9d6b916fda222dd8884ddc5b767f4aabbd0a6791eda527926d069006d0f",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -125,5 +125,8 @@
       "conclusion": "success",
       "completed_at": "2026-02-03T20:03:07Z"
     }
+  ],
+  "binary_paths": [
+    "packages/test/test-assets/make.com"
   ]
 }

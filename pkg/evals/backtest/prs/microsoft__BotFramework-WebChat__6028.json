@@ -19,7 +19,7 @@
   "merge_sha": "5a04a971f4d782b5c066b89b901748df91fd2578",
   "diff_sha256": "f4261a7eb100c1a019bb0ba2bceadb6bc2e2934f05265a21a4ceabed9b6ab2c4",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -411,5 +411,8 @@
       "conclusion": "success",
       "completed_at": "2026-11-08T23:01:14Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/styleOptions/avatarBorderRadius.html.snap-1.png"
   ]
 }

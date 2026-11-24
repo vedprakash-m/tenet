@@ -19,7 +19,7 @@
   "merge_sha": "f211d9dadf2d78bfe1be98d12841a27b28442545",
   "diff_sha256": "bf5755d8410af6c4db727a5a9d5aa3c026524552069136412964e54d7bc027d1",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -626,5 +626,15 @@
       "conclusion": "success",
       "completed_at": "2026-11-04T01:57:41Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/accessibility/ariaNotify/longSend.html.snap-1.png",
+    "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.event.html.snap-1.png",
+    "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.fast.html.snap-1.png",
+    "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.html.snap-1.png",
+    "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.html.snap-2.png",
+    "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.html.snap-3.png",
+    "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.language.html.snap-1.png",
+    "__tests__/html2/accessibility/liveRegion/activityStatus.longSend.sendFailed.html.snap-1.png"
   ]
 }

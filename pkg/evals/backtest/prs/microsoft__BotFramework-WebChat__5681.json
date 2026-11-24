@@ -19,7 +19,7 @@
   "merge_sha": "f7a730ff38528525df240399354658e135f6e3e3",
   "diff_sha256": "7ad158b1b2f3d6b6a09ed8258be1b5f9e7361751436758e357bb8f076823cd03",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -281,5 +281,14 @@
       "conclusion": "success",
       "completed_at": "2026-01-29T07:40:03Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/autoScroll/autoScroll.afterSend.html.snap-1.png",
+    "__tests__/html2/hooks/useTextBox.html.snap-1.png",
+    "__tests__/html2/hooks/useTextBox.html.snap-2.png",
+    "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-1.png",
+    "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-2.png",
+    "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-3.png",
+    "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-4.png"
   ]
 }

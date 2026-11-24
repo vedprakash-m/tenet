@@ -611,5 +611,6 @@
       "conclusion": "success",
       "completed_at": "2026-03-05T11:09:00Z"
     }
-  ]
+  ],
+  "binary_paths": []
 }

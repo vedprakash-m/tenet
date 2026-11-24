@@ -19,7 +19,7 @@
   "merge_sha": "78d436aa42a4ebf3061aceb087709198f8d9d483",
   "diff_sha256": "5f75dfb99292af0acd5434c9e3f05cae52e71c42ea6fb252ec5a66d0f1d48c08",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -540,5 +540,13 @@
       "conclusion": "success",
       "completed_at": "2026-10-28T23:09:50Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/accessibility/ariaNotify/adaptiveCard.inputValue.html.snap-1.png",
+    "__tests__/html2/accessibility/ariaNotify/heroCard.html.snap-1.png",
+    "__tests__/html2/accessibility/ariaNotify/hostHidesLiveRegion.html.snap-1.png",
+    "__tests__/html2/accessibility/ariaNotify/message.html.snap-1.png",
+    "__tests__/html2/accessibility/ariaNotify/switchTransport.html.snap-1.png",
+    "__tests__/html2/accessibility/ariaNotify/unsupported.html.snap-1.png"
   ]
 }

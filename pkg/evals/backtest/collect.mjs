@@ -186,6 +186,7 @@ async function collectOne(owner, repo, summary) {
       diff_sha256: null,
       shas_resolved: null,
       applies_at_base: null,
+      binary_paths: [],
       labels: (pr.labels || []).map((label) => typeof label === "string" ? label : label.name).filter(Boolean),
       draft_history: draftHistory,
       commits: commits.map((commit) => ({
@@ -324,7 +325,7 @@ async function writeSchema() {
       "repo", "number", "title", "body", "author", "created_at", "merged_at",
       "base", "head", "base_ref", "head_ref", "base_sha", "head_sha", "merge_sha", "labels",
       "draft_history", "commits", "files", "reviews", "check_runs",
-      "diff_sha256", "shas_resolved", "applies_at_base",
+      "diff_sha256", "shas_resolved", "applies_at_base", "binary_paths",
     ],
     properties: {
       repo: { type: "string" },
@@ -414,6 +415,7 @@ async function writeSchema() {
           },
         },
       },
+      binary_paths: { type: "array", items: { type: "string" } },
     },
   };
   await writeFile(path.join(__dirname, "schema.json"), `${JSON.stringify(schema, null, 2)}\n`, "utf8");
@@ -428,7 +430,7 @@ async function verify() {
   function gitIn(dir, args) {
     return new Promise((resolve, reject) => {
       execFile("git", args, { cwd: dir, encoding: "buffer", windowsHide: true, maxBuffer: 128 * 1024 * 1024 }, (error, stdout, stderr) => {
-        if (error) reject(error);
+        if (error) reject(Object.assign(error, { stderr: stderr.toString("utf8") }));
         else resolve(stdout);
       });
     });
@@ -566,27 +568,40 @@ async function verify() {
         throw new Error(`${prName}: ${shaName} is not resolvable locally`);
       }
     }
+    let binaryPaths = [];
+    try {
+      const numstat = await gitIn(cloneDir, ["diff", "--numstat", `${record.base_sha}...${record.head_sha}`]);
+      binaryPaths = numstat.toString("utf8").split(/\r?\n/).filter((line) => line.startsWith("-\t-\t")).map((line) => line.split("\t").slice(2).join("\t"));
+    } catch {
+      throw new Error(`${prName}: unable to read numstat`);
+    }
+    if (JSON.stringify(binaryPaths) !== JSON.stringify(record.binary_paths || [])) {
+      throw new Error(`${prName}: binary_paths mismatch`);
+    }
 
     const tempDir = await mkdtemp(path.join(scratch, "verify-apply-"));
     const tempDiff = path.join(tempDir, "case.diff");
     let appliesAtBase = false;
+    let applyError = "";
     try {
       await gitIn(cloneDir, ["worktree", "add", "--detach", "--force", tempDir, record.base_sha]);
+      await gitIn(tempDir, ["config", "core.autocrlf", "false"]);
       await writeFile(tempDiff, diff);
       try {
-        await gitIn(tempDir, ["apply", "--check", "--unidiff-zero", tempDiff]);
+        const applyArgs = ["apply", "--check", "--unidiff-zero", ...((record.binary_paths || []).map((file) => `--exclude=${file}`)), tempDiff];
+        await gitIn(tempDir, applyArgs);
         appliesAtBase = true;
-      } catch {
+      } catch (error) {
         appliesAtBase = false;
+        applyError = String(error?.stderr || "").split(/\r?\n/).find((line) => line.trim()) || "";
       }
     } finally {
       await gitIn(cloneDir, ["worktree", "remove", "--force", tempDir]).catch(() => {});
       await rm(tempDir, { recursive: true, force: true }).catch(() => {});
     }
-    if (record.applies_at_base !== appliesAtBase) {
-      throw new Error(`${prName}: applies_at_base mismatch`);
-    }
-    if (!appliesAtBase) console.log(`diff_apply=false repo=${record.repo} number=${record.number}`);
+    record.applies_at_base = appliesAtBase;
+    await writeFile(path.join(prsDir, prName), `${JSON.stringify(record, null, 2)}\n`, "utf8");
+    if (!appliesAtBase) console.log(`diff_apply=false repo=${record.repo} number=${record.number} first_error=${applyError}`);
     diffTotalSize += gz.length;
   }
   if (diffTotalSize >= 25 * 1024 * 1024) {

@@ -19,7 +19,7 @@
   "merge_sha": "488ce7246687f57e8e15f2f9443d0ad64debca70",
   "diff_sha256": "60730289fa278b343a10ba47e5145aef8e73a714c1177b8023f540ed1683177e",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -1751,5 +1751,33 @@
       "submitted_at": "2025-05-05T18:21:40Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customize-size-and-roundness-of-avatar-1-snap.png => html2/avatar/layout.customSizeAndRoundness.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-1-snap.png => html2/avatar/layout.default.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-2-snap.png => html2/avatar/layout.default.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-only-on-one-side-1-snap.png => html2/avatar/layout.default.oneSide.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-only-on-one-side-2-snap.png => html2/avatar/layout.default.oneSide.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-only-on-one-side-1-snap.png => html2/avatar/layout.default.oneSide.rtl.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-only-on-one-side-2-snap.png => html2/avatar/layout.default.oneSide.rtl.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-1-snap.png => html2/avatar/layout.default.rtl.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-2-snap.png => html2/avatar/layout.default.rtl.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-bubble-nub-and-round-bubble-1-snap.png => html2/avatar/layout.fullCustomized.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-bubble-nub-and-round-bubble-2-snap.png => html2/avatar/layout.fullCustomized.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-bubble-nub-and-round-bubble-only-on-one-side-1-snap.png => html2/avatar/layout.fullCustomized.oneSide.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-with-default-avatar-bubble-nub-and-round-bubble-only-on-one-side-2-snap.png => html2/avatar/layout.fullCustomized.oneSide.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-bubble-nub-and-round-bubble-only-on-one-side-1-snap.png => html2/avatar/layout.fullCustomized.oneSide.rtl.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-bubble-nub-and-round-bubble-only-on-one-side-2-snap.png => html2/avatar/layout.fullCustomized.oneSide.rtl.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-bubble-nub-and-round-bubble-1-snap.png => html2/avatar/layout.fullCustomized.rtl.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/chrome-docker/customizable-avatar-js-customizable-avatar-in-rtl-with-default-avatar-bubble-nub-and-round-bubble-2-snap.png => html2/avatar/layout.fullCustomized.rtl.html.snap-2.png}",
+    "__tests__/html2/grouping/customGrouping.html.snap-1.png",
+    "__tests__/html2/grouping/disableAll.html.snap-1.png",
+    "__tests__/html2/grouping/disableSender.html.snap-1.png",
+    "__tests__/html2/grouping/disableStatus.html.snap-1.png",
+    "__tests__/html2/grouping/disableStatus.perSender.html.snap-1.png",
+    "__tests__/html2/grouping/extraneousGroup.html.snap-1.png",
+    "__tests__/html2/grouping/fluentTheme.html.snap-1.png",
+    "__tests__/html2/grouping/groupingBorder.html.snap-1.png",
+    "__tests__/html2/grouping/noSuchGroup.html.snap-1.png"
+  ]
 }

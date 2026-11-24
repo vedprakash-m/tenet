@@ -19,7 +19,7 @@
   "merge_sha": "5838525adb528fdc6cf2ca2f4d9c4c56c92ab28c",
   "diff_sha256": "0c14a4ac824324dc1d97ba7f6c99cffa7fcd8dad8da13dd7ed3e8e3d091bb64a",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -372,5 +372,42 @@
       "submitted_at": "2025-07-10T18:06:15Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.html.snap-8.png"
+  ]
 }

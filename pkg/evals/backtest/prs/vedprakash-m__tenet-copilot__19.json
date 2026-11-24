@@ -239,5 +239,6 @@
       "conclusion": "failure",
       "completed_at": "2026-11-10T22:15:50Z"
     }
-  ]
+  ],
+  "binary_paths": []
 }

@@ -19,7 +19,7 @@
   "merge_sha": "5b04ab2b9cf5ce94026c97283296ce1bdf729134",
   "diff_sha256": "7a32a2e61dd6365f11429009ebab308b6c34d9e5ee435ee916101a7766453320",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -300,5 +300,10 @@
       "submitted_at": "2025-09-26T20:06:29Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/html2/simple/fatModule/esm.sh/fluentTheme.html.snap-1.png",
+    "__tests__/html2/simple/fatModule/esm.sh/tsx/fluentTheme.html.snap-1.png",
+    "__tests__/html2/simple/fatModule/fluentTheme.html.snap-1.png"
+  ]
 }

@@ -19,7 +19,7 @@
   "merge_sha": "409110093d2868018ab12dac920c3d48ce52c8eb",
   "diff_sha256": "1865704fd0decacc3fd300da308c88a34ad900e996b742fc61cbc449aed889d8",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -148,5 +148,10 @@
       "submitted_at": "2025-02-11T00:48:00Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-streaming-1-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-streaming-1-snap.png",
+    "__tests__/__image_snapshots__/html/with-builtin-decorator-js-fluent-theme-applied-with-decorators-1-snap.png"
+  ]
 }

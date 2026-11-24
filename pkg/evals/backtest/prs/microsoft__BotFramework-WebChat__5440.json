@@ -19,7 +19,7 @@
   "merge_sha": "8ab050b50c05d0aaffa4277321c92b118698d0b5",
   "diff_sha256": "650779cc4e39f64eb38674f0462514f10b98946408bacca7dd1fd255427e482c",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -76,5 +76,8 @@
       "submitted_at": "2025-03-08T05:30:31Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/html2/livestream/batchedActivities.html.snap-1.png"
+  ]
 }

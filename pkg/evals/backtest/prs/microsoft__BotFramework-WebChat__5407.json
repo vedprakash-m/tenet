@@ -19,7 +19,7 @@
   "merge_sha": "4df27b880ca41c09c33223507a4ab0f26408b376",
   "diff_sha256": "aee667a17560b28cae7e75bb9db7623bbf2ed00446cfb52adad57984159e78e9",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -666,5 +666,35 @@
       "submitted_at": "2025-01-14T22:01:44Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/__image_snapshots__/html/feedback-activity-status-click-js-vote-button-should-send-event-on-click-2-snap.png",
+    "__tests__/__image_snapshots__/html/feedback-activity-status-click-js-vote-button-should-send-event-on-click-3-snap.png",
+    "__tests__/__image_snapshots__/html/feedback-activity-status-click-js-vote-button-should-send-event-on-click-4-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-1-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-2-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-3-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-4-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-5-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-6-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-dark-js-fluent-theme-applied-dark-theme-applied-side-by-side-left-transcript-right-feedback-7-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-1-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-2-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-3-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-4-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-5-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-6-snap.png",
+    "__tests__/__image_snapshots__/html/side-by-side-wide-js-fluent-theme-applied-side-by-side-left-transcript-right-feedback-7-snap.png",
+    "__tests__/html2/activity/feedback.activity.html.snap-1.png",
+    "__tests__/html2/activity/feedback.activity.html.snap-2.png",
+    "__tests__/html2/activity/feedback.activity.html.snap-3.png",
+    "__tests__/html2/activity/feedback.activity.html.snap-4.png",
+    "__tests__/html2/activity/feedback.activity.html.snap-5.png",
+    "__tests__/html2/activity/feedback.activity.html.snap-6.png",
+    "__tests__/html2/activity/feedback.status.html.snap-1.png",
+    "__tests__/html2/activity/feedback.status.html.snap-2.png",
+    "__tests__/html2/activity/feedback.status.html.snap-3.png",
+    "__tests__/html2/activity/feedback.status.html.snap-4.png",
+    "__tests__/html2/activity/feedback.status.html.snap-5.png"
+  ]
 }

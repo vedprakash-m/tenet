@@ -19,7 +19,7 @@
   "merge_sha": "750bf1724c7ee5b610a87152b6ef5bdff67574d4",
   "diff_sha256": "34507a4ae9c4ad5e29adb961bd56fb4cc6f5bb8d56af5e0e7566fee49863ca86",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -451,5 +451,10 @@
       "conclusion": "success",
       "completed_at": "2026-11-12T18:39:47Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/styleOptions/sendBox.disabled.html.snap-1.png",
+    "__tests__/html2/styleOptions/sendBox.html.snap-1.png",
+    "__tests__/html2/styleOptions/sendBox.html.snap-2.png"
   ]
 }

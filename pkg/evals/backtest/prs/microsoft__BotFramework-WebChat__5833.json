@@ -19,7 +19,7 @@
   "merge_sha": "4c60bbe09b0d3ecb21d6c9488ca9d25e56829628",
   "diff_sha256": "c6c19cd0d56aa9dc3cb7dc980d15ec9eb082248f5dbba084fcd96d647e18c96a",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -300,5 +300,12 @@
       "conclusion": "success",
       "completed_at": "2026-05-22T10:58:49Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/adaptiveCard/renderError.withoutDebug.html.snap-1.png",
+    "__tests__/html2/middleware/errorBox/{simple.html.snap-1.png => proxy.html.snap-1.png}",
+    "__tests__/html2/middleware/errorBox/proxy.noDebugProvider.html.snap-1.png",
+    "__tests__/html2/middleware/errorBox/useBuildRenderCallback.html.snap-1.png",
+    "__tests__/html2/middleware/errorBox/{simple.noDebugProvider.html.snap-1.png => useBuildRenderCallback.noDebugProvider.html.snap-1.png}"
   ]
 }

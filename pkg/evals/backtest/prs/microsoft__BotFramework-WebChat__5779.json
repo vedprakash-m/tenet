@@ -19,7 +19,7 @@
   "merge_sha": "cd39b84090a4ea857a53ecd718f474ac5e3b6559",
   "diff_sha256": "5e10eb0847327780163178773120e03a03f48403e4e3b89ce29ed7b6d4fddb43",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -1262,5 +1262,25 @@
       "conclusion": "success",
       "completed_at": "2026-03-30T19:37:21Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/activityGrouping/{activityGrouping.legacyActivityMiddleware.html.snap-1.png => activityGrouping.legacyActivityMiddleware.skip.html.snap-1.png}",
+    "__tests__/html2/middleware/avatar/backwardCompatibility.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/addOrReplace.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/changing.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/changing.html.snap-2.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/decorate.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/delete.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/styleOptions.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/styleOptions.html.snap-2.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/addOrReplace.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/changing.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/changing.html.snap-2.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/decorate.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/defaultAvatar.styleOptions.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/defaultAvatar.styleOptions.html.snap-2.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/delete.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/renderProxy.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/useBuildRenderAvatarCallback.html.snap-1.png"
   ]
 }

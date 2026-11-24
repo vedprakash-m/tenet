@@ -19,7 +19,7 @@
   "merge_sha": "9ee9c6ddf86d0eba7ed870e4d3056e1e32364067",
   "diff_sha256": "d0a29774503b0c27eb59e766c608bda1e82844f388dd5c448568e127bec04308",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -406,5 +406,12 @@
       "conclusion": "success",
       "completed_at": "2026-11-09T09:23:48Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/rtl/toaster.html.snap-1.png",
+    "__tests__/html2/styleOptions/toast.html.snap-1.png",
+    "__tests__/html2/styleOptions/toast.html.snap-2.png",
+    "__tests__/html2/styleOptions/toast.html.snap-3.png",
+    "__tests__/html2/styleOptions/toast.html.snap-4.png"
   ]
 }

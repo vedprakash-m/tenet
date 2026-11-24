@@ -94,15 +94,20 @@ async function replayOne(dir, record) {
 
   let diff = Buffer.alloc(0);
   let appliesAtBase = false;
+  let binaryPaths = [];
   if (resolved) {
     diff = await git(dir, ["diff", "-U0", `${record.base_sha}...${record.head_sha}`]);
+    const numstat = await git(dir, ["diff", "--numstat", `${record.base_sha}...${record.head_sha}`]);
+    binaryPaths = numstat.toString("utf8").split(/\r?\n/).filter((line) => line.startsWith("-\t-\t")).map((line) => line.split("\t").slice(2).join("\t"));
     const tempDir = await mkdtemp(path.join(scratch, "apply-check-"));
     const diffPath = path.join(tempDir, "case.diff");
     try {
       await git(dir, ["worktree", "add", "--detach", "--force", tempDir, record.base_sha]);
+      await git(tempDir, ["config", "core.autocrlf", "false"]);
       await writeFile(diffPath, diff);
       try {
-        await git(tempDir, ["apply", "--check", "--unidiff-zero", diffPath]);
+        const applyArgs = ["apply", "--check", "--unidiff-zero", ...binaryPaths.map((file) => `--exclude=${file}`), diffPath];
+        await git(tempDir, applyArgs);
         appliesAtBase = true;
       } catch {
         appliesAtBase = false;
@@ -116,6 +121,7 @@ async function replayOne(dir, record) {
   record.diff_sha256 = sha256(diff);
   record.shas_resolved = resolved;
   record.applies_at_base = appliesAtBase;
+  record.binary_paths = binaryPaths;
   await writeFile(path.join(prsDir, fileName(record.repo, record.number)), `${JSON.stringify(record, null, 2)}\n`, "utf8");
   await writeFile(path.join(diffsDir, diffName(record.repo, record.number)), gzipSync(diff));
   return resolved;

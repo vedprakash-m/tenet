@@ -19,7 +19,7 @@
   "merge_sha": "4ee5562cedfb7edd59970bdaa1e8978750c5115f",
   "diff_sha256": "33dd4e25666b3ec6ce147654e93374bb2e3416f39a4095b61a87389d9342e758",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [
     {
@@ -455,5 +455,12 @@
       "conclusion": "success",
       "completed_at": "2026-10-22T06:08:06Z"
     }
+  ],
+  "binary_paths": [
+    "__tests__/html2/adaptiveCard/headingLevel.markdownInHeading.html.snap-1.png",
+    "__tests__/html2/adaptiveCard/headingLevel.startAt.html.snap-1.png",
+    "__tests__/html2/markdown/headingLevels.html.snap-1.png",
+    "__tests__/html2/markdown/headingLevels.startAt.html.snap-1.png",
+    "__tests__/html2/markdown/headingLevels.startsAtLevel2.html.snap-1.png"
   ]
 }

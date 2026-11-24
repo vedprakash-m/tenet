@@ -76,5 +76,6 @@
       "submitted_at": "2025-05-01T18:12:43Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "binary_paths": []
 }

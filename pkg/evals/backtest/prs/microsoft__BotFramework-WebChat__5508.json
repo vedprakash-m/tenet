@@ -19,7 +19,7 @@
   "merge_sha": "b40ec719c1a81e90a3fbdcc8a784d4742505dc50",
   "diff_sha256": "f81564f2b29643857942d17e6384f79b71659599a386fd31527f46d6ff60b008",
   "shas_resolved": true,
-  "applies_at_base": false,
+  "applies_at_base": true,
   "labels": [],
   "draft_history": [],
   "commits": [
@@ -379,5 +379,11 @@
       "submitted_at": "2025-08-01T21:04:14Z"
     }
   ],
-  "check_runs": []
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/html2/basic/disableFileUpload.copilot.html.snap-1.png",
+    "__tests__/html2/basic/disableFileUpload.false.fluent.html.snap-1.png",
+    "__tests__/html2/basic/disableFileUpload.fluent.html.snap-1.png",
+    "__tests__/html2/basic/disableFileUpload.html.snap-1.png"
+  ]
 }
