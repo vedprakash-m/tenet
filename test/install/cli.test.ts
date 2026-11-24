@@ -153,7 +153,8 @@ test("dist CLI runs init, repeat init, doctor, upgrade and remove", async (t) =>
 
   const upgrade = run(repo.path, "upgrade");
   assert.equal(upgrade.child.status, 0, upgrade.child.stdout);
-  assert.equal((upgrade.envelope.result as { from: string }).from, "0.0.0");
+  const manifest = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8")) as { version: string };
+  assert.equal((upgrade.envelope.result as { from: string }).from, manifest.version);
 
   const remove = run(repo.path, "remove");
   assert.equal(remove.child.status, 0, remove.child.stdout);

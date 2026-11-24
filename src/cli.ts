@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { git } from "./core/git.js";
@@ -413,7 +414,15 @@ export async function run(argv: readonly string[], input: CliIo = {}): Promise<0
   }
 }
 
-const entry = process.argv[1] ? path.resolve(process.argv[1]) : "";
-if (entry && entry === fileURLToPath(import.meta.url)) {
+function realEntryPath(filename: string): string {
+  try {
+    return realpathSync(filename);
+  } catch {
+    return path.resolve(filename);
+  }
+}
+
+const entry = process.argv[1];
+if (entry && realEntryPath(entry) === realEntryPath(fileURLToPath(import.meta.url))) {
   process.exitCode = await run(process.argv.slice(2));
 }

@@ -2,32 +2,31 @@
 
 **Spec-driven development for software factories. Agents build what you meant, and you can see that they did.**
 
-Tenet sets up your repository so that your coding agents work from specifications you have read and blessed, and every pull request shows which blessed requirements it touches, which tagged tests passed on that exact commit, and what remains unchecked. It drafts those specifications from your own code and docs, through the agent you already use. Nothing blocks your work until you choose. Underneath is an open standard, so any factory engine, tool or dashboard can work with the same records.
+Tenet gives coding agents specifications you have read and blessed. With Tenet's GitHub Actions workflows configured, pull requests can show which blessed requirements they touch, which tagged tests passed on the tested commit, and what remains unchecked. The agent you already use can draft specifications from your code and docs. Underneath is an open standard, so any factory engine, tool or dashboard can work with the same records.
 
-> **Status: design (M0). Nothing is published yet.** The steps below describe the first release, 0.1.0-alpha.0, as specified in the [experience specification](tenet/specs/ux-spec.md).
+> **Status: alpha.0 in preparation.** Build a local package from this checkout to try the commands below. The [experience specification](tenet/specs/ux-spec.md) describes the full release journey.
 
 ## Get started
 
-You need Git, a GitHub repository with Actions enabled, and Node 22 or later where the command or your agent runs. There is no account and no service.
+You need Git and Node.js 22 or later. From a checkout of the Tenet source, build and install the local package.
 
-**Recommended: let your coding agent do it.** Open your agent in the repository and paste:
-
-```text
-Install Tenet with `npm install --global @vedprakash-m/tenet@0.1.0-alpha.0` (if that fails on permissions, use
-`npx -y @vedprakash-m/tenet@0.1.0-alpha.0` wherever I say `tenet`), run `tenet init --yes` and show me what it wrote.
-Then run `tenet onboard`, follow the draft-specs skill, ask me the questions only I can answer,
-and open one pull request named "Set up Tenet" with the setup files and the drafted specifications.
+```sh
+npm ci
+npm pack
+npm install --global ./vedprakash-m-tenet-0.1.0-alpha.0.tgz
 ```
 
-Your agent installs Tenet, reads your code and docs, asks you what code can't tell it (purpose, users, what must never happen), and opens one pull request. Statements drawn from code or docs cite their source, your answers and the agent's guesses are labelled, and the conflicts it detects are listed for you to settle. Run `tenet bless` to read and approve each section; **nothing drafted is in force until you bless it.** Merge, and every later pull request gets a proof card.
+Open a terminal in the Git repository you want to onboard. It needs at least one commit.
 
-**Other ways in:**
-- Run the commands yourself: `npm install --global @vedprakash-m/tenet@0.1.0-alpha.0`, then `tenet init` and `tenet onboard`.
-- New project: **Use this template** on [vedprakash-m/tenet-starter](https://github.com/vedprakash-m/tenet-starter).
+```sh
+tenet --version
+tenet --help
+tenet onboard --inventory-only
+```
 
-Step-by-step walkthroughs for an [existing repository or a new project](tenet/specs/ux-spec.md#part-1-start-here).
+Onboarding runs with defaults in a repository without `tenet.yaml`. The command writes an inventory and a drafting assignment under `.tenet/onboard/`. Give your coding agent `.tenet/onboard/assignment.json` to draft specifications. Tenet does not call a model.
 
-**What Tenet changes in your repository:** it adds `tenet.yaml` (about 9 lines), `tenet.lock` and a CI workflow that posts the card; it adds marked blocks to `AGENTS.md`, `.gitignore`, your pull-request template and either your existing CI job (one step after your tests) or a Tenet test workflow, plus your agent host's skills and MCP entry; onboarding adds your specifications. `init` lists every change before making it. **To remove Tenet,** run `tenet remove`: it undoes exactly what `init` recorded and keeps your specifications.
+In a repository configured for Tenet, use `tenet bless` to review and approve sections before their drafts take effect. Run `tenet check` to check the specifications and `tenet board` to see their status. `init`, `upgrade`, `remove` and `doctor` are part of the planned install flow. CI and agent-host setup are still release work.
 
 ---
 
@@ -38,7 +37,7 @@ Step-by-step walkthroughs for an [existing repository or a new project](tenet/sp
 | **Onboarding** | Your agent drafts your vision, requirements, design, experience and plan from your code and docs, with source-backed statements cited and detected conflicts listed; you bless it section by section, and blessed text stays in force until you bless a change | 0.1.0-alpha.0 |
 | **Proof card** | On every pull request, forks included: the blessed requirements the change touches, which acceptance items had their tagged tests pass on that exact commit (and whether those tests came with the change), and whether tests were deleted or skipped | 0.1.0-alpha.0 |
 | **Agent context** | Your agents get only the blessed specifications their task touches, through `AGENTS.md`, skills or a local MCP server, plus short working rules you can replace; onboarding turns your existing `copilot-instructions.md` or `CLAUDE.md` rules into blessed specifications | 0.1.0-alpha.0 |
-| **`tenet` command** | `init`, `onboard`, `bless`, `context`, `check`, `fix`, `board` (specifications until alpha.1), `upgrade`, `remove` | 0.1.0-alpha.0 |
+| **`tenet` command** | This checkout includes `onboard`, `bless`, `context`, `mcp`, `check`, `fix`, `split`, `verify` and `board` (specifications until alpha.1). Install and maintenance commands are planned for the release. | 0.1.0-alpha.0 |
 | **Rules and decisions** | Rules first show what they *would have* blocked; you turn on the ones that earned it. Decisions use your forge's normal review | 0.1.0-alpha.1 |
 | **Signed verification** | Evidence signed by a protected CI job, so the record cannot be forged or altered (it does not prove the checks were the right ones) | 0.1.0-alpha.2 |
 | **Reference agents and careful lane** | Agent cards for the shaper (definitions), test writer (independent tests), builder and judge; for risky changes, tests are written by a separate agent and pinned before the build; an optional minimal runner chains them through your own agent tool | 0.1.0 |
@@ -48,14 +47,14 @@ Step-by-step walkthroughs for an [existing repository or a new project](tenet/sp
 
 | Your agent or engine can | What you get |
 |---|---|
-| Open pull requests | Proof cards, with no integration |
+| Open pull requests | Proof cards when the repository runs Tenet’s GitHub Actions workflows |
 | Read `AGENTS.md` | The map of your specifications and the rules |
 | Load skills | Onboarding, working a change, reviewing with findings |
 | Use MCP | `context`, `check` and `status` as tools |
 | Restrict file writes (a host binding, 0.1.x) | Protected files refused before they are written |
 | Run headless (Tenet's runner, a headless agent host and `gh`) | Tenet's runner chains the shipped agents through it, up to your approvals (0.1.0); bigger factories plug in the same way |
 
-Tenet never calls a model, so it works with whatever model your agent uses; context and skills need an agent that reads `AGENTS.md`, skills or MCP, and the onboarding evaluation names the agents it was tested with. Engines can also write evidence through a JSON file contract; engine adapters that let Tenet dispatch work arrive in 0.3. GitHub is the first forge supported. Any dashboard can read `board.json`. Tenet's records are tool-neutral; the first release runs end to end on GitHub, with the agent hosts its evaluation names.
+Tenet never calls a model, so it works with whatever model your agent uses; context and skills need an agent that reads `AGENTS.md`, skills or MCP, and the onboarding evaluation names the agents it was tested with. Engines can also write evidence through a JSON file contract; engine adapters that let Tenet dispatch work arrive in 0.3. GitHub is the first supported forge. Any dashboard can use the board's JSON output. Tenet's records are tool-neutral. The alpha.0 release targets an end-to-end GitHub flow with the agent hosts named in its onboarding evaluation.
 
 ## Why Tenet
 
