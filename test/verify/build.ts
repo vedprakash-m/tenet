@@ -1,14 +1,9 @@
-import { spawnSync } from "node:child_process";
-import { readdirSync } from "node:fs";
+import { existsSync } from "node:fs";
 
+// npm test builds dist once before any test runs; tests never compile into dist themselves,
+// because a rebuild during the run races other test files importing from dist.
 export function buildVerify(): void {
-  const files = readdirSync("src/verify").filter((name) => name.endsWith(".ts")).map((name) => `src/verify/${name}`);
-  const run = spawnSync(process.execPath, [
-    "node_modules/typescript/bin/tsc", "--target", "ES2023", "--module", "NodeNext", "--moduleResolution", "NodeNext",
-    "--strict", "--noUncheckedIndexedAccess", "--exactOptionalPropertyTypes", "--verbatimModuleSyntax",
-    "--noEmitOnError", "--skipLibCheck", "--outDir", "dist", "--rootDir", "src", ...files,
-  ], { encoding: "utf8" });
-  if (run.status !== 0) throw new Error(run.stderr || run.stdout);
+  if (!existsSync("dist/verify/record.js")) throw new Error("dist is not built: run `npm run build` (npm test does this first)");
 }
 
 export const emptyDeps = {
