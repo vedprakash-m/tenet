@@ -1,0 +1,616 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5768,
+  "title": "Bump dependencies",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n### Changed\r\n\r\n- Bumped dependencies, by [@compulim](https://github.com/compulim) in PR [#5385](https://github.com/microsoft/BotFramework-WebChat/pull/5385), PR [#5400](https://github.com/microsoft/BotFramework-WebChat/pull/5400), PR [#5426](https://github.com/microsoft/BotFramework-WebChat/pull/5426), PR [#5427](https://github.com/microsoft/BotFramework-WebChat/pull/5427), PR [#5476](https://github.com/microsoft/BotFramework-WebChat/pull/5476), PR [#5516](https://github.com/microsoft/BotFramework-WebChat/pull/5516), PR [#5529](https://github.com/microsoft/BotFramework-WebChat/pull/5529), PR [#5532](https://github.com/microsoft/BotFramework-WebChat/pull/5532), PR [#5659](https://github.com/microsoft/BotFramework-WebChat/pull/5659), PR [#5661](https://github.com/microsoft/BotFramework-WebChat/pull/5661), and PR [#5768](https://github.com/microsoft/BotFramework-WebChat/pull/5768), by [@OEvgeny](https://github.com/OEvgeny) in PR [#5662](https://github.com/microsoft/BotFramework-WebChat/pull/5662)\r\n   - Production dependencies\r\n      - [`@babel/runtime@7.28.6`](https://npmjs.com/package/@babel/runtime/v/7.28.6)\r\n      - [`@emotion/css@11.13.5`](https://npmjs.com/package/@emotion/css/v/11.13.5)\r\n      - [`@redux-devtools/extension@3.3.0`](https://npmjs.com/package/@redux-devtools/extension/v/3.3.0)\r\n      - [`adaptivecards@3.0.5`](https://npmjs.com/package/adaptivecards/v/3.0.5)\r\n      - [`botframework-directlinejs@0.15.6`](https://npmjs.com/package/botframework-directlinejs/v/0.15.6)\r\n      - [`core-js-pure@3.48.0`](https://npmjs.com/package/core-js-pure/v/3.48.0)\r\n      - [`core-js@3.48.0`](https://npmjs.com/package/core-js/v/3.48.0)\r\n      - [`event-as-promise@2.0.1`](https://npmjs.com/package/event-as-promise/v/2.0.1)\r\n      - [`globalize@1.7.1`](https://npmjs.com/package/globalize/v/1.7.1)\r\n      - [`html-react-parser@5.2.17`](https://npmjs.com/package/html-react-parser/v/5.2.17)\r\n      - [`inject-meta-tag@0.1.0`](https://npmjs.com/package/inject-meta-tag/v/0.1.0)\r\n      - [`iter-fest@0.3.1`](https://npmjs.com/package/iter-fest/v/0.3.1)\r\n      - [`katex@0.16.33`](https://npmjs.com/package/katex/v/0.16.33)\r\n      - [`mdast-util-from-markdown@2.0.3`](https://npmjs.com/package/mdast-util-from-markdown/v/2.0.3)\r\n      - [`merge-refs@2.0.0`](https://npmjs.com/package/merge-refs/v/2.0.0)\r\n      - [`micromark-extension-gfm@3.0.0`](https://npmjs.com/package/micromark-extension-gfm/v/3.0.0)\r\n      - [`micromark-util-character@2.1.1`](https://npmjs.com/package/micromark-util-character/v/2.1.1)\r\n      - [`micromark-util-sanitize-uri@2.0.1`](https://npmjs.com/package/micromark-util-sanitize-uri/v/2.0.1)\r\n      - [`micromark@4.0.2`](https://npmjs.com/package/micromark/v/4.0.2)\r\n      - [`microsoft-cognitiveservices-speech-sdk@1.48.0`](https://npmjs.com/package/microsoft-cognitiveservices-speech-sdk/v/1.48.0)\r\n      - [`mime@4.1.0`](https://npmjs.com/package/mime/v/4.1.0)\r\n      - [`punycode@2.3.1`](https://npmjs.com/package/punycode/v/2.3.1)\r\n      - [`react-chain-of-responsibility@0.4.2`](https://npmjs.com/package/react-chain-of-responsibility/v/0.4.2)\r\n      - [`react-dictate-button@4.0.1`](https://npmjs.com/package/react-dictate-button/v/4.0.1)\r\n      - [`react-film@4.0.0`](https://npmjs.com/package/react-film/v/4.0.0)\r\n      - [`react-say@2.2.1`](https://npmjs.com/package/react-say/v/2.2.1)\r\n      - [`react-scroll-to-bottom@4.2.1-main.53844f5`](https://npmjs.com/package/react-scroll-to-bottom/v/4.2.1-main.53844f5)\r\n      - [`react-wrap-with@0.1.0`](https://npmjs.com/package/react-wrap-with/v/0.1.0)\r\n      - [`redux-saga@1.4.2`](https://npmjs.com/package/redux-saga/v/1.4.2)\r\n      - [`sanitize-html@2.17.1`](https://npmjs.com/package/sanitize-html/v/2.17.1)\r\n      - [`shiki@2.5.0`](https://npmjs.com/package/shiki/v/2.5.0)\r\n      - [`tagged-tag@1.0.0`](https://npmjs.com/package/tagged-tag/v/1.0.0)\r\n      - [`use-propagate@0.2.2`](https://npmjs.com/package/use-propagate/v/0.2.2)\r\n      - [`use-reduce-memo@0.1.0`](https://npmjs.com/package/use-reduce-memo/v/0.1.0)\r\n      - [`use-ref-from@0.2.1`](https://npmjs.com/package/use-ref-from/v/0.2.1)\r\n      - [`use-state-with-ref@0.2.1`](https://npmjs.com/package/use-state-with-ref/v/0.2.1)\r\n      - [`uuid@8.3.2`](https://npmjs.com/package/uuid/v/8.3.2)\r\n      - [`valibot@1.2.0`](https://npmjs.com/package/valibot/v/1.2.0)\r\n      - [`web-speech-cognitive-services@8.1.4`](https://npmjs.com/package/web-speech-cognitive-services/v/8.1.4)\r\n   - Development dependencies\r\n      - [`@ast-grep/napi@0.41.0`](https://npmjs.com/package/@ast-grep/napi/v/0.41.0)\r\n      - [`@babel/cli@7.28.6`](https://npmjs.com/package/@babel/cli/v/7.28.6)\r\n      - [`@babel/core@7.29.0`](https://npmjs.com/package/@babel/core/v/7.29.0)\r\n      - [`@babel/plugin-transform-runtime@7.29.0`](https://npmjs.com/package/@babel/plugin-transform-runtime/v/7.29.0)\r\n      - [`@babel/plugin-transform-typescript@7.28.6`](https://npmjs.com/package/@babel/plugin-transform-typescript/v/7.28.6)\r\n      - [`@babel/preset-env@7.29.0`](https://npmjs.com/package/@babel/preset-env/v/7.29.0)\r\n      - [`@babel/preset-react@7.28.5`](https://npmjs.com/package/@babel/preset-react/v/7.28.5)\r\n      - [`@babel/preset-typescript@7.28.5`](https://npmjs.com/package/@babel/preset-typescript/v/7.28.5)\r\n      - [`@biomejs/biome@2.3.10`](https://npmjs.com/package/@biomejs/biome/v/2.3.10)\r\n      - [`@fluentui/react-provider@9.22.15`](https://npmjs.com/package/@fluentui/react-provider/v/9.22.15)\r\n      - [`@fluentui/tokens@1.0.0-alpha.23\"`](https://npmjs.com/package/@fluentui/tokens/v/1.0.0-alpha.23)\r\n      - [`@happy-dom/jest-environment@20.0.11`](https://npmjs.com/package/@happy-dom/jest-environment/v/20.0.11)\r\n      - [`@jridgewell/sourcemap-codec@1.5.5`](https://npmjs.com/package/@jridgewell/sourcemap-codec/v/1.5.5)\r\n      - [`@testduet/given-when-then@0.1.0`](https://npmjs.com/package/@testduet/given-when-then/v/0.1.0)\r\n      - [`@tsconfig/strictest@2.0.8`](https://npmjs.com/package/@tsconfig/strictest/v/2.0.8)\r\n      - [`@types/dom-speech-recognition@0.0.7`](https://npmjs.com/package/@types/dom-speech-recognition/v/0.0.7)\r\n      - [`@types/jest@29.5.14`](https://npmjs.com/package/@types/jest/v/29.5.14)\r\n      - [`@types/mdast@4.0.4`](https://npmjs.com/package/@types/mdast/v/4.0.4)\r\n      - [`@types/node@25.3.3`](https://npmjs.com/package/@types/node/v/25.3.3)\r\n      - [`@types/react-dom@18.3.7`](https://npmjs.com/package/@types/react-dom/v/18.3.7)\r\n      - [`@types/react-is@16.7.5`](https://npmjs.com/package/@types/react-is/v/16.7.5)\r\n      - [`@types/react@16.14.69`](https://npmjs.com/package/@types/react/v/16.14.69)\r\n      - [`@types/react@18.3.28`](https://npmjs.com/package/@types/react/v/18.3.28)\r\n      - [`@types/semver@7.7.1`](https://npmjs.com/package/@types/semver/v/7.7.1)\r\n      - [`@types/use-sync-external-store@1.5.0`](https://npmjs.com/package/@types/use-sync-external-store/v/1.5.0)\r\n      - [`@types/uuid@8.3.4`](https://npmjs.com/package/@types/uuid/v/8.3.4)\r\n      - [`@typescript-eslint/eslint-plugin@8.56.1`](https://npmjs.com/package/@typescript-eslint/eslint-plugin/v/8.56.1)\r\n      - [`@typescript-eslint/parser@8.56.1`](https://npmjs.com/package/@typescript-eslint/parser/v/8.56.1)\r\n      - [`adaptivecards@3.0.2`](https://npmjs.com/package/adaptivecards/v/3.0.2)\r\n      - [`adm-zip@0.5.16`](https://npmjs.com/package/adm-zip/v/0.5.16)\r\n      - [`axe-core@4.11.1`](https://npmjs.com/package/axe-core/v/4.11.1)\r\n      - [`babel-jest@29.7.0`](https://npmjs.com/package/babel-jest/v/29.7.0)\r\n      - [`babel-plugin-istanbul@7.0.1`](https://npmjs.com/package/babel-plugin-istanbul/v/7.0.1)\r\n      - [`base64-js@1.5.1`](https://npmjs.com/package/base64-js/v/1.5.1)\r\n      - [`bent@7.3.12`](https://npmjs.com/package/bent/v/7.3.12)\r\n      - [`botframework-directlinejs@0.15.8`](https://npmjs.com/package/botframework-directlinejs/v/0.15.8)\r\n      - [`chalk@5.6.2`](https://npmjs.com/package/chalk/v/5.6.2)\r\n      - [`compression@1.8.1`](https://npmjs.com/package/compression/v/1.8.1)\r\n      - [`concurrently@9.2.1`](https://npmjs.com/package/concurrently/v/9.2.1)\r\n      - [`core-js-pure@3.48.0`](https://npmjs.com/package/core-js-pure/v/3.48.0)\r\n      - [`core-js@3.48.0`](https://npmjs.com/package/core-js/v/3.48.0)\r\n      - [`cross-env@10.1.0`](https://npmjs.com/package/cross-env/v/10.1.0)\r\n      - [`diff@8.0.2`](https://npmjs.com/package/diff/v/8.0.2)\r\n      - [`dotenv@17.3.1`](https://npmjs.com/package/dotenv/v/17.3.1)\r\n      - [`dtsroll@1.4.1`](https://npmjs.com/package/dtsroll/v/1.4.1)\r\n      - [`esbuild@0.27.3`](https://npmjs.com/package/esbuild/v/0.27.3)\r\n      - [`eslint-config-prettier@10.1.8`](https://npmjs.com/package/eslint-config-prettier/v/10.1.8)\r\n      - [`eslint-plugin-import@2.32.0`](https://npmjs.com/package/eslint-plugin-import/v/2.32.0)\r\n      - [`eslint-plugin-local-rules@3.0.2`](https://npmjs.com/package/eslint-plugin-local-rules/v/3.0.2)\r\n      - [`eslint-plugin-prettier@5.5.5`](https://npmjs.com/package/eslint-plugin-prettier/v/5.5.5)\r\n      - [`eslint-plugin-react-hooks@7.0.1`](https://npmjs.com/package/eslint-plugin-react-hooks/v/7.0.1)\r\n      - [`eslint-plugin-react@7.37.5`](https://npmjs.com/package/eslint-plugin-react/v/7.37.5)\r\n      - [`eslint-plugin-security@4.0.0`](https://npmjs.com/package/eslint-plugin-security/v/4.0.0)\r\n      - [`eslint@8.57.1`](https://npmjs.com/package/eslint/v/8.57.1)\r\n      - [`express@5.2.1`](https://npmjs.com/package/express/v/5.2.1)\r\n      - [`glob@8.1.0`](https://npmjs.com/package/glob/v/8.1.0)\r\n      - [`handler-chain@0.1.1`](https://npmjs.com/package/handler-chain/v/0.1.1)\r\n      - [`has-resolved@2.0.0`](https://npmjs.com/package/has-resolved/v/2.0.0)\r\n      - [`html-react-parser@5.2.10`](https://npmjs.com/package/html-react-parser/v/5.2.10)\r\n      - [`http-proxy-middleware@2.0.9`](https://npmjs.com/package/http-proxy-middleware/v/2.0.9)\r\n      - [`husky@9.1.7`](https://npmjs.com/package/husky/v/9.1.7)\r\n      - [`jest-environment-node@29.7.0`](https://npmjs.com/package/jest-environment-node/v/29.7.0)\r\n      - [`jest-image-snapshot@6.5.1`](https://npmjs.com/package/jest-image-snapshot/v/6.5.1)\r\n      - [`jest@29.7.0`](https://npmjs.com/package/jest/v/29.7.0)\r\n      - [`keep-a-changelog@2.7.1`](https://npmjs.com/package/keep-a-changelog/v/2.7.1)\r\n      - [`lint-staged@16.2.7`](https://npmjs.com/package/lint-staged/v/16.2.7)\r\n      - [`micromark-util-types@2.0.2`](https://npmjs.com/package/micromark-util-types/v/2.0.2)\r\n      - [`microsoft-cognitiveservices-speech-sdk@1.47.0`](https://npmjs.com/package/microsoft-cognitiveservices-speech-sdk/v/1.47.0)\r\n      - [`minimatch@10.1.1`](https://npmjs.com/package/minimatch/v/10.1.1)\r\n      - [`nodemon@3.1.14`](https://npmjs.com/package/nodemon/v/3.1.14)\r\n      - [`nopt@9.0.0`](https://npmjs.com/package/nopt/v/9.0.0)\r\n      - [`prettier@3.8.1`](https://npmjs.com/package/prettier/v/3.8.1)\r\n      - [`progress@2.0.3`](https://npmjs.com/package/progress/v/2.0.3)\r\n      - [`q@1.5.1`](https://npmjs.com/package/q/v/1.5.1)\r\n      - [`react-dom@16.8.6`](https://npmjs.com/package/react-dom/v/16.8.6)\r\n      - [`react-dom@18.3.1`](https://npmjs.com/package/react-dom/v/18.3.1)\r\n      - [`react-is@16.13.1`](https://npmjs.com/package/react-is/v/16.13.1)\r\n      - [`react@16.8.6`](https://npmjs.com/package/react/v/16.8.6)\r\n      - [`react@18.3.1`](https://npmjs.com/package/react/v/18.3.1)\r\n      - [`read-package-up@12.0.0`](https://npmjs.com/package/read-package-up/v/12.0.0)\r\n      - [`read-pkg@10.1.0`](https://npmjs.com/package/read-pkg/v/10.1.0)\r\n      - [`selenium-webdriver@4.41.0`](https://npmjs.com/package/selenium-webdriver/v/4.41.0)\r\n      - [`selfsigned@5.5.0`](https://npmjs.com/package/selfsigned/v/5.5.0)\r\n      - [`serve-handler@6.1.7`](https://npmjs.com/package/serve-handler/v/6.1.7)\r\n      - [`serve@14.2.6`](https://npmjs.com/package/serve/v/14.2.6)\r\n      - [`simple-git@3.30.0`](https://npmjs.com/package/simple-git/v/3.30.0)\r\n      - [`tsd@0.33.0`](https://npmjs.com/package/tsd/v/0.33.0)\r\n      - [`tsup@8.5.1`](https://npmjs.com/package/tsup/v/8.5.1)\r\n      - [`type-fest@5.4.4`](https://npmjs.com/package/type-fest/v/5.4.4)\r\n      - [`typescript-plugin-css-modules@5.2.0`](https://npmjs.com/package/typescript-plugin-css-modules/v/5.2.0)\r\n      - [`typescript@5.9.3`](https://npmjs.com/package/typescript/v/5.9.3)\r\n      - [`unplugin-lightningcss@0.4.3`](https://npmjs.com/package/unplugin-lightningcss/v/0.4.3)\r\n      - [`webpack-cli@6.0.1`](https://npmjs.com/package/webpack-cli/v/6.0.1)\r\n      - [`webpack@5.105.4`](https://npmjs.com/package/webpack/v/5.105.4)\r\n      - [`yaml@2.8.2`](https://npmjs.com/package/yaml/v/2.8.2)\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\nBump dependencies.\r\n\r\n## Design\r\n\r\n### Adaptive Cards and `swiper` package\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n`adaptivecards@3.0.5` (latest) is depending on a vulnerable version of `swiper`. We are using `overrides` to bump to `swiper@12.1.2` while waiting for the maintainer to update their package.\r\n\r\n```sh\r\n# Modify package.json and add overrides\r\n\r\nnpm install adaptivecards --include-workspace-root -w packages/bundle\r\nnpm uninstall adaptivecards\r\n```\r\n\r\nThis overrides will only work with bundle. It does not have any effects on NPM-installed version of Web Chat.\r\n\r\n### Speech SDK authorization token\r\n\r\n`microsoft-cognitiveservices-speech-sdk@1.17.0` prefer `authorizationToken` of `\"Bearer XYZ\"`.\r\n\r\nHowever, in version 1.48.0, they prefer `authorizationToken` of `\"XYZ\"` (without \"Bearer\").\r\n\r\nFor smoother transition, we added code to help our developers to automatically strip \"Bearer\" off the authorization token.\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- `npm run bump && npm dedupe`\r\n- Added `npm dedupe` to `bump` script\r\n- Pinned `react-wrap-with@0.1.0` until it resolve a compatibility issue with Preact\r\n- Overrode `swiper@12.1.2`\r\n- Strip \"Bearer\" prefix from speech authorization token\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [x] ~I have added tests and executed them locally~\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n- [x] ~Browser and platform compatibilities reviewed~\r\n- [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n- [x] ~Documents reviewed (docs, samples, live demo)~\r\n- [x] ~Internationalization reviewed (strings, unit formatting)~\r\n- [x] `package.json` and `package-lock.json` reviewed\r\n- [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n- [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-03-05T06:35:55Z",
+  "merged_at": "2026-03-05T17:27:45Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "bump-deps",
+  "head": "bump-deps",
+  "base_sha": "6b157f19a2975d3f23fd030cc8f460d31a54994b",
+  "head_sha": "6ceff2eb0f42d3dea62033a40aadc8fce7635bd8",
+  "merge_sha": "99a37f1227d117ca9380f54d75f724200a172418",
+  "diff_sha256": "8d2cbd61cd3b30d1d09f948f029ab82cae19d5b1c84307b07997cd32d9852060",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-03-05T10:44:29Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "8f4b8b9afd5a94ca90316d4ffd70680b9d415d43",
+      "message": "Initial bump",
+      "author": "compulim"
+    },
+    {
+      "sha": "65c7d39c88c2ae42fb45018e60ae0b113c7def2b",
+      "message": "Bump microsoft-cognitiveservices-speech-sdk@1.48.0",
+      "author": "compulim"
+    },
+    {
+      "sha": "69925bda762c0ec09024825299997181f7a6d5fc",
+      "message": "Pin global-agent@3.0.0",
+      "author": "compulim"
+    },
+    {
+      "sha": "9e60a749f9de09408826f14f0fab8fd1d75b96ce",
+      "message": "Remove \"Bearer\" from speech token",
+      "author": "compulim"
+    },
+    {
+      "sha": "574dc1aa3c0dbabe6f03798904a0393d5d89d2c8",
+      "message": "Fix exports",
+      "author": "compulim"
+    },
+    {
+      "sha": "33982287bbab0bafd10e24828cc7e315b00a5f2a",
+      "message": "Fix has-resolved",
+      "author": "compulim"
+    },
+    {
+      "sha": "c34f84c74a6c26f6b4f494b03e13f0a3b36b94f8",
+      "message": "Debump react-wrap-with",
+      "author": "compulim"
+    },
+    {
+      "sha": "f170bef6c2edfdcdc8805a969df5f2015775d14d",
+      "message": "Debump react[-dom]@18.3.0",
+      "author": "compulim"
+    },
+    {
+      "sha": "db8a045d34782b87e4813150b68901df83171712",
+      "message": "Add CHANGELOG entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "13527da3354282b8451f01576b2a8daa02be8386",
+      "message": "Use PromiseLike",
+      "author": "compulim"
+    },
+    {
+      "sha": "aab0b7077a6a0ef38d889ef07b42fd2c93a3e611",
+      "message": "Bump to react[-dom]@18.3.1",
+      "author": "compulim"
+    },
+    {
+      "sha": "1efd1fd6f0894fd86d8cd47adde849e50d33c0b6",
+      "message": "Update entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "56a9eddcf1e66ca30edddc5d1a0438be61a61d39",
+      "message": "Apply suggestions from code review",
+      "author": "compulim"
+    },
+    {
+      "sha": "6cd0bf95db416123e6e0e8fa978791f557ec6dbf",
+      "message": "Rename to `credentials`",
+      "author": "compulim"
+    },
+    {
+      "sha": "6ceff2eb0f42d3dea62033a40aadc8fce7635bd8",
+      "message": "Clean up",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 59,
+      "deletions": 51,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 2044,
+      "deletions": 1489,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-graph/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/package.json",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/package.json",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 20,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/createCognitiveServicesSpeechServicesPonyfillFactory.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/speech/createMicrophoneAudioConfigAndAudioContext.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/speech/isPromiseLike.spec.ts",
+      "status": "added",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/speech/isPromiseLike.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/speech/removeBearerInAuthorizationToken.spec.ts",
+      "status": "added",
+      "additions": 145,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/speech/removeBearerInAuthorizationToken.ts",
+      "status": "added",
+      "additions": 50,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core-debug-api/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core-graph/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/package.json",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/package.json",
+      "status": "modified",
+      "additions": 23,
+      "deletions": 19,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/src/playCognitiveServicesStream.spec.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/isomorphic-react-dom/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/isomorphic-react/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/react-valibot/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/redux-store/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/adaptivecards/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/base64-js/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/botframework-directlinejs/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/html-react-parser/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/microsoft-cognitiveservices-speech-sdk/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/microsoft-cognitiveservices-speech-sdk/src/index.ts",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 50,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/microsoft-cognitiveservices-speech-sdk/src/sdk/Exports.ts",
+      "status": "modified",
+      "additions": 26,
+      "deletions": 45,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom@baseline/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom@umd/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-is/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react@baseline/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react@umd/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/dev-server/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/harness/package.json",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/test-assets/package.json",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/web-server/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/vibe-grep/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-03-05T10:52:40Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-05T10:59:34Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-05T11:00:00Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-05T11:00:08Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-05T11:01:40Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-05T17:27:10Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:21:21Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:21:00Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:20:19Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:20:13Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:20:09Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:20:28Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:20:33Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:20:45Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:20:01Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:19:34Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:19:43Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:20:00Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:19:50Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:19:59Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:20:53Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:20:07Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:19:56Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:19:41Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:20:19Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:08:51Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:08:13Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:13:13Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:12:32Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:09:16Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:14:07Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:08:40Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:15:08Z"
+    },
+    {
+      "name": "Build test harness",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:10:10Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:09:40Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-03-05T11:09:00Z"
+    }
+  ],
+  "binary_paths": []
+}

@@ -1,0 +1,5 @@
+{
+  "src/checkout/pay.ts:1": [
+    "export function pay() { return true; }"
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "command": "init",
+  "version": "0.0.0",
+  "result": {
+    "plan": {
+      "created": [
+        "tenet.yaml",
+        "tenet.lock",
+        ".github/workflows/tenet.yml",
+        ".github/workflows/tenet-tests.yml",
+        ".agents/skills/tenet-onboard/SKILL.md",
+        ".agents/skills/tenet-work/SKILL.md",
+        ".agents/skills/tenet-review/SKILL.md"
+      ],
+      "blocks": [
+        "AGENTS.md",
+        ".github/pull_request_template.md",
+        ".gitignore",
+        ".gitattributes"
+      ],
+      "keys": [
+        {
+          "path": ".mcp.json",
+          "pointer": "/mcpServers/tenet"
+        }
+      ]
+    },
+    "wrote": {
+      "createdCount": 7,
+      "blockCount": 4,
+      "keyCount": 1
+    },
+    "findings": []
+  },
+  "errors": []
+}

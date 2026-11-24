@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "command": "remove",
+  "version": "0.0.0",
+  "result": {
+    "removedPaths": [
+      "tenet.yaml",
+      "tenet.lock"
+    ],
+    "kept": [
+      {
+        "path": "tenet/intent.md",
+        "reason": "spec-or-records"
+      }
+    ],
+    "reminder": "If you made the Tenet check required in branch protection or rulesets, remove that rule in your forge settings."
+  },
+  "errors": []
+}

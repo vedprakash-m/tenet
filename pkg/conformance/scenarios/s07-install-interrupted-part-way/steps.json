@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "scenario": "s07-install-interrupted-part-way",
+  "spec_refs": [
+    "tenet/specs/tech-spec/onboarding.md#2-install-and-upgrade",
+    "tenet/specs/plan/alpha.0b.md#a0-6"
+  ],
+  "steps": [
+    {
+      "id": "01-interrupted-init",
+      "kind": "cli",
+      "args": [
+        "init",
+        "--yes",
+        "--json"
+      ],
+      "interrupt": {
+        "at": "after-pending-and-after-each-managed-write",
+        "oneFreshCopyPerPoint": true
+      },
+      "expectedJson": "expected/01-interrupted-init.json"
+    },
+    {
+      "id": "02-resume-init",
+      "kind": "cli",
+      "args": [
+        "init",
+        "--yes",
+        "--json"
+      ],
+      "compareTreeToCleanRun": true,
+      "expectedJson": "expected/02-init-resume.json"
+    },
+    {
+      "id": "03-doctor",
+      "kind": "cli",
+      "args": [
+        "doctor",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJson": "expected/03-doctor.json"
+    },
+    {
+      "id": "04-remove",
+      "kind": "cli",
+      "args": [
+        "remove",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedTree": "before",
+      "expectedJson": "expected/04-remove.json"
+    }
+  ]
+}

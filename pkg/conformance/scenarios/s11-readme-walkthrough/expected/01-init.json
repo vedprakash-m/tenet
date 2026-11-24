@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "command": "init",
+  "version": "0.0.0",
+  "result": {
+    "plan": {
+      "yes": true
+    },
+    "wrote": {
+      "createdCount": 7
+    },
+    "findings": []
+  },
+  "errors": []
+}

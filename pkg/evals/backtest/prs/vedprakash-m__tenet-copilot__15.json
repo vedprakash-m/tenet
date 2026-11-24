@@ -1,0 +1,898 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 15,
+  "title": "Integrated preview: merge open PRs, disable undo, keep __proto__ keys, cache admission",
+  "body": "Integrated **preview** build. It is not qualified and must not be called a release.\n\n## What this branch does\n- Merges open PRs #7, #8, #9, #11, #12, #13 and #14. #10's save is not included.\n- **Disables undo.** `undo` and `decide undo-confirm` exit 2 with `capability-missing`, because undo can overwrite human work. The skill tells the agent to send the user to Git. Tests: `undo-disabled.test.ts` and the UAT undo section. Existing undo tests keep running through a test-only seam.\n- **Keeps the record key `__proto__`.** Persisted state maps use `ownRecord` in place of `z.record`, and the verdict's hash map is built on a null-prototype object (`currentTestHashes`). Before this, a changed support file named `__proto__` could still be reported as `checked-local`. Test: `own-record-keys.test.ts`.\n- **Caches store admission** by file identity and makes `publishState` read state once. This fixes the timing regression from #14: long-history warm p95 went from 904 ms back to 365 ms.\n- **Duplicate-key parser:** whitespace before a colon is now handled with a sticky regex. Test: `unique-record.test.ts`.\n- **README** lists the open safety defects. **CHANGELOG** has an entry dated 2026-11-08.\n\n## CI on `d0f3aa3`\n- `untrusted` passes on ubuntu, macOS and windows-portability. macOS passed on rerun after the known nested-watch canary flake.\n- `system-budgets` **fails NFR-01** (target: warm p95 ≤ 300 ms):\n\n  | Fixture | Warm p95 | Result |\n  |---|---:|---|\n  | small | 260 ms | pass |\n  | large | 328 ms | fail |\n  | long-history | 365 ms | fail |\n\n  Large and long-history already missed the target before the merge (316 ms and 347 ms). What's left is bundle compile, Git spawns and parsing, and reducing those is a design change.\n\n## Known open, not fixed (disclosed in README)\n- Consent applies to more than was shown: dirty-file answers, and a Git hook ran without consent.\n- Recovery removes matching files and does not always report it.\n- Nothing has been observed on the real host (VS Code with Copilot).\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-09T07:00:20Z",
+  "merged_at": "2026-11-09T18:03:22Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "preview-integration",
+  "head": "preview-integration",
+  "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
+  "head_sha": "d0f3aa32eed615798fa074860f37cd4cffc7e7f6",
+  "merge_sha": "20337f646d41292a5d425cf376d91970f697fe0c",
+  "diff_sha256": "eb10463aa0c02f9b74c1ae5149f4fd3fc89c197185816891e0503347ee282263",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "b73887cb1f13e798009f6cf8c4b6193217022ee2",
+      "message": "test: cover undo label collisions after preview",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "20e68519ace68532dd1d0fab03f924e1bb46e765",
+      "message": "feat: prioritize interface-change review context [AGT-12]",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "684d05223f0a56b518276f26190496a921923764",
+      "message": "docs: describe AGT-12 native context priority",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "c69403652bb680026dc34bcdf03a5d24e0c1553f",
+      "message": "build: apply approved D01 responsibility and bundle ceilings",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "1909d9e390084c33084eb66e21cd89e1d965fb1c",
+      "message": "docs: record D01 capacity scope and measured candidate totals",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "225b43cfd9ca12c78e00f248a26b4e68ab839732",
+      "message": "docs: record D01 capacity scope and measured candidate totals",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "f134cb6f82f565fdb64eed1da058309922247660",
+      "message": "build: apply approved D01 responsibility and bundle ceilings",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "15fc29944eb7fa3d96d40b36528beb33ac768d73",
+      "message": "docs: record D01 capacity scope and measured candidate totals",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "d17152a7ef38be327035f84dab60de2050d12798",
+      "message": "feat: report five measured or unknown kernel-call timing fields",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "9f5359b40e4347c693e8f84cecfcc41f4003bd24",
+      "message": "docs: explain kernel-call timing scope and provenance",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "e9d570923a85381781db12c7d99f131a694ce7a1",
+      "message": "feat: add process gates and bounded CI measurements",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "aaed1609cb49ceb7ac3e47b421bbff360160dbc7",
+      "message": "docs: publish process policies and approved memory target",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "270527e9f8090551fd18399d919c961b9eac0111",
+      "message": "build: apply approved D01 responsibility and bundle ceilings",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "f3d664b2f6bc27a609efc629b3719cb1d8f55391",
+      "message": "fix: reject invalid empty host timing observations",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "84b2b4c0a9e1a0328d651518ce005b10b1eecf1c",
+      "message": "docs: record D01 capacity scope and measured candidate totals",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "db009d16d14d6a8799c957ba322db170b5a94c2a",
+      "message": "test: attribute both AGT-12 UAT candidate changes",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "649d2338f101116e506f682927c9f1e6ede0f714",
+      "message": "feat: cache capabilities by declared dependency identity",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "fa9f59217806420d8324f02d7e32aef6e427daf7",
+      "message": "docs: specify INS-05 cache identity and provenance",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "070bb23b68baf17cbfb755779c81ea3000aba127",
+      "message": "test: align portability controls with approved capacity ceiling",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "640c6f0dc954d88d033efe709fdd77b704cc012c",
+      "message": "test: align portability controls with approved capacity ceiling",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "53d6fa6b0af66c4e3c16d2553a6385bbc4189395",
+      "message": "test: align portability controls with approved capacity ceiling",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "49aea1819985c904cfb615ae73319221b2640832",
+      "message": "docs: record exact D01b bundle boundary controls",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "68d7a2f2c99ac0bd7208599b323b068c367e4e7d",
+      "message": "test: align portability controls with approved capacity ceiling",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "7276c7a943b59a3f057d0d6e199eaa3769df078f",
+      "message": "test: provide timing-only ports for inherited verb refusals",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "c146269cdec6f52c2df296ed6a05c63dfbe11b2e",
+      "message": "docs: record timing refusal and shared capacity validation corrections",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "98ce857df3bf54da703c62b12022de6e0f623c98",
+      "message": "feat: harden schema-1 bridge admission",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "3362c50145f7fd177a6b2fe62ff623aac601b3ce",
+      "message": "docs: define schema-1 bridge candidate identity",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "be8fbd3e84bd08489116201f662656d4bafa6dbb",
+      "message": "fix: preserve no-op state boundaries during capability refresh",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "211958bbcadf17fded7f34aec707feb0216c3e0c",
+      "message": "docs: clarify cache publication and no-op regression evidence",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "1ded6480726b6c0b0b6070592a8836398ea349dd",
+      "message": "ci: preserve failing measurement exit codes",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "d036eefb889539b14f3cc367982016f89dd63270",
+      "message": "docs: record measurement exit repair and retained failure",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "1af05109b0712ebd285a8382a9d4a818e12fb12a",
+      "message": "test: use registered inspect verb in bridge UAT",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "803f7f7c78f910c91ceb87225c7fc80c681b8fe7",
+      "message": "Record paired frozen-budget diagnostics without selecting passes",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "aea13ed48a98a426e641cefc4ace979b55855ca1",
+      "message": "Disclose divergent corrected budget measurements",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "9052b17534835f0a9b160fead2188dafb0515b3a",
+      "message": "Record native watcher calibration diagnostics without weakening gates",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "59ef17882f42ff3429556668bc0038d51a682dd3",
+      "message": "Disclose paired budget failures and the native calibration blocker",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "6ad271e5223de85cb5549ebd803561627f2bb0f7",
+      "message": "Merge branch 'pr-7' into preview-integration",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "cbd37e16db25bcb48305b7d08573e6b5c661ad11",
+      "message": "Merge branch 'pr-13' into preview-integration",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "d9384de8c5615a280d1a14622e2f1a2ef1bc604c",
+      "message": "Merge branch 'pr-11' into preview-integration",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "e9c50635951af1fc62ff650946762d4079463683",
+      "message": "Merge branch 'pr-8' into preview-integration",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "37ec31f1f7dacc435170161e2625ca70d2013584",
+      "message": "Merge branch 'pr-14' into preview-integration",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "b27a36a571664809209caa8741662a8a6acfce2e",
+      "message": "Merge branch 'pr-12' into preview-integration",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "df0d2c272ce2ee04bfe0a5fa45cfd2f774115b0b",
+      "message": "Disable undo and disclose open safety defects for the preview",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "f25e37d40b2c570525e62b7d3f3998573d9646f0",
+      "message": "Enable undo in the crash-undo child fixture",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "a38db5bf32c94acf4cfa8a146bd4b68862dbb5da",
+      "message": "Keep record keys named __proto__ when state is read",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "34a0a98ad09d6bdb33bef31bf199b15b2809aef2",
+      "message": "Cache state admission by file identity",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "d0f3aa32eed615798fa074860f37cd4cffc7e7f6",
+      "message": "Publish state with one read and skip re-admitting own writes",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": ".github/pull_request_template.md",
+      "status": "added",
+      "additions": 22,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/model-drift.yml",
+      "status": "added",
+      "additions": 28,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/posix-uat.yml",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/system-budgets.yml",
+      "status": "added",
+      "additions": 113,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/untrusted.yml",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 63,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "status": "added",
+      "additions": 83,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "SECURITY.md",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "docs/release/release-verification.md",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "docs/schema-1-bridge.md",
+      "status": "added",
+      "additions": 93,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/user/install-and-remove.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/user/qualified-tuple.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "eval/experiments/coordinator-intro-proxy.json",
+      "status": "added",
+      "additions": 34,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/host-plugin.ts",
+      "status": "modified",
+      "additions": 51,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/private-record-fs.ts",
+      "status": "modified",
+      "additions": 32,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/store-fs.ts",
+      "status": "modified",
+      "additions": 121,
+      "deletions": 33,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/system.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/capabilities.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/migration-terminal.ts",
+      "status": "added",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/review.ts",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/schemas.ts",
+      "status": "modified",
+      "additions": 35,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/timing.ts",
+      "status": "added",
+      "additions": 30,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-capabilities.ts",
+      "status": "added",
+      "additions": 30,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-mutate.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-render.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-timing.ts",
+      "status": "added",
+      "additions": 42,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline.ts",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/ports/types.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/facts.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/inspect.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/undo.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/wire.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/audit-boundaries.test.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/backup-accounting.test.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/bench-comparison.test.ts",
+      "status": "added",
+      "additions": 45,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/capability-cache.test.ts",
+      "status": "added",
+      "additions": 142,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/ci-security.test.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/fixtures/bridge-terminal.ts",
+      "status": "added",
+      "additions": 33,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/fixtures/crash-undo.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/fixtures/store-admission-barrier.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/interface-context.test.ts",
+      "status": "added",
+      "additions": 98,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/invariants.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/own-record-keys.test.ts",
+      "status": "added",
+      "additions": 38,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/platform.test.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/process-policy.test.ts",
+      "status": "added",
+      "additions": 73,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/quality-gate.test.ts",
+      "status": "modified",
+      "additions": 29,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/read-only-review.test.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/reproducible-build.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/schema-1-bridge.test.ts",
+      "status": "added",
+      "additions": 259,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/skill-experiment.test.ts",
+      "status": "added",
+      "additions": 19,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/starter-memory.test.ts",
+      "status": "added",
+      "additions": 14,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/store-boundary.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/timing.test.ts",
+      "status": "added",
+      "additions": 160,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/tooling-portability.test.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/trace-journal.test.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/undo-disabled.test.ts",
+      "status": "added",
+      "additions": 37,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/undo.test.ts",
+      "status": "modified",
+      "additions": 36,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/unique-record.test.ts",
+      "status": "added",
+      "additions": 22,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/README.md",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/com.github.copilot/descriptor.json",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-review/SKILL.md",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet/SKILL.md",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet/resources/focused-review.md",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "specs/PRD.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "specs/tech-spec.md",
+      "status": "modified",
+      "additions": 70,
+      "deletions": 14,
+      "previous_path": null
+    },
+    {
+      "path": "specs/ux-spec.md",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/bench-comparison.ts",
+      "status": "added",
+      "additions": 99,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/build.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/lint-quality.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "tools/quality-baseline.json",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/reproducible-build.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "tools/semver.ts",
+      "status": "added",
+      "additions": 43,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/skill-experiment.ts",
+      "status": "added",
+      "additions": 136,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/starter-memory.ts",
+      "status": "added",
+      "additions": 71,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/bridge.mjs",
+      "status": "added",
+      "additions": 78,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/crash-bundle-bridge.mjs",
+      "status": "added",
+      "additions": 29,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/uat.mjs",
+      "status": "modified",
+      "additions": 78,
+      "deletions": 8,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-09T07:02:16Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-09T07:12:47Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T07:00:45Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T07:00:46Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T07:36:03Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T07:22:57Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T07:02:59Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T03:36:04Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T03:18:38Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T04:08:43Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-09T03:14:58Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T03:15:17Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T03:15:15Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-09T03:17:02Z"
+    }
+  ],
+  "binary_paths": []
+}

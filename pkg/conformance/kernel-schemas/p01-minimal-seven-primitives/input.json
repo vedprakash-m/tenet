@@ -1,0 +1,55 @@
+{
+  "schema": "bundle-of-primitives",
+  "records": {
+    "subject": {
+      "kind": "git-tree",
+      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "x-tag": "m1"
+    },
+    "actor": {
+      "id": "ved",
+      "kind": "person"
+    },
+    "claim": {
+      "id": "CLM-1",
+      "type": "acceptance",
+      "selector": {
+        "station": "verify"
+      }
+    },
+    "evidence": {
+      "subject": {
+        "kind": "git-tree",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "claims": [
+        "CLM-1"
+      ],
+      "method": "unit",
+      "result": "pass",
+      "producer": {
+        "source": "ci"
+      }
+    },
+    "decision": {
+      "kind": "approve",
+      "subject": {
+        "kind": "git-tree",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "target": "CLM-1",
+      "actor": "ved",
+      "proof": {
+        "strength": "forge-verified",
+        "via": "review",
+        "policy_revision": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    "event": {
+      "id": "01JDF000000000000000000001",
+      "prev": [],
+      "type": "work.created",
+      "work": "pr-1"
+    }
+  }
+}

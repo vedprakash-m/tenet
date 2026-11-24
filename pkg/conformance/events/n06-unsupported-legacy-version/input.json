@@ -1,0 +1,5 @@
+{
+  "op": "readProofRecord",
+  "path": "proof/pr-5/0123456789abcdef/1001-1.json",
+  "content": "{\"schema_version\":99,\"evaluation_id\":\"0123456789abcdef\",\"conclusion\":\"success\"}"
+}

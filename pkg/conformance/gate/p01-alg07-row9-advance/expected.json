@@ -1,0 +1,15 @@
+{
+  "verdict": "advance",
+  "disposition": "records",
+  "reasons": [],
+  "claims": [
+    {
+      "id": "AB-1",
+      "result": "satisfied"
+    }
+  ],
+  "next": {
+    "who": null,
+    "action": "advance"
+  }
+}

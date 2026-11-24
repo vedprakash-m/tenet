@@ -1,0 +1,233 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5870,
+  "title": "Bump to 4.19.3-0",
+  "body": "<!-- Please provide the issue number here if any -->\n\n## Changelog Entry\n\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\n\n## Description\n\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\n\nBump to `4.19.3-0` after release of `4.19.2`.\n\n## Design\n\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\n\n## Specific Changes\n\n<!-- Please list the changes in a concise manner. -->\n\n- `npm version prepatch --no-git-tag-version`\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] ~I have added tests and executed them locally~\n- [x] ~I have updated `CHANGELOG.md`~\n- [x] ~I have updated documentation~\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\n- [x] ~Browser and platform compatibilities reviewed~\n- [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\n- [x] ~Documents reviewed (docs, samples, live demo)~\n- [x] ~Internationalization reviewed (strings, unit formatting)~\n- [x] `package.json` and `package-lock.json` reviewed\n- [x] ~Security reviewed (no data URIs, check for nonce leak)~\n- [x] ~Tests reviewed (coverage, legitimacy)~\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-09T06:07:54Z",
+  "merged_at": "2026-10-09T06:34:09Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "bump-4.19.3-0",
+  "head": "bump-4.19.3-0",
+  "base_sha": "35afdb3d9422e3aa0a868c8505afc3e64786bc0b",
+  "head_sha": "9e265842cfe4d9695c6b4d1388a316207bbfd9f0",
+  "merge_sha": "290781aeb804db334a4cbdb97ed447cf4696f09b",
+  "diff_sha256": "e7521dfeb8c795c5414cc0b69dfb5d2e9383e4e2f01e467d651062f807ec3f33",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-09T06:08:40Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "9e265842cfe4d9695c6b4d1388a316207bbfd9f0",
+      "message": "Bump to 4.19.3-0",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-09T06:09:56Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-09T06:10:13Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:34:04Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:33:38Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:09:15Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:21:29Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:18:16Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:10:05Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:08:49Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:21:41Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:21:44Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:22:12Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:21:43Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:22:21Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:20:54Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:21:11Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:22:06Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:22:27Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:21:58Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:21:27Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:22:00Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:21:37Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:33:13Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:21:09Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:13:50Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:17:51Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:21:55Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:09:11Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:15:33Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:09:16Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:15:21Z"
+    },
+    {
+      "name": "copilot-pull-request-reviewer",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:09:56Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:08:49Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:08:56Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-09T06:09:26Z"
+    }
+  ],
+  "binary_paths": []
+}

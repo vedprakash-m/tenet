@@ -1,39 +1,12 @@
-# Tenet plan: 0.1.0-alpha.0 build contracts, waves A0-4 to A0-8
+# Tenet plan: 0.1.0-alpha.0 build contracts, waves A0-5 to A0-8
 
 > Level L2 · Version 0.13 · Part of [plan.md](../plan.md) · Status: **draft, awaiting the Owner's approval; frozen by CP-0015** · Budget: 6,000 tokens · Split from `plan/alpha.0.md` under the rollover rule (L-0027)
 
 **Context card.** The second half of the alpha.0 build contracts, and the release. The references and the "every contract also means" list in [alpha.0.md](alpha.0.md) apply here unchanged.
 
-## A0-4
+## A0-4 (continued)
 
-**CP-0009 · Check, fix and split** · R-008, R-033, R-038, R-054 (lock mismatch), R-219
-1. *Needs:* CP-0044; TS §9–§10; C §1, §8, §13; ALG-02 (rename), ALG-03 (integrity, relocation).
-2. *Owns:* `src/specs/{check,fix,split}.ts`, the commands `check`, `fix`, `split` with their result schemas, `kit/hooks/pre-commit`, `test/check/`.
-3. *Exports:* `check({paths?, pack?, ci?, base?}) → {findings, summary: {errors, warnings, advises}}`; `fix({dryRun}) → {changes}`; `split(doc, section)`.
-4. *Behavior:*
-   - **Findings** (sorted by `file ?? ""`, numeric `line ?? 0`, `code`, `message`): required files (`tenet.yaml`; `<records>/intent.md` in one-file layout else every `policy.specs.documents` path, missing → `TN-SCHEMA`; `tenet.lock` and vendored `kit_path` when `kit_path !== "kit"`), schemas, links and anchors, citations (`file: doc.path`), origin present, section states and flags, blessed-copy integrity (`TN-SPEC-BLESSED-COPY`, `file: doc.path`, `line`: heading line), unique IDs across `ladder` order (`TN-SPEC-DUP-ID` on each later duplicate's `file` and `line`), vision coverage (`TN-SPEC-UNCOVERED-VISION`, TS §6.3), budgets (`TN-BUDGET-WARN` locally at `≥ Math.ceil(limit * 0.9)`; `TN-BUDGET` with `--ci --base` when `head > limit` and `base <= limit`), kit integrity (`TN-KIT-EDITED`, `file: "tenet.lock"`), and package version vs lock (`TN-LOCK-MISMATCH`, `file: "tenet.lock"`, coexisting with `TN-KIT-EDITED`). `--paths` scopes per-document checks and skips cross-document and lock/kit checks.
-   - **Exit codes** follow C §13: `budget` is a rule finding only with `--ci --base` on a change that crosses 100%.
-   - **`fix`:** assigns IDs (C §1), numbers `V-` items, writes front matter, section entries, digests and `drafted_from`, moves renamed entries and copies, updates uniquely relocated anchors, and normalizes citation paths. It never changes meaning, states or blessings.
-   - **`split`:** moves a section into a part, leaving a pointer and updated links.
-   - The hook warns and never blocks.
-5. *Edge cases:* `fix` twice changes nothing; two branches both assigning `R-40` (`fix` renumbers the newer unblessed one; if both are blessed, `check` reports it).
-6. *Out of scope:* event and alias checks (CP-0007).
-7. *Fixtures:* `test/check/<code>/`, one violation each; a generated 500-document repository for R-082.
-8. *Proving:* `npm test -- test/check`: each fixture yields exactly its finding; `fix` repairs every mechanical one; R-082 timing holds with git calls batched.
-
-**CP-0045 · Agent context and MCP** · R-049, R-211
-1. *Needs:* CP-0044; C §9; ALG-10.
-2. *Owns:* `src/context/`, `src/mcp/`, the commands `context` and `mcp` with their result schemas, `test/context/`, `test/mcp/`.
-3. *Exports:* `context(input) → {blessed, drafts, index, omitted, truncated, rules}`; `serveMcp(io)`.
-4. *Behavior:* ALG-10 and C §9 exactly, reading blessed copies; `rules` lists the five alpha.0 pack rules with their effective capped modes; when nothing is blessed, human CLI and MCP `content[0].text` print `"nothing blessed yet; run tenet bless"` while keeping the 6-key JSON result; a blessed copy failing integrity emits `TN-SPEC-BLESSED-COPY` (in CLI `--json` `errors[]` and human/MCP text) and is served in `drafts` (`integrity_failed: true`); `tenet_status` gives the level and spec states; `tenet_next` gives the pending blessings; `tenet_propose` writes into the named work item's packet folder.
-5. *Edge cases:*
-   - nothing blessed ("nothing blessed yet; run tenet bless")
-   - global rules over their reserved share; an item asked for by ID that alone exceeds the budget (`over_budget`)
-   - a blessed copy failing integrity (served as a draft)
-   - notifications get no reply; stdout carries only protocol messages
-6. *Out of scope:* writing host entries (CP-0010).
-7. *Fixtures:* `pkg/conformance/alg-10/`, including "retry once".
-8. *Proving:* `npm test -- test/context test/mcp`; a scripted session matches its golden transcript; the pinned MCP Inspector CLI lists and calls every tool on Windows, macOS and Linux, through both the committed entry and the Windows local form.
+**CP-0009** and **CP-0045** are in [alpha.0.md](alpha.0.md#a0-4) under the rollover rule.
 
 **CP-0053 · Specification board** · R-032 (alpha.0 part)
 1. *Needs:* CP-0044, CP-0018; C §5.
@@ -55,8 +28,8 @@
    - **Preflight:** text as UX Part 1; returns `{revision, read_count: sources.files.length, skipped_count: sources.skipped.length, dirty_warning}`.
    - **Inventory:** its first findings (sorted by `kind` order `dead-path`, `skipped-tests`, `owners-unmatched`, `no-test-report`, then `path`, then `message`, with the templates in OB §1; top-level `findings` equals `inventory.findings`), project kind, `sources.skipped` reasons (`env|credentials|vendored|generated|excluded|binary|oversize`), units (`one-file`: `[{id: "root", paths: ["."], views}]`; `separate`: CODEOWNERS areas else top-level source folders, merging `< 2,000`-line units into their preceding neighbor, or following neighbor at index `0`) and output paths (`assignment.inventory = ".tenet/onboard/inventory.json"`) exactly as OB §1 and ALG-11. Test declarations and skips come from CP-0018's `scanTests`; doc dates come from one `lastChangedMap` call.
    - **Instruction files:** listed with kind `instructions` (OB §1).
-   - **Inputs:** repository facts are byte-identical for one commit, and report data goes only in `observations`. `tenet.yaml` is read from the working tree.
-   - **Refresh:** keeps IDs, edits, rejections and blessings, and assigns only units whose sources changed since `drafted_at_rev`.
+   - **Inputs:** deterministic over `(HEAD, working tenet.yaml, .tenet/reports/*)`: repository facts come from `HEAD`, report data goes only in `observations` (suppressing `no-test-report` when non-empty; tracked `.tenet/reports/*` remain in `sources.files`), and `tenet.yaml` is read from the working tree.
+   - **Refresh:** keeps IDs, edits, rejections and blessings; runs `deps.check` (returning diagnostics via the CLI envelope without blocking the assignment write); unions diffs from `drafted_at_rev` (failing if missing from shallow history; assigning all units if absent), assigning matching or overlapping units and all units when a shared file outside unit roots changed.
 5. *Edge cases:* no commit (`TN-ENV-NO-COMMIT`); uncommitted changes; a monorepo; not a git repository (exit 3); `onboard` run twice.
 6. *Out of scope:* drafting (the user's agent); blessing and the card (CP-0052).
 7. *Fixtures:* `test/onboard/{empty,node-service,python-lib,go-cli,monorepo}`.
@@ -127,9 +100,9 @@
 
 **CP-0052 · Blessing, onboarding card, evaluation and scenarios** · R-223 (bless, card), R-012 (drafter evaluation)
 1. *Needs:* CP-0010; ALG-03, ALG-13; OB §1; AG §1–§2.
-2. *Owns:* `src/onboard/{bless,card}.ts`, the `bless` command and its result schema, `onboard --card`, `pkg/evals/onboarding/` (repository only, never published), `pkg/conformance/scenarios/`, `test/onboard/bless/`.
-3. *Exports:* `bless({doc?, section?}) → {blessed, confirmed, rejected, deferred, minutes}`; `onboardingCard() → markdown` (it also records `drafted_at_rev`).
-4. *Behavior:* ALG-03's session (conflicts first; bless, confirm, edit, reject, defer); version bumps; the anchors file; the log line (ALG-13); the card per OB §1 and its golden examples.
+2. *Owns:* `src/onboard/{bless,card}.ts`, the `bless` command and its result schema, `onboard --card`, `pkg/evals/onboarding/` (repository only, never published), `test/onboard/bless/`.
+3. *Exports:* `bless({doc?, section?}) → {blessed, confirmed, rejected, deferred, minutes}` (numeric counts and elapsed minutes); `onboardingCard({pr?}) → markdown` (it also records `drafted_at_rev` on committed drafts; `onboard --card --json` returns `{card, drafted_at_rev}`).
+4. *Behavior:* ALG-03's session (conflicts first with affected-ID edit check; bless, confirm `[y/N]`, edit, reject/defer with optional `[y/N]` blessed-copy restore; per-section persistence/rollback and concurrent-edit check); version bumps (`contracts §3`); `<blessed_copy>.anchors.json` mapping `{citationKey: normalizedLines}`; section-action log rows (ALG-13, nullable counts when `drafted_at_rev` is unavailable); the card per OB §1 (`Math.ceil(words / 200)` per section, omitting zero-conflict block, literal `<n>` without `--pr`) and its golden examples. `ALG-07` fixtures evaluate cleanly against `ALG-07` beside alpha.0 `TN-POLICY-ALPHA0-CAP`; install steps assert `contracts §8` keys, exit codes, and tree parity.
 5. *Edge cases:* no terminal (exit 2); an inferred statement left; an open conflict; a conflict choice that contradicts a statement; interruption keeps finished sections; re-blessing an edited section; `confirm` after a squash from a shallow clone.
 6. *Out of scope:* forge blessing (alpha.1).
 7. *Fixtures:*
@@ -138,7 +111,7 @@
      - each has a `key.json` with obligations and their sources, planted conflicts (a stale README, an ADR against a test, an inactive flag, a roadmap issue) and scripted answers
      - scoring: ALG-13's automatic checks and kept ratio; recall and invented scored by a person who did not run the agent, with a second scorer on 20%
      - **fresh-session check:** bless "retry once", change the code to retry twice, then ask a fresh agent session that has only the installed `AGENTS.md`, skills and MCP to change the retry code; it passes if the agent works from "retry once" and reports the drift
-   - **The scenario suite** (`pkg/conformance/scenarios/`), run against the CLI, SDK, MCP and card:
+   - **The independent scenario suite** (`pkg/conformance/scenarios/`, already authored; its runner passes without editing the suite itself), run against the CLI, SDK, MCP and card:
      - a tagged test that never ran
      - `Implements:` changed on the same commit
      - an advisory and an enforced failure together (ALG-07, as a fixture)
@@ -150,7 +123,7 @@
      - a renamed heading
      - a pull request closed without merging (nothing beyond its last evaluation is recorded)
      - the README and UX walkthroughs run verbatim
-8. *Proving:* `npm test -- test/onboard`, using `fakeTty`; `npm run eval:onboarding -- --agent <name>` writes a scored report, which passes on the two agents CP-0058 names; `npm run scenarios` passes.
+8. *Proving:* `npm test -- test/onboard`, using `fakeTty`; `npm run eval:onboarding -- --agent <name>` writes a scored report, which passes on the two agents CP-0058 names; `npm run scenarios` runs `test/onboard/scenarios.test.ts` over `pkg/conformance/scenarios/*/steps.json` with deterministic test adapters and passes.
 
 ## A0-8
 

@@ -1,0 +1,501 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5893,
+  "title": "Ensure 4.5:1 contrast for syntax-highlighted code and keep code blocks when messages are already in the store",
+  "body": "> Comments in syntax-highlighted code have 4.36:1 color contrast in the Fluent theme, below the 4.5:1 required by WCAG 1.4.3 (axe `color-contrast`, serious).\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed syntax-highlighted code having less than 4.5:1 color contrast: comments in the light code block theme (`github-light-default`) were 4.36:1 in the Fluent theme and now use the muted text color of the theme, `#656d76` (5.03:1), in PR [#5893](https://github.com/microsoft/BotFramework-WebChat/pull/5893), by [@OEvgeny](https://github.com/OEvgeny)\n- Fixed code blocks becoming empty when Web Chat is rendered with messages already in the store, such as again with the same store or from a saved state: code is shown without highlighting until the syntax highlighter is loaded, in PR [#5893](https://github.com/microsoft/BotFramework-WebChat/pull/5893), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nWeb Chat paints the code block background itself. The Fluent theme uses `#fafafa` (light) and `#141414` (dark). The GitHub code themes were designed for `#ffffff` and `#0d1117`. On `#fafafa`, comments of `github-light-default` (`#6e7781`) are 4.36:1 by the WCAG formula, which axe rounds down to 4.35:1. The \"View code\" dialog of `side-by-side/codeblock.navigation.html` hit this, so that check was skipped.\n\nThe light code block theme passed to Shiki now replaces the comment color with `colorReplacements: { '#6e7781': '#656d76' }`. `#656d76` is the muted text color of the same theme (GitHub Primer's `fg.muted`), with about the same hue: 5.03:1 on `#fafafa` and 5.25:1 on `#ffffff`. The dark code block theme is unchanged.\n\nThe same Shiki integration also left code blocks empty when Web Chat was rendered with messages already in the store: rendered again with the same store, or with a store created from a saved state. These messages rendered before the new highlighter had loaded. `CodeHighlighterComposer` then called an `undefined` highlighter, and its error handler threw on `highlightCode.name`. The code block had already moved its code out, so it stayed empty. While no highlighter is set, `CodeHighlighterComposer` now uses the one above it, which is the plain-text highlighter by default.\n\n## Design\n\n- Only the failing color is replaced, statically, with Shiki's `colorReplacements` on the theme. Only comments fail: every other foreground of the two themes that JavaScript, Python, and TypeScript tokens use is at least 4.83:1 in the light theme (`#8250df` on `#fafafa`) and 5.99:1 in the dark theme (`#8b949e` on `#141414`). The other rules below 4.5:1 have background-like foregrounds (`markup.ignored`, `markup.untracked`, `carriage-return`), which the bundled grammars do not produce. A Shiki update with new theme colors, or a new language, could bring a failing color; the accessibility check in the new tests catches it for the sampled tokens.\n- `#656d76` is the color the theme itself uses for muted text, so comments stay in its palette. It is checked against the Fluent background, which is darker than the default theme's `#ffffff`. It also leaves a margin for hosts that set `--codeBlockBackground` to a slightly darker gray, such as Fluent's `colorNeutralBackground3` `#f5f5f5` (4.81:1). Hosts are responsible for the contrast of their own background, as before.\n- The default theme also gets `#656d76` for comments. It already passed at 4.55:1, but there is one highlighter for both themes. Existing snapshots are unchanged: the difference is under the image snapshot threshold. The accessibility check in the new tests catches a regression.\n- The new test opens the \"View code\" dialog because axe cannot measure text in the transcript: the transcript focus overlays (`pointer-events: none`) cover it, and axe reports it as \"incomplete\" instead of failing.\n- The code block theme is the `codeBlockTheme` style option and does not follow the color scheme, and the code block background does not follow the Fluent UI theme. So a dark Web Chat can show either code block theme on the same backgrounds as a light one. Verified combinations (lowest token contrast, measured in the transcript and in the \"View code\" dialog):\n   - Default theme, light code theme (`#ffffff`): 5.05:1 (`#8250df`; comments 5.25:1). Dark code theme (`#0d1117`): 6.15:1. The default theme has no dark variant, and `prefers-color-scheme: dark` does not change either background.\n   - Fluent theme, light or no Fluent UI theme: light code theme (`#fafafa`) 4.83:1 (`#8250df`; comments 5.03:1), dark code theme (`#141414`) 5.99:1.\n   - Fluent theme in a dark Fluent UI theme (`webDarkTheme`): light code theme 4.83:1, dark code theme 5.99:1. The same in the Copilot variant and with a custom brand ramp.\n- `markdown/vnext/markdownStreaming.html` keeps its skips: without them, it fails only for the level-one heading (#4721), not for color contrast.\n\nFollow-ups, not in this PR:\n\n- In the dark `side-by-side` pages, the FAQ link in the \"View code\" dialog is 2.81:1 (`#5661d4`, the test palette's `brand[100]`, on `#292929`). The skip is now limited to the dark theme.\n- The accessibility check cannot measure the color contrast of text in the transcript, as described above.\n\n## Specific Changes\n\n- `bundle/src/codeHighlighter/shiki.ts`: the light code block theme (`github-light-default`) replaces the comment color `#6e7781` with `#656d76`\n- `component/.../createCodeHighlighterComposer.tsx`: `highlightCode` is optional. Without it, the upstream highlighter is used\n- `test/page-object/.../createDirectLineEmulator.js`: the subscribe function is no longer `async`. Its promise was called as a teardown function when Web Chat unmounted, which logged `TypeError: n is not a function`\n- Added `__tests__/html2/markdown/codeBlock/contrast.html` (default and Fluent themes, light and dark code themes, and the Fluent theme in a dark Fluent UI theme with either code theme): opens the \"View code\" dialog for JavaScript, TypeScript, and Python with comments, strings, keywords, and other tokens, with the default accessibility check. Fails on `main` in the Fluent theme, light and dark: `insufficient color contrast of 4.35 (foreground color: #6e7781, background color: #fafafa)`\n- Added `__tests__/html2/markdown/codeBlock/remount.html`: renders Web Chat again with the same store and expects the Python code block to be highlighted. Fails on `main` with the code block empty and `TypeError: Cannot read properties of undefined (reading 'name')`\n- `__tests__/html2/side-by-side/index.html`: the \"View code\" dialog step is checked again in the light theme, and the TODO now only mentions the FAQ link in the dark theme\n\n- [x] I have added tests and executed them locally\n- [x] I have updated `CHANGELOG.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-17T12:39:12Z",
+  "merged_at": "2026-10-18T06:32:13Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-code-block-contrast",
+  "head": "OEvgeny/fix-code-block-contrast",
+  "base_sha": "a9b871b9601b9d49128b8e4ec3e8d1629491c41e",
+  "head_sha": "2cfeeee0129dc4a51238045b3b16cc3410e5f0da",
+  "merge_sha": "0041a3899b2093ba94e85f94b133eac9e52ce425",
+  "diff_sha256": "b93c6a209e8455069a0d6ee03ae2c7f7c0e050ea411029ac3bcfdea4e959fd1b",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-17T15:16:02Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "810f4fc6311e847409fc76abd785e07ac7e1f997",
+      "message": "Ensure 4.5:1 contrast for syntax-highlighted code",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "b35c293433ba639c47069c57c45efbc384fd812a",
+      "message": "Keep code blocks when Web Chat is rendered again with the same store",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "04682c81010325385de157cf3f857754f91965d6",
+      "message": "Check each theme color once and skip colors that already pass",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "62fd68db15c81258f0e5e3a8788507302594e6a3",
+      "message": "Add PR number to changelog",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7f15e6145b42ac2f8274f43439290cc557fc4561",
+      "message": "Check code block contrast with Web Chat in a dark Fluent UI theme",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "8bd71d932b9eb6ea5037a876588a9fcfa96c05b0",
+      "message": "Replace comment color of the light code block theme instead of adjusting every color",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "2cfeeee0129dc4a51238045b3b16cc3410e5f0da",
+      "message": "Merge branch 'main' into OEvgeny/fix-code-block-contrast",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.dark.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.dark.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.dark.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.dark.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.fluent.dark.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.fluent.dark.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.fluent.dark.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.fluent.dark.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.fluent.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.fluent.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.fluent.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.html",
+      "status": "added",
+      "additions": 163,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/contrast.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/remount.html",
+      "status": "added",
+      "additions": 63,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/codeBlock/remount.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/index.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/codeHighlighter/shiki.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/codeHighlighter/private/createCodeHighlighterComposer.tsx",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/createDirectLineEmulator.js",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-17T15:16:09Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:54:55Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T00:55:51Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-18T01:50:19Z"
+    },
+    {
+      "state": "CHANGES_REQUESTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T06:20:00Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-18T06:25:27Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:32:09Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:32:36Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:27:04Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:31:42Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:30:52Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:31:31Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:29:01Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:32:00Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:30:14Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:30:07Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:29:05Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:31:10Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:30:46Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:30:39Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:31:24Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:29:17Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:29:31Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:30:41Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:29:49Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:30:38Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:23:42Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:24:51Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:25:48Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:17:12Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:17:16Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:17:28Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:18:33Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:17:35Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:17:50Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:22:17Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:17:19Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-18T06:17:36Z"
+    }
+  ],
+  "binary_paths": [
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.dark.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.dark.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.dark.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.fluent.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.code-block-dark.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.dark.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.dark.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.dark.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.fluent.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/contrast.html.snap-1.png",
+    "__tests__/html2/markdown/codeBlock/contrast.html.snap-2.png",
+    "__tests__/html2/markdown/codeBlock/contrast.html.snap-3.png",
+    "__tests__/html2/markdown/codeBlock/remount.html.snap-1.png"
+  ]
+}

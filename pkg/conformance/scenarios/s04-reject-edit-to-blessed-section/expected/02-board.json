@@ -1,0 +1,72 @@
+{
+  "ok": true,
+  "command": "board",
+  "version": "0.0.0",
+  "result": {
+    "schema_version": 1,
+    "as_of": "2026-11-23T12:00:00Z",
+    "read": {
+      "main": "aee6c55927875220719bb4808917e1da201754b6",
+      "branches": [],
+      "records": null
+    },
+    "specs": [
+      {
+        "path": "tenet/vision.md",
+        "section": "vision",
+        "level": "L0",
+        "state": "blessed",
+        "flags": [],
+        "recorded": "self"
+      },
+      {
+        "path": "tenet/specs/prd.md",
+        "section": "requirements",
+        "level": "L1",
+        "state": "blessed",
+        "flags": [
+          "edited"
+        ],
+        "recorded": "self"
+      },
+      {
+        "path": "tenet/specs/plan.md",
+        "section": "plan",
+        "level": "L2",
+        "state": "deferred",
+        "flags": []
+      },
+      {
+        "path": "tenet/specs/tech-spec.md",
+        "section": "design",
+        "level": "L2",
+        "state": "deferred",
+        "flags": []
+      },
+      {
+        "path": "tenet/specs/ux-spec.md",
+        "section": "experience",
+        "level": "L2",
+        "state": "deferred",
+        "flags": []
+      }
+    ],
+    "pending_blessings": [
+      {
+        "path": "tenet/specs/prd.md",
+        "section": "requirements",
+        "conflicts": [],
+        "open_questions": []
+      }
+    ],
+    "spec_debt": [
+      {
+        "kind": "untested-requirement",
+        "path": "tenet/specs/prd.md",
+        "id": "R-1",
+        "message": "Requirements › R-1 has no tagged test"
+      }
+    ]
+  },
+  "errors": []
+}

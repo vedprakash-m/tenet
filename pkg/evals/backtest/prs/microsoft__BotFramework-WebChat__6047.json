@@ -1,0 +1,461 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6047,
+  "title": "Keep Web Chat's styles when a React 19.2 Activity hides and shows it",
+  "body": "> Web Chat loses its styles when a React 19.2 `<Activity>` hides and shows it.\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed styles lost after a React 19.2 `<Activity>` hides and shows Web Chat, in PR [#6047](https://github.com/microsoft/BotFramework-WebChat/pull/6047), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nWhen a React 19.2 `<Activity>` hid Web Chat, the effect cleanup removed its emotion `<style>` elements; showing it did not add them back, as the reference count was taken in render. `useEmotion()` now counts in a layout effect and, after the last release, inserts the registered rules again.\n\n## Design\n\n- Rebuild from emotion's registered styles, not re-append the removed elements: production emotion uses `insertRule()`, whose rules are lost with the element, and classes created while hidden need rules too.\n- Effects cannot tell hiding from unmounting, so removal cannot wait for unmount. Not `@emotion/react` (never removes styles): CSS modules are replacing emotion.\n- Only mounted instances are shared: two Web Chats rendered in the same commit get two sheets.\n\n## Specific Changes\n\n- `useEmotion.ts`: count in a layout effect, re-insert the registered rules after the last release\n- `react19/activity.hideShow{,.fluent,.styleOptions}.html`: same look after hide and show (default, Fluent), style options changed while hidden\n- `react19/strictMode.unmount.styles.html`, `strictMode/unmount.styles.html`: unmount removes the styles\n- `basic/twoWebChats.unmountOne.html`: the other Web Chat keeps the shared styles\n- `react19/activity.hideShow.sharedStyles.html`: shown again, then the other unmounts: styles kept\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-12T20:19:23Z",
+  "merged_at": "2026-11-13T00:31:15Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-activity-styles",
+  "head": "OEvgeny/fix-activity-styles",
+  "base_sha": "ad47bd0f144787e6da44d32d95256da0e2284608",
+  "head_sha": "515dbc0b6989e2b7bf0c9008a4a163dd4cca0b89",
+  "merge_sha": "7697bdfeec0ef9e0a0aed91f3518157467e3daca",
+  "diff_sha256": "4014ea721e9166b723e1199928038b1143a5e5c55eefcc543d7801b04865ed5b",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-12T20:45:40Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "a537274a42d0bb152fd2ba4a3df88374ce546cff",
+      "message": "Test that Web Chat keeps its styles when an Activity hides and shows it",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "5108d2c951198e55f8907a632281058ad8d1c1d9",
+      "message": "Keep Web Chat styles when an Activity hides and shows it",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "b89329899437e7617f6ac28da98e4a197f08b9ce",
+      "message": "Test styles with snapshots and style counts, and a shared sheet after an Activity showed Web Chat again",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "75c97e7ec47cb4307331d088ae44d8abc478a7a3",
+      "message": "Merge remote-tracking branch 'origin/main' into OEvgeny/fix-activity-styles",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "c129fe13b8207905998a6c59fe9bcb94af7cbef2",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "515dbc0b6989e2b7bf0c9008a4a163dd4cca0b89",
+      "message": "Merge branch 'main' into OEvgeny/fix-activity-styles",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6047-fix-activity-styles.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/basic/twoWebChats.unmountOne.html",
+      "status": "added",
+      "additions": 80,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/basic/twoWebChats.unmountOne.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/basic/twoWebChats.unmountOne.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/activity.hideShow.fluent.html",
+      "status": "added",
+      "additions": 74,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/activity.hideShow.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/activity.hideShow.fluent.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/activity.hideShow.html",
+      "status": "added",
+      "additions": 74,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/activity.hideShow.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/activity.hideShow.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/activity.hideShow.sharedStyles.html",
+      "status": "added",
+      "additions": 91,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/activity.hideShow.sharedStyles.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/activity.hideShow.sharedStyles.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/activity.hideShow.styleOptions.html",
+      "status": "added",
+      "additions": 73,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/activity.hideShow.styleOptions.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/strictMode.unmount.styles.html",
+      "status": "added",
+      "additions": 63,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/react19/strictMode.unmount.styles.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/strictMode/unmount.styles.html",
+      "status": "added",
+      "additions": 63,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/strictMode/unmount.styles.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/useEmotion.ts",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 14,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-12T20:49:40Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-12T23:10:32Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:31:04Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:30:40Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:29:40Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:28:47Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:28:08Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:28:54Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:28:15Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:30:31Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:29:44Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:29:28Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:29:17Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:29:52Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:30:11Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:27:26Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:29:36Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:21:30Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:28:56Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:30:16Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:30:13Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:30:17Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:20:56Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:21:20Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:21:38Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:20:28Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:20:39Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:20:29Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:21:01Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:20:36Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:20:31Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:21:18Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:20:37Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:22:44Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:23:37Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:22:51Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:14:58Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:14:09Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:15:23Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:14:25Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:17:01Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:20:04Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:19:31Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:14:47Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:15:19Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:15:35Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:15:18Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:15:06Z"
+    }
+  ],
+  "binary_paths": [
+    "__tests__/html2/basic/twoWebChats.unmountOne.html.snap-1.png",
+    "__tests__/html2/basic/twoWebChats.unmountOne.html.snap-2.png",
+    "__tests__/html2/react19/activity.hideShow.fluent.html.snap-1.png",
+    "__tests__/html2/react19/activity.hideShow.fluent.html.snap-2.png",
+    "__tests__/html2/react19/activity.hideShow.html.snap-1.png",
+    "__tests__/html2/react19/activity.hideShow.html.snap-2.png",
+    "__tests__/html2/react19/activity.hideShow.sharedStyles.html.snap-1.png",
+    "__tests__/html2/react19/activity.hideShow.sharedStyles.html.snap-2.png",
+    "__tests__/html2/react19/activity.hideShow.styleOptions.html.snap-1.png",
+    "__tests__/html2/react19/strictMode.unmount.styles.html.snap-1.png",
+    "__tests__/html2/strictMode/unmount.styles.html.snap-1.png"
+  ]
+}

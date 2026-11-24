@@ -1,0 +1,15 @@
+{
+  "merged": {
+    "methods": [
+      "benchmark"
+    ],
+    "strength": {
+      "provenance": "ci-observed",
+      "independence": "same-definition"
+    },
+    "pass_rule": {
+      "kind": "baseline-relative",
+      "tolerance": 0.03
+    }
+  }
+}

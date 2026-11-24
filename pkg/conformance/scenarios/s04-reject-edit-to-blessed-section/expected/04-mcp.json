@@ -1,0 +1,71 @@
+[
+  {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "protocolVersion": "2025-11-25",
+      "capabilities": {
+        "tools": {
+          "listChanged": false
+        }
+      },
+      "serverInfo": {
+        "name": "tenet",
+        "version": "0.0.0"
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "# Agent context\n\n## Blessed (1)\n- R-1 — A payment that times out is retried once, never twice. (path; edited; owner: ved)\n\n## Drafts (0)\n\n## Index (0)\n\n## Omitted: none\n## Rules: tests-not-weakened (advise), protected-surfaces (advise), acceptance-passed (advise), citations-valid (advise), budget (advise)\n"
+        }
+      ],
+      "structuredContent": {
+        "blessed": [
+          {
+            "id": "R-1",
+            "section": "requirements",
+            "text": "A payment that times out is retried once, never twice.",
+            "flags": [
+              "edited"
+            ],
+            "owner": "ved",
+            "reason": "path"
+          }
+        ],
+        "drafts": [],
+        "index": [],
+        "omitted": [],
+        "truncated": false,
+        "rules": [
+          {
+            "rule": "tests-not-weakened",
+            "mode": "advise"
+          },
+          {
+            "rule": "protected-surfaces",
+            "mode": "advise"
+          },
+          {
+            "rule": "acceptance-passed",
+            "mode": "advise"
+          },
+          {
+            "rule": "citations-valid",
+            "mode": "advise"
+          },
+          {
+            "rule": "budget",
+            "mode": "advise"
+          }
+        ]
+      },
+      "isError": false
+    }
+  }
+]

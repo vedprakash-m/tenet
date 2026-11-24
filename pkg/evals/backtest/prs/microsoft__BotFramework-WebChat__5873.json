@@ -1,0 +1,385 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5873,
+  "title": "Fix flaky tests and remove `checkAccessibility` overrides",
+  "body": "## Changelog Entry\n\nNot required, development only.\n\n## Description\n\nFixes 2 flaky tests and removes `window.checkAccessibility = async () => {}` from tests, which disabled the accessibility check for the whole test. Remaining known violations are skipped explicitly with `skipCheckAccessibility`, scoped to the failing variants and snapshots, with a TODO.\n\n## Design\n\n`react-scroll-to-bottom` may mistake the first scroll after its scroll animation as a resize while sticky, and scroll back to the bottom. `pageObjects.scrollToTop()` now scrolls again, like a user would.\n\n## Specific Changes\n\n- `pageObjects.scrollToTop()`: scroll again when the transcript snaps back to the bottom, fixes flaky `scrollToEndButton.containerSize.html`\n- `activity/legacy/unknownAttachment.html`: wait for the live region warning before asserting\n- Removed obsolete `window.checkAccessibility` overrides from 11 tests\n- Replaced the remaining overrides with `skipCheckAccessibility` and a TODO:\n   - `part-grouping/status.html`, `part-grouping/index.html`: part grouping remounts when its first activity changes, `aria-activedescendant` points to the removed group\n   - `side-by-side/index.html`: deprecated Copilot custom variant puts elements other than articles in `role=\"feed\"`; color contrast in the \"View code\" dialog\n   - `markdown/vnext/markdownStreaming.html`: markdown `#` renders a level-one heading\n- `CHANGELOG.md`: moved #5865 and #5872 entries from 4.19.2 to Unreleased, they were merged after the release\n\n- [x] I have added tests and executed them locally\n- [ ] I have updated `CHANGELOG.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-16T19:16:32Z",
+  "merged_at": "2026-10-16T21:18:37Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-flaky-tests-and-axe-overrides",
+  "head": "OEvgeny/fix-flaky-tests-and-axe-overrides",
+  "base_sha": "f81b9d8ba166686d07fd873f7eb5aad811754823",
+  "head_sha": "688f8e7f482dc7656d936bf91a6e4c8241eb9061",
+  "merge_sha": "faf8117bd71995b0fed53f5cfcd7a0dcab98ab0f",
+  "diff_sha256": "240d000b1d53921648cc396441a95a5bc0af883d6a311df4a2c1b9b67e2553e4",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "fed251f9aecb694e0c066c323168607fe8700bcb",
+      "message": "Move changelog entries merged after 4.19.2 to Unreleased",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "74350681dc71f0602061b54c26dc7242fbba4d69",
+      "message": "Fix flaky scrollToTop and unknownAttachment tests",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "1da2063d6a6e9005386298225454ebb7b6dd0bb2",
+      "message": "Remove checkAccessibility overrides from tests",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "688f8e7f482dc7656d936bf91a6e4c8241eb9061",
+      "message": "Address review: use waitFor, link react-scroll-to-bottom fix",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/legacy/unknownAttachment.html",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/message-status.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/accordion.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/showModal.linkDefinitions.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/citation/url.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/copyButton/layout.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/focusBack.multiple.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/vnext/markdownStreaming.html",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/folded.skip.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 20,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/keyboard.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/navigation.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/status.html",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/index.html",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 21,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/pageObjects/scrollToTop.js",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-16T19:20:26Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-16T19:54:17Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-16T19:54:54Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-16T19:55:54Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2026-10-16T19:58:34Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-16T19:58:50Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-16T20:34:55Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-16T20:34:57Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-16T21:08:24Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T21:18:46Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T21:18:27Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T21:10:12Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:36:43Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:35:14Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:35:29Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:48:32Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:49:00Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:47:39Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:49:10Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:48:15Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:48:42Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:48:12Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:48:01Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:47:54Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:47:46Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T21:18:19Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T21:17:13Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:47:36Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:49:15Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:43:38Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:48:38Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:44:36Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:48:07Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:48:51Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:42:45Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:36:01Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:35:16Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:40:18Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:35:20Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:35:27Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-16T20:36:02Z"
+    }
+  ],
+  "binary_paths": []
+}

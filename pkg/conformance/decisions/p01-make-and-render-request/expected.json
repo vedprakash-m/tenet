@@ -1,0 +1,8 @@
+{
+  "request_id": "sha256:9b2e64de0955c9a752a154684fec150ccbd453218fae7950c017e204532e6b92",
+  "allowed_actors": [
+    "alice",
+    "ved"
+  ],
+  "rendered": "### Tenet decision · pr-12 · approve\n\nApprove definition?\n- 1. stop\n- 2. revise\n- 3. approve\n\nReply `/tenet approve @1234567890abcdef` or `/tenet pick <n> @1234567890abcdef` (expires 2026-11-24T12:00:00Z).\n"
+}

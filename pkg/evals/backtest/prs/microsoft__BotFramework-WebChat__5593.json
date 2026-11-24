@@ -1,0 +1,309 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5593,
+  "title": "Support `<script type=\"module\">` imports for Fluent skin pack",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Related to #5592.\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n### Added\r\n\r\n- (Experimental) Added support for importing via `<script type=\"module\">`, by [@compulim](https://github.com/compulim) in PR [#5592](https://github.com/microsoft/BotFramework-WebChat/pull/5592)\r\n   - Added support for `botframework-webchat-fluent-theme` package, by [@compulim](https://github.com/compulim) in PR [#5593](https://github.com/microsoft/BotFramework-WebChat/pull/5593)\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\nAdding exports for `<script type=\"module\">` in `botframework-webchat-fluent-theme` package.\r\n\r\nAs a side-effect, we are also exporting a repack of React 18 because Fluent UI requires JSX Runtime (`react(-dom)@>=17`). The repack helps web developers on sovereign cloud and airgapped-environment to host Web Chat without third party CDN services.\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n- Fluent UI 9 requires JSX Runtime\r\n   - We need to repack `react(-dom)@18` in additional to the current `react(-dom)@16.8.6` for sovereign cloud and airgapped environment\r\n- When using our precompiled CDN bits, importing from [esm.sh](https://esm.sh/) will need to reroute `react(-dom)` to our CDN bits to maintain singularity of React\r\n- CDN bits is in a 2-level directory hierarchy for `react(-dom)` for now, we will do it for other packages in another PR\r\n   - `static/react-dom.js`\r\n   - `static/react-dom/client.js`\r\n   - `static/react-dom/chunk-*.js`\r\n   - This helps web server operators to configure their web server to reduce the complexity requirement of import maps\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Added new exports at `botframework-webchat-fluent-theme/static`\r\n- Added new `repack/react(-dom)@18` ESM-repacked packages\r\n- Added tests for our CDN bits, vendor bits from [esm.sh](https://esm.sh/), and from [esm.sh/tsx](https://esm.sh/#tsx)\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-09-25T13:08:15Z",
+  "merged_at": "2025-09-26T20:40:25Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "feat-fat-module-fluent-theme",
+  "head": "feat-fat-module-fluent-theme",
+  "base_sha": "1898c00b3b47fde47cddf50bcc4259e85f6779ce",
+  "head_sha": "ef2a684c93a59e69e75e9bbe763c98e3f3233857",
+  "merge_sha": "5b04ab2b9cf5ce94026c97283296ce1bdf729134",
+  "diff_sha256": "7a32a2e61dd6365f11429009ebab308b6c34d9e5ee435ee916101a7766453320",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-09-25T13:27:55Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "11dd460aaa110ec6e4143e027c4ec2e73a164996",
+      "message": "Add test",
+      "author": "compulim"
+    },
+    {
+      "sha": "ad16bcb63d2502fd90f5ef9d07c3212ae5f7bb6f",
+      "message": "Build /static",
+      "author": "compulim"
+    },
+    {
+      "sha": "3f025894ecacb5210f15970b57783dd5d34fb542",
+      "message": "Add react@18 and react-dom@18",
+      "author": "compulim"
+    },
+    {
+      "sha": "c770b898c9bfb734ceb02c84470aee48b124452b",
+      "message": "Add tests for fluent-theme",
+      "author": "compulim"
+    },
+    {
+      "sha": "0c61baa4d66a901a2ce4faf64d6254c10f60b1aa",
+      "message": "Add tsx test",
+      "author": "compulim"
+    },
+    {
+      "sha": "419e74da81d84d9f8d63a7194c98c94af3e57d02",
+      "message": "No need object-assign aliasing",
+      "author": "compulim"
+    },
+    {
+      "sha": "3d3d6d2de941a0794d1d6bc715643e113f1addd2",
+      "message": "Add comment",
+      "author": "compulim"
+    },
+    {
+      "sha": "ef2a684c93a59e69e75e9bbe763c98e3f3233857",
+      "message": "Add entry",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": ".dockerignore",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/pull-request-validation.yml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/simple/fatModule/esm.sh/fluentTheme.html",
+      "status": "renamed",
+      "additions": 33,
+      "deletions": 27,
+      "previous_path": "__tests__/html2/simple/fatModule/fluentTheme.skip.html"
+    },
+    {
+      "path": "__tests__/html2/simple/fatModule/esm.sh/fluentTheme.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/simple/fatModule/esm.sh/tsx/fluentTheme.html",
+      "status": "added",
+      "additions": 95,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/simple/fatModule/esm.sh/tsx/fluentTheme.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/simple/fatModule/fluentTheme.html",
+      "status": "added",
+      "additions": 103,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/simple/fatModule/fluentTheme.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docker-compose-wsl2.yml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "lint-staged.config.js",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 105,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/esbuild.static.mjs",
+      "status": "modified",
+      "additions": 40,
+      "deletions": 20,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/.gitignore",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/esbuild.static.mjs",
+      "status": "added",
+      "additions": 92,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/package.json",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom@18/.gitignore",
+      "status": "added",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom@18/build.js",
+      "status": "added",
+      "additions": 45,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom@18/package.json",
+      "status": "added",
+      "additions": 41,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom@18/src/client.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom@18/src/index.ts",
+      "status": "added",
+      "additions": 21,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom@18/src/tsconfig.json",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react@18/.gitignore",
+      "status": "added",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react@18/package.json",
+      "status": "added",
+      "additions": 44,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react@18/src/index.ts",
+      "status": "added",
+      "additions": 44,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react@18/src/jsx-dev-runtime.ts",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react@18/src/jsx-runtime.ts",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react@18/src/tsconfig.json",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/dev-server/src/index.js",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "serve-test.json",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-09-26T20:05:46Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-09-26T20:06:29Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/html2/simple/fatModule/esm.sh/fluentTheme.html.snap-1.png",
+    "__tests__/html2/simple/fatModule/esm.sh/tsx/fluentTheme.html.snap-1.png",
+    "__tests__/html2/simple/fatModule/fluentTheme.html.snap-1.png"
+  ]
+}

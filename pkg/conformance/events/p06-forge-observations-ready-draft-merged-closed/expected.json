@@ -1,0 +1,50 @@
+{
+  "observations": [
+    {
+      "pr": 12,
+      "action": "ready_for_review",
+      "delivery": "del-1",
+      "recorded": true,
+      "type": "work.moved",
+      "forge": {
+        "signed": false,
+        "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "pr": 12,
+      "action": "converted_to_draft",
+      "delivery": "del-2",
+      "recorded": true,
+      "type": "work.moved",
+      "forge": {
+        "signed": false,
+        "head_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "pr": 13,
+      "action": "closed",
+      "delivery": "del-3",
+      "recorded": true,
+      "type": "work.closed",
+      "endpoint": "integrated",
+      "forge": {
+        "signed": false,
+        "head_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    },
+    {
+      "pr": 14,
+      "action": "closed",
+      "delivery": "del-4",
+      "recorded": true,
+      "type": "work.closed",
+      "endpoint": null,
+      "forge": {
+        "signed": false,
+        "head_sha": "cccccccccccccccccccccccccccccccccccccccc"
+      }
+    }
+  ]
+}

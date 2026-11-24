@@ -151,7 +151,7 @@ Both install the locked version with `npm install --no-save` and check it agains
 5. **Post the check run** `Tenet` on the **head** SHA, found by name and head. Its conclusion follows §10 (when $N > 1$ PRs share `head`, each card is headed `Pull request #<number>\n` with budget $\lfloor(60,000 - \text{overhead})/N\rfloor$ and the worst conclusion across the $N$ cards). The summary is cut at 60,000 characters in this order: same-area requirements first, then passing items' test lists, then passing requirements. Failing items, weakening, protected files and "would have blocked" are never cut (if those essential lines alone exceed the budget, `renderCheckSummary` throws `RangeError`, or the recorder keeps the full card in `refs/tenet/records` and posts a `neutral`/`failure` truncated pointer).
 6. **Append records** (§4).
 
-From alpha.1 the recorder also handles review, `/tenet` reply, ready-for-review, conversion to draft and closing events. **Merge queues** (L-0032): alpha.1 records merge-group candidates as observations; alpha.2 verifies the exact tested candidate before publishing its required status (kernel §5); full merge-queue evidence and quarantine come in 0.1.x. CP-0040's event table fixes the trigger and token for each.
+From alpha.1 the recorder also handles review, `/tenet` reply, ready-for-review, conversion to draft and closing events (in alpha.0, a pull request closed without merging records nothing beyond its last evaluation). **Merge queues** (L-0032): alpha.1 records merge-group candidates as observations; alpha.2 verifies the exact tested candidate before publishing its required status (kernel §5); full merge-queue evidence and quarantine come in 0.1.x. CP-0040's event table fixes the trigger and token for each.
 
 ## 4. Records ref
 
@@ -205,7 +205,7 @@ Records live at `refs/tenet/evidence` under `<subject-digest>/<id>.json`, writte
 **Recording and limits.**
 - The recorder records two-factor status as `enforced`, `not-enforced` or `unobservable`.
 - A pull-request author can't approve their own pull request on most forges, so from `verify` agents open pull requests as a `bots[]` identity, or the decision-maker uses the comment form.
-- Below `verify` the Owner may accept their own work, shown as `self-accepted` on the board after merge.
+- Below `verify` the Owner may accept their own work (`proof.self_accepted: true`), shown as `self-accepted` on the board after merge. `/tenet bless <doc>#<slug>` stores an attributed `approve` (`name: "bless-section"`, `recorded: "forge"`); `/tenet not-useful <finding>` writes an immutable `not-useful` observation (`decision: null`).
 - A decision by an account on a pull request its own agent session opened is flagged. Unless a host binding attests credential separation (assumption 4), `forge-verified` counts as detected.
 
 `person-present` is an `ssh-keygen -Y` signature by a security key whose presence can be read from the signature (CP-0017). `key` and `channel` answers are advisory. An option that changes scope carries the replacement digest or returns to Define. Revoking a key is a policy change; earlier signatures stay valid.

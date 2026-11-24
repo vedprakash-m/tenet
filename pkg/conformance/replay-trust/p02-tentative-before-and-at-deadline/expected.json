@@ -1,0 +1,22 @@
+{
+  "evaluations": [
+    {
+      "as_of": "2026-11-24T11:59:59Z",
+      "transitions": [
+        {
+          "event_id": "01JDF000000000000000000002",
+          "status": "pending-evidence"
+        }
+      ]
+    },
+    {
+      "as_of": "2026-11-24T12:00:00Z",
+      "transitions": [
+        {
+          "event_id": "01JDF000000000000000000002",
+          "status": "unjustified"
+        }
+      ]
+    }
+  ]
+}

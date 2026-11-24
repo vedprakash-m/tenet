@@ -1,0 +1,12 @@
+{
+  "op": "cliBoardOpen",
+  "argv": [
+    "board",
+    "--open"
+  ],
+  "gitignore": [
+    ".tenet/",
+    "now.md",
+    "now.html"
+  ]
+}

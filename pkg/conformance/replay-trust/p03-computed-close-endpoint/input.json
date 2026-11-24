@@ -1,0 +1,16 @@
+{
+  "scenarios": [
+    {
+      "name": "verified-integrated",
+      "merged": true,
+      "all_claims_satisfied": true,
+      "accepted_without_verification": false
+    },
+    {
+      "name": "external-unverified",
+      "merged": true,
+      "all_claims_satisfied": false,
+      "external_close": true
+    }
+  ]
+}

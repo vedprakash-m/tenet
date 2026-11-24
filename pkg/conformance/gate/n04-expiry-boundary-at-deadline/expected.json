@@ -1,0 +1,18 @@
+{
+  "verdict": "refuse",
+  "disposition": "blocks",
+  "lead": "TN-GATE-CLAIM",
+  "reasons": [
+    "TN-GATE-CLAIM"
+  ],
+  "claims": [
+    {
+      "id": "AB-1",
+      "result": "unsatisfied"
+    }
+  ],
+  "next": {
+    "who": "ci",
+    "action": "wait-for-evidence"
+  }
+}

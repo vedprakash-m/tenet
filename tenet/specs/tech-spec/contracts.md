@@ -11,14 +11,14 @@
 | Requirement ID | `R-<n>` (prefix set by `specs.id_prefix`, default `R`); `n` is the next unused integer in the project; assigned by `tenet fix`; never reused |
 | Acceptance item ID | `AB-<n>`, numbered from 1 within its pull request; stored as `pr-<number>/AB-<n>` |
 | Work item | `pr-<number>` for a quick change; `CP-<6 Crockford Base32 chars>` alias for a packet, the first 6 characters of the base32 SHA-256 of its ULID, lengthened by one on collision; legacy `CP-NNNN` stays valid |
-| Schema ID | Each schema's `$id` is `https://vedprakash-m.github.io/tenet/schemas/<minor>/<name>.json` (for example `…/schemas/0.1/proof-card.json`), published from `kit/schemas/` with the release (L-0031) |
+| Schema ID | `https://vedprakash-m.github.io/tenet/schemas/<minor>/<name>.json` (alpha.1 adds `subject`, `actor`, `claim`, `evidence`, `decision`, `event`, `work`, `criteria`, `step-assignment`, `step-result`, `loop`), published with the release (L-0031) |
 | ULID | 26 uppercase Crockford Base32 characters, monotonic within one millisecond |
 | Test tag | `\[(AB-\d+|<prefix>-\d+)\]` in a test's full name, where `<prefix>` is `specs.id_prefix`; or `(?:^|[^A-Za-z0-9]|_)tenet_(AB|<prefix>)_(\d+)(?=$|[^A-Za-z0-9])` (`tenet_AB_1` means `AB-1`, and it also matches inside `test_retries_once_tenet_AB_1` or `suite > tenet_AB_1`); or a JUnit `<property name="tenet.case" value="…">`, or a CTRF `extra.tenet_cases` array. `AB`, `CF`, `Q` and `V` are reserved and can't be a requirement prefix; any other bracketed token (`[UTF-8]`) is ignored. ALG-08 says which tags count |
 | Vision item ID | `V-(?:[A-Z]+)?\d+` (`V-2`, `V-P18`), numbered by `fix`; `serves:` takes a comma-separated list |
 | Evaluation ID | First 16 hex characters of SHA-256 over RFC 8785 `{repository, work, tested_commit, base, acceptance_digest, implemented: [{id, blessed_digest}], policy_blob, tenet_version}` (`policy_blob` is the git blob ID of the target's `tenet.yaml`); a reply or approval binds it (ci.md §6). One evaluation can have several runs; each record is keyed by run and attempt (ci.md §4) |
 | `tenet.lock` | `{schema_version: 1, package: "@vedprakash-m/tenet", version, integrity: "sha512-…", kit_sha256}`; `integrity` is the registry's `dist.integrity`, recorded at install; CI installs with `npm install --no-save` and refuses a tarball that doesn't match it; whether the kit is vendored follows from `kit_path` |
 | `.tenet/` | `manifest.json` (§10), `manifest.pending.json`, `onboard/` (§4), `reports/`, `cache/`, `runs/`; all git-ignored except `manifest.json` and a vendored `kit/` (`init` writes the `.gitignore` block) |
-| `<records>/blessed/` | Copies of blessed section text and `log.jsonl` (one line per blessing session: `{doc, section, by, at, minutes, statements: {drafted, kept, edited, adopted, added}}`), committed (ALG-03, ALG-13) |
+| `<records>/blessed/` | Copies of blessed section text and `log.jsonl` (one line per finished section action: `{doc, section, action: bless|confirm|reject|defer, by, at, minutes, statements: {drafted, kept, edited, adopted, added}, session_id?}`, where `statements` fields are `null` when unavailable), committed (ALG-03, ALG-13) |
 
 ## 2. Pull-request acceptance block
 
@@ -35,7 +35,7 @@ Parsing: heading text exact (`## Acceptance` or `### Acceptance`); optional `Imp
 **Front matter** (YAML, first lines of the file):
 
 ```yaml
-tenet: {spec: 1, doc: intent, level: L1, version: "0.1", owner: ved, drafted_from: 9f3c2e1, drafted_at_rev: 9f3c2e1}
+tenet: {spec: 1, doc: intent, level: L1, version: "0.1", owner: ved, drafted_from: 9f3c2e1, drafted_at_rev: 9f3c2e1}   # version uses /^\d+(?:\.\d+)*$/ (tenet fix defaults missing to "0.1")
 # drafted_from: the inventory's revision (information only; onboarding drafts only); drafted_at_rev: the commit holding the agent's draft, set by `onboard --card` (ALG-13). Both optional before then
 sections:
   requirements:                     # section slug (ALG-02)
@@ -73,7 +73,7 @@ Parsed entries: `{id, checked: bool, section: string|null, text, resolution?: st
 
 ## 4. Onboarding files
 
-`.tenet/onboard/inventory.json`: `{schema_version, revision, sources: {files: [{path, kind: source|config|test|doc|ci|adr|manifest|instructions, sha256, lines}], skipped: [{path, reason: env|credentials|vendored|generated|excluded|binary|oversize}]}, modules: [{id, roots, languages}], tests: [{path, runner, cases}], docs: [{path, title, sections, last_changed}], owners: [{pattern, owners}], ci: [{path, commands}], size: {source_lines, areas}, layout: one-file | separate, units: [{id, paths, views}], findings: [{kind: dead-path | skipped-tests | owners-unmatched | no-test-report, path, message}], observations: {reports: [{path, sha256, runner, cases}]}}`. Everything except `observations` comes from the repository at `revision` and is byte-identical for one commit; `observations` come from local reports and are named by digest.
+`.tenet/onboard/inventory.json`: `{schema_version, revision, sources: {files: [{path, kind: source|config|test|doc|ci|adr|manifest|instructions, sha256, lines}], skipped: [{path, reason: env|credentials|vendored|generated|excluded|binary|oversize}]}, modules: [{id, roots, languages}], tests: [{path, runner, cases}], docs: [{path, title, sections, last_changed}], owners: [{pattern, owners}], ci: [{path, commands}], size: {source_lines, areas}, layout: one-file | separate, units: [{id, paths, views}], findings: [{kind: dead-path | skipped-tests | owners-unmatched | no-test-report, path, message}], observations: {reports: [{path, sha256, runner, cases}]}}`. Everything except `observations` is deterministic over `(HEAD, working tenet.yaml)`; `observations.reports` reads working-tree `.tenet/reports/*` and `checks[].report_path` (named by `sha256`, suppressing `no-test-report` when non-empty; tracked `.tenet/reports/*` stay in `sources.files`).
 
 `.tenet/onboard/interview.json` (written by the agent): `{questions: [{id, text, answer, answered_at}]}`.
 
@@ -87,21 +87,7 @@ Parsed entries: `{id, checked: bool, section: string|null, text, resolution?: st
 
 ## 6. Test reports
 
-`init` writes the runner's own command with these flags (never `npm test -- …`):
-
-| Runner / kind | `checks.<name>.run` | `report`, `report_from` |
-|---|---|---|
-| vitest | `npx vitest run --reporter=default --reporter=junit --outputFile.junit=.tenet/reports/<name>.xml` | `junit`, file |
-| jest | `npx jest --ci --json --outputFile=.tenet/reports/<name>.json` | `jest-json`, file |
-| node:test | `node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=.tenet/reports/<name>.xml` | `junit`, file |
-| pytest | `python -m pytest --junitxml=.tenet/reports/<name>.xml` | `junit`, file |
-| go | `go test -json ./...` | `go-test-json`, stdout |
-| ctrf | runner's CTRF command writing `.tenet/reports/<name>.json` | `ctrf`, file |
-| other | the user's own command | `none`: per-test results unavailable |
-
-Real reports differ from these formats in ways every reader must handle: [evidence.md §2](evidence.md#2-real-test-reports).
-
-Every reader produces one `TestReport` model (`runner` equals `kind`: `junit` | `ctrf` | `go-test-json` | `jest-json` | `none`): `{runner, cases: [{full_name, file?, status: pass|fail|skip|error, attempts: [status], tags: [id], duration_ms?}], teardown_failed: bool, inconclusive: bool}` (ALG-08). Missing reports throw `TN-REPORT-MISSING`; malformed reports throw `TN-REPORT-MALFORMED`. When `file` is present, store it with forward slashes, relativized to `cwd` if supplied. `duration_ms`, when present, is rounded to the nearest integer millisecond (`Math.round`).
+Moved to [evidence.md §2](evidence.md#2-real-test-reports) under the rollover rule. Every reader produces one `TestReport` model (`runner` equals `kind`: `junit` | `ctrf` | `go-test-json` | `jest-json` | `none`): `{runner, cases: [{full_name, file?, status: pass|fail|skip|error, attempts: [status], tags: [id], duration_ms?}], teardown_failed: bool, inconclusive: bool}` (ALG-08). Missing reports throw `TN-REPORT-MISSING`; malformed reports throw `TN-REPORT-MALFORMED`. When `file` is present, store it with forward slashes, relativized to `cwd` if supplied. `duration_ms`, when present, is rounded to the nearest integer millisecond (`Math.round`).
 
 ## 7. CI
 
@@ -125,7 +111,7 @@ Moved to [ci.md](ci.md) under the rollover rule: the test job and recorder, runn
 | `import` | 0.1.x | packets | |
 | `conform` | M4 | — | |
 
-Global flags: `--json`, `--cwd`, `--quiet`, `--verbose`, `--offline`. Under `--json` stdout holds exactly one JSON object `{ok, command, version, result, errors: [finding]}`; human text goes to stderr. A **finding** is `{code, severity: error|warning|advise, rule, file, line, message, fix}`, with `rule`, `file` and `line` nullable; `check` returns `result: {findings: [finding], summary: {errors, warnings, advises}}` (counts by `severity`, with `findings` sorted by `file ?? ""`, numeric `line ?? 0`, `code`, `message`), and `tenet_check` the same. **Results by command:** `init` `{plan, wrote, findings}`; `onboard` `{preflight, inventory_path, assignment_path, findings}`; `bless` `{blessed, confirmed, rejected, deferred, minutes}`; `context` the `tenet_context` result; `fix` `{changes}`; `split` `{moved, pointer}`; `board` `board.json`; `upgrade` `{from, to, changed}`; `remove` `{removed, kept}`; `doctor` `{checks: [{name, ok, detail}]}`; `verify --record` `{evaluation_id, conclusion, wrote}`. Each command's packet owns `kit/schemas/results/<command>.json`. Exit codes in precedence order: 2 usage, 3 environment, 4 policy refusal, 1 gate or check failed, 0 success; each error code's exit code is in §13. Each command's `result` follows `kit/schemas/results/<command>.json` (CP-0004). Pull-request replies (`/tenet approve`, `pick`, `bless`, `not-useful`) arrive in alpha.1 (ci.md §6).
+Global flags: `--json`, `--cwd`, `--quiet`, `--verbose`, `--offline`. Under `--json` stdout holds exactly one JSON object `{ok, command, version, result, errors: [finding]}`; human text goes to stderr. A **finding** is `{code, severity: error|warning|advise, rule, file, line, message, fix}`, with `rule`, `file` and `line` nullable; `check` returns `result: {findings: [finding], summary: {errors, warnings, advises}}` (counts by `severity`, with `findings` sorted by `file ?? ""`, numeric `line ?? 0`, `code`, `message`), and `tenet_check` the same. **Results by command:** `init` `{plan, wrote, findings}`; `onboard` `{preflight, inventory, findings, assignment}` (`onboard --card`: `{card, drafted_at_rev}`); `bless` `{blessed, confirmed, rejected, deferred, minutes}` (integer counts, numeric minutes); `context` the `tenet_context` result; `fix` `{changes}`; `split` `{moved, pointer}`; `board` `board.json`; `upgrade` `{from, to, changed}`; `remove` `{removed, kept}`; `doctor` `{checks: [{name, ok, detail}]}`; `verify --record` `{evaluation_id, conclusion, wrote}`. Each command's packet owns `kit/schemas/results/<command>.json`. Exit codes in precedence order: 2 usage, 3 environment, 4 policy refusal, 1 gate or check failed, 0 success; each error code's exit code is in §13. Each command's `result` follows `kit/schemas/results/<command>.json` (CP-0004). Pull-request replies (`/tenet approve`, `pick`, `bless`, `not-useful`) arrive in alpha.1 (ci.md §6).
 
 ## 9. MCP
 
@@ -165,10 +151,10 @@ Message and fix text for every code: [messages.md](messages.md).
 |---|---|---|
 | `TN-USAGE-*`, `TN-USAGE-REF`, `TN-USAGE-BUDGET`, `TN-BLESS-NO-TTY` | usage | 2 |
 | `TN-ENV-NODE`, `TN-ENV-GIT`, `TN-ENV-NO-COMMIT`, `TN-ENV-NOT-GIT`, `TN-ENV-OFFLINE`, `TN-POLICY-MISSING` | environment | 3 |
-| `TN-POLICY-LOOSEN`, `TN-POLICY-INCOMPATIBLE`, `TN-POLICY-RULE`, `TN-INIT-EXISTS`, `TN-BLESS-OPEN-CONFLICT`, `TN-BLESS-INFERRED` | policy refusal | 4 |
-| `TN-SCHEMA`, `TN-POLICY-SCHEMA`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-SPEC-UNCOVERED-VISION`, `TN-KIT-EDITED`, `TN-KIT-INVALID`, `TN-KIT-MISSING`, `TN-LOCK-INVALID`, `TN-LOCK-MISSING`, `TN-EV-DUP`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID`, `TN-INTERNAL` | structural | 1 |
+| `TN-POLICY-LOOSEN`, `TN-POLICY-INCOMPATIBLE`, `TN-POLICY-RULE`, `TN-POLICY-RULE-DECISION`, `TN-INIT-EXISTS`, `TN-BLESS-OPEN-CONFLICT`, `TN-BLESS-INFERRED` | policy refusal | 4 |
+| `TN-SCHEMA`, `TN-POLICY-SCHEMA`, `TN-BACKTEST-INCOMPLETE`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-SPEC-UNCOVERED-VISION`, `TN-KIT-EDITED`, `TN-KIT-INVALID`, `TN-KIT-MISSING`, `TN-LOCK-INVALID`, `TN-LOCK-MISSING`, `TN-EV-DUP`, `TN-EV-CYCLE`, `TN-EV-CROSS-WORK`, `TN-EV-NO-CREATE`, `TN-EV-RESOLVE`, `TN-DEC-ACTOR`, `TN-DEC-CONFLICT`, `TN-DEC-KEY-REVOKED`, `TN-DEC-SELF-VERIFY`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID`, `TN-INTERNAL` | structural | 1 |
 | `TN-CITE-FILE`, `TN-CITE-RANGE`, `TN-CITE-HEADING`, `TN-CITE-TEST` (rule `citations-valid`); `TN-BUDGET` (`budget`); `TN-WEAK-*` (`tests-not-weakened`); `TN-PROTECTED` (`protected-surfaces`); `TN-ACC-UNPASSED` (`acceptance-passed`); `TN-GATE-*` (the row's rule) | rule (`severity: "error"` in `enforce`, `"advise"` in `advise`) | 1 in `enforce`, else 0 |
-| `TN-REPORT-MISSING`, `TN-REPORT-MALFORMED`, `TN-RECORD-BUNDLE`, `TN-LOCK-MISMATCH`, `TN-POLICY-BRANCH`, `TN-POLICY-LEVEL-UNAVAILABLE`, `TN-POLICY-ALPHA0-CAP`, `TN-BUDGET-WARN`, `TN-SUBJ-DIRTY`, `TN-EV-ORPHAN` | warning, shown as degraded | 0 |
+| `TN-REPORT-MISSING`, `TN-REPORT-MALFORMED`, `TN-RECORD-BUNDLE`, `TN-RECORD-TIP`, `TN-LOCK-MISMATCH`, `TN-POLICY-BRANCH`, `TN-POLICY-LEVEL-UNAVAILABLE`, `TN-POLICY-ALPHA0-CAP`, `TN-BUDGET-WARN`, `TN-SUBJ-DIRTY`, `TN-EV-ORPHAN`, `TN-DEC-STALE`, `TN-DEC-EXPIRED`, `TN-DEC-AMBIGUOUS` | warning, shown as degraded | 0 |
 
 ## 14. Loops
 

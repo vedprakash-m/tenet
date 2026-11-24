@@ -1,0 +1,484 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6007,
+  "title": "Fix file attachments without a name throwing in development builds",
+  "body": "> A bot file attachment without `name` throws \"Validation error while parsing props\" in development builds, and production builds label its link \"Download file 'false'\".\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed file attachments without `name` throwing in development or labeled \"Download file 'false'\", in PR [#6007](https://github.com/microsoft/BotFramework-WebChat/pull/6007), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\n`FileAttachment` passed the optional `attachment.name` to `FileContent`, whose `fileName` prop is a required string. It now falls back to an empty name, so the attachment renders with a download icon and the link reads \"Download file ''\".\n\n## Design\n\n- The fallback sits where the activity is read, as in the screen reader renderer of file attachments; `FileContent` keeps `fileName` required.\n- Not taken: the send box's \"A file\" label (the link would read \"Download file 'A file'\") or a name parsed from `contentUrl`; the empty `download` attribute already lets the browser name the saved file.\n- A \"Download file\" label without the empty quotes needs new localized strings; left for a follow-up.\n\n## Specific Changes\n\n- `FileAttachment.js`: `fileName` falls back to `''`\n- `attachment/file.noName.html` (+ `.fluent.html`): snapshot 1, a download icon without a file name; asserts the link name \"Download file ''\"\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-03T04:42:48Z",
+  "merged_at": "2026-11-04T00:20:21Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-file-attachment-no-name",
+  "head": "OEvgeny/fix-file-attachment-no-name",
+  "base_sha": "4f8dc5979b65a756842c739f3a4a8db70e6e1632",
+  "head_sha": "5e16a6c1c44a113b169a069fb47b8babddeb226e",
+  "merge_sha": "be71cb455cda341d813800165d6ad4ffa4bcc28f",
+  "diff_sha256": "c070201ad108b190935a205b1c6ccef1b4e0663ad91ed7c2ba8b3dceb008885c",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-04T00:09:33Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "4a151470c5045bae261c5904a0c68eca2d09495f",
+      "message": "Render the copy button of code blocks through a portal instead of a separate React root",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "3c1355f3ec853c72f79ab76f302d6ab1006dae63",
+      "message": "Use createRoot() in renderWebChat() on React 19",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "38974c982e7e7a2f565d3f50651ace9d37627567",
+      "message": "Add React 19 smoke tests",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "420de2815daebbbcbe9b1e676113bb36b10b16dc",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "d09829bccf9f2a927549bff3dd42b1e88709653b",
+      "message": "Merge branch 'main' into OEvgeny/fix-react-19-support",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "d9ba6d82f8d166384decbe88bd04bf95b88ce0ad",
+      "message": "Name only react-film as the blocker of the React 19 Strict Mode test",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "366a59f97f0e8e2f4262372263331e2708e4ad51",
+      "message": "Make the code block copy button a plain custom element",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "e3fef37a2dea2d22c5b0b40862dcc911207fc927",
+      "message": "Make the build paths of renderWebChat() explicit",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "92afb9778d568ebb942f782143015f0ab17038d0",
+      "message": "Remove the createRoot() branch for react-dom in renderWebChat()",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "c803814b71edb2cf03c2df02b36ba30ac414ae3c",
+      "message": "Merge branch 'main' into OEvgeny/fix-react-19-support",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "921aaacc4ed1e9a438913beb965eb1059ea54bd1",
+      "message": "Declare React 19 support",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "db7f6b26a13901428e4f240003eec1249bc91683",
+      "message": "Test the ESM build on React 19 development, in Strict Mode",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "0c8d0c1d81702273c215f8d2cf4e1ed8d2bf2c06",
+      "message": "Add the snapshots of the React 19 Strict Mode test",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "2e8673c5e71d839a2fac6e162d0abb51aa35268e",
+      "message": "Render each Adaptive Card once per inputs, so Strict Mode on React 19 keeps the typed inputs",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "f6e332e18d905d803f14dfadad0af61161346b99",
+      "message": "Remove the remaining propTypes and the prop-types dependency",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "0d8180c8a52e2c561bdd665e651c3c9e82e767aa",
+      "message": "Shorten the title of the React 19 Strict Mode test for Prettier",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "92d65e05c733bce22768b33524d00eb26d33d65f",
+      "message": "Fix type errors with @types/react@19",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "a2e7723063ce617e8697a28a15a7cb267ef087ab",
+      "message": "Run the type definitions test with @types/react@19 too",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7480e958ff2f77a501c48342a6890e6623d7eec6",
+      "message": "Validate the props that propTypes checked with Valibot",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "2b118b9bb0587678e9624dd4028e2155ec7e598c",
+      "message": "Type the props from the new schemas with InferReactProps",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "36aaa3a2e1e8ed4dcc5b7b201e3fcca04cf15b5f",
+      "message": "Accept null for the props that propTypes did not require",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "5e9bf1a830dae7f64c91d98a9ae6646b8731ff0f",
+      "message": "Replace the regression tests of null props with reachable ones",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "82c219771cbc6a4483e357bd6681d746ee3211ce",
+      "message": "Use a null fallback text in the transcript regression test",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "80e6d1bac4df252447532d7c95a8cf0f0e465609",
+      "message": "Add snapshots to the regression tests of null props",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "d6bf11ade24da3105e7a18c00a4e59bc7a9a412d",
+      "message": "List the propTypes replacement under Changed in the changelog, it is not breaking",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "29ed607dbb6fc6c08a664e3b51cccfbe015dd7d1",
+      "message": "Accept the props that callers pass but the schemas rejected",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "e63de8c2bacbb47bb778fea6e6559bf5062acd65",
+      "message": "Prefer optional() over nullish() in the props schemas",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "5e06d25f509f02b8f49615e4fd221d22a7dc87b7",
+      "message": "Render file attachments without name",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "f34ae13123137bdae0d770f05e2255e1582a8734",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "087cec6b110ca9e7ba44c4e337f978c280c45d31",
+      "message": "Merge remote-tracking branch 'origin/main' into OEvgeny/fix-react-19-support",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "6d3f4d48c63d9256402720c58e4c3f66adb4a6c2",
+      "message": "Merge remote-tracking branch 'origin/OEvgeny/fix-react-19-support' into OEvgeny/fix-file-attachment-no-name",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "5e16a6c1c44a113b169a069fb47b8babddeb226e",
+      "message": "Merge main after #5955 was squash-merged",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6007-fix-file-attachment-no-name.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/file.noName.fluent.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/file.noName.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/file.noName.html",
+      "status": "added",
+      "additions": 67,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/attachment/file.noName.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Attachment/FileAttachment.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-04T00:11:50Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-04T00:19:06Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:11:10Z"
+    },
+    {
+      "name": "copilot-pull-request-reviewer",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:11:50Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:06:58Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:07:30Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:06:40Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:06:34Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:04:19Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:05:20Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:06:49Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:06:18Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:06:23Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:05:24Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:05:47Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:06:33Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:04:50Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:06:14Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:05:22Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:06:08Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:06:43Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:05:32Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:04:44Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:58:26Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:58:00Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:58:52Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:58:03Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:58:49Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:57:55Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:57:55Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:58:37Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:58:32Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:58:46Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:57:53Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:57:59Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:00:40Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-04T00:00:43Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:59:50Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:51:36Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:52:20Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:52:04Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:56:47Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:51:31Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:53:08Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:52:46Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:52:20Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:51:43Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-03T23:52:30Z"
+    }
+  ],
+  "binary_paths": [
+    "__tests__/html2/attachment/file.noName.fluent.html.snap-1.png",
+    "__tests__/html2/attachment/file.noName.html.snap-1.png"
+  ]
+}

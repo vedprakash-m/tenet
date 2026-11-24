@@ -1,0 +1,20 @@
+{
+  "scenarios": [
+    {
+      "name": "no-creation",
+      "state": null,
+      "justified_station": null,
+      "finding_codes": [
+        "TN-EV-NO-CREATE"
+      ]
+    },
+    {
+      "name": "competing-creations",
+      "state": null,
+      "justified_station": null,
+      "finding_codes": [
+        "TN-EV-NO-CREATE"
+      ]
+    }
+  ]
+}

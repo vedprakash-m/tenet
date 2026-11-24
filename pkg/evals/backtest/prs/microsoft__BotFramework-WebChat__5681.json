@@ -1,0 +1,294 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5681,
+  "title": "Unpin `botframework-directlinespeech-sdk`",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Revert #5662.\r\n\r\n## Changelog Entry\r\n\r\n### Changed\r\n\r\n- Pinned to [`botframework-directlinespeech-sdk@4.18.1-main.20251208.8ccadd6`](https://npmjs.com/package/botframework-directlinespeech-sdk/v/4.18.1-main.20251208.8ccadd6), by [@OEvgeny](https://github.com/OEvgeny) in PR [#5662](https://github.com/microsoft/BotFramework-WebChat/pull/5662), and unpinned in PR [#5681](https://github.com/microsoft/BotFramework-WebChat/pull/5681)\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\nWe temporarily pinned down a version of `botframework-directlinespeech-sdk` as we work on package ownership. The issue is fixed and we are unpinning.\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Unpinned `botframework-directlinespeech-sdk`\r\n- Updated snapshots related to recent MockBot updates\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [x] ~I have added tests and executed them locally~\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n- [x] ~Browser and platform compatibilities reviewed~\r\n- [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n- [x] ~Documents reviewed (docs, samples, live demo)~\r\n- [x] ~Internationalization reviewed (strings, unit formatting)~\r\n- [x] `package.json` and `package-lock.json` reviewed\r\n- [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n- [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-01-29T06:41:06Z",
+  "merged_at": "2026-01-29T08:01:21Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "fix-unpin-dlspeech",
+  "head": "fix-unpin-dlspeech",
+  "base_sha": "d02108c7d4583992cc1fba950b3ab15ab20cf5b3",
+  "head_sha": "8437d313bf64c58a03f9fd19b3ea9a7faaa4e713",
+  "merge_sha": "f7a730ff38528525df240399354658e135f6e3e3",
+  "diff_sha256": "7ad158b1b2f3d6b6a09ed8258be1b5f9e7361751436758e357bb8f076823cd03",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-01-29T06:43:20Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "4e7c796362d36a6edf8220c066b8d36fbb40b8d7",
+      "message": "Unpin DLSpeech SDK",
+      "author": "compulim"
+    },
+    {
+      "sha": "906a2b880e4565b618e96315fec9a5b73c0094e3",
+      "message": "Update PR number",
+      "author": "compulim"
+    },
+    {
+      "sha": "411910ef1afbf4513d1a4a755a8cd8e2ad794e2e",
+      "message": "Update snapshots",
+      "author": "compulim"
+    },
+    {
+      "sha": "f8c43f0d80422a04ad5a89d2d5a36f78609b38cf",
+      "message": "Update start script",
+      "author": "compulim"
+    },
+    {
+      "sha": "8437d313bf64c58a03f9fd19b3ea9a7faaa4e713",
+      "message": "Fix flakiness",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/autoScroll/autoScroll.afterSend.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/hooks/useTextBox.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/hooks/useTextBox.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/speech/performCardAction.continuous.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 45,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 6,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "DISMISSED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-01-29T06:58:56Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-01-29T07:45:20Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:48:30Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:48:12Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:11Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:24Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:18Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:46Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:48:02Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:26Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:42Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:15Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:05Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:32Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:31Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:26Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:13Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:53Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:46:36Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:57Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:47:20Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:35:53Z"
+    },
+    {
+      "name": "Build test harness",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:37:17Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:42:51Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:36:23Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:41:28Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:40:33Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:36:40Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-01-29T07:40:03Z"
+    }
+  ],
+  "binary_paths": [
+    "__tests__/html2/autoScroll/autoScroll.afterSend.html.snap-1.png",
+    "__tests__/html2/hooks/useTextBox.html.snap-1.png",
+    "__tests__/html2/hooks/useTextBox.html.snap-2.png",
+    "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-1.png",
+    "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-2.png",
+    "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-3.png",
+    "__tests__/html2/scrollToEndButton/scrollToEndButton.visibility.html.snap-4.png"
+  ]
+}

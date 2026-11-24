@@ -1,0 +1,98 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6064,
+  "title": "Store: make `jsonValueSchema` up to ~150× faster by skipping the boxed-primitive check on plain objects, and add a JSON benchmark",
+  "body": "> Targets `feat-new-store` (#6053).\n\n## Changelog Entry\n\nNone. This is a performance fix to the unreleased store in #6053, so it should be labelled `no-changelog`.\n\n## Description\n\nThe question was whether `jsonValueSchema` (the `@value` of JSON literals) is cheaper than `JSON.parse(JSON.stringify())`. It wasn't: it was 10–25× slower on object-heavy payloads. The cause was `unbox()`. It checks each object for a boxed Number, String, Boolean or BigInt by calling `valueOf()`, which throws four times for every ordinary object.\n\n## Design\n\nSkip `unbox()` when the object's prototype is `Object.prototype`, `Array.prototype` or `null`. Such objects are almost never boxed primitives.\n\nThe cost is one documented corner case. A boxed primitive whose prototype was replaced with one of those is no longer unwrapped:\n\n```js\nconst value = Object.setPrototypeOf(new Boolean(true), null);\n\nJSON.parse(JSON.stringify(value)); // true\nparse(jsonValueSchema, value);     // {}\n```\n\n`JSON.stringify()` is itself inconsistent here, because it unwraps through the replaced prototype's `valueOf()`/`toString()`: `Object.setPrototypeOf(new Number(1), Object.prototype)` becomes `null`. Boxed primitives from another realm, such as an `<iframe>`, are still unwrapped, since their prototype isn't this realm's `Object.prototype`.\n\nBenchmark results (`npm run benchmark:json`, µs per call). \"Round-trip + reviver\" also removes dangerous keys, so it is the equivalent of `jsonValueSchema`:\n\n| Payload | Before | After | Round-trip | Round-trip + reviver |\n| --- | --: | --: | --: | --: |\n| Small object (5 keys) | 55.06 | **0.46** | 1.02 | 4.81 |\n| Adaptive card | 6,250 | **27.85** | 69.77 | 308 |\n| 5,000 objects | 423,807 | **2,694** | 5,979 | 32,127 |\n| 100,000 numbers | 4,653 | **4,639** | 9,094 | 79,602 |\n| 1,000 strings of 1 KB | 40.80 | **14.52** | 1,718 | 2,210 |\n| Deep object (500 levels) | 14,680 | **124** | 211 | 626 |\n| 1,000 objects with `Date` | 28,295 | **1,098** | 1,277 | 2,666 |\n| 1,000 boxed primitives | 45,923 | 19,458 | 446 | 2,337 |\n\nStill slow: boxed primitives and other non-plain objects (class instances, `Map`) still throw during the check. This could be improved later by trying the check that matches the object's prototype first.\n\n## Specific Changes\n\n- **`node/JSONValue.ts`**\n   - Adds `isPlain()`; `preprocess()` calls `unbox()` only for objects that aren't plain.\n   - JSDoc on `preprocess()`, `toJSONValue()` and `jsonValueSchema` now lists the corner case.\n- **`OPINIONS.md`**\n   - The JSON literal \"only exception\" is now two exceptions: dangerous keys, and boxed primitives with a replaced prototype. Explains the reason and the cross-realm behavior.\n- **`node/JSONValueSchema.test.ts`**\n   - Tests that pin the documented difference for a `Number` with `Object.prototype` and a `Boolean` with a `null` prototype.\n   - A test that boxed values inside arrays and `null`-prototype objects are still unwrapped.\n- **`benchmark.json.ts`** and the `benchmark:json` script\n   - Compares `jsonValueSchema` with the round-trip, with and without the dangerous-key reviver.\n   - Checks that the outputs match before timing.\n\n---\n\n- [x] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md` — not needed, `no-changelog`\n- [x] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-11-21T21:44:46Z",
+  "merged_at": "2026-11-21T21:53:07Z",
+  "base_ref": "feat-new-store",
+  "base": "feat-new-store",
+  "head_ref": "copilot/6053-benchmark-json-parse-serialize",
+  "head": "copilot/6053-benchmark-json-parse-serialize",
+  "base_sha": "3572ec5b6a5d3803fb15c213a9b66105ae6b49ff",
+  "head_sha": "4387db95409ca0619017c41cbaf3358a7d018723",
+  "merge_sha": "5a97d65760ceb3c79802aef6e5be6c9a312f4912",
+  "diff_sha256": "c680b770a8e7e93141f4b5423523351ee0349015fdb695b8681eac0ff8bdc5e9",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-21T21:53:03Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "4387db95409ca0619017c41cbaf3358a7d018723",
+      "message": "Skip unboxing plain objects in jsonValueSchema (~100x faster), add JSON benchmark",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/store/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/OPINIONS.md",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/benchmark.json.ts",
+      "status": "added",
+      "additions": 173,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/JSONValue.ts",
+      "status": "modified",
+      "additions": 23,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/JSONValueSchema.test.ts",
+      "status": "modified",
+      "additions": 40,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T21:53:11Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T21:45:33Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T21:45:40Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-21T21:46:28Z"
+    }
+  ],
+  "binary_paths": []
+}

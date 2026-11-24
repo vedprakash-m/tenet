@@ -1,0 +1,460 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6036,
+  "title": "Convert the send box layout and text box to CSS modules",
+  "body": "> Continues the CSS Modules migration (#6024, #6028, #6030, #6031, #6032) with the send box layout and text box.\n\n## Changelog Entry\n\n### Changed\n\n- Converted the send box layout and text box to CSS Modules with `webchat__` class names and their style options to custom properties, in PR [#6036](https://github.com/microsoft/BotFramework-WebChat/pull/6036), by [@OEvgeny](https://github.com/OEvgeny)\n\n### Removed\n\n- 💥 Deprecated the `autoResizeTextArea`, `dictationInterims`, `sendBox` and `sendBoxTextBox` style set entries, which no longer affect rendering, in PR [#6036](https://github.com/microsoft/BotFramework-WebChat/pull/6036), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThe send box layout, text box, dictation interims, drop zone and submit error message move from emotion to CSS Modules without snapshot changes. Their 10 style options become custom properties, and 4 style set entries are deprecated.\n\n## Design\n\n- Every `webchat__` class stays on its element; the dictation interims `<p>` gets `webchat__dictation-interims`, and its `status`/`dictating` classes stay. Toolbar buttons and suggested actions (later stages) are placed with `:global(.webchat__…)`.\n- Fluent's `webchat__send-box__attachment-bar` class is left as is: the removed rule never matched it.\n- `sendBoxTextColor` set to `undefined` or `''` on purpose: the single-line input now inherits the page's text color, as the multi-line one already did, instead of the browser default.\n\n## Specific Changes\n\n- `SendBox/SendBox.module.css`: 6 regions, one per component\n- `CSSCustomPropertiesContainer.tsx`, `CustomPropertyNames.ts`: 10 new properties\n- `BasicSendBox`, `TextBox`, `AutoResizeTextArea`, `DictationInterims`, `DropZone`, `SendBoxComposer`: `useStyles()`\n- `createStyleSet.ts`, 4 `StyleSet/*.ts`: `@deprecated`\n- `sendBox/focusSendBackToSendBox.html`: page CSS instead of a `styleSet` override; same snapshot\n- `styleOptions/sendBox.html`: every option, snapshots 1–2 (same on `main`)\n- `styleOptions/sendBox.disabled.html`: disabled text color (same on `main`)\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-10T02:41:40Z",
+  "merged_at": "2026-11-12T19:04:52Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-css-modules-send-box",
+  "head": "OEvgeny/fix-css-modules-send-box",
+  "base_sha": "c7b16cad41e8c58333910a143809a2c8c380a02a",
+  "head_sha": "9f2dca1f57a8805b59c81ea481c20bf0acbee08f",
+  "merge_sha": "750bf1724c7ee5b610a87152b6ef5bdff67574d4",
+  "diff_sha256": "34507a4ae9c4ad5e29adb961bd56fb4cc6f5bb8d56af5e0e7566fee49863ca86",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-10T03:18:46Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "806cd6c48dd6145d3166b3524ee570b863989de2",
+      "message": "Show the send box focus with page CSS and test the send box style options",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "ec52642e62b609c3d3ab181513d69836d761fb65",
+      "message": "Convert the send box layout and text box to CSS modules",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "9cceeea76b9d70fa1bb0858be35dbcf547935f30",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "dfecfdfd2139d2d4ce99989d4139113ee37b0963",
+      "message": "Add the Changed changelog entry",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "1ed2e95f775b6f7f9d2930c2429882570810eb16",
+      "message": "Merge branch 'main' into OEvgeny/fix-css-modules-send-box",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "9f2dca1f57a8805b59c81ea481c20bf0acbee08f",
+      "message": "Merge branch 'main' into OEvgeny/fix-css-modules-send-box",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6036-fix-css-modules-send-box.md",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/focusSendBackToSendBox.html",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 17,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/sendBox.disabled.html",
+      "status": "added",
+      "additions": 56,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/sendBox.disabled.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/sendBox.html",
+      "status": "added",
+      "additions": 66,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/sendBox.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/sendBox.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/SendBox/AutoResizeTextArea.tsx",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/SendBox/BasicSendBox.tsx",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 46,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/SendBox/DictationInterims.tsx",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 19,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/SendBox/DropZone.tsx",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 34,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/SendBox/SendBox.module.css",
+      "status": "added",
+      "additions": 257,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/SendBox/TextBox.tsx",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 25,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/CSSCustomPropertiesContainer.tsx",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/CustomPropertyNames.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/AutoResizeTextArea.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/DictationInterims.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/SendBox.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/SendBoxTextBox.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/createStyleSet.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/internal/SendBox/SendBoxComposer.tsx",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 24,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-10T03:18:55Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-12T08:45:07Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:04:06Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "failure",
+      "completed_at": "2026-11-12T19:04:27Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:41:28Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:47:37Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:43:16Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:39:10Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:43:38Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:40:25Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:52:30Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:44:57Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:53:12Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:45:02Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:52:47Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:53:37Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:45:12Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:52:53Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:53:23Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:54:05Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:53:08Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:45:09Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:44:29Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:51:42Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:44:50Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:45:10Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:44:28Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:53:37Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:03:57Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:44:20Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:52:36Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:52:01Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:44:32Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:45:55Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:44:23Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:47:38Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:53:23Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:44:21Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:53:38Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:51:54Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:51:27Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:38:58Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:40:09Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:39:26Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:38:43Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:40:22Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:39:28Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T18:39:47Z"
+    }
+  ],
+  "binary_paths": [
+    "__tests__/html2/styleOptions/sendBox.disabled.html.snap-1.png",
+    "__tests__/html2/styleOptions/sendBox.html.snap-1.png",
+    "__tests__/html2/styleOptions/sendBox.html.snap-2.png"
+  ]
+}

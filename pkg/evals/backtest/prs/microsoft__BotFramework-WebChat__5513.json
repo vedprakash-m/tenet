@@ -1,0 +1,413 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5513,
+  "title": "fix: treat activity with abstract as non contentless activity",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n- Added collapsible activity and activity with abstract handling, in PR [#5506](https://github.com/microsoft/BotFramework-WebChat/pull/5506), in PR [#5513](https://github.com/microsoft/BotFramework-WebChat/pull/5513), by [@OEvgeny](https://github.com/OEvgeny)\r\n\r\n## Description\r\n\r\nThis allows an informative activity with only abstract field to be rendered with loading animation, by adjusting schema validation and styles.\r\n\r\n## Specific Changes\r\n\r\n- allow abstract to be rendered as an activity with loader\r\n- update tests\r\n\r\n## -\r\n\r\n-\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [x] Browser and platform compatibilities reviewed\r\n-  [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] Internationalization reviewed (strings, unit formatting)\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] Security reviewed (no data URIs, check for nonce leak)\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-07-10T17:29:26Z",
+  "merged_at": "2025-07-10T18:07:44Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "fix/typing-abstract",
+  "head": "fix/typing-abstract",
+  "base_sha": "c1bd6b1fc8f7b461d942f0826c00ee98b13072c1",
+  "head_sha": "23c10147e17ab5d1fbc1c716de2d6ece9965497b",
+  "merge_sha": "5838525adb528fdc6cf2ca2f4d9c4c56c92ab28c",
+  "diff_sha256": "0c14a4ac824324dc1d97ba7f6c99cffa7fcd8dad8da13dd7ed3e8e3d091bb64a",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-07-10T17:40:01Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "b9e945bd6325d8b4a41bcc7bde4c5750f6a4b3fb",
+      "message": "fix: treat activity with abstract as non contentless activity",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "6cd86ecc50889cbe34018a9d27b84fe2d52830a9",
+      "message": "Merge branch 'main' into fix/typing-abstract",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "23c10147e17ab5d1fbc1c716de2d6ece9965497b",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/StackedLayout.module.css",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/StackedLayout.tsx",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/utils/getActivityLivestreamingMetadata.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityDecorator.module.css",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityLoader.module.css",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-10T17:54:19Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-10T17:55:26Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-10T17:58:37Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-10T18:00:07Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-10T18:06:00Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-07-10T18:06:15Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.html.snap-8.png"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "op": "projectBoard",
+  "now": "2026-11-23T16:00:00Z",
+  "snapshot": {
+    "works": [
+      {
+        "id": "pr-9",
+        "title": "Manual run without cost",
+        "lane": "quick",
+        "station": "build",
+        "status": "active",
+        "run_cost": null
+      }
+    ]
+  }
+}

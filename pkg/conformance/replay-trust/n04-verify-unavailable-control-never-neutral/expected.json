@@ -1,0 +1,16 @@
+{
+  "scenarios": [
+    {
+      "name": "report-missing",
+      "conclusion": "failure"
+    },
+    {
+      "name": "ci-unavailable",
+      "conclusion": "failure"
+    },
+    {
+      "name": "records-not-kept",
+      "conclusion": "failure"
+    }
+  ]
+}

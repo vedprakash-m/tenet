@@ -1,0 +1,49 @@
+{
+  "op": "projectAndRender",
+  "now": "2026-11-23T14:00:00Z",
+  "snapshot": {
+    "read": {
+      "main": "9f3c2e1",
+      "branches": [
+        "tenet/CP-0001-retry"
+      ],
+      "records": "refs/tenet/records"
+    },
+    "works": [
+      {
+        "id": "pr-5",
+        "title": "Retry checkout",
+        "lane": "careful",
+        "events": [
+          {
+            "id": "01JDF000000000000000000001",
+            "prev": [],
+            "type": "work.created",
+            "work": "pr-5",
+            "time": "2026-11-23T12:00:00Z",
+            "by": "ved",
+            "data": {
+              "title": "Retry checkout",
+              "station": "build",
+              "lane": "careful"
+            }
+          },
+          {
+            "id": "01JDF000000000000000000002",
+            "prev": [
+              "01JDF000000000000000000001"
+            ],
+            "type": "work.moved",
+            "work": "pr-5",
+            "time": "2026-11-23T13:00:00Z",
+            "by": "runner",
+            "data": {
+              "station": "verify",
+              "tentative": true
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
