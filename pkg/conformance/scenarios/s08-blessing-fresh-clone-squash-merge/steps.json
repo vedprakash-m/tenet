@@ -57,10 +57,12 @@
       ],
       "fakeTty": [
         "1",
-        "confirm"
+        "confirm",
+        "y"
       ],
       "expectExitCode": 0,
-      "expectedOmitted": "proposals-r7#Q3"
+      "expectedJson": "expected/05-bless.json",
+      "expectedLogEntry": "expected/05-log-entry.json"
     },
     {
       "id": "06-context-after-confirm",

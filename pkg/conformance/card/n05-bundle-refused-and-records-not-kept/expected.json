@@ -4,10 +4,10 @@
   "wrote": false,
   "card": {
     "schema_version": 1,
-    "evaluation_id": "43be01587a3e3d7e",
+    "evaluation_id": "fa78cb3290a81072",
     "tested": {
-      "commit": "9b41d00000000000000000000000000000000000",
-      "kind": "merge-candidate",
+      "commit": "a111111111111111111111111111111111111111",
+      "kind": "head",
       "head": "a111111111111111111111111111111111111111",
       "base": "b222222222222222222222222222222222222222"
     },

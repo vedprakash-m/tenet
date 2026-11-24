@@ -94,7 +94,7 @@
         "number": 7
       },
       "assertRecordsTipUnchanged": true,
-      "expectedOmitted": "proposals-r7#Q6"
+      "expectedJson": "expected/05-verify-closed.json"
     }
   ]
 }

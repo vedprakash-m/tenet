@@ -15,7 +15,7 @@
         "--json"
       ],
       "expectExitCode": 0,
-      "expectedOmitted": "proposals-r7#Q7"
+      "expectedJson": "expected/01-init.json"
     },
     {
       "id": "02-commit-initial",
@@ -42,7 +42,8 @@
         "--inventory-only",
         "--json"
       ],
-      "expectExitCode": 0
+      "expectExitCode": 0,
+      "expectedJson": "expected/04-onboard-inventory.json"
     },
     {
       "id": "05-onboard-card",
@@ -53,7 +54,8 @@
         "--json"
       ],
       "expectExitCode": 0,
-      "expectedOmitted": "proposals-r7#Q4"
+      "expectedJson": "expected/05-onboard-card.json",
+      "expectedCard": "expected/05-card.md"
     },
     {
       "id": "06-bless",
@@ -64,10 +66,11 @@
       ],
       "fakeTty": [
         "1",
+        "bless",
         "bless"
       ],
       "expectExitCode": 0,
-      "expectedOmitted": "proposals-r7#Q2"
+      "expectedJson": "expected/06-bless.json"
     }
   ]
 }

@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "command": "board",
+  "version": "0.0.0",
+  "result": {
+    "specs": [
+      {
+        "path": "tenet/intent.md",
+        "section": "vision",
+        "level": "L0",
+        "state": "blessed",
+        "flags": [],
+        "recorded": "self"
+      },
+      {
+        "path": "tenet/intent.md",
+        "section": "requirements",
+        "level": "L1",
+        "state": "deferred",
+        "flags": []
+      }
+    ],
+    "pending_blessings": []
+  },
+  "errors": []
+}

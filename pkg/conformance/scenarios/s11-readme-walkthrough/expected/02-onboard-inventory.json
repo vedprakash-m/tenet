@@ -1,0 +1,147 @@
+{
+  "ok": true,
+  "command": "onboard",
+  "version": "0.0.0",
+  "result": {
+    "preflight": {
+      "revision": "175926eb3b08d21dea4388cc916d7932e0d37d79",
+      "read_count": 5,
+      "skipped_count": 0,
+      "dirty_warning": false
+    },
+    "inventory": {
+      "schema_version": 1,
+      "revision": "175926eb3b08d21dea4388cc916d7932e0d37d79",
+      "sources": {
+        "files": [
+          {
+            "path": "README.md",
+            "kind": "doc",
+            "sha256": "593309e426e086d42fddd48fc37187629d58d5ec05d683c25435629fcb574a71",
+            "lines": 3
+          },
+          {
+            "path": "package.json",
+            "kind": "manifest",
+            "sha256": "469182db1964289f42fa2658ce14014f9513c20cbed561d79616822e48c20624",
+            "lines": 8
+          },
+          {
+            "path": "src/retry.ts",
+            "kind": "source",
+            "sha256": "a4df7c522729ec739d213d194c3d97bd87b3eefe1fce477daf7a8b74ce0f94db",
+            "lines": 3
+          },
+          {
+            "path": "tenet.yaml",
+            "kind": "config",
+            "sha256": "f5623b8c7d413ae1f36e6004c9b958dd669410e21a05cfc35f11e878cdf1fce2",
+            "lines": 20
+          },
+          {
+            "path": "test/retry.test.ts",
+            "kind": "test",
+            "sha256": "542699a75c3c0cc43e7f3c8c7b6b350347572c2c32c4cdedc88ccff6af1a0779",
+            "lines": 2
+          }
+        ],
+        "skipped": []
+      },
+      "modules": [
+        {
+          "id": "root",
+          "roots": [
+            "."
+          ],
+          "languages": [
+            "typescript"
+          ]
+        }
+      ],
+      "tests": [
+        {
+          "path": "test/retry.test.ts",
+          "runner": "node:test",
+          "cases": 1
+        }
+      ],
+      "docs": [
+        {
+          "path": "README.md",
+          "title": "Demo",
+          "sections": [],
+          "last_changed": "2026-11-23T12:00:00Z"
+        }
+      ],
+      "owners": [],
+      "ci": [],
+      "size": {
+        "source_lines": 3,
+        "areas": 0
+      },
+      "layout": "one-file",
+      "units": [
+        {
+          "id": "root",
+          "paths": [
+            "."
+          ],
+          "views": [
+            "vision",
+            "requirements",
+            "design",
+            "experience",
+            "plan"
+          ]
+        }
+      ],
+      "findings": [],
+      "observations": {
+        "reports": []
+      }
+    },
+    "findings": [],
+    "assignment": {
+      "schema_version": 1,
+      "inventory": ".tenet/onboard/inventory.json",
+      "skill": "draft-specs",
+      "project_kind": "library",
+      "views": [
+        "vision",
+        "requirements",
+        "design",
+        "experience",
+        "plan"
+      ],
+      "layout": "one-file",
+      "units": [
+        {
+          "id": "root",
+          "paths": [
+            "."
+          ],
+          "views": [
+            "vision",
+            "requirements",
+            "design",
+            "experience",
+            "plan"
+          ]
+        }
+      ],
+      "question_limit": 10,
+      "output": {
+        "paths": [
+          "tenet/intent.md"
+        ]
+      },
+      "rules": [
+        "no intent from code alone",
+        "every observed or documented statement cites",
+        "never resolve a conflict",
+        "never bless"
+      ]
+    }
+  },
+  "errors": []
+}

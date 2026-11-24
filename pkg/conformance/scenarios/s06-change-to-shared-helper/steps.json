@@ -18,10 +18,7 @@
         "--json"
       ],
       "expectExitCode": 0,
-      "assertUnits": [
-        "src-api",
-        "src-billing"
-      ]
+      "expectedJson": "expected/01-onboard-initial.json"
     },
     {
       "id": "02-branch",
@@ -60,10 +57,7 @@
         "--json"
       ],
       "expectExitCode": 0,
-      "assertUnits": [
-        "src-api",
-        "src-billing"
-      ]
+      "expectedJson": "expected/05-onboard-refresh.json"
     },
     {
       "id": "06-verify-record",

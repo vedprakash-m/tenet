@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "command": "bless",
+  "version": "0.0.0",
+  "result": {
+    "blessed": 0,
+    "confirmed": 0,
+    "rejected": 1,
+    "deferred": 0,
+    "minutes": 0
+  },
+  "errors": []
+}

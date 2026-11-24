@@ -1,0 +1,239 @@
+{
+  "ok": true,
+  "command": "onboard",
+  "version": "0.0.0",
+  "result": {
+    "preflight": {
+      "revision": "cf8e94da1c81a54200e16122d8078350b3b7ba0f",
+      "read_count": 11,
+      "skipped_count": 0,
+      "dirty_warning": false
+    },
+    "inventory": {
+      "schema_version": 1,
+      "revision": "cf8e94da1c81a54200e16122d8078350b3b7ba0f",
+      "sources": {
+        "files": [
+          {
+            "path": ".claude/settings.json",
+            "kind": "config",
+            "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356",
+            "lines": 1
+          },
+          {
+            "path": ".github/workflows/ci.yml",
+            "kind": "ci",
+            "sha256": "60000b8f222055262205e79bf371bd3314d2434ad585a983d05bd7aedc4a5839",
+            "lines": 8
+          },
+          {
+            "path": "CODEOWNERS",
+            "kind": "config",
+            "sha256": "f066c7be96c6bacb206b2224cfa9e1964f3a7cb92de479a56f5caadb9b3a20b2",
+            "lines": 1
+          },
+          {
+            "path": "README.md",
+            "kind": "doc",
+            "sha256": "fd7cfea7dcf22e7eed9b356d171371e882e8edc31a8fa06c43a55a268e90139c",
+            "lines": 3
+          },
+          {
+            "path": "docs/adr/0001-retries.md",
+            "kind": "adr",
+            "sha256": "2452645fbf2b15cb4bde61c725f8eddbd305d3fe1a9e448dbec8f234c85bf0cd",
+            "lines": 1
+          },
+          {
+            "path": "docs/adr/0002-timeouts.md",
+            "kind": "adr",
+            "sha256": "17cee6e984359ed383ad9cb092a0b73a39c4bd67ca20246e5034b680f0ee9681",
+            "lines": 1
+          },
+          {
+            "path": "docs/architecture.md",
+            "kind": "doc",
+            "sha256": "3fc7b49bde02dba2bb475a91a05d5dafe8a9d3590ac4288fbfbac81d6dcf6008",
+            "lines": 3
+          },
+          {
+            "path": "package.json",
+            "kind": "manifest",
+            "sha256": "e503c74bc30885d337e0e713f2e1a5e250cc257dbb9ad6b6ddb9ed04195f9497",
+            "lines": 11
+          },
+          {
+            "path": "src/retry.ts",
+            "kind": "source",
+            "sha256": "7a8e8a78848be4eec7cc9d1d5b750de570c46aa610b76c65c3a68f22f1d5f89e",
+            "lines": 6
+          },
+          {
+            "path": "tenet.yaml",
+            "kind": "config",
+            "sha256": "6b38f9f665889b1e042589a599bbfd30ab1378a0ee99ab8bfb6205f02c94a57c",
+            "lines": 27
+          },
+          {
+            "path": "test/checkout.retry.test.ts",
+            "kind": "test",
+            "sha256": "2766eef8912cb0fbff080d0ffbeebbe0d11fcaaa04c175c12e1300ce619c6d1a",
+            "lines": 4
+          }
+        ],
+        "skipped": []
+      },
+      "modules": [
+        {
+          "id": "root",
+          "roots": [
+            "."
+          ],
+          "languages": [
+            "typescript"
+          ]
+        }
+      ],
+      "tests": [
+        {
+          "path": "test/checkout.retry.test.ts",
+          "runner": "vitest",
+          "cases": 1
+        }
+      ],
+      "docs": [
+        {
+          "path": "README.md",
+          "title": "Checkout",
+          "sections": [],
+          "last_changed": "2026-11-23T12:00:00Z"
+        },
+        {
+          "path": "docs/adr/0001-retries.md",
+          "title": "ADR 1",
+          "sections": [],
+          "last_changed": "2026-11-23T12:00:00Z"
+        },
+        {
+          "path": "docs/adr/0002-timeouts.md",
+          "title": "ADR 2",
+          "sections": [],
+          "last_changed": "2026-11-23T12:00:00Z"
+        },
+        {
+          "path": "docs/architecture.md",
+          "title": "Architecture",
+          "sections": [],
+          "last_changed": "2026-11-23T12:00:00Z"
+        }
+      ],
+      "owners": [
+        {
+          "pattern": "*",
+          "owners": [
+            "@ved",
+            "@priya",
+            "@ops"
+          ]
+        }
+      ],
+      "ci": [
+        {
+          "path": ".github/workflows/ci.yml",
+          "commands": [
+            "npm test"
+          ]
+        }
+      ],
+      "size": {
+        "source_lines": 6,
+        "areas": 1
+      },
+      "layout": "one-file",
+      "units": [
+        {
+          "id": "root",
+          "paths": [
+            "."
+          ],
+          "views": [
+            "vision",
+            "requirements",
+            "design",
+            "experience",
+            "plan"
+          ]
+        }
+      ],
+      "findings": [
+        {
+          "kind": "dead-path",
+          "path": "docs/architecture.md",
+          "message": "docs/architecture.md links missing path ./also-missing.md"
+        },
+        {
+          "kind": "dead-path",
+          "path": "docs/architecture.md",
+          "message": "docs/architecture.md links missing path ./missing-doc.md"
+        }
+      ],
+      "observations": {
+        "reports": []
+      }
+    },
+    "findings": [
+      {
+        "kind": "dead-path",
+        "path": "docs/architecture.md",
+        "message": "docs/architecture.md links missing path ./also-missing.md"
+      },
+      {
+        "kind": "dead-path",
+        "path": "docs/architecture.md",
+        "message": "docs/architecture.md links missing path ./missing-doc.md"
+      }
+    ],
+    "assignment": {
+      "schema_version": 1,
+      "inventory": ".tenet/onboard/inventory.json",
+      "skill": "draft-specs",
+      "project_kind": "library",
+      "views": [
+        "vision",
+        "requirements",
+        "design",
+        "experience",
+        "plan"
+      ],
+      "layout": "one-file",
+      "units": [
+        {
+          "id": "root",
+          "paths": [
+            "."
+          ],
+          "views": [
+            "vision",
+            "requirements",
+            "design",
+            "experience",
+            "plan"
+          ]
+        }
+      ],
+      "question_limit": 10,
+      "output": {
+        "paths": [
+          "tenet/intent.md"
+        ]
+      },
+      "rules": [
+        "no intent from code alone",
+        "every observed or documented statement cites",
+        "never resolve a conflict",
+        "never bless"
+      ]
+    }
+  },
+  "errors": []
+}

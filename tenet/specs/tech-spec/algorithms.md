@@ -40,11 +40,11 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
   - a line in `<records>/blessed/log.jsonl` (ALG-13)
 
   It prints the `git commit` command; it never commits.
-- **Session actions:**
+- **Session actions:** (`bless` prompts owner from `owners[]`, conflicts with numbered choices plus `Decide later`, then each section with `bless / edit / reject / later` or `confirm` when `sources-changed`; `later` records `defer`):
   - bless (and bump the document's `version` when blessed text changed)
-  - **confirm**: only for `sources-changed` sections. It shows each changed anchor's old and new lines, then keeps the text, re-anchors and records a blessing.
+  - **confirm**: only for `sources-changed` sections. It shows each changed anchor's old and new lines, prompts `[y/N]`, then keeps the text, re-anchors and records a blessing.
   - **edit**: opens `$VISUAL`, else `$EDITOR`, else `notepad` on Windows or `vi`, then re-parses.
-  - **reject** and **defer**: on a section that was never blessed, they set `rejected` (excluded from context) or `deferred` (returned as a hint). On an `edited` blessed section, they act on the edit: the blessed copy stays in force, and the person is offered to restore the file's text from it.
+  - **reject** and **defer**: on a section that was never blessed, they set `rejected` (excluded from context) or `deferred` (returned as a hint). On an `edited` blessed section, they act on the edit: the blessed copy stays in force, and `"Restore the document's section from its blessed copy? [y/N] "` offers to overwrite the document section (`y` restores `digest === blessed_digest` and clears `edited`; `n` keeps the edited draft flagged `edited`).
 - **Flags**, recomputed by `check` and `board` at the current revision (return `[]` when `section.state !== "blessed"`):
   - `edited`: the section's digest differs from `blessed_digest`
   - `sources-changed`: an anchored range's lines no longer hash to its anchor, or the file or test is gone. If the same lines appear **exactly once** elsewhere in the file (a sliding-window hash scan; files over 50,000 lines are not scanned and are flagged), they moved: `check` doesn't flag them and `fix` updates the range. Zero or several matches flag `sources-changed` ("matched N places").
