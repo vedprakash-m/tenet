@@ -146,7 +146,6 @@ const installEnv = {
   npm_config_fund: "false",
   npm_config_fetch_retries: "1",
   npm_config_fetch_timeout: "30000",
-  npm_config_strict_ssl: "false",
 };
 const install = await execute(process.platform === "win32" ? "npm.cmd" : process.execPath,
   process.platform === "win32"
@@ -155,9 +154,15 @@ const install = await execute(process.platform === "win32" ? "npm.cmd" : process
   projectDir,
   installEnv);
 let installFallback = null;
+let installErrorLine = null;
 const consumerModules = path.join(projectDir, "node_modules");
 if (install.exit !== 0) {
-  installFallback = "npm install <tarball> failed; used local build dependencies and extracted tarball for smoke execution";
+  installErrorLine = `${install.stderr}\n${install.stdout}`
+    .split(/\r?\n/)
+    .find((line) => /\bnpm error\b/i.test(line) && /\b(request|reason|errno|code)\b/i.test(line))
+    ?? `${install.stderr}\n${install.stdout}`.split(/\r?\n/).find((line) => /\bnpm error\b/i.test(line))
+    ?? `npm install failed with exit code ${install.exit}`;
+  installFallback = "registry install unavailable: smoke used local extraction";
   await mkdir(consumerModules, { recursive: true });
   await cp(path.join(source, "node_modules"), consumerModules, { recursive: true });
   const extractDir = path.join(scratchRoot, "tarball");
@@ -331,6 +336,16 @@ for (const result of buildResults) {
 }
 lines.push(`- npm pack --json: exit ${packResult.exit}, ${packResult.seconds.toFixed(3)}s`);
 lines.push(`- npm install <tarball>: exit ${install.exit}, ${install.seconds.toFixed(3)}s`);
+lines.push(
+  "",
+  "### Registry install",
+  "",
+  `- Status: ${install.exit === 0 ? "WORKED" : "FAILED"}`,
+);
+if (install.exit !== 0) {
+  lines.push(`- npm error: ${escapeTable(installErrorLine)}`);
+  lines.push("- Fallback: registry install unavailable: smoke used local extraction");
+}
 lines.push("", "## pkg/conformance files grouped by suite", "");
 if (conformanceSuites.length === 0) lines.push("None.");
 for (const [suite, files] of conformanceSuites) {

@@ -2,21 +2,27 @@
 
 ## Environment
 
-- Harness commit: `2c023b36b5d2e52c317d8e27b50f82f426cee471`
+- Harness commit: `dd03350f45c3c99ae175b4134c569f1359bfb1cb`
 - Branch: `r8/pack-smoke`
 - Source: `Q:\Ved\Pers\tenet`
-- Scratch: `C:\Users\vemishra\AppData\Local\Temp\tenet-pack-smoke-iyr4RO`
-- Tarball: `C:\Users\vemishra\AppData\Local\Temp\tenet-pack-smoke-iyr4RO\pack\vedprakash-m-tenet-0.0.0.tgz`
-- Tarball size: 1031518 bytes
-- Tarball file count: 1038
+- Scratch: `C:\Users\vemishra\AppData\Local\Temp\tenet-pack-smoke-pfOItB`
+- Tarball: `C:\Users\vemishra\AppData\Local\Temp\tenet-pack-smoke-pfOItB\pack\vedprakash-m-tenet-0.0.0.tgz`
+- Tarball size: 1069716 bytes
+- Tarball file count: 1073
 
 ## Build and pack
 
-- git pull --ff-only: exit 0, 0.793s
-- npm ci: exit 0, 6.642s
-- npm run build: exit 0, 14.194s
-- npm pack --json: exit 0, 21.265s
-- npm install <tarball>: exit 1, 84.510s
+- git pull --ff-only: exit 0, 2.023s
+- npm ci: exit 0, 32.470s
+- npm run build: exit 0, 21.313s
+- npm pack --json: exit 0, 28.424s
+- npm install <tarball>: exit 1, 85.089s
+
+### Registry install
+
+- Status: FAILED
+- npm error: npm error code ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE
+- Fallback: registry install unavailable: smoke used local extraction
 
 ## pkg/conformance files grouped by suite
 
@@ -999,12 +1005,13 @@ Count: 31
 
 | Command | Exit | ok | Seconds |
 |---|---:|---:|---:|
-| npx tenet --version | 0 | n/a | 3.959 |
-| npx tenet --help | 0 | n/a | 4.158 |
-| npx tenet onboard --inventory-only --json | 0 | true | 5.136 |
-| npx tenet check --json | 3 | false | 4.232 |
-| npx tenet board --json | 3 | false | 4.193 |
-| npx tenet context --query test --budget-tokens 2000 --json | 3 | false | 4.442 |
+| npx tenet --version | 0 | n/a | 36.000 |
+| npx tenet --help | 0 | n/a | 27.845 |
+| npx tenet onboard --inventory-only --json | 0 | true | 36.126 |
+| npx tenet check --json | 3 | false | 16.869 |
+| npx tenet board --json | 3 | false | 14.663 |
+| npx tenet context --query test --budget-tokens 2000 --json | 3 | false | 10.846 |
+| npx tenet doctor --json | 3 | false | 15.212 |
 
 ### npx tenet --version
 
@@ -1033,17 +1040,21 @@ Commands:
   board              Show specification state and spec debt
   check              Check specification structure and integrity
   context            Select blessed specification context
+  doctor             Check the Tenet installation and required tools
   fix                Repair mechanical specification problems
+  init               Install Tenet in the current repository
   mcp                Serve the Tenet MCP tools over stdio
   onboard            Inspect your project and prepare a specification drafting assignment.
+  remove             Remove Tenet-owned installation files
   split              Move a specification section into a part
+  upgrade            Upgrade Tenet-owned files to the installed version
   verify             Run checks, collect a bundle, or record CI proof.
 ```
 
 ### npx tenet onboard --inventory-only --json
 
 ```text
-{"ok":true,"command":"onboard","version":"0.0.0","result":{"preflight":{"revision":"17289e8027b8c597e427bf816a77e760c8621240","read_count":21,"skipped_count":1,"dirty_warning":false},"inventory":{"schema_version":1,"revision":"17289e8027b8c597e427bf816a77e760c8621240","sources":{"files":[{"path":".github/workflows/ci.yml","kind":"ci","sha256":"6c69fbab039ddbec1edfccc74fbe315dd3232455dddffe2f75baedbcb231c7e1","lines":10},{"path":".gitignore","kind":"config","sha256":"a8db166167d30d2c36fa95cc3163e77a4bc33205ede3b81a368750f25ded3879","lines":2},{"path":"CLAUDE.md","kind":"instructions","sha256":"87cfd2810189846eac73967baef51c3080c60ed2165d31800a4996c22f093f13","lines":5},{"path":"CODEOWNERS","kind":"config","sha256":"a72902895617c54ba070dae6db021761a6cb431c0055c6951d22456270b77946","lines":3},{"path":"Dockerfile","kind":"config","sha256":"8687c32eb0d902cd2f6f61fc267606abb7cbe752314ee615398138f6f7847a15","lines":5},{"path":"README.md","kind":"doc","sha256":"1d825dbad0da76f1ec1d2bb59101f0dcff240a4a7c12d7e9eeb3171fab87266f","lines":12},{"path":"docs/adr/0001-idempotency-ttl.md","kind":"adr","sha256":"2220a53be50f9994a4c457dbe1a82f2e8b721120f2c241f1d7f7c764014400a3","lines":7},{"path":"docs/architecture.md","kind":"doc","sha256":"4e36c2ea3b67a55a81fa7256461809e6489742ac5aa3c9805baf2536f15ff3ce","lines":7},{"path":"docs/roadmap.md","kind":"doc","sha256":"18e408f24c39dcbc0d719c5f5d8d6eefe9192fc11bc0468634600e340f9a6035","lines":3},{"path":"package.json","kind":"manifest","sha256":"0bda4ed6cb89d14ad0d4913fbbd163c8b4636a035ce5c283cdafa05f03687a7b","lines":13},{"path":"src/config/flags.js","kind":"source","sha256":"88c10dca73dd7ea2267801aebf6d63dd241861136acabfef5a848717ab257238","lines":3},{"path":"src/config/limits.js","kind":"source","sha256":"963c57a02e9f00ded7e2a7104b1143acfb2d74e1775974a5b40d8e28eb1941b7","lines":3},{"path":"src/payments/idempotency.js","kind":"source","sha256":"8b41a0a1252e09f22e4d6dd982b38f9cce30746299be2e9a3bce39b645045b92","lines":14},{"path":"src/payments/retry.js","kind":"source","sha256":"fdab176e6eaa7bff6099ce1dda5179902ff2dc50240134de9b75cb0c878acba8","lines":11},{"path":"src/routes/health.js","kind":"source","sha256":"6a8e39446cfaf1c3397e83fd238fa418d358c598d796b34e75fa558248b992ce","lines":3},{"path":"src/security/hmac.js","kind":"source","sha256":"334179432ed83e1b54f47cc95e8fc6f67b43b5deb90de1ac6e9cf0f7f55818f4","lines":9},{"path":"src/security/redact.js","kind":"source","sha256":"577570bdc0de5b2b10fc8496ddefbc665c5ed37bb201a4f9a715eabfad17be1b","lines":6},{"path":"src/server.js","kind":"source","sha256":"6a1e537c37adcf5e97f6b111e239a25a12d42572d7e6f111433d644a8ec92938","lines":19},{"path":"test/redact.test.js","kind":"test","sha256":"4e8cf4be7cff37c2fd114feee0eaf64b4c00ea6cc2ecb7465047e6c9c3356a09","lines":9},{"path":"test/retry.test.js","kind":"test","sha256":"235119703c2748ffb12c77781915f595cd35288e047004ef042cace12d032b8a","lines":14},{"path":"test/webhook.test.js","kind":"test","sha256":"1b7d60f8f1ae334589af0c16885c1fab9e6de6f62994667ea78dc50d6e04ce08","lines":14}],"skipped":[{"path":".env.example","reason":"env"}]},"modules":[{"id":"root","roots":["."],"languages":["javascript"]}],"tests":[{"path":"test/redact.test.js","runner":"node:test","cases":1},{"path":"test/retry.test.js","runner":"node:test","cases":1},{"path":"test/webhook.test.js","runner":"node:test","cases":2}],"docs":[{"path":"README.md","title":"LedgerGate","sections":["behavior","run"],"last_changed":"2026-11-24T17:54:49Z"},{"path":"docs/adr/0001-idempotency-ttl.md","title":"ADR-0001: Idempotency Key Enforcement and TTL","sections":["decision"],"last_changed":"2026-11-24T17:54:49Z"},{"path":"docs/architecture.md","title":"Architecture","sections":["async-reconciliation","security"],"last_changed":"2026-11-24T17:54:49Z"},{"path":"docs/roadmap.md","title":"Roadmap","sections":[],"last_changed":"2026-11-24T17:54:49Z"}],"owners":[{"pattern":"/src/payments/","owners":["@payments-team"]},{"pattern":"/src/security/","owners":["@sec-team"]},{"pattern":"*","owners":["@ved"]}],"ci":[{"path":".github/workflows/ci.yml","commands":["node --test"]}],"size":{"source_lines":68,"areas":3},"layout":"one-file","units":[{"id":"root","paths":["."],"views":["vision","requirements","design","experience","plan"]}],"findings":[],"observations":{"reports":[]}},"findings":[],"assignment":{"schema_version":1,"inventory":".tenet/onboard/inventory.json","skill":"draft-specs","project_kind":"service","views":["vision","requirements","design","experience","plan"],"layout":"one-file","units":[{"id":"root","paths":["."],"views":["vision","requirements","design","experience","plan"]}],"question_limit":10,"output":{"paths":["tenet/intent.md"]},"rules":["no intent from code alone","every observed or documented statement cites","never resolve a conflict","never bless"]}},"errors":[]}
+{"ok":true,"command":"onboard","version":"0.0.0","result":{"preflight":{"revision":"26acb2b235415be76ae6971d40450a88792524bd","read_count":21,"skipped_count":1,"dirty_warning":false},"inventory":{"schema_version":1,"revision":"26acb2b235415be76ae6971d40450a88792524bd","sources":{"files":[{"path":".github/workflows/ci.yml","kind":"ci","sha256":"6c69fbab039ddbec1edfccc74fbe315dd3232455dddffe2f75baedbcb231c7e1","lines":10},{"path":".gitignore","kind":"config","sha256":"a8db166167d30d2c36fa95cc3163e77a4bc33205ede3b81a368750f25ded3879","lines":2},{"path":"CLAUDE.md","kind":"instructions","sha256":"87cfd2810189846eac73967baef51c3080c60ed2165d31800a4996c22f093f13","lines":5},{"path":"CODEOWNERS","kind":"config","sha256":"a72902895617c54ba070dae6db021761a6cb431c0055c6951d22456270b77946","lines":3},{"path":"Dockerfile","kind":"config","sha256":"8687c32eb0d902cd2f6f61fc267606abb7cbe752314ee615398138f6f7847a15","lines":5},{"path":"README.md","kind":"doc","sha256":"1d825dbad0da76f1ec1d2bb59101f0dcff240a4a7c12d7e9eeb3171fab87266f","lines":12},{"path":"docs/adr/0001-idempotency-ttl.md","kind":"adr","sha256":"2220a53be50f9994a4c457dbe1a82f2e8b721120f2c241f1d7f7c764014400a3","lines":7},{"path":"docs/architecture.md","kind":"doc","sha256":"4e36c2ea3b67a55a81fa7256461809e6489742ac5aa3c9805baf2536f15ff3ce","lines":7},{"path":"docs/roadmap.md","kind":"doc","sha256":"18e408f24c39dcbc0d719c5f5d8d6eefe9192fc11bc0468634600e340f9a6035","lines":3},{"path":"package.json","kind":"manifest","sha256":"0bda4ed6cb89d14ad0d4913fbbd163c8b4636a035ce5c283cdafa05f03687a7b","lines":13},{"path":"src/config/flags.js","kind":"source","sha256":"88c10dca73dd7ea2267801aebf6d63dd241861136acabfef5a848717ab257238","lines":3},{"path":"src/config/limits.js","kind":"source","sha256":"963c57a02e9f00ded7e2a7104b1143acfb2d74e1775974a5b40d8e28eb1941b7","lines":3},{"path":"src/payments/idempotency.js","kind":"source","sha256":"8b41a0a1252e09f22e4d6dd982b38f9cce30746299be2e9a3bce39b645045b92","lines":14},{"path":"src/payments/retry.js","kind":"source","sha256":"fdab176e6eaa7bff6099ce1dda5179902ff2dc50240134de9b75cb0c878acba8","lines":11},{"path":"src/routes/health.js","kind":"source","sha256":"6a8e39446cfaf1c3397e83fd238fa418d358c598d796b34e75fa558248b992ce","lines":3},{"path":"src/security/hmac.js","kind":"source","sha256":"334179432ed83e1b54f47cc95e8fc6f67b43b5deb90de1ac6e9cf0f7f55818f4","lines":9},{"path":"src/security/redact.js","kind":"source","sha256":"577570bdc0de5b2b10fc8496ddefbc665c5ed37bb201a4f9a715eabfad17be1b","lines":6},{"path":"src/server.js","kind":"source","sha256":"6a1e537c37adcf5e97f6b111e239a25a12d42572d7e6f111433d644a8ec92938","lines":19},{"path":"test/redact.test.js","kind":"test","sha256":"4e8cf4be7cff37c2fd114feee0eaf64b4c00ea6cc2ecb7465047e6c9c3356a09","lines":9},{"path":"test/retry.test.js","kind":"test","sha256":"235119703c2748ffb12c77781915f595cd35288e047004ef042cace12d032b8a","lines":14},{"path":"test/webhook.test.js","kind":"test","sha256":"1b7d60f8f1ae334589af0c16885c1fab9e6de6f62994667ea78dc50d6e04ce08","lines":14}],"skipped":[{"path":".env.example","reason":"env"}]},"modules":[{"id":"root","roots":["."],"languages":["javascript"]}],"tests":[{"path":"test/redact.test.js","runner":"node:test","cases":1},{"path":"test/retry.test.js","runner":"node:test","cases":1},{"path":"test/webhook.test.js","runner":"node:test","cases":2}],"docs":[{"path":"README.md","title":"LedgerGate","sections":["behavior","run"],"last_changed":"2026-11-24T20:17:45Z"},{"path":"docs/adr/0001-idempotency-ttl.md","title":"ADR-0001: Idempotency Key Enforcement and TTL","sections":["decision"],"last_changed":"2026-11-24T20:17:45Z"},{"path":"docs/architecture.md","title":"Architecture","sections":["async-reconciliation","security"],"last_changed":"2026-11-24T20:17:45Z"},{"path":"docs/roadmap.md","title":"Roadmap","sections":[],"last_changed":"2026-11-24T20:17:45Z"}],"owners":[{"pattern":"/src/payments/","owners":["@payments-team"]},{"pattern":"/src/security/","owners":["@sec-team"]},{"pattern":"*","owners":["@ved"]}],"ci":[{"path":".github/workflows/ci.yml","commands":["node --test"]}],"size":{"source_lines":68,"areas":3},"layout":"one-file","units":[{"id":"root","paths":["."],"views":["vision","requirements","design","experience","plan"]}],"findings":[],"observations":{"reports":[]}},"findings":[],"assignment":{"schema_version":1,"inventory":".tenet/onboard/inventory.json","skill":"draft-specs","project_kind":"service","views":["vision","requirements","design","experience","plan"],"layout":"one-file","units":[{"id":"root","paths":["."],"views":["vision","requirements","design","experience","plan"]}],"question_limit":10,"output":{"paths":["tenet/intent.md"]},"rules":["no intent from code alone","every observed or documented statement cites","never resolve a conflict","never bless"]}},"errors":[]}
 ```
 
 ### npx tenet check --json
@@ -1064,7 +1075,13 @@ Commands:
 {"ok":false,"command":"tenet","version":"0.0.0","result":null,"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
 ```
 
+### npx tenet doctor --json
+
+```text
+{"ok":false,"command":"doctor","version":"0.0.0","result":{"checks":[{"name":"node","ok":true,"detail":"Node.js 24.22.1"},{"name":"git","ok":true,"detail":"Git 2.56.1.windows.1"},{"name":"ssh","ok":false,"detail":"OpenSSH OpenSSH_for_Windows_9.5p2, LibreSSL 3.8.2"},{"name":"gh","ok":true,"detail":"gh CLI 2.105.0"},{"name":"lock","ok":false,"detail":"Policy file tenet.yaml was not found."},{"name":"workflows","ok":true,"detail":"No workflows configured (ci_mode none)"}]},"errors":[{"code":"TN-POLICY-MISSING","severity":"error","rule":null,"file":"tenet.yaml","line":null,"message":"Policy file tenet.yaml was not found.","fix":"Run `tenet init` to create tenet.yaml."}]}
+```
+
 ## Problems
 
-- npm install <tarball> failed; used local build dependencies and extracted tarball for smoke execution
+- registry install unavailable: smoke used local extraction
 
