@@ -62,9 +62,9 @@ export type Board = {
   schema_version: 1;
   as_of: string;
   read: {
-  main: string;
+  main: string | null;
   branches: Array<string>;
-  records: string;
+  records: string | null;
 };
   pack?: {
   phases?: Array<string>;
@@ -75,13 +75,19 @@ export type Board = {
   level: "L0" | "L1" | "L2" | "L3" | "L4";
   state: "draft" | "blessed" | "rejected" | "deferred";
   flags: Array<string>;
-  recorded: "self" | "forge" | "signed";
+  recorded?: "self" | "forge" | "signed";
 }>;
   pending_blessings: Array<{
   path: string;
   section: string;
   conflicts: Array<string>;
   open_questions: Array<string>;
+}>;
+  spec_debt: Array<{
+  kind: "broken-citation" | "untested-requirement" | "over-budget";
+  path: string;
+  id: string | null;
+  message: string;
 }>;
   items?: Array<{
   id: string;
