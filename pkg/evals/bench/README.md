@@ -27,3 +27,6 @@ The gate implies:
 - the first findings should appear within 10 minutes;
 - `check` should not grow meaningfully with Markdown files outside `specs.documents`;
 - discovery should be bounded by actual specification inputs rather than the whole repository.
+
+RESULTS.md records exit codes and replaces timed medians with `FAILED` whenever a run exits
+non-zero or prints `TN-INTERNAL`. A failed cell is not an elapsed-time result.

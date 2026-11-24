@@ -1,34 +1,9 @@
-import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
+// npm test builds dist once before any test runs; tests never compile into dist themselves,
+// because a rebuild during the run races other test files importing from dist.
 export async function loadPolicyModule() {
-  const root = path.resolve(".");
-  const output = path.join(root, "dist", "policy", "index.js");
-  execFileSync(
-    process.execPath,
-    [
-      path.join(root, "node_modules", "typescript", "bin", "tsc"),
-      "--target",
-      "ES2023",
-      "--module",
-      "NodeNext",
-      "--moduleResolution",
-      "NodeNext",
-      "--strict",
-      "--noUncheckedIndexedAccess",
-      "--exactOptionalPropertyTypes",
-      "--verbatimModuleSyntax",
-      "--noEmitOnError",
-      "--skipLibCheck",
-      "--outDir",
-      "dist",
-      "--rootDir",
-      "src",
-      "--declaration",
-      "src/policy/index.ts",
-    ],
-    { cwd: root, stdio: "inherit" },
-  );
+  const output = path.join(path.resolve("."), "dist", "policy", "index.js");
   return import(pathToFileURL(output).href);
 }

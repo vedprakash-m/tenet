@@ -1,0 +1,5 @@
+{
+  "idempotent": true,
+  "executions": 1,
+  "challenge_consumed": true
+}

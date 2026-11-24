@@ -1,0 +1,9 @@
+{
+  "valid": true,
+  "evidence_state": "signed",
+  "envelope": {
+    "algorithm": "ed25519",
+    "key_id": "attest-ed25519-1",
+    "store_path": "refs/tenet/evidence/sha256:1111111111111111111111111111111111111111111111111111111111111111/REC-100.json"
+  }
+}
