@@ -9,5 +9,15 @@
   ],
   "conclusion": "failure",
   "budget": 60000,
-  "filler": "essential-over-limit"
+  "filler": {
+    "section": "blocking_regressed",
+    "character": "x",
+    "unboundedCharacters": 60001
+  },
+  "record": {
+    "work": "pr-8",
+    "evaluation_id": "eval-health",
+    "run_id": "run-40",
+    "attempt": 2
+  }
 }

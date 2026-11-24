@@ -1,16 +1,34 @@
 {
   "operation": "render-health-card",
-  "health": [
-    {
-      "area": "payments",
-      "indicator": "payment-health",
-      "status": "unknown"
-    }
-  ],
-  "conclusion": "failure",
   "shared_head": [
-    1,
-    2
+    2,
+    1
   ],
-  "budget": 60000
+  "budget": 60000,
+  "cards": [
+    {
+      "pr": 2,
+      "configured": true,
+      "health": [
+        {
+          "area": "payments",
+          "indicator": "payment-health",
+          "status": "unknown"
+        }
+      ],
+      "conclusion": "failure"
+    },
+    {
+      "pr": 1,
+      "configured": true,
+      "health": [
+        {
+          "area": "payments",
+          "indicator": "payment-health",
+          "status": "holding"
+        }
+      ],
+      "conclusion": "neutral"
+    }
+  ]
 }

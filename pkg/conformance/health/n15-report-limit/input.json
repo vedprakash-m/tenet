@@ -2,7 +2,17 @@
   "operation": "admit-health-report",
   "format": "tenet-health-json",
   "generate": {
-    "limit": "20,000 items",
-    "overBy": 1
+    "kind": "repeat-finding",
+    "seed": "../p08-native-enforce/report.json",
+    "count": 20001,
+    "finding": {
+      "rule_id": "no-stale",
+      "file": "src/payments/a.ts",
+      "line": 1,
+      "end_line": 1,
+      "symbol": "pay",
+      "snippet_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hint": "Remove the stale branch."
+    }
   }
 }

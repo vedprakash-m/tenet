@@ -2,7 +2,9 @@
   "operation": "admit-health-report",
   "format": "tenet-health-json",
   "generate": {
-    "limit": "50 MB",
-    "overBy": 1
+    "kind": "pad-json",
+    "seed": "../p08-native-enforce/report.json",
+    "rawBytes": 52428801,
+    "padding": " "
   }
 }
