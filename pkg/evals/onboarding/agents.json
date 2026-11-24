@@ -1,0 +1,11 @@
+{
+  "replay": {
+    "command": "node",
+    "args": [
+      "{replay_script}",
+      "{replay_drafts}"
+    ],
+    "model": "none (stored drafts)",
+    "effort": "not applicable"
+  }
+}
