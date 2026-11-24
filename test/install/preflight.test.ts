@@ -207,6 +207,43 @@ test("preflight derives production Windows hosts from USERPROFILE and APPDATA", 
   assert.ok(result.plan?.created.includes(".tenet/manifest.local.json"));
 });
 
+test("Windows profile planning never falls back to the real home directory", async () => {
+  const oldHome = process.env.HOME;
+  const oldUserProfile = process.env.USERPROFILE;
+  const oldAppData = process.env.APPDATA;
+  const oldLocalAppData = process.env.LOCALAPPDATA;
+  delete process.env.HOME;
+  delete process.env.USERPROFILE;
+  delete process.env.APPDATA;
+  delete process.env.LOCALAPPDATA;
+  try {
+    const repo = await tmpRepo("install-no-process-home");
+    try {
+      await repo.write(".claude/settings.json", "{}\n");
+      await repo.write(".vscode/settings.json", "{}\n");
+      await commit(repo);
+      const result = await preflight({
+        cwd: repo.path,
+        yes: true,
+        environment: { ...githubEnvironment, platform: "win32" },
+      });
+      assert.deepEqual(result.plan?.local_keys, []);
+      assert.equal(result.plan?.created.includes(".tenet/manifest.local.json"), false);
+    } finally {
+      await repo.cleanup();
+    }
+  } finally {
+    if (oldHome === undefined) delete process.env.HOME;
+    else process.env.HOME = oldHome;
+    if (oldUserProfile === undefined) delete process.env.USERPROFILE;
+    else process.env.USERPROFILE = oldUserProfile;
+    if (oldAppData === undefined) delete process.env.APPDATA;
+    else process.env.APPDATA = oldAppData;
+    if (oldLocalAppData === undefined) delete process.env.LOCALAPPDATA;
+    else process.env.LOCALAPPDATA = oldLocalAppData;
+  }
+});
+
 test("preflight uses an existing report-producing job and preserves service and matrix facts", async (t) => {
   const repo = await tmpRepo("install-existing-ci");
   t.after(repo.cleanup);

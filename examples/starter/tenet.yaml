@@ -4,17 +4,6 @@ paths:
 level: observe
 specs:
   id_prefix: R
-  documents:
-    - path: tenet/vision.md
-      level: L0
-    - path: tenet/specs/prd.md
-      level: L1
-    - path: tenet/specs/tech-spec.md
-      level: L2
-    - path: tenet/specs/ux-spec.md
-      level: L2
-    - path: tenet/specs/plan.md
-      level: L2
 owners:
   - id: ved
     name: Ved

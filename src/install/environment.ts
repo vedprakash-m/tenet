@@ -1,4 +1,3 @@
-import { homedir } from "node:os";
 import path from "node:path";
 import type { PreflightEnvironment } from "./types.js";
 
@@ -14,7 +13,8 @@ export function localProfileRoot(
   if (appData) return path.resolve(appData);
   const profile = process.env.USERPROFILE;
   if (profile) return path.resolve(profile, "AppData", "Roaming");
-  return path.resolve(homedir(), "AppData", "Roaming");
+  const home = process.env.HOME;
+  return home ? path.resolve(home, "AppData", "Roaming") : undefined;
 }
 
 export function localProfileRoots(
@@ -28,14 +28,14 @@ export function localProfileRoots(
     };
   }
   if ((environment.platform ?? process.platform) !== "win32") return undefined;
-  const home = process.env.USERPROFILE ?? homedir();
+  const home = process.env.USERPROFILE ?? process.env.HOME;
   const roaming = process.env.APPDATA ??
     (process.env.USERPROFILE ? path.resolve(process.env.USERPROFILE, "AppData", "Roaming") : undefined) ??
-    path.resolve(homedir(), "AppData", "Roaming");
+    (process.env.HOME ? path.resolve(process.env.HOME, "AppData", "Roaming") : undefined);
+  if (!home && !roaming) return undefined;
   return {
-    claude: path.resolve(home),
-    cursor: path.resolve(roaming),
-    vscode: path.resolve(roaming),
+    ...(home ? { claude: path.resolve(home) } : {}),
+    ...(roaming ? { cursor: path.resolve(roaming), vscode: path.resolve(roaming) } : {}),
   };
 }
 

@@ -132,7 +132,13 @@ function release(
   const integrity = environment.registry?.releases?.[version]?.integrity ??
     process.env.TENET_INSTALL_INTEGRITY;
   if (!integrity) {
-    throw new Error(`No registry integrity was supplied for ${registryPackage}@${version}.`);
+    const detail = `No registry integrity is available for ${registryPackage}@${version}.`;
+    const words = message("TN-LOCK-INVALID", { detail });
+    const finding = { ...fail("TN-LOCK-INVALID", words.message, words.fix), file: "tenet.lock" };
+    throw Object.assign(new Error(words.message), {
+      code: "TN-LOCK-INVALID",
+      finding,
+    });
   }
   return { package: registryPackage, version, integrity };
 }
@@ -592,13 +598,6 @@ function buildPolicy(preflight: PreflightResult, setup: string[], reportPath: st
     level: "observe",
     specs: {
       id_prefix: "R",
-      documents: [
-        { path: "tenet/vision.md", level: "L0" },
-        { path: "tenet/specs/prd.md", level: "L1" },
-        { path: "tenet/specs/tech-spec.md", level: "L2" },
-        { path: "tenet/specs/ux-spec.md", level: "L2" },
-        { path: "tenet/specs/plan.md", level: "L2" },
-      ],
     },
     ...(preflight.facts.owners.length > 0 ? { owners: preflight.facts.owners } : {}),
     checks: {
