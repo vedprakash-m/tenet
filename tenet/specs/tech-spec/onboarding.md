@@ -109,8 +109,8 @@ It then prints the first findings and offers onboarding (in an empty repo, asks 
   - deletes a created file only if its SHA-256 matches the manifest; otherwise it is kept and reported in `kept` (`reason: "edited-by-you"`)
   - deletes text between markers (or restores `previous_block` / `prefix_sep` when recorded and surrounding bytes match)
   - restores a key's `previous` value (or `previous_raw` when no unowned key changed) only if it still holds the `installed` value; otherwise keeps it (`reason: "edited-by-you"`)
-  - deletes `.tenet/manifest.json`, `.tenet/manifest.local.json`, `.tenet/manifest.pending.json`, and any created file (including local wrappers Tenet created) or managed directory left empty
-  - never touches specifications or records
+  - read any `.tenet/reports/` `checks[].report_path` entries from `tenet.yaml` before removing created files, then delete `.tenet/manifest.json`, `.tenet/manifest.local.json`, `.tenet/manifest.pending.json`, Tenet's local generated working state under `.tenet/` (`.tenet/onboard/inventory.json`, `.tenet/onboard/assignment.json`, `.tenet/cache/**`, `.tenet/runs/**`, and generated report files under `.tenet/reports/` matching `checks[].report_path` or `test.xml|test.json|junit.xml|ctrf.json|go-test.json|go-test-json.json|jest.json|jest-json.json`, verified by `lstat` confinement without traversing symlinks), and any created file (including local wrappers Tenet created) or managed directory left empty, reporting each deleted working-state file in `removed` (`kind: "file"`)
+  - never touches specifications, records, `.tenet/onboard/interview.json`, or any custom user-written file inside or outside `.tenet/`
 - Fixtures: interruption after each write; a pre-existing `AGENTS.md` and `.mcp.json` are restored exactly; an edited `tenet.yaml` is kept; a key the user changed after install is kept.
 
 ## 3. Onboarding measures (ALG-13)
