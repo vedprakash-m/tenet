@@ -164,9 +164,47 @@ test("preflight injects Windows shim requirements into detected hosts", async (t
       windowsCommandShimRequired: ["vscode"],
     },
   });
+
   assert.deepEqual(result.plan?.local_keys, [
     { host: "vscode", path: `${root}/Code/User/mcp.json`, pointer: "/servers/tenet" },
   ]);
+});
+
+test("preflight derives production Windows hosts from USERPROFILE and APPDATA", async (t) => {
+  const repo = await tmpRepo("install-windows-host-roots");
+  t.after(repo.cleanup);
+  await repo.write("package.json", JSON.stringify({
+    scripts: { test: "vitest run" },
+    devDependencies: { vitest: "1.6.0" },
+  }));
+  await repo.write("package-lock.json", "{}\n");
+  await repo.write(".claude/settings.json", "{}\n");
+  await repo.write(".cursor/settings.json", "{}\n");
+  await repo.write(".vscode/settings.json", "{}\n");
+  await commit(repo);
+  const oldHome = process.env.USERPROFILE;
+  const oldAppData = process.env.APPDATA;
+  const home = path.join(repo.path, "home").replaceAll("\\", "/");
+  const appData = path.join(repo.path, "roaming").replaceAll("\\", "/");
+  process.env.USERPROFILE = home;
+  process.env.APPDATA = appData;
+  t.after(() => {
+    if (oldHome === undefined) delete process.env.USERPROFILE;
+    else process.env.USERPROFILE = oldHome;
+    if (oldAppData === undefined) delete process.env.APPDATA;
+    else process.env.APPDATA = oldAppData;
+  });
+  const result = await preflight({
+    cwd: repo.path,
+    yes: true,
+    environment: { ...githubEnvironment, platform: "win32" },
+  });
+  assert.deepEqual(result.plan?.local_keys.map(({ host, path: itemPath }) => ({ host, path: itemPath })), [
+    { host: "claude", path: `${home}/.claude.json` },
+    { host: "vscode", path: `${appData}/Code/User/mcp.json` },
+    { host: "cursor", path: `${appData}/Cursor/User/mcp.json` },
+  ]);
+  assert.ok(result.plan?.created.includes(".tenet/manifest.local.json"));
 });
 
 test("preflight uses an existing report-producing job and preserves service and matrix facts", async (t) => {

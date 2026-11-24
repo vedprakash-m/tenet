@@ -17,6 +17,7 @@ import {
 } from "./manifest.js";
 import type {
   InstallManifest,
+  LocalManifest,
   ManifestKey,
   PendingManifest,
   RemoveKept,
@@ -24,6 +25,7 @@ import type {
   RemoveRemoved,
   RemoveResult,
 } from "./types.js";
+import { localProfileRoot } from "./environment.js";
 
 const reminder = "If you made the Tenet check required in branch protection or rulesets, remove that rule in your forge settings.";
 const removableParents = [".agents", ".claude", ".cursor", ".github", ".tenet", ".vscode"];
@@ -46,6 +48,7 @@ async function optionalText(filename: string): Promise<string | null> {
 async function manifestFile(cwd: string): Promise<{
   manifest: InstallManifest | null;
   pending: PendingManifest | null;
+  localManifest: LocalManifest | null;
 }> {
   const activePath = await confine(".tenet/manifest.json", cwd).catch(() => {
     throw pathError(".tenet/manifest.json");
@@ -59,7 +62,18 @@ async function manifestFile(cwd: string): Promise<{
   ]);
   const active = activeText === null ? null : JSON.parse(activeText) as InstallManifest;
   const pending = pendingText === null ? null : JSON.parse(pendingText) as PendingManifest;
-  return { manifest: active ?? pending?.manifest ?? null, pending };
+  let localManifest: LocalManifest | null = null;
+  const localPath = await confine(".tenet/manifest.local.json", cwd);
+  const localText = await optionalText(localPath);
+  if (localText !== null) localManifest = JSON.parse(localText) as LocalManifest;
+  else {
+    const pendingLocal = pending?.writes.find((write) =>
+      write.path === ".tenet/manifest.local.json" && write.content !== undefined);
+    if (pendingLocal?.content !== undefined) {
+      localManifest = JSON.parse(pendingLocal.content) as LocalManifest;
+    }
+  }
+  return { manifest: active ?? pending?.manifest ?? null, pending, localManifest };
 }
 
 async function validateRecordedPaths(
@@ -67,33 +81,48 @@ async function validateRecordedPaths(
   manifest: InstallManifest,
   pending: PendingManifest | null,
   localProfileRoot: string | undefined,
+  localManifest: LocalManifest | null,
 ): Promise<void> {
-  const paths = [
+  const repoPaths = [
     ...manifest.created.map((item) => item.path),
     ...manifest.blocks.map((item) => item.path),
     ...manifest.keys.map((item) => item.path),
     ...(pending?.writes.filter((item) => item.kind !== "local_key").map((item) => item.path) ?? []),
   ];
-  for (const itemPath of [...new Set(paths)]) {
+  for (const itemPath of [...new Set(repoPaths)]) {
     await confine(itemPath, cwd).catch(() => {
       throw pathError(itemPath);
     });
   }
-  if (!localProfileRoot) {
+  const recordedRoots = Object.values(localManifest?.profile_roots ?? {});
+  if (!localProfileRoot && recordedRoots.length === 0) {
     const local = pending?.writes.find((item) => item.kind === "local_key");
     if (local) throw pathError(local.path);
     return;
   }
-  const root = path.resolve(localProfileRoot);
-  for (const itemPath of pending?.writes.filter((item) => item.kind === "local_key")
-    .map((item) => item.path) ?? []) {
-    const relative = path.relative(root, path.resolve(itemPath));
-    if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
-      throw pathError(itemPath);
+  const roots = [localProfileRoot, ...recordedRoots]
+    .filter((root): root is string => Boolean(root))
+    .map((root) => path.resolve(root));
+  const localPaths = [
+    ...(pending?.writes.filter((item) => item.kind === "local_key").map((item) => item.path) ?? []),
+    ...(localManifest?.keys.map((item) => item.path) ?? []),
+  ];
+  for (const itemPath of new Set(localPaths)) {
+    let accepted = false;
+    for (const root of roots) {
+      const relative = path.relative(root, path.resolve(itemPath));
+      if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+        continue;
+      }
+      try {
+        await confine(relative.replaceAll("\\", "/"), root);
+        accepted = true;
+        break;
+      } catch {
+        // Try the other permitted recorded root.
+      }
     }
-    await confine(relative.replaceAll("\\", "/"), root).catch(() => {
-      throw pathError(itemPath);
-    });
+    if (!accepted) throw pathError(itemPath);
   }
 }
 
@@ -135,13 +164,15 @@ function restorePrevious(key: ManifestKey, current: Record<string, unknown>): un
   return current;
 }
 
-function canRestoreRaw(key: ManifestKey, current: Record<string, unknown>): string | null {
+function restoreKeyBytes(source: string, key: ManifestKey): string | null {
   if (key.previous_raw === undefined) return null;
+  const previous = decodeJson(key.previous_raw);
+  const previousValue = pointerValue(previous, key.pointer);
+  const candidate = previousValue === undefined
+    ? deleteJsonPointerBytes(source, key.pointer)
+    : setJsonPointerBytes(source, key.pointer, previousValue);
   try {
-    const previous = decodeJson(key.previous_raw);
-    const candidate = structuredClone(current);
-    restorePrevious(key, candidate);
-    return isDeepStrictEqual(candidate, previous) ? key.previous_raw : null;
+    return isDeepStrictEqual(decodeJson(candidate), previous) ? key.previous_raw : candidate;
   } catch {
     return null;
   }
@@ -192,7 +223,7 @@ async function removeEmptyManagedDirectories(cwd: string, paths: string[]): Prom
 export async function remove(options: RemoveOptions = {}): Promise<RemoveResult> {
   const cwd = path.resolve(options.cwd ?? process.cwd());
   const retained = await retainedRoots(cwd);
-  const { manifest, pending } = await manifestFile(cwd);
+  const { manifest, pending, localManifest } = await manifestFile(cwd);
   const removed: RemoveRemoved[] = [];
   const kept = new Map<string, RemoveKept["reason"]>();
   if (!manifest) {
@@ -207,7 +238,8 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
     cwd,
     manifest,
     pending,
-    options.environment?.localProfileRoot,
+    localProfileRoot(options.environment),
+    localManifest,
   );
 
   const affected: string[] = [];
@@ -243,7 +275,8 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
     const target = block.previous_block !== undefined && block.previous_block !== null
       ? `${source.slice(0, range.start)}${block.previous_block}${source.slice(range.end)}`
       : removeAppendedBlock(source, range.start, range.end, block.prefix_sep);
-    if (target.length === 0) await rm(filename, { force: true });
+    if (target.length === 0 && !block.previous_existed) await rm(filename, { force: true });
+    else if (target.length === 0) await writeAtomic(filename, "");
     else await writeAtomic(filename, target);
     removed.push({ path: block.path, kind: "block" });
   }
@@ -266,24 +299,52 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
       kept.set(key.path, "edited-by-you");
       continue;
     }
-    const raw = canRestoreRaw(key, root);
-    if (raw !== null) {
+    const raw = restoreKeyBytes(source, key);
+    if (key.previous_raw === undefined) {
+      await rm(filename, { force: true });
+    } else if (raw !== null) {
       await writeAtomic(filename, raw);
     } else {
-      const restored = key.previous === null && key.previous_raw === undefined
-        ? deleteJsonPointerBytes(source, key.pointer)
-        : setJsonPointerBytes(source, key.pointer, key.previous);
-      const parsed = decodeJson(restored);
-      if (Object.keys(parsed).length === 0) await rm(filename, { force: true });
-      else await writeAtomic(filename, restored);
+      kept.set(key.path, "edited-by-you");
+      continue;
+    }
+    removed.push({ path: key.path, kind: "key" });
+  }
+
+  for (const key of localManifest?.keys ?? []) {
+    const source = await optionalText(key.path);
+    if (source === null) continue;
+    let root: Record<string, unknown>;
+    try {
+      root = decodeJson(source);
+    } catch {
+      kept.set(key.path, "edited-by-you");
+      continue;
+    }
+    if (!isDeepStrictEqual(pointerValue(root, key.pointer), key.installed)) {
+      kept.set(key.path, "edited-by-you");
+      continue;
+    }
+    const raw = restoreKeyBytes(source, key);
+    if (key.previous_raw === undefined) {
+      await rm(key.path, { force: true });
+    } else if (raw !== null) {
+      await writeAtomic(key.path, raw);
+    } else {
+      const restored = structuredClone(root);
+      restorePrevious(key, restored);
+      if (Object.keys(restored).length === 0) await rm(key.path, { force: true });
+      else await writeAtomic(key.path, `${JSON.stringify(restored, null, 2)}\n`);
     }
     removed.push({ path: key.path, kind: "key" });
   }
 
   const activePath = await confine(".tenet/manifest.json", cwd);
   const pendingPath = await confine(".tenet/manifest.pending.json", cwd);
+  const localPath = await confine(".tenet/manifest.local.json", cwd);
   await rm(activePath, { force: true });
   await rm(pendingPath, { force: true });
+  if (!keptCreated.has(".tenet/manifest.local.json")) await rm(localPath, { force: true });
   await removeEmptyManagedDirectories(cwd, affected.concat(
     ".tenet/manifest.json",
     ".tenet/manifest.pending.json",

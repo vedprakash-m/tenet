@@ -27,6 +27,8 @@ export type {
   InitWrote,
   InstallFinding,
   InstallManifest,
+  LocalManifest,
+  LocalManifestKey,
   ManifestBlock,
   ManifestCreated,
   ManifestKey,

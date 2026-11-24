@@ -314,7 +314,7 @@ export async function doctorEvaluation(
     },
     {
       name: "gh",
-      ok: ghAvailable,
+      ok: true,
       detail: ghAvailable ? `gh CLI ${displayVersion("gh", ghRaw)}` : "gh CLI not found (optional)",
     },
     { name: "lock", ok: lockOk, detail: lockDetail },

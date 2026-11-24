@@ -12,6 +12,7 @@ import {
   blockMarker,
   decodeJson,
   jsonFile,
+  localManifestJson,
   manifestJson,
   pendingJson,
   pointerValue,
@@ -32,8 +33,11 @@ import type {
   PreflightOptions,
   PreflightResult,
   RunnerFact,
+  LocalManifest,
+  LocalManifestKey,
   WriteSet,
 } from "./types.js";
+import { localProfileRoot, localProfileRoots } from "./environment.js";
 
 export type WritePlanOptions = PreflightOptions & {
   force?: boolean;
@@ -210,6 +214,7 @@ function ignoreBlock(version: string): string {
   return `${blockMarker("yaml", version)}
 .tenet/*
 !.tenet/manifest.json
+!.tenet/manifest.local.json
 !.tenet/kit/
 ${"# tenet:end"}
 `;
@@ -529,6 +534,16 @@ async function managedManifest(cwd: string): Promise<InstallManifest | null> {
   }
 }
 
+async function managedLocalManifest(cwd: string): Promise<LocalManifest | null> {
+  const filename = await confine(".tenet/manifest.local.json", cwd);
+  try {
+    return JSON.parse(await readFile(filename, "utf8")) as LocalManifest;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
+
 async function fileForWrite(
   cwd: string,
   itemPath: string,
@@ -644,6 +659,7 @@ export async function planWriteSet(
   plan.local_keys.sort((left, right) =>
     compareUtf16(left.path, right.path) || compareUtf16(left.pointer, right.pointer) || compareUtf16(left.host, right.host));
   const priorManifest = await managedManifest(cwd);
+  const priorLocalManifest = await managedLocalManifest(cwd);
   const files = new Map<string, PlannedFile>();
   files.set("tenet.lock", {
     path: "tenet.lock",
@@ -731,7 +747,8 @@ export async function planWriteSet(
     });
   }
   for (const itemPath of plan.created) {
-    if (itemPath === ".tenet/manifest.json") continue;
+    if (itemPath === ".tenet/manifest.json" ||
+      itemPath === ".tenet/manifest.local.json") continue;
     if (!files.has(itemPath)) throw new Error(`No content was planned for ${itemPath}.`);
   }
 
@@ -744,6 +761,64 @@ export async function planWriteSet(
     keys: [],
   };
   let writeIndex = 0;
+  const resolvedProfileRoots = localProfileRoots(options.environment);
+  const localWrites: PendingWrite[] = [];
+  const localKeys: LocalManifestKey[] = [];
+  for (const key of plan.local_keys) {
+    const resolvedProfileRoot = resolvedProfileRoots?.[key.host] ??
+      localProfileRoot(options.environment);
+    const filename = await validateLocalPath(key.path, resolvedProfileRoot);
+    const { state } = await fileForWrite(cwd, filename, true);
+    const root = state.text === null ? {} : decodeJson(state.text);
+    const previous = pointerValue(root, key.pointer);
+    const installed = mcpValue(releaseInfo.version, releaseInfo.package, true);
+    setPointer(root, key.pointer, installed);
+    const content = state.text === null
+      ? jsonFile(root)
+      : setJsonPointerBytes(state.text, key.pointer, installed);
+    const prior = priorLocalManifest?.keys.find((item) =>
+      item.host === key.host && item.path === key.path && item.pointer === key.pointer);
+    const installedAlready = prior !== undefined &&
+      state.text !== null &&
+      (JSON.stringify(previous) === JSON.stringify(prior.installed) ||
+        JSON.stringify(previous) === JSON.stringify(installed));
+    localKeys.push({
+      ...key,
+      previous: installedAlready ? prior.previous : previous ?? null,
+      installed,
+      ...(installedAlready
+        ? prior.previous_raw !== undefined ? { previous_raw: prior.previous_raw } : {}
+        : state.text !== null ? { previous_raw: state.text } : {}),
+    });
+    const finalContent = state.text !== null && isDeepStrictEqual(previous, installed)
+      ? state.text
+      : content;
+    localWrites.push({
+      id: `local_key:${String(++writeIndex).padStart(3, "0")}:${key.host}:${key.path}:${key.pointer}`,
+      kind: "local_key",
+      path: filename,
+      pointer: key.pointer,
+      ...(resolvedProfileRoot ? { profile_root: resolvedProfileRoot } : {}),
+      before_sha256: state.sha256,
+      after_sha256: sha256Bytes(Buffer.from(finalContent, "utf8")),
+      content: finalContent,
+    });
+  }
+  if (plan.local_keys.length > 0) {
+    const roots = Object.fromEntries(plan.local_keys.map(({ host, path: itemPath }) => {
+      const root = resolvedProfileRoots?.[host] ?? localProfileRoot(options.environment);
+      if (!root) pathError(itemPath);
+      return [host, root];
+    }));
+    files.set(".tenet/manifest.local.json", {
+      path: ".tenet/manifest.local.json",
+      content: localManifestJson({
+        schema_version: 1,
+        profile_roots: roots,
+        keys: localKeys,
+      }),
+    });
+  }
   for (const itemPath of plan.created) {
     if (itemPath === ".tenet/manifest.json") continue;
     const planned = files.get(itemPath);
@@ -828,6 +903,9 @@ export async function planWriteSet(
       path: block.path,
       kind: block.kind,
       marker: blockMarker(block.kind, releaseInfo.version),
+      previous_existed: currentIsInstalled
+        ? previousMetadata.previous_existed ?? state.exists
+        : state.exists,
       previous_block: currentIsInstalled ? previousMetadata.previous_block ?? null : managed.previous,
       prefix_sep: currentIsInstalled ? previousMetadata.prefix_sep ?? "" : managed.prefixSep,
     });
@@ -878,33 +956,7 @@ export async function planWriteSet(
     });
   }
 
-  for (const key of plan.local_keys) {
-    const filename = await validateLocalPath(key.path, options.environment?.localProfileRoot);
-    const { state } = await fileForWrite(cwd, filename, true);
-    const root = state.text === null ? {} : decodeJson(state.text);
-    const previous = pointerValue(root, key.pointer);
-    const installed = mcpValue(releaseInfo.version, releaseInfo.package, true);
-    setPointer(root, key.pointer, installed);
-    const content = state.text === null
-      ? jsonFile(root)
-      : setJsonPointerBytes(
-          state.text,
-          key.pointer,
-          installed,
-        );
-    const finalContent = state.text !== null && isDeepStrictEqual(previous, installed)
-      ? state.text
-      : content;
-    writes.push({
-      id: `local_key:${String(++writeIndex).padStart(3, "0")}:${key.host}:${key.path}:${key.pointer}`,
-      kind: "local_key",
-      path: filename,
-      pointer: key.pointer,
-      before_sha256: state.sha256,
-      after_sha256: sha256Bytes(Buffer.from(finalContent, "utf8")),
-      content: finalContent,
-    });
-  }
+  writes.push(...localWrites);
 
   manifest.created.sort((left, right) => compareUtf16(left.path, right.path));
   manifest.blocks.sort((left, right) => compareUtf16(left.path, right.path));
@@ -939,8 +991,9 @@ export async function planWriteSet(
 
 async function confinedWritePath(write: PendingWrite, plan: WriteSet, pending: PendingManifest): Promise<string> {
   if (write.kind === "local_key") {
-    if (!plan.localProfileRoot) pathError(write.path);
-    return validateLocalPath(write.path, plan.localProfileRoot);
+    const root = write.profile_root ?? plan.localProfileRoot;
+    if (!root) pathError(write.path);
+    return validateLocalPath(write.path, root);
   }
   void pending;
   return confine(write.path, plan.cwd).catch((error) => {
@@ -968,7 +1021,8 @@ function recordWrote(plan: WriteSet, write: PendingWrite, wrote: InitWrote): voi
     if (planned) wrote.keys.push({ ...planned });
   } else if (kind === "local_keys") {
     const planned = plan.plan.local_keys.find((item) =>
-      item.path === write.path && item.pointer === write.pointer);
+      item.path.replaceAll("\\", "/") === write.path.replaceAll("\\", "/") &&
+      item.pointer === write.pointer);
     if (planned) wrote.local_keys.push({ ...planned });
   }
 }

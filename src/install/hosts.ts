@@ -18,10 +18,11 @@ function localKey(
   relativePath: string,
   pointer: string,
 ): HostWritePlan["local_keys"] {
-  if (!context.localProfileRoot && context.platform !== "win32") return [];
-  if (!context.localProfileRoot) return [];
+  const root = context.localProfileRoots?.[host] ?? context.localProfileRoot;
+  if (!root && context.platform !== "win32") return [];
+  if (!root) return [];
   if (!context.windowsCommandShimRequired?.includes(host)) return [];
-  const filename = path.join(context.localProfileRoot, ...relativePath.split("/")).replaceAll("\\", "/");
+  const filename = path.join(root, ...relativePath.split("/")).replaceAll("\\", "/");
   return [{ host, path: filename, pointer }];
 }
 

@@ -6,6 +6,7 @@ import { git } from "../core/git.js";
 import { message } from "../core/messages.js";
 import { fail } from "../core/output.js";
 import { compareUtf16, detectHosts } from "./hosts.js";
+import { localProfileRoots, windowsCommandShimRequired } from "./environment.js";
 import type {
   CiJobFact,
   HostContext,
@@ -450,15 +451,23 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
   }
 
   const hostPlan: HostWritePlan = { created: [], blocks: [], keys: [], local_keys: [] };
-  const hostContext: HostContext = {
+  const detectedContext: HostContext = {
     cwd,
     platform: environment.platform ?? process.platform,
-    ...(environment.localProfileRoot === undefined ? {} : { localProfileRoot: environment.localProfileRoot }),
-    ...(environment.windowsCommandShimRequired === undefined ? {} : {
-      windowsCommandShimRequired: environment.windowsCommandShimRequired,
-    }),
   };
-  const descriptors = await detectHosts(hostContext);
+  const descriptors = await detectHosts(detectedContext);
+  const profileRoots = localProfileRoots(environment);
+  const shimHosts = windowsCommandShimRequired(
+    environment,
+    descriptors
+      .filter(({ capabilityLevel }) => capabilityLevel !== "instructions")
+      .map(({ id }) => id),
+  );
+  const hostContext: HostContext = {
+    ...detectedContext,
+    ...(profileRoots === undefined ? {} : { localProfileRoots: profileRoots }),
+    ...(shimHosts === undefined ? {} : { windowsCommandShimRequired: shimHosts }),
+  };
   for (const descriptor of descriptors) mergeHostPlan(hostPlan, await descriptor.planWrites(hostContext));
   const hosts = descriptors.map((descriptor) => ({ id: descriptor.id, capability: descriptor.capabilityLevel }))
     .sort((left, right) => compareUtf16(left.id, right.id));
@@ -467,6 +476,7 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
     "tenet.yaml",
     "tenet.lock",
     ".tenet/manifest.json",
+    ...(hostPlan.local_keys.length > 0 ? [".tenet/manifest.local.json"] : []),
     ...hostPlan.created,
   ];
   if (options.vendor) {

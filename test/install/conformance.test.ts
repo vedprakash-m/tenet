@@ -28,6 +28,7 @@ assert.equal(compile.status, 0, compile.stderr || compile.stdout);
 const { init, planWriteSet, preflight, remove, upgrade } = await import(
   pathToFileURL(path.join(output, "install", "index.js")).href
 );
+const { exitCodeFor } = await import(pathToFileURL(path.join(output, "core", "output.js")).href);
 
 const casesRoot = path.resolve("pkg/conformance/install");
 const kitPath = path.resolve("kit");
@@ -203,6 +204,19 @@ function findingCode(error: unknown): string | undefined {
   return (error as { finding?: { code?: string } })?.finding?.code;
 }
 
+async function expectedError(caseName: string, step: string): Promise<(error: unknown) => boolean> {
+  const expected = JSON.parse(await readFile(
+    path.join(casesRoot, caseName, "expected", step, "result.json"),
+    "utf8",
+  )) as { exitCode: number; findingCode: string };
+  return (error: unknown) => {
+    const finding = (error as { finding?: Parameters<typeof exitCodeFor>[0][number] }).finding;
+    assert.equal(finding?.code, expected.findingCode);
+    assert.equal(finding ? exitCodeFor([finding]) : undefined, expected.exitCode);
+    return true;
+  };
+}
+
 test.after(async () => {
   await cleanupTestRoot();
   await rm(output, { recursive: true, force: true });
@@ -278,6 +292,9 @@ for (const caseName of positiveCases) {
       );
     }
     if (caseName === "p12-windows-local-host") {
+      assert.deepEqual(result.wrote.local_keys, result.plan.local_keys);
+      assert.ok(setup.repo.git(["ls-files", "--others", "--exclude-standard"]).split(/\r?\n/)
+        .includes(".tenet/manifest.local.json"));
       const localRoot = (
         setup.options.environment as { localProfileRoot: string }
       ).localProfileRoot;
@@ -402,6 +419,88 @@ test("p12 loader upgrades shared and Windows local MCP pins", async (t) => {
   assert.equal(local.servers.tenet.args[0], "/c");
 });
 
+test("local manifest durably restores and removes local host keys", async (t) => {
+  const setup = await makeCase("p12-windows-local-host");
+  t.after(() => dispose(setup));
+  const localRoot = (setup.options.environment as { localProfileRoot: string }).localProfileRoot;
+  const localPath = path.join(localRoot, "Code", "User", "mcp.json");
+  const original = "{\r\n  \"servers\": {\r\n    \"search\": {\"command\":\"node\"}\r\n  }\r\n}\r\n";
+  await mkdir(path.dirname(localPath), { recursive: true });
+  await writeFile(localPath, original);
+  await init(await optionsForStep(setup, 0));
+  const durable = JSON.parse(await readFile(
+    path.join(setup.repo.path, ".tenet", "manifest.local.json"),
+    "utf8",
+  )) as {
+    profile_roots: Record<string, string>;
+    keys: Array<{ host: string; path: string; pointer: string; previous_raw?: string }>;
+  };
+  assert.equal(durable.profile_roots.vscode, localRoot);
+  assert.equal(durable.keys[0]?.previous_raw, original);
+  await remove(await optionsForStep(setup, 1));
+  assert.equal(await readFile(localPath, "utf8"), original);
+  await assert.rejects(readFile(path.join(setup.repo.path, ".tenet", "manifest.local.json")));
+});
+
+test("remove keeps a user-edited local key and deletes an untouched newly created one", async (t) => {
+  const setup = await makeCase("p12-windows-local-host");
+  t.after(() => dispose(setup));
+  const options = await optionsForStep(setup, 0);
+  await init(options);
+  const localRoot = (setup.options.environment as { localProfileRoot: string }).localProfileRoot;
+  const localPath = path.join(localRoot, "Code", "User", "mcp.json");
+  const source = JSON.parse(await readFile(localPath, "utf8")) as {
+    servers: { tenet: { command: string; args: string[] } };
+  };
+  source.servers.tenet.command = "owner-command";
+  await writeFile(localPath, `${JSON.stringify(source, null, 2)}\n`);
+  const result = await remove(options);
+  assert.ok(result.kept.some((item) =>
+    item.path === localPath.replaceAll("\\", "/") && item.reason === "edited-by-you"));
+  assert.equal((JSON.parse(await readFile(localPath, "utf8")) as {
+    servers: { tenet: { command: string } };
+  }).servers.tenet.command, "owner-command");
+});
+
+test("remove deletes JSON wrappers and local files created only for owned keys", async (t) => {
+  const setup = await makeCase("p12-windows-local-host");
+  t.after(() => dispose(setup));
+  const options = await optionsForStep(setup, 0);
+  await init(options);
+  const localRoot = (setup.options.environment as { localProfileRoot: string }).localProfileRoot;
+  const localPath = path.join(localRoot, "Code", "User", "mcp.json");
+  await remove(options);
+  await assert.rejects(readFile(path.join(setup.repo.path, ".mcp.json")));
+  await assert.rejects(readFile(localPath));
+});
+
+test("remove restores a pre-existing zero-byte managed block file", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await setup.repo.write(".github/pull_request_template.md", "");
+  await init(await optionsForStep(setup, 0));
+  const manifest = JSON.parse(await readFile(
+    path.join(setup.repo.path, ".tenet", "manifest.json"),
+    "utf8",
+  )) as { blocks: Array<{ path: string; previous_existed: boolean }> };
+  assert.equal(manifest.blocks.find((item) =>
+    item.path === ".github/pull_request_template.md")?.previous_existed, true);
+  const result = await remove(await optionsForStep(setup, 0));
+  assert.equal(await readFile(path.join(setup.repo.path, ".github", "pull_request_template.md"), "utf8"), "");
+  assert.ok(result.removed.some((item) =>
+    item.path === ".github/pull_request_template.md" && item.kind === "block"));
+});
+
+test("remove preserves pre-existing empty ancestor objects during JSON key restoration", async (t) => {
+  const setup = await makeCase("p08-existing-mcp");
+  t.after(() => dispose(setup));
+  const original = "{\n  \"mcpServers\": {},\n  \"unowned\": {}\n}\n";
+  await setup.repo.write(".mcp.json", original);
+  await init(await optionsForStep(setup, 0));
+  await remove(await optionsForStep(setup, 0));
+  assert.equal(await readFile(path.join(setup.repo.path, ".mcp.json"), "utf8"), original);
+});
+
 test("p17 loader upgrades owned pins without changing policy", async (t) => {
   const setup = await makeCase("p17-upgrade-pins-and-policy");
   t.after(() => dispose(setup));
@@ -455,12 +554,12 @@ test("remove deletes a newly owned MCP key without rewriting sibling JSON", asyn
   const key = manifest.keys.find((item) => item.path === ".mcp.json");
   assert.ok(key);
   key.previous = null;
-  delete key.previous_raw;
+  key.previous_raw = "{\r\n  \"mcpServers\": { \"owner\" : { \"command\" : \"node\" } }\r\n}\r\n";
   await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
   await remove(await optionsForStep(setup, 1));
   assert.equal(
     await readFile(path.join(setup.repo.path, ".mcp.json"), "utf8"),
-    "{\r\n  \"mcpServers\": {  \"owner\" : { \"command\" : \"node\" } }\r\n}\r\n",
+    "{\r\n  \"mcpServers\": { \"owner\" : { \"command\" : \"node\" } }\r\n}\r\n",
   );
 });
 
@@ -543,6 +642,31 @@ test("upgrade resume returns exact uninterrupted rows after a write", async (t) 
   assert.deepEqual(await upgrade(options), uninterrupted);
 });
 
+test("upgrade rejects an unrecorded installation when no pending upgrade exists", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  await assert.rejects(upgrade(await optionsForStep(setup, 0)), (error: unknown) =>
+    findingCode(error) === "TN-INIT-EXISTS");
+  await assert.rejects(readFile(path.join(setup.repo.path, ".tenet", "manifest.json")));
+  await assert.rejects(readFile(path.join(setup.repo.path, ".tenet", "manifest.pending.json")));
+});
+
+test("upgrade resumes a valid pending plan after the active manifest is missing", async (t) => {
+  const setup = await makeCase("p17-upgrade-pins-and-policy");
+  t.after(() => dispose(setup));
+  await init(await optionsForStep(setup, 0));
+  const options = await optionsForStep(setup, 1);
+  await assert.rejects(
+    upgrade({ ...options, fault: { after: "pending" } }),
+    (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+  );
+  await rm(path.join(setup.repo.path, ".tenet", "manifest.json"));
+  const result = await upgrade(options);
+  assert.equal(result.from, "0.1.0-alpha.0");
+  assert.equal(result.to, "0.1.0-alpha.1");
+  await readFile(path.join(setup.repo.path, ".tenet", "manifest.json"));
+});
+
 test("resume confines local paths before replay mutation", async (t) => {
   const setup = await makeCase("p12-windows-local-host");
   t.after(() => dispose(setup));
@@ -569,7 +693,8 @@ test("n04 confined planning rejects an outside symlink before any write", async 
   const setup = await makeCase("n04-init-symlink-outside");
   t.after(() => dispose(setup));
   const before = await tree(setup.repo.path);
-  await assert.rejects(init(setup.options), (error: unknown) => findingCode(error) === "TN-PATH-ESCAPE");
+  await assert.rejects(init(setup.options),
+    await expectedError("n04-init-symlink-outside", "01-init"));
   assert.deepEqual(await tree(setup.repo.path), before);
   assert.equal(
     await readFile(path.join(setup.sandbox, "github-sibling", "workflows", "sentinel.yml"), "utf8"),
@@ -619,7 +744,8 @@ test("n05 refuses an unmanaged created workflow without leaving a pending plan",
   const setup = await makeCase("n05-conflicting-created-workflow");
   t.after(() => dispose(setup));
   const before = await tree(setup.repo.path);
-  await assert.rejects(init(setup.options), (error: unknown) => findingCode(error) === "TN-INIT-EXISTS");
+  await assert.rejects(init(setup.options),
+    await expectedError("n05-conflicting-created-workflow", "01-init"));
   assert.deepEqual(await tree(setup.repo.path), before);
 });
 
@@ -627,7 +753,8 @@ test("n03 remove rejects a recorded parent path before every write", async (t) =
   const setup = await makeCase("n03-remove-recorded-parent-path");
   t.after(() => dispose(setup));
   const before = await tree(setup.repo.path);
-  await assert.rejects(remove(setup.options), (error: unknown) => findingCode(error) === "TN-PATH-ESCAPE");
+  await assert.rejects(remove(setup.options),
+    await expectedError("n03-remove-recorded-parent-path", "01-remove"));
   assert.deepEqual(await tree(setup.repo.path), before);
   assert.equal(await readFile(path.join(setup.sandbox, "outside-sentinel.txt"), "utf8"),
     "Keep this fixture sentinel.\n");
@@ -679,6 +806,9 @@ test("n08 cancellation preserves the exact repository tree", async (t) => {
   assert.equal(result.cancelled, true);
   assert.deepEqual(result.wrote, { created: [], blocks: [], keys: [], local_keys: [] });
   assert.deepEqual(await tree(setup.repo.path), before);
+  assert.deepEqual(await tree(setup.repo.path), await tree(
+    path.join(casesRoot, "n08-preflight-declined", "expected", "01-init", "tree"),
+  ));
 });
 
 test("n01 and n02 expose structured preflight findings without writes", async (t) => {
@@ -687,7 +817,11 @@ test("n01 and n02 expose structured preflight findings without writes", async (t
     ["n02-not-a-git-repository", "TN-ENV-NOT-GIT"],
   ] as const) {
     const setup = await makeCase(caseName);
-    await assert.rejects(init(setup.options), (error: unknown) => findingCode(error) === code);
+    if (caseName === "n02-not-a-git-repository") {
+      await assert.rejects(init(setup.options), await expectedError(caseName, "01-init"));
+    } else {
+      await assert.rejects(init(setup.options), (error: unknown) => findingCode(error) === code);
+    }
     assert.deepEqual(await tree(setup.repo.path), { "README.md": (await readFile(
       path.join(casesRoot, caseName, "before", "README.md"),
     )).toString("base64") });

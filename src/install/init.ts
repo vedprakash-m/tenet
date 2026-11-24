@@ -4,6 +4,7 @@ import { preflight } from "./preflight.js";
 import { manifestJson, sha256Bytes } from "./manifest.js";
 import { applyPlan, planWriteSet, resumePendingPlan } from "./writes.js";
 import type { InitOptions, InitResult, PreflightOptions } from "./types.js";
+import { localProfileRoot } from "./environment.js";
 
 async function isComplete(cwd: string, plan: Awaited<ReturnType<typeof planWriteSet>>): Promise<boolean> {
   for (const write of plan.writes) {
@@ -30,6 +31,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
   const preflightOptions: PreflightOptions = { ...options };
   const result = await preflight(preflightOptions);
   const cwd = path.resolve(options.cwd ?? process.cwd());
+  const profileRoot = localProfileRoot(options.environment);
   if (options.answers?.continue === false) {
     if (!result.plan) {
       throw Object.assign(new Error(result.diagnostics[0]?.message ?? "Install preflight failed."), {
@@ -45,8 +47,8 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
   }
   const resumed = await resumePendingPlan(cwd, result, {
     ...(options.fault ? { fault: options.fault } : {}),
-    ...(options.environment?.localProfileRoot
-      ? { localProfileRoot: options.environment.localProfileRoot }
+    ...(profileRoot
+      ? { localProfileRoot: profileRoot }
       : {}),
   });
   if (resumed) return { ...resumed, findings: result.findings };
@@ -60,8 +62,8 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
   }
   const applied = await applyPlan(plan, {
     ...(options.fault ? { fault: options.fault } : {}),
-    ...(options.environment?.localProfileRoot
-      ? { localProfileRoot: options.environment.localProfileRoot }
+    ...(profileRoot
+      ? { localProfileRoot: profileRoot }
       : {}),
   });
   return { ...applied, findings: result.findings };

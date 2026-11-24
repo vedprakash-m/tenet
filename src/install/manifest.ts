@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import type {
   InitPlan,
   InstallManifest,
+  LocalManifest,
   ManifestBlock,
   PendingManifest,
   PendingWrite,
@@ -147,11 +148,12 @@ function updateJsonSpan(
   if (!span.members) throw new SyntaxError("A JSON pointer parent is not an object.");
   const key = parts[0] ?? "";
   const member = span.members.get(key);
-  if (parts.length === 1 && member) {
-    return `${source.slice(0, member.value.start)}${JSON.stringify(value)}${source.slice(member.value.end)}`;
-  }
-  if (parts.length > 1 && member) {
-    return updateJsonSpan(source, member.value, parts.slice(1), value);
+  if (member) {
+    if (parts.length === 1) {
+      return `${source.slice(0, member.value.start)}${JSON.stringify(value)}${source.slice(member.value.end)}`;
+    }
+    const updated = updateJsonSpan(source, member.value, parts.slice(1), value);
+    return updated;
   }
   let nested = value;
   for (const part of parts.slice(1).reverse()) nested = { [part]: nested };
@@ -161,7 +163,7 @@ function updateJsonSpan(
   const insertion = close - trailingLength;
   const newline = source.includes("\r\n") ? "\r\n" : "\n";
   const closeLine = source.lastIndexOf("\n", close) + 1;
-  const closeIndent = source.slice(closeLine, close);
+  const closeIndent = source.slice(closeLine, close).match(/^\s*/)?.[0] ?? "";
   const indent = `${closeIndent}  `;
   const separator = span.members.size > 0 ? "," : "";
   const addition = `${separator}${newline}${indent}${JSON.stringify(key)}: ${JSON.stringify(nested)}`;
@@ -172,6 +174,7 @@ export function setJsonPointerBytes(source: string, pointer: string, value: unkn
   const parts = pointerParts(pointer);
   return updateJsonSpan(source, jsonSpans(source), parts, value);
 }
+
 
 function removeJsonSpan(
   source: string,
@@ -266,6 +269,22 @@ export function manifestJson(manifest: InstallManifest): string {
 
 export function pendingJson(pending: PendingManifest): string {
   return `${JSON.stringify(pending, null, 2)}\n`;
+}
+
+export function localManifestJson(manifest: LocalManifest): string {
+  return jsonFile({
+    schema_version: manifest.schema_version,
+    profile_roots: Object.fromEntries(
+      Object.entries(manifest.profile_roots).sort(([left], [right]) =>
+        sortedText(left, right)),
+    ),
+    keys: manifest.keys
+      .map((key) => ({ ...key }))
+      .sort((left, right) =>
+        sortedText(left.host, right.host) ||
+        sortedText(left.path, right.path) ||
+        sortedText(left.pointer, right.pointer)),
+  });
 }
 
 export function planFromManifest(

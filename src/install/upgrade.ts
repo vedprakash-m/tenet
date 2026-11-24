@@ -2,6 +2,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { confine } from "../core/fs.js";
+import { message } from "../core/messages.js";
+import { fail } from "../core/output.js";
 import { preflight } from "./preflight.js";
 import { decodeJson, pointerValue, sha256Bytes } from "./manifest.js";
 import { applyPlan, planWriteSet, readPendingPlan, resumePendingPlan } from "./writes.js";
@@ -15,6 +17,7 @@ import type {
   UpgradeResult,
   WriteSet,
 } from "./types.js";
+import { localProfileRoots } from "./environment.js";
 
 type ChangeIndex = Map<string, UpgradeChanged["action"]>;
 
@@ -115,13 +118,16 @@ async function shouldApplyKey(
 }
 
 async function shouldApplyLocalKey(
-  localProfileRoot: string | undefined,
+  profileRoots: Partial<Record<string, string>> | undefined,
   packageName: string,
   previousVersion: string,
   write: PendingWrite,
 ): Promise<{ apply: boolean; action: UpgradeChanged["action"] }> {
-  if (!localProfileRoot || !write.pointer || !write.content) return { apply: false, action: "kept" };
-  const root = path.resolve(localProfileRoot);
+  if (!write.pointer || !write.content) return { apply: false, action: "kept" };
+  const host = write.id.split(":")[2];
+  const rootValue = write.profile_root ?? (host ? profileRoots?.[host] : undefined);
+  if (!rootValue) return { apply: false, action: "kept" };
+  const root = path.resolve(rootValue);
   const relative = path.relative(root, path.resolve(write.path));
   if (!relative || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
     return { apply: false, action: "kept" };
@@ -167,6 +173,7 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
     );
   }
   const cwd = path.resolve(options.cwd ?? process.cwd());
+  const profileRoots = localProfileRoots(options.environment);
   const prior = await currentManifest(cwd);
   const pending = await readPendingPlan(cwd, options.environment?.localProfileRoot);
   if (pending) {
@@ -190,6 +197,14 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
       to: original.to,
       changed: original.changed,
     };
+  }
+  if (!prior) {
+    const itemPath = ".tenet/manifest.json";
+    const words = message("TN-INIT-EXISTS", { path: itemPath });
+    throw Object.assign(new Error(words.message), {
+      code: "TN-INIT-EXISTS",
+      finding: { ...fail("TN-INIT-EXISTS", words.message, words.fix), file: itemPath },
+    });
   }
   await resumePendingPlan(cwd, result, {
     ...(options.fault ? { fault: options.fault } : {}),
@@ -227,7 +242,7 @@ export async function upgrade(options: UpgradeOptions = {}): Promise<UpgradeResu
       }
     } else if (write.kind === "local_key") {
       decision = await shouldApplyLocalKey(
-        options.environment?.localProfileRoot,
+        profileRoots,
         packageName,
         previousVersion,
         write,

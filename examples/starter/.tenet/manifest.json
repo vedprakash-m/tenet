@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "version": "0.0.0",
+  "created": [
+    {
+      "path": ".agents/skills/tenet-draft-specs/SKILL.md",
+      "sha256": "2e9ce5b69a7792ef5ed51cc2754450cdde80f24250f2b5994f98d2c021093ff9"
+    },
+    {
+      "path": ".agents/skills/tenet-review-with-findings/SKILL.md",
+      "sha256": "cea7b0c9d11b1731c8610e20c6294b5712868fd3b105ae0b3028afe693c7f64e"
+    },
+    {
+      "path": ".agents/skills/tenet-work-a-change/SKILL.md",
+      "sha256": "d57058ba233bd9cdfe5f1a581e72d126599563fd9f4f4a83328231fac9398fc5"
+    },
+    {
+      "path": ".gitattributes",
+      "sha256": "3310fe0c4ebd0285bbdf8c64c1ff0b51b311909bf96aab469b9aa501c8a235af"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "sha256": "02a6a707f51a13cb862e109501d3c25e9a3a0a04c5d93824ea9ede2b14b94b16"
+    },
+    {
+      "path": ".github/workflows/tenet-tests.yml",
+      "sha256": "d32bd3a8d60c28a0a9756a79e2679782b18ed97d53721f6cda65552b50d965c6"
+    },
+    {
+      "path": ".github/workflows/tenet.yml",
+      "sha256": "a804f3dc95dd5e43afa016324737eceb087ebea3ecc82346be80bf53be6febc6"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "f70385b14c82d0291035340bfc3d3097a83031715a6aadcaf07bc2a4ca933f7c"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "c76e50b005b217a25cae7975368d67e54c191b40e10fae823720643f10d64552"
+    },
+    {
+      "path": "tenet.lock",
+      "sha256": "38a25b115e8a034e01dd06b2510c173040bfa58f09da67e2003896395a011f37"
+    },
+    {
+      "path": "tenet.yaml",
+      "sha256": "00c0c5ff464a78e69c06751edb30cf7923b8734fde88f18737c13279d67c3ac2"
+    },
+    {
+      "path": "tenet/intent.md",
+      "sha256": "49f396cd54f152d9202d090ae68061e40beeca0a26b215cd0482c5d2157c58bb"
+    }
+  ],
+  "blocks": [
+    {
+      "path": ".gitattributes",
+      "kind": "yaml",
+      "marker": "# tenet:begin v0.0.0",
+      "previous_existed": false,
+      "previous_block": null,
+      "prefix_sep": ""
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "kind": "markdown",
+      "marker": "<!-- tenet:begin v0.0.0 -->",
+      "previous_existed": false,
+      "previous_block": null,
+      "prefix_sep": ""
+    },
+    {
+      "path": ".gitignore",
+      "kind": "yaml",
+      "marker": "# tenet:begin v0.0.0",
+      "previous_existed": false,
+      "previous_block": null,
+      "prefix_sep": ""
+    },
+    {
+      "path": "AGENTS.md",
+      "kind": "markdown",
+      "marker": "<!-- tenet:begin v0.0.0 -->",
+      "previous_existed": false,
+      "previous_block": null,
+      "prefix_sep": ""
+    }
+  ],
+  "keys": []
+}

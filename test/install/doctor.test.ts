@@ -158,6 +158,14 @@ test("doctor makes a missing lock a structural exit with the canonical detail", 
     finding.code === "TN-LOCK-MISSING" &&
     finding.message === "Lock file tenet.lock was not found." &&
     finding.fix === "Run `tenet init` to create and pin tenet.lock."));
+  const expected = new Map<string, string>();
+  const expectedRoot = path.join(casesRoot, "n07-doctor-missing-lock", "expected", "01-doctor", "tree");
+  for (const name of await readdir(expectedRoot)) {
+    expected.set(name, await readFile(path.join(expectedRoot, name), "utf8"));
+  }
+  for (const [name, contents] of expected) {
+    assert.equal(await readFile(path.join(repo.path, name), "utf8"), contents);
+  }
 });
 
 test("doctor public result contains only checks", async (t) => {
@@ -173,6 +181,24 @@ test("doctor public result contains only checks", async (t) => {
   });
 
   assert.deepEqual(Object.keys(result), ["checks"]);
+});
+
+test("doctor treats a missing gh executable as an optional success", async (t) => {
+  const repo = await tmpRepo("doctor-gh-optional");
+  t.after(repo.cleanup);
+  await copyBefore("n07-doctor-missing-lock", repo.path);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "fixture"]);
+  const result = await install.doctorEvaluation({
+    cwd: repo.path,
+    environment: environment({ tools: { gh: null } }),
+    verifyLock: async () => ({ ok: true, path: kitPath, sha256: "", skipped: true, lock_sha256: null }),
+  });
+  assert.deepEqual(result.checks[3], {
+    name: "gh",
+    ok: true,
+    detail: "gh CLI not found (optional)",
+  });
 });
 
 test("doctor maps a kit digest mismatch without changing a package mismatch", async (t) => {

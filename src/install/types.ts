@@ -53,6 +53,7 @@ export type HostContext = {
   cwd: string;
   platform: NodeJS.Platform | string;
   localProfileRoot?: string;
+  localProfileRoots?: Partial<Record<string, string>>;
   windowsCommandShimRequired?: string[];
 };
 
@@ -179,6 +180,7 @@ export type ManifestCreated = {
 
 export type ManifestBlock = PlannedBlock & {
   marker: string;
+  previous_existed: boolean;
   previous_block?: string | null;
   prefix_sep?: "" | "\n" | "\r\n";
 };
@@ -197,11 +199,22 @@ export type InstallManifest = {
   keys: ManifestKey[];
 };
 
+export type LocalManifestKey = ManifestKey & {
+  host: string;
+};
+
+export type LocalManifest = {
+  schema_version: 1;
+  profile_roots: Record<string, string>;
+  keys: LocalManifestKey[];
+};
+
 export type PendingWrite = {
   id: string;
   kind: "file" | "block" | "key" | "local_key";
   path: string;
   pointer?: string;
+  profile_root?: string;
   before_sha256: string | null;
   after_sha256: string;
   content?: string;
