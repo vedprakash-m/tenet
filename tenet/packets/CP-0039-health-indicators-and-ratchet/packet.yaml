@@ -6,12 +6,12 @@ priority: standard
 due: null
 levels: [L3, L4]
 serves: [V-P9, V-M10]
-implements: [R-175, R-176, R-177, R-178]
+implements: [R-175, R-176, R-177]
 milestone: M1
 source: "specs/plan.md"
 stage: triage
 status: parked
-blocked_by: [CP-0024, CP-0035, CP-0037]
+blocked_by: [CP-0024]
 unblocks: []
 owner_role: null
 claimed_by: null
