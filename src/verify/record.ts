@@ -17,6 +17,7 @@ import { keepRecord, type RecordsStore } from "./records.js";
 export type VerifyEvent =
   | { kind: "workflow_run"; repository: string; run: WorkflowRun; pulls?: number[]; base?: string }
   | { kind: "edited"; repository: string; number: number };
+type UnmergedClose = { kind: "pull_request"; action: "closed"; merged: false; repository: string; number: number };
 export type CardResult = { card: ProofCard; conclusion: Conclusion; wrote: boolean };
 type Evaluation = CardResult & { work: string; run: WorkflowRun | null; rules: ProofCard["rules"]; level: Policy["level"] };
 type Subjects = { cwd: string; stale: boolean; close(): Promise<void> };
@@ -297,7 +298,8 @@ export async function record(event: VerifyEvent, deps: VerifyDeps, options: Reco
   return first;
 }
 
-export async function recordAll(event: VerifyEvent, deps: VerifyDeps, options: RecordOptions): Promise<CardResult[]> {
+export async function recordAll(event: VerifyEvent | UnmergedClose, deps: VerifyDeps, options: RecordOptions): Promise<CardResult[]> {
+  if (event.kind === "pull_request") return [];
   const { forge } = options;
   const prs = event.kind === "edited" ? [await forge.getPullRequest(event.number)] : event.pulls?.length
     ? await Promise.all([...new Set(event.pulls)].map((number) => forge.getPullRequest(number)))
