@@ -623,4 +623,4 @@ export async function bless(options: BlessOptions = {}, io: BlessIO = {}): Promi
   return result.result;
 }
 
-export { reader as readCitationSource, matter as readSpecMatter, documentText as writeSpecMatter, governing as isGovernedSection };
+export { measures as measureStatements, reader as readCitationSource, matter as readSpecMatter, documentText as writeSpecMatter, governing as isGovernedSection };
