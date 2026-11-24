@@ -13,6 +13,7 @@ const { keepRecord, recordsFiles } = await import("../../dist/verify/records.js"
 
 const { parseDoc } = await import("../../dist/specs/parse.js");
 const { sectionDigest } = await import("../../dist/specs/sections.js");
+const { loadPolicy } = await import("../../dist/policy/index.js");
 const { renderCheckSummary } = await import("../../dist/verify/card.js");
 
 const repository = "fixture/checkout";
@@ -247,6 +248,15 @@ async function recordFixture(t: import("node:test").TestContext, options: {
   const repo = await tmpRepo("verify-regression");
   t.after(repo.cleanup);
   await repo.write("README.md", "verification fixture\n");
+  await repo.write("tenet.yaml", [
+    "standard: 0.1.0-alpha.0",
+    "kit_path: kit",
+    "specs:",
+    "  id_prefix: R",
+    "  documents: [{path: intent.md, level: L1}]",
+    "checks: {unit: {run: npm test, report: junit}}",
+    "",
+  ].join("\n"));
   for (const [file, content] of Object.entries(options.before ?? {})) await repo.write(file, content);
   repo.git(["add", "-A"]);
   repo.git(["commit", "-qm", "base"]);
@@ -256,13 +266,13 @@ async function recordFixture(t: import("node:test").TestContext, options: {
   repo.git(["commit", "-qm", "test subject"]);
   const head = repo.git(["rev-parse", "HEAD"]).trim();
   const run = { id: "42", attempt: 1, workflow: "Tenet tests", head, repository, startedAt: at };
-  const pull = { number: 1, head, base, body };
+  const pull = { number: 1, head, base, body: body.replace("C-1", "R-1") };
   const store = memoryStore();
   const order: string[] = [];
   const checkRuns: Array<{ summary: string; conclusion: string }> = [];
   const deps = {
     ...emptyDeps,
-    policy: async () => ({ ...policy, level: options.level ?? "observe" }),
+    policy: async (ref: string, cwd: string) => ({ ...await loadPolicy({ ref, cwd }), level: options.level ?? "observe" }),
     verifyLock: async () => {},
     touched: async () => [{ id: "R-1", why: "implements" }],
     ...(options.realSpecs ? {
