@@ -1,0 +1,196 @@
+{
+  "schema": "bundle-of-full-records",
+  "subject": {
+    "kind": "git-tree",
+    "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "base": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "actor": {
+    "id": "builder-1",
+    "kind": "agent",
+    "roles": [
+      "builder"
+    ],
+    "keys": [
+      {
+        "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAITest",
+        "added": "2026-11-23T00:00:00Z"
+      }
+    ],
+    "chain": [
+      "ved",
+      "runner",
+      "claude-code",
+      "bash"
+    ]
+  },
+  "claim": {
+    "id": "PERF-1",
+    "type": "measurement",
+    "selector": {
+      "station": "verify",
+      "lane": "careful",
+      "work_type": "feature",
+      "paths": [
+        "src/**"
+      ],
+      "areas": [
+        "core"
+      ]
+    },
+    "class": "performance",
+    "methods": [
+      "benchmark"
+    ],
+    "pass_rule": {
+      "rule": "p95-latency-ms",
+      "tolerance": 0.05
+    },
+    "lifetime": "continuing",
+    "owner": "ved",
+    "waivable": false,
+    "state": "held"
+  },
+  "evidence": [
+    {
+      "id": "EV-CHECK-1",
+      "subject": {
+        "kind": "git-tree",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "claims": [
+        "R-12"
+      ],
+      "kind": "check",
+      "method": "integration",
+      "cases": {
+        "expected": 3,
+        "executed": 3,
+        "passed": 3,
+        "skipped": 0
+      },
+      "result": "pass",
+      "strength": {
+        "provenance": "ci-observed",
+        "independence": "different-definition"
+      },
+      "producer": {
+        "source": "ci",
+        "verifier_version": "0.1.0-alpha.1",
+        "policy_revision": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "workflow_run": "1001-1"
+      },
+      "inputs": {
+        "runner_image": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "lockfile": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "check_definition": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "valid_until": "2026-12-01T00:00:00Z",
+      "payload": {
+        "report_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "log_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "fix_hints": [
+          {
+            "rule_id": "citations-valid",
+            "path": "src/retry.ts",
+            "hint": "Update line range"
+          }
+        ]
+      },
+      "identity": {
+        "run": "1001",
+        "attempt": 1
+      }
+    },
+    {
+      "id": "EV-MEAS-1",
+      "subject": {
+        "kind": "git-tree",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "claims": [
+        "PERF-1"
+      ],
+      "kind": "measurement",
+      "method": "benchmark",
+      "cases": {
+        "expected": 1,
+        "executed": 1,
+        "passed": 1,
+        "skipped": 0
+      },
+      "result": "pass",
+      "strength": {
+        "provenance": "ci",
+        "independence": "same-definition"
+      },
+      "producer": {
+        "source": "ci",
+        "policy_revision": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "inputs": {
+        "lockfile": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "payload": {
+        "metric": "p95_ms",
+        "value": 42,
+        "threshold": 50,
+        "direction": "lower-is-better",
+        "samples": 30,
+        "baseline_value": 41,
+        "rule": "p95-latency-ms",
+        "scope": "api",
+        "confidence": 0.95
+      }
+    },
+    {
+      "id": "EV-REV-1",
+      "subject": {
+        "kind": "git-tree",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "claims": [
+        "CRITIC-1"
+      ],
+      "kind": "review",
+      "method": "critic-review",
+      "cases": {
+        "expected": 1,
+        "executed": 1,
+        "passed": 1,
+        "skipped": 0
+      },
+      "result": "pass",
+      "strength": {
+        "provenance": "ci",
+        "independence": "different-model-family"
+      },
+      "producer": {
+        "source": "ci",
+        "policy_revision": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "inputs": {
+        "check_definition": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "payload": {
+        "round": 1,
+        "judge": "spec-reviewer",
+        "model_family": "frontier-a",
+        "status": "complete",
+        "findings": [
+          {
+            "id": "F-1",
+            "origin": "introduced",
+            "location": "src/retry.ts:42",
+            "substantiated": true
+          }
+        ],
+        "invalid": [],
+        "resolved": [
+          "F-1"
+        ],
+        "requires_human": false
+      }
+    }
+  ]
+}

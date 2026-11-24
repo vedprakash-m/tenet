@@ -1,0 +1,6 @@
+loop: broken-define
+kind: station
+applies: {station: define, lanes: [careful]}
+limits: {rounds: 2}
+steps:
+  - {id: next, kind: route, on: {advance: done, refuse: stop}}

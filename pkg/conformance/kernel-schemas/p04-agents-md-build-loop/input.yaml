@@ -1,0 +1,10 @@
+loop: build                       # kit/loops/build.yaml
+kind: station
+applies: {station: build, lanes: [quick, careful, deep]}
+limits: {rounds: 2}
+steps:
+  - {id: work, kind: agent, card: builder, inputs: [assignment, context, tests], outputs: [result]}
+  - {id: checks, kind: script, run: verify --run-checks --local}   # writes a local advisory card for the judge
+  - {id: inspect, kind: agent, card: judge, inputs: [result, card], outputs: [findings], tools: read-only, lanes: [careful, deep]}
+  - {id: next, kind: route, on: {advance: done, human-gate: decide, refuse: {if: "rounds < limits.rounds", goto: "fix:work", else: decide}}}
+  - {id: decide, kind: human_gate, decision: accept-findings, options: [{option: stop, goto: stop}, {option: revise, goto: "fix:work"}, {option: accept-with-findings, goto: done}]}

@@ -1,0 +1,7 @@
+{
+  "schema": "claim",
+  "document": {
+    "id": "CLM-1",
+    "type": "acceptance"
+  }
+}
