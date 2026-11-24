@@ -1,0 +1,8 @@
+{
+  "op": "attest",
+  "level": "verify",
+  "visibility": "private",
+  "ed25519_key_present": false,
+  "sigstore_consented": false,
+  "oidc_available": false
+}

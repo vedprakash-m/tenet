@@ -24,6 +24,14 @@
       }
     },
     {
+      "id": "02b-stage-pr",
+      "kind": "git",
+      "args": [
+        "add",
+        "test/retry.test.ts"
+      ]
+    },
+    {
       "id": "03-git-commit",
       "kind": "git",
       "args": [
@@ -94,7 +102,7 @@
         "number": 7
       },
       "assertRecordsTipUnchanged": true,
-      "expectedOmitted": "proposals-r7#Q6"
+      "expectedJson": "expected/05-verify-closed.json"
     }
   ]
 }

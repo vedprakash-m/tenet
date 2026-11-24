@@ -1,10 +1,14 @@
 
+import { message } from "../core/messages.js";
+import { fail } from "../core/output.js";
 import { contextSummary, contextWithFindings } from "../context/index.js";
 
 type CommandContext = {
+  args: string[];
   cwd: string;
   options: Record<string, string | boolean | string[]>;
   json: boolean;
+  quiet: boolean;
   stdout: { write(value: string | Uint8Array): unknown };
 };
 
@@ -25,6 +29,13 @@ const command = {
     { flags: "--budget-tokens <n>" },
   ],
   async run(commandContext: CommandContext) {
+    if (commandContext.args.length > 0) {
+      const words = message("TN-USAGE-CONTEXT", {
+        command: "context",
+        detail: `unexpected positional arguments: ${commandContext.args.join(", ")}`,
+      });
+      throw fail("TN-USAGE-CONTEXT", words.message, words.fix);
+    }
     const budget = commandContext.options["--budget-tokens"];
     const paths = list(commandContext.options["--paths"]);
     const ids = list(commandContext.options["--ids"]);
@@ -37,7 +48,7 @@ const command = {
       ...(commandContext.options["--include-drafts"] === true ? { include_drafts: true } : {}),
       ...(typeof budget === "string" ? { budget_tokens: Number(budget) } : {}),
     });
-    if (!commandContext.json) {
+    if (!commandContext.json && !commandContext.quiet) {
       commandContext.stdout.write(
         contextSummary(details.result, details.findings, details.validBlessedSections),
       );

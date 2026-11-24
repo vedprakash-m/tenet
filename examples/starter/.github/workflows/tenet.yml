@@ -1,0 +1,87 @@
+# Tenet package pin: 0.1.0-alpha.0
+name: Tenet recorder
+on:
+  workflow_run: {workflows: [Tenet tests], types: [completed]}
+  pull_request_target: {types: [edited]}
+permissions: {contents: write, checks: write, pull-requests: read, actions: read}
+concurrency: {group: "tenet-record-${{ github.event.workflow_run.head_sha || github.event.pull_request.head.sha }}", cancel-in-progress: false}
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          ref: "${{ github.event.repository.default_branch }}"
+          fetch-depth: 1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with: {node-version: "22"}
+      - name: Install Tenet from the target lock
+        shell: bash
+        env: {TENET_GITHUB_TOKEN: "${{ github.token }}"}
+        run: |
+          node --input-type=module <<'TENET_BOOTSTRAP'
+          import { execFileSync } from "node:child_process";
+          import { createHash } from "node:crypto";
+          import { mkdirSync, readFileSync } from "node:fs";
+          import path from "node:path";
+
+          const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
+          const run = event.workflow_run;
+          const git = (...args) => execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+          let base = event.pull_request?.base?.sha ?? run?.pull_requests?.[0]?.base?.sha ?? event.before;
+          if (!base && run?.event === "pull_request") {
+            const repo = process.env.GITHUB_REPOSITORY;
+            if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo)) throw new Error("Invalid repository.");
+            for (let page = 1; ; page += 1) {
+              const url = new URL(process.env.GITHUB_API_URL + "/repos/" + repo + "/pulls");
+              url.searchParams.set("state", "open");
+              url.searchParams.set("per_page", "100");
+              url.searchParams.set("page", String(page));
+              const response = await fetch(url, {
+                headers: { authorization: "Bearer " + process.env.TENET_GITHUB_TOKEN, accept: "application/vnd.github+json" },
+                redirect: "error", signal: AbortSignal.timeout(30_000),
+              });
+              if (!response.ok) throw new Error("Could not find the target lock.");
+              const pulls = await response.json();
+              base = pulls.find((pull) => pull.head.sha === run.head_sha)?.base?.sha;
+              if (base || pulls.length < 100) break;
+            }
+          }
+          base ??= git("rev-parse", "HEAD");
+          if (!/^(?!0+$)(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(base)) throw new Error("Invalid target revision.");
+          let raw;
+          try { raw = git("show", base + ":tenet.lock"); }
+          catch {
+            git("fetch", "--no-tags", "--filter=blob:none", "origin", base);
+            raw = git("show", base + ":tenet.lock");
+          }
+          let lock;
+          try { lock = JSON.parse(raw); }
+          catch {
+            lock = Object.create(null);
+            for (const row of raw.split(/\r?\n/)) {
+              if (!row.trim() || /^\s*(?:#|---$)/.test(row)) continue;
+              const entry = /^([a-z_0-9]+):\s*(['"]?)([^'"\s#]+)\2\s*(?:#.*)?$/.exec(row);
+              if (!entry || Object.hasOwn(lock, entry[1])) throw new Error("Invalid target lock.");
+              lock[entry[1]] = entry[3];
+            }
+          }
+          if (String(lock.schema_version) !== "1" ||
+              lock.package !== "@vedprakash-m/tenet" ||
+              !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(lock.version) ||
+              !/^sha512-[A-Za-z0-9+/]{86}==$/.test(lock.integrity)) throw new Error("Invalid target lock.");
+          const directory = path.join(process.env.RUNNER_TEMP, "tenet-tool");
+          mkdirSync(directory, { recursive: true });
+          const npm = (...args) => execFileSync(process.platform === "win32" ? "npm.cmd" : "npm", args, {
+            cwd: directory, encoding: "utf8", windowsHide: true, shell: process.platform === "win32",
+          });
+          const packed = JSON.parse(npm("pack", "--ignore-scripts", "--json", lock.package + "@" + lock.version))[0];
+          if (!/^vedprakash-m-tenet-[A-Za-z0-9.-]+\.tgz$/.test(packed.filename)) throw new Error("Invalid package filename.");
+          const actual = "sha512-" + createHash("sha512").update(readFileSync(path.join(directory, packed.filename))).digest("base64");
+          if (actual !== lock.integrity) throw new Error("Tenet package integrity differs from the target lock.");
+          npm("install", "--no-save", "--ignore-scripts", "--no-audit", "--no-fund", "./" + packed.filename);
+          TENET_BOOTSTRAP
+      - name: Record CI proof
+        shell: bash
+        env: {TENET_GITHUB_TOKEN: "${{ github.token }}"}
+        run: node "$RUNNER_TEMP/tenet-tool/node_modules/@vedprakash-m/tenet/dist/cli.js" verify --record

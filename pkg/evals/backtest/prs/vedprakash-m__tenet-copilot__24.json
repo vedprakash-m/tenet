@@ -1,0 +1,238 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 24,
+  "title": "Read project intent back after .tenet/ is lost (CON-07)",
+  "body": "## What\n\nPRD CON-07: \"If `.tenet/` is lost, Tenet shall reconstruct from repository memory and Git history, ask only consequential unknowns and never fabricate evidence.\"\n\nAt the first `open` with **no state document**, if the repository has Tenet's marks (managed blocks in `INTENT.md`, damaged markers, `Tenet-Work` trailers, or unmerged `tenet/` branches):\n\n- A `reconstructed-from-repository` note (new reason code, exit 0) lists which shared files are present, commits per work label in Git history (all refs), unmerged `tenet/` branches, shallow history, blocks it could not read, and a fixed list of what **cannot** be recovered (grants, consents, approvals, receipts, review judgments, locks, adoption/trust, contracts and budgets, verification and test links, plan-item links and states, decision quotes).\n- The work label sequence continues past the highest label in history (e.g. `W-0007` in history means the new contract is `W-0008`), whatever the answer.\n- If `INTENT.md` has blocks that read back exactly, one chat question, `reconstruction-review` (exit 3), is bound to the hash of the recovered content. Other calls are fenced until it is answered, the same way quarantine is. `decide adopt --target reconstruction --answer reconstruction-review=use` loads the recovered content as **unadopted** intent and records `project.reconstructed` (IDs and what was not recovered). `=fresh` keeps an empty intent. If `INTENT.md` changed after the question, nothing is recovered and the question is asked again.\n- `INTENT.md` and Git are only read.\n\nNever fabricated: no grant, consent, receipt, trust entry, lock, review or contract is created. `adoption.intent` stays `undecided`. Recovered elements have `origin: \"tenet\"` and `verifiedBy: []`, plan items come back `proposed` with no element links, and decision records have no quote. A block is recovered only when re-rendering what was read gives the file's text again (new pure `core/reconstruct.ts`, the inverse of `renderIntent`); any other block is listed as not recovered.\n\n## Simplifications (disclosed; not a full implementation of TS §15.3 / UX §6 / local `specs/reconstruction.md`)\n\n- No `docs/decisions/` or test-tag scan, no proposed lock manifest, and no policy or charter re-adoption flow beyond saying the files must be adopted again.\n- No 500-commit bound: the trailer scan reads all refs.\n- Damaged markers do **not** stop `open` (TS §7.8 says stop). They produce an `intent-markers-invalid` note and nothing is recovered.\n- It does not ask which unfinished work to resume. Unmerged `tenet/` branches are listed as facts; their contracts are lost.\n- Offered only at the first `open` with no state document. After a quarantine both questions are queued, quarantine first; that ordering is **not tested**.\n- `inspect` does not mention reconstruction.\n- ID allocators are not seeded after a decline, so a new ID may equal one in `INTENT.md` (that block is then kept as a human edit).\n- `project.reconstructed` is a new optional field in a non-strict object, so an older kernel drops it on write.\n- Prior adoption is unknown: the same repository content after an adopted or a declined history is treated the same.\n- No independent review or owner sign-off of the contract. The spec's §14 gaps remain open.\n\n## Tests (`packages/kernel/test/reconstruction.test.ts`, all tagged `[CON-07]`)\n\n- Parser round trip of every block kind; a hand-edited block is skipped; damaged markers recover nothing. Runs on every platform.\n- `GitCli.tenetHistory` on real Git: labels per commit on all refs, a forged `W-99999999999` ignored, unmerged versus merged `tenet/` branches. Runs on every platform.\n- Five `open` tests (POSIX only, since the kernel refuses mutating work on Windows): one question, label `W-0008`, no authority or evidence, fence, accept, asked once; decline; stale answer; a real adopt → `rm -r .tenet` → reconstruct; no marks means no change.\n\n## Interaction with GIT-09\n\n`shared-merge.test.ts` commits managed `INTENT.md` blocks before its first `open`. With no `.tenet/`, that is the CON-07 footprint, so `open` now asks `reconstruction-review`, which blocks `finish` until answered. The test setup now asserts the question and answers `fresh`; the GIT-09 behavior under test is unchanged.\n\n## Local checks (Windows)\n\n- Typecheck, `lint-arch`, `lint-skills` and `lint-quality` pass.\n- `npm run privacy` and the privacy range check pass.\n- `coverage --milestone R1`: CON-07 is now mapped. It still exits 1 because of other unmapped Musts (EVD-04, QLT-05), several of which other sessions are building.\n- The five `open` tests have **not run locally**; they run only in this PR's Linux and macOS CI.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\n\n",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-10T23:10:21Z",
+  "merged_at": "2026-11-12T00:20:22Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "con-07-reconstruction",
+  "head": "con-07-reconstruction",
+  "base_sha": "5482e1da783015ad41588d4402d1b66ee8fb75de",
+  "head_sha": "6a8f5b4af5ac0d5f203bd0915a564333d0f4caa9",
+  "merge_sha": "4d33af5fe22e28a614fa8eda8117eea0a723bb77",
+  "diff_sha256": "585afc4c17001bccd8af2f096b221a817d53170377033fc10a990ea10503e0fc",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-12T00:20:19Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "bb07f92676c3b7c047152d8e56b23851d19e37ba",
+      "message": "Read project intent back from INTENT.md after .tenet/ is lost (CON-07)",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "78ffedced36b6594ec0ec85a022e264e4440d7a2",
+      "message": "Changelog: CON-07 reconstruction and its disclosed simplifications",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "2949ff52194b9d1f3763191ef1012908cb9d88f1",
+      "message": "Fit the Git history read within the git-cli budget after GIT-09",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "0d67761d5237fb50dc17809c113c8d0ec60e1bac",
+      "message": "Fix the unmerged-branch read and the CON-07 and GIT-09 test interactions",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "6a8f5b4af5ac0d5f203bd0915a564333d0f4caa9",
+      "message": "Merge remote-tracking branch 'origin/main' into con-07-reconstruction",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/git-cli.ts",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/reasons.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/reconstruct.ts",
+      "status": "added",
+      "additions": 112,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/schemas.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/adopt.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/reconstruction.ts",
+      "status": "added",
+      "additions": 107,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-mutate.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-version.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/ports/types.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/open-new.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/open.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/reconstruction.test.ts",
+      "status": "added",
+      "additions": 200,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/shared-merge.test.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet/SKILL.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:17:24Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-12T00:28:44Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:18:30Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:17:29Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:51:29Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:20:36Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-12T00:28:01Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-12T00:17:04Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:17:25Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:17:26Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-12T00:19:11Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:50:21Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:41:50Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:19:22Z"
+    }
+  ],
+  "binary_paths": []
+}

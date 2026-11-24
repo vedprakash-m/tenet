@@ -1,0 +1,22 @@
+{
+  "scenarios": [
+    {
+      "name": "row6-trust-surface",
+      "verdict": "human gate",
+      "disposition": "blocks",
+      "lead": "TN-GATE-TRUST",
+      "reasons": [
+        "TN-GATE-TRUST"
+      ]
+    },
+    {
+      "name": "row7-review-incomplete",
+      "verdict": "human gate",
+      "disposition": "advises",
+      "lead": "TN-GATE-REVIEW",
+      "reasons": [
+        "TN-GATE-REVIEW"
+      ]
+    }
+  ]
+}

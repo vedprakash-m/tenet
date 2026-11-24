@@ -1,0 +1,49 @@
+{
+  "scenarios": [
+    {
+      "name": "no-creation",
+      "events": [
+        {
+          "id": "01JDF000000000000000000001",
+          "prev": [],
+          "type": "work.moved",
+          "work": "CP-1008",
+          "time": "2026-11-23T12:00:00Z",
+          "by": "ved",
+          "data": {
+            "station": "define"
+          }
+        }
+      ]
+    },
+    {
+      "name": "competing-creations",
+      "events": [
+        {
+          "id": "01JDF000000000000000000001",
+          "prev": [],
+          "type": "work.created",
+          "work": "CP-1009",
+          "time": "2026-11-23T12:00:00Z",
+          "by": "a1",
+          "data": {
+            "title": "First",
+            "station": "intake"
+          }
+        },
+        {
+          "id": "01JDF000000000000000000002",
+          "prev": [],
+          "type": "work.created",
+          "work": "CP-1009",
+          "time": "2026-11-23T12:00:00Z",
+          "by": "a2",
+          "data": {
+            "title": "Second",
+            "station": "build"
+          }
+        }
+      ]
+    }
+  ]
+}

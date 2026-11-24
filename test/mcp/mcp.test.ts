@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { Readable } from "node:stream";
 import path from "node:path";
 import test from "node:test";
 import { serveMcp } from "../../dist/mcp/index.js";
-import { contextSummary, contextWithFindings } from "../../dist/context/index.js";
+import { context, contextSummary, contextWithFindings } from "../../dist/context/index.js";
+import { git } from "../../dist/core/git.js";
 import { sectionDigest } from "../../dist/specs/sections.js";
+
+const ALG_10_ROOT = path.join(process.cwd(), "pkg/conformance/alg-10");
 
 class Output {
   text = "";
@@ -14,8 +18,15 @@ class Output {
   }
 }
 
+// Temporary repositories live under the shared test root, never in the project root.
+async function testRoot(): Promise<string> {
+  const root = path.resolve(".test-tmp", String(process.pid));
+  await mkdir(root, { recursive: true });
+  return root;
+}
+
 async function repo(): Promise<{ cwd: string; write(filename: string, text: string): Promise<void> }> {
-  const cwd = await mkdtemp(path.join(process.cwd(), ".cp45-mcp-"));
+  const cwd = await mkdtemp(path.join(await testRoot(), "cp45-mcp-"));
   const value = {
     cwd,
     async write(filename: string, text: string) {
@@ -62,6 +73,7 @@ async function repo(): Promise<{ cwd: string; write(filename: string, text: stri
 async function session(
   cwd: string,
   requests: unknown[],
+  now = new Date("2026-11-23T12:00:00Z"),
 ): Promise<{ responses: Array<Record<string, unknown>>; stderr: string }> {
   const stdout = new Output();
   const stderr = new Output();
@@ -70,13 +82,150 @@ async function session(
     stdin: Readable.from(requests.map((item) => `${JSON.stringify(item)}\n`)),
     stdout,
     stderr,
-    now: () => new Date("2026-11-23T12:00:00Z"),
+    now: () => now,
   });
   return {
     responses: stdout.text.trim().split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line)),
     stderr: stderr.text,
   };
 }
+
+function matchesProjection(actual: unknown, expected: unknown, location: string): void {
+  if (
+    expected &&
+    typeof expected === "object" &&
+    !Array.isArray(expected) &&
+    "$assert" in expected
+  ) {
+    const instruction = expected as { $assert: string; value: unknown };
+    assert.deepEqual(
+      Object.keys(expected).sort(),
+      ["$assert", "value"],
+      `${location} assertion must contain only $assert and value`,
+    );
+    if (instruction.$assert === "size") {
+      assert.ok(Array.isArray(actual), `${location} is not an array`);
+      assert.equal(actual.length, instruction.value, location);
+      return;
+    }
+    if (instruction.$assert === "contains") {
+      assert.ok(Array.isArray(actual), `${location} is not an array`);
+      assert.ok(Array.isArray(instruction.value), `${location} contains value is not an array`);
+      for (const needle of instruction.value) {
+        assert.ok(
+          actual.some((candidate) => {
+            try {
+              matchesProjection(candidate, needle, location);
+              return true;
+            } catch {
+              return false;
+            }
+          }),
+          `${location} does not contain the expected projection`,
+        );
+      }
+      return;
+    }
+    assert.fail(`${location} uses unknown assertion ${instruction.$assert}`);
+  }
+  if (Array.isArray(expected)) {
+    assert.ok(Array.isArray(actual), `${location} is not an array`);
+    assert.equal(actual.length, expected.length, `${location} length`);
+    for (let index = 0; index < expected.length; index += 1) {
+      matchesProjection(actual[index], expected[index], `${location}[${index}]`);
+    }
+    return;
+  }
+  if (expected && typeof expected === "object") {
+    assert.ok(actual && typeof actual === "object" && !Array.isArray(actual), `${location} is not an object`);
+    for (const [key, value] of Object.entries(expected)) {
+      assert.ok(Object.hasOwn(actual, key), `${location} is missing ${key}`);
+      matchesProjection(
+        (actual as Record<string, unknown>)[key],
+        value,
+        `${location}.${key}`,
+      );
+    }
+    return;
+  }
+  assert.deepEqual(actual, expected, location);
+}
+
+async function conformanceRepo(files: Record<string, string>): Promise<string> {
+  const cwd = await mkdtemp(path.join(await testRoot(), "cp45-conformance-"));
+  for (const [filename, contents] of Object.entries(files)) {
+    const target = path.join(cwd, ...filename.split("/"));
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, contents);
+    assert.equal(
+      await readFile(target, "utf8"),
+      contents,
+      `materialized fixture bytes changed for ${filename}`,
+    );
+  }
+  return cwd;
+}
+
+test("runs every checked-in ALG-10 conformance case and MCP parity projection", async (t) => {
+  const cases = (await readdir(ALG_10_ROOT, { withFileTypes: true }))
+    .filter((entry) => entry.isDirectory())
+    .sort((left, right) => left.name.localeCompare(right.name));
+  assert.equal(cases.length, 16);
+
+  for (const entry of cases) {
+    await t.test(entry.name, async () => {
+      const input = JSON.parse(
+        await readFile(path.join(ALG_10_ROOT, entry.name, "input.json"), "utf8"),
+      ) as {
+        operation: "context" | "mcp";
+        options?: Record<string, unknown>;
+        requests?: unknown[];
+        alsoContext?: Record<string, unknown>;
+        repo: { now: string; files: Record<string, string> };
+      };
+      const expected = JSON.parse(
+        await readFile(path.join(ALG_10_ROOT, entry.name, "expected.json"), "utf8"),
+      ) as Record<string, unknown>;
+      const cwd = await conformanceRepo(input.repo.files);
+      try {
+        if (input.operation === "context") {
+          const result = await context({
+            cwd,
+            ...(input.options ?? {}),
+          } as Parameters<typeof context>[0]);
+          assert.deepEqual(
+            Object.keys(result),
+            ["blessed", "drafts", "index", "omitted", "truncated", "rules"],
+          );
+          matchesProjection(result, expected, entry.name);
+        } else if (input.operation === "mcp") {
+          const output = await session(
+            cwd,
+            input.requests ?? [],
+            new Date(input.repo.now),
+          );
+          assert.equal(output.stderr, "");
+          matchesProjection(output.responses, expected.responses, `${entry.name}.responses`);
+          if (input.alsoContext) {
+            const direct = await context({
+              cwd,
+              ...input.alsoContext,
+            } as Parameters<typeof context>[0]);
+            assert.deepEqual(
+              Object.keys(direct),
+              ["blessed", "drafts", "index", "omitted", "truncated", "rules"],
+            );
+            matchesProjection(direct, expected.alsoContext, `${entry.name}.alsoContext`);
+          }
+        } else {
+          assert.fail(`${entry.name} has unknown operation ${(input as { operation: unknown }).operation}`);
+        }
+      } finally {
+        await rm(cwd, { recursive: true, force: true });
+      }
+    });
+  }
+});
 
 test("serves scripted NDJSON without replies for notifications", async () => {
   const target = await repo();
@@ -200,6 +349,16 @@ test("returns status and next actions from the working policy and packet", async
 test("writes proposals only inside the named packet folder", async () => {
   const target = await repo();
   try {
+    await git(["init"], { cwd: target.cwd });
+    await git(["config", "core.autocrlf", "false"], { cwd: target.cwd });
+    await git(["config", "core.safecrlf", "false"], { cwd: target.cwd });
+    await git(["config", "user.name", "Fixture"], { cwd: target.cwd });
+    await git(["config", "user.email", "fixture@example.com"], { cwd: target.cwd });
+    await git(["add", "--all"], { cwd: target.cwd });
+    await git(["commit", "-m", "fixture"], { cwd: target.cwd });
+    await target.write("unrelated.txt", "keep staged\n");
+    await git(["add", "--", "unrelated.txt"], { cwd: target.cwd });
+
     const { responses } = await session(target.cwd, [
       {
         jsonrpc: "2.0",
@@ -224,9 +383,53 @@ test("writes proposals only inside the named packet folder", async () => {
     const saved = JSON.parse(await readFile(path.join(target.cwd, ...result.path.split("/")), "utf8"));
     assert.equal(saved.work, "CP-0045");
     assert.equal(saved.kind, "escalation");
+    assert.equal(
+      (await git(["show", "--format=", "--name-only", "HEAD"], { cwd: target.cwd })).trim(),
+      result.path,
+    );
+    assert.deepEqual(
+      JSON.parse(await git(["show", `HEAD:${result.path}`], { cwd: target.cwd })),
+      saved,
+    );
+    assert.equal(
+      (await git(["diff", "--cached", "--name-only"], { cwd: target.cwd })).trim(),
+      "unrelated.txt",
+    );
   } finally {
     await rm(target.cwd, { recursive: true, force: true });
   }
+});
+
+test("rejects global JSON mode before serving MCP protocol output", () => {
+  const cli = path.join(process.cwd(), "dist", "cli.js");
+  const child = spawnSync(
+    process.execPath,
+    [cli, "--json", "mcp"],
+    { encoding: "utf8", input: "" },
+  );
+  assert.equal(child.status, 2);
+  assert.equal(child.stderr, "");
+  const lines = child.stdout.trim().split(/\r?\n/);
+  assert.equal(lines.length, 1);
+  const envelope = JSON.parse(lines[0] ?? "{}") as {
+    ok: boolean;
+    errors: Array<{ code: string }>;
+  };
+  assert.equal(envelope.ok, false);
+  assert.equal(envelope.errors[0]?.code, "TN-USAGE-MCP");
+});
+
+test("rejects positional arguments before starting the MCP server", () => {
+  const cli = path.join(process.cwd(), "dist", "cli.js");
+  const child = spawnSync(
+    process.execPath,
+    [cli, "mcp", "stray"],
+    { encoding: "utf8", input: "" },
+  );
+  assert.equal(child.status, 2);
+  assert.equal(child.stdout, "");
+  assert.match(child.stderr, /TN-USAGE-MCP/);
+  assert.match(child.stderr, /unexpected positional arguments: stray/);
 });
 
 test("invalid JSON and invalid tools use standard JSON-RPC errors", async () => {

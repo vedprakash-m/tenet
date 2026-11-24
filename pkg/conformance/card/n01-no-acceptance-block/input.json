@@ -24,7 +24,7 @@
       "base": "b222222222222222222222222222222222222222",
       "acceptance_digest": "7450b7f5180b38f072616b01e41778f94dfb8803ae28df7e4830bf99f0ed5141",
       "implemented": [],
-      "policy_blob": "2f6390fade593f8db48ed4d8a8b946a9aa6c84d3b1e49d6c71d9694fdf878412",
+      "policy_blob": "3b981a41598a2e16170db16ba4a16519bd33e8b7",
       "tenet_version": "0.1.0-alpha.0"
     },
     "legacy_event": {
@@ -79,14 +79,16 @@
   "repo": {
     "baseFiles": {
       "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"C\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ],\n  \"checks\": {\n    \"unit\": {\n      \"run\": \"npm test\",\n      \"report\": \"junit\",\n      \"report_path\": \".tenet/reports/unit.xml\"\n    }\n  }\n}\n",
-      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_copy\":\"tenet/blessed/intent/requirements.md\",\"blessed_by\":\"ved\",\"blessed_at\":\"2026-11-20T00:00:00Z\",\"recorded\":\"self\",\"flags\":[]}\n---\n## Requirements\n### C-1: Checkout retries\nA payment that times out is retried once, never twice. [src/checkout/retry.ts:1-10](src/checkout/retry.ts#L1-L10)\n\n### C-4: Checkout audit log\nEvery retry writes an audit entry in the same checkout folder. [src/checkout/audit.ts:1-8](src/checkout/audit.ts#L1-L8)\n",
-      "src/checkout/retry.ts": "export function retry() { return 1; }\n"
+      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:73355dc95a61ce3cd787a535d867500b2b47d04363c0facfd40ab62a4812115d\",\"blessed_digest\":\"sha256:73355dc95a61ce3cd787a535d867500b2b47d04363c0facfd40ab62a4812115d\",\"blessed_copy\":\"tenet/blessed/intent/requirements.md\",\"blessed_by\":\"ved\",\"blessed_at\":\"2026-11-20T00:00:00Z\",\"recorded\":\"self\",\"flags\":[]}\n---\n## Requirements\n- C-1 A payment that times out is retried once, never twice. {origin: observed; cites: src/checkout/retry.ts:1-1}\n",
+      "src/checkout/retry.ts": "export function retry() { return 1; }\n",
+      "tenet/blessed/intent/requirements.md": "- C-1 A payment that times out is retried once, never twice. {origin: observed; cites: src/checkout/retry.ts:1-1}\n"
     },
     "headFiles": {
       "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"C\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ],\n  \"checks\": {\n    \"unit\": {\n      \"run\": \"npm test\",\n      \"report\": \"junit\",\n      \"report_path\": \".tenet/reports/unit.xml\"\n    }\n  }\n}\n",
-      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_copy\":\"tenet/blessed/intent/requirements.md\",\"blessed_by\":\"ved\",\"blessed_at\":\"2026-11-20T00:00:00Z\",\"recorded\":\"self\",\"flags\":[]}\n---\n## Requirements\n### C-1: Checkout retries\nA payment that times out is retried once, never twice. [src/checkout/retry.ts:1-10](src/checkout/retry.ts#L1-L10)\n\n### C-4: Checkout audit log\nEvery retry writes an audit entry in the same checkout folder. [src/checkout/audit.ts:1-8](src/checkout/audit.ts#L1-L8)\n",
+      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:73355dc95a61ce3cd787a535d867500b2b47d04363c0facfd40ab62a4812115d\",\"blessed_digest\":\"sha256:73355dc95a61ce3cd787a535d867500b2b47d04363c0facfd40ab62a4812115d\",\"blessed_copy\":\"tenet/blessed/intent/requirements.md\",\"blessed_by\":\"ved\",\"blessed_at\":\"2026-11-20T00:00:00Z\",\"recorded\":\"self\",\"flags\":[]}\n---\n## Requirements\n- C-1 A payment that times out is retried once, never twice. {origin: observed; cites: src/checkout/retry.ts:1-1}\n",
       "src/checkout/retry.ts": "export function retry() { return 1; /* tuned */ }\n",
-      "test/checkout.retry.test.ts": "import { test } from \"node:test\";\ntest(\"retries once\", () => {});\n"
+      "test/checkout.retry.test.ts": "import { test } from \"node:test\";\ntest(\"retries once\", () => {});\n",
+      "tenet/blessed/intent/requirements.md": "- C-1 A payment that times out is retried once, never twice. {origin: observed; cites: src/checkout/retry.ts:1-1}\n"
     }
   }
 }

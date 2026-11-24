@@ -6,10 +6,10 @@ priority: standard
 due: null
 levels: [L3, L4]
 serves: [V-P9, V-M10]
-implements: [R-175, R-176, R-177, R-178]
+implements: [R-175, R-176, R-177]
 milestone: M1
 source: "specs/plan.md"
-stage: triage
+stage: commit
 status: parked
 blocked_by: [CP-0024]
 unblocks: []
@@ -23,3 +23,4 @@ history:                      # append-only; changes only through the tenet comm
   - {at: 2026-11-23T00:30Z, to: intake, by: Ved, reason: "seeded from plan v0.6 (L-0011), release 0.1.x"}
   - {at: 2026-11-23T00:30Z, from: intake, to: triage, by: Ved}
   - {at: 2026-11-23T00:30Z, to: parked, by: Ved, reason: "revisit when 0.1.0 is released"}
+  - {at: 2026-11-24T12:15Z, to: active, by: Ved, reason: "definition v6 approved (PR #11, L-0039); spec updates applied; ready for builder assignment"}

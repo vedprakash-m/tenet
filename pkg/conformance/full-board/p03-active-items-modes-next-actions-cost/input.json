@@ -1,0 +1,42 @@
+{
+  "op": "projectAndRender",
+  "now": "2026-11-23T15:00:00Z",
+  "snapshot": {
+    "read": {
+      "main": "9f3c2e1",
+      "branches": [
+        "pr-7"
+      ],
+      "records": "refs/tenet/records"
+    },
+    "policy": {
+      "level": "protect",
+      "rules": {
+        "tests-not-weakened": "enforce",
+        "protected-surfaces": "enforce",
+        "acceptance-passed": "advise"
+      }
+    },
+    "works": [
+      {
+        "id": "pr-7",
+        "title": "Add backoff jitter",
+        "lane": "quick",
+        "station": "verify",
+        "status": "waiting",
+        "run_cost": {
+          "amount": 0.42,
+          "unit": "USD",
+          "status": "known",
+          "source": "claude-code"
+        },
+        "claims": {
+          "applicable": 3,
+          "satisfied": 2,
+          "waived": 0,
+          "unsatisfied": 1
+        }
+      }
+    ]
+  }
+}

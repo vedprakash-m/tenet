@@ -13,11 +13,11 @@ sections:
     flags: []
   claims:
     state: draft
-    digest: sha256:569049264ee6e6bca03e8f40837a4938d5e1b60876507b3891c0cc5e37999a47
+    digest: sha256:a49bcd9acc5eb4bd3cd680321a0890b33ea08c3b998239dc634bb2d5f8a69ebf
     flags: []
   evidence:
     state: draft
-    digest: sha256:19cecddfa74a46c964b2bd2622076369b42fc83f5bec8ba7f1588afa1e226066
+    digest: sha256:4793e5202410e27ce5937153c08a4e8465ff5b203634baf68fde35a4aec14624
     flags: []
   decisions:
     state: draft
@@ -55,7 +55,7 @@ sections:
 |R-170|Continuing promise|claim type|Closing a packet turns its preservation items into blessed continuing claims whose proving cases are protected (R-103); a change touching their paths, or the dependencies their area declares, must keep their evidence fresh; a promise is **defeated** (R-187) by a later failing observation, escaped defect, incident or failed audit on its scope until new evidence or a decision restores it|V-P9, V-M10|0.1.x|asked||
 |R-103|Protected surfaces|claim type|**Trust surface** (policy, the verifier workflow, permissions, factory definition): an `approve` of `change-policy` (`person-present` at `assure`, `forge-verified` otherwise); unwaivable. **Weakening evidence** (tests deleted or skipped, assertions removed, thresholds lowered, proving cases retired, theorem statements or axiom allowlists changed): an `approve` by the owner of what is weakened; replacing a proving case with an equivalent passing one is `forge-verified`. **Mechanics** (scripts, compiler, linter and test configuration, lockfiles, new tests): normal review, with a warning on the proof card when the change weakens a check. **Blessing records** (blessed copies and blessing fields): require the section owner's blessing under R-223 and have a separate tier|V-B2, V-P9, V-B10|0.1.0|asked||
 |R-146|Change size|claim type|Each lane caps files and lines; a larger change is split or raised|V-P5|0.1.0|asked||
-|R-175|Health indicator|claim type|Declared, tool-neutral indicators per area (complexity, duplication, architecture violations, dead code and stale flags, type coverage, suite time and flake rate, docs referring to missing code) may not worsen beyond tolerance on the touched scope versus the target's baseline without a forge-verified `waive` (`accept-health-regression`); improvements on main raise the baseline; adoption records existing problems as the baseline|V-P9, V-M10|0.1.x|asked||
+|R-175|Health indicator|claim type|Declared, tool-neutral indicators per area (complexity, duplication, architecture violations, dead code and stale flags, type coverage, suite time and flake rate, docs referring to missing code) may not worsen beyond tolerance on the touched scope versus the target's baseline without an `accept-health-regression` `waive` (`R-203`; `forge-verified` at `assure` with `person-present` optional, `30d` default expiry); baseline updates only via explicit `change-policy` commits on `.tenet/health-baseline.json` (auto `main` tightening deferred to `CP-0062`); adoption records existing problems as the baseline|V-P9, V-M10|0.1.x|asked||
 |R-176|Architecture rule|claim type|Layers, forbidden dependencies and cycles as pinned checks with fix hints, counted as health indicators|V-P9|0.1.x|asked||
 |R-143|Area readiness|claim type|On an `area` subject: the environment reproduces, pinned checks exist and are fast and stable, an owner is known, the protected paths are in place and health is holding; each lane names the readiness it needs; a declining area loses express and quick lanes for new work (work in flight keeps its lane until its next gate); intake records a disposition (admitted, linked, deferred, rejected, already resolved)|V-P5, V-V7|0.1.x|asked||
 |R-154|Outcome|claim type|Statuses `recovered`, `partial`, `no-change`, `insufficient-exposure`, `unknown`, scoped to a region or cohort; evidence available at decision time is kept apart from later evidence|V-V5|0.1.0 (vocabulary); M2|asked||
@@ -78,7 +78,7 @@ sections:
 |R-156|Input provenance|evidence field|Every assignment input carries source, trust and hash (used by R-105)|V-P11|0.1.0|asked||
 |R-163|Twins|evidence field|Twins declare version, known differences, last fidelity check and how long it stays valid; simulated evidence names its twin and is marked `stale-twin` and downgraded after expiry|V-P11, V-V5|M2|asked||
 |R-182|Selective execution|evidence field|Eligible, selected and skipped tests are recorded; a mapped proving case may be skipped only with a recorded impact result showing it unaffected; a periodic full run reports what selection missed|V-P2, V-B8|M2|asked||
-|R-177|Check lifecycle|claim type|Findings can be marked "not useful" from 0.1.0, and a check above its budget (default 10%) is flagged for demotion; each pinned check names an owner (0.1.x); at M2 a known-bad fixture it must keep failing and retirement when cost exceeds benefit|V-P7, V-P2, V-B10|0.1.0; 0.1.x; M2|asked||
+|R-177|Check lifecycle|claim type|Findings can be marked "not useful" from 0.1.0, and a check above its rolling-30d deduplicated budget (default 10%, separately tracking `waived`, `overrides` and `false_blocks`, past `minimum_sample`) is flagged to its sorted closed policy owners (`indicator.owner ?? check.owner ?? areas[area].owners`); each pinned check names an owner (0.1.x); at M2 a known-bad fixture it must keep failing and retirement when cost exceeds benefit|V-P7, V-P2, V-B10|0.1.0; 0.1.x; M2|asked||
 |R-148|Reviewer metrics|view|Precision, missed defects, false blockers, abstentions and consistency by class; a second model family confirms material findings where available|V-P2, V-M2|M2|asked||
 |R-183|Maintainability audit|evidence kind|Audits ask whether a maintainer would merge as is, with three reasons|V-M2, V-M10|M2|asked||
 |R-126|Sampled scoring|evidence kind|A random sample of runs and changes graded against declared criteria; failures become proposed packets|V-V7, V-M2|M2|asked||

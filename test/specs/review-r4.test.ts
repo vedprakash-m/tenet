@@ -1,12 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { anchorsFor } from "../../dist/specs/anchors.js";
-import { resolveCitations } from "../../dist/specs/citations.js";
-import { deltas } from "../../dist/specs/deltas.js";
-import { ladder } from "../../dist/specs/ladder.js";
-import { parseDoc, parseRequirement } from "../../dist/specs/parse.js";
-import { touched } from "../../dist/specs/touched.js";
 import { tmpRepo } from "../helpers/tmpRepo.ts";
+
+const [
+  { anchorsFor },
+  { resolveCitations },
+  { deltas },
+  { ladder },
+  { parseDoc, parseRequirement },
+  { touched },
+] = await Promise.all([
+  import("../../dist/specs/anchors.js"),
+  import("../../dist/specs/citations.js"),
+  import("../../dist/specs/deltas.js"),
+  import("../../dist/specs/ladder.js"),
+  import("../../dist/specs/parse.js"),
+  import("../../dist/specs/touched.js"),
+]);
 
 function specification(items: string[], options: { doc?: string; level?: string; state?: string } = {}): string {
   return [
@@ -81,10 +91,22 @@ test("r4 B4 malformed citations use syntax-first classification and wording", ()
   const findings = resolveCitations(doc, (filename) =>
     filename === "src/a.ts" ? "one\n" : null
   );
-  assert.deepEqual(findings.map((finding) => [finding.code, finding.message]), [
-    ["TN-CITE-RANGE", "citation is malformed"],
-    ["TN-CITE-RANGE", "citation is malformed"],
-    ["TN-CITE-RANGE", "Citation src/a.ts:9 has an invalid line range or format."],
+  assert.deepEqual(findings.map((finding) => [finding.code, finding.message, finding.fix]), [
+    [
+      "TN-CITE-RANGE",
+      "Citation doc: guide.md#bad slug:5 has an invalid line range or format.",
+      "Fix doc: guide.md#bad slug:5 to use a valid path:line or path:start-end within file length.",
+    ],
+    [
+      "TN-CITE-RANGE",
+      "Citation src/a.ts:one-two has an invalid line range or format.",
+      "Fix src/a.ts:one-two to use a valid path:line or path:start-end within file length.",
+    ],
+    [
+      "TN-CITE-RANGE",
+      "Citation src/a.ts:9 has an invalid line range or format.",
+      "Fix src/a.ts:9 to use a valid path:line or path:start-end within file length.",
+    ],
   ]);
 });
 
@@ -127,6 +149,24 @@ test("r4 B6 a new blessed requirement is touched by its head-side line", async (
     const head = await commitAll(repository, "head");
     const result = await touched(base, head, [], { cwd: repository.path });
     assert.ok(result.some((item) => item.id === "R-12" && item.why === "text-changed"));
+  } finally {
+    await repository.cleanup();
+  }
+});
+
+test("CP-0044 touched reads the policy ID prefix", async () => {
+  const repository = await tmpRepo("cp-0044-touched-prefix");
+  try {
+    await repository.write("tenet.yaml", "specs: {id_prefix: C}\n");
+    await repository.write("tenet/intent.md", specification([
+      "- C-1 Existing. {origin: asked}",
+    ]));
+    const base = await commitAll(repository, "base");
+    await repository.write("src/a.ts", "changed\n");
+    const head = await commitAll(repository, "head");
+    assert.deepEqual(await touched(base, head, ["C-1"], { cwd: repository.path }), [
+      { id: "C-1", why: "implements" },
+    ]);
   } finally {
     await repository.cleanup();
   }
@@ -229,6 +269,29 @@ test("r4 B10 deltas compare every part of a document and reject ID collisions", 
   }
 });
 
+test("CP-0044 deltas reads the policy ID prefix", async () => {
+  const repository = await tmpRepo("cp-0044-deltas-prefix");
+  try {
+    await repository.write("tenet.yaml", "specs: {id_prefix: C}\n");
+    await repository.write("tenet/intent.md", specification([
+      "- C-1 Before. {origin: asked}",
+    ]));
+    const base = await commitAll(repository, "base");
+    await repository.write("tenet/intent.md", specification([
+      "- C-1 After. {origin: asked}",
+    ]));
+    const head = await commitAll(repository, "head");
+    assert.deepEqual(await deltas(base, head, { cwd: repository.path }), [{
+      doc: "intent",
+      added: [],
+      modified: ["C-1"],
+      removed: [],
+    }]);
+  } finally {
+    await repository.cleanup();
+  }
+});
+
 test("r4 B11 a never-existing doc citation does not become cited-code-changed", async () => {
   const repository = await tmpRepo("review-r4-b11");
   try {
@@ -240,6 +303,28 @@ test("r4 B11 a never-existing doc citation does not become cited-code-changed", 
     await repository.write("src/a.ts", "after\n");
     const head = await commitAll(repository, "head");
     assert.deepEqual(await touched(base, head, [], { cwd: repository.path }), []);
+  } finally {
+    await repository.cleanup();
+  }
+});
+
+test("r8 B11 only base-existing doc slugs change when the file is deleted", async () => {
+  const repository = await tmpRepo("review-r8-b11");
+  try {
+    await repository.write("tenet/intent.md", specification([
+      "- R-1 Existing section. {origin: asked; cites: doc: docs/guide.md#existing}",
+      "- R-2 Missing section. {origin: asked; cites: doc: docs/guide.md#never}",
+      "- R-3 Implemented deletion. {origin: asked; cites: doc: docs/guide.md#existing}",
+    ]));
+    await repository.write("docs/guide.md", "## Existing\n\nBase text.\n");
+    const base = await commitAll(repository, "base");
+    repository.git(["rm", "docs/guide.md"]);
+    const head = await commitAll(repository, "head");
+    assert.deepEqual(await touched(base, head, ["R-3"], { cwd: repository.path }), [
+      { id: "R-3", why: "implements" },
+      { id: "R-1", why: "cited-code-changed" },
+      { id: "R-2", why: "same-area" },
+    ]);
   } finally {
     await repository.cleanup();
   }

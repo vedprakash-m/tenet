@@ -1,0 +1,21 @@
+{
+  "operation": "map-diff",
+  "subject": {
+    "base": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "tested": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "repo": {
+    "base": {
+      "src/payments/crème file.ts": "a\nb\nc\n"
+    },
+    "tested": {
+      "src/payments/crème file.ts": "a\nB\nc\n"
+    },
+    "git_config": {
+      "diff.algorithm": "histogram",
+      "diff.renames": "false",
+      "core.quotePath": "true",
+      "diff.mnemonicPrefix": "true"
+    }
+  }
+}

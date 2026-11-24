@@ -1,0 +1,25 @@
+id: CP-0064
+title: "Code health: protected runner supervision"
+type: feature
+lane: careful
+priority: standard
+due: null
+levels: [L3, L4]
+serves: [V-P9, V-M10]
+implements: [R-175, R-176]
+milestone: M1
+source: "split from CP-0039"
+stage: triage
+status: parked
+blocked_by: [CP-0039]
+unblocks: []
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 4, sessions: 2}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:
+  - {at: 2026-11-24T11:40Z, to: intake, by: Ved, reason: "split protected runner supervision and per-unit completion proof out of CP-0039"}
+  - {at: 2026-11-24T11:40Z, from: intake, to: triage, by: Ved}
+  - {at: 2026-11-24T11:40Z, to: parked, by: Ved, reason: "parked behind CP-0039 core health ratchet"}

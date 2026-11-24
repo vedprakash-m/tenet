@@ -1,0 +1,592 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5993,
+  "title": "Fluent: style Web Chat elements through the CSS module theme",
+  "body": "> Fluent styles Web Chat elements by their readable class names (`:global(.bubble)`), so Web Chat cannot drop or rename them.\n\n## Changelog Entry\n\nNone: internal refactoring with no visible change, label `no-changelog`.\n\n## Description\n\nFluent's CSS modules selected 101 class names of Web Chat CSS modules through `:global()`. Fluent's rules for Web Chat elements now live in one override CSS module, which `FluentThemeProvider` passes whole through `<CSSModuleThemeComposer>` (#5984). Each element gets at most two Fluent classes.\n\n## Design\n\n- `fluent-theme/src/private/fluentCSSModuleTheme.module.css`: rules moved unchanged from Fluent's `PartGroupingDecorator`, `SendBox` and `Theme` modules, keeping order, regions and scope, so the cascade does not change\n- A rule without styles keeps its class with `--webchat-preserve-reason: target-class;`, which `esbuildPlugins.mjs` strips after the class map is built; vibe-grep fails the build if one is left\n\n## Specific Changes\n\n- `FluentThemeProvider`: wraps everything in `<CSSModuleThemeComposer>`\n- `ActivityButton`, `SendBox`: classes for themes, kept by the declaration above\n- `fluentCSSModuleTheme.spec.ts`: only the override module uses Web Chat local names, never through `:global()`\n- root `package.json`: `lightningcss` dev dependency (1.32.0, as installed today)\n- No snapshot changes in the Fluent html2 tests\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-30T22:18:49Z",
+  "merged_at": "2026-10-31T18:16:20Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-css-fluent-context",
+  "head": "OEvgeny/fix-css-fluent-context",
+  "base_sha": "9e50a576e107f635d361994423987271f94b53dd",
+  "head_sha": "6f1fc063f53d32651041c9bb251160fb15666234",
+  "merge_sha": "8241b2b5ee58b097fec41bc3f8579da016b8dbf5",
+  "diff_sha256": "2a01066beacc1116926fdba228d19571c803f14a7b5411ad686a433dc9e5d906",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [
+    "no-changelog"
+  ],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-31T17:41:07Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "cfd487947c33c3b4c660805a91f2438c225a16b0",
+      "message": "Fluent: style feedback buttons and form through the CSS module theme",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4379c147990af79e6881723c658b089f97a47745",
+      "message": "Fluent: style code blocks and the view code dialog through the CSS module theme",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "f6f25baa2d0840ccea6a8c6e1b338262d1792383",
+      "message": "Fluent: style the attachment bar and text area through the CSS module theme",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "b75cc17eac15a58bf05fac661ae1c8e3fee4aebb",
+      "message": "Fluent: style the transcript focus indicators through the CSS module theme",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "392714bb06bddb045f820e9743005519b8465e34",
+      "message": "Fluent: style the stacked layout, bubbles and carousel through the CSS module theme",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "98b9a979b273e5da4a2b0d117232458600d6c465",
+      "message": "Fluent: style grouping, text, citations and Adaptive Cards through the CSS module theme",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "36d197bb249c5a0d4e5a64bd8d242d42744e7c05",
+      "message": "Give the activity button text a CSS module class, so Fluent styles it through the CSS module theme",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "fb284c4f5446fac0dd5bc6bec89d1215e67a235f",
+      "message": "Declare lightningcss, which fluentCSSModuleOverrides.spec.ts imports, as a root dev dependency",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "baed602d760230f42b23c5b4d77e4d8b1e8a0b18",
+      "message": "Check that Fluent lists every Web Chat local name its CSS modules use",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "6aeacbf3372d7aa38872964313f8211ef06fa5d1",
+      "message": "Keep class names of CSS module rules without styles through --webchat-preserve-reason",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "c310cf0a25e2593935de8a347c3b04b9a9fc4892",
+      "message": "Move Fluent's rules for the feedback form and thumb buttons to override modules",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "fb0812fb8e0c1b3089f0e901f03604bfffc0f274",
+      "message": "Move Fluent's rules for code blocks to override modules",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "66028d09278bdf6e490b2f8c9864b5ef54f52a8b",
+      "message": "Move Fluent's rules for the send box to override modules",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4c7366a480589240f80886045c593de68b0cef4f",
+      "message": "Move Fluent's rules for the transcript focus to an override module",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4ddeb964c325cbaf861c940de7a723329572169f",
+      "message": "Move Fluent's rules for activity layout to override modules",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7736c88fd08ae4353afc1b9649d595c996df2732",
+      "message": "Move Fluent's rules for part grouping to override modules",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "78b3adae36bb5340d2af00dc1238c3624e68216b",
+      "message": "Move Fluent's rules for text and Markdown to override modules",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4a79ead27037c018393f95d8eead985bd5973471",
+      "message": "Move Fluent's rules for Adaptive Cards and animated images to override modules",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "518cd05f6c0fd01d1ad1278eb0a01749742bc3d4",
+      "message": "Drop the lists of Web Chat local names and pickCSSModule, now that every Fluent override is in an override module",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "ba8d210d635928843b60a7dc3c92fbf6208598c2",
+      "message": "Write the ButtonText system color in TitleCase in the activity button override",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "8a8dd780d6599503d8e34b7805feaf76f6ef7972",
+      "message": "Keep Fluent's scrollbar rules together in the code block content override",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4acd8cc7817d08dd899ce5073f2c1ecc7fa299ed",
+      "message": "Fail the CSS check of the build when --webchat-preserve-reason reaches the output CSS",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "fa746369a19bac3cbc248afc77cd3f3222e99378",
+      "message": "Run the second Lightning CSS pass only on the CSS of CSS modules, not on their class maps",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "1255369bbe3b54f3a83cf3de24c841014f1eb58a",
+      "message": "Put every Fluent rule for Web Chat elements in one override CSS module",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "6f1fc063f53d32651041c9bb251160fb15666234",
+      "message": "Merge branch 'main' into OEvgeny/fix-css-fluent-context",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "esbuildPlugins.mjs",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Attachment/Text/private/ActivityButton.module.css",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Attachment/Text/private/ActivityButton.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/PartGroupingDecorator.module.css",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 882,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/sendBox/SendBox.module.css",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 61,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/theme/Theme.module.css",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 481,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/FluentThemeProvider.tsx",
+      "status": "modified",
+      "additions": 28,
+      "deletions": 24,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/fluentCSSModuleTheme.module.css",
+      "status": "added",
+      "additions": 1456,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/fluentCSSModuleTheme.spec.ts",
+      "status": "added",
+      "additions": 154,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/fluentCSSModuleTheme.ts",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/vibe-grep/src/rules/lightning-css.yaml",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-30T23:23:38Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-30T23:31:04Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-30T23:54:41Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-30T23:54:43Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T02:10:30Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T02:10:32Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T04:08:40Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T04:11:26Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T04:42:26Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T04:42:29Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T05:52:25Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T06:00:27Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T06:02:50Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T06:10:46Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T06:18:09Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T06:18:11Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T06:20:16Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T06:23:05Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T06:28:07Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-31T07:43:34Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-31T17:41:16Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-31T17:57:13Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:15:42Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:15:21Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:13:00Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:13:28Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:13:16Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:13:23Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:12:00Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:14:03Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:14:12Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:13:38Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:13:55Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:13:49Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:13:36Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:05:42Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:13:54Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:14:30Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:15:12Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:14:04Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:05:59Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:12:28Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:12:54Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:06:09Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:05:07Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:05:58Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:05:55Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:05:13Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:05:45Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:05:06Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:05:02Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:05:17Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:05:09Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:08:13Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:08:47Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:06:46Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T17:58:27Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T17:57:51Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T17:59:00Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T17:58:21Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T17:59:06Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T18:04:01Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T17:59:14Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T17:59:26Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T17:59:00Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T17:58:34Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-31T17:59:03Z"
+    }
+  ],
+  "binary_paths": []
+}

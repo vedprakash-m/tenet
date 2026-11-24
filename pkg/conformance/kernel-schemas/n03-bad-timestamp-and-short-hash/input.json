@@ -1,0 +1,15 @@
+{
+  "records": {
+    "subject": {
+      "kind": "git-tree",
+      "digest": "sha256:abcd1234"
+    },
+    "event": {
+      "id": "01JDF000000000000000000003",
+      "prev": [],
+      "type": "work.moved",
+      "work": "pr-1",
+      "time": "2026-11-23T12:00:00+05:30"
+    }
+  }
+}

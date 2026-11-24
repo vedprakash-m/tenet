@@ -2,6 +2,25 @@
 
 All changes to the standard and kit. Each release lists added, changed, deprecated and removed rules, and the migrations it ships (PRD R-004).
 
+## 0.1.0-alpha.0
+
+### Added
+
+- `kind: field-added` · The npm package includes the CLI, SDK, kit, and alpha.0 conformance fixtures.
+- `kind: field-added` · `tenet onboard` inventories committed files and writes a drafting assignment. The onboarding card pins the draft revision. `tenet bless` records section-level decisions and keeps the last blessed copy in force while people review edits or changed sources.
+- `kind: field-added` · `tenet check` reports specification structure, citations, and budget findings. `tenet fix` repairs mechanical metadata and `tenet split` moves a section to its own document. `tenet board` shows specification state and work that needs review.
+- `kind: field-added` · The local MCP server and `tenet context` give agents the blessed text that applies to their task, with draft hints and omissions labeled.
+- `kind: field-added` · The CI test job collects evidence and the recorder posts an advisory proof card. The card shows the tested revision, touched requirements, tagged test results, and weakening findings.
+
+### Changed
+
+- `kind: rule-clarified` · Alpha.0 runs its five proof rules at advisory strength. The proof card separates what passed from what did not run or could not be checked.
+- `kind: rule-clarified` · Specification checks follow the configured document ladder, including the one-file layout and its split parts.
+
+### Migrations
+
+None.
+
 ## 0.1.0-draft · 2026-11-22
 
 ### Added

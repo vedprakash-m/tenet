@@ -1,0 +1,8 @@
+{
+  "op": "attestFork",
+  "pr": 19,
+  "fork": true,
+  "target_policy_rev": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "tested_commit": "dddddddddddddddddddddddddddddddddddddddd",
+  "bundle_run_id": "5001"
+}

@@ -1,0 +1,15 @@
+{
+  "state": {
+    "title": "Perm",
+    "station": "define",
+    "lane": "quick",
+    "priority": "standard"
+  },
+  "conflicts": [],
+  "applied": [
+    "01JDF000000000000000000001",
+    "01JDF000000000000000000002",
+    "01JDF000000000000000000004"
+  ],
+  "held": []
+}

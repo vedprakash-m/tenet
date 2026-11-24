@@ -1,0 +1,34 @@
+{
+  "ok": true,
+  "command": "board",
+  "version": "0.0.0",
+  "result": {
+    "schema_version": 1,
+    "as_of": "2026-11-23T12:00:00Z",
+    "read": {
+      "main": "407727622aac54961faa9cc8458ad7846cedc459",
+      "branches": [],
+      "records": null
+    },
+    "specs": [
+      {
+        "path": "tenet/intent.md",
+        "section": "vision",
+        "level": "L1",
+        "state": "blessed",
+        "flags": [],
+        "recorded": "self"
+      },
+      {
+        "path": "tenet/intent.md",
+        "section": "requirements",
+        "level": "L1",
+        "state": "deferred",
+        "flags": []
+      }
+    ],
+    "pending_blessings": [],
+    "spec_debt": []
+  },
+  "errors": []
+}

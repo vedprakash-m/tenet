@@ -1,4 +1,5 @@
 import type { CommandSpec } from "../core/commands.js";
+import { message } from "../core/messages.js";
 import { fail } from "../core/output.js";
 import { split } from "../specs/split.js";
 
@@ -9,11 +10,11 @@ export const splitCommand: CommandSpec = {
   async run(context) {
     const [document, section] = context.args;
     if (!document || !section || context.args.length !== 2) {
-      throw fail(
-        "TN-USAGE-SPLIT",
-        "Invalid usage for tenet split.",
-        "Run tenet split --help for valid arguments and flags.",
-      );
+      const words = message("TN-USAGE-SPLIT", {
+        command: "split",
+        detail: "expected <document> <section>",
+      });
+      throw fail("TN-USAGE-SPLIT", words.message, words.fix);
     }
     return { result: await split(document, section, context.cwd) };
   },

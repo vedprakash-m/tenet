@@ -1,0 +1,122 @@
+{
+  "scenarios": [
+    {
+      "name": "revoked-key",
+      "signed_at": "2026-11-23T12:00:00Z",
+      "actor": "alice",
+      "public_key": "ssh-ed25519 AAAA2",
+      "snapshot": {
+        "owners": [
+          {
+            "id": "ved",
+            "forge_accounts": [
+              "vedprakash-m"
+            ],
+            "keys": [
+              {
+                "public_key": "ssh-ed25519 AAAA1",
+                "added": "2026-11-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "alice",
+            "forge_accounts": [
+              "alice-dev"
+            ],
+            "keys": [
+              {
+                "public_key": "ssh-ed25519 AAAA2",
+                "added": "2026-11-01T00:00:00Z",
+                "revoked": "2026-11-20T00:00:00Z"
+              }
+            ]
+          }
+        ],
+        "level": "protect",
+        "pr_author": "tenet-bot",
+        "tested_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "name": "self-approve-at-verify",
+      "request": {
+        "request_id": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+        "repository": "vedprakash-m/tenet-sandbox",
+        "work": "pr-12",
+        "target": "AB-1",
+        "subject": {
+          "kind": "git-tree",
+          "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        "decision_kind": "approve",
+        "question": "Approve definition for retry checkout?",
+        "choices": [
+          {
+            "id": "1",
+            "label": "stop"
+          },
+          {
+            "id": "2",
+            "label": "approve"
+          }
+        ],
+        "evaluation_id": "1234567890abcdef",
+        "policy_revision": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "allowed_actors": [
+          "ved",
+          "alice"
+        ],
+        "expires_at": "2026-11-24T12:00:00Z"
+      },
+      "event": {
+        "kind": "pull_request_review",
+        "source_id": "rev-self",
+        "state": "approved",
+        "reviewer_login": "tenet-bot",
+        "reviewed_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "created_at": "2026-11-23T12:15:00Z",
+        "content_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "snapshot": {
+        "owners": [
+          {
+            "id": "ved",
+            "forge_accounts": [
+              "vedprakash-m"
+            ],
+            "keys": [
+              {
+                "public_key": "ssh-ed25519 AAAA1",
+                "added": "2026-11-01T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "alice",
+            "forge_accounts": [
+              "alice-dev"
+            ],
+            "keys": [
+              {
+                "public_key": "ssh-ed25519 AAAA2",
+                "added": "2026-11-01T00:00:00Z",
+                "revoked": "2026-11-20T00:00:00Z"
+              }
+            ]
+          },
+          {
+            "id": "bot-owner",
+            "forge_accounts": [
+              "tenet-bot"
+            ],
+            "keys": []
+          }
+        ],
+        "level": "verify",
+        "pr_author": "tenet-bot",
+        "tested_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    }
+  ]
+}

@@ -1,0 +1,275 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 22,
+  "title": "Add the reference workload obligation and fitness trend (QLT-05)",
+  "body": "## What this does\n\nQLT-05: a recipe can declare a reference workload and fitness functions; Deep contracts run it through the kernel; the kernel judges the report, keeps a series across contracts, and raises an attention item when a trend crosses its declared threshold.\n\n- **Obligation.** A Deep contract in a project whose recipe record lists `workload` in `checks` owes `OB-workload` (kind `workload`, category `release`). Derived from the recipe record, not the file. Standard/Quick contracts and projects without `workload` owe none.\n- **Declaration.** Strict `workload.json` v1 parsed in pure `core/fitness.ts`: `run` and optional `build` as argv arrays (shell and package-manager launchers refused), `report: \"stdout\"`, `timeoutMs`, `minimumSamples`, `samples`, up to 32 fitness functions with `measure`, `unit`, `better`, `target`, and `degradation` (`percent`, `consecutive` 2–12, `floor`) for trended ones. Invalid → receipt `inconclusive` with the new reason `workload-declaration-invalid`, nothing runs, the check does not abort.\n- **Run.** Build and run argv are planned in the execution envelope (new command kind `workload`) and run through the existing runner, only after every other required obligation's process passed; otherwise the receipt is `skipped`.\n- **Receipt.** The kernel judges the report against the declared targets (spec §5, recommendation \"all A\"): pass only for reference mode, enough samples, every target met, no harness reasons, exit 0. A missed target or an uncovered harness reason fails. Smoke/too few samples → `population-mismatch`; missing/invalid/contradictory reports and timeouts are inconclusive. Every workload receipt and check response carries the scope sentence (this concerns only the declared workload; the harness is project code; the kernel measures nothing).\n- **Series and trend.** `finish` appends one point per function per contract to `project.fitness` (≤12) in the same publish that finishes the contract; a recorded receipt adds nothing. Each check applies the rule to stored points plus its own receipt: each of the last n points worse than the one before, and the change larger than max(percent of the first, floor). When it fires, the contract gets a `fitness-trend:` attention item and the verdict carries `fitness-trend-degraded` until the user or a reviewer disposes it (same-session does not clear it). After a raised window, the next one starts at its newest point. A changed environment tag restarts the comparison, and the response says so. The check response lists values as \"the last n Deep contracts\".\n\n## Simplifications (disclosed, not built)\n\n- The series tag uses platform, architecture, memory and node major **as the report states them**, not kernel observations (no `Runner.machine()`), so a report that misstates its environment is not caught (spec E6b not built).\n- No `build-not-fresh` rule; report read from stdout only; no depth limit beyond the runner's 10 MB output bound; a failed build reads as `report-missing` with no wording of its own.\n- `inspect why`, `finish` result text and the review manifest do not show the series. Only the check response and the verdict reason do.\n- `workload.json` / `workload/*` are not added to any recipe's protected paths (WR-9 not built).\n- No schema version bump or migration: `Receipt.workload`, `project.fitness` and the `workload` check value are optional additions, as trait results were.\n- **The neutral starter is unchanged.** It ships no `workload/run.ts` harness, so it neither lists `workload` nor ships `workload.json`. QLT-05's \"each application recipe shall declare\" is therefore **not met for the starter** (spec Q4 option C, which narrows the requirement and is the owner's call).\n- \"Consecutive\" means consecutive Deep contracts that ran the workload. That is narrower than the PRD's \"consecutive checks\" (spec Q2 A, not confirmed by the owner).\n- Canonical specs (Tech Spec §§9.1, 12.7, App. C; UX wording) are not backfilled.\n- The end-to-end test uses a **tiny fake harness** that prints a fixed-shape JSON report with a p95 the test sets. It measures nothing. Real wall time, the loan-desk harness and host behavior are unobserved.\n\n## Tests\n\n- `test/fitness.test.ts` `[QLT-05]` (pure, runs everywhere): strict declaration cases, obligation derivation, report judgement (pass, missed target, harness reason, smoke, too few samples, missing/invalid, contradictions), the trend rule (spec E8 values incl. zero base and higher-is-better), series idempotence, environment restart, the window after a raised item.\n- `test/verdict.test.ts` `[QLT-05]`: the trend item holds the verdict below checked-local; same-session disposition does not clear it; user/reviewer does.\n- `test/workload.test.ts` `[QLT-05]` (POSIX only; mutating work is refused on Windows): a Deep contract runs the fake harness and passes; a missed target fails; Standard and no-recipe contracts owe none; an invalid declaration is inconclusive without aborting; three consecutive Deep contracts at 100, 110, 121 ms raise one item, `inspect why` shows `fitness-trend-degraded`, a recheck adds no duplicate, a user disposition clears it, and finish records `raised`.\n\nLocal (Windows): typecheck, lint-arch, lint-skills, lint-quality, `npm run privacy` pass. `node tools/coverage.ts --milestone R1` lists QLT-05 as mapped; it still exits 1 for AGT-10, EVD-04, GIT-09 and CON-07, which other branches are building. The POSIX tests have not run locally. They first run in this PR's CI.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-10T22:52:36Z",
+  "merged_at": "2026-11-12T00:15:21Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "claude/quirky-boyd-8c39d7",
+  "head": "claude/quirky-boyd-8c39d7",
+  "base_sha": "367e9f5d6350364288b2c956a987ea96e3f565b7",
+  "head_sha": "0e0cc76438a6e81ad247158c14a17bc1540a75e1",
+  "merge_sha": "5482e1da783015ad41588d4402d1b66ee8fb75de",
+  "diff_sha256": "268b4e7c2f7eb802620fc285435b3c8a3aa0c64d2026504a33a7569d5837e3f1",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-12T00:15:17Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "f787c35a3bed897bbf4ff64a80aafaf3d77485d5",
+      "message": "Add the reference workload obligation and fitness trend (QLT-05)",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "2cd6b75d122990c6c5c3a6151483ec8c7f8cd2b7",
+      "message": "docs: changelog for the reference workload and fitness trend",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "01fd9035c3dd6901a5ca6bfe0d46466a5a5b647e",
+      "message": "Use a separate project for the Standard-lane workload case",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "0e0cc76438a6e81ad247158c14a17bc1540a75e1",
+      "message": "Merge origin/main into the QLT-05 branch",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/runner.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/execution-envelope.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/fitness.ts",
+      "status": "added",
+      "additions": 193,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/obligations.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/reasons.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/receipts.ts",
+      "status": "modified",
+      "additions": 35,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/schemas.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/verdict.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/ports/types.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-envelope.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-evidence.ts",
+      "status": "modified",
+      "additions": 26,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-execute.ts",
+      "status": "modified",
+      "additions": 23,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-finalize.ts",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-rerun.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/finish.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/reconcile.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/fitness.test.ts",
+      "status": "added",
+      "additions": 148,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/verdict.test.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/workload.test.ts",
+      "status": "added",
+      "additions": 157,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-11T00:10:57Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T23:57:42Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T23:58:56Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T23:57:50Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-11T00:33:03Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-11T00:01:08Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-11T00:18:23Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-10T23:57:23Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-11T00:00:45Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T23:59:16Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T23:57:44Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-11T00:35:44Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T23:57:50Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-11T00:14:09Z"
+    }
+  ],
+  "binary_paths": []
+}

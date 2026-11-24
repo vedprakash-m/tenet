@@ -1,0 +1,68 @@
+{
+  "stale_forge": {
+    "repository": "org/repo",
+    "pr": 15,
+    "action": "ready_for_review",
+    "delivery": "del-old",
+    "head_sha": "0000000000000000000000000000000000000000",
+    "current_head_sha": "ffffffffffffffffffffffffffffffffffffffff",
+    "at": "2026-11-23T11:00:00Z"
+  },
+  "incomplete_resolve_events": [
+    {
+      "id": "01JDF000000000000000000001",
+      "prev": [],
+      "type": "work.created",
+      "work": "CP-1010",
+      "time": "2026-11-23T12:00:00Z",
+      "by": "ved",
+      "data": {
+        "title": "Partial resolve",
+        "station": "define"
+      }
+    },
+    {
+      "id": "01JDF000000000000000000002",
+      "prev": [
+        "01JDF000000000000000000001"
+      ],
+      "type": "work.moved",
+      "work": "CP-1010",
+      "time": "2026-11-23T12:01:00Z",
+      "by": "a1",
+      "data": {
+        "station": "build"
+      }
+    },
+    {
+      "id": "01JDF000000000000000000003",
+      "prev": [
+        "01JDF000000000000000000001"
+      ],
+      "type": "work.moved",
+      "work": "CP-1010",
+      "time": "2026-11-23T12:01:00Z",
+      "by": "a2",
+      "data": {
+        "station": "verify"
+      }
+    },
+    {
+      "id": "01JDF000000000000000000005",
+      "prev": [
+        "01JDF000000000000000000002"
+      ],
+      "type": "decision.made",
+      "work": "CP-1010",
+      "time": "2026-11-23T12:02:00Z",
+      "by": "ved",
+      "data": {
+        "kind": "resolve",
+        "keep": "01JDF000000000000000000002",
+        "proof": {
+          "strength": "forge-verified"
+        }
+      }
+    }
+  ]
+}

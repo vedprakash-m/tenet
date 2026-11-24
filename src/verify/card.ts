@@ -77,6 +77,12 @@ function markdown(model: ProofCard, omitPassingNames: boolean): string {
 
 export function renderCard(model: ProofCard): string { return markdown(model, false); }
 
+export class SummaryOverflow extends RangeError {
+  constructor(readonly essential: string) {
+    super("required proof details exceed the check summary limit");
+  }
+}
+
 export function renderCheckSummary(model: ProofCard, limit = 60_000): string {
   const full = renderCard(model);
   if (full.length <= limit) return full;
@@ -89,6 +95,6 @@ export function renderCheckSummary(model: ProofCard, limit = 60_000): string {
     ...prominent, requirements: prominent.requirements.filter(({ tests }) => tests.expected === 0 ||
       tests.failed > 0 || tests.not_run > 0 || tests.passed < tests.expected),
   }, true);
-  if (essential.length > limit) throw new RangeError("required proof details exceed the check summary limit");
+  if (essential.length > limit) throw new SummaryOverflow(essential);
   return essential;
 }

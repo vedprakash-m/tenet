@@ -1,0 +1,9 @@
+{
+  "since": "commit-before-pr8",
+  "items": [
+    {
+      "id": "pr-8",
+      "title": "Fresh change"
+    }
+  ]
+}

@@ -1,0 +1,408 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6037,
+  "title": "Ship real type declarations for botframework-directlinespeech-sdk",
+  "body": "> `botframework-directlinespeech-sdk` ships JavaScript as its type declarations.\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed `botframework-directlinespeech-sdk` shipping JavaScript as type declarations, and the `createDirectLineSpeechAdapters` return type naming `webSpeechPonyfill` instead of `webSpeechPonyfillFactory`, in PR [#6037](https://github.com/microsoft/BotFramework-WebChat/pull/6037), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\ntsup emitted the bundled JavaScript as the package's `.d.mts`/`.d.ts`, and the `require` types pointed to a never-built `lib/index.d.ts`: TypeScript consumers got wrong types (ESM) or none (CommonJS). The package now ships hand-written declarations for both. The bundle's `createDirectLineSpeechAdapters` type returns `webSpeechPonyfillFactory`, as at runtime, not `webSpeechPonyfill`.\n\n## Design\n\n- Hand-written `index.d.ts` rather than converting to TypeScript (1,700 lines) or generating from JSDoc (there is none, so all `any`).\n- tsup emits it as `.d.mts` and `.d.ts`: one `src/index.d.ts` for both conditions makes ESM types \"masquerade as CJS\" (arethetypeswrong).\n- The bundle keeps its `as any`: `web-speech-cognitive-services`' `SpeechRecognition` is not assignable to `typeof SpeechRecognition`.\n\n## Specific Changes\n\n- `directlinespeech/src/index.d.ts`: declarations for `createAdapters` and `buildInfo`; activities typed as interfaces are accepted\n- `directlinespeech/tsup.config.ts`: emits them\n- `directlinespeech/package.json`: `require` and top-level `types` point to `dist/*.d.ts`\n- `directlinespeech/test-d/`: tsd tests of the shipped declarations (options, result, `buildInfo`, invalid options), run by the \"Type definitions test\" job\n- `bundle/src/createDirectLineSpeechAdapters.ts`: `webSpeechPonyfillFactory` in the return type\n- `bundle/test-d/pass/create-direct-line-speech-adapters.test-d.ts`: checks it\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-10T03:17:56Z",
+  "merged_at": "2026-11-12T19:22:27Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-directlinespeech-types",
+  "head": "OEvgeny/fix-directlinespeech-types",
+  "base_sha": "750bf1724c7ee5b610a87152b6ef5bdff67574d4",
+  "head_sha": "e94efd22b0ffdb1ced05124bc98ef5c1038831bc",
+  "merge_sha": "e358bd761ed0d9393580457e4869aafdf9a787d3",
+  "diff_sha256": "657b2a105f2e262bc595d969f47cdee278d0d7c44303b3e268d8d198e63d9b0d",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-10T03:48:42Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "43dbec105d2ac6a69bfeef59d9862da93d61c2c4",
+      "message": "Ship real type declarations for botframework-directlinespeech-sdk",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "0957e4d985910634255874765ac72facfe525310",
+      "message": "Fix the return type of createDirectLineSpeechAdapters",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7499413f7f46c33df1e78999f6dff34b08df664e",
+      "message": "Accept interface-typed activities and match the speech ponyfill type to the runtime",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "570df3e7879dcab17f24b5cffb67649d293b5bbb",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "3477ecdfecbdca9df529ba3e0b68a3279f82d54f",
+      "message": "Test the type declarations of botframework-directlinespeech-sdk with tsd",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7fdacc7c4bd5ab0e4343ac84950a0b9dd8c7d8c9",
+      "message": "Merge branch 'main' into OEvgeny/fix-directlinespeech-types",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "e94efd22b0ffdb1ced05124bc98ef5c1038831bc",
+      "message": "Merge branch 'main' into OEvgeny/fix-directlinespeech-types",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6037-fix-directlinespeech-types.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/pull-request-validation.yml",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/createDirectLineSpeechAdapters.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/test-d/pass/create-direct-line-speech-adapters.test-d.ts",
+      "status": "added",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/package.json",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/src/index.d.ts",
+      "status": "added",
+      "additions": 90,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/test-d/build-info.test-d.ts",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/test-d/create-adapters-fetch-credentials.test-d.ts",
+      "status": "added",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/test-d/create-adapters-invalid-options.test-d.ts",
+      "status": "added",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/test-d/create-adapters-result.test-d.ts",
+      "status": "added",
+      "additions": 37,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/tsup.config.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-10T03:48:50Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-11-10T04:53:59Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-11-10T04:55:34Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-12T08:45:33Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "failure",
+      "completed_at": "2026-11-12T19:22:20Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:22:07Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:20:37Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:20:25Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:19:04Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:20:48Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:21:06Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:20:34Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:21:34Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:21:10Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:12:52Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:21:58Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:20:16Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:20:01Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:12:33Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:12:27Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:20:26Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:21:52Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:12:46Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:20:38Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:13:10Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:12:59Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:19:52Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:12:23Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:13:16Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:12:55Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:20:02Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:14:30Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:12:25Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:21:48Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:12:25Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:12:31Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:14:29Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:13:20Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:06:57Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:06:13Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:06:04Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:11:15Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:08:12Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:08:28Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:07:04Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:05:47Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:07:43Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:06:53Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:06:20Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T19:06:36Z"
+    }
+  ],
+  "binary_paths": []
+}

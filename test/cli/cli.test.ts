@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtemp, rm, symlink } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { registerCommand, run } from "../../dist/cli.js";
 import { version } from "../../dist/core/output.js";
 import { fakeTty } from "../helpers/fakeTty.ts";
@@ -13,11 +18,39 @@ test("version and help use the public CLI entry points", async () => {
   assert.match(help.stdout.text, /Usage: tenet/);
 });
 
+test("the CLI starts when invoked through a filesystem link", async (t) => {
+  const scratch = await mkdtemp(path.join(os.tmpdir(), "tenet-cli-link-"));
+  t.after(() => rm(scratch, { recursive: true, force: true }));
+  const cli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
+  const link = path.join(scratch, "tenet");
+  const windows = process.platform === "win32";
+  // A Windows directory junction exercises the same entry guard without symlink privileges.
+  await symlink(windows ? path.dirname(cli) : cli, link, windows ? "junction" : "file");
+  const entry = windows ? path.join(link, path.basename(cli)) : link;
+  assert.equal(execFileSync(process.execPath, [entry, "--version"], { encoding: "utf8" }), `${version}\n`);
+});
+
 test("unknown flags exit with usage code 2", async () => {
   const terminal = fakeTty();
   registerCommand({ name: "flag-test", run: () => ({ value: true }) });
   assert.equal(await run(["flag-test", "--not-a-flag"], { ...terminal, checkEnvironment: false }), 2);
   assert.match(terminal.stderr.text, /Unknown flag/);
+});
+
+test("doctor bypasses the global environment gate and reports its own checks", async () => {
+  const terminal = fakeTty();
+  const code = await run(["--json", "doctor"], {
+    ...terminal,
+    nodeVersion: "1.0.0",
+    gitVersion: "1.0.0",
+  });
+  assert.equal(code, 0);
+  const envelope = JSON.parse(terminal.stdout.text) as {
+    result: { checks: Array<{ name: string }> } | null;
+  };
+  assert.deepEqual(envelope.result?.checks.map(({ name }) => name), [
+    "node", "git", "ssh", "gh", "lock", "workflows",
+  ]);
 });
 
 test("usage validation precedes environment and offline checks", async () => {
@@ -197,10 +230,9 @@ test("human findings include location, rule, why and fix", async () => {
     }),
   });
   assert.equal(await run(["finding-text"], { ...terminal, checkEnvironment: false }), 1);
-  assert.match(terminal.stderr.text, /TN-SCHEMA at tenet\/example\.md:12: missing title/);
-  assert.match(terminal.stderr.text, /rule: schema-valid/);
-  assert.match(terminal.stderr.text, /why: missing title/);
-  assert.match(terminal.stderr.text, /fix: add a title/);
+  assert.match(terminal.stderr.text, /missing title at tenet\/example\.md:12/);
+  assert.match(terminal.stderr.text, /why: schema-valid/);
+  assert.match(terminal.stderr.text, /→ add a title/);
 });
 
 test("unexpected exceptions are complete internal failures, not usage errors", async () => {
@@ -221,8 +253,8 @@ test("unexpected exceptions are complete internal failures, not usage errors", a
       rule: null,
       file: null,
       line: null,
-      message: "The command could not run",
-      fix: "boom",
+      message: "Internal failure: boom.",
+      fix: "Report this defect with the command and error details.",
     },
   ]);
 });

@@ -1,0 +1,22 @@
+{
+  "op": "alias-and-subject",
+  "ulid": "01JDF9Z8X7W6V5U4T3S2R1Q0P0",
+  "existing_aliases": [
+    "CP-000000"
+  ],
+  "tree": [
+    {
+      "mode": "100644",
+      "type": "blob",
+      "oid": "1111111111111111111111111111111111111111",
+      "path": "src/dir with spaces/\"quoted\"-file.ts"
+    },
+    {
+      "mode": "100644",
+      "type": "blob",
+      "oid": "2222222222222222222222222222222222222222",
+      "path": "src/日本語/spec.md"
+    }
+  ],
+  "expected_subject_digest": "sha256:6e976e6780a21827de7293115a36de6bd3766ee2a3365adf64d88527d2061b49"
+}

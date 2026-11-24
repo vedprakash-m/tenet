@@ -1,0 +1,173 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6062,
+  "title": "Investigating getPartIds return values in node types",
+  "body": "Pull request created by AI Agent",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-11-20T20:14:51Z",
+  "merged_at": "2026-11-20T20:16:17Z",
+  "base_ref": "feat-new-store",
+  "base": "feat-new-store",
+  "head_ref": "copilot/frozen-unfrozen-node-check",
+  "head": "copilot/frozen-unfrozen-node-check",
+  "base_sha": "f05d9d51854dbdbdb5cde3ba7b2de9de51bd9707",
+  "head_sha": "2948b28f294171a0c8a586c3e15d45c0f99d9c98",
+  "merge_sha": "20dd99520119232ba5fca0a75ad87913ebd76418",
+  "diff_sha256": "d4d155be4f2c4be6a655b9988316d6278c87c0e82871755441e5e73d3c272e5d",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-20T20:16:12Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "2948b28f294171a0c8a586c3e15d45c0f99d9c98",
+      "message": "getPartIds() throws on non-FrozenNodeSet; rename InternalNode/UnfrozenNode to FrozenInternalNode/UnfrozenInternalNode",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/store/src/Store.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertNotSelfPart.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/JSONValue.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/FrozenInternalNode.ts",
+      "status": "renamed",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": "packages/store/src/private/InternalNode.ts"
+    },
+    {
+      "path": "packages/store/src/private/ReadWriteNode.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/ReadWriteNode.ts",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/UnfrozenInternalNode.ts",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/UnfrozenNode.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 17,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/createNode.test.ts",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 14,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/createNode.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/dateCreatedTime.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/freezeNode.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/freezeNode.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/getPartIds.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/sortedChildIds.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-20T20:16:23Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-20T20:15:32Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-20T20:15:35Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-20T20:16:29Z"
+    },
+    {
+      "name": "copilot",
+      "conclusion": "success",
+      "completed_at": "2026-11-20T19:41:44Z"
+    }
+  ],
+  "binary_paths": []
+}

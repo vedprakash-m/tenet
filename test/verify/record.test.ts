@@ -5,20 +5,25 @@ import { fakeGitHub } from "../helpers/fakeGitHub.ts";
 import { buildVerify, emptyDeps } from "./build.ts";
 
 buildVerify();
-const { recordAll, evaluationId } = await import("../../dist/verify/record.js");
+const { record, recordAll, evaluationId } = await import("../../dist/verify/record.js");
 const { decodeBundle, readArtifact } = await import("../../dist/verify/bundle.js");
 const { sha256, jcs } = await import("../../dist/core/hash.js");
 const { GitHubForge, githubRequest } = await import("../../dist/verify/forge.js");
 const { keepRecord, recordsFiles } = await import("../../dist/verify/records.js");
 
+const { parseDoc } = await import("../../dist/specs/parse.js");
+const { sectionDigest } = await import("../../dist/specs/sections.js");
+const { loadPolicy } = await import("../../dist/policy/index.js");
+const { renderCheckSummary } = await import("../../dist/verify/card.js");
+
 const repository = "fixture/checkout";
 const at = "2026-11-23T10:00:00Z";
-const body = "## Acceptance\nImplements: R-1\n- [AB-1] retry once\n";
-const policy = { level: "observe", specs: { id_prefix: "R" }, checks: { unit: { report: "junit" } } };
+const body = "## Acceptance\nImplements: C-1\n- [AB-1] retry once\n";
+const policy = { level: "observe", specs: { id_prefix: "C" }, checks: { unit: { report: "junit" } } };
 
-function bundle(head: string, base: string, state = "pass") {
-  const report = Buffer.from(state === "malformed" ? "broken" :
-    `<testsuite><testcase name="[AB-1] retry once">${state === "skip" ? "<skipped/>" : ""}</testcase></testsuite>`);
+function bundle(head: string, base: string, state = "pass", xml?: string) {
+  const report = Buffer.from(xml ?? (state === "malformed" ? "broken" :
+    `<testsuite><testcase name="[AB-1] retry once">${state === "skip" ? "<skipped/>" : ""}</testcase></testsuite>`));
   const model = {
     schema_version: 1, "x-repository": repository,
     run: { id: "42", attempt: 1, workflow: "Tenet tests", job: "test", index: 0 },
@@ -152,9 +157,16 @@ test("recorder handles CI outcome rows, forks with a shared head, push, edits an
       ...emptyDeps,
       policy: async () => policy,
       verifyLock: async () => {},
-      touched: async () => [{ id: "R-1", why: "implements" }],
+      touched: async (_base: string, _head: string, _ids: string[], options?: { prefix?: string }) => {
+        assert.equal(options?.prefix, "C");
+        return [{ id: "C-1", why: "implements" as const }];
+      },
+      deltas: async (_base: string, _head: string, options?: { prefix?: string }) => {
+        assert.equal(options?.prefix, "C");
+        return [];
+      },
       specification: async () => ({ blessed: true, requirements: [
-        { id: "R-1", excerpt: "Retry once.", state: "blessed", recorded: "self", flags: [], blessed_digest: "sha256:abc" },
+        { id: "C-1", excerpt: "Retry once.", state: "blessed", recorded: "self", flags: [], blessed_digest: "sha256:abc" },
       ], blessings_changed: [] }),
     };
     for (const [state, expected, reason] of [
@@ -197,7 +209,7 @@ test("recorder handles CI outcome rows, forks with a shared head, push, edits an
         assert.equal(summaries.length, 1);
         assert.match(summaries[0], /Pull request #1[\s\S]*Pull request #2/);
         const evalInput = { repository, work: "pr-1", tested_commit: head, base,
-          acceptance_digest: card.acceptance_digest, implemented: [{ id: "R-1", blessed_digest: "sha256:abc" }],
+          acceptance_digest: card.acceptance_digest, implemented: [{ id: "C-1", blessed_digest: "sha256:abc" }],
           policy_blob: base, tenet_version: options.version };
         assert.equal(card.evaluation_id, sha256(jcs(evalInput)).slice(0, 16));
         assert.equal(evaluationId(evalInput), card.evaluation_id);
@@ -227,4 +239,153 @@ test("artifact redirect keeps the GitHub token on the API request only", async (
   assert.equal(found.data.toString(), "fixture zip bytes");
   assert.equal(fake.requests[0].body.authorization, "Bearer fixture-token");
   assert.equal(fake.requests[1].body, undefined);
+});
+
+async function recordFixture(t: import("node:test").TestContext, options: {
+  before?: Record<string, string>; after: Record<string, string>;
+  xml?: string; level?: string; realSpecs?: boolean; bareDigest?: boolean; loseRecords?: boolean;
+}) {
+  const repo = await tmpRepo("verify-regression");
+  t.after(repo.cleanup);
+  await repo.write("README.md", "verification fixture\n");
+  await repo.write("tenet.yaml", [
+    "standard: 0.1.0-alpha.0",
+    "kit_path: kit",
+    "specs:",
+    "  id_prefix: R",
+    "  documents: [{path: intent.md, level: L1}]",
+    "checks: {unit: {run: npm test, report: junit}}",
+    "",
+  ].join("\n"));
+  for (const [file, content] of Object.entries(options.before ?? {})) await repo.write(file, content);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "base"]);
+  const base = repo.git(["rev-parse", "HEAD"]).trim();
+  for (const [file, content] of Object.entries(options.after)) await repo.write(file, content);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "test subject"]);
+  const head = repo.git(["rev-parse", "HEAD"]).trim();
+  const run = { id: "42", attempt: 1, workflow: "Tenet tests", head, repository, startedAt: at };
+  const pull = { number: 1, head, base, body: body.replace("C-1", "R-1") };
+  const store = memoryStore();
+  const order: string[] = [];
+  const checkRuns: Array<{ summary: string; conclusion: string }> = [];
+  const deps = {
+    ...emptyDeps,
+    policy: async (ref: string, cwd: string) => ({ ...await loadPolicy({ ref, cwd }), level: options.level ?? "observe" }),
+    verifyLock: async () => {},
+    touched: async () => [{ id: "R-1", why: "implements" }],
+    ...(options.realSpecs ? {
+      parseDoc,
+      sectionDigest: options.bareDigest ? (text: string) => sectionDigest(text).replace(/^sha256:/, "") : sectionDigest,
+    } : {
+      specification: async () => ({ blessed: true, requirements: [
+        { id: "R-1", excerpt: "Retry once.", state: "blessed", recorded: "self", flags: [], blessed_digest: "sha256:abc" },
+      ], blessings_changed: [] }),
+    }),
+  };
+  const result = await record({ kind: "workflow_run", repository, run, pulls: [1], base }, deps, {
+    cwd: repo.path,
+    now: () => new Date(at), version: "0.1.0-alpha.0", render: renderCheckSummary,
+    checkout: async () => ({ cwd: repo.path, stale: false, close: async () => {} }),
+    policyBlob: async () => base, waitForRetry: async () => {},
+    forge: {
+      getPullRequest: async () => pull, findPullRequests: async () => [pull], latestRun: async () => run,
+      downloadBundles: async () => ({ total: 1, missing: 0, bundles: [bundle(head, base, "pass", options.xml)] }),
+      upsertCheckRun: async (request) => { order.push("publish"); checkRuns.push(request); },
+    },
+    records: {
+      ...store,
+      write: async (snapshot, files) => {
+        order.push("record");
+        return options.loseRecords ? false : store.write(snapshot, files);
+      },
+    },
+  });
+  return { result, order, store, checkRuns };
+}
+
+function blessing(names: { doc?: string; by: string }) {
+  const copy = "- R-1 Retry once. {origin: asked}\n";
+  const digest = sectionDigest(copy);
+  return {
+    "tenet/blessed/intent/requirements.md": copy,
+    "tenet/intent.md": [
+      "---",
+      `tenet: {spec: 1, level: L1${names.doc ? `, doc: ${names.doc}` : ""}}`,
+      `sections: {requirements: {state: blessed, blessed_digest: "${digest}", blessed_copy: tenet/blessed/intent/requirements.md, blessed_by: "${names.by}", recorded: self}}`,
+      "---",
+      "## Requirements",
+      copy,
+    ].join("\n"),
+  };
+}
+
+test("r6 finding 1 uses a specification document ID and falls back to its path", async (t) => {
+  for (const doc of ["intent", undefined]) {
+    const { result } = await recordFixture(t, {
+      before: blessing({ doc, by: "old owner" }), after: blessing({ doc, by: "new owner" }), realSpecs: true,
+    });
+    assert.deepEqual(result.card.blessings_changed, [{
+      doc: doc ?? "tenet/intent.md", section: "requirements", blessed_by: "new owner", commit_author: "Tenet Test",
+    }]);
+  }
+});
+
+test("r6 finding 2 counts requirement-tagged declarations independently of acceptance tags", async (t) => {
+  const { result } = await recordFixture(t, {
+    before: { "test/retry.test.ts": 'test("[R-1] unit retry", () => {});\n' },
+    after: { "test/retry.test.ts": 'test("[R-1] unit retry", () => {});\ntest("[AB-1] retry once", () => {});\n' },
+    xml: '<testsuite><testcase name="[AB-1] retry once"/><testcase name="[R-1] unit retry"/></testsuite>',
+  });
+  assert.equal(result.card.items[0]?.result, "passed");
+  assert.deepEqual(result.card.requirements[0]?.tests, { expected: 1, passed: 1, failed: 0, skipped: 0, not_run: 0 });
+  const acceptanceOnly = await recordFixture(t, { after: { "test/retry.test.ts": 'test("[AB-1] retry once", () => {});\n' } });
+  assert.deepEqual(acceptanceOnly.result.card.requirements[0]?.tests, { expected: 0, passed: 0, failed: 0, skipped: 0, not_run: 0 });
+});
+
+test("r6 finding 3 keeps the complete card before posting a bounded non-passing summary", async (t) => {
+  const critical = "failure context ".repeat(4_100);
+  for (const [level, conclusion] of [["observe", "neutral"], ["verify", "failure"], ["assure", "failure"]]) {
+    const { result, order, store, checkRuns } = await recordFixture(t, {
+      level, after: { "test/retry.test.ts": 'test("[AB-1] retry once", () => {});\n' },
+      xml: `<testsuite><testcase name="${critical}[AB-1] retry once"><failure>fail</failure></testcase></testsuite>`,
+    });
+    assert.deepEqual(order, ["record", "publish"]);
+    assert.equal(result.conclusion, conclusion);
+    assert.equal(result.wrote, true);
+    assert.equal(checkRuns[0]?.conclusion, conclusion);
+    assert.ok(checkRuns[0].summary.length <= 60_000);
+    assert.ok(checkRuns[0].summary.endsWith("\n… (truncated at 60,000 characters · full proof card in refs/tenet/records)"));
+    const kept = JSON.parse(store.files[`proof/pr-1/${result.card.evaluation_id}/42-1.json`]);
+    assert.ok(kept.items[0].first_failure.startsWith(critical));
+    assert.ok(kept.degraded.includes("check summary exceeded 60,000 characters; full proof card in refs/tenet/records"));
+  }
+  const refused = await recordFixture(t, {
+    loseRecords: true, level: "verify", after: { "test/retry.test.ts": 'test("[AB-1] retry once", () => {});\n' },
+    xml: `<testsuite><testcase name="${critical}[AB-1] retry once"><failure>fail</failure></testcase></testsuite>`,
+  });
+  assert.equal(refused.result.conclusion, "failure");
+  assert.equal(refused.result.wrote, false);
+  assert.ok(refused.checkRuns[0].summary.endsWith("full proof card could not be kept)"));
+});
+
+test("r6 finding 4 compares blessed-copy digests with and without their algorithm prefix", async (t) => {
+  const blessingFiles = blessing({ doc: "intent", by: "owner" });
+  const accepted = await recordFixture(t, { after: blessingFiles, realSpecs: true, bareDigest: true });
+  assert.equal(accepted.result.card.badge, "advisory");
+  assert.equal(accepted.result.card.requirements[0]?.id, "R-1");
+  const refused = await recordFixture(t, {
+    after: { ...blessingFiles, "tenet/blessed/intent/requirements.md": "Changed copy\n" }, realSpecs: true, bareDigest: true,
+  });
+  assert.equal(refused.result.card.badge, "intent-not-yet-blessed");
+  assert.deepEqual(refused.result.card.requirements, []);
+});
+
+test("an unmerged pull request close records nothing beyond its last evaluation", async () => {
+  const untouched = <T extends object>(): T => new Proxy({} as T, {
+    get(_target, name) { assert.fail(`Closed pull request accessed ${String(name)}`); },
+  });
+  const event = { kind: "pull_request", action: "closed", merged: false, repository, number: 7 } as const;
+  assert.deepEqual(await recordAll(event, untouched(), untouched()), []);
 });

@@ -1,0 +1,82 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 7,
+  "title": "Cover undo label collisions after preview",
+  "body": "## Outcome\n\nAdds confirmation-time coverage for the approved REC reconstruction slice 0 undo guard. The runtime guard already exists in base commit `b86cec9`; this PR does not duplicate or change it. This is not full CON-07 reconstruction.\n\n## Coverage\n\nThe real-Git `[CON-12, GIT-04]` regression obtains an undo preview, adds a foreign commit with the same `Tenet-Work` label, and confirms undo. It requires `undo-conflict`, no inverse execution, unchanged source/index/history, no `undoneBy`, and no new revert contract.\n\n## Validation\n\nExact head `b73887cb1f13e798009f6cf8c4b6193217022ee2` passed [push run 42406328133](https://github.com/vedprakash-m/tenet/actions/runs/42406328133) and [PR run 42406344599, attempt 2](https://github.com/vedprakash-m/tenet/actions/runs/42406344599): full CI and real-repository built-bundle UAT on Node 24 and 22.12 on Ubuntu/macOS, plus Windows portability. First PR attempt failed a nested watcher calibration timeout; cause unconfirmed, unchanged same-head retry passed, no guard or timeout weakened.\n\nLocal static/build/artifact gates and staged/outgoing privacy checks passed; privacy scans are heuristic, not proof. Local Windows mutating workflows remain intentionally unsupported. No installed-host observation or release qualification is claimed.\n\nNo schema, budget or kernel behavior changes. Changelog records validation as pending at commit time; the exact-head results above supersede that status. Local plan stays ignored. Predicted CHANGELOG conflict with capacity #9 awaits prerequisite merge and owner-authorized branch update; no immediate rewrite.\n\n## Review and merge gates\n\nThis changes executable TypeScript test content. Conservatively retain the solo 72-hour review window under PRD ENG-11 / Tech Spec §18; green CI does not waive elapsed time or independent review. Opened 2026-11-07 19:28 UTC: earliest solo-window completion is 2026-11-10 19:28 UTC. The owner merges; this session will not merge or push main.",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-07T19:28:00Z",
+  "merged_at": "2026-11-09T18:03:24Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "vedprakash-m-reconstruction-undo-guard",
+  "head": "vedprakash-m-reconstruction-undo-guard",
+  "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
+  "head_sha": "b73887cb1f13e798009f6cf8c4b6193217022ee2",
+  "merge_sha": "6ad271e5223de85cb5549ebd803561627f2bb0f7",
+  "diff_sha256": "c4d504d9869ec1f3ee997bc98dacd059fcca7b75c06857fa6e70a27060f3272e",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "b73887cb1f13e798009f6cf8c4b6193217022ee2",
+      "message": "test: cover undo label collisions after preview",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/undo.test.ts",
+      "status": "modified",
+      "additions": 33,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T19:49:29Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T19:30:28Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:32:13Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T19:49:36Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:02:00Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T19:31:08Z"
+    }
+  ],
+  "binary_paths": []
+}

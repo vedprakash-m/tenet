@@ -1,0 +1,8 @@
+{
+  "op": "recordCandidate",
+  "level": "verify",
+  "candidate_id": "mg-23",
+  "tested_candidate_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "current_candidate_revision": "ffffffffffffffffffffffffffffffffffffffff",
+  "pr_head_passing": true
+}

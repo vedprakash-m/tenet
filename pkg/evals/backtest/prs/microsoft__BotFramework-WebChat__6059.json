@@ -1,0 +1,365 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6059,
+  "title": "store: address review findings in SetView, VersionedStorage, createNode, FrozenNodeSet",
+  "body": "Fixes the outstanding review comments on `packages/store`. Each comment first got a failing test, then the code fix.\n\n### `createNode`\n- Reads each own data property descriptor once, so a getter can no longer return different values to validation and storage.\n- Compares node-reference sets with `isSameIds`, i.e. by ID.\n\n### `SetView` (base of `FrozenSet` and `FrozenNodeSet`)\n- `difference`, `intersection`, `isDisjointFrom`, `isSubsetOf`, `isSupersetOf`, `symmetricDifference` and `union` are hand-written using only `size`/`has()`/`keys()`. They no longer depend on native `Set.prototype` methods, which are missing in Chrome/Firefox 100 and Safari 15.\n- These methods use the receiver's own `has()`, so `FrozenNodeSet` matches node references by `@id`.\n- A code comment explains why `core-js-pure` is not used:\n   - It returns its own `Set` class, so `instanceof Set` is `false`.\n   - It copies the receiver into a plain `Set`, which drops `FrozenNodeSet`'s ID matching, so `union()` duplicates references.\n\n### `VersionedStorage`: copy on move\n- A `Map` shared with older versions is never reordered.\n   - A deleted key stays in place as a `DELETED` tombstone.\n   - Re-adding a deleted key, moving a key, or piling up too many tombstones copies the head into a new `Map`.\n- An older version gets its key order by filtering its own map's keys through `has()`, and caches the result.\n- This fixes:\n   - Older snapshots changing order after a delete.\n   - Iterators exposing the head `Map` directly.\n   - Delete-then-set not moving the key to the end.\n- Replaces an earlier position-tracking fix: about 270 lines of code instead of about 420, memory per node is the same as before, and benchmarks are roughly the same.\n- Drops the `ordered: false` option; `FrozenSkipList` now uses the default storage.\n\n### Tests\n- New regression tests for each review comment, in the tests for `SetView`, `createNode`, `FrozenNodeSet`, `VersionedStorage`, `FrozenMap` and `FrozenSet`.\n- One existing `FrozenMap` expectation is corrected to insertion order (`['a', 'b', 'c']`).\n\n```ts\n// Works in browsers without native Set methods, and matches node references by ID.\nnew FrozenNodeSet(['_:m-1', '_:m-2']).union(new Set([{ '@id': '_:m-2' }, { '@id': '_:m-3' }]));\n// → _:m-1, _:m-2, _:m-3\n```",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-11-19T20:10:09Z",
+  "merged_at": "2026-11-19T20:27:36Z",
+  "base_ref": "feat-new-store",
+  "base": "feat-new-store",
+  "head_ref": "copilot/add-test-cases-for-failing-scenarios",
+  "head": "copilot/add-test-cases-for-failing-scenarios",
+  "base_sha": "dd37b9e8dcb19df8dae3478f44cf15d35d735f39",
+  "head_sha": "5fce03b8609bbd228c223b3b5b48b9fecca08083",
+  "merge_sha": "d929d9deeb2ee677d14287a876bd171c92c0c1a7",
+  "diff_sha256": "5a089205cbbaab17ccad6ea3c90523c44ecf9b5ef2e58a5e346efaebab173603",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-19T20:11:55Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "e14bd95b19999d8d69a4ec2e36c6bc9ff1895252",
+      "message": "Add failing tests for outstanding review comments in #6053",
+      "author": "compulim"
+    },
+    {
+      "sha": "5b7e500537bd68ff18f21be3a17b01935e21d906",
+      "message": "Fix review issues: createNode accessor, SetView polyfill-free Set methods, VersionedStorage ordering and snapshot-safe iteration",
+      "author": "compulim"
+    },
+    {
+      "sha": "85035b54359e6bc7bcd41b4eb2fa250c877af841",
+      "message": "Simplify VersionedStorage: copy on move instead of tracking positions",
+      "author": "compulim"
+    },
+    {
+      "sha": "5fce03b8609bbd228c223b3b5b48b9fecca08083",
+      "message": "Document why SetView does not use core-js-pure",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/store/src/private/createNode.test.ts",
+      "status": "modified",
+      "additions": 41,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/createNode.ts",
+      "status": "modified",
+      "additions": 28,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenMap.test.ts",
+      "status": "modified",
+      "additions": 92,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenMap.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenNodeSet.test.ts",
+      "status": "modified",
+      "additions": 50,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenSet.test.ts",
+      "status": "modified",
+      "additions": 52,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenSet.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/SetView.test.ts",
+      "status": "added",
+      "additions": 75,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/SetView.ts",
+      "status": "modified",
+      "additions": 142,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/VersionedStorage.test.ts",
+      "status": "modified",
+      "additions": 94,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/VersionedStorage.ts",
+      "status": "modified",
+      "additions": 209,
+      "deletions": 66,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:29:44Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:30:06Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:18:38Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:19:34Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:19:21Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:19:15Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:19:17Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:19:05Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:27:57Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:18:40Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:18:56Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:18:54Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:28:09Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:25:37Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:18:39Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:19:32Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:26:08Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:18:50Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:25:57Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:27:38Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:27:54Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:28:11Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:27:32Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:29:34Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:26:40Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:26:26Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:28:58Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:26:04Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:28:05Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-19T20:26:48Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:26:20Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "failure",
+      "completed_at": "2026-11-19T20:20:45Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:19:42Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:21:47Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:12:22Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:13:33Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:17:39Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:12:23Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:13:28Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:12:36Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:14:21Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:13:11Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "failure",
+      "completed_at": "2026-11-19T20:13:05Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:11:02Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:11:40Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-19T20:11:06Z"
+    }
+  ],
+  "binary_paths": []
+}

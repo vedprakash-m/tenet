@@ -1,0 +1,5 @@
+{
+  "candidate_valid": false,
+  "degraded_includes": "merge-candidate-stale",
+  "conclusion": "failure"
+}

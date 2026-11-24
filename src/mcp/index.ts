@@ -1,12 +1,14 @@
 import { readFileSync } from "node:fs";
-import { mkdir, readFile, readdir } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
-import { version } from "../core/output.js";
-import { ulid } from "../core/hash.js";
 import { writeAtomic } from "../core/fs.js";
+import { git } from "../core/git.js";
+import { ulid } from "../core/hash.js";
+import { message } from "../core/messages.js";
+import { fail, version } from "../core/output.js";
 import {
   contextSummary,
   contextWithFindings,
@@ -17,6 +19,7 @@ import { check } from "../specs/check.js";
 
 export type McpIo = {
   cwd?: string;
+  args?: string[];
   stdin?: NodeJS.ReadableStream;
   stdout?: { write(value: string | Uint8Array): unknown };
   stderr?: { write(value: string | Uint8Array): unknown };
@@ -284,13 +287,51 @@ async function proposeTool(
   const found = await packet(cwd, args.work);
   const proposals = path.join(found.directory, "proposals");
   await mkdir(proposals, { recursive: true });
-  const filename = path.join(proposals, `${ulid(now())}.json`);
+  const timestamp = now();
+  const filename = path.join(proposals, `${ulid(timestamp)}.json`);
+  const relative = portableRelative(cwd, filename);
   await writeAtomic(filename, `${JSON.stringify({
     kind: args.kind,
     work: args.work,
     payload: args.payload,
   }, null, 2)}\n`);
-  return { path: portableRelative(cwd, filename) };
+  try {
+    await git(["add", "--", relative], { cwd });
+    const commitEnv: NodeJS.ProcessEnv = {
+      GIT_AUTHOR_NAME: "Tenet",
+      GIT_AUTHOR_EMAIL: "tenet@localhost",
+      GIT_COMMITTER_NAME: "Tenet",
+      GIT_COMMITTER_EMAIL: "tenet@localhost",
+      GIT_AUTHOR_DATE: timestamp.toISOString(),
+      GIT_COMMITTER_DATE: timestamp.toISOString(),
+    };
+    await git(
+      [
+        "commit",
+        "--only",
+        "--no-verify",
+        "--no-gpg-sign",
+        "-m",
+        `tenet: propose ${args.kind} for ${args.work}`,
+        "--",
+        relative,
+      ],
+      { cwd, env: commitEnv },
+    );
+  } catch (error) {
+    try {
+      await git(["reset", "--quiet", "--", relative], { cwd });
+    } catch {
+      // Preserve the original commit failure.
+    }
+    try {
+      await rm(filename, { force: true });
+    } catch {
+      // Preserve the original commit failure.
+    }
+    throw error;
+  }
+  return { path: relative };
 }
 
 function textForResult(name: string, result: JsonObject): string {
@@ -394,6 +435,22 @@ export async function serveMcp(input: McpIo = {}): Promise<void> {
     stdout: input.stdout ?? process.stdout,
     ...input,
   } as Required<Pick<McpIo, "cwd" | "stdin" | "stdout">> & McpIo;
+  if (io.stdout === io.stderr) {
+    const words = message("TN-USAGE-MCP", {
+      command: "mcp",
+      detail: "the MCP protocol cannot share its stdout stream with --json",
+    });
+    throw fail("TN-USAGE-MCP", words.message, words.fix);
+  }
+  const marker = process.argv.indexOf("mcp");
+  const args = input.args ?? (marker < 0 ? [] : cliPositionals(process.argv.slice(marker + 1)));
+  if (args.length > 0) {
+    const words = message("TN-USAGE-MCP", {
+      command: "mcp",
+      detail: `unexpected positional arguments: ${args.join(", ")}`,
+    });
+    throw fail("TN-USAGE-MCP", words.message, words.fix);
+  }
   const lines = createInterface({ input: io.stdin, crlfDelay: Infinity });
   for await (const source of lines) {
     if (source.trim() === "") continue;
@@ -407,4 +464,23 @@ export async function serveMcp(input: McpIo = {}): Promise<void> {
     const response = await request(parsed, io);
     if (response) line(io, response);
   }
+}
+
+function cliPositionals(argv: string[]): string[] {
+  const positionals: string[] = [];
+  for (let index = 0; index < argv.length; index += 1) {
+    const value = argv[index] ?? "";
+    if (value === "--cwd") {
+      index += 1;
+    } else if (
+      value !== "--json" &&
+      value !== "--quiet" &&
+      value !== "--verbose" &&
+      value !== "--offline" &&
+      !value.startsWith("--cwd=")
+    ) {
+      positionals.push(value);
+    }
+  }
+  return positionals;
 }

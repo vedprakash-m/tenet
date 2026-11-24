@@ -1,0 +1,100 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5620,
+  "title": "chore: update react-chain-of-responsibility",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n- Bumped `react-chain-of-responsibility` to `0.4.1` version, by [@OEvgeny](https://github.com/OEvgeny) in PR [#5620](https://github.com/microsoft/BotFramework-WebChat/pull/5620)\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n## -\r\n\r\n-\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [ ] I have added tests and executed them locally\r\n-  [ ] I have updated `CHANGELOG.md`\r\n-  [ ] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [ ] Browser and platform compatibilities reviewed\r\n-  [ ] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [ ] Documents reviewed (docs, samples, live demo)\r\n-  [ ] Internationalization reviewed (strings, unit formatting)\r\n-  [ ] `package.json` and `package-lock.json` reviewed\r\n-  [ ] Security reviewed (no data URIs, check for nonce leak)\r\n-  [ ] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-10-22T02:02:04Z",
+  "merged_at": "2025-10-22T02:20:02Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "chore/update-rcor",
+  "head": "chore/update-rcor",
+  "base_sha": "7788726e285bbcc93016e5e3bc8c35bf150a1c27",
+  "head_sha": "c8e5ebcdb1948ad61d759d488bb64f23980426c1",
+  "merge_sha": "98275e9a9565a3a24d4f551b3b590c07c445fd81",
+  "diff_sha256": "666d7e569376abb3bb2e13e33edce4fbce439f86afe1ecbe44f5ec65ca99e061",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-10-22T02:04:02Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "5bf52643307feebf2856b25e49830d0d7c6749f8",
+      "message": "chore: update reqct-chain-of-responsibility",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "447cdfcef39848452e790dbbfdf2957199cb21d0",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "c8e5ebcdb1948ad61d759d488bb64f23980426c1",
+      "message": "new version",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-10-22T02:07:37Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": []
+}

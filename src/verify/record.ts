@@ -10,14 +10,16 @@ import { declaredTags, itemResults, parseAcceptance, weakening, type TestReport 
 import type { Finding, ProofCard } from "../types/generated.js";
 import { decodeBundle, mergeMatrix, parseBundledReport, refusedBundle, safeEntry,
   type BundleData, type CheckEntry, type ParsedSpecification, type Subject, type VerificationBundle, type VerifyDeps } from "./bundle.js";
+import { SummaryOverflow } from "./card.js";
 import type { Conclusion, ForgeAdapter, PullRequest, WorkflowRun } from "./forge.js";
 import { keepRecord, type RecordsStore } from "./records.js";
 
 export type VerifyEvent =
   | { kind: "workflow_run"; repository: string; run: WorkflowRun; pulls?: number[]; base?: string }
   | { kind: "edited"; repository: string; number: number };
+type UnmergedClose = { kind: "pull_request"; action: "closed"; merged: false; repository: string; number: number };
 export type CardResult = { card: ProofCard; conclusion: Conclusion; wrote: boolean };
-type Evaluation = CardResult & { work: string; run: WorkflowRun | null; rules: ProofCard["rules"] };
+type Evaluation = CardResult & { work: string; run: WorkflowRun | null; rules: ProofCard["rules"]; level: Policy["level"] };
 type Subjects = { cwd: string; stale: boolean; close(): Promise<void> };
 export type RecordOptions = {
   cwd: string;
@@ -167,6 +169,7 @@ async function specifications(
       .split("\0").filter((name) => name.endsWith(".md"));
     const blobs = await catFileBatch(ref, names, { cwd });
     const docs = new Map<string, ParsedSpecification>();
+    const tracked = new Set(names);
     const copies = new Set<string>();
     for (const [filename, content] of blobs) {
       const doc = parse?.(filename, content.toString("utf8"), parseOptions);
@@ -174,7 +177,10 @@ async function specifications(
       docs.set(filename, doc);
       for (const section of doc.sections) {
         if (section.state === "blessed" && section.blessed_copy) {
-          try { copies.add(safeEntry(section.blessed_copy)); } catch { /* invalid blessed copy path */ }
+          try {
+            const copy = safeEntry(section.blessed_copy);
+            if (tracked.has(copy)) copies.add(copy);
+          } catch { /* invalid blessed copy path */ }
         }
       }
     }
@@ -191,7 +197,8 @@ async function specifications(
       for (const section of doc.sections) {
         if (section.state !== "blessed" || !section.blessed_copy || !section.blessed_digest) continue;
         const bytes = snapshot.copies.get(section.blessed_copy);
-        if (!bytes || digest(bytes.toString("utf8")) !== section.blessed_digest) continue;
+        if (!bytes || digest(bytes.toString("utf8")).replace(/^sha256:/, "") !==
+          section.blessed_digest.replace(/^sha256:/, "")) continue;
         if (snapshot === after) blessed = true;
         const metadata = fields(sectionMetadata[section.slug]);
         const recorded = metadata.recorded === "forge" || metadata.recorded === "signed" ? metadata.recorded : "self";
@@ -209,7 +216,8 @@ async function specifications(
           if (previous.blessed_digest !== section.blessed_digest || previous.blessed_by !== metadata.blessed_by ||
             previous.blessed_at !== metadata.blessed_at || previous.recorded !== metadata.recorded) {
             const author = await git(["log", "-1", "--format=%an", tested, "--", filename], { cwd });
-            blessings.push({ doc: filename, section: section.slug, blessed_by: metadata.blessed_by, commit_author: author.trim() });
+            const docId = fields(doc.front?.tenet).doc;
+            blessings.push({ doc: typeof docId === "string" ? docId : filename, section: section.slug, blessed_by: metadata.blessed_by, commit_author: author.trim() });
           }
         }
       }
@@ -290,7 +298,8 @@ export async function record(event: VerifyEvent, deps: VerifyDeps, options: Reco
   return first;
 }
 
-export async function recordAll(event: VerifyEvent, deps: VerifyDeps, options: RecordOptions): Promise<CardResult[]> {
+export async function recordAll(event: VerifyEvent | UnmergedClose, deps: VerifyDeps, options: RecordOptions): Promise<CardResult[]> {
+  if (event.kind === "pull_request") return [];
   const { forge } = options;
   const prs = event.kind === "edited" ? [await forge.getPullRequest(event.number)] : event.pulls?.length
     ? await Promise.all([...new Set(event.pulls)].map((number) => forge.getPullRequest(number)))
@@ -300,7 +309,8 @@ export async function recordAll(event: VerifyEvent, deps: VerifyDeps, options: R
   const results: Evaluation[] = [];
   for (const pr of candidates) results.push(await evaluate(event, pr, deps, options));
   if (!results.length) return [];
-  await publish(results, options);
+  const initial = summaries(results, options);
+  if (!initial.overflow) await publish(results, initial.text, options);
   let lost = false;
   for (const result of results) {
     const { card, run } = result;
@@ -315,21 +325,55 @@ export async function recordAll(event: VerifyEvent, deps: VerifyDeps, options: R
       lost = true;
       card.degraded.push("results not kept");
       card.why.push({ text: "results not kept", class: "host" });
-      result.conclusion = "neutral";
+      result.conclusion = degradedConclusion(result);
     }
   }
-  if (lost) await publish(results, options);
+  if (initial.overflow || lost) await publish(results, summaries(results, options).text, options);
   return results.map(({ card, conclusion, wrote }) => ({ card, conclusion, wrote }));
 }
 
-async function publish(results: Evaluation[], options: RecordOptions): Promise<void> {
-  const first = results[0];
-  if (!first) return;
+const summaryLimit = 60_000;
+const overflowNotice = "check summary exceeded 60,000 characters; full proof card in refs/tenet/records";
+const overflowPointer = "\n… (truncated at 60,000 characters · full proof card in refs/tenet/records)";
+const lostPointer = "\n… (truncated at 60,000 characters · full proof card could not be kept)";
+
+function degradedConclusion(result: Evaluation): Conclusion {
+  return result.conclusion === "failure" || result.level === "verify" || result.level === "assure" ? "failure" : "neutral";
+}
+
+function summaries(results: Evaluation[], options: RecordOptions): { text: string; overflow: boolean } {
   const headings = results.map((result) => results.length > 1 ? `Pull request #${result.work.slice(3)}\n` : "");
   const overhead = headings.reduce((total, heading) => total + heading.length, 0) + results.length - 1;
-  const budget = Math.floor((60_000 - overhead) / results.length);
-  const summary = results.map((result, index) => (headings[index] ?? "") + options.render(result.card, budget)).join("\n");
-  if (summary.length > 60_000) throw new RangeError("required proof details exceed the check summary limit");
+  const budget = Math.max(0, Math.floor((summaryLimit - overhead) / results.length));
+  let overflow = false;
+  const text = results.map((result, index) => {
+    const heading = headings[index] ?? "";
+    try {
+      return heading + options.render(result.card, budget);
+    } catch (error) {
+      if (!(error instanceof SummaryOverflow)) throw error;
+      overflow = true;
+      const kept = result.wrote;
+      const alreadyFlagged = result.card.degraded.includes(overflowNotice);
+      const recordsLost = result.card.degraded.includes("results not kept") || !result.run;
+      if (!alreadyFlagged && !recordsLost) {
+        result.card.degraded.push(overflowNotice);
+        result.card.why.push({ text: overflowNotice, class: "host" });
+      }
+      result.conclusion = degradedConclusion(result);
+      const pointer = recordsLost && !kept ? lostPointer : overflowPointer;
+      const room = Math.max(0, budget - pointer.length);
+      const partial = error.essential.slice(0, room).replace(/[\uD800-\uDBFF]$/, "");
+      return heading + partial + pointer.slice(0, budget);
+    }
+  }).join("\n");
+  if (text.length > summaryLimit) throw new RangeError("required proof details exceed the check summary limit");
+  return { text, overflow };
+}
+
+async function publish(results: Evaluation[], summary: string, options: RecordOptions): Promise<void> {
+  const first = results[0];
+  if (!first) return;
   const conclusion = results.some((result) => result.conclusion === "failure") ? "failure" :
     results.some((result) => result.conclusion === "neutral") ? "neutral" : "success";
   await options.forge.upsertCheckRun({ head: first.card.tested.head, conclusion, summary });
@@ -408,9 +452,10 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
       if (snapshot.stale) host.push("merge-candidate-stale");
       const checked = await deps.check({ cwd: snapshot.cwd, ci: true, base: tested.base });
       reportFindings = checked.findings;
+      const specOptions = { cwd: snapshot.cwd, prefix: policy.specs.id_prefix };
       [touched, deltas, declared, weakened] = await Promise.all([
-        deps.touched(tested.base, tested.commit, acceptance.implements, { cwd: snapshot.cwd }),
-        deps.deltas(tested.base, tested.commit, { cwd: snapshot.cwd }),
+        deps.touched(tested.base, tested.commit, acceptance.implements, specOptions),
+        deps.deltas(tested.base, tested.commit, specOptions),
         declaredTags(tested.base, tested.commit, policy.specs.id_prefix, { cwd: snapshot.cwd }),
         weakening(tested.base, tested.commit, { cwd: snapshot.cwd }),
       ]);
@@ -469,5 +514,5 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
   card.rules = ruleOutcomes.filter((item) => item.would_block);
   card.why = whyFor(card, host);
   const conclusion: Conclusion = card.rules.length || card.degraded.length || card.tests.failed ? "neutral" : "success";
-  return { card, conclusion, wrote: false, work, run, rules: ruleOutcomes };
+  return { card, conclusion, wrote: false, work, run, rules: ruleOutcomes, level: loaded?.policy.level ?? "observe" };
 }

@@ -1,8 +1,15 @@
 name: CI
 
+# Each pull request runs once (no duplicate branch-push run); a newer push cancels the older run.
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
@@ -27,3 +34,15 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run check:examples
+      - name: Generate health snapshot
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
+        run: |
+          npm run coverage
+          npm run health:snapshot
+      - name: Upload health snapshot
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tenet-health
+          path: .tenet/health/
+          if-no-files-found: error

@@ -1,29 +1,11 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { tmpRepo } from "../helpers/tmpRepo.ts";
 
-const build = spawnSync(
-  process.execPath,
-  [
-    "node_modules/typescript/bin/tsc",
-    "--target", "ES2023",
-    "--module", "NodeNext",
-    "--moduleResolution", "NodeNext",
-    "--strict",
-    "--noUncheckedIndexedAccess",
-    "--exactOptionalPropertyTypes",
-    "--verbatimModuleSyntax",
-    "--skipLibCheck",
-    "--outDir", "dist",
-    "--rootDir", "src",
-    "src/reports/index.ts",
-  ],
-  { cwd: process.cwd(), encoding: "utf8" },
-);
-if (build.status !== 0) throw new Error(build.stderr || build.stdout);
+// npm test builds dist once before any test runs; tests never compile into dist themselves,
+// because a rebuild during the run races other test files importing from dist.
 
 const reports = await import("../../dist/reports/index.js");
 const fixtures = path.join(

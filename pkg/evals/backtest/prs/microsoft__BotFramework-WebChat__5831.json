@@ -1,0 +1,265 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5831,
+  "title": "Bump sanitize-html@2.17.4",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n- Bumped dependencies, by [@compulim](https://github.com/compulim) in PR [#5385](https://github.com/microsoft/BotFramework-WebChat/pull/5385), PR [#5400](https://github.com/microsoft/BotFramework-WebChat/pull/5400), PR [#5426](https://github.com/microsoft/BotFramework-WebChat/pull/5426), PR [#5427](https://github.com/microsoft/BotFramework-WebChat/pull/5427), PR [#5476](https://github.com/microsoft/BotFramework-WebChat/pull/5476), PR [#5516](https://github.com/microsoft/BotFramework-WebChat/pull/5516), PR [#5529](https://github.com/microsoft/BotFramework-WebChat/pull/5529), PR [#5532](https://github.com/microsoft/BotFramework-WebChat/pull/5532), PR [#5659](https://github.com/microsoft/BotFramework-WebChat/pull/5659), PR [#5661](https://github.com/microsoft/BotFramework-WebChat/pull/5661), PR [#5768](https://github.com/microsoft/BotFramework-WebChat/pull/5768), PR [#5813](https://github.com/microsoft/BotFramework-WebChat/pull/5813), and PR [#5831](https://github.com/microsoft/BotFramework-WebChat/pull/5831), by [@OEvgeny](https://github.com/OEvgeny) in PR [#5662](https://github.com/microsoft/BotFramework-WebChat/pull/5662)\r\n   - Production dependencies\r\n      - [`sanitize-html@2.17.4`](https://npmjs.com/package/sanitize-html/v/2.17.4)\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\nBump `sanitize-html@2.17.4` and also `npm audit fix`.\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- `npm install --save-exact --workspace=packages/bundle sanitize-html@2.17.4`\r\n- `npm audit fix`\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [x] ~I have added tests and executed them locally~\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n- [x] ~Browser and platform compatibilities reviewed~\r\n- [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n- [x] ~Documents reviewed (docs, samples, live demo)~\r\n- [x] ~Internationalization reviewed (strings, unit formatting)~\r\n- [x] `package.json` and `package-lock.json` reviewed\r\n- [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n- [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-05-16T08:01:45Z",
+  "merged_at": "2026-05-18T18:55:55Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "bump-sanitize-html",
+  "head": "bump-sanitize-html",
+  "base_sha": "2a3d1d3c98a653c0f15712f72d35e4388bde59eb",
+  "head_sha": "cb0c69220d5f6aadd5eaf67a6bc6ed5251c974ad",
+  "merge_sha": "c138220e433a062180dc94bbb3cede8bb5e54e82",
+  "diff_sha256": "47472fc9ea813a96906be63de069c5aa928d1526e87b79ca422a291110b877f2",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-05-16T08:02:47Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "04ab857948eac63ea3ef8962165be63dc9b8dd0e",
+      "message": "Bump sanitize-html@2.17.4",
+      "author": "compulim"
+    },
+    {
+      "sha": "0fdf53167e195134b5cb2630f219a63b55811b76",
+      "message": "Add entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "cb0c69220d5f6aadd5eaf67a6bc6ed5251c974ad",
+      "message": "Update PR number",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 37,
+      "deletions": 15,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-05-16T08:06:37Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-05-18T18:55:52Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:16:48Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:17:16Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:50Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:53Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:54Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:49Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:41Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:51Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:37Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:10Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:41Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:18Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:11Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:19Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:14:47Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:16:02Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:16:04Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:36Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:15:41Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:12:02Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:10:06Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:10:49Z"
+    },
+    {
+      "name": "Cleanup artifacts",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:06:56Z"
+    },
+    {
+      "name": "Upload results",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:06:35Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:03:12Z"
+    },
+    {
+      "name": "Agent",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:05:48Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:03:03Z"
+    },
+    {
+      "name": "Prepare",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:03:06Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:03:14Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:03:26Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:04:07Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:07:40Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:02:51Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:03:26Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:03:11Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-05-16T08:03:43Z"
+    }
+  ],
+  "binary_paths": []
+}

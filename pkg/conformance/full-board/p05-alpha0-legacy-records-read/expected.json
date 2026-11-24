@@ -1,0 +1,9 @@
+{
+  "legacy_records_count": 2,
+  "decisions_count": 1,
+  "flow": {
+    "cost": {
+      "status": "unavailable"
+    }
+  }
+}

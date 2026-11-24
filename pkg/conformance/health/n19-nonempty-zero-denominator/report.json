@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "coverage": {
+    "complete": true,
+    "analyzed_paths": [
+      "src/payments/a.ts"
+    ]
+  },
+  "scope_digest": "sha256:23d044cc115bef52d62ac19e0f61870abbdf2db3f81baae7a213a19087ea9eb2",
+  "entries": [
+    {
+      "kind": "scalar",
+      "area": "payments",
+      "indicator": "payment-health",
+      "population": "area",
+      "unit": "ratio",
+      "direction": "up",
+      "value": 0,
+      "numerator": 0,
+      "denominator": 0
+    }
+  ]
+}

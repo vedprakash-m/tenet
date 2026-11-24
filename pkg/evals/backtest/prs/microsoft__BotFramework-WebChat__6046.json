@@ -1,0 +1,308 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6046,
+  "title": "Fix the Merge test results check on Ubuntu 26.04 runners",
+  "body": "> Fixes the \"Merge test results\" check, which fails on every pull request since `ubuntu-latest` moved to Ubuntu 26.04.\n\n## Changelog Entry\n\n### Fixed\n\n- 👷🏻 Fixed the \"Merge test results\" check failing on Ubuntu 26.04 runners (lcov 2.4), in PR [#6046](https://github.com/microsoft/BotFramework-WebChat/pull/6046), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nUbuntu 26.04 ships lcov 2.4, which rejects our unit test coverage as corrupt because Istanbul writes two functions named `observeActivity` (an outer function and its inner generator share the name), so no `lcov.info` is produced and the list and summary steps fail too. The lcov steps now ignore `inconsistent` data and use `branch_coverage` instead of the deprecated `lcov_branch_coverage`.\n\n## Design\n\n- Ignoring `inconsistent` works with lcov 2.0 (Ubuntu 24.04) and 2.4 (Ubuntu 26.04), so the job does not depend on the `ubuntu-latest` image; pinning `runs-on: ubuntu-24.04` would only postpone it, and renaming the inner generators would break again on the next duplicate name.\n\n## Specific Changes\n\n- `pull-request-validation.yml`, job `merge-test-results`: `--rc branch_coverage=1 --ignore-errors inconsistent,inconsistent` on the merge, list and summary steps\n\n- [ ] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-12T20:04:31Z",
+  "merged_at": "2026-11-13T00:13:21Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-ci-lcov-ubuntu-26",
+  "head": "OEvgeny/fix-ci-lcov-ubuntu-26",
+  "base_sha": "c2080ea47f0c29138106656aa4e0f6f92ba9ed7e",
+  "head_sha": "1ab288eeb1fa5677b7ea2ac08bca62b7b4cdb452",
+  "merge_sha": "ad47bd0f144787e6da44d32d95256da0e2284608",
+  "diff_sha256": "51720f81f20eddefaf17858e13e7547d2b31a1003b0953fdb057bf03b8f6b9da",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-12T20:45:38Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "2ee6ad0c27a59748adbfb0a678bee776808cb465",
+      "message": "Fix the Merge test results job on Ubuntu 26.04 runners (lcov 2.4)",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7487e9e864df9b60f42d34e0f5f4ae4fbfa8babe",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "1ab288eeb1fa5677b7ea2ac08bca62b7b4cdb452",
+      "message": "Merge branch 'main' into OEvgeny/fix-ci-lcov-ubuntu-26",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6046-fix-ci-lcov-ubuntu-26.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/pull-request-validation.yml",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 3,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-12T20:47:55Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-12T23:02:27Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:13:21Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:12:55Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:09:36Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:02:11Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:11:26Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:11:32Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:11:09Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:11:37Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:09:47Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:09:21Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:10:42Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:12:00Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:10:41Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:11:40Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:10:17Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:12:17Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:11:01Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:09:29Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:12:46Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:11:02Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:02:50Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:02:20Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:03:10Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:03:09Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:02:56Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:02:08Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:03:03Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:02:59Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:02:14Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:02:15Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:02:08Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:03:23Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:05:58Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:04:39Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T23:58:27Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T23:57:50Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T23:58:34Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T23:58:06Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:00:21Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T23:57:49Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:00:02Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-13T00:01:12Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T23:59:06Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T23:59:10Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T23:58:48Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T23:58:36Z"
+    }
+  ],
+  "binary_paths": []
+}

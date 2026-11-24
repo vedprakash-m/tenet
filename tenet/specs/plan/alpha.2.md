@@ -7,8 +7,8 @@
 **CP-0042 · Replay, trust and safe failure · R-026, R-035, R-110, R-217**
 1. *Needs:* Alpha.1; TS §§4–5; ALG-07; CI §§7, 8, 10; K §§1–3, 5.
 2. *Owns:* `src/kernel/replay.ts`, `src/verify/{trust,safe-failure}.ts`, computed close endpoint, doctor trust output, replay and trust tests.
-3. *Exports:* `replay(history, snapshot, asOf) → {transitions, state, findings}`, `observeTrust`, `requiredOutcome → {conclusion, guarantee, reasons}`.
-4. *Behavior:* Reproduce the historical evaluation time and record. Compute closure and tentative expiry. Record T1–T3 and declared or observed T4 separately from required-status availability. Apply CI §10 and label explicit overrides accepted without verification.
+3. *Exports:* `replay(history, snapshot, asOf) → {transitions: [{event_id, type, status, reason?}], state: {..., endpoint}, findings}`, `observeTrust(input, asOf) → {t1, t2, t3, t4, merge_requires_status, observed_at, stale, guarantee}`, `requiredOutcome(input) → {conclusion, guarantee, reasons, degraded}`.
+4. *Behavior:* Reproduce the historical evaluation time and record. Compute `state.endpoint` (`checked|integrated|implemented-unverified|cancelled|superseded`) and tentative expiry (`pending-evidence` -> `unjustified`). Record T1–T3 and T4 (`enforced|declared|unknown`) separately from `merge_requires_status` (`enforced*` only when all hold, T4 is `enforced`, status is required, and observation age `<= 7d`). Apply CI §10 (`store-loss` -> `"results not kept"`, `shared-decision-account` -> `detected`), and label explicit overrides `accepted-without-verification`.
 5. *Edge cases:* Expiry boundary, late evidence, store loss, stale trust, unavailable protection and shared decision account.
 6. *Out of scope:* Signing, host containment and the GA close command pending release-boundary reconciliation.
 7. *Fixtures:* `test/kernel/replay/{tentative,expiry,late,policy-change,close}/`, `test/verify/trust/{t1-t4,unavailable,override,outcome-table}/`.
@@ -17,8 +17,8 @@
 **CP-0046 · Signed evidence and candidate checks · R-100**
 1. *Needs:* CP-0042; CI §§3–7, 10; C §11; K §§2, 3, 5; L-0030.
 2. *Owns:* Sealed workflow, recorder signing, `src/core/sign.ts`, signed store, upgrade wiring, fixed-candidate binding and person-present wire fixtures.
-3. *Exports:* `signReceipt`, `verifyReceipt`, `personPresentPayload(request, choice, actor, challenge)`, `recordCandidate`.
-4. *Behavior:* Keep the approved two-job boundary. Validate provenance, completeness and size before reading reports or applying a result. Use the documented signing backend where confirmed. Write immutable receipts and apply CI §10 to the exact candidate. Validate the canonical payload and report whether presence is available.
+3. *Exports:* `signReceipt(receipt, key) → {receipt, envelope: {algorithm, key_id, signature, store_path}}`, `verifyReceipt(input) → {valid, evidence_state, backend, store_path}`, `personPresentPayload(request, choice, actor, challenge)`, `verifyPersonPresent` (`{valid, accepted, user_presence: "observed"|"unavailable"|"none", challenge_consumed, error_kind?}`), `recordCandidate` (`candidates/<id>/<rev>.json` on `refs/tenet/records`).
+4. *Behavior:* Keep the approved two-job boundary. Validate provenance, completeness and size before reading reports or applying a result (`TN-SEALED-DIRTY` when sealed check mutates tracked files; `TN-RECORD-BUNDLE` on wrong run ID). Use the documented signing backend (`sigstore|ed25519|oidc`). Write immutable receipts at `refs/tenet/evidence/<subject-digest>/<id>.json` and apply CI §10 to the exact candidate. Validate the canonical payload and report whether presence is available (`user_presence: "unavailable"` on ordinary keys).
 5. *Edge cases:* Missing key, partial shards, wrong run, retry, fork, superseded merge candidate and unknown security-key presence.
 6. *Out of scope:* Assure activation and full later R-152 functionality. Preserve unresolved scope in the evidence track.
 7. *Fixtures:* `test/verify/attest/{signed,tampered,wrong-run,partial-shards,candidate-stale,retry,fork,person-present}/`.

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "coverage": {
+    "complete": true,
+    "analyzed_paths": [
+      "src/payments/a.ts"
+    ]
+  },
+  "scope_digest": "sha256:3b6cbef3e6249c73473035fcfa2f9c5d5171ad99d0dab0cb768cd6e9a34897b0",
+  "entries": [
+    {
+      "kind": "finding_set",
+      "area": "payments",
+      "indicator": "payment-health",
+      "findings": [],
+      "max_new": 99
+    }
+  ]
+}

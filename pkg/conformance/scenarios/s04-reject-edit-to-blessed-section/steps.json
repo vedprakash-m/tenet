@@ -78,10 +78,10 @@
       "fakeTty": [
         "1",
         "reject",
-        "restore"
+        "y"
       ],
       "expectExitCode": 0,
-      "expectedOmitted": "proposals-r7#Q2"
+      "expectedJson": "expected/05-bless.json"
     },
     {
       "id": "06-context-after-reject",

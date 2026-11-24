@@ -1,0 +1,12 @@
+{
+  "decision": {
+    "kind": "approve",
+    "name": "bless-section",
+    "actor": "ved",
+    "target": "tenet/intent.md#retry",
+    "recorded": "forge"
+  },
+  "observation": {
+    "forge_source_id": "cmt-902"
+  }
+}

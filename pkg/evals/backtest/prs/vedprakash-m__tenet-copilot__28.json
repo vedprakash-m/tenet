@@ -1,0 +1,1295 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 28,
+  "title": "Rename project to Tenet Copilot",
+  "body": "## Outcome and evidence\n\nRenames the public project and repository identity to Tenet Copilot while preserving `/tenet`, `/tenet-review`, `.tenet/`, `tenet.policy.json`, `kernel/tenet.mjs`, `TENET_*`, `Tenet-Work`, and `tenet/` branch naming. Updates package/plugin identity, repository URLs, release artifact naming with a legacy migration alias, canonical specs, user docs, and release verification. Also includes the authorized production-readiness fixes for call-boundary recovery, storage, starter restore safety, CI determinism, and hosted performance.\n\nPrivacy/range scans are clean. Hosted `Tenet validation` passed on the exact functional head, including all source shards, Windows lanes, bundled payloads and all UAT groups. The independent `System budgets` job remains failed only on the long-history warm-latency row; the 300 ms budget has not been weakened or skipped.\n\n## Compatibility and release notes\n\n- [x] Classified as a pre-1.0 minor compatibility change; runtime commands and state contracts remain stable.\n- [x] Kernel/plugin SemVer agree at `0.2.0-m0`.\n- [x] Release disclosures cover changed repository/package/plugin identity, executable and destination naming, migration alias, support text, and unchanged permissions/schemas/evaluators.\n\n## Maintainer review (ENG-07, ENG-11)\n\n- [x] Consequential changes were reviewed immediately; findings were fixed or disclosed.\n- [x] External reviewer was requested when available. Agent review does not count as second-maintainer review.\n- [x] Review disclosure is complete; no second maintainer was available.\n- [x] Owner-approved amendment removes calendar waiting from ENG-11. Merge may occur when required checks and review disclosure are complete.\n\nExternal reviewer or unavailable: unavailable; owner is the sole maintainer.\n\nThe owner merges; this PR does not authorize publication or bypass release gates.",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-23T01:47:12Z",
+  "merged_at": "2026-11-23T04:45:52Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "tenet-copilot-rename",
+  "head": "tenet-copilot-rename",
+  "base_sha": "1a393f1dd3fcdfbe9bc37ede103350d040e5addf",
+  "head_sha": "84da73eb0ce6ab7735691daf213276218e7986e0",
+  "merge_sha": "72799814e5c60115aca7bb47ee59716319fd4f5f",
+  "diff_sha256": "b9e8b3f32400c23f4a423d7dfe9799dd39f7e26de6534d1cab8450e0f260ee33",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "46e7cf8118fc0ed3b637f0ad8f0919aa0737475e",
+      "message": "Rename project to Tenet Copilot",
+      "author": "Ved"
+    },
+    {
+      "sha": "0945df85f044149b43cde192814566bb3d331159",
+      "message": "Update Tenet Copilot specs and changelog",
+      "author": "Ved"
+    },
+    {
+      "sha": "229d68a7406600966604be46ac57abd91c7b9112",
+      "message": "Handle coarse report timestamps",
+      "author": "Ved"
+    },
+    {
+      "sha": "79ad8e97ba85926101e29f33c3679e2c8a1fd50b",
+      "message": "Keep report fix within kernel budget",
+      "author": "Ved"
+    },
+    {
+      "sha": "6d65c45ca5066ea61c3ee19060e995666436a325",
+      "message": "Disclose invalid report cause",
+      "author": "Ved"
+    },
+    {
+      "sha": "3ff73d5a48eb28858158c9528149a8ce79263544",
+      "message": "Lazy-load bounded kernel child",
+      "author": "Ved"
+    },
+    {
+      "sha": "7e1816e2d20e3048abb3a28f22f1606c11361d7d",
+      "message": "Name invalid hosted reports",
+      "author": "Ved"
+    },
+    {
+      "sha": "5a156b29538c69cee43b5423aefd8dedfcc1ee65",
+      "message": "Stabilize hosted CI and system budgets",
+      "author": "Ved"
+    },
+    {
+      "sha": "3d60bf0d2073a2efb7c8824642de675b70e5e74a",
+      "message": "Expose hosted assertion diagnostic",
+      "author": "Ved"
+    },
+    {
+      "sha": "037b808ed6d8f0aca7d424d553f0458a8a01e8e6",
+      "message": "Fix prepared starter runtime and startup cost",
+      "author": "Ved"
+    },
+    {
+      "sha": "fbefa7c16ece2e182cecb36f70626448c03e3511",
+      "message": "Refresh golden task evidence hash",
+      "author": "Ved"
+    },
+    {
+      "sha": "404b5c3a930cc03f6d2a0b63ac655367b3ec3468",
+      "message": "Consolidate bounded child runtime",
+      "author": "Ved"
+    },
+    {
+      "sha": "c515a23437db1c9eb99fd99404248c282dad11e9",
+      "message": "Refresh execution baseline key",
+      "author": "Ved"
+    },
+    {
+      "sha": "5ff7ac51c94f21983fb41c5bb5b1fe03228924fc",
+      "message": "Remove calendar wait from review policy",
+      "author": "Ved"
+    },
+    {
+      "sha": "84da73eb0ce6ab7735691daf213276218e7986e0",
+      "message": "Amend specs for immediate review",
+      "author": "Ved"
+    }
+  ],
+  "files": [
+    {
+      "path": ".github/CODE_OF_CONDUCT.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": ".github/CONTRIBUTING.md",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/config.yml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/host-report.yml",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/install-help.yml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": ".github/SECURITY.md",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": ".github/copilot-instructions.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/release.yml",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/system-budgets.yml",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/untrusted.yml",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 15,
+      "previous_path": null
+    },
+    {
+      "path": "LICENSE",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "NOTICE",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 17,
+      "previous_path": null
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "additions": 41,
+      "deletions": 50,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-10-20/filter-jobs-evidence.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-10-20/reassessment-evidence.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-10-20/reassessment.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-10-20/static-integrity-evidence.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-10-28/synced-reassessment.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-10-28/synced-validation.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-10-29/reassessment.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-10-31/publication-validation.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-10-31/takeover-validation.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-11-04/consolidation-validation.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-11-04/implementation-audit.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-11-21/should-dispositions.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-11-22/cold-install.md",
+      "status": "added",
+      "additions": 94,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-11-22/frozen-protocol-draft.md",
+      "status": "added",
+      "additions": 208,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-11-22/host-spikes-h1.md",
+      "status": "added",
+      "additions": 122,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-11-22/host-spikes-h2.md",
+      "status": "added",
+      "additions": 110,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-11-22/participant-study-protocol.md",
+      "status": "added",
+      "additions": 169,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/2026-11-22/starter-assurance-matrix.md",
+      "status": "added",
+      "additions": 123,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/audits/evidence-ledger.json",
+      "status": "modified",
+      "additions": 6782,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "docs/release/external-requests.md",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "docs/release/release-verification.md",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "docs/release/target-c-finalization.md",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "docs/user/autopilot.md",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "docs/user/install-and-remove.md",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "docs/user/qualified-tuple.md",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "docs/user/starter-requests.md",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "docs/user/what-tenet-adds.md",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/call-boundary.ts",
+      "status": "added",
+      "additions": 185,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/call-entry.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/call-runtime.ts",
+      "status": "added",
+      "additions": 24,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/node-ts.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/playwright.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/runner.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/store-eviction.ts",
+      "status": "added",
+      "additions": 96,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/store-fs.ts",
+      "status": "modified",
+      "additions": 35,
+      "deletions": 41,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/store-staging.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/diagnostics.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/receipts.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/main.ts",
+      "status": "modified",
+      "additions": 29,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-mutate.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/pipeline-timing.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/ports/types.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/inspect.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/open-new.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/version.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/wire.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/bench.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/call-boundary.test.ts",
+      "status": "added",
+      "additions": 100,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/contract.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/coverage.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/diagnostics-export.test.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/filters.test.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/src/app.ts.txt",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/server/test/restore.test.ts.txt",
+      "status": "modified",
+      "additions": 58,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/shared/schemas.ts.txt",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/fixtures/golden-tasks/loan-desk/web/src/App.tsx.txt",
+      "status": "modified",
+      "additions": 33,
+      "deletions": 15,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/golden-task-loan-desk.test.ts",
+      "status": "modified",
+      "additions": 33,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/marker-bridge-bundle.test.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/platform.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/prerequisite-guidance.test.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/privacy.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/process-policy.test.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/readme.test.ts",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/receipts.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/release-workflow.test.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/runner-artifact.test.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/starter.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/storage-eviction.test.ts",
+      "status": "modified",
+      "additions": 39,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/store.test.ts",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/tools.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/version-pin.test.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/LICENSE",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/NOTICE",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 17,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/README.md",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/com.github.copilot/agents/tenet-analyst.agent.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/com.github.copilot/agents/tenet-reviewer.agent.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/com.github.copilot/agents/tenet.agent.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/com.github.copilot/commands/tenet.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/plugin.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-build/SKILL.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-intake/SKILL.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-intake/resources/conventions-draft.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-intake/resources/onboarding.md",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-review/SKILL.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/recipe.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/.github/workflows/ci.yml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/LICENSE",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/README.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/docs/architecture.md",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/docs/asvs.md",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/docs/hardening.md",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/package-lock.json",
+      "status": "modified",
+      "additions": 31,
+      "deletions": 48,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/playwright.config.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/app.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/dev-identities.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/health.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/src/platform/restore.ts",
+      "status": "modified",
+      "additions": 54,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/abuse-limits.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/busy-session.test.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/e2e/auth-browser.e2e.spec.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/e2e/server-identity.e2e.spec.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/platform.test.ts",
+      "status": "modified",
+      "additions": 57,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/restore.test.ts",
+      "status": "modified",
+      "additions": 58,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/server/test/support/browser-server.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/shared/schemas.ts",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/web/src/App.tsx",
+      "status": "modified",
+      "additions": 33,
+      "deletions": 15,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-starter-ts-web-api/template/web/src/lib/api.test.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet/SKILL.md",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "specs/PRD.md",
+      "status": "modified",
+      "additions": 292,
+      "deletions": 292,
+      "previous_path": null
+    },
+    {
+      "path": "specs/plan.md",
+      "status": "modified",
+      "additions": 27,
+      "deletions": 18,
+      "previous_path": null
+    },
+    {
+      "path": "specs/tech-spec.md",
+      "status": "modified",
+      "additions": 95,
+      "deletions": 95,
+      "previous_path": null
+    },
+    {
+      "path": "specs/ux-spec.md",
+      "status": "modified",
+      "additions": 58,
+      "deletions": 58,
+      "previous_path": null
+    },
+    {
+      "path": "tools/bench.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "tools/lint-arch.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/release-notes.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/test-baseline.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "tools/test-inventory.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/bridge.mjs",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/crash-bundle-bridge.mjs",
+      "status": "modified",
+      "additions": 39,
+      "deletions": 27,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/crash-bundle-forget.mjs",
+      "status": "modified",
+      "additions": 38,
+      "deletions": 28,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/crash-bundle-index.mjs",
+      "status": "modified",
+      "additions": 54,
+      "deletions": 44,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/crash-bundle-project.mjs",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/uat.mjs",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 7,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "Tenet validation",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:43:41Z"
+    },
+    {
+      "name": "System budgets",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-23T04:41:59Z"
+    },
+    {
+      "name": "bundle-uat (ubuntu-latest, effects)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:37:09Z"
+    },
+    {
+      "name": "bundle-uat (macos-latest, starter)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:42:26Z"
+    },
+    {
+      "name": "bundle-uat (macos-latest, accounting)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:42:36Z"
+    },
+    {
+      "name": "bundle-uat (ubuntu-latest, git-process)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:37:15Z"
+    },
+    {
+      "name": "bundle-uat (macos-latest, metadata)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:43:32Z"
+    },
+    {
+      "name": "bundle-uat (ubuntu-latest, workflow)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:36:04Z"
+    },
+    {
+      "name": "bundle-uat (macos-latest, core)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:43:06Z"
+    },
+    {
+      "name": "bundle-uat (ubuntu-latest, starter)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:36:20Z"
+    },
+    {
+      "name": "bundle-uat (macos-latest, effects)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:42:40Z"
+    },
+    {
+      "name": "bundle-uat (macos-latest, git-process)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:43:28Z"
+    },
+    {
+      "name": "bundle-uat (macos-latest, workflow)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:43:28Z"
+    },
+    {
+      "name": "bundle-uat (macos-latest, admission)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:41:35Z"
+    },
+    {
+      "name": "bundle-uat (ubuntu-latest, admission)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:35:53Z"
+    },
+    {
+      "name": "bundle-uat (ubuntu-latest, metadata)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:35:22Z"
+    },
+    {
+      "name": "bundle-uat (ubuntu-latest, accounting)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:35:38Z"
+    },
+    {
+      "name": "bundle-uat (ubuntu-latest, core)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:35:55Z"
+    },
+    {
+      "name": "source (macos-latest, 2, 2/5)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:39:57Z"
+    },
+    {
+      "name": "source (macos-latest, 5, 5/5)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:40:03Z"
+    },
+    {
+      "name": "source (macos-latest, 3, 3/5)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:41:21Z"
+    },
+    {
+      "name": "source (macos-latest, 4, 4/5)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:40:50Z"
+    },
+    {
+      "name": "source (ubuntu-latest, 5, 5/5)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:38:40Z"
+    },
+    {
+      "name": "source (ubuntu-latest, 3, 3/5)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:38:19Z"
+    },
+    {
+      "name": "source (ubuntu-latest, 4, 4/5)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:37:28Z"
+    },
+    {
+      "name": "source (ubuntu-latest, 1, 1/5)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:37:46Z"
+    },
+    {
+      "name": "source (macos-latest, 1, 1/5)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:41:10Z"
+    },
+    {
+      "name": "source (ubuntu-latest, 2, 2/5)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:37:34Z"
+    },
+    {
+      "name": "bundle-payload (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:35:11Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:36:41Z"
+    },
+    {
+      "name": "bundle-producer",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:34:49Z"
+    },
+    {
+      "name": "bundle-payload (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:35:43Z"
+    },
+    {
+      "name": "windows-minimum",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:35:48Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-23T04:34:01Z"
+    },
+    {
+      "name": "frozen-fixtures (long-history)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-23T04:41:58Z"
+    },
+    {
+      "name": "frozen-fixtures (small)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-23T04:35:40Z"
+    },
+    {
+      "name": "frozen-fixtures (large)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-23T04:35:51Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:34:21Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:34:19Z"
+    },
+    {
+      "name": "preflight",
+      "conclusion": "success",
+      "completed_at": "2026-11-23T04:34:22Z"
+    }
+  ],
+  "binary_paths": []
+}

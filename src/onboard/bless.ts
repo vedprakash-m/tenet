@@ -1,12 +1,14 @@
 import { spawn } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
-import { appendFile, mkdir, readFile, rm } from "node:fs/promises";
+import { appendFile, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { isMap, parseDocument } from "yaml";
 import { utcSeconds } from "../core/clock.js";
 import { confine, writeAtomic } from "../core/fs.js";
 import { git } from "../core/git.js";
-import { loadPolicy } from "../policy/index.js";
+import { readYaml } from "../core/yaml.js";
+import { loadPolicy, ownersFor } from "../policy/index.js";
+import type { TenetYaml } from "../types/generated.js";
 import { anchorBlock, anchorsFor } from "../specs/anchors.js";
 import { resolveCitations } from "../specs/citations.js";
 import { flags } from "../specs/flags.js";
@@ -27,6 +29,7 @@ export type BlessIO = {
   terminal?: boolean;
   now?: () => Date;
   edit?: (filename: string, cwd: string) => Promise<void>;
+  write?: typeof writeAtomic;
 };
 type Ask = (prompt: string) => Promise<string | null>;
 type SectionState = { doc: ParsedDoc; section: SpecSection; text: string; filename: string };
@@ -96,6 +99,21 @@ function sourceLine(text: string, line: number | null): string {
   return line === null ? "" : text.replaceAll("\r\n", "\n").split("\n")[line - 1] ?? "";
 }
 
+export function parseBlessDocument(file: string, text: string, prefix: string): ParsedDoc {
+  const doc = parseDoc(file, text, { prefix });
+  for (const section of doc.sections) {
+    for (const conflict of section.conflicts) {
+      if (conflict.resolution) continue;
+      const line = sourceLine(text, itemLine(conflict));
+      const resolution = /(?:^|[\s;|])resolution:\s*(.+)$/i.exec(line)?.[1]?.trim();
+      if (!resolution) continue;
+      conflict.resolution = resolution;
+      conflict.text = conflict.text.replace(/(?:^|[\s;|])resolution:.*$/i, "").replace(/[;|\s]+$/, "");
+    }
+  }
+  return doc;
+}
+
 function choices(text: string): string[] {
   return [...text.matchAll(/\|\s*\d+:\s*([^|]+?)(?=\s*\||$)/g)].map((entry) => entry[1]?.trim() ?? "").filter(Boolean);
 }
@@ -110,13 +128,19 @@ async function pick(ask: Ask, prompt: string, allowed: readonly string[], write:
   }
 }
 
-async function settle(state: SessionState, ask: Ask, write: (value: string) => void): Promise<boolean> {
+async function settle(state: SessionState, ask: Ask, write: (value: string) => void, findings: Finding[]): Promise<boolean> {
   for (const { path, id } of state.conflicts) {
     const source = await state.read(path, "conflicts");
     const conflict = source?.section.conflicts.find((item) => item.id === id);
     if (!source || !conflict || (conflict.checked && conflict.resolution)) continue;
     write(blessText.conflict(id, conflict.text));
-    const alternatives = choices(sourceLine(source.text, itemLine(conflict)));
+    const line = sourceLine(source.text, itemLine(conflict));
+    const sections = source.doc.sections.filter((section) => governing(section) && belongs(conflict, source.doc, section));
+    const postpone = () => {
+      findings.push(diagnostic("TN-BLESS-OPEN-CONFLICT", { slug: sections[0]?.slug ?? "conflicts", ids: id }));
+      return false;
+    };
+    const alternatives = choices(line);
     let resolution: string | null;
     if (alternatives.length) {
       const menu = [...alternatives, blessText.postpone];
@@ -128,9 +152,9 @@ async function settle(state: SessionState, ask: Ask, write: (value: string) => v
       resolution = await ask(blessText.writeResolution);
       if (resolution === null) return false;
     }
-    if (!resolution) continue;
-    const target = await state.read(path, conflict.section ?? "");
-    const items = target ? statements(target.section) : source.doc.sections.flatMap(statements);
+    if (!resolution) return postpone();
+    const affected = /\(affects:\s*([^)]+)\)/i.exec(line)?.[1]?.split(",").map((entry) => entry.trim().toLowerCase());
+    const items = sections.flatMap(statements).filter((item) => !affected || affected.includes(item.id.toLowerCase()));
     const answer = items.length ? await pick(
       ask, blessText.contradiction, ["no", ...items.map(({ id: itemId }) => itemId.toLowerCase())], write,
     ) : "no";
@@ -141,9 +165,9 @@ async function settle(state: SessionState, ask: Ask, write: (value: string) => v
       await state.edit(source);
       const updated = await state.read(path, "conflicts");
       const remaining = updated?.doc.sections.flatMap(statements).find((entry) => entry.id === item?.id);
-      if (!updated || (remaining && remaining.text === item?.text)) {
+      if (!updated || (remaining && cleanText(remaining.text) === cleanText(item?.text ?? ""))) {
         write(blessText.conflictUnchanged);
-        continue;
+        return postpone();
       }
       const current = updated.section.conflicts.find((entry) => entry.id === id);
       if (current) await state.resolveConflict(updated, current, resolution);
@@ -192,7 +216,7 @@ export async function blessSession(state: SessionState, io: BlessIO = {}) {
     const owner = await pick(ask, blessText.owner(state.owners.map((id, i) => `${i + 1}. ${id}`).join("  ")),
       state.owners.map((_, i) => String(i + 1)), write);
     const by = owner === null ? undefined : state.owners[Number(owner) - 1];
-    if (by && await settle(editableState, ask, write)) {
+    if (by && await settle(editableState, ask, write, findings)) {
       for (const target of state.targets) {
         while (!interrupted) {
           const current = await state.read(target.path, target.slug);
@@ -257,9 +281,9 @@ export async function blessSession(state: SessionState, io: BlessIO = {}) {
 
 type Front = ReturnType<typeof matter>;
 type Counts = { drafted: number | null; kept: number | null; edited: number | null; adopted: number | null; added: number | null };
-type Patch = { path: string; text: string };
-type Workspace = { cwd: string; head: string; records: string; prefix: string; started: number; now: () => Date };
-const normalize = (text: string) => text.replaceAll("\r\n", "\n");
+type Patch = { path: string; text: string; expected?: string };
+type Workspace = { cwd: string; head: string; records: string; prefix: string; started: number; now: () => Date; write: typeof writeAtomic };
+const normalize = (text: string) => text.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
 const cleanText = (text: string) => text.replace(/\{[^{}]*\}/g, "").trim().replace(/\s+/g, " ");
 const portable = (value: string) => value.replaceAll("\\", "/").replace(/^\.\//, "");
 
@@ -419,13 +443,10 @@ async function countDraft(entry: SectionState, current: SpecSection, ws: Workspa
   return counts;
 }
 
-function bumpVersion(version: unknown, filename: string): string {
-  if (typeof version !== "string" || !/^\d+(?:\.\d+)*$/.test(version)) {
-    throw diagnostic("TN-SCHEMA", { path: filename, schema: "spec-front-matter", pointer: "/tenet/version" });
-  }
-  const parts = version.split(".");
-  const last = parts.pop() ?? "0";
-  return [...parts, String(BigInt(last) + 1n)].join(".");
+function bumpVersion(version: unknown): string {
+  const text = typeof version === "string" && version ? version : "0.1";
+  if (!/^\d+$/.test(text) && !/\.\d+$/.test(text)) return `${text}.1`;
+  return text.replace(/\d+$/, (last) => String(BigInt(last) + 1n));
 }
 
 async function copyFor(entry: SectionState, read: ReturnType<typeof reader>): Promise<string> {
@@ -437,20 +458,63 @@ async function copyFor(entry: SectionState, read: ReturnType<typeof reader>): Pr
   return copy;
 }
 
+async function blessedCopyPath(ws: Workspace, document: string, slug: string): Promise<string> {
+  const encode = (file: string) => file.replaceAll("/", "__");
+  // Windows resolves paths case-insensitively while record paths retain their original case.
+  const compare = (file: string) => process.platform === "win32" ? file.toLowerCase() : file;
+  const encoded = encode(document);
+  const comparison = compare(encoded);
+  const root = await confine(ws.records, ws.cwd);
+  async function collides(directory: string, relative: string): Promise<boolean> {
+    const entries = await readdir(directory, { withFileTypes: true });
+    for (const entry of entries) {
+      if (relative === ws.records && ["blessed", "holdout"].includes(entry.name.toLowerCase())) continue;
+      const candidate = `${relative}/${entry.name}`;
+      const key = compare(encode(candidate));
+      if (entry.isDirectory() && comparison.startsWith(`${key}__`)) {
+        if (await collides(path.join(directory, entry.name), candidate)) return true;
+      } else if (entry.isFile() && key === comparison && compare(candidate) !== compare(document)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  if (await collides(root, ws.records)) {
+    throw { ...diagnostic("TN-SCHEMA", { path: document, schema: "spec-front-matter", pointer: "/sections" }), file: document };
+  }
+  const relative = `${ws.records}/blessed/${encoded}/${slug}.md`;
+  // An existing symlink inside blessed must not point elsewhere in the repository.
+  await confine(relative, ws.cwd);
+  const blessedRoot = await confine(`${ws.records}/blessed`, ws.cwd);
+  await mkdir(blessedRoot, { recursive: true });
+  const copy = `${encoded}/${slug}.md`;
+  await confine(copy, blessedRoot);
+  await confine(`${copy}.anchors.json`, blessedRoot);
+  return relative;
+}
+
+async function optionalBytes(filename: string): Promise<Buffer | null> {
+  return readFile(filename).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  });
+}
+
 async function persist(ws: Workspace, patches: Patch[], log: object): Promise<void> {
   const logfile = await confine(`${ws.records}/blessed/log.jsonl`, ws.cwd);
   const saved = new Map<string, Buffer | null>();
   try {
     for (const patch of patches) {
       const filename = await confine(patch.path, ws.cwd);
-      const old = await readFile(filename).catch((error: NodeJS.ErrnoException) => {
-        if (error.code === "ENOENT") return null;
-        throw error;
-      });
-      await writeAtomic(filename, patch.text);
+      const old = await optionalBytes(filename);
+      if (patch.expected !== undefined && old?.toString("utf8") !== patch.expected) {
+        throw diagnostic("TN-SUBJ-DIRTY", { command: "bless" });
+      }
+      await ws.write(filename, patch.text);
       saved.set(filename, old);
     }
     await mkdir(path.dirname(logfile), { recursive: true });
+    saved.set(logfile, await optionalBytes(logfile));
     await appendFile(logfile, `${JSON.stringify(log)}\n`, "utf8");
   } catch (error) {
     const failures: unknown[] = [error];
@@ -490,10 +554,10 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
       const errors = resolveCitations(relevant, read);
       if (errors.length) return errors;
       const newAnchors = anchorsFor(subject, read);
-      const copyPath = `${ws.records}/blessed/${checked.doc.path.replaceAll("/", "__")}/${section.slug}.md`;
+      const copyPath = await blessedCopyPath(ws, checked.doc.path, section.slug);
       const digest = sectionDigest(subject.text);
       if (action === "bless" && section.blessed_digest && section.blessed_digest !== digest) {
-        front.yaml.setIn(["tenet", "version"], bumpVersion(front.yaml.getIn(["tenet", "version"]), checked.doc.path));
+        front.yaml.setIn(["tenet", "version"], bumpVersion(front.yaml.getIn(["tenet", "version"])));
       }
       set("state", "blessed");
       set("digest", section.digest);
@@ -505,7 +569,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
       set("anchors", newAnchors.anchors);
       set("blessed_copy", copyPath);
       set("flags", section.digest === digest ? [] : ["edited"]);
-      patches.push({ path: copyPath, text: subject.text }, { path: `${copyPath}.anchors.json`, text: `${JSON.stringify(newAnchors.texts, null, 2)}\n` });
+      patches.push({ path: copyPath, text: normalize(subject.text) }, { path: `${copyPath}.anchors.json`, text: `${JSON.stringify(newAnchors.texts, null, 2)}\n` });
       measured = subject;
     } else if (section.blessed_digest) {
       if (restore) {
@@ -513,6 +577,7 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
         front.body = matter(restored.text).body;
         set("digest", restored.section.digest);
         set("flags", flags(restored.section, read));
+        measured = restored.section;
       } else {
         set("digest", section.digest);
         set("flags", flags(section, read));
@@ -522,10 +587,10 @@ async function writeAction(ws: Workspace, entry: SectionState, action: Completed
       set("digest", section.digest);
       set("flags", []);
     }
-    patches.push({ path: checked.doc.path, text: documentText(front) });
+    patches.push({ path: checked.doc.path, text: documentText(front), expected: entry.text });
     const counts = await countDraft(checked, measured, ws);
     await persist(ws, patches, {
-      doc: checked.doc.path, section: section.slug, by, at: utcSeconds(ws.now),
+      doc: checked.doc.path, section: section.slug, action, by, at: utcSeconds(ws.now),
       minutes: Math.max(0, ws.now().valueOf() - ws.started) / 60_000, statements: counts,
     });
     return [];
@@ -561,18 +626,20 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
     const records = portable(policy.paths.records);
     const prefix = policy.specs.id_prefix;
     const now = io.now ?? (() => new Date());
-    const ws: Workspace = { cwd, head, records, prefix, now, started: now().valueOf() };
+    const ws: Workspace = { cwd, head, records, prefix, now, started: now().valueOf(), write: io.write ?? writeAtomic };
     const read = reader(cwd);
-    const paths = [...new Set(policy.specs.documents.map((doc) => `${records}/${portable(doc.path)}`))];
     const load = async (relative: string) => {
       const filename = await confine(relative, cwd);
       const text = await readFile(filename, "utf8").catch((error: NodeJS.ErrnoException) => {
         if (error.code === "ENOENT") return null;
         throw error;
       });
-      return text === null ? null : { filename, text, doc: parseDoc(relative, text, { prefix }) };
+      return text === null ? null : { filename, text, doc: parseBlessDocument(relative, text, prefix) };
     };
-    const docs = (await Promise.all(paths.map(load))).filter((doc) => doc !== null);
+    const raw = await readYaml(await confine("tenet.yaml", cwd)) as TenetYaml;
+    const intent = raw.specs?.documents?.length ? null : await load(`${records}/intent.md`);
+    const paths = [...new Set(policy.specs.documents.map((doc) => `${records}/${portable(doc.path)}`))];
+    const docs = intent ? [intent] : (await Promise.all(paths.map(load))).filter((doc) => doc !== null);
     const selected = options.doc === undefined ? docs : docs.filter(({ doc }) =>
       doc.path === portable(options.doc ?? "") || doc.path === `${records}/${portable(options.doc ?? "")}` ||
       (doc.front?.tenet as { doc?: string } | undefined)?.doc === options.doc);
@@ -590,7 +657,8 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
         target.path === doc.path && doc.sections.some((section) => section.slug === target.slug && conflict && belongs(conflict, doc, section)));
     }));
     const result = await blessSession({
-      owners: (policy.owners ?? []).map(({ id }) => id),
+      owners: policy.owners?.length ? policy.owners.map(({ id }) => id) :
+        [...new Set(targets.flatMap(({ path }) => ownersFor(path)))],
       targets,
       conflicts,
       read: async (file, selector) => {
@@ -605,7 +673,7 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
         const index = (itemLine(conflict) ?? 0) - 1;
         const source = lines[index];
         if (!source) return;
-        lines[index] = `${source.replace(/^(\s*[-*+]\s+)\[[ xX]\]/, "$1[x]").replace(/(?:^|[;|\s])resolution:\s*.*$/, "").replace(/[;|\s]*$/, "")} | resolution: ${resolution}`;
+        lines[index] = `${source.replace(/^(\s*[-*+]\s+)\[[ xX]\]/, "$1[x]").replace(/(?:^|[;|\s])resolution:\s*.*$/i, "").replace(/[;|\s]*$/, "")} | resolution: ${resolution}`;
         await writeAtomic(entry.filename, lines.join("\n"));
       },
       commit: (entry, action, by, restore, adopt) => writeAction(ws, entry, action, by, restore, adopt),

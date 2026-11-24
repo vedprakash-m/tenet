@@ -1,0 +1,9 @@
+# Run the onboarding evaluation
+
+Run `npm run build`, then `npm run eval:onboarding -- --agent replay`. Replay uses stored drafts and scripted answers as a harness control. Release scoring requires live agent adapters and independent human scoring. Use `--fixture node-service` to exercise one fixture or `--out <directory>` to place the dated report elsewhere.
+
+Add a named entry to `agents.json` with an executable `command`, its `args` array, and optional `model` and `effort`. The harness invokes it without a shell in a materialized fixture worktree. Stdin contains one JSON object with `assignment_path`, the parsed `assignment`, and `answers` (scripted Owner question/answer records). Write draft files at `assignment.output.paths` and record the interview under `.tenet/onboard/interview.json`. Use just the supplied worktree, its Tenet tools and the stdin data. Configure a sandbox in the agent adapter when the executable requires an enforced filesystem boundary. The harness does not hand the adapter the key, rubric, or expected scores.
+
+The harness prints the report and scratch paths. The scratch directory holds the worktrees, cards, check outputs, agent output and `run.json`. A person performs any blessing at the terminal and scores semantic recall and inventions using the [scoring protocol](scoring.md). After blessing, run `npm run eval:onboarding -- --rescore <scratch> --out <directory>` to refresh kept ratios and session durations from the action logs. For the default output directory, a same-day report is backed up in scratch before replacement.
+
+Run `npm run eval:onboarding -- --fresh-session` for the scripted drift trial and verifier arguments. The verifier runs the retry fixture's candidate code, so use a disposable worktree and a sandbox for code you would not run locally.

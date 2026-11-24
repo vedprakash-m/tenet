@@ -1,0 +1,17 @@
+{
+  "operation": "admit-health-report",
+  "format": "sarif",
+  "generate": {
+    "kind": "nest-sarif-property",
+    "seed": "../p09-sarif-enforce/report.json",
+    "propertyPath": [
+      "runs",
+      0,
+      "properties",
+      "fixture_depth"
+    ],
+    "container": "array",
+    "depth": 65,
+    "leaf": null
+  }
+}

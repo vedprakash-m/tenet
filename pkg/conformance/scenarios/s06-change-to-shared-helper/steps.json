@@ -18,10 +18,7 @@
         "--json"
       ],
       "expectExitCode": 0,
-      "assertUnits": [
-        "src-api",
-        "src-billing"
-      ]
+      "expectedJson": "expected/01-onboard-initial.json"
     },
     {
       "id": "02-branch",
@@ -39,6 +36,14 @@
         "src/shared/http.ts": "export function httpGet(url: string) {\n  return fetch(url, { headers: { 'x-tenet': '1' } });\n}\n",
         "test/shared.test.ts": "import { test } from \"node:test\";\ntest(\"[AB-1] shared helper adds x-tenet\", () => {});\n"
       }
+    },
+    {
+      "id": "03b-stage-tests",
+      "kind": "git",
+      "args": [
+        "add",
+        "test/shared.test.ts"
+      ]
     },
     {
       "id": "04-commit-shared-helper",
@@ -60,10 +65,7 @@
         "--json"
       ],
       "expectExitCode": 0,
-      "assertUnits": [
-        "src-api",
-        "src-billing"
-      ]
+      "expectedJson": "expected/05-onboard-refresh.json"
     },
     {
       "id": "06-verify-record",

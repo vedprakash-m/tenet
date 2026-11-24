@@ -32,19 +32,19 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
   - no open conflict or question naming the section (`TN-BLESS-OPEN-CONFLICT`)
   - no `origin: inferred` statement left (`TN-BLESS-INFERRED`; each is edited, or adopted, which sets `origin: asked; adopted_by`)
 
-  The person picks who they are from `owners[]`; `recorded: self`.
+  The person picks who they are from `owners[]` (falling back to `ownersFor` when empty; `alpha.0` allows any configured owner, `recorded: self`). Before blessing, resolve each open conflict (`section` match or document-wide `null`; optional `affects: ID1, ID2`; `Resolution:` read case-insensitively): ask which drafted statement ID it contradicts (or `no`), open the editor, and require that statement's text to change or vanish before writing `resolution:` (else postpone or fail `TN-BLESS-OPEN-CONFLICT`).
 - **Blessing writes:**
   - `state: blessed`, `blessed_digest` = the current digest, `blessed_at_rev` = `HEAD` (information only)
-  - `anchors`: per citation, `sha256` over its cited lines (CRLF→LF, trailing `[ \t]` trimmed; file trailing `\n` dropped before 1-based split) and raw lines saved in `<blessed copy>.anchors.json`. A `test:` citation anchors from the matching declaration line up to (exclusive of) the next outer/peer `ALG-09` declaration or EOF; a `doc:` citation anchors that section's digest.
-  - a copy of the text at `<records>/blessed/<document path with / as __>/<slug>.md`
+  - `anchors`: per citation, `sha256` over its cited lines (CRLF→LF, trailing `[ \t]` trimmed; file trailing `\n` dropped before 1-based split). Sidecar `<blessed copy>.anchors.json` maps `{citationKey: normalizedLinesText}`. A `test:` citation anchors from the matching declaration line up to (exclusive of) the next outer/peer `ALG-09` declaration or EOF; a `doc:` citation anchors that section's digest.
+  - a copy of the text at `<records>/blessed/<document path with / as __>/<slug>.md` (confined under `<records>/blessed/`, UTF-8 LF, refusing `/` vs `__` collisions with `TN-SCHEMA`)
   - a line in `<records>/blessed/log.jsonl` (ALG-13)
 
-  It prints the `git commit` command; it never commits.
-- **Session actions:**
-  - bless (and bump the document's `version` when blessed text changed)
-  - **confirm**: only for `sources-changed` sections. It shows each changed anchor's old and new lines, then keeps the text, re-anchors and records a blessing.
+  Persist per finished section (copy, sidecar, atomic spec write after checking concurrent edits with `TN-SUBJ-DIRTY`, then log append); roll back that section's files on error. `EOF`/`SIGINT` keeps finished sections; prints `git commit` and never commits.
+- **Session actions:** (`bless` prompts owner from `owners[]`, conflicts with numbered choices plus `Decide later`, then each section with `bless / edit / reject / later` or `confirm` when `sources-changed`; `later` records `defer`):
+  - bless (on first blessing keep `version`; when blessed text changes, increment the final integer of dotted numeric `version` e.g. `0.1` → `0.2`, or increment trailing `.<n>` / append `.1` on legacy strings)
+  - **confirm**: only for `sources-changed` sections. It shows each changed anchor's old and new lines (or `(unavailable)` and fails `TN-CITE-FILE` if missing, keeping the prior blessed copy), prompts `[y/N]`, then keeps the text, re-anchors and records a blessing.
   - **edit**: opens `$VISUAL`, else `$EDITOR`, else `notepad` on Windows or `vi`, then re-parses.
-  - **reject** and **defer**: on a section that was never blessed, they set `rejected` (excluded from context) or `deferred` (returned as a hint). On an `edited` blessed section, they act on the edit: the blessed copy stays in force, and the person is offered to restore the file's text from it.
+  - **reject** and **defer**: on a section that was never blessed, they set `rejected` (excluded from context) or `deferred` (returned as a hint). On an `edited` blessed section, they act on the edit: the blessed copy stays in force, and `"Restore the document's section from its blessed copy? [y/N] "` offers to overwrite the document section (`y` restores `digest === blessed_digest` and clears `edited`; `n` keeps the edited draft flagged `edited`).
 - **Flags**, recomputed by `check` and `board` at the current revision (return `[]` when `section.state !== "blessed"`):
   - `edited`: the section's digest differs from `blessed_digest`
   - `sources-changed`: an anchored range's lines no longer hash to its anchor, or the file or test is gone. If the same lines appear **exactly once** elsewhere in the file (a sliding-window hash scan; files over 50,000 lines are not scanned and are flagged), they moved: `check` doesn't flag them and `fix` updates the range. Zero or several matches flag `sources-changed` ("matched N places").
@@ -67,7 +67,7 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
 - `doc: path#slug`: a heading with that slug exists (missing `#slug` is `TN-CITE-RANGE`).
 - `test: file > name`: `file` exists (missing ` > ` is `TN-CITE-RANGE`) and each segment split on ` > ` appears in order (`indexOf` advancing cursor) in `file` as written, `def <seg>` or `func <seg>`.
 
-Errors, at most one per citation, checked as syntax, then file, then range, heading or test: `TN-CITE-FILE`, `TN-CITE-RANGE` (also every malformed citation: `doc:` without `#slug`, `test:` without ` > `, a range that isn't integer `start-end`, using the `TN-CITE-RANGE` template in `messages.md`), `TN-CITE-HEADING`, `TN-CITE-TEST` (carrying `severity: "error"`, `rule: "citations-valid"`, `file: doc.path`, and 1-based `line` of the citing statement, else `null`). Resolving says nothing about whether the source supports the statement; that judgment is the spec reviewer's, labelled advisory. Fixtures: a nested `describe > it` name resolves; a renamed test fails.
+Errors, at most one per citation, checked as syntax, then file, then range, heading or test: `TN-CITE-FILE`, `TN-CITE-RANGE` (also every malformed citation: `doc:` without `#slug`, `test:` without ` > `, a range that isn't integer `start-end`, using the `TN-CITE-RANGE` template in `messages.md`), `TN-CITE-HEADING`, `TN-CITE-TEST` (carrying `severity: "error"` on direct `check` or `citations-valid` mode under `--ci --base`, `rule: "citations-valid"`, `file: doc.path`, and 1-based `line` of the citing statement, else `null`). Resolving says nothing about whether the source supports the statement; that judgment is the spec reviewer's, labelled advisory. Fixtures: a nested `describe > it` name resolves; a renamed test fails.
 
 ## ALG-05
 
@@ -101,6 +101,7 @@ Fixtures: every arrival order of the same set gives one state; a resolution deli
   - binary pass rules: all must pass
   - baseline-relative: the smallest tolerance
   - probabilistic: the higher rate and the larger run count
+  - health scopes: later layers never narrow `scope_globs` or add `exclude_globs` (`TN-POLICY-LOOSEN`)
   - different pass-rule kinds: incompatible
 
 ## ALG-07
@@ -127,7 +128,7 @@ Each applicable claim's result is `satisfied`, `waived`, `failed`, `unsatisfied`
 - **Lead reason and next action:** the first matching row with the verdict's value. All matching reasons are listed.
 - Property: adding an applicable claim that is enforced and unsatisfied never yields a more permissive verdict or disposition.
 
-**Output:** `{claims: [{id, result, reason}], verdict, disposition: blocks|advises|records, lead, reasons, next: {who, action, command}, blocking?, evaluated_at, snapshot}`. When the disposition is `blocks`, `blocking` names the earliest enforcing match, by row and then claim ID (L-0032).
+**Output:** `{claims: [{id, result, reason}], verdict, disposition: blocks|advises|records, lead, reasons, next: {who, action, command}, blocking?, evaluated_at, snapshot}`. Order `reasons` by row (`1..8`), then ASCII `claim_id`; `blocking` is `{row, rule, claim_id, reason}` (`claim_id: null` for rows 1–5) for the earliest enforcing match (L-0032); live `next.command` is `tenet resolve|decide|escalate|fix` or `null`. Author self-waiver sets claim reason `TN-GATE-SELF-WAIVE` and `verdict: "refuse"`.
 
 Fixtures: one per row; an advisory review (row 7) beside an enforced failed claim (row 8): verdict refuse, disposition blocks; an advisory failure beside an enforced pass; a stop threshold with all claims passing.
 
@@ -154,22 +155,7 @@ For `not_checked`: map changed code extensions at `head` (`.rb` ruby, `.cs` csha
 
 ## ALG-10
 
-**Context selection.**
-- **Inputs:** `paths`, `ids`, `query`, `include_drafts`, `budget_tokens` (default 4,000).
-- **Candidates:** blessed sections, using their blessed copies.
-- **Groups, in order:**
-  1. **global**: requirements marked `scope: global`, within a reserved 25% of the budget
-  2. requirements whose ID is named
-  3. requirements citing a path equal to, inside or containing an input path
-  4. **`applies_to`**: prose sections whose `applies_to` matches an input path (`id: "<doc>#<slug>"`)
-  5. **`query`**: requirements (`text`) or sections (`heading`) containing the query, case-insensitive
-- **Ordering:** within a group, by level (L0, L1, L2) then numeric/ASCII ID; duplicates are dropped.
-- **Budget:** `tokens(s) = Math.ceil(s.length / 4)` (`budget_tokens <= 0` refuses with `TN-USAGE-BUDGET`). Walk candidates in group order: add whole items while `used + tokens(item.text) <= budget_tokens` (global rules beyond their 25% share still precede Groups 2–5); if a non-explicit item doesn't fit, push its `id` to `omitted`, set `truncated = true`, and keep scanning smaller items. An item named in `ids` always comes back whole (never `omitted`), clamping `used` at `budget_tokens` and setting `over_budget: true` if `tokens(item.text) > budget_tokens` (`truncated` is `omitted.length > 0`). Then build `index` from remaining blessed requirements not in `blessed` or `omitted` (`title: item.text.slice(0, 80)`, cost `tokens(id + " " + title)`) up to `Math.floor(budget_tokens * 0.20)`.
-- **Each item carries** its `flags`, single-string `owner` (joining multiple CODEOWNERS with `", "`) and `reason` (`global|id|path|applies_to|query`).
-- **Drafts:** `include_drafts` populates `drafts` with `draft`/`deferred` sections (never `rejected`); a blessed copy failing `ALG-03` integrity is excluded from `blessed` and served in `drafts` (`integrity_failed: true`).
-- **No inputs:** group 1 plus the index.
-
-Fixtures: a global rule survives a budget filled by one long local requirement; the omitted IDs match between CLI and MCP.
+**Context selection:** in [mcp.md §2](mcp.md#2-context-selection-alg-10), moved under the rollover rule.
 
 ## ALG-11
 
@@ -192,3 +178,17 @@ Fixtures: a global rule survives a budget filled by one long local requirement; 
 4. `same-area`: cites a file sharing the same area key (`codeowners:<pattern>` from last matching rule in first existing `.github/CODEOWNERS`, `CODEOWNERS`, `docs/CODEOWNERS` at head, else `dir:<top-level>` or `dir:.`) as a changed file, sorted by numeric ID then capped at 10, shown collapsed as "may be affected"
 
 Fixtures: changing `src/retry.ts:42` → `cited-code-changed`; sibling file → `same-area`.
+
+## ALG-15
+
+**Touched-scope and rename diff mapper** (`src/specs/diff-mapper.ts`, replacing private diff parsers in `src/specs/touched.ts` and `src/reports/weakening.ts` for `ALG-08`, `ALG-09`, `ALG-14`, `CP-0036`, `CP-0039`).
+- **Inputs:** `(base_sha, tested_sha)`; computes `diff_base_sha = git merge-base base_sha tested_sha` and diffs `diff_base_sha..tested_sha`.
+- **Attribute and environment isolation:** invoke `git` with `GIT_CONFIG_NOSYSTEM=1`, empty global config, `GIT_ATTR_NOSYSTEM=1`, `-c core.quotepath=false -c core.attributesfile= -c diff.algorithm=myers -c diff.renames=true -c diff.renameLimit=1000 -c diff.mnemonicPrefix=false -c diff.noprefix=false -c diff.relative=false diff --no-ext-diff --no-textconv --no-color --text -M50%`. Overflowing `renameLimit` fails as `unknown`.
+- **Binary detection:** inspect raw blob bytes via `git cat-file --batch`; blobs containing `0x00` are `is_binary: true`, while all non-NUL blobs produce UTF-8 hunks regardless of `.gitattributes` `binary` or `-diff`.
+- **Scopes (`no 20-line bypass`):** `min_changed_lines` never skips `enforce` checks (`low_sample: true` advisory badge below `20`). `touched_files` and `area` (`enforce`-eligible) compare baseline-relative multiset counts within `(file_or_renamed_path, area, fp_key)` (`-M50%` credit only within equal `area`s, and count-based `max(0, current_ref[k] - allowed_counts[k])` on `referenced_paths[]`). `touched_lines` (always capped strictly at `advise` in core `CP-0039`) checks findings overlapping `[newStart, newEnd]` added/modified hunks plus `referenced_paths[]`, never triggering on unmodified shifted lines outside `-U0` hunks.
+
+Fixtures: `.gitattributes -diff` + deleted-test red-team case across Windows/macOS/Linux; hostile global gitconfig; `renameLimit` overflow; CRLF parity; cross-area rename.
+
+## ALG-16
+
+**Health evaluation, architecture SCC and tamper routing:** in [health.md §2](health.md#2-health-evaluation-and-tamper-routing-alg-16), moved under the rollover rule.

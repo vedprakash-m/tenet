@@ -23,7 +23,10 @@
       },
       "properties": {
         "main": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "minLength": 1
         },
         "branches": {
@@ -34,7 +37,10 @@
           }
         },
         "records": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "minLength": 1
         }
       },
@@ -114,8 +120,35 @@
           "section",
           "level",
           "state",
-          "flags",
-          "recorded"
+          "flags"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "state": {
+                  "const": "blessed"
+                }
+              },
+              "required": [
+                "state"
+              ]
+            },
+            "then": {
+              "properties": {
+                "recorded": {
+                  "enum": [
+                    "self",
+                    "forge",
+                    "signed"
+                  ]
+                }
+              },
+              "required": [
+                "recorded"
+              ]
+            }
+          }
         ]
       }
     },
@@ -156,6 +189,43 @@
           "section",
           "conflicts",
           "open_questions"
+        ]
+      }
+    },
+    "spec_debt": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "broken-citation",
+              "untested-requirement",
+              "over-budget"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "kind",
+          "path",
+          "id",
+          "message"
         ]
       }
     },
@@ -487,6 +557,7 @@
     "as_of",
     "read",
     "specs",
-    "pending_blessings"
+    "pending_blessings",
+    "spec_debt"
   ]
 }

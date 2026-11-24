@@ -10,8 +10,8 @@
       "rule": null,
       "file": null,
       "line": null,
-      "message": "Invalid token budget: 0",
-      "fix": "Pass a finite positive --budget-tokens value."
+      "message": "Context token budget 0 must be a positive integer.",
+      "fix": "Pass a positive integer to `--budget-tokens` or `budget_tokens`."
     }
   ]
 }

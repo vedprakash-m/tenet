@@ -1,0 +1,72 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5658,
+  "title": "Reformat CHANGELOG.md in a stricter keep-a-changelog format",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\nReformatting our CHANGELOG.md to enable packages like [`keep-a-changelog`](https://npmjs.com/package/keep-a-changelog).\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\nWe want to enable tooling like [`keep-a-changelog`](https://npmjs.com/package/keep-a-changelog) for more automations.\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Updated `CHANGEGLOG.md`\r\n   - Breaking changes is becoming part of release notes\r\n   - Added legends 💥🐛🏫🧪 for readability/searchability\r\n   - Moved samples into added/changed/deprecated\r\n- `chmod +x bump-peer.sh`\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] ~I have added tests and executed them locally~\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] ~`package.json` and `package-lock.json` reviewed~\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-12-19T01:51:16Z",
+  "merged_at": "2025-12-19T04:17:35Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "bump-deps",
+  "head": "bump-deps",
+  "base_sha": "7ce8d0996f9b18c1c5c2d6d7310803e79b8e5e18",
+  "head_sha": "41941dec1562f7c76877f81725b297056178b93a",
+  "merge_sha": "928783a3e1d7767c3ef0d23578efb798e04df2db",
+  "diff_sha256": "2861edb6fabf35e74714b47fd7a26a2ee442f671ff208c09a816197be2a41dc4",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-12-19T01:56:26Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "d1a91f7a7bd9ad6cd990e830ee196290f4c3685c",
+      "message": "Allow execute",
+      "author": "compulim"
+    },
+    {
+      "sha": "7c74f306c59f192fe3295f8ce30df53c8e2daa89",
+      "message": "Reformatting CHANGELOG in a stricter keep-a-changelog format",
+      "author": "compulim"
+    },
+    {
+      "sha": "41941dec1562f7c76877f81725b297056178b93a",
+      "message": "Reorder legends",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 143,
+      "deletions": 206,
+      "previous_path": null
+    },
+    {
+      "path": "scripts/npm/bump-peer.sh",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-12-19T02:40:19Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": []
+}

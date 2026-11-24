@@ -1,0 +1,355 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5550,
+  "title": "Upgrade tests to `html2` (part 9)",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Upgraded `toast.*`\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] ~I have updated `CHANGELOG.md`~\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] ~`package.json` and `package-lock.json` reviewed~\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] Tests reviewed (coverage, legitimacy)",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-08-11T19:45:47Z",
+  "merged_at": "2025-08-17T01:10:00Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "feat-html2-9",
+  "head": "feat-html2-9",
+  "base_sha": "b72725d48fdf386c22ac6f997866d6457ad3b3e5",
+  "head_sha": "dbad728d934af23c0530b70a795d0387add4b00d",
+  "merge_sha": "b0521347bf42cd2763203f47794d09b95df4c0ab",
+  "diff_sha256": "f59309e62a7663848ba40d20b49eff41ebd1c707661fd7f39e5faa74a073c9ce",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-08-11T21:06:32Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "11755e30333cdc004e62e49936bfaa812ff08728",
+      "message": "Move toast/*",
+      "author": "compulim"
+    },
+    {
+      "sha": "05a1c6f2ef47667a04f4c2d70c76f006b4b12ea9",
+      "message": "Merge branch 'main' into feat-html2-9",
+      "author": "compulim"
+    },
+    {
+      "sha": "97f0b784d5441fa1c7e7d5484681527b4620504b",
+      "message": "Merge branch 'main' into feat-html2-9",
+      "author": "compulim"
+    },
+    {
+      "sha": "dbad728d934af23c0530b70a795d0387add4b00d",
+      "message": "Merge branch 'main' into feat-html2-9",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "__tests__/html/toast.accessibility.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/toast.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/toast.showUpdateDismiss.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/toast.twoVeryLongNotifications.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/toast.undefined.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/toaster.hideToaster.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/toaster.moveRecentToTop.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/toaster.twoNotifications.closeOne.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/toaster.twoNotifications.expandCollapse.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/toast/accessibility.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/toast.accessibility.html"
+    },
+    {
+      "path": "__tests__/html2/toast/hideToaster.html",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": "__tests__/html/toaster.hideToaster.html"
+    },
+    {
+      "path": "__tests__/html2/toast/hideToaster.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toast-show-update-dismiss-js-notification-toast-show-a-notification-update-and-dismiss-it-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/hideToaster.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-hide-toaster-js-notification-toast-hide-toaster-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/hideToaster.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-hide-toaster-js-notification-toast-hide-toaster-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/layout.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/toast.html"
+    },
+    {
+      "path": "__tests__/html2/toast/layout.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toast-js-notification-toast-should-show-privacy-policy-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/moveRecentToTop.html",
+      "status": "renamed",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": "__tests__/html/toaster.moveRecentToTop.html"
+    },
+    {
+      "path": "__tests__/html2/toast/moveRecentToTop.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-move-recent-to-top-js-notification-toast-move-recently-updated-toast-to-the-top-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/moveRecentToTop.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-move-recent-to-top-js-notification-toast-move-recently-updated-toast-to-the-top-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/showUpdateDismiss.html",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": "__tests__/html/toast.showUpdateDismiss.html"
+    },
+    {
+      "path": "__tests__/html2/toast/showUpdateDismiss.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toast-show-update-dismiss-js-notification-toast-show-a-notification-update-and-dismiss-it-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/showUpdateDismiss.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toast-show-update-dismiss-js-notification-toast-show-a-notification-update-and-dismiss-it-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/showUpdateDismiss.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-hide-toaster-js-notification-toast-hide-toaster-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/twoNotifications.closeOne.html",
+      "status": "renamed",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": "__tests__/html/toaster.twoNotifications.closeOne.html"
+    },
+    {
+      "path": "__tests__/html2/toast/twoNotifications.closeOne.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/twoNotifications.closeOne.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/twoNotifications.closeOne.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/twoNotifications.closeOne.html.snap-4.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-4-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/twoNotifications.expandCollapse.html",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": "__tests__/html/toaster.twoNotifications.expandCollapse.html"
+    },
+    {
+      "path": "__tests__/html2/toast/twoNotifications.expandCollapse.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-two-notifications-expand-collapse-js-notification-toast-show-2-notifications-expand-and-collapse-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/twoNotifications.expandCollapse.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-two-notifications-expand-collapse-js-notification-toast-show-2-notifications-expand-and-collapse-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/twoNotifications.expandCollapse.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toaster-two-notifications-expand-collapse-js-notification-toast-show-2-notifications-expand-and-collapse-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/twoVeryLongNotifications.html",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": "__tests__/html/toast.twoVeryLongNotifications.html"
+    },
+    {
+      "path": "__tests__/html2/toast/twoVeryLongNotifications.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toast-two-very-long-notifications-js-notification-toast-show-two-very-long-notifications-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/twoVeryLongNotifications.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toast-two-very-long-notifications-js-notification-toast-show-two-very-long-notifications-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/twoVeryLongNotifications.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toast-two-very-long-notifications-js-notification-toast-show-two-very-long-notifications-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/toast/undefined.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/toast.undefined.html"
+    },
+    {
+      "path": "__tests__/html2/toast/undefined.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/toast-undefined-js-notification-toast-should-not-break-when-showing-a-toast-with-undefined-content-1-snap.png"
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-08-13T03:09:34Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-08-14T16:08:49Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/{__image_snapshots__/html/toast-show-update-dismiss-js-notification-toast-show-a-notification-update-and-dismiss-it-3-snap.png => html2/toast/hideToaster.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toaster-hide-toaster-js-notification-toast-hide-toaster-2-snap.png => html2/toast/hideToaster.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toaster-hide-toaster-js-notification-toast-hide-toaster-1-snap.png => html2/toast/hideToaster.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/toast-js-notification-toast-should-show-privacy-policy-1-snap.png => html2/toast/layout.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toaster-move-recent-to-top-js-notification-toast-move-recently-updated-toast-to-the-top-1-snap.png => html2/toast/moveRecentToTop.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toaster-move-recent-to-top-js-notification-toast-move-recently-updated-toast-to-the-top-2-snap.png => html2/toast/moveRecentToTop.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toast-show-update-dismiss-js-notification-toast-show-a-notification-update-and-dismiss-it-1-snap.png => html2/toast/showUpdateDismiss.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toast-show-update-dismiss-js-notification-toast-show-a-notification-update-and-dismiss-it-2-snap.png => html2/toast/showUpdateDismiss.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toaster-hide-toaster-js-notification-toast-hide-toaster-3-snap.png => html2/toast/showUpdateDismiss.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-1-snap.png => html2/toast/twoNotifications.closeOne.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-2-snap.png => html2/toast/twoNotifications.closeOne.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-3-snap.png => html2/toast/twoNotifications.closeOne.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-close-one-js-notification-toast-show-2-notifications-expand-close-one-and-add-new-4-snap.png => html2/toast/twoNotifications.closeOne.html.snap-4.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-expand-collapse-js-notification-toast-show-2-notifications-expand-and-collapse-1-snap.png => html2/toast/twoNotifications.expandCollapse.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-expand-collapse-js-notification-toast-show-2-notifications-expand-and-collapse-2-snap.png => html2/toast/twoNotifications.expandCollapse.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toaster-two-notifications-expand-collapse-js-notification-toast-show-2-notifications-expand-and-collapse-3-snap.png => html2/toast/twoNotifications.expandCollapse.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/toast-two-very-long-notifications-js-notification-toast-show-two-very-long-notifications-1-snap.png => html2/toast/twoVeryLongNotifications.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/toast-two-very-long-notifications-js-notification-toast-show-two-very-long-notifications-2-snap.png => html2/toast/twoVeryLongNotifications.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/toast-two-very-long-notifications-js-notification-toast-show-two-very-long-notifications-3-snap.png => html2/toast/twoVeryLongNotifications.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/toast-undefined-js-notification-toast-should-not-break-when-showing-a-toast-with-undefined-content-1-snap.png => html2/toast/undefined.html.snap-1.png}"
+  ]
+}

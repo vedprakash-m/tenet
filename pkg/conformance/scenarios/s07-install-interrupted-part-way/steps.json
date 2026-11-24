@@ -18,7 +18,7 @@
         "at": "after-pending-and-after-each-managed-write",
         "oneFreshCopyPerPoint": true
       },
-      "expectedOmitted": "proposals-r7#Q7"
+      "expectedJson": "expected/01-interrupted-init.json"
     },
     {
       "id": "02-resume-init",
@@ -29,7 +29,7 @@
         "--json"
       ],
       "compareTreeToCleanRun": true,
-      "expectedOmitted": "proposals-r7#Q7"
+      "expectedJson": "expected/02-init-resume.json"
     },
     {
       "id": "03-doctor",
@@ -39,7 +39,7 @@
         "--json"
       ],
       "expectExitCode": 0,
-      "expectedOmitted": "proposals-r7#Q7"
+      "expectedJson": "expected/03-doctor.json"
     },
     {
       "id": "04-remove",
@@ -50,7 +50,7 @@
       ],
       "expectExitCode": 0,
       "expectedTree": "before",
-      "expectedOmitted": "proposals-r7#Q7"
+      "expectedJson": "expected/04-remove.json"
     }
   ]
 }

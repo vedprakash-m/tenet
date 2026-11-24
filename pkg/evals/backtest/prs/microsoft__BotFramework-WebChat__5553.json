@@ -1,0 +1,3026 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5553,
+  "title": "feat: part grouping",
+  "body": "<!-- Please provide the issue number here if any -->\n\n> Fixes #\n\n## Changelog Entry\n\n- Added visual message grouping following the `isPartOf` property of the `Message` entity, in PR [#5553](https://github.com/microsoft/BotFramework-WebChat/pull/5553), by [@OEvgeny](https://github.com/OEvgeny)\n   - The mode is suitable for providing chain-of-thought reasoning\n   - Added visual indication of `creativeWorkStatus` property in `Message` entity:\n      - `undefined` - no indicator is shown\n      - `'incomplete'` - show loader aside from the message\n      - `'published'` - show checkmark aside from the message\n   - Added a `position` property support for the `Message` entity\n      - The `position` property takes precedence over existing sequence id\n\n## Description\n\nThis PR introduces a **Part Grouping** feature that allows activities to be logically grouped and displayed in a collapsible format based on the information provided by activity `Message` entities. The implementation provides an AI-friendly way to organize related activities (like multi-step reasoning, code generation, or analysis workflows) into cohesive, user-manageable groups.\n\n## Design\n\nEnter logical grouping: the concept allowing Web Chat to dynamically decide to group activities while maintaining proper focus management and ordering.\n\nThe decision to show the activity in the group is shifted to the group view logic. The logic is responsible for calling a hook which makes the group available up in the tree for managing focus.\n\nThe message order is handled by the existing reducer logic which now tracks the `position` field from the `Message` entity but only in case when the message is a part of any group (`isPartOf.@id` field is specified).\n\nThe work started to replace the activity decorator component in the `fluent-theme` package with the new `PartGroupingDecorator`. The idea is the later should be more generic and should allow for more versatile style. The PR includes the preview of this change and further work is needed to cleanup and improve the approach.\n\nFocus management got major overhaul with logical grouping support. This mostly is based on the previous approach with added complexity of managing groups state and order.\n\n## Specific Changes\n\n- **createActivitiesReducer.ts**: added activity ordering with entity position support\n- **ActivityLogicalGrouping***: added new context provider for managing logical activity groupings\n- **TranscriptFocus***: reworked focus logic with group-aware navigation\n- **CollapsibleContent.tsx**: added core collapsible content component with accessibility features\n- **PartGrouping***: added part grouping middleware implementation\n- **PartGroupingDecorator.tsx**: added fluent UI styling for grouped activities\n\n\n\n## -\n\n-\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n-  [x] I have added tests and executed them locally\n-  [x] I have updated `CHANGELOG.md`\n-  [x] ~I have updated documentation~\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n-  [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n-  [x] Browser and platform compatibilities reviewed\n-  [x] CSS styles reviewed (minimal rules, no `z-index`)\n-  [x] Documents reviewed (docs, samples, live demo)\n-  [x] Internationalization reviewed (strings, unit formatting)\n-  [x] `package.json` and `package-lock.json` reviewed\n-  [x] Security reviewed (no data URIs, check for nonce leak)\n-  [x] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-08-19T15:12:29Z",
+  "merged_at": "2025-09-09T20:33:23Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "feat/part-grouping-final",
+  "head": "feat/part-grouping-final",
+  "base_sha": "c87202f0d44927f26b3778afdaa947edbd29da18",
+  "head_sha": "85456a0d625bcaf046a75bd2043cbb241e6591d4",
+  "merge_sha": "5e1ccb77545d5e419326d43b5236a385a180f6b2",
+  "diff_sha256": "719483225953b7b9381c8d3faa9eb4fa92344181f6067657e795bef076da2fb7",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-09-08T20:17:33Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "7b993d94fe1440676d16a29da1ecf2997cdcfbba",
+      "message": "api: add part grouping",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "5b64e4a1b1ae34ebb6004b6021ecf94688aad9a0",
+      "message": "component: break down StackedLayout and add message status",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "40119982b259d7e11edf4b871a680ce10eeda71c",
+      "message": "component: estabilish part grouping",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "509ea706633de381cf2c2024fe0812ce1e461586",
+      "message": "component: add logical grouping initial implementation",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "31e962e93ea8f4a0cce24963599034f1d1ae4b94",
+      "message": "component: fix pick to avoid reduce",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "99dc34b2c335081dc9cb5b44876234ef269a1e72",
+      "message": "component: make transcript focus composer logical group aware",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "b4b133c15402e118526bae3d6b1af6fa459d89f2",
+      "message": "component: update custom properties mapping",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "edf32a2f9027b10cf24314e60c32866cb1d6e8ac",
+      "message": "component: move transcript activity props into hook",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "0ecc52037da10310e8d457a73e2320e3d9ae0fea",
+      "message": "component: componetize transcript focus",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "d0d916bb17477e05d6f662634f05f4ad0834399f",
+      "message": "component: activity row use new transcript focus components",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "b483167fe7cfffc05fec9dee686739047ff8c0bc",
+      "message": "component: focus trap to ignore nested traps",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f563fa044eff33e1d59906fcaf149c4e0580c6fa",
+      "message": "component: basic transcript transcript focus and logical grouping adjustments",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "a7868000fc8c49da1f6b7962e8bdf5eb800c74f0",
+      "message": "component: expose PartGrouping as internal",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "3cd48eeb158e4bca3194fa80908e411201ce9ae2",
+      "message": "core: add support of status to creative work",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "a6b597e7ba9ca4ecbb066c5e0ca12b88b51a42e2",
+      "message": "fluent: part grouping decorator and related adjustments",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "3830490e83eaf4aa47e238aa9d7ced185770663c",
+      "message": "fix: small tweaks",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "925b341c505033310b4b2a5d082da16c5f24bf8e",
+      "message": "sync: update import names with main",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "0524bd92a73699e50384b6aba132a38af378ae4d",
+      "message": "fix: lint issues",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "88bb328ab666c32abb9987a26c06c75043f33438",
+      "message": "fix: stacked layout class mapping",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "b90afd3fd3eff540f4af2b500a56cfd9b5b705a1",
+      "message": "fix: transcript root should shrink to width",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f5e41e824ac2653bff4accea90d022986c8dc77f",
+      "message": "fix: active descendant positioning",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "d551b4a162735ac1e3fdd155cc798b48f3ae0a38",
+      "message": "fix: transcript focus for fluent theme along with spacing fixes",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "30fa8d5042b37aa29a8ec14ddc6a3504bb7f0525",
+      "message": "copilot: adjust header and flair rendering",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "7263ccd40eaa97b95f40cadc5446fbd7ac23b598",
+      "message": "draft: copilot fixed spacing",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "0d6796c1cacd08eef3e12e219e272fd0d02375d6",
+      "message": "fix: text content grow in white label",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "0881f0764294994331f5b92cd0b13a1eea926f2b",
+      "message": "test: fix transcript focus indicator class name",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "360d4ebcbd1c56f9b9314ee5b84f9debf77730cf",
+      "message": "fix: pre chat activity position when more than one activity",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "63a6b8095255036580f8de20ead639068f35842a",
+      "message": "test: main sendbox should recieve focus as stated",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "4262c6ab69a7c169390e0c264c3155be96852980",
+      "message": "fix: preserve different styles for heading inside and outside grop for fluent",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "0663013a656ab4973c0b4e1f1d945076ada775c5",
+      "message": "fix: activityRender should be possible without transcript",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ebce59c9f5b5e11fb8276215540e2f822c244fd9",
+      "message": "fix: scroll issues with transcript page scroll",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ce42481250593329f36e2c92192b205593089bbf",
+      "message": "fix: correct active descendant size and use wrap position for tracking activity top",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "a9cca83bdb43280cef76d02b7f6f6f032b3760db",
+      "message": "fix: focus relative with 0 should refocus either activity or group",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "34360f9bad43eecec07066bf750f7e26cfad0578",
+      "message": "fix: focus transcript on undefined activity key focus",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "df0d1b3871f0212cc57c088ffb80ec1a670609d6",
+      "message": "Revert \"test: main sendbox should recieve focus as stated\"",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "d07cbc58829a64511f3e9a2117b5d7698187793d",
+      "message": "draft: better layout for transcript focus",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "48b2de2c4eda7fc50e9c2421b65a7d081ecbf665",
+      "message": "fix: spacing in new transcript layout",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "8f960750fb65d2803ef997b1b6d4f1dbe1d39b6f",
+      "message": "fix: allow to shrink new layout",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "e9ab2b3cbf00513634d449953688c4f8635d7f18",
+      "message": "grouping: new grouping test layout",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f9b2088d9b0e5562c0e7abb705b5adbf3212bf4e",
+      "message": "fix: allow content children to shrink",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "450ea98b65da99d70ecb41a7aa3d7e39bfa7abb3",
+      "message": "fluent: allow shrinking part grouping",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f7359a2409cacf7a96df8c10187fa26fc1ed1ffd",
+      "message": "fix: scroll into view when focusing transcript",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "bb4fee4e19241e6556ec14613e3866fa38bbff80",
+      "message": "test: fix transcript navigation calculations",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "522940662791b69602c0270c0980868949a0ed8c",
+      "message": "fix: move overlay to the top",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "035f484a9132ebb2a078b568276456f870ea1566",
+      "message": "test: snapshots now have a gap",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "67e224e8693f4a8fcf44a28d72067a5c5dacfe11",
+      "message": "fix: transcript should focus even if descdendant is not defined",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "4d5c44280fa984f64574d937e1996d9504fdd1ea",
+      "message": "fix: focus target should not be clickable",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "bfbe833c03d81ce57a213dfefc91464d0670f165",
+      "message": "copilot: revisit spacing",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "b01504014ec8f2efa8e9d17bcb8e29508fb7c068",
+      "message": "test: fix auto scroll position calculation",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "629fd24595c8c7e278f90c5f1fd5368bb0b6de2d",
+      "message": "test: fix scroll position calculations",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "90dcfcfd97895dde8ac39608a975462324b896d7",
+      "message": "test: final side-by-side snaps",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "e7d267d0f6a480ff605ee32aae067d237e9a8d84",
+      "message": "test: fix autoscroll snap to have visual gap",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "fc324132996a39e6c0e1d8bd55df389cc8035e59",
+      "message": "fix: collapsible white label bottom spacing",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f38396f0a0edfd9c0b88bf360d8b0f2020d548c0",
+      "message": "test: autoscroll snap with visible gap",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "154ad3f64343a20036dfc0f9556e2b2e73ac2af7",
+      "message": "test: adjust calc for focus clicks taking into account the gap",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "0d45507e8e7453d6f01427c08f24602dbdd8ccc3",
+      "message": "test: allow slight discrepancy in scroll position",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "4c9eb3b5a2d7a6d6011e6b851090d5eef642d3fc",
+      "message": "lint",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "beacc3a9dd590c900b04e740070ccf66711c42d5",
+      "message": "cleanup: remove unused context",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f482b04912f1f8be473fed694f97964f807b81e3",
+      "message": "build: relocated useMemoWithPrevious",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "93480f999969424647f23d8984035e7b0918d293",
+      "message": "feat: detarmine current group message based on message entity",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "44b65f8e2cca3d95bb8f1c3362a55e6dcddee76a",
+      "message": "opt: logical grouping static context",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "355d05079702a3a48588ada0b7d56ef6bece5a64",
+      "message": "opt: logical grouping should emit state updates",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f4d92c2820f82bac230f0778318939776ebecfa0",
+      "message": "test: fix grouping",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "29e3d2e99ffff0383ac3c6acc05f8724f4ea1a8b",
+      "message": "update: remove nextVisibleActivity as in main",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "3998378e4aab83384948be1f8c1f53ff252c6536",
+      "message": "feat: add group focus on click",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "67187b3153983ff8ccd7b650c9c5634d6dc9780b",
+      "message": "feat: handle message positioning during part grouping",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "0a9a8381eca3bd57dd97cb370db669971f8223cc",
+      "message": "feat: loading animation and style fixes",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "4eeb04352aa73b83eac5ee69af628d32031876a8",
+      "message": "fix: better Claim/CreativeWork interop",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "c666655ed3e08d28a12087b8b439894f8f3e6bc0",
+      "message": "feat: simplify grouping selectors",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "63a8c4423820bd1c3ab05bf39c5319676a4f6f15",
+      "message": "fix: localize text and improve styles for collapsible grouping",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "005c979aebf5f0074ab8112deddcf6051797c969",
+      "message": "feat: fluent styles for part grouping",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f7f472dab85aa4f0af47d9680496cadf9feabe88",
+      "message": "fix: focus outlines",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "d70702c7d13964d6c4170b34f000b5a983533ab9",
+      "message": "fix: collapsible content tests",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "0ac6c9c3f0d64dd105bac8fabfa46e22599bbdcb",
+      "message": "feat: proper sorting in reducer",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "0c70ed7d1439893d55094b337aa885f75e02f08d",
+      "message": "fix: code block missing border",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "147bcee8656b2c771f35d4d4ff2f60d03b3dc803",
+      "message": "test: update snapshot",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "6456e7b20669c23fdc607fffcf22e18c8e8bac84",
+      "message": "feat: status loader reduced motion styles",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "c9e062ec80eb8296f066356381f2241b5e2f4be3",
+      "message": "fix: stacked layout double message status",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "16b3d42f73a3864d4ea71ffb2cb12bb79a61cb90",
+      "message": "fix: part grouping accessibility",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "a23838f9686a171efa0ae30ef3205349aee9c2e7",
+      "message": "test: add grouping test for white label",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "6d1cd6763ea64946d03f4021a6b98af9b6926bfd",
+      "message": "fix: status message spacing",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "4b94208b93f2aca848cfa317d2256717dfd1c683",
+      "message": "test: fluent + copilot variants for part grouping",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "efb5c0af404b76676a51648f502ac5e5b74760fe",
+      "message": "fix: fluent variant focus ring cut for collapsible inside group",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "8015e41a955cc82e1d65ca4cdd4627e02a8c44f8",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "638e08a9bba4240fe531e7b4f636be4b8a7b1813",
+      "message": "fix: copilot test backdrop color",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "db9a50e70fb7cbdf3e9b69db98efd3d104a39b27",
+      "message": "remove duplicate snaps",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ef5ca49bb8d708c90acb9fdcb846a49c9dfb56e6",
+      "message": "sort",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "1b10c77fb51709c0acbdb87e0d586d93db6df5d4",
+      "message": "rename",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "b1cf19c502e6ae22db332216e0818a1cb95a5de8",
+      "message": "fix wording",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "27c0ffda869742071200131d57eb5dcac6b3cba8",
+      "message": "Remove starting blank line",
+      "author": "compulim"
+    },
+    {
+      "sha": "ed253f568b206c0a59728a514da7841dfdb31282",
+      "message": "Add props schema",
+      "author": "compulim"
+    },
+    {
+      "sha": "9032a8ceddfff2513bc5a102dfe05d1928bd0faa",
+      "message": "Add schema",
+      "author": "compulim"
+    },
+    {
+      "sha": "4847db0bdfe3f7b216cd347395c98cbd3bfee78c",
+      "message": "Add prop schema",
+      "author": "compulim"
+    },
+    {
+      "sha": "721b3659ca6f6170fccea707fe971142aee725dd",
+      "message": "Add props schema",
+      "author": "compulim"
+    },
+    {
+      "sha": "55761db6bc62120311319517abc9218423f02a70",
+      "message": "Use valibot custom() instead of transform()",
+      "author": "compulim"
+    },
+    {
+      "sha": "281f3877ff6dd2b7412fe1ddbfef4663b195d079",
+      "message": "Export schema",
+      "author": "compulim"
+    },
+    {
+      "sha": "29fb39978040193f490321226409d9d5e30735c3",
+      "message": "Add props schema",
+      "author": "compulim"
+    },
+    {
+      "sha": "621ff8cd460dab3d53206970a487039b43f6c8ff",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "6fd9cd21e58e8af9cc7c0e29130b9b5646d05b2f",
+      "message": "address comment",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "66c13961dce87c06774bda8030f389296c90280a",
+      "message": "Remove displayName",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "d628f7db10b0d51399c91c585efa2450d531fb48",
+      "message": "fix don't freeze activity",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "772191b283842a04fda2d8fe383d003170443f74",
+      "message": "fix: missing return",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "71674b917e410fb6d07c9df9a4e5e8d5dd944b2b",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "f42bf39795e4bb9d2e30326887a87fbd33b844ad",
+      "message": "Add prop schema",
+      "author": "compulim"
+    },
+    {
+      "sha": "68d17591e6243a9c6dd8612b46c3c3c9b5b85ff7",
+      "message": "Sort deps",
+      "author": "compulim"
+    },
+    {
+      "sha": "404a23d40bcbf01bd686f4c1d7fe34ed4a993548",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "5a0c0955a285ab59cf9047ead9be95f1c305d4dc",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "18c2acda5b36fd11e1c65d9c0d156980166125e7",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "ead28aa2cb6f236d99f7cb1decd6eeb9935c628f",
+      "message": "Add props schema",
+      "author": "compulim"
+    },
+    {
+      "sha": "e75e8393ed3fd7f5d347b439a8adaa925910d37d",
+      "message": "Add props schema",
+      "author": "compulim"
+    },
+    {
+      "sha": "0b26d1f368ad9a866aa047ac28a6a934503470e3",
+      "message": "Add props schema",
+      "author": "compulim"
+    },
+    {
+      "sha": "4739c472ce88a02aeaf7d9f39a2f3cdb44b6c9ad",
+      "message": "Sort",
+      "author": "compulim"
+    },
+    {
+      "sha": "7d37d68e7414e93a4fe5ee57249a513a921dbb04",
+      "message": "Add props schema",
+      "author": "compulim"
+    },
+    {
+      "sha": "acd96e76c6c9eae2a9a0b4a807c2e5a5f32c1d39",
+      "message": "Casing",
+      "author": "compulim"
+    },
+    {
+      "sha": "9a83d5d0e2231289f8c93d4719dd739c5029ceda",
+      "message": "Use validateProps",
+      "author": "compulim"
+    },
+    {
+      "sha": "85456a0d625bcaf046a75bd2043cbb241e6591d4",
+      "message": "test: cleanup and add position tests",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/transcript.navigation.focusActivity.byClick.onEdges.html",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/transcript.navigation.focusActivity.scrollIntoView.keyboard.html",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/transcript.navigation.scrollIntoView.mouse.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/citation.longRef.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.dark.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.copilot.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.dark.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.fluent.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activity/collapsible.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/autoScroll/autoScroll.snap.activity.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/autoScroll/autoScroll.snap.activity.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/autoScroll/autoScroll.snap.activityAndPage.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/autoScroll/autoScroll.snap.default.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/autoScroll/autoScroll.snap.page.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/copyButton/layout.copilot.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/copyButton/layout.copilot.light.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/copyButton/layout.html",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/customGrouping.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/disableSender.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/disableStatus.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/disableStatus.perSender.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/extraneousGroup.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/fluentTheme.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/grouping.css",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/groupingBorder.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/grouping/noSuchGroup.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/linkDefinition/badge.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/linkDefinition/badge.dark.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.copilot.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.copilot.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.copilot.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.copilot.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.copilot.light.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.copilot.light.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.copilot.light.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.copilot.light.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/markdown/math/layout.scroll.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.dark.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/copilot.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.dark.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/fluent.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html",
+      "status": "added",
+      "additions": 418,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html.snap-10.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/index.html.snap-9.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html",
+      "status": "added",
+      "additions": 281,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-5.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-6.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-7.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/part-grouping/position.html.snap-8.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/previewBeforeSend/clearAfterSend.fluent.copilot.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/previewBeforeSend/clearAfterSend.fluent.copilot.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/codeblock.navigation.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/feedback.navigation.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/index.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-liner.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/pre-liner.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/streaming.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/streaming.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-10.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-11.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-12.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-13.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-14.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-15.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-16.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-17.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-10.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-11.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-12.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-13.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-14.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-15.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-16.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-17.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-3.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-4.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-5.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-6.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-7.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-8.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/side-by-side/transcript.navigation.html.snap-9.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/typing/typingIndicator.fluent.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/typing/typingIndicator.fluent.copilot.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/typing/typingIndicator.scroll.fluent.copilot.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/typing/typingIndicator.scroll.fluent.copilot.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/StyleOptions.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/defaultStyleOptions.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/localization/en-US.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/GroupActivities/private/createDefaultGroupActivitiesMiddleware.ts",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/CodeBlockContent.module.css",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/CollapsibleContent.module.css",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/CollapsibleContent.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/StackedLayout.module.css",
+      "status": "modified",
+      "additions": 79,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/StackedLayout.tsx",
+      "status": "modified",
+      "additions": 98,
+      "deletions": 72,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/StackedLayoutMain.tsx",
+      "status": "added",
+      "additions": 36,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/StackedLayoutRoot.tsx",
+      "status": "added",
+      "additions": 68,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/StackedLayoutStatus.tsx",
+      "status": "added",
+      "additions": 36,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/private/MessageStatusLoader.module.css",
+      "status": "added",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/private/MessageStatusLoader.tsx",
+      "status": "added",
+      "additions": 27,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/BasicTranscript.tsx",
+      "status": "modified",
+      "additions": 28,
+      "deletions": 45,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Composer.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Icon/ComponentIcon.module.css",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/createDefaultActivityGroupingDecoratorMiddleware.tsx",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/PartGrouping/CollapsibleGrouping.module.css",
+      "status": "added",
+      "additions": 51,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/PartGrouping/CollapsibleGrouping.tsx",
+      "status": "added",
+      "additions": 97,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/PartGrouping/PartGrouping.tsx",
+      "status": "added",
+      "additions": 63,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/PartGrouping/private/PartGroupingActivity.module.css",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/PartGrouping/private/PartGroupingActivity.tsx",
+      "status": "added",
+      "additions": 205,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/ActivityGrouping/ui/PartGrouping/private/usePartGroupingLogicalGroup.ts",
+      "status": "added",
+      "additions": 41,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/CustomPropertyNames.ts",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/TextContent.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/useCustomPropertiesClassName.ts",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/ActivityRow.tsx",
+      "status": "modified",
+      "additions": 32,
+      "deletions": 29,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/FocusTrap.tsx",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptActivityList.tsx",
+      "status": "added",
+      "additions": 22,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptFocus.module.css",
+      "status": "added",
+      "additions": 111,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptFocusArea.tsx",
+      "status": "added",
+      "additions": 27,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptFocusContent.tsx",
+      "status": "added",
+      "additions": 34,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptFocusContentActiveDescendant.tsx",
+      "status": "added",
+      "additions": 26,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptFocusContentBody.tsx",
+      "status": "added",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptFocusContentOverlay.tsx",
+      "status": "added",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptFocusIndicator.tsx",
+      "status": "added",
+      "additions": 28,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptFocusTerminator.tsx",
+      "status": "added",
+      "additions": 42,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptFocusTerminatorBody.tsx",
+      "status": "added",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/TranscriptFocusTerminatorText.tsx",
+      "status": "added",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/TranscriptFocus/index.ts",
+      "status": "added",
+      "additions": 25,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/hooks/useRenderActivityProps.ts",
+      "status": "added",
+      "additions": 82,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/internal.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityLogicalGrouping/ActivityLogicalGroupingComposer.ts",
+      "status": "added",
+      "additions": 100,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityLogicalGrouping/index.ts",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityLogicalGrouping/private/ActivityLogicalGroupingContext.ts",
+      "status": "added",
+      "additions": 31,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityLogicalGrouping/private/useStateWithOptimisticRef.ts",
+      "status": "added",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityLogicalGrouping/useAddLogicalGrouping.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityLogicalGrouping/useGetGroupState.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityLogicalGrouping/useGetLogicalGroupBoundaries.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityLogicalGrouping/useGetLogicalGroupKey.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/ActivityLogicalGrouping/useRemoveLogicalGrouping.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/GroupedRenderingActivities/private/pick.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/TranscriptFocus/TranscriptFocusComposer.spec.tsx",
+      "status": "added",
+      "additions": 611,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/TranscriptFocus/TranscriptFocusComposer.tsx",
+      "status": "modified",
+      "additions": 313,
+      "deletions": 46,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/TranscriptFocus/private/Context.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/TranscriptFocus/useActiveDescendantId.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/TranscriptFocus/useFocusByGroupKey.ts",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/TranscriptFocus/useFocusedKey.ts",
+      "status": "added",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/TranscriptFocus/useGetGroupDescendantIdByActivityKey.ts",
+      "status": "added",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/reducers/createActivitiesReducer.ts",
+      "status": "modified",
+      "additions": 31,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/external/OrgSchema/Claim.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/external/OrgSchema/CreativeWork.ts",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/external/OrgSchema/Thing.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityDecorator.module.css",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 237,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityDecorator.tsx",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityLoader.module.css",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/ActivityLoader.tsx",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/CopilotMessageHeader.tsx",
+      "status": "modified",
+      "additions": 22,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/PartGroupingDecorator.module.css",
+      "status": "added",
+      "additions": 480,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/activity/PartGroupingDecorator.tsx",
+      "status": "added",
+      "additions": 69,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/theme/Theme.module.css",
+      "status": "modified",
+      "additions": 62,
+      "deletions": 28,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/FluentThemeProvider.tsx",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/pageElements/transcriptTerminator.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2025-09-08T22:01:27Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-09-08T22:23:47Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-08T23:55:44Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-09T00:13:28Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-09T00:15:06Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-09T00:15:27Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-09T00:16:17Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-09T00:18:54Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-09-09T00:22:27Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2025-09-09T00:36:08Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-09T00:53:59Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-09-09T01:00:02Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-09T01:01:57Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-09-09T01:08:26Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-09T05:50:43Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-09T06:45:04Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-09-09T19:42:23Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-09-09T20:05:14Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-09-09T20:05:34Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/html2/activity/citation.longRef.copilot.html.snap-1.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-1.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.copilot.dark.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-1.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-2.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.copilot.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.fluent.dark.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.fluent.html.snap-8.png",
+    "__tests__/html2/activity/collapsible.html.snap-3.png",
+    "__tests__/html2/activity/collapsible.html.snap-4.png",
+    "__tests__/html2/activity/collapsible.html.snap-5.png",
+    "__tests__/html2/activity/collapsible.html.snap-6.png",
+    "__tests__/html2/activity/collapsible.html.snap-7.png",
+    "__tests__/html2/activity/collapsible.html.snap-8.png",
+    "__tests__/html2/autoScroll/autoScroll.snap.activity.html.snap-1.png",
+    "__tests__/html2/autoScroll/autoScroll.snap.activityAndPage.html.snap-1.png",
+    "__tests__/html2/autoScroll/autoScroll.snap.default.html.snap-1.png",
+    "__tests__/html2/autoScroll/autoScroll.snap.page.html.snap-1.png",
+    "__tests__/html2/copyButton/layout.copilot.dark.html.snap-1.png",
+    "__tests__/html2/copyButton/layout.copilot.light.html.snap-1.png",
+    "__tests__/html2/grouping/customGrouping.html.snap-1.png",
+    "__tests__/html2/grouping/disableSender.html.snap-1.png",
+    "__tests__/html2/grouping/disableStatus.html.snap-1.png",
+    "__tests__/html2/grouping/disableStatus.perSender.html.snap-1.png",
+    "__tests__/html2/grouping/extraneousGroup.html.snap-1.png",
+    "__tests__/html2/grouping/fluentTheme.html.snap-1.png",
+    "__tests__/html2/grouping/groupingBorder.html.snap-1.png",
+    "__tests__/html2/grouping/noSuchGroup.html.snap-1.png",
+    "__tests__/html2/linkDefinition/badge.copilot.html.snap-1.png",
+    "__tests__/html2/linkDefinition/badge.dark.copilot.html.snap-1.png",
+    "__tests__/html2/markdown/math/layout.scroll.copilot.dark.html.snap-1.png",
+    "__tests__/html2/markdown/math/layout.scroll.copilot.dark.html.snap-2.png",
+    "__tests__/html2/markdown/math/layout.scroll.copilot.dark.html.snap-3.png",
+    "__tests__/html2/markdown/math/layout.scroll.copilot.dark.html.snap-4.png",
+    "__tests__/html2/markdown/math/layout.scroll.copilot.light.html.snap-1.png",
+    "__tests__/html2/markdown/math/layout.scroll.copilot.light.html.snap-2.png",
+    "__tests__/html2/markdown/math/layout.scroll.copilot.light.html.snap-3.png",
+    "__tests__/html2/markdown/math/layout.scroll.copilot.light.html.snap-4.png",
+    "__tests__/html2/markdown/math/layout.scroll.html.snap-2.png",
+    "__tests__/html2/markdown/math/layout.scroll.html.snap-3.png",
+    "__tests__/html2/markdown/math/layout.scroll.html.snap-4.png",
+    "__tests__/html2/part-grouping/copilot.dark.html.snap-1.png",
+    "__tests__/html2/part-grouping/copilot.dark.html.snap-10.png",
+    "__tests__/html2/part-grouping/copilot.dark.html.snap-2.png",
+    "__tests__/html2/part-grouping/copilot.dark.html.snap-3.png",
+    "__tests__/html2/part-grouping/copilot.dark.html.snap-4.png",
+    "__tests__/html2/part-grouping/copilot.dark.html.snap-5.png",
+    "__tests__/html2/part-grouping/copilot.dark.html.snap-6.png",
+    "__tests__/html2/part-grouping/copilot.dark.html.snap-7.png",
+    "__tests__/html2/part-grouping/copilot.dark.html.snap-8.png",
+    "__tests__/html2/part-grouping/copilot.dark.html.snap-9.png",
+    "__tests__/html2/part-grouping/copilot.html.snap-1.png",
+    "__tests__/html2/part-grouping/copilot.html.snap-10.png",
+    "__tests__/html2/part-grouping/copilot.html.snap-2.png",
+    "__tests__/html2/part-grouping/copilot.html.snap-3.png",
+    "__tests__/html2/part-grouping/copilot.html.snap-4.png",
+    "__tests__/html2/part-grouping/copilot.html.snap-5.png",
+    "__tests__/html2/part-grouping/copilot.html.snap-6.png",
+    "__tests__/html2/part-grouping/copilot.html.snap-7.png",
+    "__tests__/html2/part-grouping/copilot.html.snap-8.png",
+    "__tests__/html2/part-grouping/copilot.html.snap-9.png",
+    "__tests__/html2/part-grouping/fluent.dark.html.snap-1.png",
+    "__tests__/html2/part-grouping/fluent.dark.html.snap-10.png",
+    "__tests__/html2/part-grouping/fluent.dark.html.snap-2.png",
+    "__tests__/html2/part-grouping/fluent.dark.html.snap-3.png",
+    "__tests__/html2/part-grouping/fluent.dark.html.snap-4.png",
+    "__tests__/html2/part-grouping/fluent.dark.html.snap-5.png",
+    "__tests__/html2/part-grouping/fluent.dark.html.snap-6.png",
+    "__tests__/html2/part-grouping/fluent.dark.html.snap-7.png",
+    "__tests__/html2/part-grouping/fluent.dark.html.snap-8.png",
+    "__tests__/html2/part-grouping/fluent.dark.html.snap-9.png",
+    "__tests__/html2/part-grouping/fluent.html.snap-1.png",
+    "__tests__/html2/part-grouping/fluent.html.snap-10.png",
+    "__tests__/html2/part-grouping/fluent.html.snap-2.png",
+    "__tests__/html2/part-grouping/fluent.html.snap-3.png",
+    "__tests__/html2/part-grouping/fluent.html.snap-4.png",
+    "__tests__/html2/part-grouping/fluent.html.snap-5.png",
+    "__tests__/html2/part-grouping/fluent.html.snap-6.png",
+    "__tests__/html2/part-grouping/fluent.html.snap-7.png",
+    "__tests__/html2/part-grouping/fluent.html.snap-8.png",
+    "__tests__/html2/part-grouping/fluent.html.snap-9.png",
+    "__tests__/html2/part-grouping/index.html.snap-1.png",
+    "__tests__/html2/part-grouping/index.html.snap-10.png",
+    "__tests__/html2/part-grouping/index.html.snap-2.png",
+    "__tests__/html2/part-grouping/index.html.snap-3.png",
+    "__tests__/html2/part-grouping/index.html.snap-4.png",
+    "__tests__/html2/part-grouping/index.html.snap-5.png",
+    "__tests__/html2/part-grouping/index.html.snap-6.png",
+    "__tests__/html2/part-grouping/index.html.snap-7.png",
+    "__tests__/html2/part-grouping/index.html.snap-8.png",
+    "__tests__/html2/part-grouping/index.html.snap-9.png",
+    "__tests__/html2/part-grouping/position.html.snap-1.png",
+    "__tests__/html2/part-grouping/position.html.snap-2.png",
+    "__tests__/html2/part-grouping/position.html.snap-3.png",
+    "__tests__/html2/part-grouping/position.html.snap-4.png",
+    "__tests__/html2/part-grouping/position.html.snap-5.png",
+    "__tests__/html2/part-grouping/position.html.snap-6.png",
+    "__tests__/html2/part-grouping/position.html.snap-7.png",
+    "__tests__/html2/part-grouping/position.html.snap-8.png",
+    "__tests__/html2/sendBox/previewBeforeSend/clearAfterSend.fluent.copilot.html.snap-2.png",
+    "__tests__/html2/sendBox/previewBeforeSend/clearAfterSend.fluent.copilot.html.snap-3.png",
+    "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-1.png",
+    "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-2.png",
+    "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-3.png",
+    "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-4.png",
+    "__tests__/html2/side-by-side/codeblock-dark.navigation.dark.html.snap-5.png",
+    "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-1.png",
+    "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-2.png",
+    "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-3.png",
+    "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-4.png",
+    "__tests__/html2/side-by-side/codeblock-dark.navigation.html.snap-5.png",
+    "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-1.png",
+    "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-2.png",
+    "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-3.png",
+    "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-4.png",
+    "__tests__/html2/side-by-side/codeblock.navigation.dark.html.snap-5.png",
+    "__tests__/html2/side-by-side/codeblock.navigation.html.snap-1.png",
+    "__tests__/html2/side-by-side/codeblock.navigation.html.snap-2.png",
+    "__tests__/html2/side-by-side/codeblock.navigation.html.snap-3.png",
+    "__tests__/html2/side-by-side/codeblock.navigation.html.snap-4.png",
+    "__tests__/html2/side-by-side/codeblock.navigation.html.snap-5.png",
+    "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-1.png",
+    "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-2.png",
+    "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-3.png",
+    "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-4.png",
+    "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-5.png",
+    "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-6.png",
+    "__tests__/html2/side-by-side/feedback.navigation.dark.html.snap-7.png",
+    "__tests__/html2/side-by-side/feedback.navigation.html.snap-1.png",
+    "__tests__/html2/side-by-side/feedback.navigation.html.snap-2.png",
+    "__tests__/html2/side-by-side/feedback.navigation.html.snap-3.png",
+    "__tests__/html2/side-by-side/feedback.navigation.html.snap-4.png",
+    "__tests__/html2/side-by-side/feedback.navigation.html.snap-5.png",
+    "__tests__/html2/side-by-side/feedback.navigation.html.snap-6.png",
+    "__tests__/html2/side-by-side/feedback.navigation.html.snap-7.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-3.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-4.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-5.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-6.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-7.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-8.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.dark.html.snap-9.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-3.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-4.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-5.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-6.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-7.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-8.png",
+    "__tests__/html2/side-by-side/pre-chat.navigation.html.snap-9.png",
+    "__tests__/html2/side-by-side/pre-liner.dark.html.snap-1.png",
+    "__tests__/html2/side-by-side/pre-liner.html.snap-1.png",
+    "__tests__/html2/side-by-side/streaming.dark.html.snap-1.png",
+    "__tests__/html2/side-by-side/streaming.html.snap-1.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-1.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-10.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-11.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-12.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-13.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-14.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-15.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-16.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-17.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-2.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-3.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-4.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-5.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-6.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-7.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-8.png",
+    "__tests__/html2/side-by-side/transcript.navigation.dark.html.snap-9.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-1.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-10.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-11.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-12.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-13.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-14.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-15.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-16.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-17.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-2.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-3.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-4.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-5.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-6.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-7.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-8.png",
+    "__tests__/html2/side-by-side/transcript.navigation.html.snap-9.png",
+    "__tests__/html2/typing/typingIndicator.fluent.copilot.html.snap-1.png",
+    "__tests__/html2/typing/typingIndicator.fluent.copilot.html.snap-2.png",
+    "__tests__/html2/typing/typingIndicator.scroll.fluent.copilot.html.snap-1.png",
+    "__tests__/html2/typing/typingIndicator.scroll.fluent.copilot.html.snap-2.png"
+  ]
+}

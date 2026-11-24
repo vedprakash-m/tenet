@@ -1,0 +1,154 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5510,
+  "title": "feat: template decorator",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n### Breaking changes\r\n\r\n- The following middleware should be created using their respective factory function:\r\n   - `activityBorderDecoratorMiddleware`, related to PR [#5504](https://github.com/microsoft/BotFramework-WebChat/pull/5504), [#5510](https://github.com/microsoft/BotFramework-WebChat/pull/5510)\r\n\r\n## Description\r\n\r\nThis adds a new template for decorator middlewares which allows passing component instead of enhancer.\r\n\r\nThe middleware stack is executed once and then is used to produce stable render tree. The `request` is passed via context and `props` are used to configure downstream decorators.\r\n\r\n## Design\r\n\r\nMeet `templateDecorator` function which now operates a bit differently to usual middleware stack:\r\n- utilizes single chain or responsibility for all decorators\r\n- produces stable component tree (up to consumers)\r\n- allows only for unconditional middleware execution\r\n- request is not available during enhancer execution\r\n- request is not mutable\r\n- the `request` prop is shared via context and passed to each of components wrapped into `createMiddleware()` along with the `Next` component\r\n\r\n## Specific Changes\r\n\r\n- added `templateDecorator`\r\n- migrated `ActivityBorderDecoratorMiddleware` to `templateDecorator`\r\n- refactored for usage of single context: wrap Proxy instances with RCoR providers\r\n- updated tests\r\n\r\n\r\n## -\r\n\r\n-\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [x] Browser and platform compatibilities reviewed\r\n-  [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] Internationalization reviewed (strings, unit formatting)\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] Security reviewed (no data URIs, check for nonce leak)\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-07-08T17:05:33Z",
+  "merged_at": "2025-07-10T17:51:22Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "feat/template-decorator",
+  "head": "feat/template-decorator",
+  "base_sha": "40736b1952628fa723c15c2c67319dfc83757ea8",
+  "head_sha": "ad70bb712d8b9733f2d5eedc2cfba295aacc3a42",
+  "merge_sha": "c1bd6b1fc8f7b461d942f0826c00ee98b13072c1",
+  "diff_sha256": "b2d694eefb5c53bd03f85427f1e435c3e3449d69321db618d068f481597e7b4e",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-07-09T16:34:25Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "12365da1690ce24eb7244c23e690d628cda47744",
+      "message": "feat: template decorator",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "06dfc2839c9a9687ef7ea73d8685edfc9cec212f",
+      "message": "Fix tests",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ad70bb712d8b9733f2d5eedc2cfba295aacc3a42",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/fluentTheme/withCustomDecorator.html",
+      "status": "modified",
+      "additions": 130,
+      "deletions": 127,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/layout.html",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 15,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityBorder/ActivityBorderDecorator.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityBorder/private/ActivityBorderDecoratorMiddleware.ts",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 35,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityBorder/private/ActivityBorderDecoratorRequestContext.ts",
+      "status": "modified",
+      "additions": 24,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/ActivityGrouping/ActivityGroupingDecorator.tsx",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/internal/InternalDecoratorComposer.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 24,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/templateDecorator.tsx",
+      "status": "added",
+      "additions": 112,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/decorator/private/BorderLoader.module.css",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/decorator/private/BorderLoader.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/decorator/private/WebChatDecorator.tsx",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/FluentThemeProvider.tsx",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 30,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-09T16:44:34Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-07-10T17:48:35Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": []
+}

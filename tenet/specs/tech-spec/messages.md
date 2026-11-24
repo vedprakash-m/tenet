@@ -77,3 +77,35 @@
 | `TN-USAGE-BUDGET` | Context token budget {budget} must be a positive integer. | Pass a positive integer to `--budget-tokens` or `budget_tokens`. |
 | `TN-USAGE-REF` | The git ref is invalid. | Pass a repository ref. |
 | `TN-WEAK-*` | Possible test weakening ({finding}) in {file}: {names}. | Restore removed tests or remove skip markers in {file}, or ask for a waiver. |
+
+## 3. Alpha.1 message templates
+
+Moved into the §2 table when `CP-0007` and `CP-0050` add their entries to `src/core/messages.ts` (`test/core/messages.test.ts` checks §2 rows strictly against `src/core/messages.ts`):
+
+- `TN-BACKTEST-INCOMPLETE`: `"Backtest cohort has incomplete coverage ({coverage} / {cohort_size} PRs)."` Fix: `"Complete missing PR records before claiming the 100-PR backtest threshold."`
+- `TN-EV-CROSS-WORK`: `"Event {id} references predecessor {prev} from another work item."` Fix: `"Fix predecessor link on {id} to reference an event in the same work item."`
+- `TN-EV-CYCLE`: `"Event {id} participates in a cycle or self-link."` Fix: `"Remove the cyclic predecessor edge on {id} before reducing."`
+- `TN-EV-NO-CREATE`: `"Work item {work} has no valid unique creation event."` Fix: `"Supply or resolve the canonical \`work.created\` event for {work}."`
+- `TN-EV-RESOLVE`: `"Resolution {id} omits one or more active conflict heads."` Fix: `"Record a \`resolve\` event whose \`prev\` includes every active conflict head."`
+- `TN-GATE-SELF-WAIVE`: `"Actor {actor} cannot waive claim {claim} broken by their own change."` Fix: `"Have another authorized decision-maker waive {claim} or satisfy the check."`
+- `TN-POLICY-RULE-DECISION`: `"Promoting rule {rule} to {mode} requires an approved change-policy decision."` Fix: `"Record an approved \`change-policy\` decision first, then re-run \`tenet rules\`."`
+- `TN-DEC-ACTOR`: `"Forge actor {actor} is not eligible to answer this request."` Fix: `"Have an authorized owner from allowed_actors submit the decision."`
+- `TN-DEC-AMBIGUOUS`: `"Unqualified reply matches {count} open decision requests."` Fix: `"Specify @<evaluation_id> or target choice on the reply."`
+- `TN-DEC-CONFLICT`: `"Competing decision choices ({choices}) leave request {id} unresolved."` Fix: `"Record an authorized resolve decision or issue a fresh request."`
+- `TN-DEC-EXPIRED`: `"Decision reply arrived after request {id} expired at {expires_at}."` Fix: `"Open a fresh decision request before replying."`
+- `TN-DEC-KEY-REVOKED`: `"Signing key for actor {actor} was revoked at {revoked}."` Fix: `"Sign with an active registered owner key."`
+- `TN-DEC-SELF-VERIFY`: `"Actor {actor} cannot approve their own pull request at level {level}."` Fix: `"Have another owner or reviewer submit the decision."`
+- `TN-DEC-STALE`: `"Reply targets evaluation {actual}, but current evaluation is {expected}."` Fix: `"Review the latest card and reply against {expected}."`
+- `TN-RECORD-TIP`: `"Records ref tip drifted from {expected} to {actual} during board read."` Fix: `"Re-run \`tenet board --fetch\` to read a consistent snapshot."`
+- `TN-SEALED-DIRTY`: `"Sealed test job modified tracked files before completing check {check}."` Fix: `"Remove working-tree writes during CI checks and re-run."`
+
+## 4. 0.1.x message templates
+
+Moved into the §2 table when `0.1.x` packets add their entries to `src/core/messages.ts` (`test/core/messages.test.ts` checks §2 rows strictly against `src/core/messages.ts`):
+
+- `TN-HEALTH-BASELINE`: `"Committed health baseline entry {key} is missing or incompatible."` Fix: `"Record the initial entry in .tenet/health-baseline.json via a change-policy commit."`
+- `TN-HEALTH-CONFIG-CHANGED`: `"Health report for {check} drifted from pinned tool or scope configuration ({detail})."` Fix: `"Update <base> tenet.yaml checks.{check} or restore the pinned analyzer configuration."`
+- `TN-HEALTH-INCOMPATIBLE`: `"Indicator {indicator} received conflicting or multiple health reports for {check}."` Fix: `"Bind one authoritative single report per checks.<name> run."`
+- `TN-HEALTH-PROVENANCE`: `"Health report for {indicator} lacks required metadata or mismatches target architecture modules ({detail})."` Fix: `"Emit valid tenet-health-json/sarif provenance matching health.architecture.modules, or run as advisory."`
+- `TN-HEALTH-REGRESSED`: `"Health indicator {indicator} regressed beyond tolerance ({detail})."` Fix: `"Reduce the regression within tolerance/max_new or record a forge-verified accept-health-regression waive."`
+- `TN-WAIVER-EXPIRED`: `"Waiver {id} expired at {expiry}."` Fix: `"Fix the underlying regression or obtain a fresh forge-verified waiver."`

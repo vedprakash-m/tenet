@@ -1,0 +1,197 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 14,
+  "title": "Harden the schema-1 bridge before schema-2 activation",
+  "body": "## Scope\n\nPrepare the independently reviewable schema-1 bridge required by owner-directed R3/migration §16.3. Schema remains **1**. No schema-2 activation, migration replay, capacity change, merge, tag or release. Activation remains blocked until the actual required bridge is available and pinned.\n\n- Raw owned marker/primary/previous admission rejects missing, invalid, unknown, target or duplicate schema declarations; ordinary same-schema corruption recovery is preserved.\n- Strict five-key `migration-terminal.json`: operationId, protocolVersion=1, strict versions:{from,to}, outcome, bindingDigest. Only 2→1/rolled-back admits the bridge, never as ownership or replay authority. Active transition/privacy fences always refuse.\n- Synchronous owned-store writers claim the existing exclusive lock or reuse their operation-local live context. Direct contention refuses; waiting transactions re-admit; retired Tx writers refuse. Read-only artifact inspection never creates/chmods directories. Stateless advisory artifacts remain unbound; unbound blobs cannot create a store.\n- Real-process direct/waiting-writer and SIGKILL/restart controls, plus built-bundle terminal/fence interruption UAT. Synthetic publishers are tests, not migrators.\n- Actual source/toolchain and bundle/payload/input hashes. See [contract and reproduction](docs/schema-1-bridge.md).\n\n## Independent review and observed evidence\n\nFresh-context scope review findings B1–B4 were disposed before implementation; independent implementation review reported no significant findings. Failing-first controls, typecheck, lints, structural coverage, focused Windows controls, payload verification and independent clean-output builds were observed.\n\nAt previous head `3362c50145f7fd177a6b2fe62ff623aac601b3ce`, Ubuntu full CI passed all **1,792 tests with no skips**, but bundle UAT exposed an invalid test invocation (`status` instead of registered `inspect --view status`). Corrected only the UAT invocation in `1af05109b0712ebd285a8382a9d4a818e12fb12a`. Windows bridge controls passed; unrelated starter tests hit five-second timeouts. The old queued macOS job was superseded, not observed passing.\n\nCurrent exact-head [push gates](https://github.com/vedprakash-m/tenet/actions/runs/42410505990) and [PR gates](https://github.com/vedprakash-m/tenet/actions/runs/42410509171) remain **pending**. Ubuntu/macOS full CI and Node 24/22.12 bundle UAT must pass before review-ready delivery. Full local Windows CI failed (1,136 pass, 631 fail, 25 skip); unsupported POSIX mutation is not supported-host evidence.\n\n## Actual candidate identity\n\nClean committed source: `1af05109b0712ebd285a8382a9d4a818e12fb12a`, `sourceDirty:false`. Local Node `v24.22.1`, esbuild `0.28.2`, TypeScript `5.9.3`; two independent empty-output builds, 97 payload files:\n\n| Artifact | Actual SHA-256 |\n|---|---|\n| `plugin/kernel/tenet.mjs` | `bcea82fbe2665596608b178196f481cc0a4c84573336578fc4195915703ffe39` |\n| complete `plugin/SHA256SUMS` bytes | `926a07a81a344716588e45b0fdf0e1836940d633faa2b6e6caac824af2579793` |\n| source + installed compiler input snapshot | `4c137ca3645de0caa5249ccaa1c2d11e81072f7758ae9ea6b72d774e75cc33e5` |\n\nThese are **candidate build digests**, not a published release identity, publisher authentication, host qualification or approved bridge pin. Input hashes are platform/toolchain-specific. Installed-host and power-loss behavior remain unobserved. Staged and upstream-range privacy found no likely leaks; scans provide no absence guarantee.",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-07T20:06:39Z",
+  "merged_at": "2026-11-09T18:03:24Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "vedprakash-m-schema-1-bridge",
+  "head": "vedprakash-m-schema-1-bridge",
+  "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
+  "head_sha": "1af05109b0712ebd285a8382a9d4a818e12fb12a",
+  "merge_sha": "37ec31f1f7dacc435170161e2625ca70d2013584",
+  "diff_sha256": "b4c908c97ff97cbd846acca484d0dcff9d5392648bd213419fe0524e3c847338",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "98ce857df3bf54da703c62b12022de6e0f623c98",
+      "message": "feat: harden schema-1 bridge admission",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "3362c50145f7fd177a6b2fe62ff623aac601b3ce",
+      "message": "docs: define schema-1 bridge candidate identity",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "1af05109b0712ebd285a8382a9d4a818e12fb12a",
+      "message": "test: use registered inspect verb in bridge UAT",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": ".github/workflows/untrusted.yml",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/schema-1-bridge.md",
+      "status": "added",
+      "additions": 93,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/private-record-fs.ts",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/store-fs.ts",
+      "status": "modified",
+      "additions": 96,
+      "deletions": 30,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/migration-terminal.ts",
+      "status": "added",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/fixtures/bridge-terminal.ts",
+      "status": "added",
+      "additions": 33,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/fixtures/store-admission-barrier.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/reproducible-build.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/schema-1-bridge.test.ts",
+      "status": "added",
+      "additions": 259,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/store-boundary.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "specs/tech-spec.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/reproducible-build.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/bridge.mjs",
+      "status": "added",
+      "additions": 78,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/crash-bundle-bridge.mjs",
+      "status": "added",
+      "additions": 29,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/uat/uat.mjs",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:32:49Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:40:21Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:23:24Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:22:39Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:44:22Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:28:30Z"
+    }
+  ],
+  "binary_paths": []
+}

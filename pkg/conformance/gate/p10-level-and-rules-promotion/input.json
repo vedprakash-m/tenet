@@ -1,0 +1,34 @@
+{
+  "initial_policy": {
+    "standard": "~0.1",
+    "level": "observe",
+    "rules": {
+      "acceptance-passed": "advise"
+    },
+    "owners": [
+      {
+        "id": "ved"
+      }
+    ]
+  },
+  "decision": {
+    "id": "DEC-POL-1",
+    "kind": "approve",
+    "name": "change-policy",
+    "actor": "ved",
+    "proof": {
+      "strength": "forge-verified"
+    }
+  },
+  "commands": [
+    [
+      "level",
+      "protect"
+    ],
+    [
+      "rules",
+      "acceptance-passed",
+      "enforce"
+    ]
+  ]
+}

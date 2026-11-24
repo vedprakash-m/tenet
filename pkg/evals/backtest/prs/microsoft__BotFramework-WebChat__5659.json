@@ -1,0 +1,746 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5659,
+  "title": "Bump dependencies",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n### Changed\r\n\r\n- Bumped dependencies, by [@compulim](https://github.com/compulim) in PR [#5385](https://github.com/microsoft/BotFramework-WebChat/pull/5385), PR [#5400](https://github.com/microsoft/BotFramework-WebChat/pull/5400), PR [#5426](https://github.com/microsoft/BotFramework-WebChat/pull/5426), PR [#5427](https://github.com/microsoft/BotFramework-WebChat/pull/5427), PR [#5476](https://github.com/microsoft/BotFramework-WebChat/pull/5476), PR [#5516](https://github.com/microsoft/BotFramework-WebChat/pull/5516), PR [#5529](https://github.com/microsoft/BotFramework-WebChat/pull/5529), PR [#5532](https://github.com/microsoft/BotFramework-WebChat/pull/5532), and PR [#5659](https://github.com/microsoft/BotFramework-WebChat/pull/5659)\r\n   - Production dependencies\r\n      - [`@babel/runtime@7.28.4`](https://npmjs.com/package/@babel/runtime/v/7.28.4)\r\n      - [`@emotion/css@11.13.5`](https://npmjs.com/package/@emotion/css/v/11.13.5)\r\n      - [`@redux-devtools/extension@3.3.0`](https://npmjs.com/package/@redux-devtools/extension/v/3.3.0)\r\n      - [`botframework-directlinejs@0.15.6`](https://npmjs.com/package/botframework-directlinejs/v/0.15.6)\r\n      - [`core-js@3.47.0`](https://npmjs.com/package/core-js/v/3.47.0)\r\n      - [`core-js-pure@3.47.0`](https://npmjs.com/package/core-js-pure/v/3.47.0)\r\n      - [`event-as-promise@2.0.0`](https://npmjs.com/package/event-as-promise/v/2.0.0)\r\n      - [`globalize@1.7.1`](https://npmjs.com/package/globalize/v/1.7.1)\r\n      - [`iter-fest@0.3.0`](https://npmjs.com/package/iter-fest/v/0.3.0)\r\n      - [`katex@0.16.27`](https://npmjs.com/package/katex/v/0.16.27)\r\n      - [`mdast-util-from-markdown@2.0.2`](https://npmjs.com/package/mdast-util-from-markdown/v/2.0.2)\r\n      - [`merge-refs@2.0.0`](https://npmjs.com/package/merge-refs/v/2.0.0)\r\n      - [`micromark@4.0.2`](https://npmjs.com/package/micromark/v/4.0.2)\r\n      - [`micromark-extension-gfm@3.0.0`](https://npmjs.com/package/micromark-extension-gfm/v/3.0.0)\r\n      - [`micromark-util-character@2.1.1`](https://npmjs.com/package/micromark-util-character/v/2.1.1)\r\n      - [`micromark-util-sanitize-uri@2.0.1`](https://npmjs.com/package/micromark-util-sanitize-uri/v/2.0.1)\r\n      - [`mime@4.1.0`](https://npmjs.com/package/mime/v/4.1.0)\r\n      - [`punycode@2.3.1`](https://npmjs.com/package/punycode/v/2.3.1)\r\n      - [`react-chain-of-responsibility@0.4.2`](https://npmjs.com/package/react-chain-of-responsibility/v/0.4.2)\r\n      - [`react-dictate-button@4.0.0`](https://npmjs.com/package/react-dictate-button/v/4.0.0)\r\n      - [`react-film@4.0.0`](https://npmjs.com/package/react-film/v/4.0.0)\r\n      - [`react-say@2.2.0`](https://npmjs.com/package/react-say/v/2.2.0)\r\n      - [`react-scroll-to-bottom@4.2.1-main.53844f5`](https://npmjs.com/package/react-scroll-to-bottom/v/4.2.1-main.53844f5)\r\n      - [`react-wrap-with@0.1.0`](https://npmjs.com/package/react-wrap-with/v/0.1.0)\r\n      - [`redux-saga@1.4.2`](https://npmjs.com/package/redux-saga/v/1.4.2)\r\n      - [`sanitize-html@2.17.0`](https://npmjs.com/package/sanitize-html/v/2.17.0)\r\n      - [`shiki@2.5.0`](https://npmjs.com/package/shiki/v/2.5.0)\r\n      - [`use-propagate@0.2.1`](https://npmjs.com/package/use-propagate/v/0.2.1)\r\n      - [`use-reduce-memo@0.1.0`](https://npmjs.com/package/use-reduce-memo/v/0.1.0)\r\n      - [`use-ref-from@0.1.0`](https://npmjs.com/package/use-ref-from/v/0.1.0)\r\n      - [`use-state-with-ref@0.1.0`](https://npmjs.com/package/use-state-with-ref/v/0.1.0)\r\n      - [`uuid@8.3.2`](https://npmjs.com/package/uuid/v/8.3.2)\r\n      - [`valibot@1.2.0`](https://npmjs.com/package/valibot/v/1.2.0)\r\n      - [`web-speech-cognitive-services@8.1.3`](https://npmjs.com/package/web-speech-cognitive-services/v/8.1.3)\r\n   - Development dependencies\r\n      - [`@babel/cli@7.28.3`](https://npmjs.com/package/@babel/cli/v/7.28.3)\r\n      - [`@babel/core@7.28.5`](https://npmjs.com/package/@babel/core/v/7.28.5)\r\n      - [`@babel/plugin-transform-runtime@7.28.5`](https://npmjs.com/package/@babel/plugin-transform-runtime/v/7.28.5)\r\n      - [`@babel/plugin-transform-typescript@7.28.5`](https://npmjs.com/package/@babel/plugin-transform-typescript/v/7.28.5)\r\n      - [`@babel/preset-env@7.28.5`](https://npmjs.com/package/@babel/preset-env/v/7.28.5)\r\n      - [`@babel/preset-react@7.28.5`](https://npmjs.com/package/@babel/preset-react/v/7.28.5)\r\n      - [`@babel/preset-typescript@7.28.5`](https://npmjs.com/package/@babel/preset-typescript/v/7.28.5)\r\n      - [`@biomejs/biome@2.3.10`](https://npmjs.com/package/@biomejs/biome/v/2.3.10)\r\n      - [`@happy-dom/jest-environment@20.0.11`](https://npmjs.com/package/@happy-dom/jest-environment/v/20.0.11)\r\n      - [`@jridgewell/sourcemap-codec@1.5.5`](https://npmjs.com/package/@jridgewell/sourcemap-codec/v/1.5.5)\r\n      - [`@testduet/given-when-then@0.1.0`](https://npmjs.com/package/@testduet/given-when-then/v/0.1.0)\r\n      - [`@tsconfig/strictest@2.0.8`](https://npmjs.com/package/@tsconfig/strictest/v/2.0.8)\r\n      - [`@types/dom-speech-recognition@0.0.7`](https://npmjs.com/package/@types/dom-speech-recognition/v/0.0.7)\r\n      - [`@types/jest@29.5.14`](https://npmjs.com/package/@types/jest/v/29.5.14)\r\n      - [`@types/mdast@4.0.4`](https://npmjs.com/package/@types/mdast/v/4.0.4)\r\n      - [`@types/node@25.0.3`](https://npmjs.com/package/@types/node/v/25.0.3)\r\n      - [`@types/react@16.14.68`](https://npmjs.com/package/@types/react/v/16.14.68)\r\n      - [`@types/react@18.3.27`](https://npmjs.com/package/@types/react/v/18.3.27)\r\n      - [`@types/react-dom@16.9.25`](https://npmjs.com/package/@types/react-dom/v/16.9.25)\r\n      - [`@types/react-dom@18.3.7`](https://npmjs.com/package/@types/react-dom/v/18.3.7)\r\n      - [`@types/react-is@16.7.5`](https://npmjs.com/package/@types/react-is/v/16.7.5)\r\n      - [`@types/semver@7.7.1`](https://npmjs.com/package/@types/semver/v/7.7.1)\r\n      - [`@types/use-sync-external-store@1.5.0`](https://npmjs.com/package/@types/use-sync-external-store/v/1.5.0)\r\n      - [`@types/uuid@8.3.4`](https://npmjs.com/package/@types/uuid/v/8.3.4)\r\n      - [`@typescript-eslint/eslint-plugin@8.50.0`](https://npmjs.com/package/@typescript-eslint/eslint-plugin/v/8.50.0)\r\n      - [`@typescript-eslint/parser@8.50.0`](https://npmjs.com/package/@typescript-eslint/parser/v/8.50.0)\r\n      - [`adaptivecards@3.0.2`](https://npmjs.com/package/adaptivecards/v/3.0.2)\r\n      - [`adm-zip@0.5.16`](https://npmjs.com/package/adm-zip/v/0.5.16)\r\n      - [`axe-core@4.11.0`](https://npmjs.com/package/axe-core/v/4.11.0)\r\n      - [`babel-jest@29.7.0`](https://npmjs.com/package/babel-jest/v/29.7.0)\r\n      - [`babel-plugin-istanbul@7.0.1`](https://npmjs.com/package/babel-plugin-istanbul/v/7.0.1)\r\n      - [`base64-js@1.5.1`](https://npmjs.com/package/base64-js/v/1.5.1)\r\n      - [`bent@7.3.12`](https://npmjs.com/package/bent/v/7.3.12)\r\n      - [`chalk@5.6.2`](https://npmjs.com/package/chalk/v/5.6.2)\r\n      - [`compression@1.8.1`](https://npmjs.com/package/compression/v/1.8.1)\r\n      - [`concurrently@9.2.1`](https://npmjs.com/package/concurrently/v/9.2.1)\r\n      - [`core-js@3.47.0`](https://npmjs.com/package/core-js/v/3.47.0)\r\n      - [`core-js-pure@3.47.0`](https://npmjs.com/package/core-js-pure/v/3.47.0)\r\n      - [`cross-env@10.1.0`](https://npmjs.com/package/cross-env/v/10.1.0)\r\n      - [`diff@8.0.2`](https://npmjs.com/package/diff/v/8.0.2)\r\n      - [`dotenv@17.2.3`](https://npmjs.com/package/dotenv/v/17.2.3)\r\n      - [`dtsroll@1.4.1`](https://npmjs.com/package/dtsroll/v/1.4.1)\r\n      - [`esbuild@0.27.2`](https://npmjs.com/package/esbuild/v/0.27.2)\r\n      - [`eslint@8.57.1`](https://npmjs.com/package/eslint/v/8.57.1)\r\n      - [`eslint-config-prettier@10.1.8`](https://npmjs.com/package/eslint-config-prettier/v/10.1.8)\r\n      - [`eslint-plugin-import@2.32.0`](https://npmjs.com/package/eslint-plugin-import/v/2.32.0)\r\n      - [`eslint-plugin-local-rules@3.0.2`](https://npmjs.com/package/eslint-plugin-local-rules/v/3.0.2)\r\n      - [`eslint-plugin-prettier@5.5.4`](https://npmjs.com/package/eslint-plugin-prettier/v/5.5.4)\r\n      - [`eslint-plugin-react@7.37.5`](https://npmjs.com/package/eslint-plugin-react/v/7.37.5)\r\n      - [`eslint-plugin-react-hooks@7.0.1`](https://npmjs.com/package/eslint-plugin-react-hooks/v/7.0.1)\r\n      - [`eslint-plugin-security@3.0.1`](https://npmjs.com/package/eslint-plugin-security/v/3.0.1)\r\n      - [`express@5.2.1`](https://npmjs.com/package/express/v/5.2.1)\r\n      - [`glob@8.1.0`](https://npmjs.com/package/glob/v/8.1.0)\r\n      - [`handler-chain@0.1.1`](https://npmjs.com/package/handler-chain/v/0.1.1)\r\n      - [`html-react-parser@5.2.10`](https://npmjs.com/package/html-react-parser/v/5.2.10)\r\n      - [`http-proxy-middleware@2.0.9`](https://npmjs.com/package/http-proxy-middleware/v/2.0.9)\r\n      - [`husky@9.1.7`](https://npmjs.com/package/husky/v/9.1.7)\r\n      - [`jest@29.7.0`](https://npmjs.com/package/jest/v/29.7.0)\r\n      - [`jest-environment-node@29.7.0`](https://npmjs.com/package/jest-environment-node/v/29.7.0)\r\n      - [`jest-image-snapshot@6.5.1`](https://npmjs.com/package/jest-image-snapshot/v/6.5.1)\r\n      - [`keep-a-changelog@2.7.1`](https://npmjs.com/package/keep-a-changelog/v/2.7.1)\r\n      - [`lint-staged@16.2.7`](https://npmjs.com/package/lint-staged/v/16.2.7)\r\n      - [`micromark-util-types@2.0.2`](https://npmjs.com/package/micromark-util-types/v/2.0.2)\r\n      - [`microsoft-cognitiveservices-speech-sdk@1.17.0`](https://npmjs.com/package/microsoft-cognitiveservices-speech-sdk/v/1.17.0)\r\n      - [`microsoft-cognitiveservices-speech-sdk@1.47.0`](https://npmjs.com/package/microsoft-cognitiveservices-speech-sdk/v/1.47.0)\r\n      - [`minimatch@10.1.1`](https://npmjs.com/package/minimatch/v/10.1.1)\r\n      - [`nodemon@3.1.11`](https://npmjs.com/package/nodemon/v/3.1.11)\r\n      - [`nopt@9.0.0`](https://npmjs.com/package/nopt/v/9.0.0)\r\n      - [`prettier@3.7.4`](https://npmjs.com/package/prettier/v/3.7.4)\r\n      - [`progress@2.0.3`](https://npmjs.com/package/progress/v/2.0.3)\r\n      - [`q@1.5.1`](https://npmjs.com/package/q/v/1.5.1)\r\n      - [`react@16.8.6`](https://npmjs.com/package/react/v/16.8.6)\r\n      - [`react@18.3.1`](https://npmjs.com/package/react/v/18.3.1)\r\n      - [`react-dom@16.8.6`](https://npmjs.com/package/react-dom/v/16.8.6)\r\n      - [`react-dom@18.3.1`](https://npmjs.com/package/react-dom/v/18.3.1)\r\n      - [`react-is@16.13.1`](https://npmjs.com/package/react-is/v/16.13.1)\r\n      - [`read-package-up@12.0.0`](https://npmjs.com/package/read-package-up/v/12.0.0)\r\n      - [`read-pkg@10.0.0`](https://npmjs.com/package/read-pkg/v/10.0.0)\r\n      - [`selenium-webdriver@4.39.0`](https://npmjs.com/package/selenium-webdriver/v/4.39.0)\r\n      - [`selfsigned@5.2.0`](https://npmjs.com/package/selfsigned/v/5.2.0)\r\n      - [`serve@14.2.5`](https://npmjs.com/package/serve/v/14.2.5)\r\n      - [`serve-handler@6.1.6`](https://npmjs.com/package/serve-handler/v/6.1.6)\r\n      - [`simple-git@3.30.0`](https://npmjs.com/package/simple-git/v/3.30.0)\r\n      - [`tsd@0.33.0`](https://npmjs.com/package/tsd/v/0.33.0)\r\n      - [`tsup@8.5.1`](https://npmjs.com/package/tsup/v/8.5.1)\r\n      - [`type-fest@5.3.1`](https://npmjs.com/package/type-fest/v/5.3.1)\r\n      - [`typescript@5.9.3`](https://npmjs.com/package/typescript/v/5.9.3)\r\n      - [`typescript-plugin-css-modules@5.2.0`](https://npmjs.com/package/typescript-plugin-css-modules/v/5.2.0)\r\n      - [`unplugin-lightningcss@0.4.3`](https://npmjs.com/package/unplugin-lightningcss/v/0.4.3)\r\n      - [`webpack@5.104.1`](https://npmjs.com/package/webpack/v/5.104.1)\r\n      - [`webpack-cli@6.0.1`](https://npmjs.com/package/webpack-cli/v/6.0.1)\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\nBump dependencies.\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n### Pull request validation bumping to Node.js 24\r\n\r\nWe no longer see Jest errors which forced us to pin to Node.js 18. We are bumping to 24.\r\n\r\n### Moving to Microsoft Container Registry\r\n\r\nWe have a security requirement to use images from [mcr.microsoft.com](https://mcr.microsoft.com/). However, MCR does not mirror official Node.js image > 18.\r\n\r\nWhen bumping `selfsigned`, it seems it need a newer version of Node.js that support Web Crypto.\r\n\r\n<img width=\"665\" height=\"191\" alt=\"image\" src=\"https://github.com/user-attachments/assets/3d5b9790-9754-484e-a6b0-c727d3b6cc7a\" />\r\n\r\nIf we are right, we need to bump to a newer Node.js. As MCR don't mirror official image > 18, we have to use images by MCR. In this PR, we are using [`24-bookworm`](https://mcr.microsoft.com/en-us/artifact/mar/devcontainers/javascript-node/tag/24-bookworm).\r\n\r\n### Happy DOM configuration\r\n\r\nAfter bumping `happy-dom`, it starts throwing error when `<script>` is injected. The error said the JS file is not being downloaded, which is the right behavior. The JS file is not intended to be downloaded or executed.\r\n\r\nWe are setting the `window.happyDOM.settings.handleDisabledFileLoadingAsSuccess = true` to remove the error.\r\n\r\n### `selfsigned` updated its signature\r\n\r\n`generate()` function is now `async generate()`.\r\n\r\n### Disabling some React rules\r\n\r\n```yml\r\n# The rule is preventing read access to refs inside the render loop.\r\n# For optimization, we are heavy on ref usage.\r\nreact-hooks/refs: off\r\n\r\n# This rule does not understand validateProps and falsely claim validateProps is causing mutations.\r\nreact-hooks/preserve-manual-memoization: off\r\n```\r\n\r\n### `package-lock.json` does not contains cross-platform packages\r\n\r\nNode.js 24 requires `package-lock.json` must list cross-platform packages.\r\n\r\nWe run `npm install` under Node.js 24 and obtained that `package-lock.json` snapshot. We did not rebuild `package-lock.json` as it contains a lot of historical value.\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Remove pin dependencies on `typescript@~5.8.3`\r\n- Run `npm run bump`\r\n- Fixed some tests (refer to Design section)\r\n- Format `PULL_REQUEST_TEMPLATE.md`\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] ~I have added tests and executed them locally~\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-12-19T05:09:18Z",
+  "merged_at": "2025-12-19T17:17:49Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "bump-deps2",
+  "head": "bump-deps2",
+  "base_sha": "928783a3e1d7767c3ef0d23578efb798e04df2db",
+  "head_sha": "01499a2ed3e6efb5cd49cd9decace3abc2ab3565",
+  "merge_sha": "025429f9d1dee7fbd10e08f692ac1cead38da461",
+  "diff_sha256": "7a2ceb080223644d15bddb4238b6b0683b295ee1b7b1be4904660dbeda8f3e1b",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-12-19T05:13:47Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "263a7a0c71c5fe5889695024d839f81af0e2881d",
+      "message": "First bump",
+      "author": "compulim"
+    },
+    {
+      "sha": "409765cd8bc418ca3cdbe26d4f8472e6d419457c",
+      "message": "Bump typescript@5.9.3",
+      "author": "compulim"
+    },
+    {
+      "sha": "2b42f1ac231a3fc4123fe8dd5676ceb9ca1f17ad",
+      "message": "Update entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "cc9aea026b4db16786834eaed2c50971fa26f568",
+      "message": "Reformat",
+      "author": "compulim"
+    },
+    {
+      "sha": "d6584a5747f6698014f85c4510f301bbbf34171f",
+      "message": "Bump to Node.js 22",
+      "author": "compulim"
+    },
+    {
+      "sha": "2c79fe5e82bb88eb739e4f5dc43554bd17d197af",
+      "message": "Build only if build script present",
+      "author": "compulim"
+    },
+    {
+      "sha": "0cb4e03429e0999bb52e6db996f709477470c0f4",
+      "message": "Use @types/uuid@8",
+      "author": "compulim"
+    },
+    {
+      "sha": "b0852de3ff49b0b39815c9ec2163a94214f16f69",
+      "message": "Fix hooks rules",
+      "author": "compulim"
+    },
+    {
+      "sha": "87dab98a3e8d560f8f0403362ebe75a6dc0c2f1b",
+      "message": "Suppress JS loading error",
+      "author": "compulim"
+    },
+    {
+      "sha": "5f43ea6d8d9fbad9aecf3a2a5f804f3f523ee978",
+      "message": "Load via href",
+      "author": "compulim"
+    },
+    {
+      "sha": "d6effc2a468337cb8c016ae4ef58650c0a45c033",
+      "message": "Downgrade WebDriver",
+      "author": "compulim"
+    },
+    {
+      "sha": "8ff60aaf19fa67c262b4ec7aef949c8bfe932123",
+      "message": "Revert \"Downgrade WebDriver\"",
+      "author": "compulim"
+    },
+    {
+      "sha": "3d9c7764c9b6edaa997e8f06525c32f0b0a01bc7",
+      "message": "Use MCR for base image",
+      "author": "compulim"
+    },
+    {
+      "sha": "5850c978d15fb4296645db8ca2ffed1197a5b82d",
+      "message": "Fix React rules",
+      "author": "compulim"
+    },
+    {
+      "sha": "2aa00f4d4fd72c3d2eedc561cdbd87ea9bcf751d",
+      "message": "Fix React rules",
+      "author": "compulim"
+    },
+    {
+      "sha": "4a2291fe06652e1e3d7cd4282767e1de991211d5",
+      "message": "Add happy-dom settings",
+      "author": "compulim"
+    },
+    {
+      "sha": "dfd46945bd3511cd3cc260df8d85383037786ee5",
+      "message": "Fix test",
+      "author": "compulim"
+    },
+    {
+      "sha": "8d7ae4bac771c0363526c0e3a55f4cbd34d48763",
+      "message": "Fix registry",
+      "author": "compulim"
+    },
+    {
+      "sha": "9629f22480ec148c7b87bd2258b41b6ad774c833",
+      "message": "Pin @types/react and @types/react-dom",
+      "author": "compulim"
+    },
+    {
+      "sha": "2fa8372a89ae5928aabd49ca0a929950d81968de",
+      "message": "Remove flushSync",
+      "author": "compulim"
+    },
+    {
+      "sha": "ae4ba436ec59b5188dc81ab68d2802e9c2cbab6e",
+      "message": "Add @types/uuid",
+      "author": "compulim"
+    },
+    {
+      "sha": "27b47e0487c732d9764af0e42043098da7d85975",
+      "message": "Revert",
+      "author": "compulim"
+    },
+    {
+      "sha": "73a4aa56eeac0776025e22cd3e92eacf6a4214c9",
+      "message": "Pin @types/*",
+      "author": "compulim"
+    },
+    {
+      "sha": "6ea3cae1a9ef499a58dec2500395643db6fb83d2",
+      "message": "Revert",
+      "author": "compulim"
+    },
+    {
+      "sha": "74c1a8f905ece1b2aa276214b56643ae698961b0",
+      "message": "Move to read-package-up as read-pkg-up is deprecated",
+      "author": "compulim"
+    },
+    {
+      "sha": "bd4b12f266513385257d64d9fb8c13a0915ac237",
+      "message": "Bump to Node.js 24",
+      "author": "compulim"
+    },
+    {
+      "sha": "68402d76b32a1e5397ac8beaec3b7775d180f1e5",
+      "message": "Pin @types/react and @types/react-dom properly",
+      "author": "compulim"
+    },
+    {
+      "sha": "1e1849c4eef5515bead7b5bedd9f9d3b17479a7e",
+      "message": "Pin @types/jest@29",
+      "author": "compulim"
+    },
+    {
+      "sha": "5311fa949ec61a822e8f006383438c17fe8306c4",
+      "message": "Pack package-lock.json",
+      "author": "compulim"
+    },
+    {
+      "sha": "40ab7c7e00ec0ef2c376168cda5a2d74f60ad0f8",
+      "message": "Fix cross platform package for Node.js 24",
+      "author": "compulim"
+    },
+    {
+      "sha": "a114db5779adfb19980d41654ae25fced2641b24",
+      "message": "Revert",
+      "author": "compulim"
+    },
+    {
+      "sha": "3fa133fb8a70df893c0b1275e7af8e876f7034b1",
+      "message": "Fix mutable ref typing",
+      "author": "compulim"
+    },
+    {
+      "sha": "19858b3d7412aa703b1d4630d3f8ab8cf951976a",
+      "message": "Pin to @types/react(-dom)@16",
+      "author": "compulim"
+    },
+    {
+      "sha": "01499a2ed3e6efb5cd49cd9decace3abc2ab3565",
+      "message": "Update",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": ".eslintrc.react.yml",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 14,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/pull-request-validation.yml",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 89,
+      "deletions": 64,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 3268,
+      "deletions": 2983,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 31,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-graph/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/package.json",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/package.json",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 19,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/templateDecorator.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/useSendTimeoutForActivity.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/package.json",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 29,
+      "deletions": 24,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/adaptiveCards/Attachment/AdaptiveCardRenderer.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 18,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/BasicToaster.js",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/BasicTranscript.tsx",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/useActivityAccessibleName.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/providers/internal/SendBox/SendBoxComposer.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core-graph/package.json",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/package.json",
+      "status": "modified",
+      "additions": 24,
+      "deletions": 19,
+      "previous_path": null
+    },
+    {
+      "path": "packages/debug-theme/package.json",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/package.json",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 18,
+      "previous_path": null
+    },
+    {
+      "path": "packages/embed/src/setups/loadAsset.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/embed/src/setups/version3.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/embed/src/setups/version4.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/package.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/sendBox/private/useUniqueId.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/isomorphic-react-dom/package.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/isomorphic-react/package.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/react-hooks/package.json",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/react-valibot/package.json",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/redux-store/package.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/adaptivecards/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/base64-js/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/botframework-directlinejs/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/html-react-parser/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/microsoft-cognitiveservices-speech-sdk/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom@baseline/package.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom@baseline/src/index.ts",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-dom@umd/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react-is/package.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react/package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react@baseline/package.json",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/repack/react@umd/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/package.json",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 14,
+      "previous_path": null
+    },
+    {
+      "path": "packages/support/cldr-data-downloader/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/support/cldr-data/package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/support/cldr-data/src/index.spec.js",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/support/cldr-data/src/install.mjs",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/dev-server/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/harness/Dockerfile",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/harness/package.json",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/package.json",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/web-server/package.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/web-server/src/index.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/tsconfig/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/k.direct-line-token/javascript/bot/package-lock.json",
+      "status": "added",
+      "additions": 2483,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/k.direct-line-token/javascript/bot/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/k.direct-line-token/javascript/web/package-lock.json",
+      "status": "added",
+      "additions": 1549,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/k.direct-line-token/javascript/web/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/e.piping-to-redux/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/f.selectable-activity/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/g.chat-send-history/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/h.clear-after-idle/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/a.minimizable-web-chat/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/b.speech-ui/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/c.smart-display/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/d.plain-ui/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/e.extending-ui/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "samples/package-lock.json",
+      "status": "modified",
+      "additions": 129,
+      "deletions": 128,
+      "previous_path": null
+    },
+    {
+      "path": "samples/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "testharness2.dockerfile",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 6,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-12-19T09:53:35Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-12-19T09:54:08Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-12-19T09:54:33Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-12-19T17:11:16Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": []
+}

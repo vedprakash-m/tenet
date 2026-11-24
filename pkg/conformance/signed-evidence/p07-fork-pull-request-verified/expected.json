@@ -1,0 +1,5 @@
+{
+  "fork": true,
+  "evidence_state": "signed",
+  "write_credentials_exposed_to_test_job": false
+}

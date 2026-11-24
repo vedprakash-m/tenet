@@ -1,0 +1,84 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5415,
+  "title": "Fix: dropzone doesn't receive drop event",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog\r\n\r\n-  Fixed [#5390](https://github.com/microsoft/BotFramework-WebChat/issues/5390). Fixed drop zone remaining visible when file is dropped outside of the zone, in PR [#5394](https://github.com/microsoft/BotFramework-WebChat/pull/5394), in PR [#5415](https://github.com/microsoft/BotFramework-WebChat/pull/5415), by [@OEvgeny](https://github.com/OEvgeny)\r\n\r\n## Description\r\n\r\nWhile the previous fix (#5394) addressed the visibility issue in certain cases, this PR further improves the drop zone behavior by ensuring it correctly receives outside drop events and handles them appropriately.\r\n\r\n## Design\r\n\r\n1. Added dragover event listener which prevents default browser behavior only when dragged inside the window to prevent unnecessary global event handlers\r\n2. Added detailed documentation explaining the relationship between dragover and drop events\r\n\r\n## Specific Changes\r\n\r\n- Added dynamic dragover event listener management\r\n- Enhanced type definition for dragover event handler to support both React and native events\r\n- Improved comment explaining browser drag and drop behavior\r\n- Reorder listeners\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [x] Browser and platform compatibilities reviewed\r\n-  [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] Internationalization reviewed (strings, unit formatting)\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] Security reviewed (no data URIs, check for nonce leak)\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-01-28T23:39:45Z",
+  "merged_at": "2025-01-29T20:11:13Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "fix/dropzome-fix",
+  "head": "fix/dropzome-fix",
+  "base_sha": "1f5e5578ba32a23c59eb8245423a3d086cdbde32",
+  "head_sha": "3f82df68d96f33e8e87aafd3599153fcf2171f71",
+  "merge_sha": "b40802d7f54397a26572831e38002386543bdfcd",
+  "diff_sha256": "5897e79230153fab3e020bb09d391d9e65fc9fc9aa7219d83456f7efce8873a9",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-01-29T19:08:52Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "866e8b962923bf45d37fd877bdf0ae72d6dc0768",
+      "message": "Fix: dropzone doesn't get drop events",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "27d9388eed1f7d6198b52e5f1755457cd0c8e142",
+      "message": "Improve",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "5a1df77fb4c9ad4e87c1d1064f3a25e0ceedf49a",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "3f82df68d96f33e8e87aafd3599153fcf2171f71",
+      "message": "Add test",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/fluentTheme/dragAndDrop.upload.html",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/dropZone/DropZone.tsx",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 5,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-01-29T19:52:00Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": []
+}

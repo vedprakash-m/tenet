@@ -1,0 +1,25 @@
+id: CP-0059
+title: "Release 0.1.0-alpha.0"
+type: ops
+lane: careful
+priority: standard
+due: null
+levels: [L3, L4]
+serves: [V-V3, V-P18]
+implements: [R-004, R-005]
+milestone: M1
+source: "specs/plan.md"
+stage: triage
+status: parked
+blocked_by: [CP-0052, CP-0053, CP-0054, CP-0057]
+unblocks: []
+owner_role: null
+claimed_by: null
+appetite: {agent_hours: 4, sessions: 2}
+spent: {agent_hours: 0, sessions: 0, owner_minutes: 0}
+candidate: null
+endpoint: null
+history:                      # append-only; changes only through the tenet command once it exists
+  - {at: 2026-11-23T22:50Z, to: intake, by: "spec-writer", reason: "alpha.0 release ops work item per plan/alpha.0b.md and onboarding.md §4"}
+  - {at: 2026-11-23T22:50Z, from: intake, to: triage, by: "spec-writer"}
+  - {at: 2026-11-23T22:50Z, to: parked, by: "spec-writer", reason: "awaiting CP-0001 ratification, CP-0010/0052/0054/0057 completion"}

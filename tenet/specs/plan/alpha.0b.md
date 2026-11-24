@@ -76,15 +76,15 @@
 **CP-0010 · Init, upgrade, remove** · R-020, R-022, R-023, R-024, R-025, R-051, R-221, R-222, R-225 (rules in the block, Copilot pointer)
 1. *Needs:* CP-0045, CP-0048, CP-0051 (its workflow templates, loaded through the kit, never imported); OB §2; C §6, §10; CI §2–§3; AG §1; ALG-12.
 2. *Owns:* `src/install/` (with `hosts.ts`, a list of `HostDescriptor` entries: `detect`, `planWrites`, `capabilityLevel`), the commands `init`, `upgrade`, `remove`, `doctor` with their result schemas, `examples/starter/` (the `tenet-starter` contents), `test/install/`.
-3. *Exports:* `init({yes, vendor, force}) → {plan, wrote, findings, cancelled?}`, `upgrade() → {from, to, changed: [{path, action: created|replaced|kept}]}`, `remove() → {removed: [{path, kind: file|block|key}], kept: [{path, reason: edited-by-you|spec-or-records}], reminder}`, `doctor() → {checks: [{name: node|git|ssh|gh|lock|workflows, ok, detail}]}`.
+3. *Exports:* `init({yes, localHosts, vendor, force}) → {plan, wrote, findings, cancelled?}`, `upgrade() → {from, to, changed: [{path, action: created|replaced|kept}]}`, `remove() → {removed: [{path, kind: file|block|key}], kept: [{path, reason: edited-by-you|spec-or-records}], reminder}`, `doctor() → {checks: [{name: node|git|ssh|gh|lock|workflows, ok, detail}]}`.
 4. *Behavior:*
    - **Preflight:** as UX Part 1, with the host capability level (`skills+mcp|mcp|instructions`, R-222) and where the tests will run (`ci_mode: existing-ci|tenet-workflow|none`, `ci_reason` per CI §2). Declining preflight writes nothing and exits 0 (`cancelled: true`).
    - **Writes (ALG-12, confined to the repository; static `TN-PATH-ESCAPE` and `TN-INIT-EXISTS` checks run before writing `.tenet/manifest.pending.json`):**
      - `tenet.yaml` at `observe` with synthesized check `checks.test`, runner command and shell `run:` setup (C §6, CI §2)
-     - the lock, with `integrity` from the registry and `kit_sha256` over `kit/`
+     - the lock, reading `package.json`'s `version`: registry `dist.integrity` when published, or local package SHA-512 (`x-integrity-source: "local"`, with a non-blocking warning) for `0.0.0`, unpublished prereleases/release candidates, or `--offline` (refusing malformed integrity with `TN-LOCK-INVALID`, never `TN-INTERNAL`), plus `kit_sha256` over `kit/`
      - on GitHub remotes, the recorder workflow, plus the chosen test path (Tenet's workflow, or the marked step with synthesized `id: tenet-tests` and consented reporter edit; `--yes` without reporter consent or reusable workflows fall back to `tenet-workflow`); on non-GitHub remotes, omit `.github/**` (`ci_mode: "none"`)
      - the `AGENTS.md` block with the working rules `agents.working_rules` selects, the pull-request template block (GitHub), `.gitignore` and `.gitattributes` blocks (preserving outside CRLF bytes)
-     - host entries (`.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json` always use portable `npx -y @vedprakash-m/tenet@<locked> mcp`; Windows `cmd /c` forms go in local host settings tracked in `local_keys`, C §10 / OB §2)
+     - host entries (`.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json` always use portable `npx -y @vedprakash-m/tenet@<locked> mcp`; Windows `cmd /c` local host settings write only under explicit interactive `[y/N]` consent or `--yes --local-hosts` — or isolated `localProfileRoot` in fixtures — listed separately in preflight, recorded in git-ignored `.tenet/manifest.local.json`, and tracked in `local_keys`, C §10 / OB §2)
      - owners (`id` stripped of `@` and lowercased, OB §2), then `.tenet/manifest.json` (recording `previous_block`/`prefix_sep` and `previous_raw` for byte-exact `remove`)
    - **After writing:** prints the first findings and offers onboarding. An empty repository asks purpose and kind (with `--yes`: kind `other`, purpose `"Undecided · edit or run tenet onboard"`, seeding `tenet/intent.md` and finding `no-test-report`).
    - **Other commands:** `upgrade` per OB §2, rewriting the pinned version in every owned repo and local entry while preserving `tenet.yaml`; `remove` per ALG-12, retiring `.tenet/manifest*.json` and printing the branch-rule reminder; `doctor` checks `node`, `git` (missing git executable emits `TN-ENV-GIT` with `found: "not installed"`, exit 3), `ssh` (optional), `gh` (optional), `lock` (`TN-LOCK-MISSING` / `TN-LOCK-INVALID` / `TN-KIT-EDITED` / `TN-KIT-MISSING`, exit 1) and `workflows`.
@@ -101,8 +101,8 @@
 **CP-0052 · Blessing, onboarding card, evaluation and scenarios** · R-223 (bless, card), R-012 (drafter evaluation)
 1. *Needs:* CP-0010; ALG-03, ALG-13; OB §1; AG §1–§2.
 2. *Owns:* `src/onboard/{bless,card}.ts`, the `bless` command and its result schema, `onboard --card`, `pkg/evals/onboarding/` (repository only, never published), `test/onboard/bless/`.
-3. *Exports:* `bless({doc?, section?}) → {blessed, confirmed, rejected, deferred, minutes}`; `onboardingCard() → markdown` (it also records `drafted_at_rev`).
-4. *Behavior:* ALG-03's session (conflicts first; bless, confirm, edit, reject, defer); version bumps; the anchors file; the log line (ALG-13); the card per OB §1 and its golden examples.
+3. *Exports:* `bless({doc?, section?}) → {blessed, confirmed, rejected, deferred, minutes}` (numeric counts and elapsed minutes); `onboardingCard({pr?}) → markdown` (it also records `drafted_at_rev` on committed drafts; `onboard --card --json` returns `{card, drafted_at_rev}`).
+4. *Behavior:* ALG-03's session (conflicts first with affected-ID edit check; bless, confirm `[y/N]`, edit, reject/defer with optional `[y/N]` blessed-copy restore; per-section persistence/rollback and concurrent-edit check); version bumps (`contracts §3`); `<blessed_copy>.anchors.json` mapping `{citationKey: normalizedLines}`; section-action log rows (ALG-13, nullable counts when `drafted_at_rev` is unavailable); the card per OB §1 (`Math.ceil(words / 200)` per section, omitting zero-conflict block, literal `<n>` without `--pr`) and its golden examples. `ALG-07` fixtures evaluate cleanly against `ALG-07` beside alpha.0 `TN-POLICY-ALPHA0-CAP`; install steps assert `contracts §8` keys, exit codes, and tree parity.
 5. *Edge cases:* no terminal (exit 2); an inferred statement left; an open conflict; a conflict choice that contradicts a statement; interruption keeps finished sections; re-blessing an edited section; `confirm` after a squash from a shallow clone.
 6. *Out of scope:* forge blessing (alpha.1).
 7. *Fixtures:*
@@ -123,7 +123,7 @@
      - a renamed heading
      - a pull request closed without merging (nothing beyond its last evaluation is recorded)
      - the README and UX walkthroughs run verbatim
-8. *Proving:* `npm test -- test/onboard`, using `fakeTty`; `npm run eval:onboarding -- --agent <name>` writes a scored report, which passes on the two agents CP-0058 names; `npm run scenarios` passes.
+8. *Proving:* `npm test -- test/onboard`, using `fakeTty`; `npm run eval:onboarding -- --agent <name>` writes a scored report, which passes on the two agents CP-0058 names; `npm run scenarios` runs `test/onboard/scenarios.test.ts` over `pkg/conformance/scenarios/*/steps.json` with deterministic test adapters and passes.
 
 ## A0-8
 

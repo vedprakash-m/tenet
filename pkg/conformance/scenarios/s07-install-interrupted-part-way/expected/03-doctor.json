@@ -1,0 +1,34 @@
+{
+  "ok": true,
+  "command": "doctor",
+  "version": "0.0.0",
+  "result": {
+    "checks": [
+      {
+        "name": "node",
+        "ok": true
+      },
+      {
+        "name": "git",
+        "ok": true
+      },
+      {
+        "name": "ssh",
+        "ok": true
+      },
+      {
+        "name": "gh",
+        "ok": true
+      },
+      {
+        "name": "lock",
+        "ok": true
+      },
+      {
+        "name": "workflows",
+        "ok": true
+      }
+    ]
+  },
+  "errors": []
+}

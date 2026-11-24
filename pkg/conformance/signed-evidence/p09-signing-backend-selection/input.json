@@ -1,0 +1,23 @@
+{
+  "scenarios": [
+    {
+      "name": "public-repo",
+      "visibility": "public",
+      "sigstore_ok": true,
+      "ed25519_key": false
+    },
+    {
+      "name": "private-repo",
+      "visibility": "private",
+      "sigstore_ok": false,
+      "ed25519_key": true
+    },
+    {
+      "name": "oidc-fallback",
+      "visibility": "private",
+      "sigstore_ok": false,
+      "ed25519_key": false,
+      "oidc_ok": true
+    }
+  ]
+}

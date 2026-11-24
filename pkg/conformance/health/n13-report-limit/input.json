@@ -1,0 +1,10 @@
+{
+  "operation": "admit-health-report",
+  "format": "tenet-health-json",
+  "generate": {
+    "kind": "pad-json",
+    "seed": "../p08-native-enforce/report.json",
+    "rawBytes": 52428801,
+    "padding": " "
+  }
+}

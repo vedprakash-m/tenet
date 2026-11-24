@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { git } from "../core/git.js";
@@ -131,6 +131,15 @@ function defaultBudget(filename: string): number | null {
 	if (lower.includes("/plan/") && lower.endsWith(".md")) return 6_000;
 	if (lower.includes("/tech-spec/") && lower.endsWith(".md")) return 6_000;
 	return null;
+}
+
+function normalizedCharCount(text: string): number {
+	return text.replace(/\r\n?/g, "\n").length;
+}
+
+function levelOrder(level: string | null): number {
+	if (level === null) return 5;
+	return /^(L[0-4])$/.test(level) ? Number(level.slice(1)) : 5;
 }
 
 function asOf(options: BoardOptions): string {
@@ -316,19 +325,30 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 			budget: document.budget ?? defaultBudget(filename),
 		};
 	});
-	const discovered = await ladder({
+	const recordsPath = path.resolve(
 		cwd,
-		files: configured.map((document) => document.path),
-	});
+		...portable(policy.paths.records).split("/"),
+	);
+	const discovered = existsSync(recordsPath)
+		? await ladder({ cwd, specs_dir: policy.paths.records })
+		: [];
 	const entries = await Promise.all(
 		discovered.map(async (entry) => ({
 			...entry,
+			level:
+				configured.find((document) => document.path === entry.path)?.level ??
+				entry.level,
 			doc: parseDoc(
 				entry.path,
 				await readFile(path.join(cwd, ...entry.path.split("/")), "utf8"),
 				{ prefix: policy.specs.id_prefix },
 			),
 		})),
+	);
+	entries.sort(
+		(left, right) =>
+			levelOrder(left.level) - levelOrder(right.level) ||
+			(left.path < right.path ? -1 : left.path > right.path ? 1 : 0),
 	);
 	const specs: BoardSpec[] = [];
 	const pending: SpecsBoard["pending_blessings"] = [];
@@ -343,10 +363,14 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 				section.slug === "open-questions"
 			)
 				continue;
+			const configuredLevel = configured.find(
+				(document) => document.path === entry.path,
+			)?.level;
+			const sectionLevel = sectionRecord(entry.doc, section.slug).level;
 			const rawLevel =
+				(typeof sectionLevel === "string" ? sectionLevel : configuredLevel) ??
 				section.level ??
-				entry.level ??
-				configured.find((document) => document.path === entry.path)?.level;
+				entry.level;
 			const state = section.state as State;
 			if (
 				!rawLevel ||
@@ -363,9 +387,13 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 				level: rawLevel as Level,
 				state,
 				flags: sectionFlags,
-				...(state === "blessed" &&
-				(recorded === "self" || recorded === "forge" || recorded === "signed")
-					? { recorded }
+				...(state === "blessed"
+					? {
+							recorded:
+								recorded === "forge" || recorded === "signed"
+									? recorded
+									: "self",
+						}
 					: {}),
 			});
 			sectionDetails.set(sectionKey(entry.path, section.slug), {
@@ -420,7 +448,20 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 		}
 	}
 
-	for (const document of configured) {
+	const budgeted = new Map<string, { path: string; budget: number | null }>();
+	for (const entry of entries) {
+		const override = configured.find(
+			(document) => document.path === entry.path,
+		);
+		budgeted.set(entry.path, {
+			path: entry.path,
+			budget:
+				override?.budget !== undefined
+					? override.budget
+					: defaultBudget(entry.path),
+		});
+	}
+	for (const document of budgeted.values()) {
 		if (document.budget === null) continue;
 		const text = await readFile(
 			path.join(cwd, ...document.path.split("/")),
@@ -430,7 +471,7 @@ export async function board(options: BoardOptions = {}): Promise<SpecsBoard> {
 			throw error;
 		});
 		if (text === null) continue;
-		const tokens = Math.ceil(text.length / 4);
+		const tokens = Math.ceil(normalizedCharCount(text) / 4);
 		if (tokens > document.budget) {
 			specDebt.push({
 				kind: "over-budget",

@@ -1,0 +1,62 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5586,
+  "title": "Fix npm start",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n## Description\r\n\r\n`npm start` is broken after PR #5584. This PR is fixing it.\r\n\r\nIf `npm run build:validate` exited, it will exit everything in `npm start`, causing `npm start` to stop.\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- `npm start` runs `npm run build:tsup` only\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] ~I have added tests and executed them locally~\r\n-  [x] ~I have updated `CHANGELOG.md`~\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-09-19T03:13:16Z",
+  "merged_at": "2025-09-19T03:26:21Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "fix-npm-start",
+  "head": "fix-npm-start",
+  "base_sha": "eb439cc36d6449a0ee21654ab84956fda00dd4de",
+  "head_sha": "bcb88c1af47bfc633b67dcfb5c5589c619f45087",
+  "merge_sha": "47373ebd9cde7481b3e948eb50a3fb5421532266",
+  "diff_sha256": "6e02530918b4a0e149d13c3d044025ec203c504a88e36c3455250404fa281bee",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-09-19T03:15:08Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "bcb88c1af47bfc633b67dcfb5c5589c619f45087",
+      "message": "Fix npm start",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-09-19T03:15:11Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": []
+}

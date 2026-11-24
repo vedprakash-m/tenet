@@ -1,0 +1,9 @@
+{
+  "idempotent": true,
+  "decisions_recorded": 1,
+  "decision": {
+    "kind": "approve",
+    "actor": "ved",
+    "evaluation_id": "1234567890abcdef"
+  }
+}

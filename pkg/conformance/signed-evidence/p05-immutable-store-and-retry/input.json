@@ -1,0 +1,22 @@
+{
+  "op": "storeAndRetry",
+  "subject": {
+    "kind": "git-tree",
+    "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "receipt_1": {
+    "id": "REC-101-1",
+    "evaluation_id": "0123456789abcdef",
+    "run": "101",
+    "attempt": 1,
+    "result": "fail"
+  },
+  "receipt_2": {
+    "id": "REC-101-2",
+    "evaluation_id": "0123456789abcdef",
+    "run": "101",
+    "attempt": 2,
+    "result": "pass"
+  },
+  "redeliver_1": true
+}
