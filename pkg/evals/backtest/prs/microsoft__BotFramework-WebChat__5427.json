@@ -1,0 +1,784 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5427,
+  "title": "Bump dependencies",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n- Bumped all dependencies to the latest versions, by [@compulim](https://github.com/compulim) in PR [#5427](https://github.com/microsoft/BotFramework-WebChat/pull/5427)\r\n   - Production dependencies\r\n      - [`core-js-pure@3.40.0`](https://npmjs.com/package/core-js-pure/)\r\n      - [`core-js@3.40.0`](https://npmjs.com/package/core-js/)\r\n      - [`event-as-promise@2.0.0`](https://npmjs.com/package/event-as-promise/)\r\n      - [`katex@0.16.21`](https://npmjs.com/package/katex/)\r\n      - [`mdast-util-from-markdown@2.0.2`](https://npmjs.com/package/mdast-util-from-markdown/)\r\n      - [`micromark-extension-gfm@3.0.0`](https://npmjs.com/package/micromark-extension-gfm/)\r\n      - [`micromark-util-character@2.1.1`](https://npmjs.com/package/micromark-util-character/)\r\n      - [`micromark@4.0.1`](https://npmjs.com/package/micromark/)\r\n      - [`microsoft-cognitiveservices-speech-sdk@1.42.0`](https://npmjs.com/package/microsoft-cognitiveservices-speech-sdk/)\r\n      - [`mime@4.0.6`](https://npmjs.com/package/mime/)\r\n      - [`react-scroll-to-bottom@4.2.0`](https://npmjs.com/package/react-scroll-to-bottom/)\r\n      - [`sanitize-html@2.14.0`](https://npmjs.com/package/sanitize-html/)\r\n      - [`shiki@2.3.2`](https://npmjs.com/package/shiki/)\r\n      - [`use-state-with-ref@0.1.0`](https://npmjs.com/package/use-state-with-ref/)\r\n      - [`valibot@0.42.1`](https://npmjs.com/package/valibot/)\r\n      - [`web-speech-cognitive-services@8.1.1`](https://npmjs.com/package/web-speech-cognitive-services/)\r\n   - Development dependencies\r\n      - [`@biomejs/biome@1.9.4`](https://npmjs.com/package/@biomejs/biome/)\r\n      - [`@emotion/css@11.13.5`](https://npmjs.com/package/@emotion/css/)\r\n      - [`@happy-dom/jest-environment@17.1.0`](https://npmjs.com/package/@happy-dom/jest-environment/)\r\n      - [`@jridgewell/sourcemap-codec@1.5.0`](https://npmjs.com/package/@jridgewell/sourcemap-codec/)\r\n      - [`@types/mdast@4.0.4`](https://npmjs.com/package/@types/mdast/)\r\n      - [`@types/node@22.13.4`](https://npmjs.com/package/@types/node/)\r\n      - [`@types/react-dom@16.9.25`](https://npmjs.com/package/@types/react-dom/)\r\n      - [`@types/react@16.14.62`](https://npmjs.com/package/@types/react/)\r\n      - [`@types/react@16.14.62`](https://npmjs.com/package/@types/react/)\r\n      - [`@typescript-eslint/eslint-plugin@8.24.0`](https://npmjs.com/package/@typescript-eslint/eslint-plugin/)\r\n      - [`@typescript-eslint/parser@8.24.0`](https://npmjs.com/package/@typescript-eslint/parser/)\r\n      - [`adm-zip@0.5.16`](https://npmjs.com/package/adm-zip/)\r\n      - [`axe-core@4.10.2`](https://npmjs.com/package/axe-core/)\r\n      - [`babel-plugin-istanbul@7.0.0`](https://npmjs.com/package/babel-plugin-istanbul/)\r\n      - [`bent@7.3.12`](https://npmjs.com/package/bent/)\r\n      - [`compression@1.8.0`](https://npmjs.com/package/compression/)\r\n      - [`concurrently@9.1.2`](https://npmjs.com/package/concurrently/)\r\n      - [`core-js@3.40.0`](https://npmjs.com/package/core-js/)\r\n      - [`dotenv@16.4.7`](https://npmjs.com/package/dotenv/)\r\n      - [`esbuild@0.25.0`](https://npmjs.com/package/esbuild/)\r\n      - [`eslint-config-prettier@10.0.1`](https://npmjs.com/package/eslint-config-prettier/)\r\n      - [`eslint-plugin-import@2.31.0`](https://npmjs.com/package/eslint-plugin-import/)\r\n      - [`eslint-plugin-prettier@5.2.3`](https://npmjs.com/package/eslint-plugin-prettier/)\r\n      - [`eslint-plugin-react-hooks@5.1.0`](https://npmjs.com/package/eslint-plugin-react-hooks/)\r\n      - [`eslint-plugin-react@7.37.4`](https://npmjs.com/package/eslint-plugin-react/)\r\n      - [`eslint-plugin-security@3.0.1`](https://npmjs.com/package/eslint-plugin-security/)\r\n      - [`eslint@8.57.1`](https://npmjs.com/package/eslint/)\r\n      - [`express@4.21.2`](https://npmjs.com/package/express/)\r\n      - [`glob@8.1.0`](https://npmjs.com/package/glob/)\r\n      - [`http-proxy-middleware@2.0.7`](https://npmjs.com/package/http-proxy-middleware/)\r\n      - [`husky@9.1.7`](https://npmjs.com/package/husky/)\r\n      - [`lint-staged@15.4.3`](https://npmjs.com/package/lint-staged/)\r\n      - [`micromark-util-types@2.0.1`](https://npmjs.com/package/micromark-util-types/)\r\n      - [`nodemon@3.1.9`](https://npmjs.com/package/nodemon/)\r\n      - [`nopt@8.1.0`](https://npmjs.com/package/nopt/)\r\n      - [`prettier@3.5.1`](https://npmjs.com/package/prettier/)\r\n      - [`progress@2.0.3`](https://npmjs.com/package/progress/)\r\n      - [`q@1.5.1`](https://npmjs.com/package/q/)\r\n      - [`read-pkg-up@11.0.0`](https://npmjs.com/package/read-pkg-up/)\r\n      - [`read-pkg@9.0.1`](https://npmjs.com/package/read-pkg/)\r\n      - [`request-progress@3.0.0`](https://npmjs.com/package/request-progress/)\r\n      - [`request@2.88.2`](https://npmjs.com/package/request/)\r\n      - [`selenium-webdriver@4.28.1`](https://npmjs.com/package/selenium-webdriver/)\r\n      - [`selfsigned@2.4.1`](https://npmjs.com/package/selfsigned/)\r\n      - [`serve-handler@6.1.6`](https://npmjs.com/package/serve-handler/)\r\n      - [`serve@14.2.4`](https://npmjs.com/package/serve/)\r\n      - [`tsd@0.31.2`](https://npmjs.com/package/tsd/)\r\n      - [`tsup@8.3.6`](https://npmjs.com/package/tsup/)\r\n      - [`type-fest@4.34.1`](https://npmjs.com/package/type-fest/)\r\n      - [`typescript@5.7.3`](https://npmjs.com/package/typescript/)\r\n      - [`webpack-cli@6.0.1`](https://npmjs.com/package/webpack-cli/)\r\n      - [`webpack@5.98.0`](https://npmjs.com/package/webpack/)\r\n\r\n## Description\r\n\r\nBump dependencies.\r\n\r\n## Specific Changes\r\n\r\n- Run `npm run bump`\r\n- Evaluate new dependencies\r\n- Pin dependencies if bump is not desirable at the current moment\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] ~I have added tests and executed them locally~\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] ~Tests reviewed (coverage, legitimacy)~\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-02-14T02:19:12Z",
+  "merged_at": "2025-02-14T20:48:34Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "bump-deps-2025",
+  "head": "bump-deps-2025",
+  "base_sha": "c8c5744d57b3b3c97cc30091d60b3936abe48f96",
+  "head_sha": "ffb4ceb9fa7ac6cdfd09c1e9112e23d8e8b166fd",
+  "merge_sha": "96050995f0a53492eeb6b298f2c341223d039597",
+  "diff_sha256": "06af9c332a6986c51c2c5fcf81061b13bbf2a3653846b249932af9e2408b56c2",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-02-14T08:51:04Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "a88d12358f40ee9911bd936a211203239b77fe70",
+      "message": "Bump deps",
+      "author": "compulim"
+    },
+    {
+      "sha": "3b66ab088d30ad1126c3f9e7607e69efa7c954c5",
+      "message": "Update PR number",
+      "author": "compulim"
+    },
+    {
+      "sha": "305f6fd59ff321cf6405dcf06238ec6f86c7d2ec",
+      "message": "Update valibot API and typing for ESLint",
+      "author": "compulim"
+    },
+    {
+      "sha": "a6399bd168f9b9d5d9a859d15ec6533a8e93baa5",
+      "message": "Move to XHTML",
+      "author": "compulim"
+    },
+    {
+      "sha": "0589a6397f70a8c988ea1f1d1510c8f1699bb929",
+      "message": "Update to XHTML",
+      "author": "compulim"
+    },
+    {
+      "sha": "0715e42678f404524b0032af319de056dec65fa5",
+      "message": "Bump more",
+      "author": "compulim"
+    },
+    {
+      "sha": "08ffbc8006f1f13f5310e24efbf5e736c56dc9fe",
+      "message": "Use {} for props",
+      "author": "compulim"
+    },
+    {
+      "sha": "53d8e3077d2a4379c20f5c5d017c0fa2732e0b44",
+      "message": "Use Record<any, any>",
+      "author": "compulim"
+    },
+    {
+      "sha": "43fde0a009162e476cb3365a6efe96a4ad3eca2f",
+      "message": "Revert to {} for props",
+      "author": "compulim"
+    },
+    {
+      "sha": "6615be03e2fc605a533372e5c2c96d1ae2522a13",
+      "message": "Revert to {} for props",
+      "author": "compulim"
+    },
+    {
+      "sha": "292a0432ba4f0e98914c2ce9ed05d61600bdea27",
+      "message": "Use unknown instead of any",
+      "author": "compulim"
+    },
+    {
+      "sha": "2580c615d5797066aae575a58815a37aeec8d10e",
+      "message": "Use unknown instead of any for functions",
+      "author": "compulim"
+    },
+    {
+      "sha": "2861ea4f8528b33d14aaf78af6b7156568ef5ea7",
+      "message": "Use unknown instead of object",
+      "author": "compulim"
+    },
+    {
+      "sha": "dfb9429c54bcbb457f3d6004238307bf2e59ce79",
+      "message": "Remove generated file",
+      "author": "compulim"
+    },
+    {
+      "sha": "3a2f2c48edbf82c811fba2ab5607d102f0e5699f",
+      "message": "Use Record instead of object",
+      "author": "compulim"
+    },
+    {
+      "sha": "5866dc4648b7033792e21b1e14cf9c19df7be577",
+      "message": "Use Record instead of object",
+      "author": "compulim"
+    },
+    {
+      "sha": "8b83c1e6e7fc937ce5fe8e72fc35f5ab6f8240d8",
+      "message": "Use any for channel data value",
+      "author": "compulim"
+    },
+    {
+      "sha": "ae26360ace481b489e7c52fcef677a07ebed8675",
+      "message": "Add comment",
+      "author": "compulim"
+    },
+    {
+      "sha": "444a2465e05e02f5e23942829402476c93b9d61d",
+      "message": "Unformat",
+      "author": "compulim"
+    },
+    {
+      "sha": "d95b6c230a0bd7f5733a3fac315058140a8b0184",
+      "message": "Add comment",
+      "author": "compulim"
+    },
+    {
+      "sha": "01cc6dbc08b3927236b2285b12b18f574b2ead61",
+      "message": "Use {} for props",
+      "author": "compulim"
+    },
+    {
+      "sha": "ffb4ceb9fa7ac6cdfd09c1e9112e23d8e8b166fd",
+      "message": "Add comments",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": ".eslintrc.yml",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 73,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 3119,
+      "deletions": 2365,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 26,
+      "deletions": 26,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/package.json",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/ActivityBorderDecoratorMiddleware.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/templateMiddleware.test.tsx",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/decorator/private/templateMiddleware.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/Composer.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/SendBoxMiddleware.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/SendBoxToolbarMiddleware.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/Tracker.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/WebChatAPIContext.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/middleware/concatMiddleware.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/ActivitySendStatus/ActivitySendStatusComposer.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/types/AttachmentForScreenReaderMiddleware.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/types/AvatarMiddleware.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/types/CardActionMiddleware.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 24,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/__tests__/renderMarkdown.spec.js",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/bundle/addVersion.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.ariaLabel.spec.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.asButton.spec.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.className.spec.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.iconClassName.spec.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.rel.spec.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.selector.spec.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.target.spec.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.title.spec.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/markdown/private/betterLinkDocumentMod.wrapZeroWidthSpace.spec.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/speech/createMicrophoneAudioConfigAndAudioContext.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 14,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Attachment/FileContent.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Attachment/Text/private/ActivityCopyButton.tsx",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/BasicTranscript.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Composer.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/LinkDefinition/LinkDefinitions.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/LinkDefinition/private/extractHostnameWithSubdomain.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Utils/JSONLinkedData/dereferenceBlankNodes.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Utils/downscaleImageToDataURL/downscaleImageToDataURLUsingWorker.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Utils/supportPseudoClass.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/createWaitUntilable.spec.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/createWaitUntilable.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/styleToEmotionObject/private/StyleToEmotionObjectComposer.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/hooks/internal/useStateRef.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/package.json",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/WebChatActivity.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/external/DirectLineActivity.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/external/OrgSchema/Action.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/external/OrgSchema/Thing.ts",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 18,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/external/OrgSchema/private/orgSchemaProperties.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/external/OrgSchema/private/orgSchemaProperty.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/internal/WebChatOutgoingActivity.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/utils/getActivityLivestreamingMetadata.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/utils/onErrorResumeNext.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/package.json",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 15,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/src/playWhiteNoise.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/package.json",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/isomorphic-react-dom/package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/isomorphic-react/package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/styles/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/support/cldr-data-downloader/package.json",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/support/cldr-data/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/dev-server/package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/harness/package.json",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/package.json",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/web-server/package.json",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/e.piping-to-redux/package.json",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/f.selectable-activity/package.json",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/g.chat-send-history/package.json",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "samples/04.api/h.clear-after-idle/package.json",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/a.minimizable-web-chat/package.json",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/b.speech-ui/package.json",
+      "status": "modified",
+      "additions": 21,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/c.smart-display/package.json",
+      "status": "modified",
+      "additions": 23,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/d.plain-ui/package.json",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "samples/06.recomposing-ui/e.extending-ui/package.json",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "samples/package-lock.json",
+      "status": "modified",
+      "additions": 629,
+      "deletions": 192,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:44:20Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:45:25Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:45:52Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:45:59Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:46:06Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:47:07Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:48:04Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:49:05Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:49:30Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:49:54Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:50:24Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:51:19Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:51:39Z"
+    },
+    {
+      "state": "CHANGES_REQUESTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T15:52:10Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-02-14T19:30:47Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-02-14T19:42:10Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-02-14T19:46:04Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-02-14T20:31:56Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": []
+}

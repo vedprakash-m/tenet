@@ -1,0 +1,136 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6068,
+  "title": "Rename `UpsertNode` to `Node` and `Node` to `VettedNode` in the graph store",
+  "body": "## Changelog Entry\n\nNo changelog entry. This is a type-only rename inside the non-shipping `botframework-webchat-store` package from #6053 (label `no-changelog`).\n\n## Description\n\nFor #6053. This renames the public node types in `packages/store`:\n\n| Before | After | Meaning |\n| --- | --- | --- |\n| `UpsertNode<T>` | `Node<T>` | Validates the shape of a node you write, e.g. what an `upsert()` updater returns |\n| `Node` | `VettedNode` | A read-only node that has passed `nodeSchema`, as returned by the store |\n\n```ts\nimport type { Node, VettedNode } from 'botframework-webchat-store';\n\ncontroller.edit(transaction =>\n  transaction.upsert('_:m-1', (node: VettedNode | undefined): Node<{ text: string[] }> => ({\n    '@id': '_:m-1',\n    '@type': new Set(['Message']),\n    text: ['Hello']\n  }))\n);\n```\n\nThis PR targets the `feat-new-store` branch (#6053).\n\n## Specific Changes\n\n- **`src/node/Node.ts`**: both types are renamed. The JSDoc now uses the new names. The file name and `nodeSchema` stay the same.\n- **`src/index.ts`**: now exports `type Node, type VettedNode`, sorted by name.\n- **Store API** (`Store.ts`): `upsert()` takes `(node: VettedNode | undefined) => Node<T>`. `getSnapshot()`, `getSortedParts()` and `queryByIdentifier()` return `VettedNode`.\n- **Internal usages**: updated in `assertion/*`, `private/identifierIndex.ts`, the comments in `private/FrozenNode.ts`, `benchmark.ts` and `Store.test.ts`.\n- **Needs a human edit:** `src/goldenStories/upsertedNodeIsDifferentAndFrozen.test.ts` still imports `UpsertNode`. That folder is human-only under `goldenStories/AGENTS.md`, so this PR leaves it alone. Until it is updated by hand, `precommit:typecheck` fails with `TS2305: Module '\"../index.ts\"' has no exported member 'UpsertNode'`. The tests still pass because `node --test` strips type imports.\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [ ] ~I have added `.changelog/<PR#>-<slug>.md`~\n- [x] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\n- [ ] ~Browser and platform compatibilities reviewed~\n- [ ] ~CSS styles reviewed (minimal rules, no `z-index`)~\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] ~Internationalization reviewed (strings, unit formatting)~\n- [ ] ~`package.json` and `package-lock.json` reviewed~\n- [ ] ~Security reviewed (no data URIs, check for nonce leak)~\n- [ ] Tests reviewed (coverage, legitimacy)",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-11-22T13:34:09Z",
+  "merged_at": "2026-11-22T13:36:52Z",
+  "base_ref": "feat-new-store",
+  "base": "feat-new-store",
+  "head_ref": "copilot/6053-rename-upsertnode-to-node-and-node-to-vettedn",
+  "head": "copilot/6053-rename-upsertnode-to-node-and-node-to-vettedn",
+  "base_sha": "e19c73d5c08ae792db1558170a270e0a087038e4",
+  "head_sha": "a6c08cd0c009098c4c5c18dc47e2ac8ff7f781fe",
+  "merge_sha": "d50957595ec35c4805e92ce839d6f6855640245a",
+  "diff_sha256": "14092c6b68c37c632350896a624bd99359501b4554d3cb7a6a35f527b5e7c936",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-22T13:36:43Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "849293bcc873d8d90342dd45526db40063c9aa52",
+      "message": "Rename UpsertNode to Node, and Node to VettedNode",
+      "author": "compulim"
+    },
+    {
+      "sha": "a6c08cd0c009098c4c5c18dc47e2ac8ff7f781fe",
+      "message": "Fix test",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/store/src/Store.test.ts",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 11,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/Store.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertIdentifierNotId.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertReferencedNodesInGraph.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/assertion/assertUniqueIdentifier.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/benchmark.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/goldenStories/upsertedNodeIsDifferentAndFrozen.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/index.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/Node.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/FrozenNode.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/identifierIndex.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-22T13:36:48Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-22T13:36:52Z"
+    }
+  ],
+  "binary_paths": []
+}

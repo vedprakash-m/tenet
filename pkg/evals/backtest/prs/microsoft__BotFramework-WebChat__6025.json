@@ -1,0 +1,322 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6025,
+  "title": "Remove the lockfiles of the archived k.direct-line-token sample",
+  "body": "> The archived `01.getting-started/k.direct-line-token` sample still ships `package-lock.json` files, which carry 5 Dependabot alerts.\n\n## Changelog Entry\n\n### Changed\n\n- 🏫 Samples: removed lockfiles of archived `k.direct-line-token`, and skipped it in `npm run bump`, in PR [#6025](https://github.com/microsoft/BotFramework-WebChat/pull/6025), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThe sample was archived in #5537, which removed its lockfiles, but `npm run bump` still ran in it and recreated them in #5659. This PR deletes both lockfiles and skips the sample in `npm run bump`, as #5533 did for `07.advanced-web-chat-apps`.\n\n## Design\n\n- Delete instead of upgrading: restify 11 already crashes the sample at startup, and fixing `zod` needs a major that `botbuilder` does not support yet.\n\n## Specific Changes\n\n- Deleted `k.direct-line-token/javascript/{bot,web}/package-lock.json`\n- `samples/package.json`: `bump:non-workspaces` skips `*/k.direct-line-token/*`, like `*/07.advanced-web-chat-apps/*`\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] ~I have added tests and executed them locally~\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [x] ~I have updated documentation~\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\n- [x] ~Browser and platform compatibilities reviewed~\n- [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\n- [x] ~Documents reviewed (docs, samples, live demo)~\n- [x] ~Internationalization reviewed (strings, unit formatting)~\n- [x] `package.json` and `package-lock.json` reviewed\n- [x] ~Security reviewed (no data URIs, check for nonce leak)~\n- [x] ~Tests reviewed (coverage, legitimacy)~\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-06T12:13:42Z",
+  "merged_at": "2026-11-06T23:33:48Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/archive-k-direct-line-token-lockfiles",
+  "head": "OEvgeny/archive-k-direct-line-token-lockfiles",
+  "base_sha": "16832055f7ccc230393f1f5a18b5615d57e4e40b",
+  "head_sha": "fa5ad0ade356556ba14cb1e3f7b331652703e75c",
+  "merge_sha": "57ff234fda4646f1e7f1919611231121913a613e",
+  "diff_sha256": "aae86ee6942596b80447b49420afc497367dcb553e042f00a9287d0f4878f3b6",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-06T14:08:45Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "5a24bce4c008737db85ba905cbf0f4d8d37e39b3",
+      "message": "Remove lockfiles of archived k.direct-line-token sample and skip it in bump",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "eb71823e416dbe48fa3bdb641de9e79ef10df86a",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "fa5ad0ade356556ba14cb1e3f7b331652703e75c",
+      "message": "Merge branch 'main' into OEvgeny/archive-k-direct-line-token-lockfiles",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6025-archive-k-direct-line-token-lockfiles.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/k.direct-line-token/javascript/bot/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 2593,
+      "previous_path": null
+    },
+    {
+      "path": "samples/01.getting-started/k.direct-line-token/javascript/web/package-lock.json",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 1577,
+      "previous_path": null
+    },
+    {
+      "path": "samples/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-06T14:08:56Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-06T21:59:02Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:33:08Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:33:29Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:30:45Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:30:07Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:31:35Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:31:11Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:30:36Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:30:38Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:22:34Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:31:38Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:30:40Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:31:37Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:31:06Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:32:15Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:33:01Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:31:53Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:30:38Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:31:42Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:31:37Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:22:40Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:31:58Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:23:15Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:23:32Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:23:02Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:23:23Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:22:47Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:23:06Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:22:48Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:23:20Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:22:35Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:22:45Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:23:29Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:25:07Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:25:24Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:16:34Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:15:59Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:16:32Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:18:28Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:17:50Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:16:13Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:17:17Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:17:05Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:17:00Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:21:32Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:17:15Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-06T23:16:40Z"
+    }
+  ],
+  "binary_paths": []
+}

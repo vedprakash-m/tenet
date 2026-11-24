@@ -1,0 +1,247 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5880,
+  "title": "Improve webchat-html-tests skill for writing tests and shared grids",
+  "body": "## Changelog Entry\n\nNot required, development only.\n\n## Description\n\nAgents writing and running HTML tests with the `webchat-html-tests` skill lost time on four things the skill did not cover. They checked whether `dist` was stale, because nothing says that tests load built files rather than `src`. They guessed asset URLs: `/assets/surface1.jpg` returns 404, because `/assets/` only serves `__tests__/assets/`. They had to find out how `*.fluent.html` variants work. And `cleanup-grid-sessions.py` deletes every grid session, so on a grid shared by several runs it killed another run's busy session.\n\nThis PR documents the first three in the skill references and makes the cleanup script safe for shared grids. Without options, the script still deletes every session.\n\n## Design\n\n`--min-age 400` keeps any session that a running test could still be using. `jest-server` reuses a grid session only while it is at most 270 seconds old, and a test and its `afterEach` each time out after 50 seconds, so a session older than 400 seconds is not in use by any html2 test. The grid status has no idle time, so the script uses session age. Chrome nodes still end sessions idle for 300 seconds (`SE_NODE_SESSION_TIMEOUT`).\n\n## Specific Changes\n\n- `SKILL.md`: new \"Build What You Changed\" step, recommend `cleanup-grid-sessions.py --min-age 400`, name the actual cause of dist 404s, and add \"writing tests\" to when to use the skill\n- `references/architecture.md`\n   - URL-to-folder table of what `webchat2` serves (from `docker-compose-wsl2.yml` and `serve-test.json`)\n   - Which packages to rebuild before testing\n   - Why deleting and re-creating a served folder returns 404s until `webchat2` restarts\n   - Theme variant redirect pattern: which query parameters base tests read, with examples\n- `references/failure-modes.md`: rows for \"old behavior after a source change\" and \"asset 404\", plus a \"Grid Sessions\" section\n- `scripts/cleanup-grid-sessions.py`\n   - `--min-age SECONDS`: delete only sessions started at least that long ago, and keep sessions with no start time\n   - `--dry-run`: list sessions with their age and delete nothing\n\n- [ ] I have added tests and executed them locally\n- [ ] I have updated `CHANGELOG.md`\n- [x] I have updated documentation\n\nTesting: the script was run against a fake grid status with young, old, and no-start sessions (all option combinations, plus invalid `--min-age`). It was also run with `--dry-run` against a live grid, with one session it created and then deleted. Every documented URL was checked with `curl` against `webchat2`. The bind mount behavior was checked with a throwaway container.\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-17T03:20:39Z",
+  "merged_at": "2026-10-17T03:35:58Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/dev-html-tests-skill",
+  "head": "OEvgeny/dev-html-tests-skill",
+  "base_sha": "e8073b3308b41dffa459de3e6d4d17ad032b37a7",
+  "head_sha": "0cc7f3a04e0a826ef76c787ff49a7d1c403cc7eb",
+  "merge_sha": "be8266aa16e06e62b3d0a3e22ed605d26950f306",
+  "diff_sha256": "1673ce6e7b16d415a96d8ab2be336405106f0646868fe117dcfa0cdf19469803",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-17T03:24:53Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "0cc7f3a04e0a826ef76c787ff49a7d1c403cc7eb",
+      "message": "Improve webchat-html-tests skill for writing tests and shared grids",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": ".github/skills/webchat-html-tests/SKILL.md",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": ".github/skills/webchat-html-tests/references/architecture.md",
+      "status": "modified",
+      "additions": 39,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": ".github/skills/webchat-html-tests/references/failure-modes.md",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": ".github/skills/webchat-html-tests/scripts/cleanup-grid-sessions.py",
+      "status": "modified",
+      "additions": 51,
+      "deletions": 3,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-17T03:27:00Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-17T03:29:01Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:36:17Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:35:56Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:33:46Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:34:42Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:34:17Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:34:13Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:33:52Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:34:06Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:35:47Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:34:06Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:34:31Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:32:54Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:33:37Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:34:07Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:34:37Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:33:01Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:34:04Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:35:17Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:35:01Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:34:51Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:28:53Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:30:31Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:28:50Z"
+    },
+    {
+      "name": "copilot-pull-request-reviewer",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:29:02Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:21:10Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:22:05Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:22:55Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:21:21Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:22:00Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:26:19Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:21:19Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:21:17Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-17T03:21:35Z"
+    }
+  ],
+  "binary_paths": []
+}

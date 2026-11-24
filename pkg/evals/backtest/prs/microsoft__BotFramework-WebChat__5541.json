@@ -1,0 +1,1368 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5541,
+  "title": "Migrate `__tests__/html/accessibility*` to `html2`",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\n(Slowly) upgrading all `html` tests to `html2` tests.\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Upgraded `html/accessibility*`\r\n- Fixed `accessibility.attachment.carouselLayoutRole` test, it was not running previously\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] ~I have updated `CHANGELOG.md`~\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] ~`package.json` and `package-lock.json` reviewed~\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-08-07T21:37:30Z",
+  "merged_at": "2025-08-08T18:07:52Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "feat-upgrade-test-1",
+  "head": "feat-upgrade-test-1",
+  "base_sha": "6c94bd4d8440540b596d9e619ad22c733655dae8",
+  "head_sha": "c6ec5682ddb1d23ecd3b1e1292dc19b2197e7d2f",
+  "merge_sha": "51257700d0e197251b5bafd42075bf9603fe4835",
+  "diff_sha256": "e8dbd8dbf6157d1a3cf425b2004639080dccfebacf3f08ee6136f1079cbdd17b",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-08-07T21:38:55Z"
+    },
+    {
+      "event": "ready_for_review",
+      "at": "2025-08-08T07:30:07Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "bd303229d9ed529ef727af645024944d334e6ffa",
+      "message": "Migrate to html2",
+      "author": "compulim"
+    },
+    {
+      "sha": "e96ee75bfc19af61544e3586f7a1220d8b234327",
+      "message": "Rename snapshots",
+      "author": "compulim"
+    },
+    {
+      "sha": "5b85f5fe0aae1ea909c57cd6bd62cd2b86fc3f74",
+      "message": "Fix snapshots",
+      "author": "compulim"
+    },
+    {
+      "sha": "c9f39efc84c5886b40257a1be99e3a491e17bb00",
+      "message": "Fix rename",
+      "author": "compulim"
+    },
+    {
+      "sha": "c6ec5682ddb1d23ecd3b1e1292dc19b2197e7d2f",
+      "message": "Merge branch 'main' into feat-upgrade-test-1",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "__tests__/html/accessibility.accessibleName.activityStatus.sendFailed.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.accessibleName.simple.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.activity.stackedLayoutRole.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.ariaPushed.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.disabled.focus.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.disabled.focus.withShowCard.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.disabled.inputs.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.hack.actionSetShouldNotBeMenuBarMod.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.hack.actionShouldBePushButtonMod.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.hack.activeElementMod.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.hack.disabledMod.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.hack.persistValuesMod.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.hack.roleMod.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.withTapAction.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.adaptiveCard.withoutTapAction.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.aria-roledescription.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.attachment.aria.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.attachment.carouselLayoutRole.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.attachment.stackedLayoutRole.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.delayActivity.raceCondition.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.delayActivity.typingActivity.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.delayActivity.typingActivityWithoutReplyToActivity.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.delayActivity.withReplyToId.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.delayActivity.withoutReplyToId.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.heroCard.heading.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.landmarkRole.invalid.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.landmarkRole.valid.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegion.activityStatus.sendFailed.contrast.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegion.activityStatus.sendFailed.event.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegion.activityStatus.sendFailed.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegion.activityStatus.sendFailed.typing.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegion.newMessages.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionActivity.htmlInMarkdown.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionActivity.performance.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionActivity.speakOverrideAttachments.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionActivity.text.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.adaptiveCard.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.adaptiveCard.speakProperty.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.animationCard.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.audio.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.audioCard.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.file.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.heroCard.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.image.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.receiptCard.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.signInCard.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.thumbnailCard.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.unknownCard.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.video.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionAttachment.videoCard.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionSuggestedActions.withMessage.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.liveRegionSuggestedActions.withoutMessage.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.sendBox.alertEmptyMessage.multilineTextBox.enter.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.sendBox.alertEmptyMessage.sendButton.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.sendBox.alertEmptyMessage.singleLineTextBox.enter.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.sendBox.alertOffline.sendButton.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.stackedLayout.withoutText.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.suggestedActions.altText.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.suggestedActions.carouselLayout.ariaAttributes.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.suggestedActions.flowLayout.ariaAttributes.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.suggestedActions.sendFocusImmediately.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.suggestedActions.stackedLayout.ariaAttributes.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/accessibility.transcript.initialEmpty.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/accessibleName.activityStatus.sendFailed.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.accessibleName.activityStatus.sendFailed.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/accessibleName.simple.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.accessibleName.simple.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/activity/stackedLayoutRole.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.activity.stackedLayoutRole.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/ariaPushed.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.ariaPushed.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/disabled.focus.html",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.disabled.focus.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/disabled.focus.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-adaptive-card-disabled-focus-js-accessibility-requirement-disabling-adaptive-card-should-send-focus-back-to-chat-history-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/disabled.focus.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-adaptive-card-disabled-focus-js-accessibility-requirement-disabling-adaptive-card-should-send-focus-back-to-chat-history-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/disabled.focus.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-adaptive-card-disabled-focus-js-accessibility-requirement-disabling-adaptive-card-should-send-focus-back-to-chat-history-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/disabled.focus.withShowCard.html",
+      "status": "renamed",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.disabled.focus.withShowCard.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/disabled.focus.withShowCard.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-adaptive-card-disabled-focus-with-show-card-js-accessibility-requirement-disabling-adaptive-card-with-action-show-card-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/disabled.focus.withShowCard.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-adaptive-card-disabled-focus-with-show-card-js-accessibility-requirement-disabling-adaptive-card-with-action-show-card-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/disabled.inputs.html",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.disabled.inputs.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/disabled.inputs.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-adaptive-card-disabled-inputs-js-accessibility-requirement-disabling-adaptive-card-with-inputs-field-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/disabled.inputs.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-adaptive-card-disabled-inputs-js-accessibility-requirement-disabling-adaptive-card-with-inputs-field-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/disabled.inputs.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-adaptive-card-disabled-inputs-js-accessibility-requirement-disabling-adaptive-card-with-inputs-field-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.actionSetShouldNotBeMenuBarMod.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.hack.actionSetShouldNotBeMenuBarMod.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.actionShouldBePushButtonMod.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.hack.actionShouldBePushButtonMod.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.activeElementMod.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.hack.activeElementMod.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.disabledMod.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.hack.disabledMod.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.persistValuesMod.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.hack.persistValuesMod.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/hack.roleMod.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.hack.roleMod.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/withTapAction.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.withTapAction.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/withTapAction.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-adaptive-card-with-tap-action-js-accessibility-requirement-adaptive-card-with-tap-action-should-be-focusable-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/withoutTapAction.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.adaptiveCard.withoutTapAction.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/withoutTapAction.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-adaptive-card-without-tap-action-js-accessibility-requirement-adaptive-card-without-tap-action-should-not-be-focusable-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/aria-roledescription.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.aria-roledescription.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/attachment/aria.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.attachment.aria.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/attachment/carouselLayoutRole.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.attachment.carouselLayoutRole.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/attachment/heroCard.heading.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.heroCard.heading.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/attachment/stackedLayoutRole.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.attachment.stackedLayoutRole.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/delayActivity/raceCondition.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.delayActivity.raceCondition.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/delayActivity/typingActivity.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.delayActivity.typingActivity.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/delayActivity/typingActivityWithoutReplyToActivity.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.delayActivity.typingActivityWithoutReplyToActivity.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/delayActivity/withReplyToId.html",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": "__tests__/html/accessibility.delayActivity.withReplyToId.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/delayActivity/withReplyToId.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-delay-activity-with-reply-to-id-js-accessibility-requirement-should-delay-activity-with-reply-to-id-referencing-a-missing-activity-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/delayActivity/withReplyToId.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-delay-activity-with-reply-to-id-js-accessibility-requirement-should-delay-activity-with-reply-to-id-referencing-a-missing-activity-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/delayActivity/withReplyToId.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-delay-activity-with-reply-to-id-js-accessibility-requirement-should-delay-activity-with-reply-to-id-referencing-a-missing-activity-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/delayActivity/withoutReplyToId.html",
+      "status": "renamed",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": "__tests__/html/accessibility.delayActivity.withoutReplyToId.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/delayActivity/withoutReplyToId.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-delay-activity-without-reply-to-id-js-accessibility-requirement-should-not-delay-activity-without-reply-to-id-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/delayActivity/withoutReplyToId.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-delay-activity-without-reply-to-id-js-accessibility-requirement-should-not-delay-activity-without-reply-to-id-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/landmarkRole/invalid.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.landmarkRole.invalid.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/landmarkRole/valid.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.landmarkRole.valid.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activity/htmlInMarkdown.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionActivity.htmlInMarkdown.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activity/htmlInMarkdown.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-activity-html-in-markdown-js-accessibility-requirement-should-clean-up-html-in-markdown-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activity/performance.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.liveRegionActivity.performance.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activity/speakOverrideAttachments.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.liveRegionActivity.speakOverrideAttachments.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activity/text.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionActivity.text.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activity/text.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-activity-text-js-accessibility-requirement-should-clean-up-speak-property-for-live-region-text-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.sendFailed.contrast.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegion.activityStatus.sendFailed.contrast.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.sendFailed.contrast.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-activity-status-send-failed-contrast-js-live-region-should-render-send-failed-retry-correctly-in-high-contrast-mode-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.sendFailed.event.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.liveRegion.activityStatus.sendFailed.event.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.sendFailed.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.liveRegion.activityStatus.sendFailed.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/activityStatus.sendFailed.typing.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.liveRegion.activityStatus.sendFailed.typing.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.adaptiveCard.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-adaptive-card-js-accessibility-requirement-attachments-in-live-region-adaptive-card-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.speakProperty.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.adaptiveCard.speakProperty.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/adaptiveCard.speakProperty.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-adaptive-card-speak-property-js-live-region-should-narrate-speak-property-adaptive-card-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/animationCard.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.animationCard.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/animationCard.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-animation-card-js-accessibility-requirement-attachments-in-live-region-animation-card-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/audio.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.audio.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/audio.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-audio-js-accessibility-requirement-attachments-in-live-region-audio-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/audioCard.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.audioCard.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/audioCard.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-audio-card-js-accessibility-requirement-attachments-in-live-region-audio-card-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/file.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.file.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/file.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-file-js-accessibility-requirement-attachments-in-live-region-file-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/heroCard.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.heroCard.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/heroCard.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-hero-card-js-accessibility-requirement-attachments-in-live-region-hero-card-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/image.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.image.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/image.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-image-js-accessibility-requirement-attachments-in-live-region-image-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/receiptCard.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.receiptCard.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/receiptCard.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-receipt-card-js-accessibility-requirement-attachments-in-live-region-receipt-card-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/signInCard.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.signInCard.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/signInCard.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-sign-in-card-js-accessibility-requirement-attachments-in-live-region-sign-in-card-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/thumbnailCard.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.thumbnailCard.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/thumbnailCard.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-thumbnail-card-js-accessibility-requirement-attachments-in-live-region-thumbnail-card-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/unknownCard.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.unknownCard.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/unknownCard.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-unknown-card-js-accessibility-requirement-attachments-in-live-region-unknown-card-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/video.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.video.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/video.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-video-js-accessibility-requirement-attachments-in-live-region-video-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/videoCard.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionAttachment.videoCard.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/attachment/videoCard.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-attachment-video-card-js-accessibility-requirement-attachments-in-live-region-video-card-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/newMessages.html",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": "__tests__/html/accessibility.liveRegion.newMessages.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/newMessages.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-new-messages-js-accessibility-requirement-should-focus-new-messages-button-when-shortcut-pressed-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/newMessages.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-new-messages-js-accessibility-requirement-should-focus-new-messages-button-when-shortcut-pressed-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/newMessages.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-new-messages-js-accessibility-requirement-should-focus-new-messages-button-when-shortcut-pressed-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/suggestedActions/withMessage.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionSuggestedActions.withMessage.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/suggestedActions/withMessage.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-suggested-actions-with-message-js-accessibility-requirement-suggested-actions-in-live-region-with-message-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/suggestedActions/withoutMessage.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.liveRegionSuggestedActions.withoutMessage.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/liveRegion/suggestedActions/withoutMessage.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-live-region-suggested-actions-without-message-js-accessibility-requirement-suggested-actions-in-live-region-without-message-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.multilineTextBox.enter.html",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": "__tests__/html/accessibility.sendBox.alertEmptyMessage.multilineTextBox.enter.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.multilineTextBox.enter.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-empty-message-multiline-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-multiline-send-box-should-alert-about-empty-message-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.multilineTextBox.enter.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-empty-message-multiline-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-multiline-send-box-should-alert-about-empty-message-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.multilineTextBox.enter.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-empty-message-multiline-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-multiline-send-box-should-alert-about-empty-message-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.sendButton.html",
+      "status": "renamed",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": "__tests__/html/accessibility.sendBox.alertEmptyMessage.sendButton.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.sendButton.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-empty-message-send-button-js-accessibility-requirement-when-clicking-on-send-box-with-an-empty-send-box-should-alert-about-empty-message-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.sendButton.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-empty-message-send-button-js-accessibility-requirement-when-clicking-on-send-box-with-an-empty-send-box-should-alert-about-empty-message-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.sendButton.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-empty-message-send-button-js-accessibility-requirement-when-clicking-on-send-box-with-an-empty-send-box-should-alert-about-empty-message-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.singleLineTextBox.enter.html",
+      "status": "renamed",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": "__tests__/html/accessibility.sendBox.alertEmptyMessage.singleLineTextBox.enter.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.singleLineTextBox.enter.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-empty-message-single-line-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-single-line-send-box-should-alert-about-empty-message-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.singleLineTextBox.enter.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-empty-message-single-line-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-single-line-send-box-should-alert-about-empty-message-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertEmptyMessage.singleLineTextBox.enter.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-empty-message-single-line-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-single-line-send-box-should-alert-about-empty-message-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertOffline.sendButton.html",
+      "status": "renamed",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": "__tests__/html/accessibility.sendBox.alertOffline.sendButton.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertOffline.sendButton.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-offline-send-button-js-accessibility-requirement-when-clicking-on-send-button-while-offline-should-alert-about-offline-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertOffline.sendButton.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-offline-send-button-js-accessibility-requirement-when-clicking-on-send-button-while-offline-should-alert-about-offline-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertOffline.sendButton.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-offline-send-button-js-accessibility-requirement-when-clicking-on-send-button-while-offline-should-alert-about-offline-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/sendBox/alertOffline.sendButton.html.snap-4.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-send-box-alert-offline-send-button-js-accessibility-requirement-when-clicking-on-send-button-while-offline-should-alert-about-offline-4-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/stackedLayout.withoutText.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.stackedLayout.withoutText.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/suggestedActions/altText.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/accessibility.suggestedActions.altText.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/suggestedActions/altText.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/accessibility-suggested-actions-alt-text-js-accessibility-requirement-should-support-image-alt-text-for-images-in-suggested-actions-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/accessibility/suggestedActions/carouselLayout.ariaAttributes.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.suggestedActions.carouselLayout.ariaAttributes.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/suggestedActions/flowLayout.ariaAttributes.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.suggestedActions.flowLayout.ariaAttributes.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/suggestedActions/sendFocusImmediately.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.suggestedActions.sendFocusImmediately.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/suggestedActions/stackedLayout.ariaAttributes.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.suggestedActions.stackedLayout.ariaAttributes.html"
+    },
+    {
+      "path": "__tests__/html2/accessibility/transcript.initialEmpty.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/accessibility.transcript.initialEmpty.html"
+    }
+  ],
+  "reviews": [
+    {
+      "state": "DISMISSED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-08-08T00:37:13Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-08-08T18:06:19Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/{__image_snapshots__/html/accessibility-adaptive-card-disabled-focus-js-accessibility-requirement-disabling-adaptive-card-should-send-focus-back-to-chat-history-1-snap.png => html2/accessibility/adaptiveCard/disabled.focus.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-adaptive-card-disabled-focus-js-accessibility-requirement-disabling-adaptive-card-should-send-focus-back-to-chat-history-2-snap.png => html2/accessibility/adaptiveCard/disabled.focus.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-adaptive-card-disabled-focus-js-accessibility-requirement-disabling-adaptive-card-should-send-focus-back-to-chat-history-3-snap.png => html2/accessibility/adaptiveCard/disabled.focus.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-adaptive-card-disabled-focus-with-show-card-js-accessibility-requirement-disabling-adaptive-card-with-action-show-card-1-snap.png => html2/accessibility/adaptiveCard/disabled.focus.withShowCard.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-adaptive-card-disabled-focus-with-show-card-js-accessibility-requirement-disabling-adaptive-card-with-action-show-card-2-snap.png => html2/accessibility/adaptiveCard/disabled.focus.withShowCard.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-adaptive-card-disabled-inputs-js-accessibility-requirement-disabling-adaptive-card-with-inputs-field-1-snap.png => html2/accessibility/adaptiveCard/disabled.inputs.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-adaptive-card-disabled-inputs-js-accessibility-requirement-disabling-adaptive-card-with-inputs-field-2-snap.png => html2/accessibility/adaptiveCard/disabled.inputs.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-adaptive-card-disabled-inputs-js-accessibility-requirement-disabling-adaptive-card-with-inputs-field-3-snap.png => html2/accessibility/adaptiveCard/disabled.inputs.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-adaptive-card-with-tap-action-js-accessibility-requirement-adaptive-card-with-tap-action-should-be-focusable-1-snap.png => html2/accessibility/adaptiveCard/withTapAction.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-adaptive-card-without-tap-action-js-accessibility-requirement-adaptive-card-without-tap-action-should-not-be-focusable-1-snap.png => html2/accessibility/adaptiveCard/withoutTapAction.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-delay-activity-with-reply-to-id-js-accessibility-requirement-should-delay-activity-with-reply-to-id-referencing-a-missing-activity-1-snap.png => html2/accessibility/delayActivity/withReplyToId.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-delay-activity-with-reply-to-id-js-accessibility-requirement-should-delay-activity-with-reply-to-id-referencing-a-missing-activity-2-snap.png => html2/accessibility/delayActivity/withReplyToId.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-delay-activity-with-reply-to-id-js-accessibility-requirement-should-delay-activity-with-reply-to-id-referencing-a-missing-activity-3-snap.png => html2/accessibility/delayActivity/withReplyToId.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-delay-activity-without-reply-to-id-js-accessibility-requirement-should-not-delay-activity-without-reply-to-id-1-snap.png => html2/accessibility/delayActivity/withoutReplyToId.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-delay-activity-without-reply-to-id-js-accessibility-requirement-should-not-delay-activity-without-reply-to-id-2-snap.png => html2/accessibility/delayActivity/withoutReplyToId.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-activity-html-in-markdown-js-accessibility-requirement-should-clean-up-html-in-markdown-1-snap.png => html2/accessibility/liveRegion/activity/htmlInMarkdown.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-activity-text-js-accessibility-requirement-should-clean-up-speak-property-for-live-region-text-1-snap.png => html2/accessibility/liveRegion/activity/text.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-activity-status-send-failed-contrast-js-live-region-should-render-send-failed-retry-correctly-in-high-contrast-mode-1-snap.png => html2/accessibility/liveRegion/activityStatus.sendFailed.contrast.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-adaptive-card-js-accessibility-requirement-attachments-in-live-region-adaptive-card-1-snap.png => html2/accessibility/liveRegion/attachment/adaptiveCard.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-adaptive-card-speak-property-js-live-region-should-narrate-speak-property-adaptive-card-1-snap.png => html2/accessibility/liveRegion/attachment/adaptiveCard.speakProperty.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-animation-card-js-accessibility-requirement-attachments-in-live-region-animation-card-1-snap.png => html2/accessibility/liveRegion/attachment/animationCard.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-audio-js-accessibility-requirement-attachments-in-live-region-audio-1-snap.png => html2/accessibility/liveRegion/attachment/audio.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-audio-card-js-accessibility-requirement-attachments-in-live-region-audio-card-1-snap.png => html2/accessibility/liveRegion/attachment/audioCard.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-file-js-accessibility-requirement-attachments-in-live-region-file-1-snap.png => html2/accessibility/liveRegion/attachment/file.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-hero-card-js-accessibility-requirement-attachments-in-live-region-hero-card-1-snap.png => html2/accessibility/liveRegion/attachment/heroCard.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-image-js-accessibility-requirement-attachments-in-live-region-image-1-snap.png => html2/accessibility/liveRegion/attachment/image.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-receipt-card-js-accessibility-requirement-attachments-in-live-region-receipt-card-1-snap.png => html2/accessibility/liveRegion/attachment/receiptCard.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-sign-in-card-js-accessibility-requirement-attachments-in-live-region-sign-in-card-1-snap.png => html2/accessibility/liveRegion/attachment/signInCard.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-thumbnail-card-js-accessibility-requirement-attachments-in-live-region-thumbnail-card-1-snap.png => html2/accessibility/liveRegion/attachment/thumbnailCard.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-unknown-card-js-accessibility-requirement-attachments-in-live-region-unknown-card-1-snap.png => html2/accessibility/liveRegion/attachment/unknownCard.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-video-js-accessibility-requirement-attachments-in-live-region-video-1-snap.png => html2/accessibility/liveRegion/attachment/video.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-attachment-video-card-js-accessibility-requirement-attachments-in-live-region-video-card-1-snap.png => html2/accessibility/liveRegion/attachment/videoCard.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-new-messages-js-accessibility-requirement-should-focus-new-messages-button-when-shortcut-pressed-1-snap.png => html2/accessibility/liveRegion/newMessages.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-new-messages-js-accessibility-requirement-should-focus-new-messages-button-when-shortcut-pressed-2-snap.png => html2/accessibility/liveRegion/newMessages.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-new-messages-js-accessibility-requirement-should-focus-new-messages-button-when-shortcut-pressed-3-snap.png => html2/accessibility/liveRegion/newMessages.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-suggested-actions-with-message-js-accessibility-requirement-suggested-actions-in-live-region-with-message-1-snap.png => html2/accessibility/liveRegion/suggestedActions/withMessage.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-live-region-suggested-actions-without-message-js-accessibility-requirement-suggested-actions-in-live-region-without-message-1-snap.png => html2/accessibility/liveRegion/suggestedActions/withoutMessage.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-empty-message-multiline-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-multiline-send-box-should-alert-about-empty-message-1-snap.png => html2/accessibility/sendBox/alertEmptyMessage.multilineTextBox.enter.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-empty-message-multiline-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-multiline-send-box-should-alert-about-empty-message-2-snap.png => html2/accessibility/sendBox/alertEmptyMessage.multilineTextBox.enter.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-empty-message-multiline-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-multiline-send-box-should-alert-about-empty-message-3-snap.png => html2/accessibility/sendBox/alertEmptyMessage.multilineTextBox.enter.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-empty-message-send-button-js-accessibility-requirement-when-clicking-on-send-box-with-an-empty-send-box-should-alert-about-empty-message-1-snap.png => html2/accessibility/sendBox/alertEmptyMessage.sendButton.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-empty-message-send-button-js-accessibility-requirement-when-clicking-on-send-box-with-an-empty-send-box-should-alert-about-empty-message-2-snap.png => html2/accessibility/sendBox/alertEmptyMessage.sendButton.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-empty-message-send-button-js-accessibility-requirement-when-clicking-on-send-box-with-an-empty-send-box-should-alert-about-empty-message-3-snap.png => html2/accessibility/sendBox/alertEmptyMessage.sendButton.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-empty-message-single-line-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-single-line-send-box-should-alert-about-empty-message-1-snap.png => html2/accessibility/sendBox/alertEmptyMessage.singleLineTextBox.enter.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-empty-message-single-line-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-single-line-send-box-should-alert-about-empty-message-2-snap.png => html2/accessibility/sendBox/alertEmptyMessage.singleLineTextBox.enter.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-empty-message-single-line-text-box-enter-js-accessibility-requirement-when-pressing-enter-on-an-empty-single-line-send-box-should-alert-about-empty-message-3-snap.png => html2/accessibility/sendBox/alertEmptyMessage.singleLineTextBox.enter.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-offline-send-button-js-accessibility-requirement-when-clicking-on-send-button-while-offline-should-alert-about-offline-1-snap.png => html2/accessibility/sendBox/alertOffline.sendButton.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-offline-send-button-js-accessibility-requirement-when-clicking-on-send-button-while-offline-should-alert-about-offline-2-snap.png => html2/accessibility/sendBox/alertOffline.sendButton.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-offline-send-button-js-accessibility-requirement-when-clicking-on-send-button-while-offline-should-alert-about-offline-3-snap.png => html2/accessibility/sendBox/alertOffline.sendButton.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-send-box-alert-offline-send-button-js-accessibility-requirement-when-clicking-on-send-button-while-offline-should-alert-about-offline-4-snap.png => html2/accessibility/sendBox/alertOffline.sendButton.html.snap-4.png}",
+    "__tests__/{__image_snapshots__/html/accessibility-suggested-actions-alt-text-js-accessibility-requirement-should-support-image-alt-text-for-images-in-suggested-actions-1-snap.png => html2/accessibility/suggestedActions/altText.html.snap-1.png}"
+  ]
+}

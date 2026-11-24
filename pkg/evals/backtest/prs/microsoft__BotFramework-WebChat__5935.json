@@ -1,0 +1,284 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5935,
+  "title": "Give Fluent suggested actions a solid background in forced colors",
+  "body": "> In Windows contrast themes, Fluent suggested actions are see-through: a host page background image shows behind their text.\n\n## Changelog Entry\n\n### Fixed\n\n- Fixed Fluent suggested actions showing the page background through them in forced colors, in PR [#5935](https://github.com/microsoft/BotFramework-WebChat/pull/5935), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThe Fluent suggested action has `background: transparent`, and forced colors keep a transparent background transparent, so the button text sits on whatever the host page draws behind Web Chat. In forced colors, the suggested action now uses `ButtonFace` as its background, also when hovered or pressed; nothing changes without forced colors.\n\n## Specific Changes\n\n- `fluent-theme/.../SuggestedAction.module.css`: `background-color: ButtonFace` in forced colors\n- `fluentTheme/suggestedActions.forcedColors.html` and `.dark.html` (new): snapshot 1, both suggested actions are solid over a striped host page background in light and dark forced colors\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-20T21:40:31Z",
+  "merged_at": "2026-10-21T00:14:30Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-fluent-forced-suggested-action",
+  "head": "OEvgeny/fix-fluent-forced-suggested-action",
+  "base_sha": "2c28a27b73d625e20e1d5647862b3ab0c249f859",
+  "head_sha": "8fa5dac69a814d51b6f6ee2c7af9b43ae6c07639",
+  "merge_sha": "3d4881acdaa748d36ef85fe27491da43c1f9c82c",
+  "diff_sha256": "3a74363f620745258710a8a70480a2380815e15e66cda5c313989496badbd15f",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-20T22:21:19Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "b82c33055a54b8096ecce25cbe8b5987b6a94506",
+      "message": "Fluent: give suggested actions a ButtonFace background in forced colors",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "6753f3d6ed6967ae58dc5da2c58cc5c5dc137d77",
+      "message": "Add PR number to changelog",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "80885d5c61ee47ffe34fd94f4d89cf0f3d7592c9",
+      "message": "Move the changelog entry to .changelog/",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "8fa5dac69a814d51b6f6ee2c7af9b43ae6c07639",
+      "message": "Merge branch 'main' into OEvgeny/fix-fluent-forced-suggested-action",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5935-fix-fluent-forced-suggested-action.md",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/suggestedActions.forcedColors.dark.html",
+      "status": "added",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/suggestedActions.forcedColors.dark.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/suggestedActions.forcedColors.html",
+      "status": "added",
+      "additions": 117,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/fluentTheme/suggestedActions.forcedColors.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/suggestedActions/SuggestedAction.module.css",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-20T22:21:25Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2026-10-20T22:36:34Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-20T23:22:12Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:14:10Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:14:43Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:55:49Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:53:16Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:48:57Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:55:30Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:49:56Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:56:47Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:00:53Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:02:21Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:02:10Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:00:58Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:02:03Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:02:25Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:00:42Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:01:40Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:00:50Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:00:33Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:01:12Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:03:30Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:02:50Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:02:26Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:01:33Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:02:36Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-21T00:14:02Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:48:20Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:48:43Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:49:01Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:48:20Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:47:53Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:48:59Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:48:55Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-20T23:48:27Z"
+    }
+  ],
+  "binary_paths": [
+    "__tests__/html2/fluentTheme/suggestedActions.forcedColors.dark.html.snap-1.png",
+    "__tests__/html2/fluentTheme/suggestedActions.forcedColors.html.snap-1.png"
+  ]
+}

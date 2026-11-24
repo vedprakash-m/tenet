@@ -1,0 +1,241 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 16,
+  "title": "Preview safety fixes: Git variables, consent binding, cleanup removal",
+  "body": "Safety fixes for the unqualified preview. Not a qualification.\n\n## Fixes\n- **Inherited Git variables are ignored (P75, P77, P78).** Git's repository-local variables (`git rev-parse --local-env-vars`, matched without case) are now dropped in four places: the kernel process, `GitCli`, the bench fixtures and the privacy check. Before, an inherited `GIT_DIR` or `GIT_WORK_TREE` could point any of them at another repository. Test: `git-env.test.ts`; two of its cases fail without the fix.\n- **Dirty-file answers cover only the files shown (P47, in part).** The answer is refused if the set of files changed after the question, and the question now names every file instead of \"and N more\". Test: `dirty-overlap-bind.test.ts`; it fails without the fix.\n- **A declined hook question is asked again (P48).** After you decline it, a later explicit `commit` asks again instead of running the hook. Test in `workflows.test.ts`; it ran and passed on ubuntu and macOS CI.\n- **Cleanup removal is disabled (P30).** `decide cleanup` still shows the preview of what it would remove, but a confirmed removal is refused with `capability-missing`. Test: `cleanup-disabled.test.ts`.\n\nREADME, skill and CHANGELOG are updated to match.\n\n## CI on `cb104ac`\n- `untrusted` passes on ubuntu, macOS and windows-portability.\n- `system-budgets` still fails on NFR-01 frozen fixtures, unchanged by this PR.\n\n## Still open\n- Recovery and attribution defects (P61, P65).\n- The missing \"wait\" and \"leave this file out\" dirty-file choices.\n- NFR-01 timing.\n- Real-host use.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-09T21:11:07Z",
+  "merged_at": "2026-11-09T21:11:57Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "safety-today",
+  "head": "safety-today",
+  "base_sha": "20337f646d41292a5d425cf376d91970f697fe0c",
+  "head_sha": "cb104ac27899be38e55fcd2645cc641e4720ed70",
+  "merge_sha": "bca2092b780692358f6447d422a53e2da1259c57",
+  "diff_sha256": "18704c93b6838f27e326c4d2c50a6a23ccba6f7de47872120b5aacd66b740fac",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "cb104ac27899be38e55fcd2645cc641e4720ed70",
+      "message": "Preview safety fixes: ignore inherited Git variables, bind dirty answers, re-ask hooks, disable cleanup removal",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/git-cli.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/git-env.ts",
+      "status": "added",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/cleanup.ts",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/simple.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/main.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/commit.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/dirty.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/wire.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/cleanup-disabled.test.ts",
+      "status": "added",
+      "additions": 16,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/dirty-overlap-bind.test.ts",
+      "status": "added",
+      "additions": 27,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/git-env.test.ts",
+      "status": "added",
+      "additions": 58,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/helpers.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/residue.test.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/workflows.test.ts",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet/SKILL.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/bench-fixtures.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/privacy-check.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T21:11:35Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-09T21:25:27Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T21:11:32Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-09T21:13:09Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T21:14:54Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T21:30:29Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T21:33:48Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-09T20:37:51Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T20:38:20Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-09T20:39:50Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T20:38:09Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T20:41:50Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T21:00:27Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T21:10:04Z"
+    }
+  ],
+  "binary_paths": []
+}

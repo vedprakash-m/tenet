@@ -1,0 +1,83 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5440,
+  "title": "Fixed batched livestream activities are not recognized in the same session",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #5439.\r\n\r\n## Changelog Entry\r\n\r\n### Fixed\r\n\r\n- Fixed [#5439](https://github.com/microsoft/BotFramework-WebChat/issues/5439). Fixed batched livestream activities are not recognized in the same session, in PR [#XXX](https://github.com/microsoft/BotFramework-WebChat/pull/XXX)\r\n\r\n## Description\r\n\r\nOn every batch of incoming activities, activity keyer will recreate the keypair map.\r\n\r\nActivity keyer will read from the old map and write to the new one. Writing to the new one ensures each render loop is clean of resource leak.\r\n\r\nIf activities are batched, activity keyer may not found the key as the key could be added in the same round.\r\n\r\nThis pull request fixed the activity keyer by reading from both new and old map.\r\n\r\n## Design\r\n\r\nIf unknown reasons, we cannot reproduce batched activities in the test suite. Or in other words, we do not know why the activities are batched.\r\n\r\nWe are using Redux store directly to inject activities, before Web Chat is mounted. So, first render will have 2 activities batched.\r\n\r\n## Specific Changes\r\n\r\n- Fixed `ActivityKeyerComposer` to read from both new and old map\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] ~`package.json` and `package-lock.json` reviewed~\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-03-08T00:39:54Z",
+  "merged_at": "2025-03-08T05:30:56Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "fix-batched-livestream",
+  "head": "fix-batched-livestream",
+  "base_sha": "e998c5698eb9b417566087e1964bf60dc4fc9a24",
+  "head_sha": "c0d410e5b5672021a1c8785fa70dfd3868cdb3cf",
+  "merge_sha": "8ab050b50c05d0aaffa4277321c92b118698d0b5",
+  "diff_sha256": "650779cc4e39f64eb38674f0462514f10b98946408bacca7dd1fd255427e482c",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-03-08T00:40:11Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "c0d410e5b5672021a1c8785fa70dfd3868cdb3cf",
+      "message": "Fixed batched livestream activities are not recognized in the same session",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 2076,
+      "deletions": 2075,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/batchedActivities.html",
+      "status": "added",
+      "additions": 88,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/livestream/batchedActivities.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/ActivityKeyer/ActivityKeyerComposer.tsx",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 10,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-03-08T05:30:23Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-03-08T05:30:31Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/html2/livestream/batchedActivities.html.snap-1.png"
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 9,
+  "title": "D01b: isolate approved capacity ceilings and owner matchers",
+  "body": "## Scope\n\nCapacity-only: central ceiling exactly **400,000 non-whitespace characters**, kernel bundle ceiling **900 KiB (921,600 bytes)**, candidate-measured owner ceilings at +5% rounded up, and complete companion matchers. Per-file, complexity, nesting and width gates remain unchanged. Unmeasured owner groups retain historical allowances. `quality-baseline.json` records approved ceilings, not clean-runtime counts.\n\nNo kernel runtime source changes, schema-2 activation, migration/bridge qualification, tag or release. The tech-spec table explicitly describes the reconciled **uncommitted candidate**, not this PR's runtime. The changelog's pending-CI statement records the status when that commit was written; qualification below is the subsequent evidence.\n\n## Dependency instructions\n\nFinal head: `49aea1819985c904cfb615ae73319221b2640832`, based on `fe475fbb26cd5690a35f33acbb2371c902f3dc58`.\n\nFetch `origin/vedprakash-m-d01-capacity-ceilings`, then cherry-pick in order:\n\n1. `c69403652bb680026dc34bcdf03a5d24e0c1553f` — tooling/tests; original `f5ad92cf8b4e08ff930f88bc7b804d53b442deec`.\n2. `225b43cfd9ca12c78e00f248a26b4e68ab839732` — canonical tech-spec/changelog; original `1acf8bf8b1d8d69c0f9a7ac52a165000433ea8ed`.\n3. `070bb23b68baf17cbfb755779c81ea3000aba127` — shared portability repair: exact 921,600-byte acceptance / 921,601-byte refusal with checksum invalidation.\n4. `49aea1819985c904cfb615ae73319221b2640832` — related changelog evidence.\n\nDo not apply both original and cherry-picked histories. Branches already carrying the original pair need only the shared test repair and any applicable documentation reconciliation. No dependency on uncommitted schema-2 code.\n\n## Clean-runtime evidence\n\n| Owner | Measured characters | Approved ceiling |\n|---|---:|---:|\n| Central | 248,251 | 400,000 |\n| Schemas | 42,701 | 77,396 |\n| Budget | 8,806 | 33,654 |\n| Store | 26,535 | 55,863 |\n| Git CLI | 37,843 | 39,718 |\n| Runner | 9,943 | 15,771 |\n| Node/TypeScript | 20,150 | 21,158 |\n| Review | 18,276 | 20,832 |\n| Risk | 4,779 | 5,018 |\n| Verdict | 13,419 | 15,451 |\n\n`tenet.mjs`: **800,807 bytes**, versus a 921,600-byte allowance. Local typecheck, all lints, coverage, build, payload and reproducibility pass. Reproducibility covers 97 files; manifest SHA-256 `037eb20995d6d6d8584cf88c5714890bf4f865ed8189c8ddf3e44d9ee1bc7cc1`.\n\nQuality controls **12/12**; revised portability plus quality controls **23/23**; final-head applicable Windows cohort **376/376**. Full local Windows CI was stopped after unsupported mutating-POSIX failures including directory `fsync` EPERM; it is **not** full-suite qualification.\n\n## Exact-head hosted qualification\n\n**PASS:** [untrusted push run 42408560105](https://github.com/vedprakash-m/tenet/actions/runs/42408560105), head `49aea1819985c904cfb615ae73319221b2640832`. Ubuntu and macOS each pass full `npm run ci` (**1,748/1,748 tests**) and built-bundle UAT on **Node 24 and Node 22.12**. Windows portability also passes.\n\nThe PR-event run initially failed only the macOS nested-watch canary timeout in unchanged `read-only-review.test.ts` (**1,747/1,748**, attempt 1); Ubuntu and Windows passed. Retry attempt 2 then passed macOS (**1,748/1,748**); [run 42408676871](https://github.com/vedprakash-m/tenet/actions/runs/42408676871) now has all three exact-head checks successful. Separately, [push run 42408560105](https://github.com/vedprakash-m/tenet/actions/runs/42408560105), attempt 1, passed Ubuntu/macOS full CI and UAT plus Windows portability. The transient failure and retry provenance are retained; no watcher code or evaluator was weakened.\n\nNative-host behavior remains unobserved. Staged and range privacy checks before pushes found nothing. **Do not merge; preserve the public review window.**",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-07T19:43:51Z",
+  "merged_at": "2026-11-09T18:03:24Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "vedprakash-m-d01-capacity-ceilings",
+  "head": "vedprakash-m-d01-capacity-ceilings",
+  "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
+  "head_sha": "49aea1819985c904cfb615ae73319221b2640832",
+  "merge_sha": "6ad271e5223de85cb5549ebd803561627f2bb0f7",
+  "diff_sha256": "14914f5cd8e6054b03df1dd57a3319e148fac2303962bf073843f3992ff4f43d",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "c69403652bb680026dc34bcdf03a5d24e0c1553f",
+      "message": "build: apply approved D01 responsibility and bundle ceilings",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "225b43cfd9ca12c78e00f248a26b4e68ab839732",
+      "message": "docs: record D01 capacity scope and measured candidate totals",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "070bb23b68baf17cbfb755779c81ea3000aba127",
+      "message": "test: align portability controls with approved capacity ceiling",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "49aea1819985c904cfb615ae73319221b2640832",
+      "message": "docs: record exact D01b bundle boundary controls",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/invariants.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/quality-gate.test.ts",
+      "status": "modified",
+      "additions": 29,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/tooling-portability.test.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "specs/tech-spec.md",
+      "status": "modified",
+      "additions": 28,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "tools/build.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/lint-quality.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "tools/quality-baseline.json",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:14:19Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:00:23Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:29:21Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:12:18Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T20:32:21Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T19:59:01Z"
+    }
+  ],
+  "binary_paths": []
+}

@@ -1,0 +1,81 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6061,
+  "title": "Store: failing tests for unresolved #6053 review threads",
+  "body": "## Changelog Entry\n\nNone. This PR only adds tests (label `no-changelog`).\n\n## Description\n\nThis PR adds failing tests for the two review threads on #6053 that are still unresolved. It doesn't fix either issue. The branch is based on `feat-new-store`, so this PR should target that branch.\n\n## Specific Changes\n\n- **`FrozenNodeSet.ts:17`: a string and a node reference with the same ID are treated as the same value** (`FrozenNodeSet.test.ts`)\n   - `getEqualityKey()` maps both `'_:b'` and `{ '@id': '_:b' }` to `'_:b'`. `union()` and `symmetricDifference()` keep whichever comes first and drop the other.\n   - The tests cover both insertion orders.\n\n   ```ts\n   new FrozenNodeSet(['_:a']).union(new Set(['_:b', { '@id': '_:b' }]));\n   // Expected: [{ '@id': '_:a' }, '_:b', { '@id': '_:b' }]\n   // Actual:   [{ '@id': '_:a' }, '_:b']\n   ```\n\n- **`VersionedStorage.ts:491`: an overlay iterator loses its place after `commit()`** (`VersionedStorage.test.ts`)\n   - After a commit, the iterator skips as many entries as it has already returned, counted from the start of the committed map. Deleting a key it has already passed shifts that count, so it skips too far.\n   - Each case is checked against a literal expected list and against a native `Map` doing the same steps:\n\n   | Overlay `[a, b, c]`: read `a`, then… | Expected rest | Actual |\n   | --- | --- | --- |\n   | `delete('a')`, `commit()` | `b, c` | `c` |\n   | `delete('a')`, `set('a', 100)`, `commit()` | `b, c, a` | incorrect |\n\n- [x] I have added tests and executed them locally\n- [ ] ~I have added `.changelog/<PR#>-<slug>.md`~\n- [ ] ~I have updated documentation~",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-11-20T01:19:20Z",
+  "merged_at": "2026-11-20T02:03:09Z",
+  "base_ref": "feat-new-store",
+  "base": "feat-new-store",
+  "head_ref": "copilot/6053-failing-tests",
+  "head": "copilot/6053-failing-tests",
+  "base_sha": "6598cf58474464c6e39a5873e274f193cc0c7050",
+  "head_sha": "50ce57d2c47b03fea830b0f14adf0d73afe15630",
+  "merge_sha": "b4af453354c8450202edead6cbca3fc8d72edebe",
+  "diff_sha256": "49ec4d7951e780fa9890f4e12cd2646b5f188a37f260660746589b4ebb83c118",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-20T02:03:05Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "bd5b1ff631702de0db63a2f3344ee5cd60818baa",
+      "message": "Add failing tests for unresolved review comments on #6053",
+      "author": "compulim"
+    },
+    {
+      "sha": "50ce57d2c47b03fea830b0f14adf0d73afe15630",
+      "message": "Fix FrozenNodeSet equality key collision and overlay iteration across commit",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/store/src/structure/FrozenNodeSet.test.ts",
+      "status": "modified",
+      "additions": 28,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/FrozenNodeSet.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/VersionedStorage.test.ts",
+      "status": "modified",
+      "additions": 90,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/structure/VersionedStorage.ts",
+      "status": "modified",
+      "additions": 15,
+      "deletions": 63,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-20T02:03:13Z"
+    }
+  ],
+  "binary_paths": []
+}

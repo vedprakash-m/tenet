@@ -1,0 +1,389 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5508,
+  "title": "Replacing hideUploadButton param inside SendBox.tsx with disableFileUpload to also hide file upload DropZone as well as button",
+  "body": "\r\n<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n- Replacing hideUploadButton param inside SendBox.tsx with disableFileUpload to also hide file upload DropZone as well as button PR [#5508](https://github.com/microsoft/BotFramework-WebChat/pull/5508), by [@JamesNewbyAtMicrosoft](https://github.com/JamesNewbyAtMicrosoft)\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\nCurrently, if user passes in true for SendBox hideUploadButton param, only the attachment button itself is hidden, but the file dropzone button is not disabled and user can still drag and drop a file to be uploaded. These change are meant to also disable the dropzone so prevent file upload and thereby fully disable webchat's file upload ability, therefore the name change as well. \r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\nFully replaced all uses of hideUploadButton param with disableFileUpload.  \r\nSendBox.tsx - added replaced disableFileUpload boolean to DropZone to additionally prevent file upload when true\r\nhideAttachFileButton.html - renamed and replaced this test (changed to hideAttachFileButtonAndDisableDropZone), adding a test to check for DropZone now showing when disableFileUpload param is true.\r\n## -\r\n\r\n-\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [ ] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [x] Browser and platform compatibilities reviewed\r\n-  [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] Internationalization reviewed (strings, unit formatting)\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] Security reviewed (no data URIs, check for nonce leak)\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "JamesNewbyAtMicrosoft",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-07-02T15:20:59Z",
+  "merged_at": "2025-08-01T21:33:43Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "janewby/WebChat",
+  "head": "janewby/WebChat",
+  "base_sha": "562f97e8ab2f9240091d5bd2a7f283d72bcbbd47",
+  "head_sha": "58ecaea979874712605b42affe274b0be4a308f3",
+  "merge_sha": "b40ec719c1a81e90a3fbdcc8a784d4742505dc50",
+  "diff_sha256": "f81564f2b29643857942d17e6384f79b71659599a386fd31527f46d6ff60b008",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "239161d84021af0c3b84a3377aa20ebd126529a3",
+      "message": "adding hideUploadButton boolean to file upload dropzone and adding to test",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "64e5fab8b0fa704066e3fdc5982b247f0a8b14bb",
+      "message": "adding space",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "9b8d3b35754995354d2fc8ceaf676cecf0470ece",
+      "message": "adding changelog details",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "3efb9bc9164c1489c05a223024b1b29c6f3f027e",
+      "message": "Merge branch 'main' into janewby/WebChat",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "187d415045446423d22fc95703b24e7502d7108c",
+      "message": "replacing hideAttachFileButton flag with disableFileUpload",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "1c179dbbeae9242f2edc82afb3c9e63c6d907d67",
+      "message": "adding for backward compat",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "38ad2a084fb38cc170183a533fa25a0df36f1d6f",
+      "message": "Merge remote-tracking branch 'origin' into janewby/WebChat",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "22fe08cb5c57b9d7df27382cba19eab4b6c3fdc6",
+      "message": "Bring back old tests",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f905b3a075a374861de079694875fec72a58b109",
+      "message": "Rework disableFileUpload:",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "ba66c60e098e9fea86d5db08706dce85b06f25a2",
+      "message": "Update packages/api/src/StyleOptions.ts",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "f5ef7ae72dcdf3e50c5bbad1ff402fe5116d674e",
+      "message": "Sort",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "88dc42f1df2b5b92c19246a74d2aec06452f8822",
+      "message": "added testing for drag and drop, deprecation patch, and removed dual flag logic",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "c13ee364d5c9c6b1f241bcea1a3e7e87b4807cb6",
+      "message": "Merge branch 'main' into janewby/WebChat",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "2d8e3667fdc1aff5dabfc09e258505106f523146",
+      "message": "Merge branch 'main' into janewby/WebChat",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "088f92e809e81c0b61fc3443f13185329b3d7206",
+      "message": "commit snapshots",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "5c4b9311dcf61841a98897986335aaa749a768a5",
+      "message": "updated test to comments",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "3df7b6509636e95b7e91c15df9366f003b3416ad",
+      "message": "Update CHANGELOG.md",
+      "author": "JamesNewbyAtMicrosoft"
+    },
+    {
+      "sha": "c167376644697e0e66f7da8c38e2bf017ac93452",
+      "message": "Improve test and cover false scenario",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "48e411bb7a03d76b88f67510a4f11909321e95fd",
+      "message": "cleanup",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "717cba449349a215d7b195cace659199064bce8d",
+      "message": "Cleanup",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "1c9b1ad9171a0ae0f652ac46875374f23b2ee004",
+      "message": "Remove unused test id",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "e30cc3174116d1b43f469260d61d170f2ef246cc",
+      "message": "fix warning display",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "dc189ef9fb99a177b5875b71273e2fb8483fd948",
+      "message": "Improve message",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "2d4adc459adb722152d4ce2fdcb681b9d95d3163",
+      "message": "Fix nits",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "58ecaea979874712605b42affe274b0be4a308f3",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/fluentTheme/hideAttachFileButton.html",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/basic/disableFileUpload.copilot.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/basic/disableFileUpload.copilot.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/basic/disableFileUpload.false.fluent.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/basic/disableFileUpload.false.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/basic/disableFileUpload.fluent.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/basic/disableFileUpload.fluent.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/basic/disableFileUpload.html",
+      "status": "added",
+      "additions": 86,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/basic/disableFileUpload.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/StyleOptions.ts",
+      "status": "modified",
+      "additions": 23,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/defaultStyleOptions.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/patchStyleOptionsFromDeprecatedProps.js",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/SendBoxToolbar/BasicSendBoxToolbar.tsx",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/SendBox.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/sendBox/SendBox.tsx",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "samples/02.branding-styling-and-customization/f.hide-upload-button/README.md",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "samples/02.branding-styling-and-customization/f.hide-upload-button/index.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "CHANGES_REQUESTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-14T17:37:04Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-14T18:23:59Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-14T18:33:44Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-14T18:37:39Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2025-07-14T18:40:27Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-24T02:16:38Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-24T02:16:58Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-31T17:06:29Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-31T17:06:53Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-31T17:07:04Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-31T17:07:39Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-31T17:10:07Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-31T17:10:44Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-31T17:11:05Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-31T17:11:18Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-31T17:14:08Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-07-31T17:15:13Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-08-01T17:50:10Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "compulim",
+      "submitted_at": "2025-08-01T18:32:11Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-08-01T21:04:14Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/html2/basic/disableFileUpload.copilot.html.snap-1.png",
+    "__tests__/html2/basic/disableFileUpload.false.fluent.html.snap-1.png",
+    "__tests__/html2/basic/disableFileUpload.fluent.html.snap-1.png",
+    "__tests__/html2/basic/disableFileUpload.html.snap-1.png"
+  ]
+}
