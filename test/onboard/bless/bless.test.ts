@@ -106,7 +106,8 @@ test("an open conflict is offered before the section and blocks blessing when po
   const repo = await setup(t, openConflict);
   const result = await speak(repo, "1\n3\nbless\n");
   assert.equal(result.findings[0]?.code, "TN-BLESS-OPEN-CONFLICT");
-  assert.ok(result.text.indexOf("Conflict CF-1") < result.text.indexOf("Requirements ("));
+  assert.match(result.text, /Conflict CF-1/);
+  assert.doesNotMatch(result.text, /Requirements \(/);
   assert.equal((await state(repo))?.state, "draft");
 });
 
@@ -342,4 +343,27 @@ test("the log keeps one action per finished section and accounts for kept adopti
     ["requirements", "bless", { drafted: 2, kept: 1, edited: 1, adopted: 1, added: 0 }],
     ["design", "defer", { drafted: 1, kept: 1, edited: 0, adopted: 0, added: 0 }],
   ]);
+});
+
+test("conflict review uses the named heading and affects IDs, and requires a substantive edit", async (t) => {
+  const body = "## Requirements\n- R-1 Retry once. {origin: asked}\n- R-2 Store a receipt. {origin: asked}\n" +
+    "## Conflicts\n- [ ] CF-1 (section: Requirements) (affects: R-1) Sources disagree. | 1: retry twice";
+  const repo = await setup(t, body);
+  const result = await speak(repo, "1\n1\nR-2\nR-1\n", {
+    edit: async (file: string) => writeFile(file, (await raw(repo)).replace("Retry once.", "Retry  once.")),
+  });
+  assert.match(result.text, /Choose one of the listed options/);
+  assert.match(result.text, /Edit R-1/);
+  assert.equal(result.findings[0]?.code, "TN-BLESS-OPEN-CONFLICT");
+  assert.doesNotMatch(await raw(repo), /resolution:/i);
+});
+
+test("a checked conflict with uppercase Resolution is accepted without a new prompt", async (t) => {
+  const body = "## Requirements\n- R-1 Retry once. {origin: asked}\n" +
+    "## Conflicts\n- [x] CF-1 (section: Requirements) Sources disagree. | Resolution: retry once";
+  const repo = await setup(t, body);
+  const result = await speak(repo, "1\nbless\n");
+  assert.deepEqual(result.findings, []);
+  assert.equal(result.result?.blessed, 1);
+  assert.doesNotMatch(result.text, /Conflict CF-1/);
 });
