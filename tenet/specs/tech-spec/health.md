@@ -1,15 +1,16 @@
 ---
 tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.1", owner: ved}
 sections:
-  _preamble: {state: draft, digest: sha256:e9e00911c7e7d759579f632069baeb27cd2b19efc2bd34bf5a9abd04eb9862da, flags: []}
+  _preamble: {state: draft, digest: sha256:88fc1174684396e9aef88b5804c2b8413efc7ca80c278c65504a6ce258a95378, flags: []}
   1-health-schemas-and-inputs: {state: draft, digest: sha256:5c21e22ec45fef7c582a6d0cb9accb17c6ca6f11a26e113b0b21b441030643ca, flags: []}
   2-health-evaluation-and-tamper-routing-alg-16: {state: draft, digest: sha256:5f205349aa2de50888fa500949291d2dbfb71bad42df59ad5573cc2f510d7b02, flags: []}
+  3-touched-scope-and-rename-diff-mapper-alg-15: {state: draft, digest: sha256:e4429ad38a852a1944c049ff2801259ce50828c224f101d5f79d99334fba9a2c, flags: []}
 ---
 # Tenet technical specification: health indicators and ratchet
 
 > Level L2 · Version 0.1 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Split from `contracts.md`, `algorithms.md`, and `CP-0039` v6 (`L-0039`) under the rollover rule
 
-**Context card.** Core baseline-relative code-health schemas, inputs, and evaluation (`ALG-16`) for `R-175`, `R-176`, and `R-177`. Touched-scope diff mapping (`ALG-15`) lives in [algorithms.md](algorithms.md#alg-15); CI outcomes and waiver proof in [ci.md](ci.md). Advanced extensions (`R-178` durability, matrix shards, auto baseline tightening, merge atomicity, runner supervision, paired hunk enforcement) live in `CP-0060`–`CP-0065`.
+**Context card.** Core baseline-relative code-health schemas, inputs, touched-scope diff mapping (`ALG-15`), and evaluation (`ALG-16`) for `R-175`, `R-176`, and `R-177`; CI outcomes and waiver proof in [ci.md](ci.md). Extensions (`R-178`, matrix shards, auto baseline tightening, merge atomicity, runner supervision, paired hunk enforcement) live in `CP-0060`–`CP-0065`.
 
 ## 1. Health schemas and inputs
 
@@ -38,3 +39,13 @@ sections:
    - **3-way `R-103` tamper check:** `.tenet/health-baseline.json`, `tenet.yaml`, workflows, `CODEOWNERS`, **`.gitattributes`**, and `protect` `inputs[]` route to `protected-surfaces`; `ALG-09` weakening and suppressions matching `checks.<name>.suppression_patterns` route to `tests-not-weakened` / `health-tamper`; unattributed markers and mechanics emit `! Tamper watch:`.
    - **Owners & rolling `R-177` budget:** Closed owner IDs `sortAscii(unique(indicator.owner ? [indicator.owner] : check.owner ? [check.owner] : areas[area].owners))` (`TN-GATE-UNKNOWN` if empty/unmapped). Track rolling-30d counters deduplicated by `(work_id, indicator, fp_key)` / adjudicated `work_id` (`not_useful > 10%`, `waived`, `overrides`, `false_blocks > 2/100`) with `minimum_sample` (`20` changes / `10` findings).
    - **Dogfooding (outside `DEC-38` freeze, info-only):** Node `--experimental-test-coverage` LCOV (TypeScript source maps enabled), Biome complexity, and suite duration seed initial `.tenet/health-baseline.json` (`origin: observed`).
+
+## 3. Touched-scope and rename diff mapper (ALG-15)
+
+`src/specs/diff-mapper.ts` (replacing private diff parsers in `src/specs/touched.ts` and `src/reports/weakening.ts` for `ALG-08`, `ALG-09`, `ALG-14`, `CP-0036`, `CP-0039`).
+- **Inputs:** `(base_sha, tested_sha)`; computes `diff_base_sha = git merge-base base_sha tested_sha` and diffs `diff_base_sha..tested_sha`.
+- **Attribute and environment isolation:** invoke `git` with `GIT_CONFIG_NOSYSTEM=1`, empty global config, `GIT_ATTR_NOSYSTEM=1`, `-c core.quotepath=false -c core.attributesfile= -c diff.algorithm=myers -c diff.renames=true -c diff.renameLimit=1000 -c diff.mnemonicPrefix=false -c diff.noprefix=false -c diff.relative=false diff --no-ext-diff --no-textconv --no-color --text -M50%`. Overflowing `renameLimit` fails as `unknown`.
+- **Binary detection:** inspect raw blob bytes via `git cat-file --batch`; blobs containing `0x00` are `is_binary: true`, while all non-NUL blobs produce UTF-8 hunks regardless of `.gitattributes` `binary` or `-diff`.
+- **Scopes (`no 20-line bypass`):** `min_changed_lines` never skips `enforce` checks (`low_sample: true` advisory badge below `20`). `touched_files` and `area` (`enforce`-eligible) compare baseline-relative multiset counts within `(file_or_renamed_path, area, fp_key)` (`-M50%` credit only within equal `area`s, and count-based `max(0, current_ref[k] - allowed_counts[k])` on `referenced_paths[]`). `touched_lines` (always capped strictly at `advise` in core `CP-0039`) checks findings overlapping `[newStart, newEnd]` added/modified hunks plus `referenced_paths[]`, never triggering on unmodified shifted lines outside `-U0` hunks.
+
+Fixtures: `.gitattributes -diff` + deleted-test red-team case across Windows/macOS/Linux; hostile global gitconfig; `renameLimit` overflow; CRLF parity; cross-area rename.
