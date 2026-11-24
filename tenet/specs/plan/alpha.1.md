@@ -6,10 +6,10 @@
 
 **CP-0049 · Kernel schemas · R-010, R-173, R-179, R-180**
 1. *Needs:* Alpha.0; TS §3; C §§1, 11; evidence §1; K §§1–3.
-2. *Owns:* Kernel primitive, work, criteria, step assignment, result, loop and evidence payload schemas in `kit/schemas/`, `pkg/migrations/`, `test/schemas/kernel/`.
-3. *Exports:* Named schemas and `migratePacket(old) → {work, events, problems}`.
-4. *Behavior:* Validate minimal and full records. Preserve legacy identities and observed history. Create no inferred authority. Use only specified defaults. Leave originals intact.
-5. *Edge cases:* Unknown keys, extension keys, incomplete claims, duplicate history and repeat migration.
+2. *Owns:* `kit/schemas/{subject,actor,claim,evidence,decision,event,work,criteria,step-assignment,step-result,loop}.json` (`$defs` payloads inside `evidence.json`; onboarding keeps `assignment.json`), `pkg/migrations/`, `test/schemas/kernel/`.
+3. *Exports:* Named schemas (`…/schemas/0.1/<name>.json`) and `migratePacket(old) → {work, events, problems}`.
+4. *Behavior:* Validate minimal and full records. `evidence.json` conditionally validates `kind` payloads (`evidence §1`, rejecting unlocated non-incomplete `review` findings; `proof`/`simulation`/`differential` accepted as data). `loop.json` validates structure (`steps` default `20`, all 3 `route.on` branches); cross-step graph rules stay in `check --pack`. `migratePacket` emits deterministic Crockford-Base32 ULIDs (`48-bit ms + 80-bit sha256(rfc8785({work, index, entry}))`), `problems` as `finding.json`, preserves legacy identities/history (including `standard` lane and duplicates), creates no inferred authority, leaves originals intact.
+5. *Edge cases:* Unknown keys, `^x-` extensions, incomplete claims, duplicate history, malformed entries and repeat migration.
 6. *Out of scope:* Evaluation, signing and execution. Reserve proof, simulation and differential names until their methods ship.
 7. *Fixtures:* `test/schemas/kernel/<schema>/` with at least two positive and three negative inputs each, plus legacy and migrated packets.
 8. *Proving:* `npm test -- test/schemas/kernel`. Named invalid fixtures fail as expected. All current packet files migrate and validate twice with identical output.

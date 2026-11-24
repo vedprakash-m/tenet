@@ -1,0 +1,91 @@
+{
+  "work": {
+    "schema_version": 1,
+    "id": "CP-0049",
+    "title": "Kernel schemas",
+    "type": "feature",
+    "lane": "careful",
+    "priority": "standard",
+    "due": null,
+    "levels": [
+      "L3",
+      "L4"
+    ],
+    "serves": [
+      "V-V4",
+      "V-P2"
+    ],
+    "implements": [
+      "R-010",
+      "R-173"
+    ],
+    "milestone": "M1",
+    "source": "specs/plan.md",
+    "blocked_by": [
+      "CP-0052",
+      "CP-0053"
+    ],
+    "unblocks": [
+      "CP-0007"
+    ],
+    "candidate": null,
+    "appetite": {
+      "agent_hours": 6,
+      "sessions": 4
+    },
+    "spent": {
+      "agent_hours": 0,
+      "sessions": 0,
+      "owner_minutes": 0
+    },
+    "owner_role": null,
+    "claimed_by": null
+  },
+  "events": [
+    {
+      "id": "01M83T4CM0JCPZ0TWQNZ3F0GXV",
+      "prev": [],
+      "type": "work.created",
+      "work": "CP-0049",
+      "time": "2026-11-23T09:00:00Z",
+      "by": "Ved",
+      "data": {
+        "title": "Kernel schemas",
+        "type": "feature",
+        "lane": "careful",
+        "station": "intake",
+        "reason": "split from CP-0004"
+      }
+    },
+    {
+      "id": "01M83T4CM05XZB6V3JTW4QK992",
+      "prev": [
+        "01M83T4CM0JCPZ0TWQNZ3F0GXV"
+      ],
+      "type": "work.moved",
+      "work": "CP-0049",
+      "time": "2026-11-23T09:00:00Z",
+      "by": "Ved",
+      "data": {
+        "from": "intake",
+        "station": "triage",
+        "lane": "standard"
+      }
+    },
+    {
+      "id": "01M83T4CM0DM3SWPMZY6MXKANC",
+      "prev": [
+        "01M83T4CM05XZB6V3JTW4QK992"
+      ],
+      "type": "work.status",
+      "work": "CP-0049",
+      "time": "2026-11-23T09:00:00Z",
+      "by": "Ved",
+      "data": {
+        "status": "parked",
+        "reason": "revisit when M0 closes"
+      }
+    }
+  ],
+  "problems": []
+}
