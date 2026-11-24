@@ -25,7 +25,7 @@ sections:
     flags: []
   4-requirements:
     state: draft
-    digest: sha256:b561967195be157f63819a354ce1b783e366ad8ad9ebe822e11c0e815251ab84
+    digest: sha256:cd9958da9b1f9fc4ddacc44bd3e6cd564e6a83ae90747cee42656eca1444c0ed
     flags: []
   5-versioning-and-release-policy:
     state: draft
@@ -113,7 +113,7 @@ No result says "proven", "authorized" or "automatic" beyond its class. **Blessin
 | R-220 | **Living specifications.** Each pull request shows the requirements and spec sections it affects; agents propose deltas when code shows a spec is wrong or incomplete; a declared gardening loop (run by any engine) proposes fixes for sections with changed sources, broken references and blessed requirements with no proving cases; the board shows this spec debt | V-P18, V-P9 | 0.1.0; 0.1.x | advisory | documented | doc: tenet/ledger/L-0016-practicality-round-applied.md#decision-or-event |
 | R-008 | Every document type has a token budget and rollover (archive, then compact or split); `tenet check` warns at 90% and `tenet split` proposes the rollover; only CI errors, on a change that takes a document over budget; assignments carry sections, not whole files | V-P7, V-V2 | 0.1.0; M2 | detected | asked | |
 | R-011 | A template for every level and document type the standard and shipped packs define, each with a worked example and a completeness checklist | V-V3, V-P18 | 0.1.0 | — | asked | |
-| R-033 | `tenet check` runs structure, traceability and citation (R-210), change-control (R-209), section-state, event, alias and budget checks; findings block only for rules in `enforce` mode (tooling R-215); `tenet fix` repairs the mechanical ones | V-P2, V-M2 | 0.1.0 | detected | asked | |
+| R-033 | `tenet check` runs structure, traceability and citation (R-210), change-control (R-209), section-state, event, alias and budget checks; direct `tenet check` treats broken citations (`TN-CITE-*`) as `error`, while `--ci --base` blocks only for rules in `enforce` mode (tooling R-215); `tenet fix` repairs the mechanical ones | V-P2, V-M2 | 0.1.0 | detected | asked | |
 | R-036 | When work and its specifications conflict, or a stop threshold is met (sessions, repeated failure, appetite, cost or tokens; for a pull request, its card failing on `stop.failing_evaluations` consecutive evaluations, default 3), the work stops; the escalation report quotes the conflicting sentences with their IDs and names the lowest level that can resolve it; `tenet escalate` writes it | V-P6, V-P18 | 0.1.0; 0.1.x | detected | asked | |
 
 ### 4.1 The kernel
