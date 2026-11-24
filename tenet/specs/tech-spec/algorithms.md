@@ -101,6 +101,7 @@ Fixtures: every arrival order of the same set gives one state; a resolution deli
   - binary pass rules: all must pass
   - baseline-relative: the smallest tolerance
   - probabilistic: the higher rate and the larger run count
+  - health scopes: later layers never narrow `scope_globs` or add `exclude_globs` (`TN-POLICY-LOOSEN`)
   - different pass-rule kinds: incompatible
 
 ## ALG-07
@@ -154,22 +155,7 @@ For `not_checked`: map changed code extensions at `head` (`.rb` ruby, `.cs` csha
 
 ## ALG-10
 
-**Context selection.**
-- **Inputs:** `paths`, `ids`, `query`, `include_drafts`, `budget_tokens` (default 4,000).
-- **Candidates:** blessed sections, using their blessed copies.
-- **Groups, in order:**
-  1. **global**: requirements marked `scope: global`, within a reserved 25% of the budget
-  2. requirements whose ID is named
-  3. requirements citing a path equal to, inside or containing an input path
-  4. **`applies_to`**: prose sections whose `applies_to` matches an input path (`id: "<doc>#<slug>"`)
-  5. **`query`**: requirements (`text`) or sections (`heading`) containing the query, case-insensitive
-- **Ordering:** within a group, by level (L0, L1, L2) then numeric/ASCII ID; duplicates are dropped.
-- **Budget:** `tokens(s) = Math.ceil(s.length / 4)` (`budget_tokens <= 0` refuses with `TN-USAGE-BUDGET`). Walk candidates in group order: add whole items while `used + tokens(item.text) <= budget_tokens` (global rules beyond their 25% share still precede Groups 2–5); if a non-explicit item doesn't fit, push its `id` to `omitted`, set `truncated = true`, and keep scanning smaller items. An item named in `ids` always comes back whole (never `omitted`), clamping `used` at `budget_tokens` and setting `over_budget: true` if `tokens(item.text) > budget_tokens` (`truncated` is `omitted.length > 0`). Then build `index` from remaining blessed requirements not in `blessed` or `omitted` (`title: item.text.slice(0, 80)`, cost `tokens(id + " " + title)`) up to `Math.floor(budget_tokens * 0.20)`.
-- **Each item carries** its `flags`, single-string `owner` (joining multiple CODEOWNERS with `", "`) and `reason` (`global|id|path|applies_to|query`).
-- **Drafts:** `include_drafts` populates `drafts` with `draft`/`deferred` sections (never `rejected`); a blessed copy failing `ALG-03` integrity is excluded from `blessed` and served in `drafts` (`integrity_failed: true`).
-- **No inputs:** group 1 plus the index.
-
-Fixtures: a global rule survives a budget filled by one long local requirement; the omitted IDs match between CLI and MCP.
+**Context selection:** in [mcp.md §2](mcp.md#2-context-selection-alg-10), moved under the rollover rule.
 
 ## ALG-11
 
@@ -192,3 +178,17 @@ Fixtures: a global rule survives a budget filled by one long local requirement; 
 4. `same-area`: cites a file sharing the same area key (`codeowners:<pattern>` from last matching rule in first existing `.github/CODEOWNERS`, `CODEOWNERS`, `docs/CODEOWNERS` at head, else `dir:<top-level>` or `dir:.`) as a changed file, sorted by numeric ID then capped at 10, shown collapsed as "may be affected"
 
 Fixtures: changing `src/retry.ts:42` → `cited-code-changed`; sibling file → `same-area`.
+
+## ALG-15
+
+**Touched-scope and rename diff mapper** (`src/specs/diff-mapper.ts`, replacing private diff parsers in `src/specs/touched.ts` and `src/reports/weakening.ts` for `ALG-08`, `ALG-09`, `ALG-14`, `CP-0036`, `CP-0039`).
+- **Inputs:** `(base_sha, tested_sha)`; computes `diff_base_sha = git merge-base base_sha tested_sha` and diffs `diff_base_sha..tested_sha`.
+- **Attribute and environment isolation:** invoke `git` with `GIT_CONFIG_NOSYSTEM=1`, empty global config, `GIT_ATTR_NOSYSTEM=1`, `-c core.quotepath=false -c core.attributesfile= -c diff.algorithm=myers -c diff.renames=true -c diff.renameLimit=1000 -c diff.mnemonicPrefix=false -c diff.noprefix=false -c diff.relative=false diff --no-ext-diff --no-textconv --no-color --text -M50%`. Overflowing `renameLimit` fails as `unknown`.
+- **Binary detection:** inspect raw blob bytes via `git cat-file --batch`; blobs containing `0x00` are `is_binary: true`, while all non-NUL blobs produce UTF-8 hunks regardless of `.gitattributes` `binary` or `-diff`.
+- **Scopes (`no 20-line bypass`):** `min_changed_lines` never skips `enforce` checks (`low_sample: true` advisory badge below `20`). `touched_files` and `area` (`enforce`-eligible) compare baseline-relative multiset counts within `(file_or_renamed_path, area, fp_key)` (`-M50%` credit only within equal `area`s, and count-based `max(0, current_ref[k] - allowed_counts[k])` on `referenced_paths[]`). `touched_lines` (always capped strictly at `advise` in core `CP-0039`) checks findings overlapping `[newStart, newEnd]` added/modified hunks plus `referenced_paths[]`, never triggering on unmodified shifted lines outside `-U0` hunks.
+
+Fixtures: `.gitattributes -diff` + deleted-test red-team case across Windows/macOS/Linux; hostile global gitconfig; `renameLimit` overflow; CRLF parity; cross-area rename.
+
+## ALG-16
+
+**Health evaluation, architecture SCC and tamper routing:** in [health.md §2](health.md#2-health-evaluation-and-tamper-routing-alg-16), moved under the rollover rule.
