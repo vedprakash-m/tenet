@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { test, type TestContext } from "node:test";
@@ -9,6 +9,7 @@ import { run } from "../../../dist/cli.js";
 import { runBless } from "../../../dist/onboard/bless.js";
 import { onboardingCard } from "../../../dist/onboard/card.js";
 import { parseDoc } from "../../../dist/specs/parse.js";
+import { writeAtomic } from "../../../dist/core/fs.js";
 import { validate } from "../../../dist/core/schema.js";
 import { fakeTty } from "../../helpers/fakeTty.ts";
 import { tmpRepo, type TemporaryRepository } from "../../helpers/tmpRepo.ts";
@@ -106,7 +107,8 @@ test("an open conflict is offered before the section and blocks blessing when po
   const repo = await setup(t, openConflict);
   const result = await speak(repo, "1\n3\nbless\n");
   assert.equal(result.findings[0]?.code, "TN-BLESS-OPEN-CONFLICT");
-  assert.ok(result.text.indexOf("Conflict CF-1") < result.text.indexOf("Requirements ("));
+  assert.match(result.text, /Conflict CF-1/);
+  assert.doesNotMatch(result.text, /Requirements \(/);
   assert.equal((await state(repo))?.state, "draft");
 });
 
@@ -144,7 +146,7 @@ test("an interruption preserves finished sections and the matching log entry", a
   const lines = (await raw(repo, log)).trim().split("\n");
   assert.equal(lines.length, 1);
   assert.deepEqual(JSON.parse(lines[0]), {
-    doc: filename, section: "requirements", by: "ved", at: date, minutes: 0,
+    doc: filename, section: "requirements", action: "bless", by: "ved", at: date, minutes: 0,
     statements: { drafted: null, kept: null, edited: null, adopted: null, added: null },
   });
   assert.match(result.text, /git commit -m "Bless specifications"/);
@@ -254,8 +256,9 @@ test("onboard --card counts sources and origins, records the draft commit, and r
   assert.equal(await run(["--json", "onboard", "--inventory-only"], { cwd: repo.path, ...io, checkEnvironment: false }), 0);
   await repo.write(filename, spec(openConflict));
   const draft = commit(repo, "draft specification");
-  const card = await onboardingCard({ cwd: repo.path, pr: 12 });
-  assert.equal(card, [
+  const card = await onboardingCard({ cwd: repo.path, pr: 12, format: "result" });
+  assert.equal(card.drafted_at_rev, draft);
+  assert.equal(card.card, [
     `### Tenet onboarding · drafted from ${inventoryRef.slice(0, 7)} · nothing is in force until you bless it`,
     "Read: 1 source file, 0 test files, 0 instruction files · Skipped: none",
     "✓ all 1 citations checked against the code",
@@ -268,12 +271,23 @@ test("onboard --card counts sources and origins, records the draft commit, and r
   ].join("\n"));
   const marked = await raw(repo);
   assert.equal((parseDoc(filename, marked).front?.tenet as { drafted_at_rev: string } | undefined)?.drafted_at_rev, draft);
-  assert.equal(await onboardingCard({ cwd: repo.path, pr: 12 }), card);
+  assert.deepEqual(await onboardingCard({ cwd: repo.path, pr: 12, format: "result" }), card);
+  assert.equal(await onboardingCard({ cwd: repo.path, pr: 12 }), card.card);
   assert.equal(await raw(repo), marked);
   assert.equal(repo.git(["rev-parse", "HEAD"]).trim(), draft);
   const output = fakeTty();
-  assert.equal(await run(["--json", "onboard", "--card"], { cwd: repo.path, ...output, checkEnvironment: false }), 0);
-  assert.match(JSON.parse(output.stdout.text).result, /gh pr checkout <n>/);
+  assert.equal(await run(["onboard", "--card"], { cwd: repo.path, ...output, checkEnvironment: false }), 0);
+  assert.match(output.stdout.text, /gh pr checkout <n>/);
+  const result = await onboardingCard({ cwd: repo.path, format: "result" });
+  assert.deepEqual(Object.keys(result).sort(), ["card", "drafted_at_rev"]);
+  assert.equal(result.drafted_at_rev, draft);
+  assert.match(result.card, /gh pr checkout <n>/);
+  const ajv = new Ajv2020();
+  for (const key of ["inventory", "assignment", "finding"]) {
+    ajv.addSchema(JSON.parse(await readFile(`kit/schemas/${key}.json`, "utf8")));
+  }
+  const validateResult = ajv.compile(JSON.parse(await readFile("kit/schemas/results/onboard.json", "utf8")));
+  assert.equal(validateResult(result), true, JSON.stringify(validateResult.errors));
 });
 
 test("onboarding card refuses to pin a draft that differs from HEAD", async (t) => {
@@ -293,4 +307,154 @@ test("onboard --card explains that a draft is needed before it writes anything",
   assert.equal(await run(["--json", "onboard", "--card"], { cwd: repo.path, ...request, checkEnvironment: false }), 2);
   assert.match(JSON.parse(request.stdout.text).errors[0].message, /commit a specification draft/);
   await assert.rejects(raw(repo), { code: "ENOENT" });
+});
+
+test("bless discovers the one-file intent only when specs.documents is empty or omitted", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  await repo.write("tenet/specs/prd.md", spec("## Design\nKeep a local record."));
+  await repo.write("tenet.yaml", config.replace("path: intent.md", "path: specs/prd.md"));
+  const explicit = await speak(repo, "1\nbless\n");
+  assert.deepEqual(explicit.findings, []);
+  assert.equal(explicit.result?.blessed, 1);
+  assert.equal((await state(repo))?.state, "draft");
+  await repo.write("tenet.yaml", config.split("specs:")[0]);
+  const result = await speak(repo, "1\nbless\n");
+  assert.deepEqual(result.findings, []);
+  assert.equal(result.result?.blessed, 1);
+  assert.match(await raw(repo, copy), /Retry once/);
+});
+
+test("self blessing offers configured IDs and falls back to ownersFor", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  await repo.write("CODEOWNERS", "/tenet/intent.md @platform\n");
+  await repo.write("tenet.yaml", config.split("owners:")[0]);
+  const result = await speak(repo, "1\nbless\n");
+  assert.deepEqual(result.findings, []);
+  assert.match(result.text, /Who is blessing\? 1\. @platform/);
+  assert.equal(JSON.parse(await raw(repo, log)).by, "@platform");
+});
+
+test("re-blessing increments a legacy suffix or appends one when absent", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  await repo.write(filename, (await raw(repo)).replace('"0.1"', '"v1"'));
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  assert.match(await raw(repo), /version: "?v1"?,/);
+  await repo.write(filename, (await raw(repo)).replace("Retry once.", "Retry twice."));
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  assert.match(await raw(repo), /version: "?v1\.1"?,/);
+  await repo.write(filename, (await raw(repo)).replace("Retry twice.", "Retry again."));
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  assert.match(await raw(repo), /version: "?v1\.2"?,/);
+});
+
+test("the log keeps one action per finished section and accounts for kept adoptions and deletions", async (t) => {
+  const draftBody = "## Requirements\n- R-1 Retry once. {origin: inferred}\n- R-2 Keep a receipt. {origin: asked}\n\n## Design\nKeep local state.";
+  const repo = await setup(t, draftBody);
+  const draft = repo.git(["rev-parse", "HEAD"]).trim();
+  await repo.write(filename, spec(draftBody.replace("- R-2 Keep a receipt. {origin: asked}\n", ""), `, drafted_at_rev: "${draft}"`));
+  const result = await speak(repo, "1\nbless\nadopt\nlater\n");
+  assert.deepEqual(result.findings, []);
+  assert.deepEqual(result.result, { blessed: 1, confirmed: 0, rejected: 0, deferred: 1, minutes: 0 });
+  const rows = (await raw(repo, log)).trim().split("\n").map((line) => JSON.parse(line));
+  assert.deepEqual(rows.map(({ section, action, statements }) => [section, action, statements]), [
+    ["requirements", "bless", { drafted: 2, kept: 1, edited: 1, adopted: 1, added: 0 }],
+    ["design", "defer", { drafted: 1, kept: 1, edited: 0, adopted: 0, added: 0 }],
+  ]);
+});
+
+test("conflict review uses the named heading and affects IDs, and requires a substantive edit", async (t) => {
+  const body = "## Requirements\n- R-1 Retry once. {origin: asked}\n- R-2 Store a receipt. {origin: asked}\n" +
+    "## Conflicts\n- [ ] CF-1 (section: Requirements) (affects: R-1) Sources disagree. | 1: retry twice";
+  const repo = await setup(t, body);
+  const result = await speak(repo, "1\n1\nR-2\nR-1\n", {
+    edit: async (file: string) => writeFile(file, (await raw(repo)).replace("Retry once.", "Retry  once.")),
+  });
+  assert.match(result.text, /Choose one of the listed options/);
+  assert.match(result.text, /Edit R-1/);
+  assert.equal(result.findings[0]?.code, "TN-BLESS-OPEN-CONFLICT");
+  assert.doesNotMatch(await raw(repo), /resolution:/i);
+});
+
+test("a checked conflict with uppercase Resolution is accepted without a new prompt", async (t) => {
+  const body = "## Requirements\n- R-1 Retry once. {origin: asked}\n" +
+    "## Conflicts\n- [x] CF-1 (section: Requirements) Sources disagree. | Resolution: retry once";
+  const repo = await setup(t, body);
+  const result = await speak(repo, "1\nbless\n");
+  assert.deepEqual(result.findings, []);
+  assert.equal(result.result?.blessed, 1);
+  assert.doesNotMatch(result.text, /Conflict CF-1/);
+});
+
+test("blessed copy names preserve case and reject slash versus double-underscore collisions", async (t) => {
+  const repo = await setup(t);
+  await repo.write("tenet/Spec/Intent.md", spec("## Requirements\n- R-1 Keep records. {origin: asked}"));
+  await repo.write("tenet/Spec__Intent.md", spec("## Requirements\n- R-2 Keep receipts. {origin: asked}"));
+  await repo.write("tenet.yaml", config.replace("path: intent.md", "path: Spec/Intent.md"));
+  const result = await speak(repo, "1\nbless\n");
+  assert.equal(result.findings[0]?.code, "TN-SCHEMA");
+  assert.equal(result.result?.blessed, 0);
+  await unlink(path.join(repo.path, "tenet/Spec__Intent.md"));
+  assert.equal((await speak(repo, "1\nbless\n")).result?.blessed, 1);
+  assert.match(await raw(repo, "tenet/blessed/tenet__Spec__Intent.md/requirements.md"), /Keep records/);
+});
+
+test("confirm reports a missing anchor source and preserves both prior files", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  await repo.write("src/retry.ts", "const times = 1;  \t\r\n");
+  await speak(repo, "1\nbless\n");
+  const before = await raw(repo, copy);
+  const sidecar = await raw(repo, `${copy}.anchors.json`);
+  assert.deepEqual(JSON.parse(sidecar), { "src/retry.ts:1": "const times = 1;" });
+  await unlink(path.join(repo.path, "src/retry.ts"));
+  const result = await speak(repo, "1\nconfirm\ny\n");
+  assert.match(result.text, /New src\/retry.ts:1:\n\(unavailable\)/);
+  assert.equal(result.findings[0]?.code, "TN-CITE-FILE");
+  assert.equal(await raw(repo, copy), before);
+  assert.equal(await raw(repo, `${copy}.anchors.json`), sidecar);
+});
+
+test("a concurrent spec edit during the action survives rollback of copy and sidecar", async (t) => {
+  const repo = await setup(t, `## Requirements\n${requirement}`);
+  const changed = (await raw(repo)).replace("Retry once.", "Retry at most once.");
+  const result = await speak(repo, "1\nbless\n", {
+    write: async (file: string, bytes: string) => {
+      await writeAtomic(file, bytes);
+      if (file.endsWith(".anchors.json")) await repo.write(filename, changed);
+    },
+  });
+  assert.equal(result.findings[0]?.code, "TN-SUBJ-DIRTY");
+  assert.equal(await raw(repo), changed);
+  for (const file of [copy, `${copy}.anchors.json`, log]) await assert.rejects(raw(repo, file), { code: "ENOENT" });
+});
+
+test("onboarding card ignores citations in special sections and omits resolved conflicts", async (t) => {
+  const repo = await setup(t);
+  assert.equal(await run(["--json", "onboard"], { cwd: repo.path, ...fakeTty(), checkEnvironment: false }), 0);
+  await repo.write(filename, spec(`## Requirements\n${requirement}\n## Open questions\n- R-2 Legacy. {origin: observed; cites: missing.ts:1}\n## Conflicts\n- [x] CF-1 Settled. | Resolution: retry once`));
+  const stamp = commit(repo, "draft");
+  const first = await onboardingCard({ cwd: repo.path, format: "result" });
+  assert.match(first.card, /all 1 citations checked/);
+  assert.doesNotMatch(first.card, /missing\.ts|Conflicts \(settle/);
+  commit(repo, "record stamp");
+  assert.equal((await onboardingCard({ cwd: repo.path, format: "result" })).drafted_at_rev, stamp);
+});
+
+test("onboarding card rolls back prior draft stamps when a later document write fails", async (t) => {
+  const repo = await setup(t);
+  assert.equal(await run(["--json", "onboard", "--layout", "separate"], { cwd: repo.path, ...fakeTty(), checkEnvironment: false }), 0);
+  const first = "tenet/vision.md";
+  const second = "tenet/specs/prd.md";
+  const draft = spec(`## Requirements\n${requirement}`);
+  await repo.write(first, draft);
+  await repo.write(second, draft);
+  commit(repo, "draft two documents");
+  let calls = 0;
+  await assert.rejects(onboardingCard({ cwd: repo.path, format: "result" }, async (file, bytes) => {
+    calls++;
+    if (file.endsWith("prd.md")) throw new Error("second stamp failed");
+    await writeAtomic(file, bytes);
+  }), /second stamp failed/);
+  assert.equal(calls, 2);
+  assert.equal(await raw(repo, first), draft);
+  assert.equal(await raw(repo, second), draft);
 });

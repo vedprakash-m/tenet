@@ -51,8 +51,22 @@
       ]
     },
     {
-      "type": "string",
-      "minLength": 1
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "card": {
+          "type": "string",
+          "minLength": 1
+        },
+        "drafted_at_rev": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{6,64}$"
+        }
+      },
+      "required": [
+        "card",
+        "drafted_at_rev"
+      ]
     }
   ]
 }
