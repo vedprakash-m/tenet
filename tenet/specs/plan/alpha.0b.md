@@ -1,3 +1,13 @@
+---
+tenet: {spec: 1, doc: plan, level: L2, version: "0.13", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:7b678df7474457c6cd816491b47146603e95d0c2a3f45a302ad825229323fdf0, flags: []}
+  a0-4-continued: {state: draft, digest: sha256:d0fd6e2e336daabdb351c3f620ce73335866ea351316d5073d4ffed4a8ec81c0, flags: []}
+  a0-5: {state: draft, digest: sha256:79161f3e2fc905002e560b6ca6050eef9a76efe28419a84199205ac0d90a3503, flags: []}
+  a0-6: {state: draft, digest: sha256:682f35e4f6ba351a3c14a70b7579ed12e03a65833ea57a652ce4db6d6536ed1b, flags: []}
+  a0-7: {state: draft, digest: sha256:0d2906602e2e9dacabe917b1f7b94c12be83f0a56a1b258fbe09f395e9a39703, flags: []}
+  a0-8: {state: draft, digest: sha256:58f7bf19755bd9feec2c573c7def194880a51a37070a1627409e8911f86d737c, flags: []}
+---
 # Tenet plan: 0.1.0-alpha.0 build contracts, waves A0-5 to A0-8
 
 > Level L2 · Version 0.13 · Part of [plan.md](../plan.md) · Status: **draft, awaiting the Owner's approval; frozen by CP-0015** · Budget: 6,000 tokens · Split from `plan/alpha.0.md` under the rollover rule (L-0027)
