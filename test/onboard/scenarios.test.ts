@@ -26,6 +26,8 @@ import { fakeTty } from "../helpers/fakeTty.ts";
 
 const suite = fileURLToPath(new URL("../../pkg/conformance/scenarios/", import.meta.url));
 const cli = fileURLToPath(new URL("../../dist/cli.js", import.meta.url));
+const { version: packageVersion } = JSON.parse(await readFile(new URL("../../package.json", import.meta.url), "utf8"));
+assert.ok(typeof packageVersion === "string" && packageVersion.length > 0, "Missing package version");
 const at = "2026-11-23T12:00:00Z";
 const now = () => new Date(at);
 const gitEnv = {
@@ -366,7 +368,7 @@ for (const name of names) {
   test(name, async (t) => {
     const dir = path.join(suite, name);
     const source = path.join(dir, "before");
-    const readText = (file: string) => readFile(path.join(dir, file), "utf8");
+    const readText = async (file: string) => (await readFile(path.join(dir, file), "utf8")).replaceAll("{{version}}", packageVersion);
     const readGolden = async (file: string) => JSON.parse(await readText(file));
     const scenario: Scenario = await readGolden("steps.json");
     assert.equal(scenario.schema, 1);
@@ -383,6 +385,7 @@ for (const name of names) {
       const expected = step.expectedJson ? await readGolden(step.expectedJson) : undefined;
       const expectedCard = step.expectedCard ? await readText(step.expectedCard) : undefined;
       let actual: unknown;
+      let expectedRefs = refs;
       try {
         switch (step.kind) {
           case "git": git(cwd, ...step.args); break;
@@ -428,8 +431,11 @@ for (const name of names) {
               const rawCard = (result.json?.result as { card?: string } | undefined)?.card;
               const revision = git(cwd, "rev-parse", "HEAD");
               bindRevisionFields(expected, actual, revision, refs);
-              const short = new Map([...refs].map(([gold, oid]) => [gold.slice(0, 7), oid.slice(0, 7)]));
-              assert.equal(rawCard, replaceRefs(expectedCard, short));
+              expectedRefs = new Map(refs);
+              for (const [gold, oid] of refs) {
+                expectedRefs.set(`drafted from ${gold.slice(0, 7)}`, `drafted from ${oid.slice(0, 7)}`);
+              }
+              assert.equal(rawCard, replaceRefs(expectedCard, expectedRefs));
             }
             break;
           }
@@ -458,7 +464,7 @@ for (const name of names) {
           if (actual && typeof actual === "object" && /"(revision|drafted_at_rev|main)"/.test(JSON.stringify(expected))) {
             bindRevisionFields(expected, actual, git(cwd, "rev-parse", "HEAD"), refs);
           }
-          assert.deepEqual(actual, replaceRefs(expected, refs));
+          assert.deepEqual(actual, replaceRefs(expected, expectedRefs));
         }
       } catch (error) {
         throw new Error(`${step.id} (${step.kind}): ${error instanceof Error ? error.message : String(error)}`, { cause: error });
