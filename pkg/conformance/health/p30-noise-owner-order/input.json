@@ -1,0 +1,385 @@
+{
+  "operation": "health-counters-pair",
+  "runs": [
+    {
+      "operation": "health-counters",
+      "as_of": "2026-11-24T00:00:00Z",
+      "area_owners": [
+        "payments",
+        "alternate"
+      ],
+      "changes": [
+        {
+          "work_id": "w0",
+          "indicator": "payment-health",
+          "fp_key": "key-0",
+          "evaluation_id": "e0",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": true,
+          "adjudicated_false_block": true
+        },
+        {
+          "work_id": "w1",
+          "indicator": "payment-health",
+          "fp_key": "key-1",
+          "evaluation_id": "e1",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": true,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w2",
+          "indicator": "payment-health",
+          "fp_key": "key-2",
+          "evaluation_id": "e2",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": true,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w3",
+          "indicator": "payment-health",
+          "fp_key": "key-3",
+          "evaluation_id": "e3",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w4",
+          "indicator": "payment-health",
+          "fp_key": "key-4",
+          "evaluation_id": "e4",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w5",
+          "indicator": "payment-health",
+          "fp_key": "key-5",
+          "evaluation_id": "e5",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w6",
+          "indicator": "payment-health",
+          "fp_key": "key-6",
+          "evaluation_id": "e6",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w7",
+          "indicator": "payment-health",
+          "fp_key": "key-7",
+          "evaluation_id": "e7",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w8",
+          "indicator": "payment-health",
+          "fp_key": "key-8",
+          "evaluation_id": "e8",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w9",
+          "indicator": "payment-health",
+          "fp_key": "key-9",
+          "evaluation_id": "e9",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w10",
+          "indicator": "payment-health",
+          "fp_key": "key-10",
+          "evaluation_id": "e10",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w11",
+          "indicator": "payment-health",
+          "fp_key": "key-11",
+          "evaluation_id": "e11",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w12",
+          "indicator": "payment-health",
+          "fp_key": "key-12",
+          "evaluation_id": "e12",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w13",
+          "indicator": "payment-health",
+          "fp_key": "key-13",
+          "evaluation_id": "e13",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w14",
+          "indicator": "payment-health",
+          "fp_key": "key-14",
+          "evaluation_id": "e14",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w15",
+          "indicator": "payment-health",
+          "fp_key": "key-15",
+          "evaluation_id": "e15",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w16",
+          "indicator": "payment-health",
+          "fp_key": "key-16",
+          "evaluation_id": "e16",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w17",
+          "indicator": "payment-health",
+          "fp_key": "key-17",
+          "evaluation_id": "e17",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w18",
+          "indicator": "payment-health",
+          "fp_key": "key-18",
+          "evaluation_id": "e18",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w19",
+          "indicator": "payment-health",
+          "fp_key": "key-19",
+          "evaluation_id": "e19",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        }
+      ]
+    },
+    {
+      "operation": "health-counters",
+      "as_of": "2026-11-24T00:00:00Z",
+      "area_owners": [
+        "alternate",
+        "payments"
+      ],
+      "changes": [
+        {
+          "work_id": "w0",
+          "indicator": "payment-health",
+          "fp_key": "key-0",
+          "evaluation_id": "e0",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": true,
+          "adjudicated_false_block": true
+        },
+        {
+          "work_id": "w1",
+          "indicator": "payment-health",
+          "fp_key": "key-1",
+          "evaluation_id": "e1",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": true,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w2",
+          "indicator": "payment-health",
+          "fp_key": "key-2",
+          "evaluation_id": "e2",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": true,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w3",
+          "indicator": "payment-health",
+          "fp_key": "key-3",
+          "evaluation_id": "e3",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w4",
+          "indicator": "payment-health",
+          "fp_key": "key-4",
+          "evaluation_id": "e4",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w5",
+          "indicator": "payment-health",
+          "fp_key": "key-5",
+          "evaluation_id": "e5",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w6",
+          "indicator": "payment-health",
+          "fp_key": "key-6",
+          "evaluation_id": "e6",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w7",
+          "indicator": "payment-health",
+          "fp_key": "key-7",
+          "evaluation_id": "e7",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w8",
+          "indicator": "payment-health",
+          "fp_key": "key-8",
+          "evaluation_id": "e8",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w9",
+          "indicator": "payment-health",
+          "fp_key": "key-9",
+          "evaluation_id": "e9",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w10",
+          "indicator": "payment-health",
+          "fp_key": "key-10",
+          "evaluation_id": "e10",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w11",
+          "indicator": "payment-health",
+          "fp_key": "key-11",
+          "evaluation_id": "e11",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w12",
+          "indicator": "payment-health",
+          "fp_key": "key-12",
+          "evaluation_id": "e12",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w13",
+          "indicator": "payment-health",
+          "fp_key": "key-13",
+          "evaluation_id": "e13",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w14",
+          "indicator": "payment-health",
+          "fp_key": "key-14",
+          "evaluation_id": "e14",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w15",
+          "indicator": "payment-health",
+          "fp_key": "key-15",
+          "evaluation_id": "e15",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w16",
+          "indicator": "payment-health",
+          "fp_key": "key-16",
+          "evaluation_id": "e16",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w17",
+          "indicator": "payment-health",
+          "fp_key": "key-17",
+          "evaluation_id": "e17",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w18",
+          "indicator": "payment-health",
+          "fp_key": "key-18",
+          "evaluation_id": "e18",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        },
+        {
+          "work_id": "w19",
+          "indicator": "payment-health",
+          "fp_key": "key-19",
+          "evaluation_id": "e19",
+          "surfaced_at": "2026-11-20T00:00:00Z",
+          "not_useful": false,
+          "adjudicated_false_block": false
+        }
+      ]
+    }
+  ]
+}

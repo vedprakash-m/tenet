@@ -1,0 +1,13 @@
+{
+  "operation": "render-health-card",
+  "health": [
+    {
+      "area": "payments",
+      "indicator": "payment-health",
+      "status": "regressed"
+    }
+  ],
+  "conclusion": "failure",
+  "budget": 60000,
+  "filler": "essential-over-limit"
+}

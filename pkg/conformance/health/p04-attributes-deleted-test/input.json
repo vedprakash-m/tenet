@@ -1,0 +1,16 @@
+{
+  "operation": "map-diff",
+  "subject": {
+    "base": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "tested": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "repo": {
+    "base": {
+      ".gitattributes": "*.ts -diff\n",
+      "test/sample.test.ts": "test(\"kept [AB-1]\", () => {});\n"
+    },
+    "tested": {
+      ".gitattributes": "*.ts -diff\n"
+    }
+  }
+}

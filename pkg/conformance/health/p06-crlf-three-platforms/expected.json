@@ -1,0 +1,15 @@
+{
+  "paths": [
+    "src/payments/a.ts"
+  ],
+  "diff": [
+    [
+      {
+        "old_start": 2,
+        "old_count": 1,
+        "new_start": 2,
+        "new_count": 1
+      }
+    ]
+  ]
+}

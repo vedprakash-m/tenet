@@ -1,0 +1,29 @@
+{
+  "cyclicEdges": [
+    {
+      "kind": "cyclic_edge",
+      "rule_id": "r176-cycle",
+      "from_module": "A",
+      "to_module": "B"
+    },
+    {
+      "kind": "cyclic_edge",
+      "rule_id": "r176-cycle",
+      "from_module": "B",
+      "to_module": "A"
+    },
+    {
+      "kind": "cyclic_edge",
+      "rule_id": "r176-cycle",
+      "from_module": "B",
+      "to_module": "C"
+    },
+    {
+      "kind": "cyclic_edge",
+      "rule_id": "r176-cycle",
+      "from_module": "C",
+      "to_module": "B"
+    }
+  ],
+  "blocks": false
+}

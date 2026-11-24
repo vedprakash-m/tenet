@@ -1,0 +1,20 @@
+{
+  "operation": "map-diff",
+  "subject": {
+    "base": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "tested": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "repo": {
+    "base": {
+      "src/payments/a.ts": "a\r\nb\r\nc\r\n"
+    },
+    "tested": {
+      "src/payments/a.ts": "a\r\nB\r\nc\r\n"
+    },
+    "platforms": [
+      "win32",
+      "darwin",
+      "linux"
+    ]
+  }
+}
