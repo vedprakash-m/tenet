@@ -60,7 +60,7 @@
         },
         "drafted_at_rev": {
           "type": "string",
-          "pattern": "^[a-f0-9]{40,64}$"
+          "pattern": "^[a-fA-F0-9]{6,64}$"
         }
       },
       "required": [

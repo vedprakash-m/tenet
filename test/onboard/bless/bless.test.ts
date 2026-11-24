@@ -256,7 +256,7 @@ test("onboard --card counts sources and origins, records the draft commit, and r
   assert.equal(await run(["--json", "onboard", "--inventory-only"], { cwd: repo.path, ...io, checkEnvironment: false }), 0);
   await repo.write(filename, spec(openConflict));
   const draft = commit(repo, "draft specification");
-  const card = await onboardingCard({ cwd: repo.path, pr: 12 });
+  const card = await onboardingCard({ cwd: repo.path, pr: 12, format: "result" });
   assert.equal(card.drafted_at_rev, draft);
   assert.equal(card.card, [
     `### Tenet onboarding · drafted from ${inventoryRef.slice(0, 7)} · nothing is in force until you bless it`,
@@ -271,12 +271,14 @@ test("onboard --card counts sources and origins, records the draft commit, and r
   ].join("\n"));
   const marked = await raw(repo);
   assert.equal((parseDoc(filename, marked).front?.tenet as { drafted_at_rev: string } | undefined)?.drafted_at_rev, draft);
-  assert.deepEqual(await onboardingCard({ cwd: repo.path, pr: 12 }), card);
+  assert.deepEqual(await onboardingCard({ cwd: repo.path, pr: 12, format: "result" }), card);
+  assert.equal(await onboardingCard({ cwd: repo.path, pr: 12 }), card.card);
   assert.equal(await raw(repo), marked);
   assert.equal(repo.git(["rev-parse", "HEAD"]).trim(), draft);
   const output = fakeTty();
-  assert.equal(await run(["--json", "onboard", "--card"], { cwd: repo.path, ...output, checkEnvironment: false }), 0);
-  const result = JSON.parse(output.stdout.text).result;
+  assert.equal(await run(["onboard", "--card"], { cwd: repo.path, ...output, checkEnvironment: false }), 0);
+  assert.match(output.stdout.text, /gh pr checkout <n>/);
+  const result = await onboardingCard({ cwd: repo.path, format: "result" });
   assert.deepEqual(Object.keys(result).sort(), ["card", "drafted_at_rev"]);
   assert.equal(result.drafted_at_rev, draft);
   assert.match(result.card, /gh pr checkout <n>/);
@@ -430,11 +432,11 @@ test("onboarding card ignores citations in special sections and omits resolved c
   assert.equal(await run(["--json", "onboard"], { cwd: repo.path, ...fakeTty(), checkEnvironment: false }), 0);
   await repo.write(filename, spec(`## Requirements\n${requirement}\n## Open questions\n- R-2 Legacy. {origin: observed; cites: missing.ts:1}\n## Conflicts\n- [x] CF-1 Settled. | Resolution: retry once`));
   const stamp = commit(repo, "draft");
-  const first = await onboardingCard({ cwd: repo.path });
+  const first = await onboardingCard({ cwd: repo.path, format: "result" });
   assert.match(first.card, /all 1 citations checked/);
   assert.doesNotMatch(first.card, /missing\.ts|Conflicts \(settle/);
   commit(repo, "record stamp");
-  assert.equal((await onboardingCard({ cwd: repo.path })).drafted_at_rev, stamp);
+  assert.equal((await onboardingCard({ cwd: repo.path, format: "result" })).drafted_at_rev, stamp);
 });
 
 test("onboarding card rolls back prior draft stamps when a later document write fails", async (t) => {
@@ -447,7 +449,7 @@ test("onboarding card rolls back prior draft stamps when a later document write 
   await repo.write(second, draft);
   commit(repo, "draft two documents");
   let calls = 0;
-  await assert.rejects(onboardingCard({ cwd: repo.path }, async (file, bytes) => {
+  await assert.rejects(onboardingCard({ cwd: repo.path, format: "result" }, async (file, bytes) => {
     calls++;
     if (file.endsWith("prd.md")) throw new Error("second stamp failed");
     await writeAtomic(file, bytes);
