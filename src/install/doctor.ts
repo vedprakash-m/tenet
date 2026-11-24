@@ -44,7 +44,7 @@ function cleanVersion(tool: DoctorTool, output: string): string | null {
   const patterns: Partial<Record<DoctorTool, RegExp>> = {
     node: /v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)/i,
     git: /git version\s+(\d+\.\d+(?:\.\d+)?(?:[^\s]*)?)/i,
-    ssh: /OpenSSH[ _-](\d+\.\d+(?:\.\d+)?(?:p\d+)?)/i,
+    ssh: /OpenSSH(?:_for_Windows)?[ _-](\d+\.\d+(?:\.\d+)?(?:p\d+)?)/i,
     gh: /gh version\s+(\S+)/i,
   };
   const match = (patterns[tool] ?? /(\d+\.\d+(?:\.\d+)?)/).exec(output);
