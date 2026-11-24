@@ -1,6 +1,6 @@
 # Tenet technical specification
 
-> Level L2 · Version 0.13 · Status: **draft, awaiting the Owner's approval** · Implements [prd.md](prd.md) and its parts · Parts: [kernel](tech-spec/kernel.md) (kernel algorithms and interfaces), [contracts](tech-spec/contracts.md) (formats and interfaces), [messages](tech-spec/messages.md) (error message and fix templates), [algorithms](tech-spec/algorithms.md), [CI and authority](tech-spec/ci.md), [agents](tech-spec/agents.md), [evidence](tech-spec/evidence.md), [onboarding](tech-spec/onboarding.md) · Normative until CP-0015 writes the kernel: this specification, its parts and the PRD; `kit/TENET.md` is superseded except where its banner says · Sections marked `<!-- provisional -->` are intended invariants: they need the Owner to change, and become `<!-- invariant -->` once the spikes (CP-0017, CP-0040, CP-0041) and the first implementation confirm them · Budget: 12,000 tokens · Previous version: `archive/specs/tech-spec.md@0.12.md`
+> Level L2 · Version 0.13 · Status: **draft, awaiting the Owner's approval** · Implements [prd.md](prd.md) and its parts · Parts: [kernel](tech-spec/kernel.md) (kernel algorithms and interfaces), [contracts](tech-spec/contracts.md) (formats and interfaces), [messages](tech-spec/messages.md) (error message and fix templates), [algorithms](tech-spec/algorithms.md), [CI and authority](tech-spec/ci.md), [agents](tech-spec/agents.md), [evidence](tech-spec/evidence.md), [onboarding](tech-spec/onboarding.md), [MCP](tech-spec/mcp.md), [health](tech-spec/health.md) · Normative until CP-0015 writes the kernel: this specification, its parts and the PRD; `kit/TENET.md` is superseded except where its banner says · Sections marked `<!-- provisional -->` are intended invariants: they need the Owner to change, and become `<!-- invariant -->` once the spikes (CP-0017, CP-0040, CP-0041) and the first implementation confirm them · Budget: 12,000 tokens · Previous version: `archive/specs/tech-spec.md@0.12.md`
 
 **Context card.** Tenet is a spec process (§6.3) made checkable by seven record types and one container (§3) and one gate rule (§4). Every feature in the catalog is a standard type of one of them, declared by a pack (§6). The CLI and SDK append events, the CI verifier produces evidence (§7), and every view is a reduction over events (§8). How strict any of this is depends on the project's `level` and each rule's mode (§6.1). Policy always comes from the target line and is judged against the snapshot recorded at decision time. Every rule states its guarantee and the trust assumptions behind it.
 
@@ -136,14 +136,14 @@ Reduction, the conflict table per event family and duplicate handling are [ALG-0
 | `approvals` | `{express: 0, quick: 0, careful: 1, deep: 2, protected: forge-verified}` (`person-present` at `assure`) | Human decisions by lane (catalog R-145) |
 | `strength` | pack defaults | Minimum `{provenance, independence}` per claim class and lane (§3.1) |
 | `replay.pending_hours` | 24 | How long a move may stay tentative |
-| `checks` | — | `{<name>: {setup: [command], run, report: junit \| ctrf \| go-test-json \| jest-json \| none, report_from: file \| stdout, report_path, inputs, owner, timeout_minutes}}`; `run` calls the runner with its reporter flags (contracts §6); how they run: [ci.md §2](tech-spec/ci.md#2-running-checks); the only commands evidence may come from |
+| `checks` | — | `{<name>: {setup: [command], run, report: junit \| ctrf \| go-test-json \| jest-json \| tenet-health-json \| sarif \| lcov \| cobertura \| none, report_from: file \| stdout, report_path, inputs, tool?: {name, version, config_digest}, suppression_patterns?: [string], owner, timeout_minutes}}`; `run` calls the runner with its reporter flags (contracts §6); how they run: [ci.md §2](tech-spec/ci.md#2-running-checks); the only commands evidence may come from |
 | `ci` | detected | `{mode: tenet-workflow \| existing-job, test_workflow}`: where the tests run ([ci.md §2](tech-spec/ci.md#2-running-checks)) |
 | `stop` | `{failing_evaluations: 3}` | Stop thresholds (R-036) |
 | `onboard` | — | `{exclude: [glob]}` (onboarding §1) |
 | `agents` | `{working_rules: default}` | `default`, `off`, or a path to the project's own working rules (agents.md §1) |
 | `lane_checks`, `size_limits`, `express` | pack defaults | Required checks per lane; change-size claims; express limits |
-| `protect` | Tenet's workflows, `tenet.yaml`, `tenet.lock`, CODEOWNERS | Paths that change only with `change-policy`; projects may add. Blessed copies and blessing fields have their own tier: they change only together with a blessing by the section's owner (DEC-55) |
-| `health` | none | `{indicators: {<name>: {check, metric, rule, tolerance, scope, area}}}` |
+| `protect` | Tenet's workflows, `tenet.yaml`, `tenet.lock`, CODEOWNERS, `.gitattributes`, `.tenet/health-baseline.json` | Paths that change only with `change-policy` (`protected-surfaces`); projects may add. Blessed copies and blessing fields have their own tier: they change only together with a blessing by the section's owner (DEC-55) |
+| `health` | none | `{baseline_path?, waiver_max_days?: 30, architecture?: {modules: {<id>: {paths, area?}}}, indicators: {<name>: {kind, check, metric, population?, direction?, rule_scope?, scope, area, max_new?, tolerance, owner?}}}` ([health.md](tech-spec/health.md)) |
 | `areas` | from CODEOWNERS | `{<name>: {paths, owners, decision_rights, wip}}`; when absent, each CODEOWNERS entry is an area with its owners |
 | `board.refs`, `trust`, `holdout`, `context_budgets` | §8, §7, R-104, §9 | Board inputs; evidence ref and forge; holdout mode; budgets |
 
@@ -162,10 +162,11 @@ Reduction, the conflict table per event family and duplicate handling are [ALG-0
 | `distinguishing-evidence` | Careful and deep: defect fixes fail on the base (R-172) | 0.1.0 | observe | advise | enforce | enforce |
 | `signed-evidence` | Evidence signed by the attest job | alpha.2 | — | — | enforce | enforce |
 | `person-present-policy` | Policy, permission and vision decisions by a security key | 0.1.x | — | — | — | enforce |
+| `health-ratchet` | Touched-scope health does not regress beyond tolerance ([health.md](tech-spec/health.md)) | 0.1.x | observe | advise | enforce | enforce |
 
 In alpha.0 every rule runs at most in `advise`, whatever the level, because rule modes arrive in alpha.1.
 
-The alpha.0 schema accepts only the fields alpha.0 reads (`standard`, `kit_path`, `paths`, `level`, `rules`, `specs`, `owners`, `checks`, `ci`, `stop`, `onboard`, `agents`, `protect`, `areas`); every other field arrives, as a minor schema version, with the packet that reads it. `init` writes at most 15 lines (`standard`, `level`, `owners`, `checks`, where `run` may name an existing script and `report` its format); everything else defaults. Unknown keys fail validation except `x-` keys. Packet branches are `tenet/<alias>-<slug>`.
+The alpha.0 schema accepts only the fields alpha.0 reads (`standard`, `kit_path`, `paths`, `level`, `rules`, `specs`, `owners`, `checks`, `ci`, `stop`, `onboard`, `agents`, `protect`, `areas`); every other field arrives, as a minor schema version, with the packet that reads it (`0.1.x` `CP-0039` adds `health`, `checks.<name>.tool`, `suppression_patterns`). `init` writes at most 15 lines (`standard`, `level`, `owners`, `checks`, where `run` may name an existing script and `report` its format); everything else defaults. Unknown keys fail validation except `x-` keys. Packet branches are `tenet/<alias>-<slug>`.
 
 ### 6.2 Packs
 

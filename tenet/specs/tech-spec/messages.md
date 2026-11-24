@@ -98,3 +98,14 @@ Moved into the §2 table when `CP-0007` and `CP-0050` add their entries to `src/
 - `TN-DEC-STALE`: `"Reply targets evaluation {actual}, but current evaluation is {expected}."` Fix: `"Review the latest card and reply against {expected}."`
 - `TN-RECORD-TIP`: `"Records ref tip drifted from {expected} to {actual} during board read."` Fix: `"Re-run \`tenet board --fetch\` to read a consistent snapshot."`
 - `TN-SEALED-DIRTY`: `"Sealed test job modified tracked files before completing check {check}."` Fix: `"Remove working-tree writes during CI checks and re-run."`
+
+## 4. 0.1.x message templates
+
+Moved into the §2 table when `0.1.x` packets add their entries to `src/core/messages.ts` (`test/core/messages.test.ts` checks §2 rows strictly against `src/core/messages.ts`):
+
+- `TN-HEALTH-BASELINE`: `"Committed health baseline entry {key} is missing or incompatible."` Fix: `"Record the initial entry in .tenet/health-baseline.json via a change-policy commit."`
+- `TN-HEALTH-CONFIG-CHANGED`: `"Health report for {check} drifted from pinned tool or scope configuration ({detail})."` Fix: `"Update <base> tenet.yaml checks.{check} or restore the pinned analyzer configuration."`
+- `TN-HEALTH-INCOMPATIBLE`: `"Indicator {indicator} received conflicting or multiple health reports for {check}."` Fix: `"Bind one authoritative single report per checks.<name> run."`
+- `TN-HEALTH-PROVENANCE`: `"Health report for {indicator} lacks required metadata or mismatches target architecture modules ({detail})."` Fix: `"Emit valid tenet-health-json/sarif provenance matching health.architecture.modules, or run as advisory."`
+- `TN-HEALTH-REGRESSED`: `"Health indicator {indicator} regressed beyond tolerance ({detail})."` Fix: `"Reduce the regression within tolerance/max_new or record a forge-verified accept-health-regression waive."`
+- `TN-WAIVER-EXPIRED`: `"Waiver {id} expired at {expiry}."` Fix: `"Fix the underlying regression or obtain a fresh forge-verified waiver."`
