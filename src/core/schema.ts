@@ -14,6 +14,7 @@ const schemaNames = [
   "inventory",
   "lock",
   "manifest",
+  "manifest-local",
   "pack",
   "proof-card",
   "spec-front-matter",

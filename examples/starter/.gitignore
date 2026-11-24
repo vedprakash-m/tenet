@@ -1,0 +1,6 @@
+# tenet:begin v0.0.0
+.tenet/*
+!.tenet/manifest.json
+!.tenet/manifest.local.json
+!.tenet/kit/
+# tenet:end

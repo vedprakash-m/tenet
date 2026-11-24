@@ -269,6 +269,10 @@ test("loads vendored kits, verifies locks, and refuses edited kits", async () =>
     );
     assert.equal((await verifyLock({ cwd: repository.path })).sha256, kit.sha256);
 
+    const lfKit = kit.sha256;
+    await repository.write(".tenet/kit/templates/item.md", "hello\r\n");
+    assert.equal((await loadKit(await loadPolicy({ cwd: repository.path }))).sha256, lfKit);
+
     await repository.write(".tenet/kit/templates/item.md", "edited\n");
     await assert.rejects(verifyLock({ cwd: repository.path }), { code: "TN-LOCK-MISMATCH" });
   } finally {

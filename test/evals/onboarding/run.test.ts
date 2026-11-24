@@ -11,13 +11,36 @@ const execute = promisify(execFile);
 const harness = fileURLToPath(new URL("../../../pkg/evals/onboarding/run.mjs", import.meta.url));
 
 async function run(...args: string[]) {
-  const { stdout } = await execute(process.execPath, [harness, ...args], { encoding: "utf8", timeout: 120_000 });
+  const isolatedHome = process.env.TENET_TEST_HOME;
+  const { stdout } = await execute(process.execPath, [harness, ...args], {
+    encoding: "utf8",
+    timeout: 120_000,
+    env: {
+      ...process.env,
+      ...(isolatedHome ? {
+        HOME: isolatedHome,
+        USERPROFILE: isolatedHome,
+        APPDATA: path.join(isolatedHome, "AppData", "Roaming"),
+      } : {}),
+      TENET_INSTALL_INTEGRITY: `sha512-${"A".repeat(86)}==`,
+    },
+  });
   return stdout;
 }
 
 test("replay evaluates a materialized fixture and leaves semantic scores for people", async (t) => {
   const out = await mkdtemp(path.join(os.tmpdir(), "tenet-eval-report-test-"));
-  t.after(() => rm(out, { recursive: true, force: true }));
+  const home = await mkdtemp(path.join(os.tmpdir(), "tenet-eval-home-"));
+  const previous = process.env.TENET_TEST_HOME;
+  process.env.TENET_TEST_HOME = home;
+  t.after(() => {
+    if (previous === undefined) delete process.env.TENET_TEST_HOME;
+    else process.env.TENET_TEST_HOME = previous;
+    return Promise.all([
+      rm(out, { recursive: true, force: true }),
+      rm(home, { recursive: true, force: true }),
+    ]).then(() => undefined);
+  });
   const result = JSON.parse(await run("--agent", "replay", "--fixture", "node-service", "--out", out));
   t.after(() => rm(result.scratch, { recursive: true, force: true }));
   assert.equal(result.automatic, 1);
@@ -42,6 +65,7 @@ test("replay evaluates a materialized fixture and leaves semantic scores for peo
   await assert.rejects(readFile(path.join(result.scratch, "node-service", "key.json")), { code: "ENOENT" });
   const draft = await readFile(path.join(result.scratch, "node-service", "tenet", "intent.md"), "utf8");
   assert.ok(draft.includes(row.draftRevision));
+  assert.equal(await readFile(path.join(home, ".claude.json"), "utf8").then(() => true, () => false), false);
   assert.match(await readFile(path.join(result.scratch, "node-service-card.md"), "utf8"), /Tenet onboarding/);
 
   // Scoring after a human session reads the action log. This test supplies

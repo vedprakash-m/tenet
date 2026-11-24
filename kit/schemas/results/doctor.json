@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/results/doctor.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": { "enum": ["node", "git", "ssh", "gh", "lock", "workflows"] },
+          "ok": { "type": "boolean" },
+          "detail": { "type": "string" }
+        },
+        "required": ["name", "ok", "detail"]
+      }
+    }
+  },
+  "required": ["checks"]
+}
