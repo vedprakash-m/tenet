@@ -1,7 +1,7 @@
 {
   "ok": true,
   "command": "init",
-  "version": "0.0.0",
+  "version": "{{version}}",
   "result": {
     "plan": {
       "created": [
@@ -74,7 +74,7 @@
       {
         "kind": "local-integrity",
         "path": "tenet.lock",
-        "message": "@vedprakash-m/tenet@0.0.0 is not on the registry, so Tenet used local package integrity. CI workflows cannot verify it until the package is published and re-pinned with `tenet upgrade`."
+        "message": "@vedprakash-m/tenet@{{version}} is not on the registry, so Tenet used local package integrity. CI workflows cannot verify it until the package is published and re-pinned with `tenet upgrade`."
       }
     ]
   },
