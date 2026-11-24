@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -372,7 +373,7 @@ async function emptyRootNames(cwd: string): Promise<Set<string>> {
 
 async function pullRequestTemplatePath(cwd: string): Promise<string> {
   const defaultName = "pull_request_template.md";
-  let entries;
+  let entries: Dirent[];
   try {
     entries = await readdir(path.join(cwd, ".github"), { withFileTypes: true });
   } catch (error) {
