@@ -858,7 +858,7 @@ export async function planWriteSet(
       const replacement = attributesBlock(releaseInfo.version, managedPaths);
       const result = replaceBlock(source, block.kind, `${replacement.trimEnd()}\n`);
       managed = { replacement, target: result.content, previous: result.previous, prefixSep: result.prefixSep };
-    } else if (block.path === ".github/pull_request_template.md") {
+    } else if (block.path.toLowerCase() === ".github/pull_request_template.md") {
       const replacement = await pullRequestBlock(kitPath, releaseInfo.version);
       if (state.text === null) {
         managed = {

@@ -564,6 +564,27 @@ test("remove restores a pre-existing zero-byte managed block file", async (t) =>
     item.path === ".github/pull_request_template.md" && item.kind === "block"));
 });
 
+test("init and remove preserve the exact existing pull-request template name", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  const expected = "# Existing pull request template\n";
+  await setup.repo.write(".github/PULL_REQUEST_TEMPLATE.md", expected);
+
+  const result = await init(setup.options);
+  assert.ok(result.plan.blocks.some((block) =>
+    block.path === ".github/PULL_REQUEST_TEMPLATE.md" && block.kind === "markdown"));
+  assert.ok(!result.plan.blocks.some((block) =>
+    block.path === ".github/pull_request_template.md"));
+  await remove(setup.options);
+  assert.equal(
+    await readFile(path.join(setup.repo.path, ".github", "PULL_REQUEST_TEMPLATE.md"), "utf8"),
+    expected,
+  );
+  const names = await readdir(path.join(setup.repo.path, ".github"));
+  assert.ok(names.includes("PULL_REQUEST_TEMPLATE.md"));
+  assert.ok(!names.includes("pull_request_template.md"));
+});
+
 test("remove preserves pre-existing empty ancestor objects during JSON key restoration", async (t) => {
   const setup = await makeCase("p08-existing-mcp");
   t.after(() => dispose(setup));
