@@ -97,7 +97,8 @@ function stableBranches(observed, expected) {
     const covered = (byLine.get(line) ?? []).sort(
       (left, right) => Number(left) - Number(right),
     );
-    const count = Math.max(covered.length, expected.get(line) ?? 0);
+    const count = expected.get(line) ?? covered.length;
+    if (covered.length > count) covered.splice(0, covered.length - count);
     while (covered.length < count) covered.unshift(false);
     for (let index = 0; index < count; index += 1) {
       stable.push({ covered: covered[index] ?? false, line });
