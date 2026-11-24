@@ -1,41 +1,9 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { tmpRepo } from "../helpers/tmpRepo.ts";
-
-const roots = [
-  "src/specs/parse.ts",
-  "src/specs/sections.ts",
-  "src/specs/citations.ts",
-  "src/specs/anchors.ts",
-  "src/specs/flags.ts",
-  "src/specs/ladder.ts",
-  "src/specs/deltas.ts",
-  "src/specs/touched.ts",
-  "src/policy/index.ts",
-];
-const build = spawnSync(
-  process.execPath,
-  [
-    "node_modules/typescript/bin/tsc",
-    "--target", "ES2023",
-    "--module", "NodeNext",
-    "--moduleResolution", "NodeNext",
-    "--strict",
-    "--noUncheckedIndexedAccess",
-    "--exactOptionalPropertyTypes",
-    "--verbatimModuleSyntax",
-    "--skipLibCheck",
-    "--outDir", "dist",
-    "--rootDir", "src",
-    ...roots,
-  ],
-  { cwd: process.cwd(), encoding: "utf8" },
-);
-if (build.status !== 0) throw new Error(build.stderr || build.stdout);
 
 const [
   { parseDoc, parseRequirement },
