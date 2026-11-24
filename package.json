@@ -30,6 +30,7 @@
     "prepack": "npm run build",
     "test": "npm run build && node scripts/run-tests.mjs",
     "coverage": "npm run build && node scripts/run-tests.mjs --coverage",
+    "health:snapshot": "node scripts/health-snapshot.mjs",
     "eval:onboarding": "node pkg/evals/onboarding/run.mjs",
     "check:examples": "node scripts/check-examples.mjs"
   },
