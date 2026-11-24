@@ -381,7 +381,7 @@ test("p11 interruption checkpoints replay to the clean tree", async (t) => {
   t.after(() => dispose(clean));
   const checked = await preflight(clean.options);
   const planned = await planWriteSet(checked, clean.options);
-  await init(clean.options);
+  const cleanResult = await init(clean.options);
   const expected = await tree(clean.repo.path);
   const checkpoints: Array<"pending" | string> = ["pending", ...planned.writes.map((write) => write.id)];
   for (const checkpoint of checkpoints) {
@@ -391,7 +391,8 @@ test("p11 interruption checkpoints replay to the clean tree", async (t) => {
       (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
     );
     await readFile(path.join(replay.repo.path, ".tenet", "manifest.pending.json"));
-    await init(replay.options);
+    const resumed = await init(replay.options);
+    assert.deepEqual(resumed, cleanResult, checkpoint);
     assert.deepEqual(await tree(replay.repo.path), expected, checkpoint);
     await dispose(replay);
   }

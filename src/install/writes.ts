@@ -1049,6 +1049,16 @@ function emptyWrote(): InitWrote {
   return { created: [], blocks: [], keys: [], local_keys: [] };
 }
 
+function completeWrote(plan: WriteSet, writes: PendingWrite[]): InitWrote {
+  const wrote = emptyWrote();
+  for (const write of writes) {
+    if (write.before_sha256 !== write.after_sha256) recordWrote(plan, write, wrote);
+  }
+  wrote.created.push(".tenet/manifest.json");
+  sortWrote(wrote);
+  return wrote;
+}
+
 function pendingIntegrityFinding(pending: PendingManifest): InstallFinding[] {
   const lock = pending.writes.find((write) => write.path === "tenet.lock");
   if (!lock?.content) return [];
@@ -1165,7 +1175,7 @@ export async function resumePendingPlan(
     ...(options.localProfileRoot ? { localProfileRoot: options.localProfileRoot } : {}),
   };
   for (const write of pending.writes) await confinedWritePath(write, plan, pending);
-  const wrote = emptyWrote();
+  const wrote = completeWrote(plan, pending.writes);
   for (let index = 0; index < pending.writes.length; index += 1) {
     const write = pending.writes[index];
     if (!write || write.content === undefined) throw new Error(`Pending write ${write?.id ?? index} has no content.`);
@@ -1174,15 +1184,12 @@ export async function resumePendingPlan(
     if (current.sha256 === write.after_sha256) continue;
     if (current.sha256 !== write.before_sha256) throw installError("TN-INIT-EXISTS", write.path);
     await writeAtomic(filename, write.content);
-    recordWrote(plan, write, wrote);
     interrupted(options.fault, write.id, index + 1);
   }
   const manifestPath = await confine(".tenet/manifest.json", cwd);
   const manifestContent = manifestJson(pending.manifest);
   await writeAtomic(manifestPath, manifestContent);
-  wrote.created.push(".tenet/manifest.json");
   await rm(pendingPath, { force: true });
-  sortWrote(wrote);
   return {
     plan: plan.plan,
     wrote,
