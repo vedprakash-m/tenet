@@ -1,0 +1,15 @@
+{
+  "scenarios": [
+    {
+      "name": "distinct-challenge-reuse",
+      "challenge": "chg-used",
+      "previous_choice": "approve",
+      "new_choice": "reject"
+    },
+    {
+      "name": "ordinary-key-no-presence",
+      "key_type": "ssh-ed25519",
+      "requires_person_present": true
+    }
+  ]
+}

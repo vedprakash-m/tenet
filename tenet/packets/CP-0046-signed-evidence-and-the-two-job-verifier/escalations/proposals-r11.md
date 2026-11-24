@@ -1,0 +1,8 @@
+# Proposals — CP-0046 round 11
+
+Questions from building the independent conformance suite (`pkg/conformance/signed-evidence/`):
+
+1. **`signReceipt` / `verifyReceipt` envelope and key-ID format (`CI §5`, `plan/alpha.2.md:20`):** `CI §5` defines Sigstore/artifact attestations for public repositories, Ed25519 via `node:crypto` with pinned public key for private repositories, and OIDC token fallback. What exact signature envelope fields (`{ algorithm, key_id, signature, store_path }`) does `signReceipt` attach alongside `refs/tenet/evidence/<subject-digest>/<id>.json`, and how does `verifyReceipt` distinguish unsigned vs invalid vs valid OIDC-fallback receipts?
+2. **Changed tracked files in sealed test job (`CI §5 line 176`):** `CI §5` specifies computing the subject before and after each check so changed tracked files make a check `inconclusive`. Which exact error/finding code or conclusion mapping applies when a sealed check dirties the tree before committing?
+3. **`recordCandidate` schema and ref storage (`K §5 line 72`, `CI §3 line 154`):** What exact record structure and ref path under `refs/tenet/records` / `refs/tenet/evidence` store verified vs superseded `merge_group` candidate evaluations?
+4. **`person-present` verification output (`K §3 lines 54–62`, `CP-0046 line 21`):** Beyond `personPresentPayload(request, choice, actor, challenge)` returning UTF-8 RFC 8785 bytes, what exact `{ verified, presence: "observed"|"unavailable"|"none", challenge_consumed }` object does verification return when an ordinary Ed25519 key (lacking hardware user presence) or reused challenge is supplied?

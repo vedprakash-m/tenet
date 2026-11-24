@@ -1,0 +1,19 @@
+{
+  "op": "signAndVerify",
+  "repository_visibility": "private",
+  "key_id": "attest-ed25519-1",
+  "receipt": {
+    "id": "REC-100",
+    "subject": {
+      "kind": "git-tree",
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "evaluation_id": "0123456789abcdef",
+    "claims": [
+      "AB-1"
+    ],
+    "kind": "check",
+    "method": "integration",
+    "result": "pass"
+  }
+}

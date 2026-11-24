@@ -1,0 +1,14 @@
+{
+  "scenarios": [
+    {
+      "name": "distinct-challenge-reuse",
+      "accepted": false,
+      "error_kind": "challenge-reused"
+    },
+    {
+      "name": "ordinary-key-no-presence",
+      "accepted": false,
+      "user_presence": "unavailable"
+    }
+  ]
+}
