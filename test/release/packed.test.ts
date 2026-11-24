@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { constants, existsSync } from "node:fs";
+import { access, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -115,7 +115,19 @@ test("the alpha.0 npm tarball has the release layout and runs the installed CLI"
   git(cwd, env, "add", ".");
   git(cwd, env, "commit", "-qm", "Copy packed conformance fixture");
   const revision = git(cwd, env, "rev-parse", "HEAD");
-  const tenet = (...args: string[]) => runNpm(["exec", "--offline", "--no", "--", "tenet", "--cwd", cwd, ...args], consumer, env);
+  const installedBin = path.join(installed, manifest.bin.tenet);
+  assert.match(await readFile(installedBin, "utf8"), /^#!\/usr\/bin\/env node\n/);
+  let tenet = (...args: string[]) => runNpm(["exec", "--offline", "--no", "--", "tenet", "--cwd", cwd, ...args], consumer, env);
+  if (process.platform !== "win32") {
+    const shim = path.join(consumer, "node_modules", ".bin", "tenet");
+    const entry = await realpath(shim);
+    assert.equal(entry, await realpath(installedBin));
+    await access(shim, constants.X_OK);
+    // The CLI compares argv[1] with import.meta.url. Use the resolved npm bin on POSIX.
+    tenet = (...args: string[]) => execFileSync(entry, ["--cwd", cwd, ...args], {
+      cwd: consumer, env, encoding: "utf8", timeout: 30_000,
+    });
+  }
   assert.equal(tenet("--version").trim(), manifest.version);
   for (const [command, ...args] of [["version", "--version"], ["help", "--help"],
     ["onboard", "onboard", "--inventory-only"], ["check", "check"], ["board", "board"]]) {
