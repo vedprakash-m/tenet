@@ -2,6 +2,7 @@ import { message, onboardText } from "../core/messages.js";
 import { fail, type Finding } from "../core/output.js";
 import { prepareOnboard } from "../onboard/assignment.js";
 import type { OnboardDeps } from "../onboard/refresh.js";
+import { check } from "../specs/check.js";
 
 type OnboardCommandContext = {
   args: string[];
@@ -62,5 +63,4 @@ export function makeOnboardCommand(deps: OnboardDeps) {
   };
 }
 
-// TODO(CP-0009): inject { check } from src/specs/check.ts once it lands.
-export const onboardCommand = makeOnboardCommand({});
+export const onboardCommand = makeOnboardCommand({ check });

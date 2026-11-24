@@ -3,6 +3,11 @@ import { git } from "../core/git.js";
 import { message } from "../core/messages.js";
 import { version } from "../core/output.js";
 import { loadPolicy, verifyLock } from "../policy/index.js";
+import { check } from "../specs/check.js";
+import { deltas } from "../specs/deltas.js";
+import { parseDoc } from "../specs/parse.js";
+import { sectionDigest } from "../specs/sections.js";
+import { touched } from "../specs/touched.js";
 import type { Finding } from "../types/generated.js";
 import type { VerifyDeps } from "../verify/bundle.js";
 import { renderCheckSummary } from "../verify/card.js";
@@ -11,11 +16,7 @@ import { record, type VerifyEvent } from "../verify/record.js";
 import { GitRecords } from "../verify/records.js";
 import { bundleExisting, runChecks, type RunChecksOptions } from "../verify/run-checks.js";
 
-async function pending(): Promise<never> {
-  throw new Error("CP-0009 check and CP-0044 specification exports are not wired");
-}
-// TODO(CP-0009, CP-0044): replace this object with { check, touched, deltas, parseDoc, sectionDigest } once their exports land.
-const deps: VerifyDeps = { check: pending, touched: pending, deltas: pending };
+const deps: VerifyDeps = { check, touched, deltas, parseDoc, sectionDigest };
 
 function object(input: unknown): Record<string, unknown> {
   return input && typeof input === "object" && !Array.isArray(input) ? input as Record<string, unknown> : {};
@@ -84,7 +85,9 @@ type VerifyCommandContext = {
 };
 
 async function verify(context: VerifyCommandContext) {
-  const modes = ["run-checks", "bundle", "record"].filter((flag) => context.options[flag] === true);
+  const modes = ["run-checks", "bundle", "record"].filter(
+    (flag) => context.options[`--${flag}`] === true,
+  );
   if (modes.length !== 1 || context.args.length) return usage("choose exactly one of --run-checks, --bundle, or --record");
   let event: Record<string, unknown>;
   try {
