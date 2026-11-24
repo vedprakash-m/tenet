@@ -1,0 +1,25 @@
+export { HOST_DESCRIPTORS, compareUtf16, detectHosts, hostDescriptors } from "./hosts.js";
+export { preflight, preflightInit } from "./preflight.js";
+export type {
+  CiJobFact,
+  CiMode,
+  HostCapability,
+  HostContext,
+  HostDescriptor,
+  HostWritePlan,
+  InitPlan,
+  InstallFinding,
+  PlannedBlock,
+  PlannedHost,
+  PlannedKey,
+  PlannedLocalKey,
+  PreflightAnswers,
+  PreflightEnvironment,
+  PreflightFacts,
+  PreflightOptions,
+  PreflightPrompt,
+  PreflightResult,
+  ProjectKind,
+  RunnerFact,
+  RunnerKind,
+} from "./types.js";
