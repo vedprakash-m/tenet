@@ -173,7 +173,7 @@ From alpha.1 the recorder also handles review, `/tenet` reply, ready-for-review,
 **Sealed test job.**
 - no secrets, read-only, network denied by default, an environment-variable allowlist
 - no cache shared with the recorder; the runner image recorded
-- it computes the subject before and after each check; changed tracked files make a check inconclusive
+- it computes the subject before and after each check; changed tracked files make a check inconclusive (`TN-SEALED-DIRTY`)
 - a check passes only on exit code 0 with a valid report
 
 **Attest job** (the recorder at `verify`).

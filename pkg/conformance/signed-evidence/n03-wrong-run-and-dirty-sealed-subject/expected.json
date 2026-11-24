@@ -1,0 +1,15 @@
+{
+  "scenarios": [
+    {
+      "name": "wrong-workflow-run",
+      "accepted": false,
+      "error_code": "TN-RECORD-BUNDLE"
+    },
+    {
+      "name": "dirty-subject",
+      "inconclusive": true,
+      "result": "inconclusive",
+      "error_code": "TN-SEALED-DIRTY"
+    }
+  ]
+}
