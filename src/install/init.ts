@@ -51,7 +51,7 @@ export async function init(options: InitOptions = {}): Promise<InitResult> {
       ? { localProfileRoot: profileRoot }
       : {}),
   });
-  if (resumed) return { ...resumed, findings: result.findings };
+  if (resumed) return { ...resumed, findings: [...result.findings, ...resumed.findings] };
   const plan = await planWriteSet(result, options);
   const findings = [
     ...result.findings,

@@ -256,6 +256,9 @@ export function manifestJson(manifest: InstallManifest): string {
   return jsonFile({
     schema_version: manifest.schema_version,
     version: manifest.version,
+    ...(manifest["x-created-directories"]
+      ? { "x-created-directories": [...manifest["x-created-directories"]].sort(sortedText) }
+      : {}),
     created: manifest.created
       .map(({ path: itemPath, sha256 }) => ({ path: itemPath, sha256 }))
       .sort((left, right) => sortedText(left.path, right.path)),

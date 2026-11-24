@@ -201,6 +201,7 @@ export type InstallManifest = {
   created: ManifestCreated[];
   blocks: ManifestBlock[];
   keys: ManifestKey[];
+  "x-created-directories"?: string[];
 };
 
 export type LocalManifestKey = ManifestKey & {

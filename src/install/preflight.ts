@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -370,6 +371,24 @@ async function emptyRootNames(cwd: string): Promise<Set<string>> {
   }
 }
 
+async function pullRequestTemplatePath(cwd: string): Promise<string> {
+  const defaultName = "pull_request_template.md";
+  let entries: Dirent[];
+  try {
+    entries = await readdir(path.join(cwd, ".github"), { withFileTypes: true });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT" || (error as NodeJS.ErrnoException).code === "ENOTDIR") {
+      return `.github/${defaultName}`;
+    }
+    throw error;
+  }
+  const matches = entries
+    .filter((entry) => entry.isFile() && entry.name.toLowerCase() === defaultName)
+    .map((entry) => entry.name)
+    .sort(compareUtf16);
+  return `.github/${matches.find((name) => name === defaultName) ?? matches[0] ?? defaultName}`;
+}
+
 async function listKitFiles(root: string, relative = ""): Promise<string[]> {
   const entries = await readdir(path.join(root, ...relative.split("/").filter(Boolean)), { withFileTypes: true });
   const files: string[] = [];
@@ -510,7 +529,7 @@ export async function preflight(options: PreflightOptions = {}): Promise<Preflig
   ];
   if (forge === "github") {
     created.push(".github/workflows/tenet.yml");
-    blocks.push({ path: ".github/pull_request_template.md", kind: "markdown" });
+    blocks.push({ path: await pullRequestTemplatePath(cwd), kind: "markdown" });
     if (ciMode === "tenet-workflow") created.push(".github/workflows/tenet-tests.yml");
     if (ciMode === "existing-ci" && selected) blocks.push({ path: selected.workflow, kind: "yaml" });
   }

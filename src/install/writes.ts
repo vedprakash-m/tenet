@@ -1,4 +1,4 @@
-import { readFile, readdir, rm } from "node:fs/promises";
+import { lstat, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
@@ -26,6 +26,7 @@ import type {
   InitPlan,
   InitResult,
   InitWrote,
+  InstallFinding,
   InstallManifest,
   ManifestBlock,
   ManifestKey,
@@ -39,7 +40,7 @@ import type {
   WriteSet,
 } from "./types.js";
 import { localProfileRoot, localProfileRoots } from "./environment.js";
-import { releaseIntegrity } from "./integrity.js";
+import { localIntegrityWarning, releaseIntegrity } from "./integrity.js";
 
 export type WritePlanOptions = PreflightOptions & {
   force?: boolean;
@@ -51,6 +52,28 @@ export type ApplyPlanOptions = {
   };
   localProfileRoot?: string;
 };
+
+async function createdDirectories(cwd: string, paths: string[]): Promise<string[]> {
+  const candidates = new Set<string>();
+  for (const itemPath of paths) {
+    let directory = path.posix.dirname(itemPath.replaceAll("\\", "/"));
+    while (directory !== "." && directory !== "/") {
+      candidates.add(directory);
+      directory = path.posix.dirname(directory);
+    }
+  }
+  const created: string[] = [];
+  for (const directory of [...candidates].sort(compareUtf16)) {
+    const filename = await confine(directory, cwd).catch(() => pathError(directory));
+    try {
+      await lstat(filename);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") created.push(directory);
+      else throw error;
+    }
+  }
+  return created;
+}
 
 type FileState = {
   exists: boolean;
@@ -689,6 +712,10 @@ export async function planWriteSet(
         .replaceAll("<Project>", project)
         .replace("Checkout recovers cleanly from transient gateway timeouts for returning shoppers.",
           purpose)
+        .replace(
+          "Requests enter `src/checkout/gateway.ts`, use `src/checkout/retry.ts` for timeout handling, and emit structured events without card payloads.",
+          "Requests use bounded timeout handling and emit structured events without card payloads.",
+        )
         .replace(/\r\n/g, "\n")
         .replace(/\n+$/, "")}\n`,
     });
@@ -747,6 +774,14 @@ export async function planWriteSet(
     created: [],
     blocks: [],
     keys: [],
+    "x-created-directories": [...new Set([
+      ...(priorManifest?.["x-created-directories"] ?? []),
+      ...await createdDirectories(cwd, [
+      ...plan.created,
+      ...plan.blocks.map((block) => block.path),
+      ...plan.keys.map((key) => key.path),
+      ]),
+    ])].sort(compareUtf16),
   };
   let writeIndex = 0;
   const resolvedProfileRoots = {
@@ -853,7 +888,7 @@ export async function planWriteSet(
       const replacement = attributesBlock(releaseInfo.version, managedPaths);
       const result = replaceBlock(source, block.kind, `${replacement.trimEnd()}\n`);
       managed = { replacement, target: result.content, previous: result.previous, prefixSep: result.prefixSep };
-    } else if (block.path === ".github/pull_request_template.md") {
+    } else if (block.path.toLowerCase() === ".github/pull_request_template.md") {
       const replacement = await pullRequestBlock(kitPath, releaseInfo.version);
       if (state.text === null) {
         managed = {
@@ -1048,6 +1083,40 @@ function emptyWrote(): InitWrote {
   return { created: [], blocks: [], keys: [], local_keys: [] };
 }
 
+function completeWrote(plan: WriteSet, writes: PendingWrite[]): InitWrote {
+  const wrote = emptyWrote();
+  for (const write of writes) {
+    if (write.before_sha256 !== write.after_sha256) recordWrote(plan, write, wrote);
+  }
+  wrote.created.push(".tenet/manifest.json");
+  sortWrote(wrote);
+  return wrote;
+}
+
+function pendingIntegrityFinding(pending: PendingManifest): InstallFinding[] {
+  const lock = pending.writes.find((write) => write.path === "tenet.lock");
+  if (!lock?.content) return [];
+  try {
+    const value = JSON.parse(lock.content) as {
+      package?: unknown;
+      version?: unknown;
+      "x-integrity-source"?: unknown;
+    };
+    if (
+      value["x-integrity-source"] !== "local" ||
+      typeof value.package !== "string" ||
+      typeof value.version !== "string"
+    ) return [];
+    return [{
+      kind: "local-integrity",
+      path: "tenet.lock",
+      message: localIntegrityWarning(value.package, value.version),
+    }];
+  } catch {
+    return [];
+  }
+}
+
 export async function applyPlan(
   plan: WriteSet,
   options: ApplyPlanOptions = {},
@@ -1122,7 +1191,11 @@ export async function resumePendingPlan(
     cwd,
     version: pending.version,
     plan: {
-      created: pending.manifest.created.map((item) => item.path).concat(".tenet/manifest.json").sort(compareUtf16),
+      created: pending.writes
+        .filter((write) => write.kind === "file")
+        .map((write) => write.path)
+        .concat(".tenet/manifest.json")
+        .sort(compareUtf16),
       blocks: pending.manifest.blocks.map(({ path, kind }) => ({ path, kind })),
       keys: pending.manifest.keys.map(({ path, pointer }) => ({ path, pointer })),
       local_keys: fallback.local_keys,
@@ -1136,7 +1209,7 @@ export async function resumePendingPlan(
     ...(options.localProfileRoot ? { localProfileRoot: options.localProfileRoot } : {}),
   };
   for (const write of pending.writes) await confinedWritePath(write, plan, pending);
-  const wrote = emptyWrote();
+  const wrote = completeWrote(plan, pending.writes);
   for (let index = 0; index < pending.writes.length; index += 1) {
     const write = pending.writes[index];
     if (!write || write.content === undefined) throw new Error(`Pending write ${write?.id ?? index} has no content.`);
@@ -1145,16 +1218,17 @@ export async function resumePendingPlan(
     if (current.sha256 === write.after_sha256) continue;
     if (current.sha256 !== write.before_sha256) throw installError("TN-INIT-EXISTS", write.path);
     await writeAtomic(filename, write.content);
-    recordWrote(plan, write, wrote);
     interrupted(options.fault, write.id, index + 1);
   }
   const manifestPath = await confine(".tenet/manifest.json", cwd);
   const manifestContent = manifestJson(pending.manifest);
   await writeAtomic(manifestPath, manifestContent);
-  wrote.created.push(".tenet/manifest.json");
   await rm(pendingPath, { force: true });
-  sortWrote(wrote);
-  return { plan: plan.plan, wrote, findings: [] };
+  return {
+    plan: plan.plan,
+    wrote,
+    findings: pendingIntegrityFinding(pending),
+  };
 }
 
 export async function readPendingPlan(

@@ -198,6 +198,27 @@ test("unpublished local versions use exact local integrity and warn", async (t) 
   assert.match(upgraded.child.stderr, /not on the registry.*local package integrity/i);
 });
 
+test("empty-repo init seeds intent without dead file references", async (t) => {
+  const repo = await tmpRepo("install-empty-intent");
+  t.after(repo.cleanup);
+  repo.git(["config", "user.name", "Fixture Owner"]);
+  repo.git(["config", "user.email", "fixture@example.invalid"]);
+
+  const installed = run(repo.path, "init", "--yes");
+  assert.equal(installed.child.status, 0, installed.child.stderr);
+  const intent = await readFile(path.join(repo.path, "tenet", "intent.md"), "utf8");
+  assert.doesNotMatch(intent, /src\/checkout\/(?:gateway|retry)\.ts/);
+
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "install"]);
+  const onboard = run(repo.path, "onboard", "--inventory-only");
+  assert.equal(onboard.child.status, 0, onboard.child.stderr);
+  const result = onboard.envelope.result as {
+    findings: Array<{ kind: string }>;
+  };
+  assert.deepEqual(result.findings.filter((finding) => finding.kind === "dead-path"), []);
+});
+
 test("malformed integrity overrides return TN-LOCK-INVALID", async (t) => {
   const repo = await tmpRepo("install-invalid-integrity");
   t.after(repo.cleanup);

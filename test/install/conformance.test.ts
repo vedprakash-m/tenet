@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cp, mkdir, mkdtemp, readFile, readlink, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { cp, lstat, mkdir, mkdtemp, readFile, readlink, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
@@ -381,7 +381,7 @@ test("p11 interruption checkpoints replay to the clean tree", async (t) => {
   t.after(() => dispose(clean));
   const checked = await preflight(clean.options);
   const planned = await planWriteSet(checked, clean.options);
-  await init(clean.options);
+  const cleanResult = await init(clean.options);
   const expected = await tree(clean.repo.path);
   const checkpoints: Array<"pending" | string> = ["pending", ...planned.writes.map((write) => write.id)];
   for (const checkpoint of checkpoints) {
@@ -391,10 +391,50 @@ test("p11 interruption checkpoints replay to the clean tree", async (t) => {
       (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
     );
     await readFile(path.join(replay.repo.path, ".tenet", "manifest.pending.json"));
-    await init(replay.options);
+    const resumed = await init(replay.options);
+    assert.deepEqual(resumed, cleanResult, checkpoint);
     assert.deepEqual(await tree(replay.repo.path), expected, checkpoint);
     await dispose(replay);
   }
+});
+
+test("resumed init keeps the clean local-integrity finding", async (t) => {
+  const clean = await makeCase("p11-interrupted-install-resumes");
+  const interrupted = await makeCase("p11-interrupted-install-resumes");
+  t.after(async () => {
+    await dispose(clean);
+    await dispose(interrupted);
+  });
+  const expected = await init(clean.options);
+  await assert.rejects(
+    init({ ...interrupted.options, fault: { after: "pending" } }),
+    (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+  );
+  const resumed = await init(interrupted.options);
+  assert.deepEqual(resumed.findings, expected.findings);
+});
+
+test("resumed init reconstructs created files separately from blocks", async (t) => {
+  const clean = await makeCase("p11-interrupted-install-resumes");
+  const interrupted = await makeCase("p11-interrupted-install-resumes");
+  t.after(async () => {
+    await dispose(clean);
+    await dispose(interrupted);
+  });
+  const expected = await init(clean.options);
+  const checked = await preflight(interrupted.options);
+  const planned = await planWriteSet(checked, interrupted.options);
+  const checkpoint = planned.writes.find((write) =>
+    write.kind === "block" && write.path === ".gitignore")?.id;
+  assert.ok(checkpoint);
+  await assert.rejects(
+    init({ ...interrupted.options, fault: { after: checkpoint } }),
+    (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+  );
+  const resumed = await init(interrupted.options);
+  assert.deepEqual(resumed.plan, expected.plan);
+  assert.ok(!resumed.plan.created.includes(".gitignore"));
+  assert.ok(!resumed.plan.created.includes(".gitattributes"));
 });
 
 test("p09 loader runs init, repeat, upgrade and byte-exact remove", async (t) => {
@@ -524,6 +564,27 @@ test("remove restores a pre-existing zero-byte managed block file", async (t) =>
     item.path === ".github/pull_request_template.md" && item.kind === "block"));
 });
 
+test("init and remove preserve the exact existing pull-request template name", async (t) => {
+  const setup = await makeCase("p02-node-vitest");
+  t.after(() => dispose(setup));
+  const expected = "# Existing pull request template\n";
+  await setup.repo.write(".github/PULL_REQUEST_TEMPLATE.md", expected);
+
+  const result = await init(setup.options);
+  assert.ok(result.plan.blocks.some((block) =>
+    block.path === ".github/PULL_REQUEST_TEMPLATE.md" && block.kind === "markdown"));
+  assert.ok(!result.plan.blocks.some((block) =>
+    block.path === ".github/pull_request_template.md"));
+  await remove(setup.options);
+  assert.equal(
+    await readFile(path.join(setup.repo.path, ".github", "PULL_REQUEST_TEMPLATE.md"), "utf8"),
+    expected,
+  );
+  const names = await readdir(path.join(setup.repo.path, ".github"));
+  assert.ok(names.includes("PULL_REQUEST_TEMPLATE.md"));
+  assert.ok(!names.includes("pull_request_template.md"));
+});
+
 test("remove preserves pre-existing empty ancestor objects during JSON key restoration", async (t) => {
   const setup = await makeCase("p08-existing-mcp");
   t.after(() => dispose(setup));
@@ -532,6 +593,24 @@ test("remove preserves pre-existing empty ancestor objects during JSON key resto
   await init(await optionsForStep(setup, 0));
   await remove(await optionsForStep(setup, 0));
   assert.equal(await readFile(path.join(setup.repo.path, ".mcp.json"), "utf8"), original);
+});
+
+test("remove deletes created directories but keeps pre-existing empty directories", async (t) => {
+  const created = await makeCase("p01-empty");
+  const existing = await makeCase("p01-empty");
+  t.after(async () => {
+    await dispose(created);
+    await dispose(existing);
+  });
+  await mkdir(path.join(existing.repo.path, "tenet"));
+
+  await init(created.options);
+  await remove(created.options);
+  await assert.rejects(lstat(path.join(created.repo.path, "tenet")), { code: "ENOENT" });
+
+  await init(existing.options);
+  await remove(existing.options);
+  assert.equal((await lstat(path.join(existing.repo.path, "tenet"))).isDirectory(), true);
 });
 
 test("p17 loader upgrades owned pins without changing policy", async (t) => {
