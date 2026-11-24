@@ -201,6 +201,32 @@ test("doctor treats a missing gh executable as an optional success", async (t) =
   });
 });
 
+test("doctor parses OpenSSH for Windows versions", async (t) => {
+  const repo = await tmpRepo("doctor-windows-ssh");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "fixture"]);
+  const result = await install.doctorEvaluation({
+    cwd: repo.path,
+    environment: environment({
+      tools: {
+        ssh: "OpenSSH_for_Windows_9.5p2, LibreSSL 3.8.2",
+      },
+    }),
+    verifyLock: async () => ({
+      ok: true,
+      path: kitPath,
+      sha256: "",
+      skipped: true,
+      lock_sha256: null,
+    }),
+  });
+  assert.deepEqual(result.checks[2], {
+    name: "ssh",
+    ok: true,
+    detail: "OpenSSH 9.5p2",
+  });
+});
+
 test("doctor maps a kit digest mismatch without changing a package mismatch", async (t) => {
   const repo = await tmpRepo("doctor-lock-mismatch");
   t.after(repo.cleanup);

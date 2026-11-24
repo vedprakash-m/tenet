@@ -28,8 +28,6 @@ import type {
 import { localProfileRoot } from "./environment.js";
 
 const reminder = "If you made the Tenet check required in branch protection or rulesets, remove that rule in your forge settings.";
-const removableParents = [".agents", ".claude", ".cursor", ".github", ".tenet", ".vscode"];
-
 function pathError(itemPath: string): Error & { code: string; finding: unknown } {
   const words = message("TN-PATH-ESCAPE", { path: itemPath });
   const finding = { ...fail("TN-PATH-ESCAPE", words.message, words.fix), file: itemPath };
@@ -200,19 +198,8 @@ function removeAppendedBlock(
   return `${source.slice(0, from)}${source.slice(through)}`;
 }
 
-async function removeEmptyManagedDirectories(cwd: string, paths: string[]): Promise<void> {
-  const candidates = new Set<string>();
-  for (const itemPath of paths) {
-    let current = path.posix.dirname(itemPath.replaceAll("\\", "/"));
-    while (current !== "." && current !== "/") {
-      const normalized = current.replaceAll("\\", "/");
-      if (removableParents.some((root) => normalized === root || normalized.startsWith(`${root}/`))) {
-        candidates.add(normalized);
-      }
-      current = path.posix.dirname(current);
-    }
-  }
-  for (const candidate of [...candidates].sort((left, right) => right.length - left.length)) {
+async function removeEmptyManagedDirectories(cwd: string, directories: string[]): Promise<void> {
+  for (const candidate of [...new Set(directories)].sort((left, right) => right.length - left.length)) {
     const filename = await confine(candidate, cwd);
     try {
       const stat = await lstat(filename);
@@ -236,7 +223,6 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
       rm(await confine(".tenet/manifest.json", cwd), { force: true }),
       rm(await confine(".tenet/manifest.pending.json", cwd), { force: true }),
     ]);
-    await removeEmptyManagedDirectories(cwd, [".tenet/manifest.json"]);
     return { removed, kept: [], reminder };
   }
   await validateRecordedPaths(
@@ -353,11 +339,13 @@ export async function remove(options: RemoveOptions = {}): Promise<RemoveResult>
   await rm(activePath, { force: true });
   await rm(pendingPath, { force: true });
   if (!keptCreated.has(".tenet/manifest.local.json")) await rm(localPath, { force: true });
-  await removeEmptyManagedDirectories(cwd, affected.concat(
-    ".tenet/manifest.json",
-    ".tenet/manifest.pending.json",
-  ));
-  for (const root of retained) kept.set(root, "spec-or-records");
+  const createdDirectories = manifest["x-created-directories"] ?? [];
+  await removeEmptyManagedDirectories(cwd, createdDirectories);
+  for (const root of retained) {
+    if (!createdDirectories.includes(root) || await retainedRoot(cwd, root)) {
+      kept.set(root, "spec-or-records");
+    }
+  }
   return {
     removed: removed.sort((left, right) =>
       left.path < right.path ? -1 : left.path > right.path ? 1 :
