@@ -18,6 +18,7 @@
 | `TN-ACC-DUP-ID` | Duplicate acceptance item ID {id}. | Renumber or remove the repeated {id} item. |
 | `TN-ACC-MISSING-ID` | Acceptance item needs an ID. | Prefix the item with [AB-<n>]. |
 | `TN-ACC-UNPASSED` | Acceptance items not passing: {ids}. | Add passing tests tagged with [AB-n] or fix failing tests for {ids}. |
+| `TN-BACKTEST-INCOMPLETE` | Backtest cohort has incomplete coverage ({coverage} / {cohort_size} PRs). | Complete missing PR records before claiming the 100-PR backtest threshold. |
 | `TN-BLESS-INFERRED` | Section {slug} still contains inferred statements ({ids}). | Edit or adopt {ids}, then run `tenet bless`. |
 | `TN-BLESS-NO-TTY` | Interactive terminal required to bless specifications. | Run `tenet bless` in an interactive terminal session. |
 | `TN-BLESS-OPEN-CONFLICT` | Section {slug} has unresolved conflicts or open questions ({ids}). | Resolve {ids} in Conflicts or Open questions, then run `tenet bless`. |
@@ -44,6 +45,7 @@
 | `TN-GATE-CONFLICT` | Work item has unresolved event conflicts ({ids}). | Run `tenet resolve` on {ids} before advancing. |
 | `TN-GATE-FROZEN` | Work item is frozen. | Wait for the Owner to unfreeze the work item before advancing. |
 | `TN-GATE-REVIEW` | Review is incomplete or requires adjudication ({reason}). | Resolve review findings or record a decision via `tenet decide`. |
+| `TN-GATE-SELF-WAIVE` | Actor {actor} cannot waive claim {claim} broken by their own change. | Have another authorized decision-maker waive {claim} or satisfy the check. |
 | `TN-GATE-STOP` | Stop threshold reached: {reason}. | Write an escalation report and run `tenet escalate`. |
 | `TN-GATE-TRUST` | Protected trust-surface claim {claim} is not satisfied. | Open a change-policy decision request via `tenet decide`. |
 | `TN-GATE-UNKNOWN` | Policy applicability is unknown because {missing} is missing. | Define {missing} in tenet.yaml or CODEOWNERS and re-run. |
@@ -63,6 +65,7 @@
 | `TN-POLICY-LOOSEN` | Policy layer {layer} attempts to loosen {name}. | Remove the loosening override from {layer} so later layers only tighten. |
 | `TN-POLICY-MISSING` | Policy file tenet.yaml was not found. | Run `tenet init` to create tenet.yaml. |
 | `TN-POLICY-RULE` | Unknown policy rule or setting {name} in tenet.yaml. | Remove or fix {name} in tenet.yaml against the active pack. |
+| `TN-POLICY-RULE-DECISION` | Promoting rule {rule} to {mode} requires an approved change-policy decision. | Record an approved `change-policy` decision first, then re-run `tenet rules`. |
 | `TN-POLICY-SCHEMA` | tenet.yaml does not match the alpha.0 schema: {detail}. | Fix tenet.yaml or remove fields that are not available in alpha.0. |
 | `TN-PROTECTED` | Change modifies protected path {path}. | Revert edits to {path} or open a change-policy decision request via `tenet decide`. |
 | `TN-RECORD-BUNDLE` | Recorded CI bundle {run_id} failed verification: {reason}. | Re-run the CI verification workflow and check bundle integrity. |

@@ -26,9 +26,9 @@
 
 **CP-0050 · Gate, levels and rule modes · R-031, R-202, R-215**
 1. *Needs:* CP-0007; TS §§4, 6.1; ALG-06 and ALG-07; CI §10; K §§2, 4.
-2. *Owns:* `src/kernel/gate.ts`, `src/policy/modes.ts`, `level`, `rules`, recorder outcome mapping, `test/kernel/gate/`, conformance `alg-06`, `alg-07` and backtest.
-3. *Exports:* `evaluateGate(input) → GateResult`, `ruleMode(policy, rule)` and the `level` and `rules` commands.
-4. *Behavior:* Validate target policy and freshness. Evaluate every applicable row and return verdict, disposition, blocking reason and next action. Rule promotion requires its approved decision. Derive recorder conclusion from CI §10. Backtest the fixed 100-PR cohort and time active overhead per K §4.
+2. *Owns:* `src/kernel/gate.ts`, `src/policy/modes.ts`, `level`, `rules`, `kit/schemas/results/{level,rules}.json`, recorder outcome mapping, `test/kernel/gate/`, conformance `gate/` (`alg-06`, `alg-07`, backtest).
+3. *Exports:* `evaluateGate(input) → GateResult`, `ruleMode(policy, rule)`, `level(target, opts) → {previous_level, level, mode_changes, warnings}`, `rules(ruleId?, mode?, opts)`.
+4. *Behavior:* Validate target policy and freshness. Evaluate every applicable row and return verdict, disposition, blocking (`{row, rule, claim_id, reason}`), ordered `reasons` and next action (`ALG-07`). Rule promotion (`observe -> advise|enforce`) requires an approved `change-policy` decision (`TN-POLICY-RULE-DECISION`); self-waivers fail with `TN-GATE-SELF-WAIVE`. Derive recorder conclusion from CI §10. Backtest the fixed 100-PR cohort (`TN-BACKTEST-INCOMPLETE` when incomplete) and time active overhead per K §4.
 5. *Edge cases:* Advisory and enforced failures together, expiry boundary, stronger policy, changed requirement, missing inputs and incomplete backtest.
 6. *Out of scope:* Signing, forge replies and undeclared policy changes.
 7. *Fixtures:* `test/kernel/gate/{mixed,expired,stale,stop,unknown}/`, an input per ALG-07 row and the evaluator trial and backtest manifests.

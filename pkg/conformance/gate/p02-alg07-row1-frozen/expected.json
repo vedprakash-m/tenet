@@ -4,5 +4,11 @@
   "lead": "TN-GATE-FROZEN",
   "reasons": [
     "TN-GATE-FROZEN"
-  ]
+  ],
+  "blocking": {
+    "row": 1,
+    "rule": "always-enforce",
+    "claim_id": null,
+    "reason": "TN-GATE-FROZEN"
+  }
 }
