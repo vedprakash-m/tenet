@@ -1,0 +1,15 @@
+{
+  "waived_gate": {
+    "verdict": "advance",
+    "disposition": "records",
+    "claims": [
+      {
+        "id": "AB-1",
+        "result": "waived"
+      }
+    ]
+  },
+  "ci10_enforced_refusal": {
+    "conclusion": "failure"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "scenarios": [
+    {
+      "name": "advisory-review-and-enforced-fail",
+      "verdict": "refuse",
+      "disposition": "blocks",
+      "lead": "TN-GATE-CLAIM",
+      "reasons": [
+        "TN-GATE-REVIEW",
+        "TN-GATE-CLAIM"
+      ]
+    },
+    {
+      "name": "advisory-fail-and-enforced-pass",
+      "verdict": "refuse",
+      "disposition": "advises",
+      "lead": "TN-GATE-CLAIM",
+      "reasons": [
+        "TN-GATE-CLAIM"
+      ]
+    }
+  ]
+}

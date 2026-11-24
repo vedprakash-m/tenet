@@ -1,0 +1,39 @@
+{
+  "op": "mergePolicy",
+  "layers": [
+    {
+      "layer": "pack",
+      "claim": {
+        "type": "acceptance",
+        "methods": [
+          "integration"
+        ],
+        "strength": {
+          "provenance": "ci",
+          "independence": "different-definition"
+        },
+        "pass_rule": {
+          "kind": "baseline-relative",
+          "tolerance": 0.05
+        }
+      }
+    },
+    {
+      "layer": "project",
+      "claim": {
+        "type": "acceptance",
+        "methods": [
+          "integration"
+        ],
+        "strength": {
+          "provenance": "local",
+          "independence": "same-definition"
+        },
+        "pass_rule": {
+          "kind": "baseline-relative",
+          "tolerance": 0.2
+        }
+      }
+    }
+  ]
+}
