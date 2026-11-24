@@ -101,8 +101,8 @@
 **CP-0052 · Blessing, onboarding card, evaluation and scenarios** · R-223 (bless, card), R-012 (drafter evaluation)
 1. *Needs:* CP-0010; ALG-03, ALG-13; OB §1; AG §1–§2.
 2. *Owns:* `src/onboard/{bless,card}.ts`, the `bless` command and its result schema, `onboard --card`, `pkg/evals/onboarding/` (repository only, never published), `test/onboard/bless/`.
-3. *Exports:* `bless({doc?, section?}) → {blessed, confirmed, rejected, deferred, minutes}`; `onboardingCard() → markdown` (it also records `drafted_at_rev`).
-4. *Behavior:* ALG-03's session (conflicts first; bless, confirm, edit, reject, defer); version bumps; the anchors file; the log line (ALG-13); the card per OB §1 and its golden examples.
+3. *Exports:* `bless({doc?, section?}) → {blessed, confirmed, rejected, deferred, minutes}` (numeric counts and elapsed minutes); `onboardingCard({pr?}) → markdown` (it also records `drafted_at_rev` on committed drafts; `onboard --card --json` returns `{card, drafted_at_rev}`).
+4. *Behavior:* ALG-03's session (conflicts first; bless, confirm `[y/N]`, edit, reject/defer with optional `[y/N]` blessed-copy restore); version bumps; the anchors file; the log line (ALG-13, nullable counts when `drafted_at_rev` is unavailable); the card per OB §1 (`Math.ceil(words / 200)` per section, omitting zero-conflict block) and its golden examples. `ALG-07` fixtures evaluate cleanly against `ALG-07` beside alpha.0 `TN-POLICY-ALPHA0-CAP`; install steps assert `contracts §8` keys, exit codes, and tree parity.
 5. *Edge cases:* no terminal (exit 2); an inferred statement left; an open conflict; a conflict choice that contradicts a statement; interruption keeps finished sections; re-blessing an edited section; `confirm` after a squash from a shallow clone.
 6. *Out of scope:* forge blessing (alpha.1).
 7. *Fixtures:*
@@ -123,7 +123,7 @@
      - a renamed heading
      - a pull request closed without merging (nothing beyond its last evaluation is recorded)
      - the README and UX walkthroughs run verbatim
-8. *Proving:* `npm test -- test/onboard`, using `fakeTty`; `npm run eval:onboarding -- --agent <name>` writes a scored report, which passes on the two agents CP-0058 names; `npm run scenarios` passes.
+8. *Proving:* `npm test -- test/onboard`, using `fakeTty`; `npm run eval:onboarding -- --agent <name>` writes a scored report, which passes on the two agents CP-0058 names; `npm run scenarios` runs `test/onboard/scenarios.test.ts` over `pkg/conformance/scenarios/*/steps.json` with deterministic test adapters and passes.
 
 ## A0-8
 
