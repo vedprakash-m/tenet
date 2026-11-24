@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "command": "remove",
+  "version": "0.0.0",
+  "result": {
+    "removedPaths": [
+      "tenet.yaml",
+      "tenet.lock",
+      ".github/workflows/tenet.yml",
+      ".github/workflows/tenet-tests.yml",
+      "AGENTS.md",
+      ".mcp.json"
+    ],
+    "kept": [],
+    "reminder": "If you made the Tenet check required in branch protection or rulesets, remove that rule in your forge settings."
+  },
+  "errors": []
+}

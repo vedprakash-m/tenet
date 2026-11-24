@@ -63,7 +63,7 @@
           }
         ]
       },
-      "expectedOmitted": "proposals-r7#Q5"
+      "expectedJson": "expected/01-gate-fixture.json"
     },
     {
       "id": "02-alpha0-policy-cap",

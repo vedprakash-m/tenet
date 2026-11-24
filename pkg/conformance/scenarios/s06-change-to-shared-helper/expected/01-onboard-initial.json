@@ -1,0 +1,240 @@
+{
+  "ok": true,
+  "command": "onboard",
+  "version": "0.0.0",
+  "result": {
+    "preflight": {
+      "revision": "f1ac464fe94ea0487254469dd2d7ccd800b613e3",
+      "read_count": 10,
+      "skipped_count": 0,
+      "dirty_warning": false
+    },
+    "inventory": {
+      "schema_version": 1,
+      "revision": "f1ac464fe94ea0487254469dd2d7ccd800b613e3",
+      "sources": {
+        "files": [
+          {
+            "path": "CODEOWNERS",
+            "kind": "config",
+            "sha256": "23f1b2140253799aa629926e222190e9f50f5a8abb3d7aa75a003fc6ac934b22",
+            "lines": 2
+          },
+          {
+            "path": "kit/TENET.md",
+            "kind": "doc",
+            "sha256": "f9a740074b9a649810d26b0a2b93ff0b24ca7a9daf2c7fe0dfd0cb45c58f23e0",
+            "lines": 3
+          },
+          {
+            "path": "src/api/handler.ts",
+            "kind": "source",
+            "sha256": "7143a0bd8662c48a341717937306c94ffc6efe66b4a34c844b537c2db1b8a44a",
+            "lines": 2007
+          },
+          {
+            "path": "src/billing/charge.ts",
+            "kind": "source",
+            "sha256": "ec7203a68baec4a9028e024613205926a388172c9865482e0e6513dc08669f80",
+            "lines": 2007
+          },
+          {
+            "path": "src/shared/http.ts",
+            "kind": "source",
+            "sha256": "a48acbc74e6968c3081ecff8885729fede68a543bc8d8b31b9b447bfe8722f56",
+            "lines": 3
+          },
+          {
+            "path": "tenet.lock",
+            "kind": "config",
+            "sha256": "86ab71101b464adff13533d3b457bde703f0db71a0369d5ef2cd1919f2e0de3a",
+            "lines": 7
+          },
+          {
+            "path": "tenet.yaml",
+            "kind": "config",
+            "sha256": "f5623b8c7d413ae1f36e6004c9b958dd669410e21a05cfc35f11e878cdf1fce2",
+            "lines": 20
+          },
+          {
+            "path": "tenet/blessed/tenet__intent.md/requirements.md",
+            "kind": "doc",
+            "sha256": "1066acafddd0170fcf9f473cf6a4ed690ec117d646a592cb3c66d9a28b5a4db2",
+            "lines": 2
+          },
+          {
+            "path": "tenet/blessed/tenet__intent.md/requirements.md.anchors.json",
+            "kind": "config",
+            "sha256": "6b97df865ab64ccbe6e4a23c28c5404208657f4f54beb5e0049acbd07b864898",
+            "lines": 11
+          },
+          {
+            "path": "tenet/intent.md",
+            "kind": "doc",
+            "sha256": "7ebef6c4ccdfd1768f4a6c3159262bf22bcaee988761efec93df52d72d397c7d",
+            "lines": 8
+          }
+        ],
+        "skipped": []
+      },
+      "modules": [
+        {
+          "id": "src",
+          "roots": [
+            "src"
+          ],
+          "languages": [
+            "typescript"
+          ]
+        }
+      ],
+      "tests": [],
+      "docs": [
+        {
+          "path": "kit/TENET.md",
+          "title": "Fixture Kit",
+          "sections": [],
+          "last_changed": "2026-11-23T12:00:00Z"
+        },
+        {
+          "path": "tenet/blessed/tenet__intent.md/requirements.md",
+          "title": "requirements.md",
+          "sections": [],
+          "last_changed": "2026-11-23T12:00:00Z"
+        },
+        {
+          "path": "tenet/intent.md",
+          "title": "intent.md",
+          "sections": [
+            "requirements"
+          ],
+          "last_changed": "2026-11-23T12:00:00Z"
+        }
+      ],
+      "owners": [
+        {
+          "pattern": "/src/api/",
+          "owners": [
+            "@api-team"
+          ]
+        },
+        {
+          "pattern": "/src/billing/",
+          "owners": [
+            "@billing-team"
+          ]
+        }
+      ],
+      "ci": [],
+      "size": {
+        "source_lines": 4017,
+        "areas": 2
+      },
+      "layout": "separate",
+      "units": [
+        {
+          "id": "src-api",
+          "paths": [
+            "src/api"
+          ],
+          "views": [
+            "vision",
+            "requirements",
+            "design",
+            "experience",
+            "plan"
+          ]
+        },
+        {
+          "id": "src-billing",
+          "paths": [
+            "src/billing"
+          ],
+          "views": [
+            "vision",
+            "requirements",
+            "design",
+            "experience",
+            "plan"
+          ]
+        }
+      ],
+      "findings": [
+        {
+          "kind": "no-test-report",
+          "path": "tenet.yaml",
+          "message": "No machine-readable test report configured"
+        }
+      ],
+      "observations": {
+        "reports": []
+      }
+    },
+    "findings": [
+      {
+        "kind": "no-test-report",
+        "path": "tenet.yaml",
+        "message": "No machine-readable test report configured"
+      }
+    ],
+    "assignment": {
+      "schema_version": 1,
+      "inventory": ".tenet/onboard/inventory.json",
+      "skill": "draft-specs",
+      "project_kind": "application",
+      "views": [
+        "vision",
+        "requirements",
+        "design",
+        "experience",
+        "plan"
+      ],
+      "layout": "separate",
+      "units": [
+        {
+          "id": "src-api",
+          "paths": [
+            "src/api"
+          ],
+          "views": [
+            "vision",
+            "requirements",
+            "design",
+            "experience",
+            "plan"
+          ]
+        },
+        {
+          "id": "src-billing",
+          "paths": [
+            "src/billing"
+          ],
+          "views": [
+            "vision",
+            "requirements",
+            "design",
+            "experience",
+            "plan"
+          ]
+        }
+      ],
+      "question_limit": 10,
+      "output": {
+        "paths": [
+          "tenet/vision.md",
+          "tenet/specs/prd.md",
+          "tenet/specs/tech-spec.md",
+          "tenet/specs/ux-spec.md",
+          "tenet/specs/plan.md"
+        ]
+      },
+      "rules": [
+        "no intent from code alone",
+        "every observed or documented statement cites",
+        "never resolve a conflict",
+        "never bless"
+      ]
+    }
+  },
+  "errors": []
+}

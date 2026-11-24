@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "command": "onboard",
+  "version": "0.0.0",
+  "result": {
+    "card": "### Tenet onboarding · drafted from cf8e94d · nothing is in force until you bless it\nRead: README.md, docs/architecture.md, docs/adr/0001-retries.md, docs/adr/0002-timeouts.md, 2 ADRs, 1 source files, 1 test files, 0 instruction files · Skipped: none\n✓ all 1 citations checked against the code\nConflicts (settle these first)\n  ! CF-1 README says two retries; src/retry.ts retries once.\nSections (about 2 minutes)\n  Vision · 1 statement · 1 asked · 1 min\n  Requirements · 1 statement · 1 observed · 1 min\n→ gh pr checkout <n>, then tenet bless in your terminal (or edit the files first)\n",
+    "drafted_at_rev": "cf8e94da1c81a54200e16122d8078350b3b7ba0f"
+  },
+  "errors": []
+}

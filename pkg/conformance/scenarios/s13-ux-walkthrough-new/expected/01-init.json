@@ -1,0 +1,19 @@
+{
+  "ok": true,
+  "command": "init",
+  "version": "0.0.0",
+  "result": {
+    "plan": {
+      "project_kind": "other"
+    },
+    "wrote": {
+      "createdCount": 8
+    },
+    "findings": [
+      {
+        "kind": "no-test-report"
+      }
+    ]
+  },
+  "errors": []
+}
