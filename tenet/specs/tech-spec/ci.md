@@ -1,3 +1,18 @@
+---
+tenet: {spec: 1, doc: tech-spec, level: L2, version: "0.12", owner: ved}
+sections:
+  _preamble: {state: draft, digest: sha256:05c4e6215f121ab9e5de57dafa61a056e15488ec4adcc5cb8856c592b5d900b0, flags: []}
+  1-one-shape-for-every-release: {state: draft, digest: sha256:9256c01e2eecf400a4d5729b6dfbedf067900bc73637fb7167de9fe2df7f7805, flags: []}
+  2-running-checks: {state: draft, digest: sha256:537a6bba07b30f7f92d90f232af47893e75b21da69a08194c5aa7ec1e5aed823, flags: []}
+  3-workflows: {state: draft, digest: sha256:9297be6610d32c27624915705b0d77e67afe6fd3fc61217364db2b0366130a02, flags: []}
+  4-records-ref: {state: draft, digest: sha256:949207be5f84a65a873e824a9c46232a10f54e83137016859ddf5e609c147936, flags: []}
+  5-verify-sealed-tests-and-signed-records-alpha2-on: {state: draft, digest: sha256:4f48c4c597126e518e134350975fe041ac89b57cb7d4fd1f0fbdacc31d6087eb, flags: []}
+  6-decisions-and-proof: {state: draft, digest: sha256:affe8479bde2bee84b3f57c674cf7cff5582ce18c7ee00cb47928f10cac41b15, flags: []}
+  7-trust-observations-and-guarantee-levels: {state: draft, digest: sha256:dad2d348957a0f175c6e287e5be894e6b56479afb894137d11fc818497a6b72b, flags: []}
+  8-safe-failure: {state: draft, digest: sha256:50a4f85f0d42fd038c8d80d04d1ff61a030d67e14738c6a30d42bcf188c739a5, flags: []}
+  9-release-procedure: {state: draft, digest: sha256:a2edca4ab67d63bb3f5adf8d2fc47bfa7a18d7b49e285de268dceb643031eedb, flags: []}
+  10-outcomes: {state: draft, digest: sha256:79146887c3e1d1c002ebb9b3aab45ff98d95e064abe727a4cefae51e5b13dde0, flags: []}
+---
 # Tenet technical specification: CI, verification and authority
 
 > Level L2 · Version 0.12 · Part of [tech-spec.md](../tech-spec.md) · Status: **draft, awaiting the Owner's approval** · Budget: 6,000 tokens · Split from `tech-spec.md` §7.2–§7.6 and `contracts.md` §7 under the rollover rule (L-0024) · Previous version: `archive/specs/tech-spec/ci.md@0.11.md`
@@ -26,17 +41,16 @@
 | What the recorder keeps | card; records ref: proof, rule outcomes | plus decisions, forge-state events, `board.json` | signed, on the evidence store |
 | Decisions read | — | reviews and `/tenet` replies (`forge`) | signed (`signed`) |
 
-**Observed in Spike B (L-0030).**
-- `workflow_run` carries `pull_requests` for a same-repository pull request; the recorder can create the check run on the head and write the records ref with plumbing.
-- `pull_request_target: edited` re-evaluates from the latest test run's bundles.
-- `upload-artifact` uploads a hidden folder named directly as `path`, but skips hidden files inside a folder; `tenet-bundle/` avoids both.
-- On GitHub Free, a private repository can't require a status (branch protection and rulesets both refuse), so there `merge requires status` is `unavailable`.
-- An account can't approve its own pull request.
+**Observed in Spike B (L-0030):**
+- `workflow_run` includes `pull_requests` for same-repo PRs; the recorder updates the head check run and writes records via plumbing.
+- `pull_request_target: edited` re-evaluates from latest test bundles.
+- `upload-artifact` accepts a dotfolder as `path` directly, skipping hidden files inside folders; `tenet-bundle/` avoids both.
+- On GitHub Free, private repos cannot require checks (branch protection and rulesets refuse), making `merge requires status` `unavailable`.
+- An account cannot approve its own pull request.
 
-**Honest limits below `verify`.**
-- A pull request can change the workflow that tests it, so blocking there is **detected**. The card says when the test workflow differs from the target's.
-- The recorder's token can write the whole repository, not only the records ref, so its records are labelled detected (DEC-49).
-- At `verify`, the signature only the attest job can make is the boundary (§5).
+**Honest limits below `verify`:**
+- PRs can alter test workflows, so blocking there is **detected** (cards flag workflow drift).
+- The recorder token has full repo write access, so its records are labelled detected (DEC-49). At `verify`, the attest signature sets the boundary (§5).
 
 ## 2. Running checks
 
@@ -134,39 +148,25 @@ Both install the locked version with `npm install --no-save` and check it agains
 
 **`verify --record` steps.**
 1. **Find the change.**
-   - For `workflow_run`: use `workflow_run.pull_requests`; else list open pull requests (paginated) and keep those whose `head.sha` is the run's head SHA. This finds fork pull requests, and two pull requests sharing a head each get their own card. None means a push to the default branch.
-   - For `edited`: reuse the latest bundle for that head SHA. If none exists, the card says "waiting for tests"; if it expired, "tests from <date> expired · push or re-run".
-2. **Accept the bundles.** List the triggering run's artifacts through the API, then download each `tenet-bundle-*` one, retrying each up to 3 times. If a listed bundle still can't be downloaded, the card says "not checked: N of M bundles unavailable" and never reports the rest as the whole result (Spike B saw a transient `503 Egress is over the account limit`). Accept them only from the test workflow named in policy, for this repository and this head SHA, and only within the limits:
-   - 50 MB per bundle, 20,000 cases
-   - XML or JSON nesting depth 64
-   - no symlinks, absolute paths or `..`
-
-   Anything beyond a limit is refused with `TN-RECORD-BUNDLE`, naming the conclusion that becomes unavailable. Merge matrix bundles: a case's status is its worst across them.
-3. **Read the change as data.** Read policy and the lock from the target (`base`; if loading at `base` fails, fall back to `base^` and record the §10 degraded string). Fetch the change with `git fetch --no-tags --filter=blob:none origin refs/pull/<n>/head refs/pull/<n>/merge`; if the merge ref has moved past the tested commit, note `merge-candidate-stale`. Check the tested commit out into a temporary worktree, never executing it.
-4. **Evaluate.**
-   - parse the acceptance block from `pr.body` (or in 0.1.0, the named packet's `definition.md` when `pr.body` has none, agents.md §5)
-   - run `tenet check --ci --base <base>`, ALG-08, ALG-09 and ALG-14
-   - evaluate the rules (ALG-07)
-   - compute the evaluation ID
-5. **Post the check run** `Tenet` on the **head** SHA, found by name and head. Its conclusion follows §10 (when $N > 1$ PRs share `head`, each card is headed `Pull request #<number>\n` with budget $\lfloor(60,000 - \text{overhead})/N\rfloor$ and the worst conclusion across the $N$ cards). The summary is cut at 60,000 characters in this order: same-area requirements first, then passing items' test lists, then passing requirements. Failing items, weakening, protected files, blocking health lines ([health.md](health.md)) and "would have blocked" are never cut (if essential lines exceed the budget, `renderCheckSummary` throws `RangeError`, or the recorder stores the full card in `refs/tenet/records` (`overflow_ref`) preserving CI `conclusion`).
+   - `workflow_run`: use `workflow_run.pull_requests`; else paginate open PRs matching `head.sha` (covers fork PRs and shared heads); none means a default-branch push.
+   - `edited`: reuse latest bundle for `head.sha` (if absent: "waiting for tests"; if expired: "tests from <date> expired · push or re-run").
+2. **Accept bundles.** List triggering run artifacts via API and download each `tenet-bundle-*` (up to 3 retries; failures emit "not checked: N of M bundles unavailable" and never report partials as complete, per Spike B `503 Egress`). Accept only from the policy test workflow for this repo and head SHA, bounded at `50 MB` per bundle, `20,000` cases, depth `64`, no symlinks/absolute paths/`..` (else `TN-RECORD-BUNDLE`, naming unavailable conclusions). Matrix bundles take worst status per case.
+3. **Read the change as data.** Load policy/lock from `<base>` (fallback `base^` with §10 degraded note). Fetch `origin refs/pull/<n>/head refs/pull/<n>/merge` (`--no-tags --filter=blob:none`; note `merge-candidate-stale` if merge ref moved). Check out tested commit in a temp worktree without executing it.
+4. **Evaluate:** parse acceptance block from `pr.body` (0.1.0 fallback: named packet `definition.md`, agents.md §5), run `tenet check --ci --base <base>`, ALG-08, ALG-09, ALG-14, ALG-07 rules, and compute evaluation ID.
+5. **Post check run** `Tenet` on **head** SHA per §10 ($N > 1$ PRs sharing `head`: `Pull request #<number>\n` header, budget $\lfloor(60,000 - \text{overhead})/N\rfloor$, worst conclusion). Shed order at `60,000` chars: same-area requirements, passing test lists, passing requirements; failing items, weakening, protected files, blocking health lines ([health.md](health.md)) and "would have blocked" are never shed (overflow writes full card to `refs/tenet/records` `overflow_ref` keeping conclusion, or `renderCheckSummary` throws `RangeError`).
 6. **Append records** (§4).
 
-From alpha.1 the recorder also handles review, `/tenet` reply, ready-for-review, conversion to draft and closing events (in alpha.0, a pull request closed without merging records nothing beyond its last evaluation). **Merge queues** (L-0032): alpha.1 records merge-group candidates as observations; alpha.2 verifies the exact tested candidate before publishing its required status (kernel §5); full merge-queue evidence and quarantine come in 0.1.x. CP-0040's event table fixes the trigger and token for each.
+Alpha.1+ recorder also handles review, `/tenet` reply, ready-for-review, draft conversion and closing (alpha.0 closed-unmerged PRs stop at their last evaluation). **Merge queues** (L-0032): alpha.1 records candidates; alpha.2 verifies the exact candidate (`kernel §5`); 0.1.x adds full evidence and quarantine. CP-0040's event table sets trigger/token per event.
 
 ## 4. Records ref
 
 `refs/tenet/records`:
-- `proof/<pr or main>/<evaluation_id>/<run_id>-<attempt>.json`, one per run, never overwritten
-- `proof/<pr or main>/latest`, which moves only forward: a run that started earlier than the one it points to never replaces it
-- `rules/<yyyy-mm>.jsonl`: one line per run and rule, `{evaluation_id, run, pr, rule, mode, would_block, at}`
-- from alpha.1: `works/pr-<n>/events/<id>.json`, `decisions/<id>.json`, `board/board.json`
+- `proof/<pr or main>/<evaluation_id>/<run_id>-<attempt>.json` (immutable)
+- `proof/<pr or main>/latest` (forward-only by run start time)
+- `rules/<yyyy-mm>.jsonl` (`{evaluation_id, run, pr, rule, mode, would_block, at}` per run/rule)
+- alpha.1+: `works/pr-<n>/events/<id>.json`, `decisions/<id>.json`, `board/board.json`
 
-**Writing.**
-- **Idempotent:** the key is the path. Writing the same content again is a no-op; different content at the same path is refused.
-- **Git plumbing** (`hash-object`, `mktree`, `commit-tree`, `update-ref`), so the working tree is never touched. The committer is `tenet-recorder`, and each message is `tenet: <kind> <id>`.
-- **Retry:** a rejected push fetches the new tip, rebuilds on it and retries, up to 8 times with 0.5–3 s jitter (five concurrent writers in Spike B needed up to 4 attempts and lost nothing). A final failure shows on the card as "results not kept"; at `verify` that conclusion is `failure` (§10).
-
-**Retention:** in alpha.0 the recorder keeps every immutable run and advances `latest` forward-only; from alpha.1, on the first write to a new `rules/<yyyy-mm>.jsonl` month file, it prunes `proof/<work>/<evaluation_id>/<run>-<attempt>.json` files older than 30 days except each `latest` target and any run referenced under `decisions/` or `works/`. Clones never fetch the ref by default; locally, `tenet board --fetch` reads it.
+**Writing:** idempotent by path (identical content no-op, conflict refused); git plumbing (`hash-object`, `mktree`, `commit-tree`, `update-ref`, committer `tenet-recorder`, message `tenet: <kind> <id>`, no working tree touch); retries rejected pushes up to 8 times with 0.5–3 s jitter (final failure shows "results not kept", `failure` at `verify` per §10). **Retention:** alpha.0 keeps all runs; alpha.1+ on each new month `rules/` file prunes `proof/<work>/<evaluation_id>/<run>-<attempt>.json` older than 30 days unless referenced by `latest`, `decisions/`, or `works/`. Not fetched by default (`tenet board --fetch`).
 
 ## 5. Verify: sealed tests and signed records (alpha.2 on)
 
