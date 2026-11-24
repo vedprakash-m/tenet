@@ -1,0 +1,396 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 12,
+  "title": "Process policies, release gates and bounded CI measurements",
+  "body": "## Outcome and evidence\n\nDepends on #9 (capacity ceilings), including its exact unchanged portability repair070bb23. No rebase/force-push; any owner-authorized integration must preserve both CHANGELOG entries and corrected capacity disclosure, then validate the resulting head. The owner merges; never push main.\n\n| Requirement | Status | Delivery and remaining limit |\n|---|---|---|\n| OSS-01 | Owner-action-needed | Contributor Covenant2.1, supported-version/private-report policies delivered; enable GitHub private vulnerability reporting. |\n| LFC-01 | Done | Strict SemVer/equality/non-regression CI check; human compatibility classification. |\n| ENG-11 | Done | PR template and release-note solo-review disclosure. |\n| ENG-05 | Owner-action-needed | Current-model unevaluated label mechanism/monthly reminder delivered; default-branch activation pending; native evaluation unclaimed. |\n| ENG-07 | Owner-action-needed | Version/source help and README, pinned actions, reproducible build/tag attestation delivered; signing/protection/release controls pending. |\n| ENG-08 | Partial | Forty actual skill-only proxy trials, five repeats/task/arm; native quality inconclusive, baseline deployed. |\n| NFR-01 | Partial | Repeatable retained warm-budget failures; native/reference evidence gaps remain. |\n| MEM | Done amendment; partial qualification | Approved400 binary MB target and startup/100-health-response measurement, not reference workload. |\n| POSIX UAT | Owner-action-needed | Dispatch-only Linux build/UAT job delivered; default-branch activation/dispatch pending. |\n\n**Exact PR head `59ef17882f42ff3429556668bc0038d51a682dd3` is not green.** [PR untrusted42416714374](https://github.com/vedprakash-m/tenet/actions/runs/42416714374) passed all Windows/Ubuntu/macOS jobs, full POSIX CI and both built-UAT runtimes. Same-head [push untrusted42416710613](https://github.com/vedprakash-m/tenet/actions/runs/42416710613) failed macOS full-suite nested watcher calibration at5033.604375ms: canary present, watchError null, eventCount0, before the CON-09 review exercise. Its isolated control passed; Ubuntu/Windows passed. Both complete logs retained; a PR pass does not erase the push failure or establish repeatability/cause.\n\nBoth surfaced frozen-fixtures checks failed: [PR42416714430](https://github.com/vedprakash-m/tenet/actions/runs/42416714430)10pass/2fail (large316/long-history347ms), plus20 failed paired warm rows; [push42416710615](https://github.com/vedprakash-m/tenet/actions/runs/42416710615)11pass/1fail (long-history340ms). Unchanged warm-p95300ms. Exact reports/logs/raw evidence retained outside worktree; no retries, relaxed thresholds or passing-only selection.\n\n| Retained run | Measured result | Warm p95 evidence (ms) |\n|---|---|---|\n|42408929961 original|11/1; false-green workflow|long-history347; producer exit1|\n|42410239534 corrected push|10/2|large312, long-history406|\n|42410242380 corrected PR|12/0|small168, large234, long-history263|\n|42412485779 prior push|12/0|161/212/263|\n|42412488892 prior PR|12/0 standard;12 failed paired rows|181/245/299 standard|\n|42416710615 current push|11/1|219/254/340|\n|42416714430 current PR|10/2 standard;20 failed paired rows|238/316/347 standard|\n\nCommit1ded648 fixed tee producer-exit masking red-first through direct redirection/always-uploaded evidence. Evaluator/thresholds/permissions unchanged. Current/corrected bundle800865bytes SHA256`5376599c1e59b6e5095a769e51b92e3a5670dcf414a4e5d37e6e3b8e6526ace9`; different hardware/load is not causality.\n\nPaired protocols: baseline`fe475fbb26cd5690a35f33acbb2371c902f3dc58`, candidate`d036eefb889539b14f3cc367982016f89dd63270`; five alternating repeats per fixture/arm,20attempts/no retries. Current large baseline317/308/308/342/307 versus candidate315/308/315/314/310; long-history baseline409/402/403/409/426 versus candidate408/409/412/406/411. All20 raw hashes, manifest/plan bindings, three sources, two bundles,860warm/100cold/40resume counts and unchanged judgments independently checked. Setup/discarded calls are not retained. Current wall942143.218279ms; model unused/credits0, compute cost unknown. Both arms fail every repeat: no candidate-only regression, demonstrated operation-level cause or justified repair/before-after result.\n\nWatcher diagnostics9052b17 preserve the five-second deadline and CON-09 sensitivity. Separately authorized one-shot root/nested [diagnostic42418884068](https://github.com/vedprakash-m/tenet/actions/runs/42418884068), commit9a938a3, recorded all8expected outcomes passing over two fixed5s windows; raw callbacks/windows/canaries/identity retained and recomputed. This isolated result does not distinguish full-suite cause. No product synchronization repair or native Copilot/host spike. Diagnostic branch remains separate from PR head.\n\nLocal commands at PR head passed: `npm run typecheck`, `npm run lint`, `npm run coverage`, `node --test packages\\kernel\\test\\ci-security.test.ts packages\\kernel\\test\\process-policy.test.ts packages\\kernel\\test\\bench-comparison.test.ts` (25controls), `npm run verify:semver`, `npm run build`, `npm run verify:payload`, `npm run verify:reproducible`. Privacy scans passed before commits/push. Full local POSIX CI is not claimed from Windows.\n\nSkill proxy:40actual trials,15training/5disjoint holdout per arm;16171→16142UTF-8 skill bytes. Baselinefe475fb, unpromoted candidatedc41b1c; retained raw hashes/consumed identities/bundles/evaluator/protocol. Native quality inconclusive. Original registered evaluator/protocol from5413b8a, exact LF-to-CRLF transformation and bytes retained alongside registration outside worktree; newer PR LF evaluator evidence kept separate, never rewritten. Wall10171ms, model unused/credits0, compute unknown. Newer proxy jobs passed but artifacts are not yet independently audited.\n\nWindows shared investigation: entire starter tree identical across baseline/#11/#13/this lane; exact failures were Vitest5000ms deadlines. Five unchanged local controls59/59each (295assertions),179840.8205ms wall; local Node/hardware differ. No reproduced hosted/minimum-runtime cause or justified shared repair; deadlines unchanged.\n\nExact owner actions: main protection/publication settings; signing identity/key and verified signed annotated tags; private vulnerability reporting; protected release environment/reviewers; owner merge prerequisites/PR under review rules, then activate monthly reminder and dispatch Linux UAT. Native host/model/full reference-workload qualification remain separately observed work.\n\n## Compatibility and release notes\n\n- [ ] Classified the public compatibility impact under PRD §6.5: patch (compatible fix), minor (compatible addition), or major (breaking contract). Before 1.0, breaking changes require a minor increment and migration notes.\n- [x] Kernel and plugin SemVer agree; versions never regress.\n- [ ] Release notes disclose changed executables, hooks, helpers, permissions, destinations, schemas, evaluators, behavior, support matrix and migration/reconsent requirements, including explicit \"No change\" statements where applicable.\n\nAdditive stateless help fields; preview0.1.0-m0; no persisted-schema change. Approved RSS target300→400binaryMB; observed startup peak123879424bytes versus419430400, not reference qualification. No proxy changes to checks/evaluators/permissions or deployed candidate. Monthly reminder alone requires issues:write; tests remain read-only. Release disclosures delivered; final actual review-window/reviewer record remains owner work.\n\n## Solo-maintainer review (ENG-07, ENG-11)\n\n- [ ] Changes to executable content, hooks, helpers, permissions, destinations or evaluators remain on this public PR for a **72-hour review window** before owner merge. Record the opening time and earliest merge time below.\n- [ ] An external reviewer was requested when available. Agent review does not count as second-maintainer review.\n- [ ] Release notes state that **no second-maintainer review occurred**, name any external reviewer, and record the actual public review window. Do not claim a window that has not elapsed.\n\nOpened: 2026-11-07T19:53:39Z\nEarliest merge: 2026-11-10T19:53:39Z\nExternal reviewer or unavailable: No second-maintainer review occurred; external-review availability is not established.\n\nThe owner merges; this PR does not authorize publication or bypass release gates.",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-07T19:53:39Z",
+  "merged_at": "2026-11-09T18:03:24Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "vedprakash-m-process-and-ci",
+  "head": "vedprakash-m-process-and-ci",
+  "base_sha": "fe475fbb26cd5690a35f33acbb2371c902f3dc58",
+  "head_sha": "59ef17882f42ff3429556668bc0038d51a682dd3",
+  "merge_sha": "b27a36a571664809209caa8741662a8a6acfce2e",
+  "diff_sha256": "b9151922b8fc377e0215313f94a307229359f7d7ca3a73d3b21ee75eeef55724",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "e9d570923a85381781db12c7d99f131a694ce7a1",
+      "message": "feat: add process gates and bounded CI measurements",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "aaed1609cb49ceb7ac3e47b421bbff360160dbc7",
+      "message": "docs: publish process policies and approved memory target",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "270527e9f8090551fd18399d919c961b9eac0111",
+      "message": "build: apply approved D01 responsibility and bundle ceilings",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "84b2b4c0a9e1a0328d651518ce005b10b1eecf1c",
+      "message": "docs: record D01 capacity scope and measured candidate totals",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "68d7a2f2c99ac0bd7208599b323b068c367e4e7d",
+      "message": "test: align portability controls with approved capacity ceiling",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "1ded6480726b6c0b0b6070592a8836398ea349dd",
+      "message": "ci: preserve failing measurement exit codes",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "d036eefb889539b14f3cc367982016f89dd63270",
+      "message": "docs: record measurement exit repair and retained failure",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "803f7f7c78f910c91ceb87225c7fc80c681b8fe7",
+      "message": "Record paired frozen-budget diagnostics without selecting passes",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "aea13ed48a98a426e641cefc4ace979b55855ca1",
+      "message": "Disclose divergent corrected budget measurements",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "9052b17534835f0a9b160fead2188dafb0515b3a",
+      "message": "Record native watcher calibration diagnostics without weakening gates",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "59ef17882f42ff3429556668bc0038d51a682dd3",
+      "message": "Disclose paired budget failures and the native calibration blocker",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": ".github/pull_request_template.md",
+      "status": "added",
+      "additions": 22,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/model-drift.yml",
+      "status": "added",
+      "additions": 28,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/posix-uat.yml",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/system-budgets.yml",
+      "status": "added",
+      "additions": 113,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/untrusted.yml",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "status": "added",
+      "additions": 83,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "SECURITY.md",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "docs/release/release-verification.md",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "docs/user/qualified-tuple.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "eval/experiments/coordinator-intro-proxy.json",
+      "status": "added",
+      "additions": 34,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/inspect.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/bench-comparison.test.ts",
+      "status": "added",
+      "additions": 45,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/ci-security.test.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/invariants.test.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/platform.test.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/process-policy.test.ts",
+      "status": "added",
+      "additions": 73,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/quality-gate.test.ts",
+      "status": "modified",
+      "additions": 29,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/read-only-review.test.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/skill-experiment.test.ts",
+      "status": "added",
+      "additions": 19,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/starter-memory.test.ts",
+      "status": "added",
+      "additions": 14,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/tooling-portability.test.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 9,
+      "previous_path": null
+    },
+    {
+      "path": "specs/PRD.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "specs/tech-spec.md",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "tools/bench-comparison.ts",
+      "status": "added",
+      "additions": 99,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/build.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/lint-quality.ts",
+      "status": "modified",
+      "additions": 20,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "tools/quality-baseline.json",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "tools/semver.ts",
+      "status": "added",
+      "additions": 43,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/skill-experiment.ts",
+      "status": "added",
+      "additions": 136,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "tools/starter-memory.ts",
+      "status": "added",
+      "additions": 71,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:37:27Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-07T21:38:52Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-07T21:53:16Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:37:25Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T22:11:28Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:39:25Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:58:55Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-07T21:37:03Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:39:27Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-07T21:56:06Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:37:26Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-07T21:38:51Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:52:36Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-07T21:37:21Z"
+    }
+  ],
+  "binary_paths": []
+}

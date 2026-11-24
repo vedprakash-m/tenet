@@ -1,0 +1,94 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6038,
+  "title": "Store: reject non-array property values at compile time in `upsert()`",
+  "body": "## Changelog Entry\n\n<!-- To be added via `node ./scripts/changelog/new.mjs` once the PR number is known. -->\n\n## Description\n\n`nodeSchema` cast its rest schema to `BaseSchema<unknown, …>` (`Node.ts:41`), so every non-named property on `Node` was typed as `unknown`. Invalid values compiled and were only rejected at runtime:\n\n```ts\ncontroller.edit(transaction =>\n  transaction.upsert('_:m-1', () => ({\n    '@id': '_:m-1',\n    '@type': new Set(['Message']),\n    text: 'Hello' // Compiled, but `text` must be `PropertyValue` (an array), e.g. ['Hello']\n  }))\n);\n```\n\nThis change makes that line a compile-time error.\n\n## Design\n\nTypeScript has no way to say \"every property except `@id`/`@type`/… must be `X`\". The index signature that `objectWithRest` produces also applies to the named properties, so no object literal can be assigned to the uncast `Node`, including valid ones.\n\nThe type is therefore split into one for reading and one for writing:\n\n- **`Node`** (reading): the real `InferOutput` of `nodeSchema`. Named properties keep their types and every other property is `PropertyValue`. Object literals can't be assigned to it.\n- **`NodeInit<T>`** (writing): a generic check over the inferred literal type `T`.\n   - Named properties must match their schema types, and the required ones must be present.\n   - Every other key must be `PropertyValue`.\n\n`upsert()` now validates the updater's return value through `NodeInit<T>`:\n\n```ts\nupsert<T>(id: Identifier, updater: (node: Node | undefined) => NodeInit<T>): void;\n```\n\nThis covers both new literals and spreads of an existing node (`{ ...node, text: 'Hello' }`). Runtime validation by `nodeSchema` is unchanged.\n\n`Node` is not exported from the package. The only public-facing change is the generic `upsert()` signature.\n\n## Specific Changes\n\n- **`node/Node.ts`**\n   - Removed the `unknown` cast. The rest properties of `Node` are now typed as `PropertyValue`.\n   - Moved the named properties into `namedPropertiesSchema` and reused its `.entries` in `objectWithRest`.\n   - Added and exported `NodeInit<T>`.\n- **`Store.ts`**: `StoreTransaction.upsert()` and its implementation are now generic over `NodeInit<T>`.\n- **`private/createNode.ts`**\n   - With the stricter types, the `instanceof Set` check no longer narrowed enough to compile.\n   - `hasPart`/`isPartOf` are now read from the parsed node instead. Behavior is the same.\n- **`benchmark.ts`**: dropped the `: Node` return type on `createMessage()`, because it builds a literal.\n- **`Store.test.ts`**\n   - Added a test where a new node has `text: 'Hello, World!'`. It asserts the compile-time error (`@ts-expect-error`) and the runtime throw.\n   - In the existing `position: 1` test, replaced the `as unknown as Node` cast with `@ts-expect-error`.\n   - Marked two existing JSON-literal tests with `@ts-expect-error`. They pass invalid `@value`s on purpose (a recursive object, and an object containing `Date`), which the old typing silently accepted.\n\n- [x] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-11-10T03:20:26Z",
+  "merged_at": "2026-11-10T04:34:55Z",
+  "base_ref": "feat-new-store",
+  "base": "feat-new-store",
+  "head_ref": "copilot/fix-type-check-bug",
+  "head": "copilot/fix-type-check-bug",
+  "base_sha": "f7aebeb9b4e1a3754a4cf2e9133400f76ec0bc8e",
+  "head_sha": "e932ef80e161449341243182417a9868422b59cb",
+  "merge_sha": "8e54a4132a4609922da579cecb5759f9e5f3987d",
+  "diff_sha256": "9aa68c3a85de8d2ad43b93d565161175018ccdd6669a3eaf3e3b42d5e1fa0b7b",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-10T04:34:50Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "047d56bddef1da684e986a7d96eb260c95c2ab55",
+      "message": "Plan: fix Node type accepting invalid property values",
+      "author": "Copilot"
+    },
+    {
+      "sha": "e932ef80e161449341243182417a9868422b59cb",
+      "message": "Store: reject non-array property values at compile-time in upsert()",
+      "author": "Copilot"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/store/src/Store.test.ts",
+      "status": "modified",
+      "additions": 27,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/Store.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/benchmark.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/node/Node.ts",
+      "status": "modified",
+      "additions": 47,
+      "deletions": 24,
+      "previous_path": null
+    },
+    {
+      "path": "packages/store/src/private/createNode.ts",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 7,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-10T04:34:41Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T04:34:59Z"
+    }
+  ],
+  "binary_paths": []
+}

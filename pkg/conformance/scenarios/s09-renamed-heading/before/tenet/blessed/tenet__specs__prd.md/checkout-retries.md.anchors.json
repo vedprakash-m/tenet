@@ -1,0 +1,5 @@
+{
+  "test: test/retry.test.ts > retries once": [
+    "test(\"[R-1] retries once\", () => {});"
+  ]
+}

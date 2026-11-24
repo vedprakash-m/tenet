@@ -1,0 +1,1286 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5779,
+  "title": "Upgrade `avatarMiddleware` to `polymiddleware`",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n- 💥 `avatarMiddleware` is being deprecated in favor of [`polymiddleware`](./docs/MIDDLEWARE.md). It will be removed on or after 2028-03-18, related to PR [#5779](https://github.com/microsoft/BotFramework-WebChat/pull/5779)\r\n\r\n### Added\r\n\r\n- Added `polymiddleware`, a new [universal middleware for every UIs](./docs/MIDDLEWARE.md), by [@compulim](https://github.com/compulim) in PR [#5515](https://github.com/microsoft/BotFramework-WebChat/pull/5515) and [#5566](https://github.com/microsoft/BotFramework-WebChat/pull/5566)\r\n   - Legacy middleware is prioritized over polymiddleware\r\n   - Supports avatar middleware, by [@compulim](https://github.com/compulim) in PR [#5779](https://github.com/microsoft/BotFramework-WebChat/pull/5779)\r\n\r\n### Removed\r\n\r\n- `avatarMiddleware` is being deprecated in favor of [`polymiddleware`](./docs/MIDDLEWARE.md). It will be removed on or after 2028-03-18, related to PR [#5779](https://github.com/microsoft/BotFramework-WebChat/pull/5779)\r\n\r\n### Fixed\r\n\r\n- Fixed `<AddFullBundle>` should not re-render when `attachment[ForScreenReader]Middleware` is updated without noticeable different (`iterateEquals`), by [@compulim](https://github.com/compulim), in PR [#5779](https://github.com/microsoft/BotFramework-WebChat/pull/5779)\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\nUpgraded avatar middleware to `avatarPolymiddleware`.\r\n\r\nUnified and memorized the `singleToArray(middleware ?? [])` pattern.\r\n\r\nAlso fixed wasted rendering in `<AddFullBundle>`.\r\n\r\nAlso fixed test harness legacy `<RunHook>` that is being rendered multiple times:\r\n\r\n- Parent component is being re-rendered, but `<RunHook>` is not memorized\r\n- Code inside `<RunHook>` subscribes to context which is changed, then the render loop is re-executed\r\n\r\n## Design\r\n\r\n<!-- If this feature is complicated in nature, please provide additional clarifications. -->\r\n\r\n### Why render legacy middleware before polymiddleware?\r\n\r\n- Legacy middleware should have high priority than defaults\r\n- Default middleware will be upgraded to polymiddleware, however, they should have lower priority\r\n- Default middleware are implemented in the `component` package, and passed via `polymiddleware` props\r\n  - They are UI, cannot be implemented in `api` package\r\n\r\nWe have a few way out, either one of the followings:\r\n\r\n- Add a new `lowPriorityPolymiddleware` props for default polymiddleware, so we can put them after legacy\r\n  - We don't want any special treatments or any prioritization system\r\n- We put the upgrade logics inside both `api` and `component` package\r\n  - `component` will upgrade legacy to polymiddleware and prioritize properly\r\n  - Spaghetti code and it is difficult to test the logic in `api` package\r\n- We always render legacy middleware before polymiddleware\r\n  - Default middleware are polymiddleware, has lower priority than legacy\r\n\r\nThe simplest and logical move is `#3`: render legacy middleware before polymiddleware.\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Moved some helper functions to `base` and `react-hooks` packages\r\n- Added new `useMemoIterable` to help memorizing iterable results\r\n- Added debug data in the enhancer of polymiddleware\r\n- Fixed test harness that `RunHookActivity` could re-render and running hooks multiple times\r\n   - For example, if style options changed, some `useXXX` hooks will be invalidated and causing the component to be re-rendered\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [x] I have added tests and executed them locally\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n- [x] ~Browser and platform compatibilities reviewed~\r\n- [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n- [x] Documents reviewed (docs, samples, live demo)\r\n- [x] ~Internationalization reviewed (strings, unit formatting)~\r\n- [x] `package.json` and `package-lock.json` reviewed\r\n- [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n- [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-03-19T08:04:01Z",
+  "merged_at": "2026-03-30T22:05:54Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "agent-polymiddleware-promoter",
+  "head": "agent-polymiddleware-promoter",
+  "base_sha": "45490e524781d6e7bda2b76509ba0cd32d8a5e82",
+  "head_sha": "9e1e90a54d02c71bcd28dde5129f00fd19e9b49d",
+  "merge_sha": "cd39b84090a4ea857a53ecd718f474ac5e3b6559",
+  "diff_sha256": "5e10eb0847327780163178773120e03a03f48403e4e3b89ce29ed7b6d4fddb43",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-03-25T21:25:23Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "ac7deb4910418b6099662390cf3c91182879077e",
+      "message": "Initial custom agent",
+      "author": "compulim"
+    },
+    {
+      "sha": "4d03e49757d6d2337caf94e8d513491179da7145",
+      "message": "Request vs. props",
+      "author": "compulim"
+    },
+    {
+      "sha": "bc7e28eb6c95604478458570dc6f412d82e06eee",
+      "message": "Add more instructions",
+      "author": "compulim"
+    },
+    {
+      "sha": "3d2e355651147aa5f32c5e646d7402cf9f73c273",
+      "message": "Upgrade avatarMiddleware to polymiddleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "446b23bb6f576be5551b7028f9f2839b9d4c54ab",
+      "message": "Keep original request object",
+      "author": "compulim"
+    },
+    {
+      "sha": "b808d04ed89d7dfa9fd8954861fc9a202e1609e3",
+      "message": "Fix ESLint",
+      "author": "compulim"
+    },
+    {
+      "sha": "72443885e955858197b2ec9ef468f079176f3fb8",
+      "message": "Fix ESLint",
+      "author": "compulim"
+    },
+    {
+      "sha": "1ee89561e7283c67ac1073ce35197354a9c75823",
+      "message": "Move to macOS 26",
+      "author": "compulim"
+    },
+    {
+      "sha": "d431dd36f849d9252caddbd3e7658f5b5c182037",
+      "message": "Fix legacy avatar bridge",
+      "author": "compulim"
+    },
+    {
+      "sha": "d5c6b46436edd0f3f8694601b9f5117368afaff4",
+      "message": "Deprioritize default activity middleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "8ee929b3c07139cca679c939aec80c647831bbee",
+      "message": "Patch attachmentLayout instead of via activityMiddleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "f7675011dc77aa92cc0bf42a3ccd4a9e66d6f50a",
+      "message": "Add helper hooks",
+      "author": "compulim"
+    },
+    {
+      "sha": "c0bc32a1f9287e76ef7dded9bef99f800941c28e",
+      "message": "Add iterateEquals",
+      "author": "compulim"
+    },
+    {
+      "sha": "5619932b0fb50e2f00ab5721afe71a29fcab4613",
+      "message": "Use useMemoIterable and polymiddleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "d4c112cb951b458f77faa906980fb8acd77de3bd",
+      "message": "Add watch deps",
+      "author": "compulim"
+    },
+    {
+      "sha": "7f0f9aaf4e6cc5c8c45f91a07bb3fbd87034295d",
+      "message": "Fix signature change",
+      "author": "compulim"
+    },
+    {
+      "sha": "8d0cf168299e620a710c3c830cab6ba9848844fe",
+      "message": "Refactor singleToArray nd OneOrMany",
+      "author": "compulim"
+    },
+    {
+      "sha": "26a8cbe1d384fccf43a65fede07aff2b757452d4",
+      "message": "Fix AddFullBundle rerendering",
+      "author": "compulim"
+    },
+    {
+      "sha": "696eb9894b95a53f200fbb2d2695e5f7f223cd6d",
+      "message": "Clean up singleToArray",
+      "author": "compulim"
+    },
+    {
+      "sha": "a165f97e3a2d47ab9677e068e977ffc998889ee9",
+      "message": "Fix typings",
+      "author": "compulim"
+    },
+    {
+      "sha": "004af6c7ecce25ef243d9383726e25abdde0d740",
+      "message": "Use undefined if array is empty",
+      "author": "compulim"
+    },
+    {
+      "sha": "f8c22740b641e52f755dc49f0bc53d82be11698b",
+      "message": "Clean up polymiddleware array",
+      "author": "compulim"
+    },
+    {
+      "sha": "d23385f6fd24b7c01e212e2a90c597eed24c8058",
+      "message": "Fix avatarMiddleware",
+      "author": "compulim"
+    },
+    {
+      "sha": "5ce745c458726361b36df94c72a8e64fdd237ba2",
+      "message": "Fix middleware.length",
+      "author": "compulim"
+    },
+    {
+      "sha": "356004f480827da573ab4245bbcb229d3e0548f2",
+      "message": "Fix ESLint",
+      "author": "compulim"
+    },
+    {
+      "sha": "bcaee945fab2a0be39f28effc07eb8786838670c",
+      "message": "Add displayName",
+      "author": "compulim"
+    },
+    {
+      "sha": "d6b8fe70f724f7bf80c0ca3389c459c7862a6035",
+      "message": "Fix test",
+      "author": "compulim"
+    },
+    {
+      "sha": "731597198f7b436209416d7bc461ef9beec6aa99",
+      "message": "Add waitFor",
+      "author": "compulim"
+    },
+    {
+      "sha": "86d6d438b03f4e024ee75a12ca65a11c2876972d",
+      "message": "Clean up useMemoIterable",
+      "author": "compulim"
+    },
+    {
+      "sha": "37bd3f63bb15b1b43e35b0f0c1093110c985cc09",
+      "message": "Fix import",
+      "author": "compulim"
+    },
+    {
+      "sha": "89644bc455fec101b60891f3878096456fef63c4",
+      "message": "Remove no-magic-numbers",
+      "author": "compulim"
+    },
+    {
+      "sha": "94649accb5b48a738e8a251ad325b2536ff0e413",
+      "message": "Should only show 1 message",
+      "author": "compulim"
+    },
+    {
+      "sha": "10b6ffc6e2f63ff7a2528ca7ad9029b75f8b7489",
+      "message": "Fix runHook twice",
+      "author": "compulim"
+    },
+    {
+      "sha": "4add0902b5262ef2ffb0bdbe6217aa9363e5e06e",
+      "message": "Fix window.React",
+      "author": "compulim"
+    },
+    {
+      "sha": "494b95b2977fd49839aa362471aa29130e3f80b3",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "22403b7f4268cef046238249c4d8b4cf80ec63e4",
+      "message": "Add test",
+      "author": "compulim"
+    },
+    {
+      "sha": "97775f4bbc2b68b60e52b5205b4e6e04cdba918c",
+      "message": "Clean up tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "8fe980e2bf9348fbd814b2964191e36b3e7ba876",
+      "message": "Skip test",
+      "author": "compulim"
+    },
+    {
+      "sha": "173be9013f5e19b7da03016d71d99e94c7190975",
+      "message": "Use styleOptions at init",
+      "author": "compulim"
+    },
+    {
+      "sha": "5326629358f3d6d47c207f87e3bc8abc8f7e1247",
+      "message": "Add changing middleware tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "f6f835b25cb4b6b25e0b44a109989fec8025ac0b",
+      "message": "Add tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "4b0bfe9ef3563118913f378f75832a16434ed835",
+      "message": "Fix type portability",
+      "author": "compulim"
+    },
+    {
+      "sha": "7fcdd2b3de0e6ba12b7b4b4fd5227105d6ced146",
+      "message": "Add AvatarPolymiddlewareProxy",
+      "author": "compulim"
+    },
+    {
+      "sha": "5d3bb3e1c3766a247779c39d81da6fcae355c8cc",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "3bb3b7128bb710529d641e4ff69a886579d937ef",
+      "message": "Add useBuildRenderAvatarCallback test",
+      "author": "compulim"
+    },
+    {
+      "sha": "63655d49073ea1227282a3bbf5fffb8ddf6b2e44",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "8e1ce638d8db7db2c6e10d7c008acd282647292c",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "68ed0a90cc87d05ea19d1f97f9bd5b64d4c37dc8",
+      "message": "Update doc",
+      "author": "compulim"
+    },
+    {
+      "sha": "ae15b969ff233b8ed3f2d44465b48121b775a949",
+      "message": "Centralize useBuildRenderCallback patch",
+      "author": "compulim"
+    },
+    {
+      "sha": "196fba014412f6035803f0f4f733505d724cd913",
+      "message": "Add entry",
+      "author": "compulim"
+    },
+    {
+      "sha": "d1dd577efa59fc17868a96c9defcf91d96d5bfb9",
+      "message": "Fix PR number",
+      "author": "compulim"
+    },
+    {
+      "sha": "1e2355d6a84f9f4d55bf7995bd191f4fe956f92a",
+      "message": "Merge branch 'main' into agent-polymiddleware-promoter",
+      "author": "compulim"
+    },
+    {
+      "sha": "ee6af7a7cdf20eec47aef7d02ed0bdf0741c9e6b",
+      "message": "Apply PR suggestions",
+      "author": "compulim"
+    },
+    {
+      "sha": "4d4d12e8f1c99d036d81f3219cae7e07f01df5e1",
+      "message": "Clean up singleToArray",
+      "author": "compulim"
+    },
+    {
+      "sha": "192ff27b5da7bd5d94a89ba072bacb9e8617be9c",
+      "message": "singleToArray return new frozen array",
+      "author": "compulim"
+    },
+    {
+      "sha": "1e29020d48101babafac9720f8ade588942e6324",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "89dd3335b68c519e92d1f0f5a3c3031fa9d24608",
+      "message": "Merge branch 'main' into agent-polymiddleware-promoter",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "1d83254a53ff551cff0364e60d3c196e928bc8b2",
+      "message": "Fix [undefined] vs. []",
+      "author": "compulim"
+    },
+    {
+      "sha": "194f513d09c916d03484269169f6387a36abf24b",
+      "message": "Add generator tests",
+      "author": "compulim"
+    },
+    {
+      "sha": "9e1e90a54d02c71bcd28dde5129f00fd19e9b49d",
+      "message": "Remove no-magic-numbers",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": ".eslintrc.yml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": ".github/agents/polymiddleware-promoter.agent.md",
+      "status": "added",
+      "additions": 45,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/pull-request-validation.yml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "AGENTS.md",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/activityGrouping/activityGrouping.legacyActivityMiddleware.skip.html",
+      "status": "renamed",
+      "additions": 72,
+      "deletions": 53,
+      "previous_path": "__tests__/html2/activityGrouping/activityGrouping.legacyActivityMiddleware.html"
+    },
+    {
+      "path": "__tests__/html2/activityGrouping/activityGrouping.legacyActivityMiddleware.skip.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html2/activityGrouping/activityGrouping.legacyActivityMiddleware.html.snap-1.png"
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/backwardCompatibility.html",
+      "status": "added",
+      "additions": 136,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/backwardCompatibility.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/addOrReplace.html",
+      "status": "added",
+      "additions": 107,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/addOrReplace.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/changing.html",
+      "status": "added",
+      "additions": 117,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/changing.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/changing.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/decorate.html",
+      "status": "added",
+      "additions": 107,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/decorate.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/delete.html",
+      "status": "added",
+      "additions": 86,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/delete.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/styleOptions.html",
+      "status": "added",
+      "additions": 120,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/styleOptions.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/styleOptions.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/addOrReplace.html",
+      "status": "added",
+      "additions": 106,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/addOrReplace.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/changing.html",
+      "status": "added",
+      "additions": 113,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/changing.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/changing.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/decorate.html",
+      "status": "added",
+      "additions": 102,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/decorate.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/defaultAvatar.styleOptions.html",
+      "status": "added",
+      "additions": 102,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/defaultAvatar.styleOptions.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/defaultAvatar.styleOptions.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/delete.html",
+      "status": "added",
+      "additions": 86,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/polymiddleware/delete.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/renderProxy.html",
+      "status": "added",
+      "additions": 138,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/renderProxy.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/useBuildRenderAvatarCallback.html",
+      "status": "added",
+      "additions": 146,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/middleware/avatar/useBuildRenderAvatarCallback.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/scrollToEndButton/scrollToEndButton.persistWhileCallingUseScrollTo.html",
+      "status": "modified",
+      "additions": 37,
+      "deletions": 16,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/timestamp/attachmentSendTimeout.html",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/transcript/legacyActivityMiddleware.reactionButtons.html",
+      "status": "modified",
+      "additions": 25,
+      "deletions": 20,
+      "previous_path": null
+    },
+    {
+      "path": "docs/MIDDLEWARE.md",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/src/PolymiddlewareComposer.tsx",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 21,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/src/avatarPolymiddleware.tsx",
+      "status": "added",
+      "additions": 90,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/src/index.ts",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/src/legacy.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/src/legacy/avatarMiddleware.ts",
+      "status": "added",
+      "additions": 29,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api-middleware/src/private/templatePolymiddleware.tsx",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/boot/internal.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/boot/middleware.ts",
+      "status": "modified",
+      "additions": 27,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/Composer.tsx",
+      "status": "modified",
+      "additions": 67,
+      "deletions": 35,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/WebChatAPIContext.ts",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/internal/useDebugDeps.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 30,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/middleware/concatMiddleware.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/useCreateAvatarRenderer.ts",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 33,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/legacy/LegacyActivityBridge.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/legacy/createActivityPolymiddlewareFromLegacy.tsx",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/legacy/createAvatarPolymiddlewareFromLegacy.tsx",
+      "status": "added",
+      "additions": 102,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/middleware/AvatarPolymiddlewareProxy.tsx",
+      "status": "added",
+      "additions": 46,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/middleware/useBuildRenderAvatarCallback.ts",
+      "status": "added",
+      "additions": 37,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/GroupActivities/GroupActivitiesComposer.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/StyleOptions/private/rectifyStyleOptions.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/types/AvatarMiddleware.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/src/utils/OneOrMany.ts",
+      "status": "added",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/src/utils/index.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/src/utils/iterateEquals.spec.ts",
+      "status": "added",
+      "additions": 84,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/src/utils/iterateEquals.ts",
+      "status": "added",
+      "additions": 26,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/base/src/utils/singleToArray.ts",
+      "status": "added",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/AddFullBundle.tsx",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/middleware.ts",
+      "status": "modified",
+      "additions": 17,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/useComposerProps.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Activity/Avatar.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/BasicTranscript.tsx",
+      "status": "modified",
+      "additions": 321,
+      "deletions": 319,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Composer.tsx",
+      "status": "modified",
+      "additions": 80,
+      "deletions": 56,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/Activity/defaultActivityPolymiddleware.tsx",
+      "status": "renamed",
+      "additions": 17,
+      "deletions": 3,
+      "previous_path": "packages/component/src/Middleware/Activity/createCoreMiddleware.tsx"
+    },
+    {
+      "path": "packages/component/src/Middleware/Avatar/DefaultAvatar.tsx",
+      "status": "renamed",
+      "additions": 7,
+      "deletions": 21,
+      "previous_path": "packages/component/src/Middleware/Avatar/createCoreMiddleware.tsx"
+    },
+    {
+      "path": "packages/component/src/Middleware/Avatar/createDefaultAvatarPolymiddleware.tsx",
+      "status": "added",
+      "additions": 22,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Transcript/hooks/useRenderActivityProps.ts",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Utils/singleToArray.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/boot/internal.ts",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/index.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core-debug-api/src/RestrictedDebugAPI.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/index.ts",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 8,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/types/OneOrMany.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/utils/singleToArray.ts",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/react-hooks/package.json",
+      "status": "modified",
+      "additions": 7,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/react-hooks/src/index.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/react-hooks/src/useDebugDeps.ts",
+      "status": "added",
+      "additions": 26,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/react-hooks/src/useMemoIterable.ts",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/activityGrouping/ActivityGroupingSurface.js",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 29,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/createDirectLineWithTranscript.js",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/createRunHookActivityMiddleware.js",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-25T17:44:14Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-25T17:44:33Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-25T17:45:44Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-03-25T21:31:14Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-25T21:46:06Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-25T21:47:44Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-25T21:47:54Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-26T06:09:06Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-26T06:09:46Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-26T06:27:39Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-26T06:27:58Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-26T06:28:08Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-26T06:28:21Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-28T15:19:05Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-28T15:30:35Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-28T15:33:37Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-28T15:34:52Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-30T18:18:05Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-30T18:18:09Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-30T18:50:12Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-03-30T19:01:48Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-03-30T22:05:43Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:50:40Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:51:03Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:41Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:34Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:25Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:50Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:44Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:34Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:50:11Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:01Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:05Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:37Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:50:22Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:22Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:35Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:00Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:37Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:34Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:49:52Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:46:02Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:43:59Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:45:18Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:37:12Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:36:19Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:37:17Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:41:40Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:38:15Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:36:58Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:51:33Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:37:36Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:37:47Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-03-30T19:37:21Z"
+    }
+  ],
+  "binary_paths": [
+    "__tests__/html2/activityGrouping/{activityGrouping.legacyActivityMiddleware.html.snap-1.png => activityGrouping.legacyActivityMiddleware.skip.html.snap-1.png}",
+    "__tests__/html2/middleware/avatar/backwardCompatibility.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/addOrReplace.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/changing.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/changing.html.snap-2.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/decorate.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/delete.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/styleOptions.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/legacyAvatarMiddleware/styleOptions.html.snap-2.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/addOrReplace.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/changing.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/changing.html.snap-2.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/decorate.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/defaultAvatar.styleOptions.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/defaultAvatar.styleOptions.html.snap-2.png",
+    "__tests__/html2/middleware/avatar/polymiddleware/delete.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/renderProxy.html.snap-1.png",
+    "__tests__/html2/middleware/avatar/useBuildRenderAvatarCallback.html.snap-1.png"
+  ]
+}

@@ -1,0 +1,257 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5957,
+  "title": "Remove the unnamed input workarounds from the selected action tests",
+  "body": "> Two selected action tests still work around unnamed inputs in the live region copy of Adaptive Cards, which #5913 fixed.\n\n## Changelog Entry\n\n(not required: test-only change, label `no-changelog`)\n\n## Description\n\n`selectedAction.announcement.validation.html` set a `placeholder` and `selectedAction.validation.html` waited for the live region to clear, both only so axe would not flag the unnamed input in the live region copy. Since #5913 names the copy by the input's `label`, both workarounds are removed.\n\n## Specific Changes\n\n- `selectedAction.announcement.validation.html`: removed `placeholder`; snapshots 1–2 lose the \"First name\" placeholder text, still showing nothing then \"Selected\" announced\n- `selectedAction.validation.html`: removed the wait for the live region to clear; snapshots unchanged\n\n- [x] I have added tests and executed them locally\n- [ ] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-22T10:59:23Z",
+  "merged_at": "2026-10-22T18:16:33Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/dev-selected-action-tests",
+  "head": "OEvgeny/dev-selected-action-tests",
+  "base_sha": "00137fa1367766b7656e6592039f6a5ee7400c59",
+  "head_sha": "15e1ca8dfecd2b7567611ec51045d525f37e6b3c",
+  "merge_sha": "011c7c5b388104f9de18157bb1f92ff05856ee2e",
+  "diff_sha256": "645cbe8ce6f11b2b56166e8e29e421441ff1b98470c3e811c74e952c79ece5e1",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [
+    "no-changelog"
+  ],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-22T15:54:58Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "15e1ca8dfecd2b7567611ec51045d525f37e6b3c",
+      "message": "Remove workarounds for unnamed live region inputs from selected action tests",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.validation.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.validation.html.snap-1.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.validation.html.snap-2.png",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/accessibility/adaptiveCard/selectedAction.validation.html",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 5,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-22T15:55:08Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-22T18:15:25Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T15:55:07Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T12:50:53Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "failure",
+      "completed_at": "2026-10-22T11:53:25Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:36:46Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:36:21Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:30:50Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:31:49Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:30:38Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:26:43Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:30:08Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:29:30Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:31:32Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:30:46Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:27:09Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:29:30Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:28:28Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:30:23Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:31:11Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:28:02Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:31:58Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:26:21Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:26:07Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:23:26Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:21:18Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:19:27Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:05:32Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:10:00Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:05:31Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:07:46Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:05:44Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:00:35Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:05:27Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:06:05Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-22T11:05:39Z"
+    }
+  ],
+  "binary_paths": [
+    "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.validation.html.snap-1.png",
+    "__tests__/html2/accessibility/adaptiveCard/selectedAction.announcement.validation.html.snap-2.png"
+  ]
+}

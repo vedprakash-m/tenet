@@ -1,0 +1,79 @@
+[
+  {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "protocolVersion": "2025-11-25",
+      "capabilities": {
+        "tools": {
+          "listChanged": false
+        }
+      },
+      "serverInfo": {
+        "name": "tenet",
+        "version": "0.0.0"
+      }
+    }
+  },
+  {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": {
+      "content": [
+        {
+          "type": "text",
+          "text": "# Agent context\n\n## Blessed (2)\n- R-1 — Always validate input. (global; owner: ved)\n- R-3 — Emit an audit line on failure. (path; owner: ved)\n\n## Drafts (0)\n\n## Index (0)\n\n## Omitted: R-2\n## Rules: tests-not-weakened (advise), protected-surfaces (advise), acceptance-passed (advise), citations-valid (advise), budget (advise)\n"
+        }
+      ],
+      "structuredContent": {
+        "blessed": [
+          {
+            "id": "R-1",
+            "section": "requirements",
+            "text": "Always validate input.",
+            "flags": [],
+            "owner": "ved",
+            "reason": "global"
+          },
+          {
+            "id": "R-3",
+            "section": "requirements",
+            "text": "Emit an audit line on failure.",
+            "flags": [],
+            "owner": "ved",
+            "reason": "path"
+          }
+        ],
+        "drafts": [],
+        "index": [],
+        "omitted": [
+          "R-2"
+        ],
+        "truncated": true,
+        "rules": [
+          {
+            "rule": "tests-not-weakened",
+            "mode": "advise"
+          },
+          {
+            "rule": "protected-surfaces",
+            "mode": "advise"
+          },
+          {
+            "rule": "acceptance-passed",
+            "mode": "advise"
+          },
+          {
+            "rule": "citations-valid",
+            "mode": "advise"
+          },
+          {
+            "rule": "budget",
+            "mode": "advise"
+          }
+        ]
+      },
+      "isError": false
+    }
+  }
+]

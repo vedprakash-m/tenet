@@ -1,0 +1,106 @@
+{
+  "ok": true,
+  "command": "check",
+  "version": "0.0.0",
+  "result": {
+    "findings": [
+      {
+        "code": "TN-POLICY-ALPHA0-CAP",
+        "severity": "advise",
+        "rule": "acceptance-passed",
+        "file": "tenet.yaml",
+        "line": null,
+        "message": "The acceptance-passed rule is capped at advise in alpha.0.",
+        "fix": "The configured mode will take effect when rule modes are available."
+      },
+      {
+        "code": "TN-POLICY-ALPHA0-CAP",
+        "severity": "advise",
+        "rule": "protected-surfaces",
+        "file": "tenet.yaml",
+        "line": null,
+        "message": "The protected-surfaces rule is capped at advise in alpha.0.",
+        "fix": "The configured mode will take effect when rule modes are available."
+      },
+      {
+        "code": "TN-POLICY-ALPHA0-CAP",
+        "severity": "advise",
+        "rule": "spec-approval",
+        "file": "tenet.yaml",
+        "line": null,
+        "message": "The spec-approval rule is capped at advise in alpha.0.",
+        "fix": "The configured mode will take effect when rule modes are available."
+      },
+      {
+        "code": "TN-POLICY-ALPHA0-CAP",
+        "severity": "advise",
+        "rule": "stop-threshold",
+        "file": "tenet.yaml",
+        "line": null,
+        "message": "The stop-threshold rule is capped at advise in alpha.0.",
+        "fix": "The configured mode will take effect when rule modes are available."
+      },
+      {
+        "code": "TN-POLICY-ALPHA0-CAP",
+        "severity": "advise",
+        "rule": "tests-not-weakened",
+        "file": "tenet.yaml",
+        "line": null,
+        "message": "The tests-not-weakened rule is capped at advise in alpha.0.",
+        "fix": "The configured mode will take effect when rule modes are available."
+      }
+    ],
+    "summary": {
+      "errors": 0,
+      "warnings": 0,
+      "advises": 5
+    }
+  },
+  "errors": [
+    {
+      "code": "TN-POLICY-ALPHA0-CAP",
+      "severity": "advise",
+      "rule": "acceptance-passed",
+      "file": "tenet.yaml",
+      "line": null,
+      "message": "The acceptance-passed rule is capped at advise in alpha.0.",
+      "fix": "The configured mode will take effect when rule modes are available."
+    },
+    {
+      "code": "TN-POLICY-ALPHA0-CAP",
+      "severity": "advise",
+      "rule": "protected-surfaces",
+      "file": "tenet.yaml",
+      "line": null,
+      "message": "The protected-surfaces rule is capped at advise in alpha.0.",
+      "fix": "The configured mode will take effect when rule modes are available."
+    },
+    {
+      "code": "TN-POLICY-ALPHA0-CAP",
+      "severity": "advise",
+      "rule": "spec-approval",
+      "file": "tenet.yaml",
+      "line": null,
+      "message": "The spec-approval rule is capped at advise in alpha.0.",
+      "fix": "The configured mode will take effect when rule modes are available."
+    },
+    {
+      "code": "TN-POLICY-ALPHA0-CAP",
+      "severity": "advise",
+      "rule": "stop-threshold",
+      "file": "tenet.yaml",
+      "line": null,
+      "message": "The stop-threshold rule is capped at advise in alpha.0.",
+      "fix": "The configured mode will take effect when rule modes are available."
+    },
+    {
+      "code": "TN-POLICY-ALPHA0-CAP",
+      "severity": "advise",
+      "rule": "tests-not-weakened",
+      "file": "tenet.yaml",
+      "line": null,
+      "message": "The tests-not-weakened rule is capped at advise in alpha.0.",
+      "fix": "The configured mode will take effect when rule modes are available."
+    }
+  ]
+}

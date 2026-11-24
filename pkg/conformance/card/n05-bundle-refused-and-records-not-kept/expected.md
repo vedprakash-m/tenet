@@ -1,4 +1,4 @@
-### Tenet proof · 9b41d0 (merge candidate) · advisory
+### Tenet proof · a11111 (head) · advisory
 Your intent this change touches
   C-1 blessed · "A payment that times out is retried once, never twice." · implements · 1 tagged test(s) not run
 Acceptance

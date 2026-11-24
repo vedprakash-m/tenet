@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "scenario": "s03-advisory-and-enforced-failure",
+  "spec_refs": [
+    "tenet/specs/tech-spec/algorithms.md#alg-07",
+    "tenet/specs/plan/alpha.0b.md#a0-7"
+  ],
+  "steps": [
+    {
+      "id": "01-alg07-fixture",
+      "kind": "sdk",
+      "export": "evaluateGateFixture",
+      "input": {
+        "cases": [
+          {
+            "name": "advisory-review-and-enforced-failed-claim",
+            "claims": [
+              {
+                "id": "review-converged",
+                "kind": "approval",
+                "mode": "advise",
+                "applicable": true,
+                "result": "unsatisfied"
+              },
+              {
+                "id": "acceptance-passed",
+                "kind": "evidence",
+                "mode": "enforce",
+                "applicable": true,
+                "result": "failed"
+              }
+            ],
+            "invariants": {
+              "verdict": "refuse",
+              "disposition": "blocks",
+              "lead": "TN-GATE-CLAIM",
+              "blocking": "acceptance-passed"
+            }
+          },
+          {
+            "name": "advisory-failure-and-enforced-pass",
+            "claims": [
+              {
+                "id": "tests-not-weakened",
+                "kind": "evidence",
+                "mode": "advise",
+                "applicable": true,
+                "result": "failed"
+              },
+              {
+                "id": "acceptance-passed",
+                "kind": "evidence",
+                "mode": "enforce",
+                "applicable": true,
+                "result": "satisfied"
+              }
+            ],
+            "invariants": {
+              "verdict": "refuse",
+              "disposition": "advises",
+              "lead": "TN-GATE-CLAIM"
+            }
+          }
+        ]
+      },
+      "expectedJson": "expected/01-gate-fixture.json"
+    },
+    {
+      "id": "02-alpha0-policy-cap",
+      "kind": "cli",
+      "args": [
+        "check",
+        "--json"
+      ],
+      "expectExitCode": 0,
+      "expectedJson": "expected/02-check.json"
+    }
+  ]
+}

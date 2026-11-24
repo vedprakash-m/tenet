@@ -1,0 +1,244 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 19,
+  "title": "Diagnostics export, trait detection and the threat note (NFR-07, QLT-11, QLT-13)",
+  "body": "Builds three Musts that had no test, under the owner's direction to drop process gates and finish today. Feature-spec review and sign-off were waived; the simplifications below are disclosed instead.\n\n- **NFR-07**: `inspect --view export` returns a redacted diagnostics projection as a preview. Saving is cooperative: the kernel writes nothing (option B of the local spec).\n- **QLT-11**: static path and dependency signals for the R1 traits. Partial coverage everywhere, so results are `present` or `unknown`. `decide traits` records project traits and takes corrections; change traits are recorded at each check. Not built: a missed-trait finding type, lane raises from late change traits, and trait obligations.\n- **QLT-13**: `threat`-tagged basis elements; `threat-note-open` blocks `checked-local` for a present security trait without a complete note. An `unknown` trait does not require the note, and an actor may be a constraint.\n\nNothing is observed on the real host.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-10T21:56:31Z",
+  "merged_at": "2026-11-10T22:23:43Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "today-musts",
+  "head": "today-musts",
+  "base_sha": "47f6e4ce24be83c8b77dc82217be2fff8cf878e2",
+  "head_sha": "6f82428571b98c29fc785239d2531228adb9a84b",
+  "merge_sha": "c4e30498aada93c5975343616fc82903637863f1",
+  "diff_sha256": "b57bdb69daf2b50a7d8933f58ee2e526168bd0c837a6ab8a8bfc2ecca9b46bb5",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-10T22:23:39Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "09a72b30a9e265690616e7518114592fcc72c31a",
+      "message": "Add the diagnostics export, trait detection and the threat note",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "6f82428571b98c29fc785239d2531228adb9a84b",
+      "message": "docs: changelog for the diagnostics export, traits and threat note",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 8,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/basis-build.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/diagnostics.ts",
+      "status": "added",
+      "additions": 60,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/reasons.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/schemas.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/threat.ts",
+      "status": "added",
+      "additions": 51,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/trait-detect.ts",
+      "status": "added",
+      "additions": 104,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/verdict.ts",
+      "status": "modified",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/index.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/traits.ts",
+      "status": "added",
+      "additions": 48,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-finalize.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/facts.ts",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/inspect.ts",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/diagnostics-export.test.ts",
+      "status": "added",
+      "additions": 69,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/golden-task-loan-desk.test.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/trait-detect.test.ts",
+      "status": "added",
+      "additions": 114,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet-intake/SKILL.md",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "plugin/skills/tenet/SKILL.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T21:59:28Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T21:57:51Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T21:57:42Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T22:15:06Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-10T21:57:21Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T21:57:41Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T21:57:45Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T21:59:25Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:17:57Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:00:57Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:19:44Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:14:12Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-10T22:00:06Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "failure",
+      "completed_at": "2026-11-10T22:15:50Z"
+    }
+  ],
+  "binary_paths": []
+}

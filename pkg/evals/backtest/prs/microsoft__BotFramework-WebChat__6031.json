@@ -1,0 +1,417 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6031,
+  "title": "Convert the toasts to CSS modules",
+  "body": "> Continues the CSS Modules migration (#5997, #6024, #6028, #6030) with the toasts.\n\n## Changelog Entry\n\n### Changed\n\n- Converted the toasts to CSS Modules with `webchat__` class names and their style options to custom properties, in PR [#6031](https://github.com/microsoft/BotFramework-WebChat/pull/6031), by [@OEvgeny](https://github.com/OEvgeny)\n\n### Removed\n\n- 💥 Deprecated the `toast` and `toaster` style set entries, which no longer affect rendering, in PR [#6031](https://github.com/microsoft/BotFramework-WebChat/pull/6031), by [@OEvgeny](https://github.com/OEvgeny)\n\n### Fixed\n\n- Fixed the toaster not mirroring in right-to-left languages, in PR [#6031](https://github.com/microsoft/BotFramework-WebChat/pull/6031), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThe toasts move from emotion style sets to CSS Modules without snapshot changes; a second commit makes the toaster follow right-to-left languages.\n\n## Design\n\n- Classes without rules stay plain strings; the toaster's `> ul` rule is dropped, as it never matched.\n- In Fluent, toasts now use the theme's font, like the error box since #6024.\n- The toaster takes its direction from `useDirection()` (the locale or the `dir` prop), like the transcript and send box, instead of from the host page.\n\n## Specific Changes\n\n- `Toast/Toast.module.css`: toaster and toast\n- `CSSCustomPropertiesContainer.tsx`: 15 properties (11 new names)\n- `BasicToast.js`, `BasicToaster.js`: `useStyles()`, toaster `dir`\n- `createStyleSet.ts`, `StyleSet/Toast{,er}.ts`: `@deprecated`\n- `styleOptions/toast.html`: all options (same on `main`)\n- `rtl/toaster.html`: mirrored toaster\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-09T09:21:53Z",
+  "merged_at": "2026-11-10T00:17:45Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-css-modules-toasts",
+  "head": "OEvgeny/fix-css-modules-toasts",
+  "base_sha": "d124c26b60e74e12b8488698a8b6784e5f6297c3",
+  "head_sha": "04602c7c6b856d6807d016a3f820724aa9da96df",
+  "merge_sha": "9ee9c6ddf86d0eba7ed870e4d3056e1e32364067",
+  "diff_sha256": "d0a29774503b0c27eb59e766c608bda1e82844f388dd5c448568e127bec04308",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-09T10:23:49Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "bbfd45d2677cabbe04a695a46ec657c482426a81",
+      "message": "Convert the toasts to CSS modules",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4e6accef6f68b2885105d7dd3ca86fced7ca9349",
+      "message": "Fix the toaster not mirroring in right-to-left languages",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "05f04e0ebbcbf52ffc6cabb72cd31383412d400f",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "04602c7c6b856d6807d016a3f820724aa9da96df",
+      "message": "Add the Changed and Fixed changelog entries",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6031-fix-css-modules-toasts.md",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/rtl/toaster.html",
+      "status": "added",
+      "additions": 62,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/rtl/toaster.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/toast.html",
+      "status": "added",
+      "additions": 128,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/toast.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/toast.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/toast.html.snap-3.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/toast.html.snap-4.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/BasicToast.js",
+      "status": "modified",
+      "additions": 16,
+      "deletions": 28,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/BasicToaster.js",
+      "status": "modified",
+      "additions": 23,
+      "deletions": 41,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/CSSCustomPropertiesContainer.tsx",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/CustomPropertyNames.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/Toast.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/Toaster.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/createStyleSet.ts",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Toast/Toast.module.css",
+      "status": "added",
+      "additions": 216,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-09T10:24:00Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-10T00:13:07Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T10:40:58Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:40:00Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:39:32Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:38:00Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:38:21Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:36:25Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:36:35Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:29:17Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:38:19Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:38:41Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:35:49Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:36:55Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:37:51Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:36:54Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:37:54Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:29:46Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:29:42Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:36:25Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:35:51Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:38:20Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:38:12Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:38:21Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:39:24Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:29:17Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:29:44Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:30:01Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:29:14Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:29:11Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:29:07Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:29:16Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:30:04Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:30:05Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:32:24Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:31:25Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:29:51Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:24:09Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:28:02Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:24:26Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:24:01Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:26:01Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:25:15Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:23:39Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:23:19Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:24:05Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:23:22Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-09T09:23:48Z"
+    }
+  ],
+  "binary_paths": [
+    "__tests__/html2/rtl/toaster.html.snap-1.png",
+    "__tests__/html2/styleOptions/toast.html.snap-1.png",
+    "__tests__/html2/styleOptions/toast.html.snap-2.png",
+    "__tests__/html2/styleOptions/toast.html.snap-3.png",
+    "__tests__/html2/styleOptions/toast.html.snap-4.png"
+  ]
+}

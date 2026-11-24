@@ -1,0 +1,81 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5473,
+  "title": "fix: respect outer visibility across Web Chat",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #5472\r\n\r\n## Changelog Entry\r\n\r\n- Fixed [#5472](https://github.com/microsoft/BotFramework-WebChat/issues/5472), ensure proper inheritance from the outside of Web Chat for visibility CSS property when hidden, in PR [#5473](https://github.com/microsoft/BotFramework-WebChat/pull/5473), by [@OEvgeny](https://github.com/OEvgeny)\r\n\r\n## Description\r\n\r\nThis ensures we mostly don't use `visibility: visible` due to its ability to reveal things if hidden upper in the tree.\r\n\r\n## Design\r\n\r\nUse `unset` in place of `visible` as it resets the value to the initial one, which is properly inherited: https://codepen.io/OEvgeny/pen/qEExOdg\r\n\r\n## Specific Changes\r\n\r\n- Changed `visibility: visible` occurrences to `visibility: unset`.\r\n\r\n## -\r\n\r\n-\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] I have updated `CHANGELOG.md`\r\n-  [ ] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n-  [x] Browser and platform compatibilities reviewed\r\n-  [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n-  [x] Documents reviewed (docs, samples, live demo)\r\n-  [x] Internationalization reviewed (strings, unit formatting)\r\n-  [x] `package.json` and `package-lock.json` reviewed\r\n-  [x] Security reviewed (no data URIs, check for nonce leak)\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-05-01T17:29:21Z",
+  "merged_at": "2025-05-01T18:18:16Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "fix/visibility",
+  "head": "fix/visibility",
+  "base_sha": "a6b3ad8276ff1aadfca9b9b9360279261156e62f",
+  "head_sha": "93e8fab436a27ddc0a5177f89bfd622b357d6f22",
+  "merge_sha": "41e8175880e39cd5afae6ec6cacfddfeba3817ba",
+  "diff_sha256": "ac84bd593f7d444a02a6ee8e923d61c99134d58d77c785540ae172516a7dde6e",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "d7df2339c941922b4d0cfc9a820003c6191dc4ca",
+      "message": "fix: respect outer visibility across Web Chat",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "93e8fab436a27ddc0a5177f89bfd622b357d6f22",
+      "message": "Changelog",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/ActivityCopyButton.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/ThumbButton.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/components/sendBox/TextArea.module.css",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2025-05-01T17:40:18Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2025-05-01T18:12:43Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": []
+}

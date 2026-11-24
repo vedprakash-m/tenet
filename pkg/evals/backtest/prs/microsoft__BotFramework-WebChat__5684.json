@@ -1,0 +1,132 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5684,
+  "title": "Revert make.com vendoring, download with SHA-256 verification",
+  "body": "## Revert make.com vendoring and add SHA verification ✓ COMPLETE\n\n### All Tasks Completed:\n- [x] Explore repository structure and understand current state\n- [x] Add `make.com` to `.gitignore` file\n- [x] Update `package.json` scripts to download make.com with SHA verification\n- [x] Add SHA-256 hash for verification (hardcoded in script)\n- [x] Add documentation comment about source code location\n- [x] Delete the vendored `make.com` file\n- [x] Move chmod after SHA verification for security\n- [x] Test the changes and verify implementation\n- [x] Run code review and address feedback\n- [x] Address review comment: Remove makeComSha256 field from package.json\n- [x] Address review comment: Reorder build:pre to run local-dependencies before setup\n- [x] Address review comment: Use more specific .gitignore patterns\n\n### Summary of Changes:\n\n**Files Modified (3):**\n1. `packages/test/test-assets/.gitignore` - Added `make.com` to ignore list with specific patterns\n2. `packages/test/test-assets/package.json` - Added SHA verification download script and documentation\n3. `packages/test/test-assets/make.com` - Deleted (1.7MB binary removed)\n\n**Key Features:**\n- ✓ SHA-256 verification hardcoded in script: `7b14377fbd6fff445abbf922583112c25a678b375eea624bd1765f74756f54fb`\n- ✓ Automatic download from `https://cosmo.zip/pub/cosmos/bin/make`\n- ✓ Security: chmod only after SHA verification passes\n- ✓ Backwards compatible: Uses system `make` if available\n- ✓ Clear error messages on hash mismatch\n- ✓ Automatic cleanup on verification failure\n- ✓ Specific .gitignore patterns with leading/trailing slashes\n\n**Build Workflow:**\n1. Build local dependencies first (`build:pre:local-dependencies`)\n2. Setup make.com if needed (`build:pre:setup`)\n3. Start watch process (`build:pre:watch`)\n4. Execute build with verified binary\n\n**Latest Changes (addressing review feedback):**\n- Removed `makeComSha256` field from package.json\n- Hardcoded SHA-256 hash directly in `build:pre:setup` script\n- Reordered `build:pre` to run `build:pre:local-dependencies` before `build:pre:setup`\n- Updated `.gitignore` patterns to use leading `/` and trailing `/` for more specific matching\n- Simplified package.json structure while maintaining security verification\n\n<!-- START COPILOT ORIGINAL PROMPT -->\n\n\n\n<details>\n\n<summary>Original prompt</summary>\n\n> # Objective\n> \n> Revert commit `dbb466214aa5a524b015b5f39a7b0b933bb77822` (this commit only) to remove the vendored `make.com` file and instead download it from the Internet with SHA verification.\n> \n> # Specific Changes Required\n> \n> ## 1. Revert the commit changes:\n> \n> Based on commit `dbb466214aa5a524b015b5f39a7b0b933bb77822`, you need to:\n> \n> ### In `packages/test/test-assets/.gitignore`:\n> - Add back `make.com` to the gitignore file (it was removed in the commit)\n> \n> ### In `packages/test/test-assets/package.json`:\n> Current state (after the commit):\n> ```json\n> \"build:pre\": \"npm run build:pre:local-dependencies && npm run build:pre:watch\",\n> \"build:pre:local-dependencies\": \"../../../scripts/npm/build-local-dependencies.sh\",\n> \"build:pre:watch\": \"../../../scripts/npm/build-watch.sh\",\n> \"build:run\": \"./make.com clean all\",\n> ```\n> \n> Change it to download make.com from the Internet:\n> ```json\n> \"build:pre\": \"npm run build:pre:setup && npm run build:pre:local-dependencies && npm run build:pre:watch\",\n> \"build:pre:local-dependencies\": \"../../../scripts/npm/build-local-dependencies.sh\",\n> \"build:pre:setup\": \"command -v make >/dev/null 2>&1 || { [ -x ./make.com ] || { curl -fsSL -o make.com https://cosmo.zip/pub/cosmos/bin/make && chmod +x make.com; }; }\",\n> \"build:pre:watch\": \"../../../scripts/npm/build-watch.sh\",\n> \"build:run\": \"MAKE_BIN=$(command -v make || echo ./make.com) && \\\"$MAKE_BIN\\\" clean all\",\n> ```\n> \n> ### Delete the vendored file:\n> - Remove `packages/test/test-assets/make.com` file (SHA: 78f9ae2104e65edd796820da072fde1205da828f)\n> \n> ## 2. Add SHA verification:\n> \n> In `packages/test/test-assets/package.json`, add a new field to track the expected SHA-256 hash of the downloaded `make.com` file:\n> \n> ```json\n> {\n>   \"name\": \"@msinternal/test-assets\",\n>   \"version\": \"0.0.0-0\",\n>   \"description\": \"\",\n>   \"private\": true,\n>   \"author\": \"Microsoft Corporation\",\n>   \"license\": \"MIT\",\n>   \"engines\": {\n>     \"node\": \">= 14.0.0\"\n>   },\n>   \"makeComSha256\": \"PLACEHOLDER_SHA256_TO_BE_CALCULATED\",\n>   \"scripts\": {\n>     ...\n>   }\n> }\n> ```\n> \n> ## 3. Implement SHA verification:\n> \n> Modify the `build:pre:setup` script to verify the SHA-256 hash after downloading:\n> \n> ```json\n> \"build:pre:setup\": \"command -v make >/dev/null 2>&1 || { [ -x ./make.com ] || { curl -fsSL -o make.com https://cosmo.zip/pub/cosmos/bin/make && chmod +x make.com && EXPECTED_SHA=$(node -p 'require(\\\"./package.json\\\").makeComSha256') && ACTUAL_SHA=$(shasum -a 256 make.com | cut -d' ' -f1) && [ \\\"$EXPECTED_SHA\\\" = \\\"$ACTUAL_SHA\\\" ] || { echo \\\"ERROR: make.com SHA mismatch! Expected: $EXPECTED_SHA, Got: $ACTUAL_SHA\\\" >&2; rm make.com; exit 1; }; }; }\",\n> ```\n> \n> ## 4. Calculate and hardcode the actual SHA:\n> \n> You need to:\n> 1. Download the file from https://cosmo.zip/pub/cosmos/bin/make\n> 2. Calculate its SHA-256 hash\n> 3. Replace `PLACEHOLDER_SHA256_TO_BE_CALCULATED` with the actual hash value\n> \n> To calculate the SHA-256 hash, you can use:\n> ```bash\n> curl -fsSL -o make.com https://cosmo.zip/pub/cosmos/bin/make\n> shasum -a 256 make.com\n> ```\n> \n> ## 5. Add documentation:\n> \n> Add a comment or note in the `package.json` file indicating the source code location:\n> \n> ```json\n> {\n>   \"name\": \"@msinternal/test-assets\",\n>   \"description\": \"Uses make.com from Cosmopolitan Libc. Source code available at: https://github.com/jart/cosmopolitan/tree/master/third_party/make\",\n>   ...\n> }\n> ```\n> \n> # Summary\n> \n> This change will:\n> 1. Revert the vendoring of `make.com` \n> 2. Download it from https://cosmo.zip/pub/cosmos/bin/make instead\n> 3. Verify the downloaded file against a hardcoded SHA-256 hash\n> 4. Alert developers if the remote file changes (SHA mismatch)\n> 5. Document the source code location\n> \n> The SHA verification ensures that if the remote `make.com` file changes, the build will fail with a clear error message, notifying developers of the change.\n\n\n</details>\n\n\n\n<!-- START COPILOT CODING AGENT SUFFIX -->\n\n*This pull request was created from Copilot chat.*\n>\n\n<!-- START COPILOT CODING AGENT TIPS -->\n---\n\n💡 You can make Copilot smarter by setting up custom instructions, customizing its development environment and configuring Model Context Protocol (MCP) servers. Learn more [Copilot coding agent tips](https://gh.io/copilot-coding-agent-tips) in the docs.",
+  "author": {
+    "login": "Copilot",
+    "type": "Bot",
+    "copilot_coding_agent": true
+  },
+  "created_at": "2026-02-03T19:32:30Z",
+  "merged_at": "2026-02-03T20:13:25Z",
+  "base_ref": "feat/qol-improvements",
+  "base": "feat/qol-improvements",
+  "head_ref": "copilot/revert-make-com-commit",
+  "head": "copilot/revert-make-com-commit",
+  "base_sha": "d143c8064981796db9663201077c56a4e913094c",
+  "head_sha": "f1d82656e634c725da19aaeae8583210868f48b1",
+  "merge_sha": "c417014199369e3c25c857b178153dfef21299cf",
+  "diff_sha256": "c140a9d6b916fda222dd8884ddc5b767f4aabbd0a6791eda527926d069006d0f",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-02-03T20:13:11Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "9321c6d4644b789f358d8c7f66fe2608b527ae79",
+      "message": "Initial plan",
+      "author": "Copilot"
+    },
+    {
+      "sha": "625e443c14a5860c8a0eea12beacfe94b36810be",
+      "message": "Revert make.com vendoring, add SHA verification and download from Internet",
+      "author": "Copilot"
+    },
+    {
+      "sha": "49021dad75927e2670925426736aa3df1855462e",
+      "message": "Security: Move chmod after SHA verification",
+      "author": "Copilot"
+    },
+    {
+      "sha": "eda38a5a42d02614464a8349ca9e9cd7bb11e0de",
+      "message": "Remove makeComSha256 field, hardcode SHA in build:pre:setup script",
+      "author": "Copilot"
+    },
+    {
+      "sha": "49fd6d271e522b35b716d8510d0c583dc8827894",
+      "message": "Reorder build:pre script: local-dependencies before setup",
+      "author": "Copilot"
+    },
+    {
+      "sha": "f1d82656e634c725da19aaeae8583210868f48b1",
+      "message": "Use more specific .gitignore patterns with leading/trailing slashes",
+      "author": "Copilot"
+    }
+  ],
+  "files": [
+    {
+      "path": "packages/test/test-assets/.gitignore",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/test-assets/make.com",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/test-assets/package.json",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 3,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-02-03T19:48:31Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-02-03T19:48:49Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-swe-agent[bot]",
+      "submitted_at": "2026-02-03T19:50:13Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-swe-agent[bot]",
+      "submitted_at": "2026-02-03T19:52:53Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-02-03T20:01:43Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-swe-agent[bot]",
+      "submitted_at": "2026-02-03T20:03:01Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-02-03T20:13:05Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-02-03T20:03:07Z"
+    }
+  ],
+  "binary_paths": [
+    "packages/test/test-assets/make.com"
+  ]
+}

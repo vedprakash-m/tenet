@@ -1,0 +1,1487 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5651,
+  "title": "Upgrade last set of tests from `html` to `html2`",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n## Changelog Entry\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n(No CHANGELOG for test changes.)\r\n\r\n## Description\r\n\r\n<!-- Please discuss the changes you have worked on. What do the changes do; why is this PR needed? -->\r\n\r\nUpgrade the last set of tests from `html/` to `html2/`.\r\n\r\nThese are leftover screenshots.\r\n\r\n<img width=\"1217\" height=\"156\" alt=\"image\" src=\"https://github.com/user-attachments/assets/0f6bf0c1-6f0d-4680-98af-a6dd26d98403\" />\r\n\r\n## Specific Changes\r\n\r\n<!-- Please list the changes in a concise manner. -->\r\n\r\n- Upgrade the last set of tests from `html/` to `html2/`\r\n- `npm run browser` default to `html2/`\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n-  [x] I have added tests and executed them locally\r\n-  [x] ~I have updated `CHANGELOG.md`~\r\n-  [x] ~I have updated documentation~\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n-  [x] ~Accessibility reviewed (tab order, content readability, alt text, color contrast)~\r\n-  [x] ~Browser and platform compatibilities reviewed~\r\n-  [x] ~CSS styles reviewed (minimal rules, no `z-index`)~\r\n-  [x] ~Documents reviewed (docs, samples, live demo)~\r\n-  [x] ~Internationalization reviewed (strings, unit formatting)~\r\n-  [x] ~`package.json` and `package-lock.json` reviewed~\r\n-  [x] ~Security reviewed (no data URIs, check for nonce leak)~\r\n-  [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "compulim",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2025-12-10T08:46:45Z",
+  "merged_at": "2025-12-10T23:01:26Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "feat-html2b",
+  "head": "feat-html2b",
+  "base_sha": "879dedf4ffa56ec350fee6a500c44098f28d4405",
+  "head_sha": "d1401e501b8ba9878da5037d94f332dcf2c9bd1e",
+  "merge_sha": "168fe524a0404ca15f78638c1516d137263c1691",
+  "diff_sha256": "6cfe91220fd973a0584e006af46ccd1daf0c678011d1037747beaa32fab6e73a",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2025-12-10T08:46:50Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "711f282fcc2178735a8e6c97c48d03513d9a8af8",
+      "message": "Port heroCard and sendBox",
+      "author": "compulim"
+    },
+    {
+      "sha": "503f5176c3bb46eda93ea884098fc6a16e2dc2d8",
+      "message": "Port suggestedActions layout",
+      "author": "compulim"
+    },
+    {
+      "sha": "a03719e3ffe070f9d6175d5226cb7f73dfc92012",
+      "message": "Port suggested actions stacked button text wrap",
+      "author": "compulim"
+    },
+    {
+      "sha": "40eeffa2980b2bb6e740d045fed27d6044eed614",
+      "message": "Port suggested actions style options",
+      "author": "compulim"
+    },
+    {
+      "sha": "7accc5b40784b89ce26b9f1319a58cfbc49b8c58",
+      "message": "Move tests to skipped",
+      "author": "compulim"
+    },
+    {
+      "sha": "c411d371e73fc1d8a036d5156df28e572d674ab9",
+      "message": "Clean up",
+      "author": "compulim"
+    },
+    {
+      "sha": "c7a139032064c282f59a5c881548c5c0e6694dfb",
+      "message": "Default to html2",
+      "author": "compulim"
+    },
+    {
+      "sha": "a4dced9dfdddec852243c86387f15de6daeca630",
+      "message": "Move assets to html2",
+      "author": "compulim"
+    },
+    {
+      "sha": "17efe1048e5fef6a404e18c66bac957538e5bb01",
+      "message": "Fix html2 snapshot to use local",
+      "author": "compulim"
+    },
+    {
+      "sha": "968184121f72e8a2747b83add0eb1dbdda5dd7f7",
+      "message": "Remove leftovers",
+      "author": "compulim"
+    },
+    {
+      "sha": "a140112e39ea748497dc2d2cb1f2312e81fd2722",
+      "message": "Move assets",
+      "author": "compulim"
+    },
+    {
+      "sha": "d1401e501b8ba9878da5037d94f332dcf2c9bd1e",
+      "message": "Remove html and fix assets",
+      "author": "compulim"
+    }
+  ],
+  "files": [
+    {
+      "path": "__tests__/__image_snapshots__/html/card-action-adaptive-card-submit-action-js-submit-action-on-adaptive-card-should-set-aria-pressed-to-true-1-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-multiline-and-stretch-2-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-multiline-and-stretch-3-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-without-speech-and-single-line-2-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/use-focus-send-box-js-use-focus-send-box-1-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/__image_snapshots__/html/use-text-box-submit-true-js-use-text-box-submit-and-set-focus-to-true-1-snap.png",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/assets/accessibility.liveRegionAttachment.css",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/accessibility.liveRegionAttachment.css"
+    },
+    {
+      "path": "__tests__/assets/activityGrouping.css",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/activityGrouping.css"
+    },
+    {
+      "path": "__tests__/assets/bot-avatar.jpg",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/bot-avatar.jpg"
+    },
+    {
+      "path": "__tests__/assets/custom-element/custom-element.js",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/custom-element/custom-element.js"
+    },
+    {
+      "path": "__tests__/assets/custom-element/event-stream.ce.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/custom-element/event-stream.ce.html"
+    },
+    {
+      "path": "__tests__/assets/custom-element/keyboard-event.ce.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/custom-element/keyboard-event.ce.html"
+    },
+    {
+      "path": "__tests__/assets/focusManagement.css",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/focusManagement.css"
+    },
+    {
+      "path": "__tests__/assets/hello-world.wav",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/hello-world.wav"
+    },
+    {
+      "path": "__tests__/assets/index.css",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/index.css"
+    },
+    {
+      "path": "__tests__/assets/staticspinner.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/staticspinner.png"
+    },
+    {
+      "path": "__tests__/assets/transcripts/attachment-without-message.json",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/transcripts/attachment-without-message.json"
+    },
+    {
+      "path": "__tests__/assets/transcripts/carousel-hero-cards.json",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/transcripts/carousel-hero-cards.json"
+    },
+    {
+      "path": "__tests__/assets/transcripts/carousel-layout.json",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/transcripts/carousel-layout.json"
+    },
+    {
+      "path": "__tests__/assets/transcripts/index.json",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/transcripts/index.json"
+    },
+    {
+      "path": "__tests__/assets/transcripts/markdown-message.json",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/transcripts/markdown-message.json"
+    },
+    {
+      "path": "__tests__/assets/transcripts/multiple-lines-multiple-files.json",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/transcripts/multiple-lines-multiple-files.json"
+    },
+    {
+      "path": "__tests__/assets/transcripts/simple-messages.json",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/transcripts/simple-messages.json"
+    },
+    {
+      "path": "__tests__/assets/transcripts/single-line-no-files.json",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/transcripts/single-line-no-files.json"
+    },
+    {
+      "path": "__tests__/assets/transcripts/user-upload.json",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/transcripts/user-upload.json"
+    },
+    {
+      "path": "__tests__/assets/uploads/empty.zip",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/uploads/empty.zip"
+    },
+    {
+      "path": "__tests__/assets/uploads/forzahorizon5.jpg",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/uploads/forzahorizon5.jpg"
+    },
+    {
+      "path": "__tests__/assets/uploads/haloinfinite.jpg",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/uploads/haloinfinite.jpg"
+    },
+    {
+      "path": "__tests__/assets/uploads/minecraftdungeons.jpg",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/uploads/minecraftdungeons.jpg"
+    },
+    {
+      "path": "__tests__/assets/uploads/seaofthieves.jpg",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/uploads/seaofthieves.jpg"
+    },
+    {
+      "path": "__tests__/assets/user-avatar.jpg",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/assets/user-avatar.jpg"
+    },
+    {
+      "path": "__tests__/html/heroCard.actions.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 12,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/sendBox.button.styleOptions.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/sendBox.buttonAlignment.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/suggestedActions.stacked.buttonTextWrap.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 29,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html/suggestedActions.styleOptions.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 7,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.imBack.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.imBack.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/hero-card-actions-js-hero-card-actions-im-back-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.messageBackAsEmpty.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.messageBackAsEmpty.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/hero-card-actions-js-hero-card-actions-message-back-empty-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.messageBackWithDisplayTextText.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.messageBackWithDisplayTextText.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/hero-card-actions-js-hero-card-actions-message-back-display-text-text-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.messageBackWithDisplayTextTextValue.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.messageBackWithDisplayTextTextValue.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/hero-card-actions-js-hero-card-actions-message-back-display-text-text-value-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.messageBackWithValue.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.messageBackWithValue.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/hero-card-actions-js-hero-card-actions-message-back-value-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.postBackAsEmpty.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.postBackAsEmpty.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/hero-card-actions-js-hero-card-actions-post-back-empty-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.postBackAsJSON.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.postBackAsJSON.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/hero-card-actions-js-hero-card-actions-post-back-json-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.postBackAsString.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.postBackAsString.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/hero-card-actions-js-hero-card-actions-post-back-string-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/richCard/heroCard/actions.skip.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/heroCard.actions.html"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.noSpeech.multilineAlignToBottom.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.noSpeech.multilineAlignToBottom.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-without-speech-multiline-and-align-to-bottom-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.noSpeech.multilineAlignToTop.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.noSpeech.multilineAlignToTop.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-without-speech-multiline-and-align-to-top-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.noSpeech.multilineStretch.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.noSpeech.multilineStretch.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-without-speech-multiline-and-stretch-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.noSpeech.singleLine.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.noSpeech.singleLine.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-without-speech-and-single-line-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.skip.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/sendBox.buttonAlignment.html"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.withSpeech.multilineAlignToBottom.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.withSpeech.multilineAlignToBottom.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-multiline-and-align-to-bottom-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.withSpeech.multilineAlignToTop.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.withSpeech.multilineAlignToTop.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-multiline-and-align-to-top-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.withSpeech.multilineStretch.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.withSpeech.multilineStretch.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-multiline-and-stretch-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.withSpeech.singleLine.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonAlignment.withSpeech.singleLine.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-and-single-line-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.default.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.default.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-default-style-options-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.default.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-default-style-options-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.default.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-default-style-options-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.default.html.snap-4.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-default-style-options-4-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.default.html.snap-5.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-default-style-options-5-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.html",
+      "status": "renamed",
+      "additions": 5,
+      "deletions": 5,
+      "previous_path": "__tests__/html/sendBox.button.styleOptions.html"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-different-style-options-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-different-style-options-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-different-style-options-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.html.snap-4.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-different-style-options-4-snap.png"
+    },
+    {
+      "path": "__tests__/html2/sendBox/buttonStyleOptions.html.snap-5.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-different-style-options-5-snap.png"
+    },
+    {
+      "path": "__tests__/html2/simple/contentSecurityPolicy.html",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/simple/contentSecurityPolicy.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/content-security-policy-html-simple-content-security-policy-html-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/skipped/README.md",
+      "status": "added",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/skipped/simple.throwError.js",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/simple.throwError.js"
+    },
+    {
+      "path": "__tests__/html2/skipped/simple.throwError.skip.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/simple.throwError.html"
+    },
+    {
+      "path": "__tests__/html2/skipped/speech.customAudioConfig.skip.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/speech.customAudioConfig.html"
+    },
+    {
+      "path": "__tests__/html2/skipped/speechRecognition.simple.js",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/speechRecognition.simple.js"
+    },
+    {
+      "path": "__tests__/html2/skipped/speechRecognition.simple.skip.html",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/speechRecognition.simple.html"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.js",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/html/suggestedActions.layout.js"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.carousel.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.carousel.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-carousel-layout-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.carousel.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-carousel-layout-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.carousel.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-carousel-layout-should-be-correct-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.carousel.withFewerItems.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.carousel.withFewerItems.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-carousel-layout-with-fewer-items-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.carousel.withFewerItems.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-carousel-layout-with-fewer-items-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.flowLayout.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.flowLayout.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-flow-layout-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.flowLayout.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-flow-layout-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.flowLayout.withMaxHeight.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.flowLayout.withMaxHeight.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-flow-layout-with-max-height-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.flowLayout.withMaxHeight.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-flow-layout-with-max-height-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.flowLayout.withMaxHeight.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-flow-layout-with-max-height-should-be-correct-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.stacked.disabled.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.stacked.disabled.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-and-disabled-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.stacked.disabled.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.stacked.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.stacked.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.stacked.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.stacked.withMaxHeight.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.stacked.withMaxHeight.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-with-height-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.stacked.withMaxHeight.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-with-height-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.ltr.stacked.withMaxHeight.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-with-height-should-be-correct-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.carousel.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.carousel.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-carousel-layout-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.carousel.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-carousel-layout-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.carousel.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-carousel-layout-should-be-correct-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.carousel.withFewerItems.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.carousel.withFewerItems.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-carousel-layout-with-fewer-items-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.carousel.withFewerItems.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-carousel-layout-with-fewer-items-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.flowLayout.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.flowLayout.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-flow-layout-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.flowLayout.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-flow-layout-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.flowLayout.withMaxHeight.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.flowLayout.withMaxHeight.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-flow-layout-with-max-height-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.flowLayout.withMaxHeight.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-flow-layout-with-max-height-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.flowLayout.withMaxHeight.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-flow-layout-with-max-height-should-be-correct-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.stacked.disabled.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.stacked.disabled.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-and-disabled-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.stacked.disabled.html.snap-2.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.stacked.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.stacked.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.stacked.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.stacked.withMaxHeight.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.stacked.withMaxHeight.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-with-height-should-be-correct-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.stacked.withMaxHeight.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-with-height-should-be-correct-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.rtl.stacked.withMaxHeight.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-with-height-should-be-correct-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/layout.skip.html",
+      "status": "renamed",
+      "additions": 4,
+      "deletions": 4,
+      "previous_path": "__tests__/html/suggestedActions.layout.html"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight100Percent.fitText.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight100Percent.fitText.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-100-change-max-height-to-fit-text-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight100Percent.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight100Percent.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-100-suggested-action-height-is-60-height-will-be-60-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight20.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight20.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-20-height-is-default-max-height-will-override-height-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight30.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight30.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-30-change-min-height-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight45.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight45.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-45-change-max-height-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight80.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeight80.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-80-change-max-height-to-fit-text-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeightFalse.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeightFalse.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-false-should-ignore-max-height-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeightUndefined.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.maxHeightUndefined.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-undefined-should-default-max-height-to-100-25-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/stacked.buttonTextWrap.skip.html",
+      "status": "renamed",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": "__tests__/html/suggestedActions.stacked.buttonTextWrap.html"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.default.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.default.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.default.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.default.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.default.html.snap-4.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-4-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.default.html.snap-5.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-5-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.default.html.snap-6.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-6-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.deprecated.html",
+      "status": "added",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.deprecated.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.deprecated.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.deprecated.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.deprecated.html.snap-4.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-4-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.deprecated.html.snap-5.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-5-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.deprecated.html.snap-6.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-6-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.html",
+      "status": "renamed",
+      "additions": 6,
+      "deletions": 6,
+      "previous_path": "__tests__/html/suggestedActions.styleOptions.html"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.html.snap-1.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-1-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.html.snap-2.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-2-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.html.snap-3.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-3-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.html.snap-4.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-4-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.html.snap-5.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-5-snap.png"
+    },
+    {
+      "path": "__tests__/html2/suggestedActions/styleOptions.html.snap-6.png",
+      "status": "renamed",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": "__tests__/__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-6-snap.png"
+    },
+    {
+      "path": "babel-passthru-transformer.js",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "docker-compose-wsl2.yml",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "jest.legacy.config.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 5,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "serve-test.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 13,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "APPROVED",
+      "author": "OEvgeny",
+      "submitted_at": "2025-12-10T23:01:24Z"
+    }
+  ],
+  "check_runs": [],
+  "binary_paths": [
+    "__tests__/__image_snapshots__/html/card-action-adaptive-card-submit-action-js-submit-action-on-adaptive-card-should-set-aria-pressed-to-true-1-snap.png",
+    "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-multiline-and-stretch-2-snap.png",
+    "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-multiline-and-stretch-3-snap.png",
+    "__tests__/__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-without-speech-and-single-line-2-snap.png",
+    "__tests__/__image_snapshots__/html/use-focus-send-box-js-use-focus-send-box-1-snap.png",
+    "__tests__/__image_snapshots__/html/use-text-box-submit-true-js-use-text-box-submit-and-set-focus-to-true-1-snap.png",
+    "__tests__/{html => }/assets/bot-avatar.jpg",
+    "__tests__/{html => }/assets/hello-world.wav",
+    "__tests__/{html => }/assets/staticspinner.png",
+    "__tests__/{html => }/assets/uploads/empty.zip",
+    "__tests__/{html => }/assets/uploads/forzahorizon5.jpg",
+    "__tests__/{html => }/assets/uploads/haloinfinite.jpg",
+    "__tests__/{html => }/assets/uploads/minecraftdungeons.jpg",
+    "__tests__/{html => }/assets/uploads/seaofthieves.jpg",
+    "__tests__/{html => }/assets/user-avatar.jpg",
+    "__tests__/{__image_snapshots__/html/hero-card-actions-js-hero-card-actions-im-back-1-snap.png => html2/richCard/heroCard/actions.imBack.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/hero-card-actions-js-hero-card-actions-message-back-empty-1-snap.png => html2/richCard/heroCard/actions.messageBackAsEmpty.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/hero-card-actions-js-hero-card-actions-message-back-display-text-text-1-snap.png => html2/richCard/heroCard/actions.messageBackWithDisplayTextText.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/hero-card-actions-js-hero-card-actions-message-back-display-text-text-value-1-snap.png => html2/richCard/heroCard/actions.messageBackWithDisplayTextTextValue.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/hero-card-actions-js-hero-card-actions-message-back-value-1-snap.png => html2/richCard/heroCard/actions.messageBackWithValue.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/hero-card-actions-js-hero-card-actions-post-back-empty-1-snap.png => html2/richCard/heroCard/actions.postBackAsEmpty.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/hero-card-actions-js-hero-card-actions-post-back-json-1-snap.png => html2/richCard/heroCard/actions.postBackAsJSON.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/hero-card-actions-js-hero-card-actions-post-back-string-1-snap.png => html2/richCard/heroCard/actions.postBackAsString.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-without-speech-multiline-and-align-to-bottom-1-snap.png => html2/sendBox/buttonAlignment.noSpeech.multilineAlignToBottom.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-without-speech-multiline-and-align-to-top-1-snap.png => html2/sendBox/buttonAlignment.noSpeech.multilineAlignToTop.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-without-speech-multiline-and-stretch-1-snap.png => html2/sendBox/buttonAlignment.noSpeech.multilineStretch.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-without-speech-and-single-line-1-snap.png => html2/sendBox/buttonAlignment.noSpeech.singleLine.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-multiline-and-align-to-bottom-1-snap.png => html2/sendBox/buttonAlignment.withSpeech.multilineAlignToBottom.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-multiline-and-align-to-top-1-snap.png => html2/sendBox/buttonAlignment.withSpeech.multilineAlignToTop.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-multiline-and-stretch-1-snap.png => html2/sendBox/buttonAlignment.withSpeech.multilineStretch.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-alignment-js-send-box-button-alignment-with-speech-and-single-line-1-snap.png => html2/sendBox/buttonAlignment.withSpeech.singleLine.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-default-style-options-1-snap.png => html2/sendBox/buttonStyleOptions.default.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-default-style-options-2-snap.png => html2/sendBox/buttonStyleOptions.default.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-default-style-options-3-snap.png => html2/sendBox/buttonStyleOptions.default.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-default-style-options-4-snap.png => html2/sendBox/buttonStyleOptions.default.html.snap-4.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-default-style-options-5-snap.png => html2/sendBox/buttonStyleOptions.default.html.snap-5.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-different-style-options-1-snap.png => html2/sendBox/buttonStyleOptions.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-different-style-options-2-snap.png => html2/sendBox/buttonStyleOptions.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-different-style-options-3-snap.png => html2/sendBox/buttonStyleOptions.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-different-style-options-4-snap.png => html2/sendBox/buttonStyleOptions.html.snap-4.png}",
+    "__tests__/{__image_snapshots__/html/send-box-button-style-options-js-send-box-button-with-different-style-options-5-snap.png => html2/sendBox/buttonStyleOptions.html.snap-5.png}",
+    "__tests__/{__image_snapshots__/html/content-security-policy-html-simple-content-security-policy-html-1-snap.png => html2/simple/contentSecurityPolicy.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-carousel-layout-should-be-correct-1-snap.png => html2/suggestedActions/layout.ltr.carousel.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-carousel-layout-should-be-correct-2-snap.png => html2/suggestedActions/layout.ltr.carousel.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-carousel-layout-should-be-correct-3-snap.png => html2/suggestedActions/layout.ltr.carousel.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-carousel-layout-with-fewer-items-should-be-correct-1-snap.png => html2/suggestedActions/layout.ltr.carousel.withFewerItems.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-carousel-layout-with-fewer-items-should-be-correct-2-snap.png => html2/suggestedActions/layout.ltr.carousel.withFewerItems.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-flow-layout-should-be-correct-1-snap.png => html2/suggestedActions/layout.ltr.flowLayout.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-flow-layout-should-be-correct-2-snap.png => html2/suggestedActions/layout.ltr.flowLayout.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-flow-layout-with-max-height-should-be-correct-1-snap.png => html2/suggestedActions/layout.ltr.flowLayout.withMaxHeight.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-flow-layout-with-max-height-should-be-correct-2-snap.png => html2/suggestedActions/layout.ltr.flowLayout.withMaxHeight.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-flow-layout-with-max-height-should-be-correct-3-snap.png => html2/suggestedActions/layout.ltr.flowLayout.withMaxHeight.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-and-disabled-should-be-correct-1-snap.png => html2/suggestedActions/layout.ltr.stacked.disabled.html.snap-1.png}",
+    "__tests__/html2/suggestedActions/layout.ltr.stacked.disabled.html.snap-2.png",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-should-be-correct-1-snap.png => html2/suggestedActions/layout.ltr.stacked.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-should-be-correct-2-snap.png => html2/suggestedActions/layout.ltr.stacked.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-with-height-should-be-correct-1-snap.png => html2/suggestedActions/layout.ltr.stacked.withMaxHeight.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-with-height-should-be-correct-2-snap.png => html2/suggestedActions/layout.ltr.stacked.withMaxHeight.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-left-to-right-using-stacked-layout-with-height-should-be-correct-3-snap.png => html2/suggestedActions/layout.ltr.stacked.withMaxHeight.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-carousel-layout-should-be-correct-1-snap.png => html2/suggestedActions/layout.rtl.carousel.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-carousel-layout-should-be-correct-2-snap.png => html2/suggestedActions/layout.rtl.carousel.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-carousel-layout-should-be-correct-3-snap.png => html2/suggestedActions/layout.rtl.carousel.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-carousel-layout-with-fewer-items-should-be-correct-1-snap.png => html2/suggestedActions/layout.rtl.carousel.withFewerItems.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-carousel-layout-with-fewer-items-should-be-correct-2-snap.png => html2/suggestedActions/layout.rtl.carousel.withFewerItems.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-flow-layout-should-be-correct-1-snap.png => html2/suggestedActions/layout.rtl.flowLayout.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-flow-layout-should-be-correct-2-snap.png => html2/suggestedActions/layout.rtl.flowLayout.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-flow-layout-with-max-height-should-be-correct-1-snap.png => html2/suggestedActions/layout.rtl.flowLayout.withMaxHeight.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-flow-layout-with-max-height-should-be-correct-2-snap.png => html2/suggestedActions/layout.rtl.flowLayout.withMaxHeight.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-flow-layout-with-max-height-should-be-correct-3-snap.png => html2/suggestedActions/layout.rtl.flowLayout.withMaxHeight.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-and-disabled-should-be-correct-1-snap.png => html2/suggestedActions/layout.rtl.stacked.disabled.html.snap-1.png}",
+    "__tests__/html2/suggestedActions/layout.rtl.stacked.disabled.html.snap-2.png",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-should-be-correct-1-snap.png => html2/suggestedActions/layout.rtl.stacked.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-should-be-correct-2-snap.png => html2/suggestedActions/layout.rtl.stacked.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-with-height-should-be-correct-1-snap.png => html2/suggestedActions/layout.rtl.stacked.withMaxHeight.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-with-height-should-be-correct-2-snap.png => html2/suggestedActions/layout.rtl.stacked.withMaxHeight.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-layout-js-suggested-actions-in-right-to-left-using-stacked-layout-with-height-should-be-correct-3-snap.png => html2/suggestedActions/layout.rtl.stacked.withMaxHeight.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-100-change-max-height-to-fit-text-1-snap.png => html2/suggestedActions/stacked.buttonTextWrap.maxHeight100Percent.fitText.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-100-suggested-action-height-is-60-height-will-be-60-1-snap.png => html2/suggestedActions/stacked.buttonTextWrap.maxHeight100Percent.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-20-height-is-default-max-height-will-override-height-1-snap.png => html2/suggestedActions/stacked.buttonTextWrap.maxHeight20.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-30-change-min-height-1-snap.png => html2/suggestedActions/stacked.buttonTextWrap.maxHeight30.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-45-change-max-height-1-snap.png => html2/suggestedActions/stacked.buttonTextWrap.maxHeight45.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-80-change-max-height-to-fit-text-1-snap.png => html2/suggestedActions/stacked.buttonTextWrap.maxHeight80.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-false-should-ignore-max-height-1-snap.png => html2/suggestedActions/stacked.buttonTextWrap.maxHeightFalse.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-stacked-button-text-wrap-js-when-true-max-height-is-undefined-should-default-max-height-to-100-25-1-snap.png => html2/suggestedActions/stacked.buttonTextWrap.maxHeightUndefined.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-1-snap.png => html2/suggestedActions/styleOptions.default.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-2-snap.png => html2/suggestedActions/styleOptions.default.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-3-snap.png => html2/suggestedActions/styleOptions.default.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-4-snap.png => html2/suggestedActions/styleOptions.default.html.snap-4.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-5-snap.png => html2/suggestedActions/styleOptions.default.html.snap-5.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-using-default-style-options-6-snap.png => html2/suggestedActions/styleOptions.default.html.snap-6.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-1-snap.png => html2/suggestedActions/styleOptions.deprecated.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-2-snap.png => html2/suggestedActions/styleOptions.deprecated.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-3-snap.png => html2/suggestedActions/styleOptions.deprecated.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-4-snap.png => html2/suggestedActions/styleOptions.deprecated.html.snap-4.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-5-snap.png => html2/suggestedActions/styleOptions.deprecated.html.snap-5.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-6-snap.png => html2/suggestedActions/styleOptions.deprecated.html.snap-6.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-1-snap.png => html2/suggestedActions/styleOptions.html.snap-1.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-with-deprecated-style-options-2-snap.png => html2/suggestedActions/styleOptions.html.snap-2.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-3-snap.png => html2/suggestedActions/styleOptions.html.snap-3.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-4-snap.png => html2/suggestedActions/styleOptions.html.snap-4.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-5-snap.png => html2/suggestedActions/styleOptions.html.snap-5.png}",
+    "__tests__/{__image_snapshots__/html/suggested-actions-style-options-js-suggested-actions-when-overriding-style-options-6-snap.png => html2/suggestedActions/styleOptions.html.snap-6.png}"
+  ]
+}

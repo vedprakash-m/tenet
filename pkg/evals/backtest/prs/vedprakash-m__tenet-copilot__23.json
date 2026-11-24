@@ -1,0 +1,311 @@
+{
+  "repo": "vedprakash-m/tenet-copilot",
+  "number": 23,
+  "title": "Sealed baseline: classify a failing suite against the starting files (EVD-04, slice 1)",
+  "body": "## What\n\nEVD-04, slice 1 (sealed baseline), from the local spec `sealed-baseline.md` §15.1 and §15.3. Slice 2 (committed-tree check) stays cut. Built under the owner's \"finish the untested Musts fast\" direction: no feature-spec review or sign-off for this build.\n\nWhen the broader suite (`OB-suite`) still fails after flaky reruns on a full candidate check, `check` runs the same test command once more in the same call, on a copy of the contract's starting files outside the workspace, and classifies the failure:\n\n- **pre-existing** (fails at the start with the same file, test, kind and first-line message signature, and both lists are complete): `baseline-failure-not-excluded` blocks and the `baseline-failures` question (exit 3) asks the user; no attempt and no failure signature are recorded.\n- **introduced** (absent from a complete starting record, or in a test file that did not exist at the start, which needs no run): stays `evidence-failed`, now worded \"weren't failing this way on a run of your starting files\" / \"new tests that fail\"; `finish` still demands another attempt.\n- **changed** (fails at both, differently) or **unknown** (with the reason): `classification-unknown` blocks and the same question asks.\n\n`decide baseline-failures`: `exclude` needs the user's words as `--quote` and records an exception (TS §8.1 shape; note `baseline-failure-excluded`, or the new `baseline-failure-unclassified-excluded` for an unknown one); `fix` makes the failures this work's to fix (`evidence-failed`). A failure left out counts as passed for the review manifest and `commit`'s checkpoint, and costs no attempt. A later check reuses the record without a second sealed run.\n\nThe copy is written from Git's object store (`ls-tree -r --long` plus one `cat-file --batch`): no checkout, no index, no filter, no hook, nothing written to the repository; it is deleted when the run ends.\n\n## Simplifications (disclosed; also in `CHANGELOG.md`)\n\n- **Dependencies:** the workspace's `node_modules` is linked into the copy only when the starting `package.json` and lockfile equal the current files, a lockfile exists, `package.json` has no `workspaces`, and no top-level package links into the workspace. Otherwise the result is unknown with `sealed-deps-unavailable`. No other dependency sharing.\n- **Refusals instead of programs:** any configured Git filter that applies here (the existing filter gate), a submodule, a tracked symbolic link, a symlinked or read-excluded start-dirty file, a start tree over 50,000 files or 500 MB, or a start-dirty file changed since `open` makes the result unknown without running anything. Materialization errors are not retried.\n- **Bounds:** 200 failure ids per list (more is unknown). A suite whose first run took over 2 minutes is not run again (unknown). A timed-out, killed, invalid or concurrently-edited starting run is retried once at a later check.\n- **No sealed receipt:** only the record is kept, so SB-12's `candidateReceipts` reader change was not needed.\n- **No adapter version bump (SB-13):** receipts from before this change have no `failureIds`, are not classified, and keep the old `evidence-failed` reading.\n- **Excluded unknown** also counts as passed for the review gate (the spec says this only for pre-existing); its note says it was not shown to fail before.\n- **Skill text:** none names the new decision; the question's options say how to answer.\n- Signatures blank paths and digits in the first message line; ignored or generated files are absent from the copy (a disclosed limit the signature mitigates, not removes).\n\n## Evidence\n\n- Local (Windows): `npm run typecheck`, `lint-arch`, `lint-skills`, `lint-quality` pass. `coverage --milestone R1` lists EVD-04 as mapped; it still exits 1 for other sessions' unmapped Musts (AGT-10, GIT-09, CON-07, QLT-05, QLT-11, QLT-13, NFR-07). `npm run privacy` clean.\n- Pure tests (`baseline.test.ts`, 10, incl. a `fast-check` property that nothing is pre-existing without complete lists; `verdict.test.ts`, 67) and the materializer test (E12) pass locally.\n- `sealed-baseline.test.ts` E1, E2, E3, E4, E10 drive real Git and Vitest through `open`, `check`, `decide`, `finish`; mutating work is refused on Windows, so they run only in the `untrusted` CI on Ubuntu and macOS.\n- Not covered by a test: E5–E7 are pure only; E8 (fault at materialize, filter), E9 transient retry, E11 concurrent edit, E13, E14 (kill during the sealed run) have no test. macOS temp-path behaviour is exercised only by CI. Unobserved on the real host.\n\nDo not merge without the owner's \"Merge it\".\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n",
+  "author": {
+    "login": "vedprakash-m",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-10T22:56:49Z",
+  "merged_at": "2026-11-12T00:28:26Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "sealed-baseline",
+  "head": "sealed-baseline",
+  "base_sha": "4d33af5fe22e28a614fa8eda8117eea0a723bb77",
+  "head_sha": "a885049e14c40d1f5b13513781e312a2592ff81c",
+  "merge_sha": "510e18a9e0eab87ab6c4f4d27f88adcf02a23c5e",
+  "diff_sha256": "3a865e00d4b15d1c8f8f3b63f456654624b68134047e1b48dc6556b5bec0cfcc",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-12T00:28:24Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "15ab41b5cfb4c41b6f00152e889913516f8ee079",
+      "message": "Classify a failing suite against a sealed run of the starting files (EVD-04, slice 1)",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "eee2a7cdf0f2f6ef95f02b36c7de1b4605973e40",
+      "message": "docs: changelog for the sealed baseline (EVD-04, slice 1)",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "aecd0232943555e49cb1f3e3d4f8d1013369c1ee",
+      "message": "Reword the no-start reason so the bundle has no text that reads as a package import",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "13be3dbfac44387271a60a8e4f18e1eebb3b452a",
+      "message": "Merge remote-tracking branch 'origin/main' into claude/kind-mccarthy-3f9281",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "6264a684c89c9ff3694944cab1297c2002d5a6bb",
+      "message": "Merge origin/main (QLT-05) into the sealed baseline branch",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "d7eef04ceb855c59130164ba62cd3614d3c3c0d7",
+      "message": "Merge remote-tracking branch 'origin/main' into claude/kind-mccarthy-3f9281",
+      "author": "Ved Mishra"
+    },
+    {
+      "sha": "a885049e14c40d1f5b13513781e312a2592ff81c",
+      "message": "Move the sealed-copy writer out of GitCli so git-cli stays within its size budget",
+      "author": "Ved Mishra"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 10,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/git-cli.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/git-seal.ts",
+      "status": "added",
+      "additions": 88,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/node-deps.ts",
+      "status": "added",
+      "additions": 35,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/adapters/node-ts.ts",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 6,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/baseline.ts",
+      "status": "added",
+      "additions": 118,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/reasons.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/receipts.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/schemas.ts",
+      "status": "modified",
+      "additions": 14,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/core/verdict.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/baseline.ts",
+      "status": "added",
+      "additions": 36,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/decisions/index.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/ports/types.ts",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-account.ts",
+      "status": "added",
+      "additions": 42,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-evidence.ts",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 34,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-execute.ts",
+      "status": "modified",
+      "additions": 4,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-finalize.ts",
+      "status": "modified",
+      "additions": 30,
+      "deletions": 18,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check-sealed.ts",
+      "status": "added",
+      "additions": 138,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/check.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/verbs/facts.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/src/wire.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/baseline.test.ts",
+      "status": "added",
+      "additions": 122,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/sealed-baseline.test.ts",
+      "status": "added",
+      "additions": 167,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/kernel/test/verdict.test.ts",
+      "status": "modified",
+      "additions": 28,
+      "deletions": 25,
+      "previous_path": null
+    }
+  ],
+  "reviews": [],
+  "check_runs": [
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:28:24Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "failure",
+      "completed_at": "2026-11-12T00:44:47Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:28:20Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-12T00:30:02Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:55:51Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:30:27Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:44:21Z"
+    },
+    {
+      "name": "paired-diagnostics",
+      "conclusion": "skipped",
+      "completed_at": "2026-11-12T00:27:58Z"
+    },
+    {
+      "name": "t1 (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:49:30Z"
+    },
+    {
+      "name": "t1 (macos-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T01:00:32Z"
+    },
+    {
+      "name": "skill-experiment",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:28:25Z"
+    },
+    {
+      "name": "windows-portability",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:31:32Z"
+    },
+    {
+      "name": "frozen-fixtures",
+      "conclusion": "failure",
+      "completed_at": "2026-11-12T00:30:08Z"
+    },
+    {
+      "name": "starter-memory",
+      "conclusion": "success",
+      "completed_at": "2026-11-12T00:28:18Z"
+    }
+  ],
+  "binary_paths": []
+}

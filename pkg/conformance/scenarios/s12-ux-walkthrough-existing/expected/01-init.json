@@ -1,0 +1,15 @@
+{
+  "ok": true,
+  "command": "init",
+  "version": "0.0.0",
+  "result": {
+    "plan": {
+      "ci_mode": "existing-ci"
+    },
+    "wrote": {
+      "createdCount": 6
+    },
+    "findings": []
+  },
+  "errors": []
+}

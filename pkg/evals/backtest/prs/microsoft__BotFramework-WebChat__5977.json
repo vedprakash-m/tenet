@@ -1,0 +1,857 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5977,
+  "title": "Check that esbuild, Vite and webpack 4/5 apps can bundle and render Web Chat",
+  "body": "> Nothing checks that apps can bundle Web Chat: `import('react-dom/client')` breaks webpack 5 on React 16.\n\n## Changelog Entry\n\n### Added\n\n- 👷🏻 Pull request validation: added rendering Web Chat bundled by esbuild, Vite, webpack 4 and 5 with React 16, 18 and 19\n- Docs: added [workarounds for webpack 4](./docs/HOSTING.md#bundling-with-webpack-4)\n\n### Changed\n\n- `botframework-webchat-core` connects to Redux DevTools without the `@redux-devtools/extension` package\n\n### Fixed\n\n- Fixed webpack 4 failing to resolve `botframework-webchat/schema.js` and `@redux-devtools/extension`\n\n## Description\n\nA new job builds an app per bundler from the tarballs on React 16, 18 or 19 and checks it renders in Chrome.\n\nWeb Chat ships a root `schema.js` and drops `@redux-devtools/extension`: webpack 4 only needs Babel.\n\n## Design\n\n- Apps set up as in their bundler's docs; Chrome 141 runs in a Selenium Docker image, driven over WebDriver.\n- `createStore` reads the DevTools extension's global like Redux Toolkit, not breaking.\n\n## Specific Changes\n\n- `pull-request-validation.yml`: `bundler-test` job, 12 legs\n- `__tests__/bundlers/<bundler>/`: the apps (React 16 uses `ReactDOM.render`); `run.mjs` checks them in the `Dockerfile`'s Chrome; `HOSTING.md` has webpack 4's config\n- `bundle/schema.js`: shim like `decorator.js`\n- `createStore.ts`: reads `__REDUX_DEVTOOLS_EXTENSION_COMPOSE__`, has a spec\n- `directlinespeech/babel.config.json`: test build uses release targets\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [x] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-10-28T22:46:09Z",
+  "merged_at": "2026-10-29T20:19:31Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-ci-webpack-consumers",
+  "head": "OEvgeny/fix-ci-webpack-consumers",
+  "base_sha": "5cac461d48697eee1d12dd8e8cdf407517e60d14",
+  "head_sha": "0dc701cf3bd3e99828d74cfb3e2d9010d983a347",
+  "merge_sha": "5842b2542776b3eba34073455f37ec9055a3ea89",
+  "diff_sha256": "1230f1d03921a36dec12a4a3a2bea36d755d02b9d3c9896f64bda1b065bb67b6",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-10-29T02:44:38Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "f8fb9fc64dc597acaba114cc0707daa3027c7854",
+      "message": "Check that webpack 4 and 5 apps can bundle Web Chat",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4e427d420a9fb050f5b18614a5a347a6d2fedf2a",
+      "message": "Document the webpack 4 workarounds and check them in CI",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "57273cae8d66ac0d7d522da337e544bc7762a8e7",
+      "message": "Transpile only the dependencies that need it for webpack 4, not Web Chat",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "86604755ff45ce27be79578b2d013e1589e587d3",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "cadcd12fa457f50be25da70e012a6498ba06454c",
+      "message": "Add the webpack 4 docs to the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "9f5e5177aff00abbc33da6e918b776fee905380e",
+      "message": "Build the instrumented directlinespeech with the release browser targets",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "78dad1a163eb06b8c976157c6b3e959397a4dbd6",
+      "message": "Ship a root schema.js so webpack 4 resolves botframework-webchat/schema.js without an alias",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "aee07853a711bf882cb608127a5185351eb14c6e",
+      "message": "Read the Redux DevTools extension global directly and drop @redux-devtools/extension",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "5ae2fdaba1740a076f5efc318e2a3045a8046b8f",
+      "message": "Bundle with esbuild, Vite and webpack 4/5 on React 16, 18 and 19, and render in Chrome instead of jsdom",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "eff6b86b6f1e024ce78efc0a72adcb64e07c4b50",
+      "message": "Exclude webpack 5 with React 19 until react-film is removed",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "2f91c036294fc81a4607c462b0fed2fd923dc689",
+      "message": "Describe the Redux DevTools change without implying a breaking change",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "eceed01be86439176f22f29c726e4231b5a3a79e",
+      "message": "Merge remote-tracking branch 'origin/main' into OEvgeny/fix-ci-webpack-consumers",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "aa4bc07963ca7ed3aee77c044bac49826d16b41c",
+      "message": "Note that webpack 5 with React 19 needs exportsPresence until react-film is removed, and name both webpack 4 fixes",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "3cfbed8387b6808911b8d6f6eb3825b458d59417",
+      "message": "Time out Chrome start and DevTools calls in browser.mjs, and always clean up Chrome, the server and the profile",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "3bb3c22b849bdf00a83385652c5ebfeb83e54aa8",
+      "message": "Check that createStore uses the enhancer returned by the Redux DevTools extension",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "bd8d545580400d74c1e4ebb64bb2dad9d5f7c43c",
+      "message": "Type the Redux DevTools global in createStore instead of globally, so tsd compiles it without env.d.ts",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "7dc9d9770abbe88bd951ffe24a93ad653a23ce79",
+      "message": "Bundle the consumer apps in production mode, also when NODE_ENV is test",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "a8d5455d9b9b753d612145aa1196d29a8a9488d7",
+      "message": "Shorten the bundler-test workflow comments",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "4acc9c6d2614e2d32cdc21fb52557061a647bc44",
+      "message": "Bundler test: one app per bundler as in its getting-started docs, checked in Chrome by run.mjs with chrome-launcher",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "5277f3bdc6782eee71bda13814f7a56b87a130ca",
+      "message": "Bundler test: React scripts install the tarballs in the same npm install, run.mjs answers an invalid report with 400",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "9588d4c5be2a45a30e3d788e582119821ccd1848",
+      "message": "Bundler test: React 16 apps render with ReactDOM.render from their own entry instead of a createRoot shim",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "14e2b3296b61f37429083bed4bf54338685bca47",
+      "message": "Bundler test: add bump scripts, and install React and Web Chat only from the React scripts",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "e3ced06034e59cabbaeaaf662be0e4269dc081ec",
+      "message": "Merge remote-tracking branch 'origin/main' into OEvgeny/fix-ci-webpack-consumers",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "a986de83e23d8f6fe1710cf8d568fdb1f7992e35",
+      "message": "Bundler test: run webpack 5 with React 19 again, react-film no longer imports render",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "58dc7b898536fd54111ab5cfd723fb14280d0a17",
+      "message": "Run the bundler apps' bump scripts from the root bump",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "97cb4d4e9ef7d2aa30cb092107ad0a464face79b",
+      "message": "Bundler test: render in Chrome 141 in Docker over WebDriver instead of chrome-launcher",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "0dc701cf3bd3e99828d74cfb3e2d9010d983a347",
+      "message": "Bundler test: time out WebDriver calls, keep the first error, bind the debug port to localhost",
+      "author": "Eugene Olonov"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/5977-fix-ci-webpack-consumers.md",
+      "status": "added",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": ".github/workflows/pull-request-validation.yml",
+      "status": "modified",
+      "additions": 53,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/.gitignore",
+      "status": "added",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/Dockerfile",
+      "status": "added",
+      "additions": 19,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/README.md",
+      "status": "added",
+      "additions": 35,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/esbuild/.gitignore",
+      "status": "added",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/esbuild/build.mjs",
+      "status": "added",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/esbuild/dist/index.html",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/esbuild/package.json",
+      "status": "added",
+      "additions": 17,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/esbuild/src/app.js",
+      "status": "added",
+      "additions": 54,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/esbuild/src/index.js",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/esbuild/src/index.react16.js",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/report.js",
+      "status": "added",
+      "additions": 38,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/run.mjs",
+      "status": "added",
+      "additions": 120,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/vite/.gitignore",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/vite/index.html",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/vite/package.json",
+      "status": "added",
+      "additions": 20,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/vite/src/app.js",
+      "status": "added",
+      "additions": 54,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/vite/src/index.js",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/vite/src/index.react16.js",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/vite/vite.config.js",
+      "status": "added",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack4/.gitignore",
+      "status": "added",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack4/dist/index.html",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack4/package.json",
+      "status": "added",
+      "additions": 43,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack4/src/app.js",
+      "status": "added",
+      "additions": 54,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack4/src/index.js",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack4/src/index.react16.js",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack4/webpack.config.js",
+      "status": "added",
+      "additions": 54,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack5/.gitignore",
+      "status": "added",
+      "additions": 4,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack5/dist/index.html",
+      "status": "added",
+      "additions": 11,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack5/package.json",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack5/src/app.js",
+      "status": "added",
+      "additions": 54,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack5/src/index.js",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack5/src/index.react16.js",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/bundlers/webpack5/webpack.config.js",
+      "status": "added",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/unit.setup/jest.config.js",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 4,
+      "previous_path": null
+    },
+    {
+      "path": "docs/HOSTING.md",
+      "status": "modified",
+      "additions": 58,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 10,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/schema.js",
+      "status": "added",
+      "additions": 3,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/package.json",
+      "status": "modified",
+      "additions": 0,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/createStore.devTools.spec.ts",
+      "status": "added",
+      "additions": 76,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/core/src/createStore.ts",
+      "status": "modified",
+      "additions": 18,
+      "deletions": 3,
+      "previous_path": null
+    },
+    {
+      "path": "packages/directlinespeech/babel.config.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 12,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-29T00:52:11Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T02:40:49Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T02:41:59Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T02:43:19Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T02:43:21Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-10-29T02:44:47Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-29T02:59:48Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T03:04:03Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T03:18:43Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T03:20:19Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T03:26:20Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T03:31:00Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T03:44:57Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T04:11:25Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T05:14:47Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T05:14:49Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-29T07:33:37Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-29T07:35:35Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-29T07:37:19Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-29T07:39:33Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-29T07:40:34Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-10-29T07:58:48Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T08:12:05Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T08:12:07Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T08:12:10Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T08:12:13Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T08:12:15Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T18:21:31Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-10-29T19:11:33Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-10-29T20:16:37Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:37:28Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:37:02Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:36:45Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:35:16Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:34:23Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:35:27Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:35:23Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:35:34Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:28:10Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:35:26Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:36:04Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:35:24Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:35:41Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:36:50Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:35:29Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:35:38Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:27:27Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:27:57Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:34:11Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:35:02Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:28:25Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:27:54Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:34:56Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:36:22Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:28:27Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:27:39Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:28:21Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:27:40Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:27:24Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:27:24Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:27:24Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:27:36Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:30:23Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:29:49Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:21:32Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:21:11Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:23:59Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:21:39Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:26:07Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:23:08Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:22:02Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:21:25Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:22:08Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:22:12Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-10-29T18:21:38Z"
+    }
+  ],
+  "binary_paths": []
+}

@@ -133,7 +133,7 @@ async function loadCommands(): Promise<void> {
   const commands = await import("./commands/index.js");
   if (loadedCommands) return;
   for (const spec of [
-    commands.boardCommand, commands.checkCommand, commands.contextCommand, commands.fixCommand,
+    commands.blessCommand, commands.boardCommand, commands.checkCommand, commands.contextCommand, commands.fixCommand,
     commands.onboardCommand, commands.splitCommand, commands.verifyCommand,
   ]) registerCommand(spec as CommandSpec);
   registerCommand({

@@ -1,0 +1,418 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 6028,
+  "title": "Convert the default and initials avatars to CSS modules",
+  "body": "> Continues the CSS Modules migration (#5997, #6024) with the avatars.\n\n## Changelog Entry\n\n### Changed\n\n- Converted the default and initials avatars to CSS Modules with `webchat__` class names; `avatarBorderRadius`, `botAvatarBackgroundColor` and `userAvatarBackgroundColor` are now custom properties, in PR [#6028](https://github.com/microsoft/BotFramework-WebChat/pull/6028), by [@OEvgeny](https://github.com/OEvgeny)\n\n### Removed\n\n- 💥 Deprecated the `avatar` and `initialsAvatar` style set entries, which no longer affect rendering, in PR [#6028](https://github.com/microsoft/BotFramework-WebChat/pull/6028), by [@OEvgeny](https://github.com/OEvgeny)\n\n## Description\n\nThe default and initials avatars move from emotion style sets to CSS Modules. No snapshot changes; rendered class names stay.\n\n## Design\n\n- `avatarBorderRadius` sets the reserved `--webchat__border-radius--avatar`; backgrounds use `--webchat__background--avatar(-user)` with the `accent` fallback in JavaScript (a CSS `var()` fallback would give Fluent avatars Fluent's accent).\n- One `Avatar.module.css` with 3 regions takes over `ImageAvatar.module.css`.\n\n## Specific Changes\n\n- `DefaultAvatar`, `InitialsAvatar`, `ImageAvatar`: `Avatar/Avatar.module.css`, `InferReactProps`\n- `CustomPropertyNames.ts`, `CSSCustomPropertiesContainer.tsx`: 3 avatar custom properties\n- `createStyleSet.ts`, `StyleSet/{Avatar,InitialsAvatar}.ts`: `@deprecated`\n- `fluentCSSModuleTheme.module.css`: `stacked-loyout__bubble` typo → `stacked-layout__bubble`, no visible change\n- `styleOptions/avatarBorderRadius.html`: new page, numeric radius (4 px corners)\n- `DefaultAvatar.spec.tsx` CSS mock; `imageAvatar` JSDoc paths\n\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\n\n- [x] I have added tests and executed them locally\n- [x] I have added `.changelog/<PR#>-<slug>.md`\n- [ ] I have updated documentation\n\n## Review Checklist\n\n> This section is for contributors to review your work.\n\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\n- [ ] Browser and platform compatibilities reviewed\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\n- [ ] Documents reviewed (docs, samples, live demo)\n- [ ] Internationalization reviewed (strings, unit formatting)\n- [ ] `package.json` and `package-lock.json` reviewed\n- [ ] Security reviewed (no data URIs, check for nonce leak)\n- [ ] Tests reviewed (coverage, legitimacy)\n\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-11-07T00:20:35Z",
+  "merged_at": "2026-11-08T23:16:15Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "OEvgeny/fix-css-modules-avatars",
+  "head": "OEvgeny/fix-css-modules-avatars",
+  "base_sha": "00cb1d3023f68d1b24341eee01fb3614e506ab6a",
+  "head_sha": "f40a0b9f436e8cf23af548c2ba7ade0c18dc2e6d",
+  "merge_sha": "5a04a971f4d782b5c066b89b901748df91fd2578",
+  "diff_sha256": "f4261a7eb100c1a019bb0ba2bceadb6bc2e2934f05265a21a4ceabed9b6ab2c4",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-11-07T04:11:02Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "6318640818529368bce87f608f11dc0a04c93fba",
+      "message": "Convert the default and initials avatars to CSS modules",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "ca154dc65a1d9f02507babbdeea681499c38c204",
+      "message": "Fluent: fix stacked-layout__bubble typo in copilot part grouping status rule",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "e9d6709933196fbddbf93cfc043f2b3df77f4032",
+      "message": "Add the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "b3ced905ba70bbdb4b4990bbd9494b432c6bbae3",
+      "message": "Add the Changed entry to the changelog fragment",
+      "author": "Eugene Olonov"
+    },
+    {
+      "sha": "f40a0b9f436e8cf23af548c2ba7ade0c18dc2e6d",
+      "message": "Merge branch 'main' into OEvgeny/fix-css-modules-avatars",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": ".changelog/6028-fix-css-modules-avatars.md",
+      "status": "added",
+      "additions": 7,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/avatarBorderRadius.html",
+      "status": "added",
+      "additions": 57,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/styleOptions/avatarBorderRadius.html.snap-1.png",
+      "status": "added",
+      "additions": 0,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Avatar/Avatar.module.css",
+      "status": "added",
+      "additions": 63,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Avatar/ImageAvatar.module.css",
+      "status": "removed",
+      "additions": 0,
+      "deletions": 13,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Avatar/ImageAvatar.tsx",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Avatar/InitialsAvatar.tsx",
+      "status": "modified",
+      "additions": 12,
+      "deletions": 28,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/Avatar/DefaultAvatar.spec.tsx",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Middleware/Avatar/DefaultAvatar.tsx",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 26,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/CSSCustomPropertiesContainer.tsx",
+      "status": "modified",
+      "additions": 6,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/CustomPropertyNames.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/Avatar.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/ImageAvatar.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/StyleSet/InitialsAvatar.ts",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Styles/createStyleSet.ts",
+      "status": "modified",
+      "additions": 11,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/src/private/fluentCSSModuleTheme.module.css",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "copilot-pull-request-reviewer[bot]",
+      "submitted_at": "2026-11-07T04:11:10Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-11-08T22:53:18Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:15:45Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:15:15Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:14:46Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:14:56Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:15:00Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:14:44Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:13:28Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:15:07Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:14:06Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:15:05Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:14:55Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:14:05Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:14:29Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:13:44Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:14:17Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:14:00Z"
+    },
+    {
+      "name": "Bundler test (vite, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:05:54Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:14:20Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:06:30Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:06:48Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:14:29Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:13:49Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:06:30Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:05:59Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:06:03Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:06:29Z"
+    },
+    {
+      "name": "Bundler test (webpack5, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:06:45Z"
+    },
+    {
+      "name": "Bundler test (vite, React 18)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:06:03Z"
+    },
+    {
+      "name": "Bundler test (esbuild, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:06:07Z"
+    },
+    {
+      "name": "Bundler test (vite, React 19)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:05:59Z"
+    },
+    {
+      "name": "Bundler test (webpack4, React 16)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:06:20Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:07:49Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:07:53Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:08:04Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:01:00Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:00:17Z"
+    },
+    {
+      "name": "Changelog",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:01:48Z"
+    },
+    {
+      "name": "Verify build-browser (ubuntu-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:01:09Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:01:58Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:00:42Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:04:54Z"
+    },
+    {
+      "name": "Verify build-browser (windows-latest)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:02:58Z"
+    },
+    {
+      "name": "Verify build-browser (macos-26)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:02:21Z"
+    },
+    {
+      "name": "Package age",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:00:29Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:01:07Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-11-08T23:01:14Z"
+    }
+  ],
+  "binary_paths": [
+    "__tests__/html2/styleOptions/avatarBorderRadius.html.snap-1.png"
+  ]
+}

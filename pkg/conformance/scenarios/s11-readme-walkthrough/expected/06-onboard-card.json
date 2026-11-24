@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "command": "onboard",
+  "version": "0.0.0",
+  "result": {
+    "card": "### Tenet onboarding · drafted from 175926e · nothing is in force until you bless it\nRead: README.md, 1 source files, 1 test files, 0 instruction files · Skipped: none\n✓ all 2 citations checked against the code\nSections (about 2 minutes)\n  Vision · 1 statement · 1 documented · 1 min\n  Requirements · 1 statement · 1 observed · 1 min\n→ gh pr checkout <n>, then tenet bless in your terminal (or edit the files first)\n",
+    "drafted_at_rev": "175926eb3b08d21dea4388cc916d7932e0d37d79"
+  },
+  "errors": []
+}

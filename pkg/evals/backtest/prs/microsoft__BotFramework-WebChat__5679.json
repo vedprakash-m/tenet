@@ -1,0 +1,392 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5679,
+  "title": "Pull based capabilities from adapter",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n\r\n## Changelog Entry\r\n\r\n- Added pull-based capabilities system for dynamically discovering adapter capabilities at runtime, in PR [#5679](https://github.com/microsoft/BotFramework-WebChat/pull/5679), by [@pranavjoshi001](https://github.com/pranavjoshi001)\r\n\r\n<!-- Please paste your new entry from CHANGELOG.MD here. Entry is not required for work only related to development purposes. -->\r\n\r\n## Description\r\n\r\nIntroduces a Capabilities system that enables WebChat to dynamically discover and consume capabilities from chat adapters at runtime.\r\n\r\nThis allows adapters(directline, ccv2 etc..) to expose configuration such as voice settings without requiring WebChat to have compile-time knowledge of specific adapter implementations. The system follows a pull-based model where adapters expose getter functions and emit events when capabilities change.\r\n\r\n## Design\r\n\r\n### Pull-Based Architecture\r\n- **Adapters expose getters**: Adapters implement getter functions (e.g., `getVoiceConfiguration()`) to provide capability values\r\n- **Event-driven updates**: Adapters emit `capabilitiesChanged` events as a \"nudge\" to signal WebChat should re-fetch capabilities\r\n- **Registry-based discovery**: A capability registry maps capability keys to getter function names, making the system extensible\r\n\r\n### Pure Derivation Pattern\r\n- Uses `useReduceMemo` to derive capabilities from the activity stream\r\n- A synthetic init marker ensures initial fetch happens on mount\r\n- Capabilities are only re-fetched when:\r\n  1. A `capabilitiesChanged` event is detected in activities\r\n\r\n### Reference Stability\r\n- Individual capability objects maintain reference equality when unchanged\r\n- Consumers using selectors only re-render when their specific capability changes\r\n- Uses shallow equality comparison with support for custom comparators\r\n\r\n## Specific Changes\r\n\r\n- Added `CapabilitiesComposer` component that provides capabilities context\r\n- Added `useCapabilities(selector)` hook for consuming capabilities with selector pattern\r\n- Added `fetchCapabilitiesFromAdapter` utility to pull capabilities from adapter getters\r\n- Added `capabilityRegistry` to map capability keys to adapter getter names\r\n- Added `Capabilities` and `VoiceConfiguration` types\r\n- Added valibot schema validation for `capabilitiesChanged` events\r\n- Exported `useCapabilities` hook from `botframework-webchat/hook`\r\n- Added `setCapability(getterName, value, options)` helper to test emulator\r\n- Added `useCapabilities.html` test covering initial fetch, event-driven updates, and reference stability\r\n- Added `CAPABILITIES.md` documentation\r\n\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [x] I have added tests and executed them locally\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [x] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n- [x] Browser and platform compatibilities reviewed\r\n- [x] CSS styles reviewed (minimal rules, no `z-index`)\r\n- [x] Documents reviewed (docs, samples, live demo)\r\n- [x] Internationalization reviewed (strings, unit formatting)\r\n- [x] `package.json` and `package-lock.json` reviewed\r\n- [x] Security reviewed (no data URIs, check for nonce leak)\r\n- [x] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "pranavjoshi001",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-01-26T11:59:49Z",
+  "merged_at": "2026-01-28T08:35:45Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "feature/pull-based-capabilities-from-adapter",
+  "head": "feature/pull-based-capabilities-from-adapter",
+  "base_sha": "46a12f8a014a57e9ce699d1292716afae3c94da7",
+  "head_sha": "7853b4bc3c172d763c1b43ecea43be61d2b21a16",
+  "merge_sha": "d02108c7d4583992cc1fba950b3ab15ab20cf5b3",
+  "diff_sha256": "9603422cbc92a7b60c7898ff093542a82c6b48e63a5d1715cd2bbe3304b5f921",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [],
+  "commits": [
+    {
+      "sha": "7ccc098173193ef3ed830f8912e9ca64a857699b",
+      "message": "pull based capabilities",
+      "author": "pranavjoshi001"
+    },
+    {
+      "sha": "ba0db80d5630eaf13ad4f47d22fb93e8d2c44aae",
+      "message": "chanagelog updated",
+      "author": "pranavjoshi001"
+    },
+    {
+      "sha": "2e275e6492b15c933ac5f17318886c71103154f5",
+      "message": "Merge branch 'main' into feature/pull-based-capabilities-from-adapter",
+      "author": "pranavjoshi001"
+    },
+    {
+      "sha": "7853b4bc3c172d763c1b43ecea43be61d2b21a16",
+      "message": "review comment fixed",
+      "author": "pranavjoshi001"
+    }
+  ],
+  "files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "__tests__/html2/hooks/useCapabilities.html",
+      "status": "added",
+      "additions": 109,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "docs/CAPABILITIES.md",
+      "status": "added",
+      "additions": 85,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/package.json",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/boot/hook.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/Composer.tsx",
+      "status": "modified",
+      "additions": 19,
+      "deletions": 16,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/hooks/index.ts",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/Capabilities/CapabilitiesComposer.tsx",
+      "status": "added",
+      "additions": 79,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/Capabilities/private/Context.ts",
+      "status": "added",
+      "additions": 13,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/Capabilities/private/capabilityRegistry.ts",
+      "status": "added",
+      "additions": 45,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/Capabilities/private/fetchCapabilitiesFromAdapter.ts",
+      "status": "added",
+      "additions": 59,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/Capabilities/private/shallowEqual.ts",
+      "status": "added",
+      "additions": 18,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/Capabilities/private/useContext.ts",
+      "status": "added",
+      "additions": 12,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/Capabilities/types/Capabilities.ts",
+      "status": "added",
+      "additions": 16,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/api/src/providers/Capabilities/useCapabilities.ts",
+      "status": "added",
+      "additions": 25,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/bundle/src/boot/actual/hook/minimal.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/boot/hook.ts",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/test/page-object/src/globals/testHelpers/createDirectLineEmulator.js",
+      "status": "modified",
+      "additions": 33,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-01-27T18:46:49Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-01-27T18:47:05Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-01-27T19:18:24Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-01-27T19:19:46Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-01-27T19:20:15Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-01-27T19:21:46Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-01-27T19:28:39Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-01-27T19:30:53Z"
+    },
+    {
+      "state": "DISMISSED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-01-27T19:51:34Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "pranavjoshi001",
+      "submitted_at": "2026-01-28T06:13:19Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "pranavjoshi001",
+      "submitted_at": "2026-01-28T06:13:31Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "pranavjoshi001",
+      "submitted_at": "2026-01-28T06:14:39Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "pranavjoshi001",
+      "submitted_at": "2026-01-28T06:14:46Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-01-28T08:35:36Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:37:00Z"
+    },
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:37:18Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:36:09Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:35:42Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:36:20Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:35:52Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:36:50Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:35:49Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:35:53Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:36:10Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:35:40Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:36:01Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:36:09Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:36:06Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:36:27Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:35:58Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:36:19Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:36:13Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:36:08Z"
+    },
+    {
+      "name": "Build test harness",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:26:10Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:30:34Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:25:28Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:28:46Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:30:04Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:28:59Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:24:59Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-01-28T06:12:45Z"
+    }
+  ],
+  "binary_paths": []
+}

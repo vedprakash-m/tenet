@@ -1,0 +1,308 @@
+{
+  "repo": "microsoft/BotFramework-WebChat",
+  "number": 5672,
+  "title": "feat: vg utility init",
+  "body": "<!-- Please provide the issue number here if any -->\r\n\r\n> Fixes #\r\n\r\n## Changelog Entry\r\n\r\n(no changelog entry for the internal infra change)\r\n\r\n## Description\r\n\r\nThis is the initial work for the new `vg` a.k.a Vibe-Grep internal tool. The tool is dedicated for AST-driven source code processing, and distributed code analysis.\r\n\r\n## Design\r\n\r\nRefer to the provided documentation for more information.\r\n\r\n## Specific Changes\r\n\r\n- Added the new private package: `@msinternal/vibe-grep`\r\n- Migrated and improved dts and css checks.\r\n\r\n---\r\n\r\n<!-- For bugs, add the bug repro as a test. Otherwise, add tests to futureproof your work. -->\r\n\r\n- [x] I have added tests and executed them locally\r\n- [x] I have updated `CHANGELOG.md`\r\n- [x] I have updated documentation\r\n\r\n## Review Checklist\r\n\r\n> This section is for contributors to review your work.\r\n\r\n- [ ] Accessibility reviewed (tab order, content readability, alt text, color contrast)\r\n- [ ] Browser and platform compatibilities reviewed\r\n- [ ] CSS styles reviewed (minimal rules, no `z-index`)\r\n- [ ] Documents reviewed (docs, samples, live demo)\r\n- [ ] Internationalization reviewed (strings, unit formatting)\r\n- [ ] `package.json` and `package-lock.json` reviewed\r\n- [ ] Security reviewed (no data URIs, check for nonce leak)\r\n- [ ] Tests reviewed (coverage, legitimacy)\r\n",
+  "author": {
+    "login": "OEvgeny",
+    "type": "User",
+    "copilot_coding_agent": false
+  },
+  "created_at": "2026-01-12T22:15:05Z",
+  "merged_at": "2026-01-13T00:50:34Z",
+  "base_ref": "main",
+  "base": "main",
+  "head_ref": "feat/vg",
+  "head": "feat/vg",
+  "base_sha": "66ab8fd89c98bc1a7653ab05569d67520e7dae9b",
+  "head_sha": "39db1f44467529b3e3eade1860ac0a74e7e60e86",
+  "merge_sha": "d3123a34b30e8ae29ae9a8d50f4e43db21eff128",
+  "diff_sha256": "fa951ac90441a130f1a947b74cd174ae4fd8ad0f19957aa6bcf8cebb6508825a",
+  "shas_resolved": true,
+  "applies_at_base": true,
+  "labels": [],
+  "draft_history": [
+    {
+      "event": "ready_for_review",
+      "at": "2026-01-12T23:27:35Z"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "0bf399e96770db5ec8724dcf5fa2e92655d9d16a",
+      "message": "feat: vg utility init",
+      "author": "OEvgeny"
+    },
+    {
+      "sha": "39db1f44467529b3e3eade1860ac0a74e7e60e86",
+      "message": "Cleanup",
+      "author": "OEvgeny"
+    }
+  ],
+  "files": [
+    {
+      "path": "package-lock.json",
+      "status": "modified",
+      "additions": 183,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "package.json",
+      "status": "modified",
+      "additions": 5,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/component/src/Attachment/Text/private/ActivityCopyButton.module.css",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "previous_path": null
+    },
+    {
+      "path": "packages/fluent-theme/package.json",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "previous_path": null
+    },
+    {
+      "path": "packages/vibe-grep/README.md",
+      "status": "added",
+      "additions": 65,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/vibe-grep/package.json",
+      "status": "added",
+      "additions": 38,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/vibe-grep/src/commands/ast-check.js",
+      "status": "added",
+      "additions": 159,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/vibe-grep/src/commands/help.js",
+      "status": "added",
+      "additions": 58,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/vibe-grep/src/rules/dist-types.yaml",
+      "status": "added",
+      "additions": 19,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/vibe-grep/src/rules/lightning-css.yaml",
+      "status": "added",
+      "additions": 19,
+      "deletions": 0,
+      "previous_path": null
+    },
+    {
+      "path": "packages/vibe-grep/src/vg.js",
+      "status": "added",
+      "additions": 42,
+      "deletions": 0,
+      "previous_path": null
+    }
+  ],
+  "reviews": [
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-01-12T23:38:57Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-01-12T23:43:12Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "compulim",
+      "submitted_at": "2026-01-12T23:43:40Z"
+    },
+    {
+      "state": "APPROVED",
+      "author": "compulim",
+      "submitted_at": "2026-01-12T23:43:53Z"
+    },
+    {
+      "state": "COMMENTED",
+      "author": "OEvgeny",
+      "submitted_at": "2026-01-12T23:45:09Z"
+    }
+  ],
+  "check_runs": [
+    {
+      "name": "Merge test results",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:51:08Z"
+    },
+    {
+      "name": "Merge test snapshots",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:50:47Z"
+    },
+    {
+      "name": "license/cla",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:42:48Z"
+    },
+    {
+      "name": "HTML test (4/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:33:02Z"
+    },
+    {
+      "name": "Build samples",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:22:08Z"
+    },
+    {
+      "name": "Print commit stats",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:22:40Z"
+    },
+    {
+      "name": "HTML test (14/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:32:31Z"
+    },
+    {
+      "name": "HTML test (12/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:32:39Z"
+    },
+    {
+      "name": "HTML test (10/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:32:38Z"
+    },
+    {
+      "name": "HTML test (3/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:32:49Z"
+    },
+    {
+      "name": "Type definitions test",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:26:05Z"
+    },
+    {
+      "name": "HTML test (7/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:32:10Z"
+    },
+    {
+      "name": "Static code analysis",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:27:53Z"
+    },
+    {
+      "name": "Build",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:25:35Z"
+    },
+    {
+      "name": "Unit test",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:27:04Z"
+    },
+    {
+      "name": "HTML test (16/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:50:08Z"
+    },
+    {
+      "name": "HTML test (15/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:49:08Z"
+    },
+    {
+      "name": "HTML test (6/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:33:26Z"
+    },
+    {
+      "name": "HTML test (5/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:50:32Z"
+    },
+    {
+      "name": "HTML test (1/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:49:02Z"
+    },
+    {
+      "name": "HTML test (13/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:49:26Z"
+    },
+    {
+      "name": "HTML test (11/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:49:47Z"
+    },
+    {
+      "name": "HTML test (2/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:49:27Z"
+    },
+    {
+      "name": "HTML test (17/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:49:26Z"
+    },
+    {
+      "name": "HTML test (9/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:50:21Z"
+    },
+    {
+      "name": "Build test harness",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:23:22Z"
+    },
+    {
+      "name": "HTML test (8/17)",
+      "conclusion": "success",
+      "completed_at": "2026-01-13T00:49:44Z"
+    },
+    {
+      "name": "CodeQL",
+      "conclusion": "success",
+      "completed_at": "2026-01-12T23:06:45Z"
+    },
+    {
+      "name": "Analyze (actions)",
+      "conclusion": "success",
+      "completed_at": "2026-01-12T23:06:19Z"
+    },
+    {
+      "name": "Analyze (javascript)",
+      "conclusion": "success",
+      "completed_at": "2026-01-12T23:07:05Z"
+    }
+  ],
+  "binary_paths": []
+}
