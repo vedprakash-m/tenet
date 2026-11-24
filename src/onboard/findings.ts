@@ -48,11 +48,7 @@ function deadPaths(facts: Facts, tracked: Set<string>): FirstFinding[] {
       directories.add(parent);
     }
   }
-  return facts.files
-    .filter(({ kind }) => kind === "doc" || kind === "adr")
-    .filter(({ path: filename }) =>
-      !/(?:^|\/)(?:\.agents|\.claude)\/skills\/tenet-[^/]+\/SKILL\.md$/.test(filename))
-    .flatMap((doc) => {
+  return facts.files.filter(({ kind }) => kind === "doc" || kind === "adr").flatMap((doc) => {
     const targets = new Set(referencedPaths(doc.text).flatMap((reference) => localTarget(reference) ?? []));
     return [...targets].flatMap((target) => {
       const local = path.posix.normalize(path.posix.join(path.posix.dirname(doc.path), target)).replace(/\/$/, "");

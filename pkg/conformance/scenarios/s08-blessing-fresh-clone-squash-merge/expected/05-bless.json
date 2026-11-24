@@ -1,7 +1,7 @@
 {
   "ok": true,
   "command": "bless",
-  "version": "0.0.0",
+  "version": "{{version}}",
   "result": {
     "blessed": 0,
     "confirmed": 1,

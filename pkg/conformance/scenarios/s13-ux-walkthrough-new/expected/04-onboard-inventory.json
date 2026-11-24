@@ -1,7 +1,7 @@
 {
   "ok": true,
   "command": "onboard",
-  "version": "0.0.0",
+  "version": "{{version}}",
   "result": {
     "preflight": {
       "revision": "4f430df3adc84ccf75c5be93cc84cc035475f2dc",
