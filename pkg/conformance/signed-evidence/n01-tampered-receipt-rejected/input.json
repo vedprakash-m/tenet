@@ -1,0 +1,13 @@
+{
+  "op": "verifyReceipt",
+  "level": "verify",
+  "receipt": {
+    "id": "REC-200",
+    "subject": {
+      "kind": "git-tree",
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "result": "fail-tampered-to-pass"
+  },
+  "tampered": true
+}

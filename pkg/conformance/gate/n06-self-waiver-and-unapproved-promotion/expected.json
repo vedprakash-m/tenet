@@ -1,0 +1,20 @@
+{
+  "self_waiver": {
+    "verdict": "refuse",
+    "disposition": "blocks",
+    "claims": [
+      {
+        "id": "AB-1",
+        "result": "failed",
+        "reason": "TN-GATE-SELF-WAIVE"
+      }
+    ],
+    "reasons": [
+      "TN-GATE-SELF-WAIVE"
+    ]
+  },
+  "unapproved_rule_promotion": {
+    "error_code": "TN-POLICY-RULE-DECISION",
+    "exit_code": 4
+  }
+}

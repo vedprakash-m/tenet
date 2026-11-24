@@ -1,0 +1,11 @@
+{
+  "base_case": {
+    "verdict": "advance",
+    "disposition": "records"
+  },
+  "with_extra_enforced_unsatisfied": {
+    "verdict": "refuse",
+    "disposition": "blocks",
+    "lead": "TN-GATE-CLAIM"
+  }
+}

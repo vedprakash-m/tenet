@@ -1,0 +1,17 @@
+{
+  "level_result": {
+    "previous_level": "observe",
+    "level": "protect"
+  },
+  "rules_result": {
+    "rule": "acceptance-passed",
+    "previous_mode": "advise",
+    "mode": "enforce"
+  },
+  "tenet_yaml": {
+    "level": "protect",
+    "rules": {
+      "acceptance-passed": "enforce"
+    }
+  }
+}

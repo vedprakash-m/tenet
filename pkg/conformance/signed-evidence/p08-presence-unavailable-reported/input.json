@@ -1,0 +1,22 @@
+{
+  "op": "verifyPersonPresent",
+  "key_type": "ssh-ed25519",
+  "hardware_presence_bit": null,
+  "payload": {
+    "domain": "tenet.decision.person-present.v1",
+    "repository": "vedprakash-m/tenet-sandbox",
+    "work": "pr-5",
+    "request_id": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+    "evaluation_id": "0123456789abcdef",
+    "subject": {
+      "kind": "git-tree",
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "policy_revision": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "decision_kind": "approve",
+    "choice_id": "approve",
+    "actor_id": "ved",
+    "challenge": "chg-7711-random",
+    "expires_at": "2026-11-24T12:00:00Z"
+  }
+}

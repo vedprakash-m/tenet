@@ -1,0 +1,20 @@
+{
+  "stale_forge": {
+    "recorded": false,
+    "reason": "stale-forge-event"
+  },
+  "incomplete_resolve": {
+    "conflicts": [
+      [
+        "01JDF000000000000000000002",
+        "01JDF000000000000000000003"
+      ]
+    ],
+    "held": [
+      "01JDF000000000000000000005"
+    ],
+    "finding_codes": [
+      "TN-EV-RESOLVE"
+    ]
+  }
+}

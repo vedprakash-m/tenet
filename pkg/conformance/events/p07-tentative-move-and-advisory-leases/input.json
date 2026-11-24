@@ -1,0 +1,85 @@
+{
+  "op": "reduce",
+  "pack": {
+    "stations": [
+      "intake",
+      "define",
+      "build",
+      "verify",
+      "integrate",
+      "close"
+    ],
+    "legal_edges": [
+      [
+        "intake",
+        "define"
+      ],
+      [
+        "define",
+        "build"
+      ],
+      [
+        "build",
+        "verify"
+      ],
+      [
+        "verify",
+        "integrate"
+      ],
+      [
+        "integrate",
+        "close"
+      ]
+    ]
+  },
+  "pending_hours": 24,
+  "evaluations": [
+    "2026-11-23T18:00:00Z",
+    "2026-11-24T12:01:00Z"
+  ],
+  "events": [
+    {
+      "id": "01JDF000000000000000000001",
+      "prev": [],
+      "type": "work.created",
+      "work": "CP-1004",
+      "time": "2026-11-23T12:00:00Z",
+      "by": "ved",
+      "data": {
+        "title": "Tentative",
+        "station": "build",
+        "lane": "careful"
+      }
+    },
+    {
+      "id": "01JDF000000000000000000002",
+      "prev": [
+        "01JDF000000000000000000001"
+      ],
+      "type": "work.moved",
+      "work": "CP-1004",
+      "time": "2026-11-23T12:01:00Z",
+      "by": "builder",
+      "data": {
+        "station": "verify",
+        "tentative": true
+      }
+    },
+    {
+      "id": "01JDF000000000000000000003",
+      "prev": [
+        "01JDF000000000000000000002"
+      ],
+      "type": "lease.taken",
+      "work": "CP-1004",
+      "time": "2026-11-23T12:02:00Z",
+      "by": "builder",
+      "data": {
+        "paths": [
+          "src/kernel/"
+        ],
+        "expires_at": "2026-11-23T14:00:00Z"
+      }
+    }
+  ]
+}

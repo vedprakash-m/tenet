@@ -1,0 +1,10 @@
+{
+  "decision": null,
+  "finding_codes": [
+    "TN-DEC-ACTOR"
+  ],
+  "observation": {
+    "forge_source_id": "cmt-bad-1",
+    "rejected": true
+  }
+}

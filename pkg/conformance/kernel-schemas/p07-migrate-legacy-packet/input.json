@@ -1,0 +1,67 @@
+{
+  "old": {
+    "id": "CP-0049",
+    "title": "Kernel schemas",
+    "type": "feature",
+    "lane": "careful",
+    "priority": "standard",
+    "due": null,
+    "levels": [
+      "L3",
+      "L4"
+    ],
+    "serves": [
+      "V-V4",
+      "V-P2"
+    ],
+    "implements": [
+      "R-010",
+      "R-173"
+    ],
+    "milestone": "M1",
+    "source": "specs/plan.md",
+    "stage": "triage",
+    "status": "parked",
+    "blocked_by": [
+      "CP-0052",
+      "CP-0053"
+    ],
+    "unblocks": [
+      "CP-0007"
+    ],
+    "owner_role": null,
+    "claimed_by": null,
+    "appetite": {
+      "agent_hours": 6,
+      "sessions": 4
+    },
+    "spent": {
+      "agent_hours": 0,
+      "sessions": 0,
+      "owner_minutes": 0
+    },
+    "candidate": null,
+    "endpoint": null,
+    "history": [
+      {
+        "at": "2026-11-23T09:00Z",
+        "to": "intake",
+        "by": "Ved",
+        "reason": "split from CP-0004"
+      },
+      {
+        "at": "2026-11-23T09:00Z",
+        "from": "intake",
+        "to": "triage",
+        "by": "Ved",
+        "lane": "standard"
+      },
+      {
+        "at": "2026-11-23T09:00Z",
+        "to": "parked",
+        "by": "Ved",
+        "reason": "revisit when M0 closes"
+      }
+    ]
+  }
+}

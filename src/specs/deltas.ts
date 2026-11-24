@@ -1,5 +1,6 @@
 import { catFileBatch, git } from "../core/git.js";
 import { jcs } from "../core/hash.js";
+import { loadPolicy } from "../policy/index.js";
 import { parseDoc, type ParsedDoc, type Requirement } from "./parse.js";
 
 export type Delta = {
@@ -9,13 +10,13 @@ export type Delta = {
   removed: string[];
 };
 
-async function markdownAt(ref: string, cwd: string): Promise<Map<string, ParsedDoc>> {
+async function markdownAt(ref: string, cwd: string, prefix: string): Promise<Map<string, ParsedDoc>> {
   const listing = await git(["ls-tree", "-r", "-z", "--name-only", ref], { cwd });
   const paths = listing.split("\0").filter((filename) => filename.endsWith(".md"));
   const blobs = await catFileBatch(ref, paths, { cwd });
   const result = new Map<string, ParsedDoc>();
   for (const [filename, contents] of blobs) {
-    const parsed = parseDoc(filename, contents.toString("utf8"));
+    const parsed = parseDoc(filename, contents.toString("utf8"), { prefix });
     if (parsed.front?.tenet !== undefined) result.set(filename, parsed);
   }
   return result;
@@ -91,10 +92,22 @@ function delta(
 export async function deltas(
   base: string,
   head: string,
-  options: { cwd?: string } = {},
+  options: { cwd?: string; prefix?: string } = {},
 ): Promise<Delta[]> {
   const cwd = options.cwd ?? process.cwd();
-  const [before, after] = await Promise.all([markdownAt(base, cwd), markdownAt(head, cwd)]);
+  let prefix = options.prefix;
+  if (!prefix) {
+    try {
+      prefix = (await loadPolicy({ cwd })).specs.id_prefix;
+    } catch (error) {
+      if ((error as { code?: unknown }).code !== "TN-POLICY-MISSING") throw error;
+      prefix = "R";
+    }
+  }
+  const [before, after] = await Promise.all([
+    markdownAt(base, cwd, prefix),
+    markdownAt(head, cwd, prefix),
+  ]);
   const beforeItems = groupedItems(before);
   const afterItems = groupedItems(after);
   const paths = [...new Set([

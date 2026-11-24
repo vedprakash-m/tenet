@@ -17,8 +17,8 @@ const { renderCheckSummary } = await import("../../dist/verify/card.js");
 
 const repository = "fixture/checkout";
 const at = "2026-11-23T10:00:00Z";
-const body = "## Acceptance\nImplements: R-1\n- [AB-1] retry once\n";
-const policy = { level: "observe", specs: { id_prefix: "R" }, checks: { unit: { report: "junit" } } };
+const body = "## Acceptance\nImplements: C-1\n- [AB-1] retry once\n";
+const policy = { level: "observe", specs: { id_prefix: "C" }, checks: { unit: { report: "junit" } } };
 
 function bundle(head: string, base: string, state = "pass", xml?: string) {
   const report = Buffer.from(xml ?? (state === "malformed" ? "broken" :
@@ -156,9 +156,16 @@ test("recorder handles CI outcome rows, forks with a shared head, push, edits an
       ...emptyDeps,
       policy: async () => policy,
       verifyLock: async () => {},
-      touched: async () => [{ id: "R-1", why: "implements" }],
+      touched: async (_base: string, _head: string, _ids: string[], options?: { prefix?: string }) => {
+        assert.equal(options?.prefix, "C");
+        return [{ id: "C-1", why: "implements" as const }];
+      },
+      deltas: async (_base: string, _head: string, options?: { prefix?: string }) => {
+        assert.equal(options?.prefix, "C");
+        return [];
+      },
       specification: async () => ({ blessed: true, requirements: [
-        { id: "R-1", excerpt: "Retry once.", state: "blessed", recorded: "self", flags: [], blessed_digest: "sha256:abc" },
+        { id: "C-1", excerpt: "Retry once.", state: "blessed", recorded: "self", flags: [], blessed_digest: "sha256:abc" },
       ], blessings_changed: [] }),
     };
     for (const [state, expected, reason] of [
@@ -201,7 +208,7 @@ test("recorder handles CI outcome rows, forks with a shared head, push, edits an
         assert.equal(summaries.length, 1);
         assert.match(summaries[0], /Pull request #1[\s\S]*Pull request #2/);
         const evalInput = { repository, work: "pr-1", tested_commit: head, base,
-          acceptance_digest: card.acceptance_digest, implemented: [{ id: "R-1", blessed_digest: "sha256:abc" }],
+          acceptance_digest: card.acceptance_digest, implemented: [{ id: "C-1", blessed_digest: "sha256:abc" }],
           policy_blob: base, tenet_version: options.version };
         assert.equal(card.evaluation_id, sha256(jcs(evalInput)).slice(0, 16));
         assert.equal(evaluationId(evalInput), card.evaluation_id);

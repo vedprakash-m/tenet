@@ -1,5 +1,6 @@
 import { catFileBatch, git } from "../core/git.js";
 import { jcs } from "../core/hash.js";
+import { loadPolicy } from "../policy/index.js";
 import {
   anchorBlock,
   citationParts,
@@ -60,6 +61,7 @@ async function allFiles(ref: string, cwd: string): Promise<string[]> {
 async function snapshots(
   ref: string,
   cwd: string,
+  prefix: string,
 ): Promise<{ files: Map<string, string>; docs: Map<string, ParsedDoc> }> {
   const paths = await allFiles(ref, cwd);
   const blobs = await catFileBatch(ref, paths, { cwd });
@@ -69,7 +71,7 @@ async function snapshots(
     const text = value.toString("utf8");
     files.set(filename, text);
     if (filename.endsWith(".md")) {
-      const doc = parseDoc(filename, text);
+      const doc = parseDoc(filename, text, { prefix });
       const tenet = doc.front?.tenet;
       if (
         tenet !== null &&
@@ -225,7 +227,10 @@ function citedCodeChanged(
     const parsed = citationParts(cite);
     if (!parsed) continue;
     const change = changedPath(parsed.path, changes);
-    if (change?.status.startsWith("D") || change?.status.startsWith("R")) return true;
+    if (
+      parsed.kind !== "doc" &&
+      (change?.status.startsWith("D") || change?.status.startsWith("R"))
+    ) return true;
     if (!baseFiles.has(parsed.path)) continue;
     if (parsed.kind === "path") {
       if (hunks.some((hunk) =>
@@ -240,11 +245,11 @@ function citedCodeChanged(
       const baseText = baseFiles.get(parsed.path);
       const headText = headFiles.get(parsed.path);
       if (!baseText) continue;
-      if (!headText) return true;
       const before = docSection(parsed.path, baseText, parsed.slug);
+      if (!before) continue;
+      if (!headText) return true;
       const after = docSection(parsed.path, headText, parsed.slug);
-      if (!before && !after) continue;
-      if (!before || !after || before.section.digest !== after.section.digest) return true;
+      if (!after || before.section.digest !== after.section.digest) return true;
       if (hunks.some((hunk) =>
         hunk.oldPath === parsed.path &&
         overlaps(before.start, before.end, hunk, true)
@@ -349,12 +354,21 @@ export async function touched(
   base: string,
   head: string,
   implementsIds: string[],
-  options: { cwd?: string; codeowners_path?: string } = {},
+  options: { cwd?: string; codeowners_path?: string; prefix?: string } = {},
 ): Promise<Touched[]> {
   const cwd = options.cwd ?? process.cwd();
+  let prefix = options.prefix;
+  if (!prefix) {
+    try {
+      prefix = (await loadPolicy({ cwd })).specs.id_prefix;
+    } catch (error) {
+      if ((error as { code?: unknown }).code !== "TN-POLICY-MISSING") throw error;
+      prefix = "R";
+    }
+  }
   const [baseState, headState, changes, hunks] = await Promise.all([
-    snapshots(base, cwd),
-    snapshots(head, cwd),
+    snapshots(base, cwd, prefix),
+    snapshots(head, cwd, prefix),
     fileChanges(base, head, cwd),
     diffHunks(base, head, cwd),
   ]);

@@ -1,0 +1,19 @@
+{
+  "verdict": "refuse",
+  "disposition": "blocks",
+  "lead": "TN-GATE-STOP",
+  "reasons": [
+    "TN-GATE-STOP"
+  ],
+  "blocking": {
+    "row": 5,
+    "rule": "stop-threshold",
+    "claim_id": null,
+    "reason": "TN-GATE-STOP"
+  },
+  "next": {
+    "who": "owner",
+    "action": "escalate",
+    "command": "tenet escalate"
+  }
+}

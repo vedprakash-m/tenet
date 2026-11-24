@@ -1,0 +1,16 @@
+{
+  "op": "renderBoardHtml",
+  "now": "2026-11-23T16:00:00Z",
+  "board": {
+    "schema_version": 1,
+    "as_of": "2026-11-23T16:00:00Z",
+    "read": {
+      "main": "9f3c2e1",
+      "branches": [],
+      "records": null
+    },
+    "specs": [],
+    "pending_blessings": [],
+    "items": []
+  }
+}

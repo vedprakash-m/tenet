@@ -1,0 +1,16 @@
+{
+  "old": {
+    "id": "BAD-ID",
+    "title": "Broken packet",
+    "type": "feature",
+    "stage": "intake",
+    "status": "active",
+    "history": [
+      {
+        "at": "not-a-timestamp",
+        "to": "intake",
+        "by": "Ved"
+      }
+    ]
+  }
+}

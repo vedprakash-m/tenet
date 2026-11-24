@@ -1,0 +1,30 @@
+{
+  "evaluations": [
+    {
+      "as_of": "2026-11-23T18:00:00Z",
+      "justified_station": "build",
+      "tentative_moves": [
+        {
+          "event_id": "01JDF000000000000000000002",
+          "station": "verify",
+          "deadline": "2026-11-24T12:01:00Z",
+          "status": "tentative"
+        }
+      ],
+      "active_leases": []
+    },
+    {
+      "as_of": "2026-11-24T12:01:00Z",
+      "justified_station": "build",
+      "tentative_moves": [
+        {
+          "event_id": "01JDF000000000000000000002",
+          "station": "verify",
+          "deadline": "2026-11-24T12:01:00Z",
+          "status": "unjustified"
+        }
+      ],
+      "active_leases": []
+    }
+  ]
+}

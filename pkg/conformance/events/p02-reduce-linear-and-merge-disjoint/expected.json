@@ -1,0 +1,19 @@
+{
+  "state": {
+    "title": "Sample",
+    "station": "define",
+    "lane": "careful",
+    "priority": "expedite",
+    "appetite": {
+      "agent_hours": 4
+    }
+  },
+  "conflicts": [],
+  "applied": [
+    "01JDF000000000000000000001",
+    "01JDF000000000000000000002",
+    "01JDF000000000000000000003",
+    "01JDF000000000000000000004"
+  ],
+  "held": []
+}

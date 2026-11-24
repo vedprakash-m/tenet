@@ -1,0 +1,19 @@
+{
+  "verdict": "refuse",
+  "disposition": "blocks",
+  "lead": "TN-GATE-CONFLICT",
+  "reasons": [
+    "TN-GATE-CONFLICT"
+  ],
+  "next": {
+    "who": "owner",
+    "action": "resolve",
+    "command": "tenet resolve"
+  },
+  "blocking": {
+    "row": 2,
+    "rule": "always-enforce",
+    "claim_id": null,
+    "reason": "TN-GATE-CONFLICT"
+  }
+}

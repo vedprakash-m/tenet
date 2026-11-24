@@ -1,0 +1,13 @@
+{
+  "decision": {
+    "kind": "approve",
+    "actor": "ved",
+    "proof": {
+      "strength": "forge-verified",
+      "self_accepted": true
+    }
+  },
+  "observation": {
+    "forge_source_id": "cmt-802"
+  }
+}

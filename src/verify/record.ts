@@ -450,9 +450,10 @@ async function evaluate(event: VerifyEvent, pr: PullRequest | undefined, deps: V
       if (snapshot.stale) host.push("merge-candidate-stale");
       const checked = await deps.check({ cwd: snapshot.cwd, ci: true, base: tested.base });
       reportFindings = checked.findings;
+      const specOptions = { cwd: snapshot.cwd, prefix: policy.specs.id_prefix };
       [touched, deltas, declared, weakened] = await Promise.all([
-        deps.touched(tested.base, tested.commit, acceptance.implements, { cwd: snapshot.cwd }),
-        deps.deltas(tested.base, tested.commit, { cwd: snapshot.cwd }),
+        deps.touched(tested.base, tested.commit, acceptance.implements, specOptions),
+        deps.deltas(tested.base, tested.commit, specOptions),
         declaredTags(tested.base, tested.commit, policy.specs.id_prefix, { cwd: snapshot.cwd }),
         weakening(tested.base, tested.commit, { cwd: snapshot.cwd }),
       ]);

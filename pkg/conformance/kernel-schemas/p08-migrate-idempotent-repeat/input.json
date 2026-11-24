@@ -1,0 +1,29 @@
+{
+  "repeat": 2,
+  "old": {
+    "id": "CP-0007",
+    "title": "Events and reduction",
+    "type": "feature",
+    "lane": "careful",
+    "stage": "build",
+    "status": "active",
+    "history": [
+      {
+        "at": "2026-11-22T21:00Z",
+        "to": "intake",
+        "by": "Ved",
+        "reason": "seeded"
+      },
+      {
+        "at": "2026-11-22T21:05Z",
+        "from": "intake",
+        "to": "build",
+        "by": "Ved",
+        "receipts": 2,
+        "gate": [
+          "R-018"
+        ]
+      }
+    ]
+  }
+}

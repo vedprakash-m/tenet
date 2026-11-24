@@ -1,0 +1,33 @@
+{
+  "schema": "evidence",
+  "document": {
+    "subject": {
+      "kind": "git-tree",
+      "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "claims": [
+      "CRITIC-1"
+    ],
+    "kind": "review",
+    "method": "critic-review",
+    "result": "pass",
+    "producer": {
+      "source": "ci"
+    },
+    "payload": {
+      "round": 1,
+      "judge": "spec-reviewer",
+      "model_family": "frontier-a",
+      "status": "complete",
+      "findings": [
+        {
+          "id": "F-1",
+          "origin": "introduced"
+        }
+      ],
+      "invalid": [],
+      "resolved": [],
+      "requires_human": false
+    }
+  }
+}

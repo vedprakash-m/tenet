@@ -11,14 +11,14 @@
 | Requirement ID | `R-<n>` (prefix set by `specs.id_prefix`, default `R`); `n` is the next unused integer in the project; assigned by `tenet fix`; never reused |
 | Acceptance item ID | `AB-<n>`, numbered from 1 within its pull request; stored as `pr-<number>/AB-<n>` |
 | Work item | `pr-<number>` for a quick change; `CP-<6 Crockford Base32 chars>` alias for a packet, the first 6 characters of the base32 SHA-256 of its ULID, lengthened by one on collision; legacy `CP-NNNN` stays valid |
-| Schema ID | Each schema's `$id` is `https://vedprakash-m.github.io/tenet/schemas/<minor>/<name>.json` (for example `…/schemas/0.1/proof-card.json`), published from `kit/schemas/` with the release (L-0031) |
+| Schema ID | `https://vedprakash-m.github.io/tenet/schemas/<minor>/<name>.json` (alpha.1 adds `subject`, `actor`, `claim`, `evidence`, `decision`, `event`, `work`, `criteria`, `step-assignment`, `step-result`, `loop`), published with the release (L-0031) |
 | ULID | 26 uppercase Crockford Base32 characters, monotonic within one millisecond |
 | Test tag | `\[(AB-\d+|<prefix>-\d+)\]` in a test's full name, where `<prefix>` is `specs.id_prefix`; or `(?:^|[^A-Za-z0-9]|_)tenet_(AB|<prefix>)_(\d+)(?=$|[^A-Za-z0-9])` (`tenet_AB_1` means `AB-1`, and it also matches inside `test_retries_once_tenet_AB_1` or `suite > tenet_AB_1`); or a JUnit `<property name="tenet.case" value="…">`, or a CTRF `extra.tenet_cases` array. `AB`, `CF`, `Q` and `V` are reserved and can't be a requirement prefix; any other bracketed token (`[UTF-8]`) is ignored. ALG-08 says which tags count |
 | Vision item ID | `V-(?:[A-Z]+)?\d+` (`V-2`, `V-P18`), numbered by `fix`; `serves:` takes a comma-separated list |
 | Evaluation ID | First 16 hex characters of SHA-256 over RFC 8785 `{repository, work, tested_commit, base, acceptance_digest, implemented: [{id, blessed_digest}], policy_blob, tenet_version}` (`policy_blob` is the git blob ID of the target's `tenet.yaml`); a reply or approval binds it (ci.md §6). One evaluation can have several runs; each record is keyed by run and attempt (ci.md §4) |
 | `tenet.lock` | `{schema_version: 1, package: "@vedprakash-m/tenet", version, integrity: "sha512-…", kit_sha256}`; `integrity` is the registry's `dist.integrity`, recorded at install; CI installs with `npm install --no-save` and refuses a tarball that doesn't match it; whether the kit is vendored follows from `kit_path` |
 | `.tenet/` | `manifest.json` (§10), `manifest.pending.json`, `onboard/` (§4), `reports/`, `cache/`, `runs/`; all git-ignored except `manifest.json` and a vendored `kit/` (`init` writes the `.gitignore` block) |
-| `<records>/blessed/` | Copies of blessed section text and `log.jsonl` (one line per blessing session: `{doc, section, by, at, minutes, statements: {drafted, kept, edited, adopted, added}}`, where statement counts are `null` when unavailable), committed (ALG-03, ALG-13) |
+| `<records>/blessed/` | Copies of blessed section text and `log.jsonl` (one line per finished section action: `{doc, section, action: bless|confirm|reject|defer, by, at, minutes, statements: {drafted, kept, edited, adopted, added}, session_id?}`, where `statements` fields are `null` when unavailable), committed (ALG-03, ALG-13) |
 
 ## 2. Pull-request acceptance block
 
@@ -35,7 +35,7 @@ Parsing: heading text exact (`## Acceptance` or `### Acceptance`); optional `Imp
 **Front matter** (YAML, first lines of the file):
 
 ```yaml
-tenet: {spec: 1, doc: intent, level: L1, version: "0.1", owner: ved, drafted_from: 9f3c2e1, drafted_at_rev: 9f3c2e1}
+tenet: {spec: 1, doc: intent, level: L1, version: "0.1", owner: ved, drafted_from: 9f3c2e1, drafted_at_rev: 9f3c2e1}   # version uses /^\d+(?:\.\d+)*$/ (tenet fix defaults missing to "0.1")
 # drafted_from: the inventory's revision (information only; onboarding drafts only); drafted_at_rev: the commit holding the agent's draft, set by `onboard --card` (ALG-13). Both optional before then
 sections:
   requirements:                     # section slug (ALG-02)
@@ -151,10 +151,10 @@ Message and fix text for every code: [messages.md](messages.md).
 |---|---|---|
 | `TN-USAGE-*`, `TN-USAGE-REF`, `TN-USAGE-BUDGET`, `TN-BLESS-NO-TTY` | usage | 2 |
 | `TN-ENV-NODE`, `TN-ENV-GIT`, `TN-ENV-NO-COMMIT`, `TN-ENV-NOT-GIT`, `TN-ENV-OFFLINE`, `TN-POLICY-MISSING` | environment | 3 |
-| `TN-POLICY-LOOSEN`, `TN-POLICY-INCOMPATIBLE`, `TN-POLICY-RULE`, `TN-INIT-EXISTS`, `TN-BLESS-OPEN-CONFLICT`, `TN-BLESS-INFERRED` | policy refusal | 4 |
-| `TN-SCHEMA`, `TN-POLICY-SCHEMA`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-SPEC-UNCOVERED-VISION`, `TN-KIT-EDITED`, `TN-KIT-INVALID`, `TN-KIT-MISSING`, `TN-LOCK-INVALID`, `TN-LOCK-MISSING`, `TN-EV-DUP`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID`, `TN-INTERNAL` | structural | 1 |
+| `TN-POLICY-LOOSEN`, `TN-POLICY-INCOMPATIBLE`, `TN-POLICY-RULE`, `TN-POLICY-RULE-DECISION`, `TN-INIT-EXISTS`, `TN-BLESS-OPEN-CONFLICT`, `TN-BLESS-INFERRED` | policy refusal | 4 |
+| `TN-SCHEMA`, `TN-POLICY-SCHEMA`, `TN-BACKTEST-INCOMPLETE`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-SPEC-UNCOVERED-VISION`, `TN-KIT-EDITED`, `TN-KIT-INVALID`, `TN-KIT-MISSING`, `TN-LOCK-INVALID`, `TN-LOCK-MISSING`, `TN-EV-DUP`, `TN-EV-CYCLE`, `TN-EV-CROSS-WORK`, `TN-EV-NO-CREATE`, `TN-EV-RESOLVE`, `TN-DEC-ACTOR`, `TN-DEC-CONFLICT`, `TN-DEC-KEY-REVOKED`, `TN-DEC-SELF-VERIFY`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID`, `TN-INTERNAL` | structural | 1 |
 | `TN-CITE-FILE`, `TN-CITE-RANGE`, `TN-CITE-HEADING`, `TN-CITE-TEST` (rule `citations-valid`); `TN-BUDGET` (`budget`); `TN-WEAK-*` (`tests-not-weakened`); `TN-PROTECTED` (`protected-surfaces`); `TN-ACC-UNPASSED` (`acceptance-passed`); `TN-GATE-*` (the row's rule) | rule (`severity: "error"` in `enforce`, `"advise"` in `advise`) | 1 in `enforce`, else 0 |
-| `TN-REPORT-MISSING`, `TN-REPORT-MALFORMED`, `TN-RECORD-BUNDLE`, `TN-LOCK-MISMATCH`, `TN-POLICY-BRANCH`, `TN-POLICY-LEVEL-UNAVAILABLE`, `TN-POLICY-ALPHA0-CAP`, `TN-BUDGET-WARN`, `TN-SUBJ-DIRTY`, `TN-EV-ORPHAN` | warning, shown as degraded | 0 |
+| `TN-REPORT-MISSING`, `TN-REPORT-MALFORMED`, `TN-RECORD-BUNDLE`, `TN-RECORD-TIP`, `TN-LOCK-MISMATCH`, `TN-POLICY-BRANCH`, `TN-POLICY-LEVEL-UNAVAILABLE`, `TN-POLICY-ALPHA0-CAP`, `TN-BUDGET-WARN`, `TN-SUBJ-DIRTY`, `TN-EV-ORPHAN`, `TN-DEC-STALE`, `TN-DEC-EXPIRED`, `TN-DEC-AMBIGUOUS` | warning, shown as degraded | 0 |
 
 ## 14. Loops
 

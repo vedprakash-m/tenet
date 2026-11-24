@@ -1,0 +1,12 @@
+loop: define                      # kit/loops/define.yaml
+kind: station
+applies: {station: define, lanes: [careful, deep]}
+limits: {rounds: 2}
+steps:
+  - {id: shape, kind: agent, card: shaper, inputs: [intake, context], outputs: [definition]}
+  - {id: review, kind: agent, card: spec-reviewer, inputs: [definition, context], outputs: [findings], tools: read-only}
+  - {id: next, kind: route, on: {refuse: {if: "rounds < limits.rounds", goto: "fix:shape", else: approve}, advance: approve, human-gate: approve}}
+  - {id: approve, kind: human_gate, decision: approve-definition, options: [{option: stop, goto: stop}, {option: revise, goto: "fix:shape"}, {option: approve, goto: tests}]}
+  - {id: tests, kind: agent, card: test-writer, inputs: [definition], outputs: [tests]}
+  - {id: pin, kind: script, run: record --pin-tests}
+  - {id: exit, kind: route, on: {advance: done, refuse: stop, human-gate: approve}}

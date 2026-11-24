@@ -1,0 +1,40 @@
+{
+  "op": "projectBoard",
+  "now": "2026-11-23T16:00:00Z",
+  "snapshot": {
+    "alpha0_records": {
+      "proof/pr-3/0123456789abcdef/100-1.json": {
+        "schema_version": 1,
+        "evaluation_id": "0123456789abcdef",
+        "conclusion": "success",
+        "tested": {
+          "commit": "1111111111111111111111111111111111111111",
+          "kind": "head"
+        }
+      },
+      "rules/2026-11.jsonl": [
+        {
+          "evaluation_id": "0123456789abcdef",
+          "run": "100-1",
+          "pr": 3,
+          "rule": "acceptance-passed",
+          "mode": "advise",
+          "would_block": false,
+          "at": "2026-11-23T10:00:00Z"
+        }
+      ]
+    },
+    "cp0049_decisions": [
+      {
+        "id": "DEC-1",
+        "kind": "approve",
+        "target": "pr-3/AB-1",
+        "actor": "ved",
+        "proof": {
+          "strength": "forge-verified",
+          "via": "review"
+        }
+      }
+    ]
+  }
+}

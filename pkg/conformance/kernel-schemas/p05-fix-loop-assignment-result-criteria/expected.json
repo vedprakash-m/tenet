@@ -1,0 +1,9 @@
+{
+  "valid": true,
+  "schemas": {
+    "loop": "loop",
+    "step_assignment": "step-assignment",
+    "step_result": "step-result",
+    "criteria": "criteria"
+  }
+}

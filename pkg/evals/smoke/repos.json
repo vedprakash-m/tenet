@@ -1,0 +1,55 @@
+[
+  {
+    "name": "tenet-copilot",
+    "repo": "vedprakash-m/tenet-copilot",
+    "category": "baseline",
+    "why": "Baseline real-repository smoke from 2026-11-23."
+  },
+  {
+    "name": "BotFramework-WebChat",
+    "repo": "microsoft/BotFramework-WebChat",
+    "category": "baseline",
+    "why": "Baseline real-repository smoke from 2026-11-23."
+  },
+  {
+    "name": "torus",
+    "repo": "Q:\\Ved\\Pers\\torus",
+    "category": "baseline",
+    "why": "Baseline local copy; recorded in the prior smoke matrix."
+  },
+  {
+    "name": "pytest-django",
+    "repo": "pytest-dev/pytest-django",
+    "category": "python-library-pytest",
+    "why": "gh search: pytest, Python, stars > 200, size 1877 KB, pushed 2026-11-01.",
+    "search": "pytest stars:>200 size:<50000 pushed:>2025-11-24 language:Python"
+  },
+  {
+    "name": "urfave-cli",
+    "repo": "urfave/cli",
+    "category": "go-cli",
+    "why": "gh search: cli, Go, stars > 200, size 12816 KB, pushed 2026-11-16.",
+    "search": "cli stars:>200 size:<50000 pushed:>2025-11-24 language:Go"
+  },
+  {
+    "name": "eslint-plugin-jest",
+    "repo": "jest-community/eslint-plugin-jest",
+    "category": "node-library-jest",
+    "why": "gh search: Jest, Node/TypeScript, stars > 200, size 39189 KB, pushed 2026-11-23.",
+    "search": "(vitest OR jest) stars:>200 size:<50000 pushed:>2025-11-24 language:JavaScript"
+  },
+  {
+    "name": "architecture-decision-record",
+    "repo": "architecture-decision-record/architecture-decision-record",
+    "category": "docs-adr",
+    "why": "gh search: ADR, docs-heavy Architecture Decision Record examples, stars > 200, size 20801 KB, pushed 2026-11-21.",
+    "search": "ADR stars:>200 size:<50000 pushed:>2025-11-24"
+  },
+  {
+    "name": "lerna",
+    "repo": "lerna/lerna",
+    "category": "monorepo-packages",
+    "why": "gh search: monorepo with packages, TypeScript, stars > 200, size 39894 KB, pushed 2026-11-23.",
+    "search": "monorepo \"packages/*\" stars:>200 size:<50000 pushed:>2025-11-24"
+  }
+]

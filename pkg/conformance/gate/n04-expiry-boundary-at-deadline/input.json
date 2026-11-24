@@ -1,0 +1,114 @@
+{
+  "op": "evaluateGate",
+  "evaluated_at": "2026-11-23T12:10:00Z",
+  "work": {
+    "id": "pr-10",
+    "station": "verify",
+    "lane": "careful"
+  },
+  "subject": {
+    "kind": "git-tree",
+    "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "policy": {
+    "level": "protect",
+    "evaluation_inputs": {
+      "requirement_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "policy_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "check_definition_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "runner_image_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "lock_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "acceptance_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    "rules": {
+      "acceptance-passed": "enforce"
+    }
+  },
+  "claims": [
+    {
+      "id": "AB-1",
+      "type": "acceptance",
+      "selector": {
+        "station": "verify"
+      },
+      "class": "functional",
+      "methods": [
+        "integration"
+      ],
+      "pass_rule": {
+        "kind": "binary"
+      },
+      "lifetime": "packet",
+      "owner": "ved",
+      "waivable": true,
+      "rule": "acceptance-passed",
+      "required_strength": {
+        "provenance": "ci",
+        "independence": "same-definition"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EV-1",
+      "subject": {
+        "kind": "git-tree",
+        "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "claims": [
+        "AB-1"
+      ],
+      "kind": "check",
+      "method": "integration",
+      "cases": {
+        "expected": 1,
+        "executed": 1,
+        "passed": 1,
+        "skipped": 0
+      },
+      "result": "pass",
+      "strength": {
+        "provenance": "ci-observed",
+        "independence": "different-definition"
+      },
+      "producer": {
+        "source": "ci",
+        "policy_revision": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "inputs": {
+        "requirement_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "policy_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "check_definition_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "runner_image_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "lock_digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "acceptance_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "valid_until": "2026-11-23T12:10:00Z"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D-WAIVE-EXP",
+      "kind": "waive",
+      "subject": {
+        "kind": "git-tree",
+        "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "target": "AB-1",
+      "actor": "reviewer-b",
+      "author_of_change": "builder-a",
+      "proof": {
+        "strength": "forge-verified",
+        "via": "review",
+        "policy_revision": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "scope": {
+        "work": "pr-10",
+        "station": "verify",
+        "acceptance_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "reason": "Expired at boundary",
+      "expiry": "2026-11-23T12:10:00Z"
+    }
+  ]
+}

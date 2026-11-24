@@ -1,0 +1,31 @@
+{
+  "op": "replay",
+  "as_of": "2026-11-25T00:00:00Z",
+  "pending_hours": 24,
+  "history": [
+    {
+      "id": "01JDF000000000000000000001",
+      "prev": [],
+      "type": "work.created",
+      "work": "pr-7",
+      "time": "2026-11-23T12:00:00Z",
+      "by": "ved",
+      "data": {
+        "station": "build"
+      }
+    },
+    {
+      "id": "01JDF000000000000000000002",
+      "prev": [
+        "01JDF000000000000000000001"
+      ],
+      "type": "work.moved",
+      "work": "pr-7",
+      "time": "2026-11-23T12:05:00Z",
+      "by": "dev",
+      "data": {
+        "station": "verify"
+      }
+    }
+  ]
+}

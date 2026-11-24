@@ -1,0 +1,10 @@
+{
+  "decision": null,
+  "observation": {
+    "kind": "not-useful",
+    "finding_id": "FND-42",
+    "actor": "ved",
+    "reason": "false positive on moved helper",
+    "forge_source_id": "cmt-903"
+  }
+}

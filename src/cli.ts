@@ -2,7 +2,8 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { git } from "./core/git.js";
-import { exitCodeFor, fail, result, version, type Finding } from "./core/output.js";
+import { message } from "./core/messages.js";
+import { errorFinding, exitCodeFor, fail, result, version, type Finding } from "./core/output.js";
 import { serveMcp } from "./mcp/index.js";
 export { serveMcp };
 
@@ -141,6 +142,13 @@ async function loadCommands(): Promise<void> {
     description: "Serve the Tenet MCP tools over stdio",
     usage: "tenet mcp",
     async run(context) {
+      if (context.args.length > 0 || context.json || context.quiet || context.verbose) {
+        const detail = context.args.length > 0
+          ? `unexpected positional arguments: ${context.args.join(", ")}`
+          : "MCP protocol mode does not support --json, --quiet or --verbose";
+        const words = message("TN-USAGE-MCP", { command: "mcp", detail });
+        throw fail("TN-USAGE-MCP", words.message, words.fix);
+      }
       await serveMcp({ cwd: context.cwd, stdin: context.stdin, stdout: context.stdout, stderr: context.stderr, now: context.now });
       return { value: null };
     },
@@ -226,21 +234,6 @@ function parseCommandArgs(spec: CommandSpec, argv: string[]): { args: string[]; 
   return { args, options };
 }
 
-function isFinding(value: unknown): value is Finding {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<Finding>;
-  return (
-    typeof candidate.code === "string" &&
-    (candidate.severity === "error" || candidate.severity === "warning" || candidate.severity === "advise") &&
-    (candidate.rule === null || typeof candidate.rule === "string") &&
-    (candidate.file === null || typeof candidate.file === "string") &&
-    (candidate.line === null ||
-      (typeof candidate.line === "number" && Number.isInteger(candidate.line) && candidate.line >= 1)) &&
-    typeof candidate.message === "string" &&
-    typeof candidate.fix === "string"
-  );
-}
-
 function internalMessage(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
   if (typeof error === "string" && error) return error;
@@ -279,10 +272,9 @@ function emitHuman(io: ReturnType<typeof defaultIo>, value: unknown, findings: F
       finding.file === null
         ? ""
         : ` at ${finding.file}${finding.line === null ? "" : `:${finding.line}`}`;
-    line(io.stderr, `${finding.code}${location}: ${finding.message}`);
-    line(io.stderr, `rule: ${finding.rule ?? "none"}`);
-    line(io.stderr, `why: ${finding.message}`);
-    line(io.stderr, `fix: ${finding.fix}`);
+    line(io.stderr, `${finding.message}${location}`);
+    line(io.stderr, `why: ${finding.rule ?? finding.code}`);
+    line(io.stderr, `→ ${finding.fix}`);
   }
   if (quiet || findings.some((finding) => finding.severity === "error")) return;
   if (typeof value === "string") line(io.stdout, value);
@@ -407,9 +399,9 @@ export async function run(argv: readonly string[], input: CliIo = {}): Promise<0
     else emitHuman(io, outcome.value, outcome.findings, parsed.quiet);
     return code;
   } catch (error) {
-    const finding = isFinding(error) && error.severity === "error"
-      ? error
-      : fail("TN-INTERNAL", "The command could not run", internalMessage(error));
+    const detail = internalMessage(error);
+    const words = message("TN-INTERNAL", { detail });
+    const finding = errorFinding(error) ?? fail("TN-INTERNAL", words.message, words.fix);
     const parsedJson = argv.includes("--json");
     if (parsedJson) emitJson(io.stdout, "tenet", null, [finding]);
     else emitHuman(io, null, [finding], false);

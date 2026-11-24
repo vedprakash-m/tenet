@@ -4,6 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import { Ajv2020 } from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
+import { boardCommand } from "../../dist/commands/board.js";
 import { sha256 } from "../../dist/core/hash.js";
 import { sectionDigest } from "../../dist/specs/sections.js";
 import { board, renderSpecsBoard } from "../../dist/views/specs-board.js";
@@ -34,7 +35,7 @@ type Section = {
 	body: string;
 	anchors?: Record<string, string>;
 	blessedBody?: string;
-	recorded?: "self" | "forge" | "signed";
+	recorded?: "self" | "forge" | "signed" | null;
 };
 
 function document(name: string, level: string, sections: Section[]): string {
@@ -56,7 +57,9 @@ function document(name: string, level: string, sections: Section[]): string {
 									),
 									blessed_at_rev: "0123456789012345678901234567890123456789",
 									blessed_copy: `tenet/blessed/${section.slug}.md`,
-									recorded: section.recorded ?? "self",
+									...(section.recorded === null
+										? {}
+										: { recorded: section.recorded ?? "self" }),
 									anchors: section.anchors ?? {},
 								}
 							: {}),
@@ -332,7 +335,7 @@ test("board detects every independent spec-debt kind", async () => {
 	}
 });
 
-test("board result validates against its owned result schema", async () => {
+test("board result validates draft and clean blessed rows against both schemas", async () => {
 	const repository = await tmpRepo("board-schema");
 	try {
 		await repository.write("tenet.yaml", policy([]));
@@ -351,31 +354,48 @@ test("board result validates against its owned result schema", async () => {
 		const ajv = new Ajv2020({ allErrors: true, strict: true });
 		addFormats(ajv);
 		const validate = ajv.compile(schema);
+		const sharedSchema = JSON.parse(
+			await readFile(
+				path.join(process.cwd(), "kit", "schemas", "board.json"),
+				"utf8",
+			),
+		);
+		const validateShared = ajv.compile(sharedSchema);
 		assert.equal(validate(result), true, JSON.stringify(validate.errors));
+		const payload = {
+			...result,
+			specs: [
+				{
+					path: "tenet/intent.md",
+					section: "requirements",
+					level: "L1",
+					state: "blessed",
+					flags: [],
+					recorded: "self",
+				},
+				{
+					path: "tenet/intent.md",
+					section: "future",
+					level: "L1",
+					state: "draft",
+					flags: [],
+				},
+			],
+			spec_debt: [
+				{
+					kind: "over-budget",
+					path: "tenet/intent.md",
+					id: null,
+					message:
+						"tenet/intent.md is over its token budget (201 > 200 tokens)",
+				},
+			],
+		};
+		assert.equal(validate(payload), true, JSON.stringify(validate.errors));
 		assert.equal(
-			validate({
-				...result,
-				specs: [
-					{
-						path: "tenet/intent.md",
-						section: "requirements",
-						level: "L1",
-						state: "blessed",
-						flags: [],
-						recorded: "self",
-					},
-				],
-				spec_debt: [
-					{
-						kind: "over-budget",
-						path: "tenet/intent.md",
-						id: null,
-						message:
-							"tenet/intent.md is over its token budget (201 > 200 tokens)",
-					},
-				],
-			}),
+			validateShared(payload),
 			true,
+			JSON.stringify(validateShared.errors),
 		);
 		assert.equal(
 			validate({
@@ -408,6 +428,177 @@ test("board result validates against its owned result schema", async () => {
 	} finally {
 		await repository.cleanup();
 	}
+});
+
+test("board discovers specification parts and overlays configured metadata", async () => {
+	const repository = await tmpRepo("board-parts");
+	try {
+		await repository.write(
+			"tenet.yaml",
+			policy([{ path: "intent.md", level: "L2" }]),
+		);
+		await repository.write(
+			"tenet/intent.md",
+			document("intent", "L1", [
+				{
+					slug: "requirements",
+					heading: "Requirements",
+					body: "Keep checkout stable.",
+				},
+			]),
+		);
+		await repository.write(
+			"tenet/specs/parts/payment.md",
+			document("payment", "L1", [
+				{
+					slug: "payment",
+					heading: "Payment",
+					body: "Keep retries bounded.",
+				},
+			]),
+		);
+		repository.git(["add", "."]);
+		repository.git(["commit", "-m", "fixture"]);
+
+		const result = await board({
+			cwd: repository.path,
+			now: "2026-11-23T10:00:00Z",
+		});
+		assert.deepEqual(
+			result.specs.map(({ path, level, state }) => ({ path, level, state })),
+			[
+				{
+					path: "tenet/specs/parts/payment.md",
+					level: "L1",
+					state: "draft",
+				},
+				{ path: "tenet/intent.md", level: "L2", state: "draft" },
+			],
+		);
+		assert.deepEqual(
+			result.pending_blessings.map(({ path }) => path),
+			["tenet/specs/parts/payment.md", "tenet/intent.md"],
+		);
+	} finally {
+		await repository.cleanup();
+	}
+});
+
+test("board represents a blessed section without recorded metadata as self", async () => {
+	const repository = await tmpRepo("board-recorded");
+	const requirement = "- R-1 Keep retries bounded. {origin: asked}";
+	try {
+		await repository.write(
+			"tenet.yaml",
+			policy([{ path: "intent.md", level: "L1" }]),
+		);
+		await repository.write(
+			"tenet/intent.md",
+			document("intent", "L1", [
+				{
+					slug: "requirements",
+					heading: "Requirements",
+					state: "blessed",
+					body: requirement,
+					recorded: null,
+				},
+			]),
+		);
+		await repository.write(
+			"test/retry.test.js",
+			"test('[R-1] keeps retries bounded', () => {});\n",
+		);
+		repository.git(["add", "."]);
+		repository.git(["commit", "-m", "fixture"]);
+
+		const result = await board({
+			cwd: repository.path,
+			now: "2026-11-23T10:00:00Z",
+		});
+		assert.deepEqual(result.specs, [
+			{
+				path: "tenet/intent.md",
+				section: "requirements",
+				level: "L1",
+				state: "blessed",
+				flags: [],
+				recorded: "self",
+			},
+		]);
+	} finally {
+		await repository.cleanup();
+	}
+});
+
+test("board counts LF and CRLF documents with the same token budget", async () => {
+	const repository = await tmpRepo("board-line-endings");
+	try {
+		await repository.write("tenet.yaml", policy([]));
+		repository.git(["add", "."]);
+		repository.git(["commit", "-m", "fixture"]);
+		const lf = document("intent", "L1", [
+			{
+				slug: "requirements",
+				heading: "Requirements",
+				body: "One.\n\nTwo.\n\nThree.\n",
+			},
+		]);
+		const budget = Math.ceil(lf.length / 4);
+		await repository.write(
+			"tenet.yaml",
+			policy([{ path: "intent.md", level: "L1", budget }]),
+		);
+		await repository.write("tenet/intent.md", lf);
+		repository.git(["add", "."]);
+		repository.git(["commit", "-m", "lf"]);
+		const normalized = await board({
+			cwd: repository.path,
+			now: "2026-11-23T10:00:00Z",
+		});
+
+		await repository.write("tenet/intent.md", lf.replace(/\n/g, "\r\n"));
+		repository.git(["add", "."]);
+		repository.git(["commit", "-m", "crlf"]);
+		const windows = await board({
+			cwd: repository.path,
+			now: "2026-11-23T10:00:00Z",
+		});
+		assert.deepEqual(normalized.spec_debt, []);
+		assert.deepEqual(windows.spec_debt, []);
+		assert.deepEqual(windows.spec_debt, normalized.spec_debt);
+	} finally {
+		await repository.cleanup();
+	}
+});
+
+test("board command uses the canonical usage diagnostic", async () => {
+	let thrown: unknown;
+	try {
+		await boardCommand.run?.({
+			args: ["unexpected"],
+			options: {},
+			cwd: process.cwd(),
+			json: false,
+			quiet: false,
+			verbose: false,
+			offline: false,
+			stdin: process.stdin,
+			stdout: process.stdout,
+			now: () => new Date(),
+		});
+	} catch (error) {
+		thrown = error;
+	}
+	assert.deepEqual(thrown, {
+		code: "TN-USAGE-BOARD",
+		severity: "error",
+		rule: null,
+		file: null,
+		line: null,
+		message:
+			"Invalid usage for `tenet board`: unexpected positional arguments.",
+		fix: "Run `tenet board --help` for valid arguments and flags.",
+	});
 });
 
 test("board renders the UX Part 2 example deterministically", async () => {

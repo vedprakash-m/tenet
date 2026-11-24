@@ -1,0 +1,11 @@
+{
+  "op": "recordCandidate",
+  "repository": "vedprakash-m/tenet-sandbox",
+  "candidate_id": "mg-22",
+  "candidate_revision": "cccccccccccccccccccccccccccccccccccccccc",
+  "target_revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "member_work": [
+    "pr-5",
+    "pr-8"
+  ]
+}

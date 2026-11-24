@@ -1,0 +1,80 @@
+{
+  "evidence": [
+    {
+      "subject": {
+        "kind": "git-tree",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "claims": [
+        "FORMAL-1"
+      ],
+      "kind": "proof",
+      "method": "lean4",
+      "result": "pass",
+      "producer": {
+        "source": "ci"
+      },
+      "payload": {
+        "prover": "lean4",
+        "version": "4.12.0",
+        "theorem_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "obligations": 4,
+        "audit": {
+          "escape_hatches": [],
+          "axioms_used": [
+            "propext"
+          ],
+          "axioms_allowed": [
+            "propext"
+          ],
+          "unsafe_added": 0
+        }
+      }
+    },
+    {
+      "subject": {
+        "kind": "git-tree",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "claims": [
+        "SIM-1"
+      ],
+      "kind": "simulation",
+      "method": "dst",
+      "result": "pass",
+      "producer": {
+        "source": "ci"
+      },
+      "payload": {
+        "seed": 42,
+        "fault_profile": "packet-drop-5pct",
+        "steps": 10000,
+        "properties": [
+          "no-double-charge"
+        ],
+        "replay": "tenet sim --seed 42"
+      }
+    },
+    {
+      "subject": {
+        "kind": "git-tree",
+        "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "claims": [
+        "DIFF-1"
+      ],
+      "kind": "differential",
+      "method": "fuzz-diff",
+      "result": "pass",
+      "producer": {
+        "source": "ci"
+      },
+      "payload": {
+        "reference": "model-v1",
+        "generator": "fast-check",
+        "cases": 500,
+        "divergences": 0
+      }
+    }
+  ]
+}

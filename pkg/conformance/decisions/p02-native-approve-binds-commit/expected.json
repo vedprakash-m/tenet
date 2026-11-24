@@ -1,0 +1,18 @@
+{
+  "decision": {
+    "kind": "approve",
+    "actor": "ved",
+    "target": "AB-1",
+    "proof": {
+      "strength": "forge-verified",
+      "via": "review",
+      "policy_revision": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  },
+  "observation": {
+    "forge_source_id": "rev-501",
+    "reviewed_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "created_at": "2026-11-23T12:00:00Z",
+    "content_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
+}

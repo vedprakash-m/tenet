@@ -1,0 +1,76 @@
+{
+  "op": "reduce",
+  "pack": {
+    "stations": [
+      "intake",
+      "define",
+      "build",
+      "verify",
+      "integrate",
+      "close"
+    ],
+    "legal_edges": [
+      [
+        "intake",
+        "define"
+      ],
+      [
+        "define",
+        "build"
+      ],
+      [
+        "build",
+        "verify"
+      ],
+      [
+        "verify",
+        "integrate"
+      ],
+      [
+        "integrate",
+        "close"
+      ]
+    ]
+  },
+  "as_of": "2026-11-23T12:10:00Z",
+  "events": [
+    {
+      "id": "01JDF000000000000000000001",
+      "prev": [],
+      "type": "work.created",
+      "work": "CP-1006",
+      "time": "2026-11-23T12:00:00Z",
+      "by": "ved",
+      "data": {
+        "title": "Orphan",
+        "station": "intake"
+      }
+    },
+    {
+      "id": "01JDF000000000000000000002",
+      "prev": [
+        "01JDF000000000000000000099"
+      ],
+      "type": "work.moved",
+      "work": "CP-1006",
+      "time": "2026-11-23T12:01:00Z",
+      "by": "ved",
+      "data": {
+        "station": "define"
+      }
+    },
+    {
+      "id": "01JDF000000000000000000003",
+      "prev": [
+        "01JDF000000000000000000002"
+      ],
+      "type": "work.moved",
+      "work": "CP-1006",
+      "time": "2026-11-23T12:02:00Z",
+      "by": "ved",
+      "data": {
+        "station": "build"
+      }
+    }
+  ]
+}
