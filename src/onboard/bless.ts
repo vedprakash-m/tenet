@@ -6,7 +6,9 @@ import { isMap, parseDocument } from "yaml";
 import { utcSeconds } from "../core/clock.js";
 import { confine, writeAtomic } from "../core/fs.js";
 import { git } from "../core/git.js";
-import { loadPolicy } from "../policy/index.js";
+import { readYaml } from "../core/yaml.js";
+import { loadPolicy, ownersFor } from "../policy/index.js";
+import type { TenetYaml } from "../types/generated.js";
 import { anchorBlock, anchorsFor } from "../specs/anchors.js";
 import { resolveCitations } from "../specs/citations.js";
 import { flags } from "../specs/flags.js";
@@ -563,7 +565,6 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
     const now = io.now ?? (() => new Date());
     const ws: Workspace = { cwd, head, records, prefix, now, started: now().valueOf() };
     const read = reader(cwd);
-    const paths = [...new Set(policy.specs.documents.map((doc) => `${records}/${portable(doc.path)}`))];
     const load = async (relative: string) => {
       const filename = await confine(relative, cwd);
       const text = await readFile(filename, "utf8").catch((error: NodeJS.ErrnoException) => {
@@ -572,7 +573,10 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
       });
       return text === null ? null : { filename, text, doc: parseDoc(relative, text, { prefix }) };
     };
-    const docs = (await Promise.all(paths.map(load))).filter((doc) => doc !== null);
+    const raw = await readYaml(await confine("tenet.yaml", cwd)) as TenetYaml;
+    const intent = raw.specs?.documents?.length ? null : await load(`${records}/intent.md`);
+    const paths = [...new Set(policy.specs.documents.map((doc) => `${records}/${portable(doc.path)}`))];
+    const docs = intent ? [intent] : (await Promise.all(paths.map(load))).filter((doc) => doc !== null);
     const selected = options.doc === undefined ? docs : docs.filter(({ doc }) =>
       doc.path === portable(options.doc ?? "") || doc.path === `${records}/${portable(options.doc ?? "")}` ||
       (doc.front?.tenet as { doc?: string } | undefined)?.doc === options.doc);
@@ -590,7 +594,8 @@ export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Pr
         target.path === doc.path && doc.sections.some((section) => section.slug === target.slug && conflict && belongs(conflict, doc, section)));
     }));
     const result = await blessSession({
-      owners: (policy.owners ?? []).map(({ id }) => id),
+      owners: policy.owners?.length ? policy.owners.map(({ id }) => id) :
+        [...new Set(targets.flatMap(({ path }) => ownersFor(path)))],
       targets,
       conflicts,
       read: async (file, selector) => {
