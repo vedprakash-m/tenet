@@ -1,8 +1,8 @@
-# Tenet package pin: 0.0.0
+# Tenet package pin: 0.1.0-alpha.0
 name: Tenet tests
 on:
   pull_request: {types: [opened, synchronize, reopened, ready_for_review]}
-  push: {branches: [r9/cp-0010]}
+  push: {branches: [main]}
 permissions: {contents: read}
 concurrency: {group: "tenet-tests-${{ github.ref }}", cancel-in-progress: true}
 jobs:
