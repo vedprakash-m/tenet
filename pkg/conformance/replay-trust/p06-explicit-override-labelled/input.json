@@ -1,0 +1,11 @@
+{
+  "op": "requiredOutcome",
+  "level": "verify",
+  "waiver": {
+    "kind": "waive",
+    "name": "override",
+    "actor": "ved",
+    "reason": "Emergency hotfix",
+    "expiry": "2026-11-24T00:00:00Z"
+  }
+}

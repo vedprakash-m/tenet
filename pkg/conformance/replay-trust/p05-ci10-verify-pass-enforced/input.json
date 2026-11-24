@@ -1,0 +1,13 @@
+{
+  "op": "requiredOutcome",
+  "level": "verify",
+  "trust": {
+    "t1": true,
+    "t2": true,
+    "t3": true,
+    "t4": "enforced",
+    "merge_requires_status": true,
+    "stale": false
+  },
+  "situation": "all-clear"
+}
