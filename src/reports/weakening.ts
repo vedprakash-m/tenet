@@ -1,8 +1,7 @@
 /// <reference path="../policy/picomatch.d.ts" />
 import picomatch from "picomatch";
 import { git } from "../core/git.js";
-import { scanTestsDetailed, type ScannedDeclaration } from "./scan.js";
-import { stripTags } from "./tags.js";
+import { scanTestsDetailed, skipPattern, type ScannedDeclaration } from "./scan.js";
 import type { Weakening } from "./types.js";
 
 const testPatterns = [
@@ -23,23 +22,6 @@ const testPatterns = [
   "**/*_test.go",
   "**/*Test.java",
   "**/tests/**/*.rs",
-];
-
-const skipPatterns = [
-  ".skip(",
-  ".only(",
-  ".todo(",
-  ".skipIf(",
-  "xit(",
-  "xdescribe(",
-  "@pytest.mark.skip",
-  "@pytest.mark.xfail",
-  "pytest.skip(",
-  "@unittest.skip",
-  "t.Skip(",
-  "@Disabled",
-  "@Ignore",
-  "#[ignore]",
 ];
 
 type DiffLines = {
@@ -104,15 +86,12 @@ export async function weakening(
 
   for (const [file, added] of lines.added) {
     for (const [lineNumber, text] of added) {
-      const pattern = skipPatterns.find((candidate) => text.includes(candidate));
-      if (!pattern) continue;
-      const affected = after.declarations
-        .filter((declaration) => declaration.file === file && affectedBy(declaration, lineNumber))
-        .map((declaration) => declaration.name);
+      if (!skipPattern(file, text)) continue;
+      const affected = affectedDeclaration(after.declarations, file, lineNumber);
       by.push({
         finding: "skip-added",
         file,
-        names: affected.length > 0 ? unique(affected) : [skipName(text)],
+        names: [affected?.name ?? text.trim()],
       });
     }
   }
@@ -161,15 +140,25 @@ function declarationTouches(declaration: ScannedDeclaration, lines: Set<number>)
   return declaration.tag_sources.some((source) => lines.has(source.line));
 }
 
-function affectedBy(declaration: ScannedDeclaration, line: number): boolean {
-  return line >= declaration.line && line <= declaration.end_line ||
-    (line >= declaration.line - 3 && line < declaration.line);
-}
-
-function skipName(text: string): string {
-  const quoted = /(?:it|test|xit)\.[A-Za-z]+\s*\(\s*["'`]([^"'`]+)|(?:xit|xdescribe)\s*\(\s*["'`]([^"'`]+)/.exec(text);
-  const name = quoted?.[1] ?? quoted?.[2];
-  return name ? stripTags(name) : text.trim();
+function affectedDeclaration(
+  declarations: ScannedDeclaration[],
+  file: string,
+  line: number,
+): ScannedDeclaration | undefined {
+  let enclosing: ScannedDeclaration | undefined;
+  let next: ScannedDeclaration | undefined;
+  for (const declaration of declarations) {
+    if (declaration.file !== file) continue;
+    if (declaration.line <= line && line <= declaration.end_line &&
+        (!enclosing || declaration.line > enclosing.line ||
+          (declaration.line === enclosing.line && declaration.end_line < enclosing.end_line))) {
+      enclosing = declaration;
+    } else if (declaration.line > line && declaration.line - line <= 3 &&
+        (!next || declaration.line < next.line)) {
+      next = declaration;
+    }
+  }
+  return enclosing ?? next;
 }
 
 async function fileChanges(base: string, head: string, cwd: string): Promise<FileChange[]> {

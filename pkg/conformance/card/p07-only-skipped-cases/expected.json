@@ -1,0 +1,80 @@
+{
+  "ok": true,
+  "conclusion": "neutral",
+  "wrote": true,
+  "card": {
+    "schema_version": 1,
+    "evaluation_id": "dcb49a105a1fe95a",
+    "tested": {
+      "commit": "9b41d00000000000000000000000000000000000",
+      "kind": "merge-candidate",
+      "head": "a111111111111111111111111111111111111111",
+      "base": "b222222222222222222222222222222222222222"
+    },
+    "acceptance_digest": "ecb0ca9c8c0d4ce5219b885c6e43faac874c66c2ae2ab8f2280e5da645358afa",
+    "requirements": [
+      {
+        "id": "C-1",
+        "excerpt": "A payment that times out is retried once, never twice.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "implements",
+        "tests": {
+          "expected": 1,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 1,
+          "not_run": 0
+        }
+      }
+    ],
+    "items": [
+      {
+        "id": "AB-1",
+        "text": "one retry after a timeout, never two",
+        "result": "skipped",
+        "coverage": "confirmed",
+        "tests": {
+          "expected": 1,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 1,
+          "not_run": 0
+        },
+        "names": [
+          "test/checkout.retry.test.ts › checkout › [AB-1] one retry after timeout"
+        ],
+        "authorship": "written-here"
+      }
+    ],
+    "tests": {
+      "report": "ok",
+      "total": 1,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 1,
+      "failing": []
+    },
+    "weakening": {
+      "found": false,
+      "by": [],
+      "not_checked": []
+    },
+    "workflow_changed": false,
+    "protected": [],
+    "blessings_changed": [],
+    "deltas": [],
+    "rules": [
+      {
+        "rule": "acceptance-passed",
+        "mode": "advise",
+        "would_block": true,
+        "reason": "AB-1 is skipped"
+      }
+    ],
+    "badge": "advisory",
+    "why": [],
+    "degraded": []
+  }
+}

@@ -45,7 +45,7 @@ const messages = {
     message: "File {path} is at or over 90% of its token budget ({tokens} / {limit} tokens).",
     fix: "Trim {path} or run `tenet split` to extract a section into a part.",
   },
-  "TN-CITE-ANANCHOR": {
+  "TN-CITE-HEADING#doc": {
     rule: "citations-valid",
     message: "Cited heading #{slug} was not found in {path}.",
     fix: "Update the doc: citation to an existing heading slug in {path}.",
@@ -106,7 +106,7 @@ function makeFinding(
 ): Finding {
   const template = messages[code];
   return {
-    code: code === "TN-CITE-ANANCHOR" ? "TN-CITE-HEADING" : code,
+    code: code === "TN-CITE-HEADING#doc" ? "TN-CITE-HEADING" : code,
     severity,
     rule: template.rule,
     file,

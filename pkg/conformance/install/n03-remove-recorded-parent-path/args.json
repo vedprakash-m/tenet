@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "outsideFiles": {
+    "outside-sentinel.txt": "Keep this fixture sentinel.\n"
+  },
+  "steps": [
+    {
+      "run": [
+        "remove",
+        "--json"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "findings": [
+    {
+      "code": "TN-SPEC-BLESSED-COPY",
+      "message": "Blessed copy for section requirements is missing or changed on disk.",
+      "fix": "Run `tenet bless` to restore or re-bless section requirements."
+    }
+  ],
+  "summary": {
+    "$assert": "present"
+  }
+}

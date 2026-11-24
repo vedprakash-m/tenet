@@ -1,0 +1,64 @@
+{
+  "ok": true,
+  "conclusion": "neutral",
+  "wrote": true,
+  "card": {
+    "schema_version": 1,
+    "evaluation_id": "46ad5b797bd006df",
+    "tested": {
+      "commit": "9b41d00000000000000000000000000000000000",
+      "kind": "merge-candidate",
+      "head": "a111111111111111111111111111111111111111",
+      "base": "b222222222222222222222222222222222222222"
+    },
+    "acceptance_digest": "17913ea3950293c30f02c4812d498fd8a86d5d145662fdd067e51c50aee5ba24",
+    "requirements": [
+      {
+        "id": "C-1",
+        "excerpt": "A payment that times out is retried once, never twice.",
+        "state": "blessed",
+        "recorded": "self",
+        "flags": [],
+        "why": "implements",
+        "tests": {
+          "expected": 0,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 0,
+          "not_run": 0
+        }
+      }
+    ],
+    "items": [],
+    "tests": {
+      "report": "ok",
+      "total": 1,
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "failing": []
+    },
+    "weakening": {
+      "found": false,
+      "by": [],
+      "not_checked": []
+    },
+    "workflow_changed": false,
+    "protected": [],
+    "blessings_changed": [],
+    "deltas": [],
+    "rules": [
+      {
+        "rule": "acceptance-passed",
+        "mode": "advise",
+        "would_block": true,
+        "reason": "TN-ACC-MISSING-ID: Acceptance item needs an ID."
+      }
+    ],
+    "badge": "advisory",
+    "why": [],
+    "degraded": [
+      "TN-ACC-MISSING-ID: Acceptance item needs an ID."
+    ]
+  }
+}

@@ -1,87 +1,80 @@
 import { jcs, sha256 } from "../core/hash.js";
+import { message } from "../core/messages.js";
 import type { Finding } from "../core/output.js";
 import type { Acceptance } from "./types.js";
 
 export function parseAcceptance(text: string): Acceptance {
-  const lines = text.replaceAll("\r\n", "\n").split("\n");
-  const implementationIds: string[] = [];
-  const candidates: Array<{ id: string; text: string }> = [];
+  const implementationIds = new Set<string>();
+  const items: Acceptance["items"] = [];
+  const seen = new Set<string>();
   const problems: Finding[] = [];
-  let heading = -1;
-  let headingFence = false;
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index] ?? "";
-    if (/^\s*```/.test(line) || /^\s*~~~/.test(line)) {
-      headingFence = !headingFence;
+  let heading = false;
+  let fence: string | undefined;
+  const lines = text.replaceAll("\r\n", "\n").split("\n");
+
+  for (const [index, line] of lines.entries()) {
+    const marker = /^ {0,3}(\x60{3,}|~{3,})(.*)$/.exec(line);
+    const run = marker?.[1];
+    if (fence) {
+      if (run && run[0] === fence[0] && run.length >= fence.length && !marker?.[2]?.trim()) fence = undefined;
       continue;
     }
-    if (!headingFence && /^#{2,3}\s+Acceptance\s*$/.test(line)) {
-      heading = index;
-      break;
+    if (run && (run[0] === "~" || !marker?.[2]?.includes("\x60"))) {
+      fence = run;
+      continue;
     }
+    if (!heading) {
+      heading = /^ {0,3}#{2,3}[ \t]+Acceptance[ \t]*$/.test(line);
+      continue;
+    }
+    if (/^ {0,3}#{1,6}(?:[ \t]|$)/.test(line)) break;
+
+    const implementation = /^Implements:\s*(.+)$/.exec(line)?.[1];
+    if (implementation) {
+      for (const value of implementation.split(",")) {
+        const id = value.trim();
+        if (id) implementationIds.add(id);
+      }
+      continue;
+    }
+
+    const tagged = /^\s*[-*]\s*(?:\[[ xX]\]\s*)?\[(AB-\d+)\]\s+(.+)$/.exec(line);
+    const id = tagged?.[1];
+    const itemText = tagged?.[2]?.trim();
+    if (!id || !itemText) {
+      if (/^\s*[-*](?:\s|$)/.test(line)) problems.push(acceptanceProblem(index + 1));
+      continue;
+    }
+    if (seen.has(id)) {
+      problems.push(acceptanceProblem(index + 1, id));
+      continue;
+    }
+    seen.add(id);
+    items.push({ id, text: itemText });
   }
 
-  if (heading >= 0) {
-    const seen = new Set<string>();
-    let fenced = false;
-    for (let index = heading + 1; index < lines.length; index += 1) {
-      const line = lines[index] ?? "";
-      if (/^#{1,6}\s+/.test(line)) break;
-      if (/^\s*```/.test(line) || /^\s*~~~/.test(line)) {
-        fenced = !fenced;
-        continue;
-      }
-      if (fenced) continue;
-      const implementationLine = /^Implements:\s*(.+)$/.exec(line);
-      if (implementationLine?.[1]) {
-        for (const value of implementationLine[1].split(",")) {
-          const id = value.trim();
-          if (id) implementationIds.push(id);
-        }
-        continue;
-      }
-      const bullet = /^\s*[-*]\s+(.+)$/.exec(line);
-      if (!bullet?.[1]) continue;
-      const item = bullet[1].replace(/^\[[ xX]\]\s*/, "");
-      const tagged = /^\[(AB-\d+)\]\s+(.+)$/.exec(item);
-      if (!tagged?.[1] || !tagged[2]) {
-        problems.push({
-          code: "TN-ACC-MISSING-ID",
-          severity: "error",
-          rule: null,
-          file: null,
-          line: index + 1,
-          message: "acceptance item needs an ID",
-          fix: "Add a unique [AB-n] ID to the acceptance item.",
-        });
-        continue;
-      }
-      const id = tagged[1];
-      if (seen.has(id)) {
-        problems.push({
-          code: "TN-ACC-DUP-ID",
-          severity: "error",
-          rule: null,
-          file: null,
-          line: index + 1,
-          message: `acceptance item ID is repeated: ${id}`,
-          fix: "Keep the first item and give this item a unique [AB-n] ID.",
-        });
-        continue;
-      }
-      seen.add(id);
-      candidates.push({ id, text: tagged[2].trim().replace(/\s+/g, " ") });
-    }
-  }
+  const implementsInOrder = [...implementationIds];
+  const digest = sha256(jcs({
+    implements: [...implementsInOrder].sort(ascii),
+    items: items.map(({ id, text }) => ({ id, text: text.replace(/\s+/g, " ") }))
+      .sort((left, right) => ascii(left.id, right.id)),
+  }));
+  return { implements: implementsInOrder, items, digest, problems };
+}
 
-  implementationIds.sort(ascii);
-  candidates.sort((left, right) => ascii(left.id, right.id));
-  const items = candidates.map((item) => ({ ...item }));
+function acceptanceProblem(line: number, id?: string): Finding {
+  const location = { severity: "error", rule: null, file: null, line } as const;
+  if (id === undefined) {
+    return {
+      ...location,
+      code: "TN-ACC-MISSING-ID",
+      ...message("TN-ACC-MISSING-ID"),
+    };
+  }
   return {
-    implements: implementationIds,
-    items,
-    digest: sha256(jcs({ implements: implementationIds, items })),
-    problems,
+    ...location,
+    code: "TN-ACC-DUP-ID",
+    ...message("TN-ACC-DUP-ID", { id }),
   };
 }
 

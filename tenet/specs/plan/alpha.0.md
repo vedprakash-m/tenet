@@ -1,6 +1,6 @@
-# Tenet plan: 0.1.0-alpha.0 build contracts, waves A0-1 to A0-4
+# Tenet plan: 0.1.0-alpha.0 build contracts, waves A0-1 to A0-3
 
-> Level L2 · Version 0.13 · Part of [plan.md](../plan.md) · Status: **draft, awaiting the Owner's approval; frozen by CP-0015** · Budget: 6,000 tokens · Added in L-0023 · Previous version: `archive/specs/plan/alpha.0.md@0.12.md` · Continued in [alpha.0b.md](alpha.0b.md) (A0-5 to A0-8)
+> Level L2 · Version 0.13 · Part of [plan.md](../plan.md) · Status: **draft, awaiting the Owner's approval; frozen by CP-0015** · Budget: 6,000 tokens · Added in L-0023 · Previous version: `archive/specs/plan/alpha.0.md@0.12.md` · Continued in [alpha.0b.md](alpha.0b.md) (A0-4 to A0-8)
 
 **Context card.** One build contract per alpha.0 packet, in wave order ([plan §2](../plan.md#2-waves)), with the eight fields of [plan §4](../plan.md#4-build-contract). A builder reads its contract, the sections it names and nothing else. If the contract and a specification disagree, the builder stops and escalates; it never chooses. References: **C** = [contracts](../tech-spec/contracts.md), **ALG** = [algorithms](../tech-spec/algorithms.md), **CI** = [ci](../tech-spec/ci.md), **AG** = [agents](../tech-spec/agents.md), **OB** = [onboarding](../tech-spec/onboarding.md), **TS** = [tech spec](../tech-spec.md), **UX** = [ux-spec](../ux-spec.md).
 
@@ -123,43 +123,4 @@
 
 ## A0-4
 
-**CP-0009 · Check, fix and split** · R-008, R-033, R-038, R-054 (lock mismatch), R-219
-1. *Needs:* CP-0044; TS §9–§10; C §1, §8, §13; ALG-02 (rename), ALG-03 (integrity, relocation).
-2. *Owns:* `src/specs/{check,fix,split}.ts`, the commands `check`, `fix`, `split` with their result schemas, `kit/hooks/pre-commit`, `test/check/`.
-3. *Exports:* `check({paths?, pack?, ci?, base?}) → {findings, summary}`; `fix({dryRun}) → {changes}`; `split(doc, section)`.
-4. *Behavior:*
-   - **Findings:** required files, schemas, links and anchors, citations, origin present, section states and flags, blessed-copy integrity, unique IDs, vision coverage (TS §6.3), budgets, kit integrity, and a package version that differs from the lock.
-   - **Exit codes** follow C §13: `budget` is a rule finding only with `--ci --base` on a change that crosses 100%.
-   - **`fix`:** assigns IDs (C §1), numbers `V-` items, writes front matter, section entries, digests and `drafted_from`, moves renamed entries and copies, updates uniquely relocated anchors, and normalizes citation paths. It never changes meaning, states or blessings.
-   - **`split`:** moves a section into a part, leaving a pointer and updated links.
-   - The hook warns and never blocks.
-5. *Edge cases:* `fix` twice changes nothing; two branches both assigning `R-40` (`fix` renumbers the newer unblessed one; if both are blessed, `check` reports it).
-6. *Out of scope:* event and alias checks (CP-0007).
-7. *Fixtures:* `test/check/<code>/`, one violation each; a generated 500-document repository for R-082.
-8. *Proving:* `npm test -- test/check`: each fixture yields exactly its finding; `fix` repairs every mechanical one; R-082 timing holds with git calls batched.
-
-**CP-0045 · Agent context and MCP** · R-049, R-211
-1. *Needs:* CP-0044; C §9; ALG-10.
-2. *Owns:* `src/context/`, `src/mcp/`, the commands `context` and `mcp` with their result schemas, `test/context/`, `test/mcp/`.
-3. *Exports:* `context(input) → {blessed, drafts, index, omitted, truncated, rules}`; `serveMcp(io)`.
-4. *Behavior:* ALG-10 and C §9 exactly, reading blessed copies; `tenet_status` gives the level and spec states; `tenet_next` gives the pending blessings; `tenet_propose` writes into the named work item's packet folder.
-5. *Edge cases:*
-   - nothing blessed ("nothing blessed yet; run tenet bless")
-   - global rules over their reserved share; an item asked for by ID that alone exceeds the budget (`over_budget`)
-   - a blessed copy failing integrity (served as a draft)
-   - notifications get no reply; stdout carries only protocol messages
-6. *Out of scope:* writing host entries (CP-0010).
-7. *Fixtures:* `pkg/conformance/alg-10/`, including "retry once".
-8. *Proving:* `npm test -- test/context test/mcp`; a scripted session matches its golden transcript; the pinned MCP Inspector CLI lists and calls every tool on Windows, macOS and Linux, through both the committed entry and the Windows local form.
-
-**CP-0053 · Specification board** · R-032 (alpha.0 part)
-1. *Needs:* CP-0044, CP-0018; C §5.
-2. *Owns:* `src/views/specs-board.ts`, the `board` command and its result schema, `test/views/`.
-3. *Exports:* `board({all}) → board.json` with `as_of`, `read`, `specs`, `pending_blessings`, `spec_debt`.
-4. *Behavior:* reads the working tree. The markdown groups "waiting for your blessing", "sources changed", "edited" and "spec debt"; **spec debt** is `{kind: broken-citation|untested-requirement|over-budget, path, id, message}`, with untested requirements found through CP-0018's `scanTests`. `--all` adds clean blessed sections.
-5. *Edge cases:* no specifications ("run tenet onboard").
-6. *Out of scope:* work items, `--open`, `--since`, `--fetch` (CP-0008).
-7. *Fixtures:* fresh drafts; half blessed; blessed with sources changed; spec debt of each kind; the UX Part 2 example.
-8. *Proving:* golden `board.json` and markdown byte-identical on three platforms.
-
-Waves A0-5 to A0-8 and the release: [alpha.0b.md](alpha.0b.md).
+In [alpha.0b.md](alpha.0b.md#a0-4), moved under the rollover rule along with waves A0-5 to A0-8 and the release.

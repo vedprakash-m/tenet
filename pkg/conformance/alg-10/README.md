@@ -1,0 +1,24 @@
+# CP-0045 · Context and MCP
+
+For a `context` case, materialize `repo.files` at the pinned synthetic checkout and call `context(options)`. Require all six Contracts §9 keys. For an `mcp` case, send the `requests` as UTF-8 newline-delimited JSON-RPC in order. Parse stdout as JSON-RPC messages and match `responses` in order. In the parity case also call context directly with `alsoContext` and match the same projection. Do not count stderr as a protocol message.
+
+Match every specified value. Lists match exact length and order unless marked `{"$assert":"contains","value":[…]}` to require the named projections anywhere, or `{"$assert":"size","value":n}` to require an array of that length. Cases leave undecided fields open, including the precise `reason` labels and draft object shape. See [CP-0045 proposals](../../../tenet/packets/CP-0045-agent-context/escalations/proposals-r3.md).
+
+| Case | Kind | Spec line exercised |
+|---|---|---|
+| [p01-path-admitted](p01-path-admitted/input.json) | positive | [ALG-10 line 163](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · The exact cited path selects the blessed requirement. |
+| [p02-retry-once-source-changed](p02-retry-once-source-changed/input.json) | positive | [ALG-10 lines 159, 168, 172](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · The original retry promise survives source drift and carries the section owner. |
+| [p03-id-and-path-deduplicate](p03-id-and-path-deduplicate/input.json) | positive | [ALG-10 lines 162–166](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · Explicit ID and cited path choose the same item once. |
+| [p04-include-draft-with-blessing](p04-include-draft-with-blessing/input.json) | positive | [ALG-10 lines 159, 169](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · The draft stays separate from the blessed copy even when explicitly included. |
+| [p05-no-inputs-global-and-index](p05-no-inputs-global-and-index/input.json) | positive | [ALG-10 lines 161, 167, 170](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · No selectors return the global item and index the remaining requirement. |
+| [p06-checked-policy-rule](p06-checked-policy-rule/input.json) | positive | [Contracts §9 line 140](../../../tenet/specs/tech-spec/contracts.md#9-mcp), [TS §6.1 lines 154, 166](../../../tenet/specs/tech-spec.md#61-tenetyaml-governance-plane) · Alpha.0 reports the effective capped rule mode. |
+| [p07-mcp-session](p07-mcp-session/input.json) | positive | [Contracts §9 lines 132–135, 140](../../../tenet/specs/tech-spec/contracts.md#9-mcp), [ALG-10 line 172](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · An initialize–notification–context–ping session agrees with the direct budget result, including the omitted IDs. |
+| [p08-applies-to-prose](p08-applies-to-prose/input.json) | positive | [ALG-10 line 164](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · A matching prose section is selected through `applies_to` without any requirement citation. |
+| [p09-global-beyond-reserve](p09-global-beyond-reserve/input.json) | positive | [ALG-10 lines 161, 167](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · A global rule bigger than its 25% reserve still precedes the local item. |
+| [p10-query-case-insensitive](p10-query-case-insensitive/input.json) | positive | [ALG-10 line 165](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · Mixed case finds the same item, with the query present in title and text. |
+| [n01-no-blessed-material](n01-no-blessed-material/input.json) | negative | [CP-0045 line 147](../../../tenet/specs/plan/alpha.0.md#a0-4), [ALG-10 line 169](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · A matching draft does not appear by default. |
+| [n02-rejected-section](n02-rejected-section/input.json) | negative | [ALG-03 line 47](../../../tenet/specs/tech-spec/algorithms.md#alg-03) · A rejected section stays excluded even when drafts are requested. |
+| [n03-broken-blessed-copy](n03-broken-blessed-copy/input.json) | negative | [ALG-03 line 51](../../../tenet/specs/tech-spec/algorithms.md#alg-03), [CP-0045 line 149](../../../tenet/specs/plan/alpha.0.md#a0-4) · A tampered copy cannot grant authority. |
+| [n04-local-omitted](n04-local-omitted/input.json) | negative | [ALG-10 lines 161, 167, 172](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · A long path match cannot evict a short global rule and is omitted whole. |
+| [n05-over-budget-explicit-id](n05-over-budget-explicit-id/input.json) | negative | [Contracts §9 line 140](../../../tenet/specs/tech-spec/contracts.md#9-mcp), [ALG-10 line 167](../../../tenet/specs/tech-spec/algorithms.md#alg-10) · An explicitly requested oversize item returns whole and flagged, with no duplicate or omission. |
+| [n06-unknown-method](n06-unknown-method/input.json) | negative | [Contracts §9 lines 134, 136](../../../tenet/specs/tech-spec/contracts.md#9-mcp) · Only the request with an ID gets a reply, with the unknown-method code. |

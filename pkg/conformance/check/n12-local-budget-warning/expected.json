@@ -1,0 +1,10 @@
+{
+  "findings": [
+    {
+      "severity": "warning"
+    }
+  ],
+  "summary": {
+    "$assert": "present"
+  }
+}

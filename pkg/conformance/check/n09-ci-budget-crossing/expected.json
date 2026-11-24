@@ -1,0 +1,13 @@
+{
+  "findings": [
+    {
+      "code": "TN-BUDGET",
+      "rule": "budget",
+      "message": "File tenet/specs/tech-spec.md is over its token budget (201 > 200 tokens).",
+      "fix": "Trim tenet/specs/tech-spec.md or run `tenet split` to extract a section into a part."
+    }
+  ],
+  "summary": {
+    "$assert": "present"
+  }
+}

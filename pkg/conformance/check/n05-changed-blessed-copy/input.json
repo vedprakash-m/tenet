@@ -1,0 +1,29 @@
+{
+  "operation": "check",
+  "options": {},
+  "repo": {
+    "repository": "checkout",
+    "now": "2026-11-23T10:00:00Z",
+    "read": {
+      "main": "9f3c2e1123456789012345678901234567890123",
+      "branches": [],
+      "records": null
+    },
+    "installedVersion": "0.1.0-alpha.0",
+    "files": {
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\",\n    \"documents\": [\n      {\n        \"path\": \"vision.md\",\n        \"level\": \"L0\"\n      },\n      {\n        \"path\": \"specs/prd.md\",\n        \"level\": \"L1\"\n      },\n      {\n        \"path\": \"specs/tech-spec.md\",\n        \"level\": \"L2\"\n      },\n      {\n        \"path\": \"specs/ux-spec.md\",\n        \"level\": \"L2\"\n      },\n      {\n        \"path\": \"specs/plan.md\",\n        \"level\": \"L2\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ]\n}\n",
+      "kit/TENET.md": "# Fixture kit\n",
+      "tenet/blessed/tenet__vision.md/vision.md": "- V-1 Keep checkout predictable. {origin: asked}\n",
+      "tenet/blessed/tenet__vision.md/vision.md.anchors.json": "{}\n",
+      "tenet/vision.md": "---\ntenet: {\"spec\":1,\"doc\":\"vision\",\"level\":\"L0\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  vision: {\"state\":\"blessed\",\"digest\":\"sha256:5fabe4ce0fc734001c72284330dc9ba4685d29539720ac55c23de573130251e4\",\"flags\":[],\"blessed_digest\":\"sha256:5fabe4ce0fc734001c72284330dc9ba4685d29539720ac55c23de573130251e4\",\"blessed_at_rev\":\"9f3c2e1123456789012345678901234567890123\",\"blessed_copy\":\"tenet/blessed/tenet__vision.md/vision.md\",\"recorded\":\"self\",\"blessed_by\":\"payments\",\"blessed_at\":\"2026-11-23T10:00:00Z\",\"anchors\":{}}\n---\n## Vision\n- V-1 Keep checkout predictable. {origin: asked}\n",
+      "tenet/blessed/tenet__specs__prd.md/requirements.md": "- R-1 Stop all checkout attempts. {origin: asked; serves: V-1}\n",
+      "tenet/blessed/tenet__specs__prd.md/requirements.md.anchors.json": "{}\n",
+      "tenet/specs/prd.md": "---\ntenet: {\"spec\":1,\"doc\":\"prd\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:4d4897250b72b9acb8f843caa3ac11ce43e1f5ac59e5a459abcc31ac2551c9a1\",\"flags\":[],\"blessed_digest\":\"sha256:4d4897250b72b9acb8f843caa3ac11ce43e1f5ac59e5a459abcc31ac2551c9a1\",\"blessed_at_rev\":\"9f3c2e1123456789012345678901234567890123\",\"blessed_copy\":\"tenet/blessed/tenet__specs__prd.md/requirements.md\",\"recorded\":\"self\",\"blessed_by\":\"payments\",\"blessed_at\":\"2026-11-23T10:00:00Z\",\"anchors\":{}}\n---\n## Requirements\n- R-1 Keep checkout predictable. {origin: asked; serves: V-1}\n",
+      "tenet/specs/tech-spec.md": "---\ntenet: {\"spec\":1,\"doc\":\"tech-spec\",\"level\":\"L2\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  design: {\"state\":\"draft\",\"digest\":\"sha256:35926d96b7479506fa81a02e403b4ccefa7cd244a86f8c34cbcdb33c31b7059a\",\"flags\":[]}\n---\n## Design\nCheckout maintains a predictable result.\n",
+      "tenet/specs/ux-spec.md": "---\ntenet: {\"spec\":1,\"doc\":\"ux-spec\",\"level\":\"L2\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  experience: {\"state\":\"draft\",\"digest\":\"sha256:727012fa53440872c3c81cf58470f45340f35f19eafcdd92533c2eb9448b5c2e\",\"flags\":[]}\n---\n## Experience\nPreserve the checkout result.\n",
+      "tenet/specs/plan.md": "---\ntenet: {\"spec\":1,\"doc\":\"plan\",\"level\":\"L2\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  plan: {\"state\":\"draft\",\"digest\":\"sha256:89298d776218a3fdb3beafc4dd8440f00d51c43a202e79c7f039ffbf1c1aafe1\",\"flags\":[]}\n---\n## Plan\nKeep checkout changes small.\n",
+      "README.md": "# Checkout\n",
+      "AGENTS.md": "# Checkout agents\n"
+    }
+  }
+}

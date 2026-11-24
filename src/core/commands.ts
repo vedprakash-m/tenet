@@ -40,21 +40,3 @@ export type CommandSpec = {
   run?: (context: CommandContext) => unknown | Promise<unknown>;
   handler?: (context: CommandContext) => unknown | Promise<unknown>;
 };
-
-const registry = new Map<string, CommandSpec>();
-
-export function registerCommand(spec: CommandSpec): void {
-  if (!spec.name || (!spec.run && !spec.handler)) throw new TypeError("command spec needs a name and run handler");
-  for (const name of [spec.name, ...(spec.aliases ?? [])]) {
-    if (registry.has(name)) throw new Error(`command is already registered: ${name}`);
-    registry.set(name, spec);
-  }
-}
-
-export function registeredCommands(): CommandSpec[] {
-  return [...new Set(registry.values())];
-}
-
-export function commandFor(name: string): CommandSpec | undefined {
-  return registry.get(name);
-}

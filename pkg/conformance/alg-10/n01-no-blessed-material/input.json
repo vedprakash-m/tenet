@@ -1,0 +1,23 @@
+{
+  "operation": "context",
+  "options": {
+    "paths": [
+      "src/retry.ts"
+    ]
+  },
+  "repo": {
+    "repository": "checkout",
+    "now": "2026-11-23T10:00:00Z",
+    "read": {
+      "main": "9f3c2e1123456789012345678901234567890123",
+      "branches": [],
+      "records": null
+    },
+    "installedVersion": "0.1.0-alpha.0",
+    "files": {
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ]\n}\n",
+      "kit/TENET.md": "# Fixture kit\n",
+      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  experience: {\"state\":\"draft\",\"digest\":\"sha256:8b94cd7c820e48df2a2d6d36f20852c2ca27b4311089ef5f396d31ab899480c6\",\"flags\":[],\"applies_to\":[\"src/**\"]}\n---\n## Experience\nShow a wait indicator in checkout.\n"
+    }
+  }
+}

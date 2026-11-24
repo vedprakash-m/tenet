@@ -1,0 +1,154 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "preflight": {
+    "revision": "f601234567890123456789012345678901234567",
+    "read_count": 7,
+    "skipped_count": 0,
+    "dirty_warning": false
+  },
+  "inventory": {
+    "schema_version": 1,
+    "revision": "f601234567890123456789012345678901234567",
+    "sources": {
+      "files": [
+        {
+          "path": ".github/copilot-instructions.md",
+          "kind": "instructions",
+          "sha256": "0c11cda4e149accaff5ec5fd4684ac6dd44b8b62df945507523455e7a329d127",
+          "lines": 2
+        },
+        {
+          "path": ".windsurfrules",
+          "kind": "instructions",
+          "sha256": "f7e960004bbd0cbe9b7f4c5ae185467719c57816660309093681c5fd8e10e7e6",
+          "lines": 1
+        },
+        {
+          "path": "AGENTS.md",
+          "kind": "instructions",
+          "sha256": "57ec40f08113040a61a55ab56c35c022ee6a549f83c18d0e8e7552e1755f8c14",
+          "lines": 5
+        },
+        {
+          "path": "CLAUDE.md",
+          "kind": "instructions",
+          "sha256": "9afd1a5c3e845fa5589b4325a4a27881c03df21ff7441c53a4512acb2fb1fcc7",
+          "lines": 2
+        },
+        {
+          "path": "package.json",
+          "kind": "manifest",
+          "sha256": "45716a5a733d3f29e959fa7a55257e153408987234369b90fbacb49df298d88d",
+          "lines": 7
+        },
+        {
+          "path": "src/cli.ts",
+          "kind": "source",
+          "sha256": "0e5d76fcc35db240e3b9925b5a797ba6783fde14d97d847bbc716b59e75f2ed3",
+          "lines": 1
+        },
+        {
+          "path": "tenet.yaml",
+          "kind": "config",
+          "sha256": "bf2e6da3dcd662003bad47b1988163b36f58b16b76795cfba63256fc4359d747",
+          "lines": 26
+        }
+      ],
+      "skipped": []
+    },
+    "modules": [
+      {
+        "id": "root",
+        "roots": [
+          "."
+        ],
+        "languages": [
+          "typescript"
+        ]
+      }
+    ],
+    "tests": [],
+    "docs": [],
+    "owners": [],
+    "ci": [],
+    "size": {
+      "source_lines": 1,
+      "areas": 0
+    },
+    "layout": "one-file",
+    "units": [
+      {
+        "id": "root",
+        "paths": [
+          "."
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "kind": "no-test-report",
+        "path": "tenet.yaml",
+        "message": "No machine-readable test report configured"
+      }
+    ],
+    "observations": {
+      "reports": []
+    }
+  },
+  "findings": [
+    {
+      "kind": "no-test-report",
+      "path": "tenet.yaml",
+      "message": "No machine-readable test report configured"
+    }
+  ],
+  "assignment": {
+    "schema_version": 1,
+    "inventory": ".tenet/onboard/inventory.json",
+    "skill": "draft-specs",
+    "project_kind": "cli",
+    "views": [
+      "vision",
+      "requirements",
+      "design",
+      "experience",
+      "plan"
+    ],
+    "layout": "one-file",
+    "units": [
+      {
+        "id": "root",
+        "paths": [
+          "."
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "question_limit": 10,
+    "output": {
+      "paths": [
+        "tenet/intent.md"
+      ]
+    },
+    "rules": [
+      "no intent from code alone",
+      "every observed or documented statement cites",
+      "never resolve a conflict",
+      "never bless"
+    ]
+  }
+}

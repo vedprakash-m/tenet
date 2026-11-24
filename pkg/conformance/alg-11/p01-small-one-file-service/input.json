@@ -1,0 +1,18 @@
+{
+  "operation": "onboard",
+  "options": {
+    "inventoryOnly": true
+  },
+  "repo": {
+    "revision": "a1b2c3d4e5f60123456789012345678901234567",
+    "committedDates": {
+      "README.md": "2026-10-01T12:00:00Z"
+    },
+    "files": {
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"R\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"core\",\n      \"name\": \"Core\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ]\n}\n",
+      "src/server.ts": "import http from \"node:http\";\nexport const server = http.createServer();\n",
+      "Dockerfile": "FROM node:22-alpine\nEXPOSE 8080\nCMD [\"node\", \"src/server.ts\"]\n",
+      "README.md": "# Checkout Service\n\n## Overview\nHandles checkout sessions.\n"
+    }
+  }
+}

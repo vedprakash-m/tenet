@@ -48,7 +48,7 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
 - **Flags**, recomputed by `check` and `board` at the current revision (return `[]` when `section.state !== "blessed"`):
   - `edited`: the section's digest differs from `blessed_digest`
   - `sources-changed`: an anchored range's lines no longer hash to its anchor, or the file or test is gone. If the same lines appear **exactly once** elsewhere in the file (a sliding-window hash scan; files over 50,000 lines are not scanned and are flagged), they moved: `check` doesn't flag them and `fix` updates the range. Zero or several matches flag `sources-changed` ("matched N places").
-- **Integrity:** the blessed copy's digest must equal `blessed_digest` (`TN-SPEC-BLESSED-COPY`); a copy that fails is served as a draft with a warning.
+- **Integrity:** the blessed copy's digest must equal `blessed_digest` (`TN-SPEC-BLESSED-COPY`, `file: doc.path`, `line`: 1-based `## ` heading line or `null` for `_preamble`); a copy that fails is served as a draft with a warning.
 - **Text in force** is always the blessed copy. Re-blessing replaces it.
 - **Owner:** the section's `owner`, else the document's `tenet.owner`, else the owners on the last CODEOWNERS line matching the document (GitHub's rule), else the Owner. `parseDoc` resolves the first two; callers apply the rest through `ownersFor`.
 - **Fixtures:**
@@ -67,7 +67,7 @@ Fixtures: CRLF and LF give one digest; editing one section leaves the others unc
 - `doc: path#slug`: a heading with that slug exists (missing `#slug` is `TN-CITE-RANGE`).
 - `test: file > name`: `file` exists (missing ` > ` is `TN-CITE-RANGE`) and each segment split on ` > ` appears in order (`indexOf` advancing cursor) in `file` as written, `def <seg>` or `func <seg>`.
 
-Errors, at most one per citation, checked as syntax, then file, then range, heading or test: `TN-CITE-FILE`, `TN-CITE-RANGE` (also every malformed citation: `doc:` without `#slug`, `test:` without ` > `, a range that isn't integer `start-end`; message "citation is malformed"), `TN-CITE-HEADING`, `TN-CITE-TEST` (carrying `severity: "error"`, `rule: "citations-valid"`, and 1-based `line` of the citing statement, else `null`). Resolving says nothing about whether the source supports the statement; that judgment is the spec reviewer's, labelled advisory. Fixtures: a nested `describe > it` name resolves; a renamed test fails.
+Errors, at most one per citation, checked as syntax, then file, then range, heading or test: `TN-CITE-FILE`, `TN-CITE-RANGE` (also every malformed citation: `doc:` without `#slug`, `test:` without ` > `, a range that isn't integer `start-end`, using the `TN-CITE-RANGE` template in `messages.md`), `TN-CITE-HEADING`, `TN-CITE-TEST` (carrying `severity: "error"`, `rule: "citations-valid"`, `file: doc.path`, and 1-based `line` of the citing statement, else `null`). Resolving says nothing about whether the source supports the statement; that judgment is the spec reviewer's, labelled advisory. Fixtures: a nested `describe > it` name resolves; a renamed test fails.
 
 ## ALG-05
 
@@ -161,37 +161,23 @@ For `not_checked`: map changed code extensions at `head` (`.rb` ruby, `.cs` csha
   1. **global**: requirements marked `scope: global`, within a reserved 25% of the budget
   2. requirements whose ID is named
   3. requirements citing a path equal to, inside or containing an input path
-  4. prose sections whose `applies_to` matches an input path
-  5. requirements whose text contains the query, case-insensitive
-- **Ordering:** within a group, by level (L0, L1, L2) then ID; duplicates are dropped.
-- **Budget:** in estimated tokens (characters ÷ 4, not any model's tokenizer). Add whole items while they fit. Global rules beyond their 25% share still come first; what no longer fits goes to `omitted`. An item named in `ids` always comes back whole, flagged `over_budget` if it alone exceeds the budget, so asking for an omitted item by ID always ends. Every item that does not fit goes into `omitted` by ID, and `truncated` is set. Then add an index of the remaining blessed requirements (ID and first 80 characters) up to 20% of the budget.
-- **Each item carries** its flags, its owner and `reason` (the group that chose it).
-- **Drafts:** only with `include_drafts`, in `drafts`.
+  4. **`applies_to`**: prose sections whose `applies_to` matches an input path (`id: "<doc>#<slug>"`)
+  5. **`query`**: requirements (`text`) or sections (`heading`) containing the query, case-insensitive
+- **Ordering:** within a group, by level (L0, L1, L2) then numeric/ASCII ID; duplicates are dropped.
+- **Budget:** `tokens(s) = Math.ceil(s.length / 4)` (`budget_tokens <= 0` refuses with `TN-USAGE-BUDGET`). Walk candidates in group order: add whole items while `used + tokens(item.text) <= budget_tokens` (global rules beyond their 25% share still precede Groups 2–5); if a non-explicit item doesn't fit, push its `id` to `omitted`, set `truncated = true`, and keep scanning smaller items. An item named in `ids` always comes back whole (never `omitted`), clamping `used` at `budget_tokens` and setting `over_budget: true` if `tokens(item.text) > budget_tokens` (`truncated` is `omitted.length > 0`). Then build `index` from remaining blessed requirements not in `blessed` or `omitted` (`title: item.text.slice(0, 80)`, cost `tokens(id + " " + title)`) up to `Math.floor(budget_tokens * 0.20)`.
+- **Each item carries** its `flags`, single-string `owner` (joining multiple CODEOWNERS with `", "`) and `reason` (`global|id|path|applies_to|query`).
+- **Drafts:** `include_drafts` populates `drafts` with `draft`/`deferred` sections (never `rejected`); a blessed copy failing `ALG-03` integrity is excluded from `blessed` and served in `drafts` (`integrity_failed: true`).
 - **No inputs:** group 1 plus the index.
 
 Fixtures: a global rule survives a budget filled by one long local requirement; the omitted IDs match between CLI and MCP.
 
 ## ALG-11
 
-**Size rule.** Count lines in tracked files with extensions `ts tsx js jsx mjs cjs py go rs java kt cs rb php swift c cc cpp h hpp scala`, excluding `vendor/`, `node_modules/`, `dist/`, `build/`, test files and generated paths (marked `linguist-generated` in `.gitattributes`, or whose first 5 lines contain `Code generated` or `@generated`). The layout is `separate` when there are ≥ 20,000 lines or ≥ 4 CODEOWNERS areas, otherwise `one-file`. `onboard --layout` overrides. **Drafting units:** one per CODEOWNERS area, else one per top-level source folder, merging any unit under 2,000 lines into its neighbor; `one-file` is a single unit.
+**Size rule.** Count lines in tracked files with extensions `ts tsx js jsx mjs cjs py go rs java kt cs rb php swift c cc cpp h hpp scala`, excluding `vendor/`, `node_modules/`, `dist/`, `build/`, test files and generated paths (marked `linguist-generated` in `.gitattributes`, or whose first 5 lines contain `Code generated` or `@generated`). The layout is `separate` when there are ≥ 20,000 lines or ≥ 4 CODEOWNERS areas, otherwise `one-file`. `onboard --layout` overrides. **Drafting units:** `one-file` is a single unit `[{id: "root", paths: ["."], views: ["vision", "requirements", "design", "experience", "plan"]}]`. In `separate`, start with one unit per CODEOWNERS area (in CODEOWNERS order; `id` = pattern stripped of leading/trailing `/` and `*` with `/` → `-`, `paths: [<normalized prefix>]`), else one per top-level folder containing counted source files in ASCII order (`id` = folder name, `paths: ["<folder>"]`; root source files use `{id: "root", paths: ["."]}`); while `units.length > 1` and any unit has `< 2,000` counted source lines, merge the first such unit into its preceding neighbor (or following neighbor when at index `0`), keeping the target unit's `id` and appending `paths`; every unit has `views: ["vision", "requirements", "design", "experience", "plan"]`.
 
 ## ALG-12
 
-**Install and removal.**
-- **Paths:** every planned or recorded path is resolved and must stay inside the repository root: no absolute paths, `..`, or symlink or junction leading outside (`TN-PATH-ESCAPE`).
-- **`init` plans every write**, then applies it:
-  1. Write `.tenet/manifest.pending.json` with every planned file, block and key, and each key's current value.
-  2. Apply in order, re-checking each file's hash just before writing it; a file that changed since planning stops the run with the plan shown. A created file that exists with identical content is skipped; with different content it is `TN-INIT-EXISTS` (pass `--force`). Blocks go at the end of the file, or replace an existing block. JSON keys are set.
-  3. Rename the pending file to `manifest.json`, recording each key's `previous` and `installed` value.
-
-  A rerun after an interruption finds the pending file and completes it.
-- **`remove`:**
-  - deletes a created file only if its SHA-256 matches the manifest; otherwise it is kept and reported as "edited by you"
-  - deletes text between markers
-  - restores a key's `previous` value only if it still holds the `installed` value; otherwise keeps it and says so
-  - deletes a created file left empty
-  - never touches specifications or records
-- Fixtures: interruption after each write; a pre-existing `AGENTS.md` and `.mcp.json` are restored exactly; an edited `tenet.yaml` is kept; a key the user changed after install is kept.
+**Install and removal:** in [onboarding.md §2](onboarding.md#2-install-and-upgrade), moved under the rollover rule.
 
 ## ALG-13
 

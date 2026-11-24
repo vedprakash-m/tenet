@@ -25,9 +25,12 @@ export async function declaredTags(
     const added = addedLines.get(declaration.file) ?? new Set<number>();
     for (const sourceTag of declaration.tag_sources) {
       if (/^AB-\d+$/.test(sourceTag.tag)) {
-        if (!added.has(sourceTag.line)) continue;
+        const inheritedOnNewDeclaration = sourceTag.via_describe && (
+          added.has(declaration.line) || declaration.title_lines.some((line) => added.has(line))
+        );
+        if (!added.has(sourceTag.line) && !inheritedOnNewDeclaration) continue;
         add(result.acceptance, sourceTag.tag, declared(declaration, sourceTag.tag, authorship));
-      } else if (/^[A-Za-z]+-\d+$/.test(sourceTag.tag)) {
+      } else if (/^[A-Z][A-Z0-9]*-\d+$/.test(sourceTag.tag)) {
         add(result.requirement, sourceTag.tag, declared(declaration, sourceTag.tag, authorship));
       }
     }
@@ -40,11 +43,11 @@ function authorshipFor(
   baseFile: string,
   baseScan: DetailedScan,
 ): DeclaredTag["authorship"] {
-  if (declaration.via_describe) return "unknown";
   const existed = baseScan.declarations.some(
     (candidate) => candidate.file === baseFile && candidate.name === declaration.name,
   );
-  return existed ? "tag-added-here" : "written-here";
+  if (!existed) return "written-here";
+  return declaration.via_describe ? "unknown" : "tag-added-here";
 }
 
 function declared(

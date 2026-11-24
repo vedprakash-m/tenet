@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "platform": "win32",
+  "hostProfile": {
+    "windowsCommandShimRequired": [
+      "vscode"
+    ],
+    "settingsScope": "isolated-user-profile"
+  },
+  "steps": [
+    {
+      "run": [
+        "init",
+        "--yes",
+        "--json"
+      ]
+    },
+    {
+      "run": [
+        "upgrade",
+        "--json"
+      ],
+      "installedVersion": "0.1.0-alpha.1"
+    }
+  ]
+}

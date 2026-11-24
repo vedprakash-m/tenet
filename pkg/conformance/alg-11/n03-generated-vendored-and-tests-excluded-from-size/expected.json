@@ -1,0 +1,171 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "preflight": {
+    "revision": "3456789abcdef0123456789abcdef0123456789a",
+    "read_count": 4,
+    "skipped_count": 7,
+    "dirty_warning": false
+  },
+  "inventory": {
+    "schema_version": 1,
+    "revision": "3456789abcdef0123456789abcdef0123456789a",
+    "sources": {
+      "files": [
+        {
+          "path": ".gitattributes",
+          "kind": "config",
+          "sha256": "da3574ace135b68088b8e306c4211894a4b0c9491eac5a7e3e49244e1a5a1ad1",
+          "lines": 1
+        },
+        {
+          "path": "src/real.ts",
+          "kind": "source",
+          "sha256": "0c5b7b67cbe34bea47f036a1db15837508f16909ee2b9573a4325ba2f17c6181",
+          "lines": 3
+        },
+        {
+          "path": "tenet.yaml",
+          "kind": "config",
+          "sha256": "bf2e6da3dcd662003bad47b1988163b36f58b16b76795cfba63256fc4359d747",
+          "lines": 26
+        },
+        {
+          "path": "test/real.test.ts",
+          "kind": "test",
+          "sha256": "157f2d22bcee46dee95a0b98e9d8aeec4b9f16811cc4c123ed0e12704521c2fa",
+          "lines": 5000
+        }
+      ],
+      "skipped": [
+        {
+          "path": "build/out.js",
+          "reason": "vendored"
+        },
+        {
+          "path": "dist/bundle.js",
+          "reason": "vendored"
+        },
+        {
+          "path": "node_modules/pkg/index.js",
+          "reason": "vendored"
+        },
+        {
+          "path": "src/gen/client.ts",
+          "reason": "generated"
+        },
+        {
+          "path": "src/gen/schema.ts",
+          "reason": "generated"
+        },
+        {
+          "path": "src/proto/messages.ts",
+          "reason": "generated"
+        },
+        {
+          "path": "vendor/lib/index.ts",
+          "reason": "vendored"
+        }
+      ]
+    },
+    "modules": [
+      {
+        "id": "src",
+        "roots": [
+          "src"
+        ],
+        "languages": [
+          "typescript"
+        ]
+      }
+    ],
+    "tests": [
+      {
+        "path": "test/real.test.ts",
+        "runner": "node:test",
+        "cases": 1
+      }
+    ],
+    "docs": [],
+    "owners": [],
+    "ci": [],
+    "size": {
+      "source_lines": 3,
+      "areas": 0
+    },
+    "layout": "one-file",
+    "units": [
+      {
+        "id": "root",
+        "paths": [
+          "."
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "kind": "no-test-report",
+        "path": "tenet.yaml",
+        "message": "No machine-readable test report configured"
+      }
+    ],
+    "observations": {
+      "reports": []
+    }
+  },
+  "findings": [
+    {
+      "kind": "no-test-report",
+      "path": "tenet.yaml",
+      "message": "No machine-readable test report configured"
+    }
+  ],
+  "assignment": {
+    "schema_version": 1,
+    "inventory": ".tenet/onboard/inventory.json",
+    "skill": "draft-specs",
+    "project_kind": "application",
+    "views": [
+      "vision",
+      "requirements",
+      "design",
+      "experience",
+      "plan"
+    ],
+    "layout": "one-file",
+    "units": [
+      {
+        "id": "root",
+        "paths": [
+          "."
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "question_limit": 10,
+    "output": {
+      "paths": [
+        "tenet/intent.md"
+      ]
+    },
+    "rules": [
+      "no intent from code alone",
+      "every observed or documented statement cites",
+      "never resolve a conflict",
+      "never bless"
+    ]
+  }
+}

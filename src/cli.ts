@@ -3,7 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { git } from "./core/git.js";
 import { exitCodeFor, fail, result, version, type Finding } from "./core/output.js";
-export { serveMcp } from "./mcp/index.js";
+import { serveMcp } from "./mcp/index.js";
+export { serveMcp };
 
 export type Writable = {
   write(value: string | Uint8Array): unknown;
@@ -129,8 +130,22 @@ async function environmentFindings(io: ReturnType<typeof defaultIo>): Promise<Fi
 
 async function loadCommands(): Promise<void> {
   if (loadedCommands) return;
+  const commands = await import("./commands/index.js");
+  if (loadedCommands) return;
+  for (const spec of [
+    commands.boardCommand, commands.checkCommand, commands.contextCommand, commands.fixCommand,
+    commands.onboardCommand, commands.splitCommand, commands.verifyCommand,
+  ]) registerCommand(spec as CommandSpec);
+  registerCommand({
+    name: "mcp",
+    description: "Serve the Tenet MCP tools over stdio",
+    usage: "tenet mcp",
+    async run(context) {
+      await serveMcp({ cwd: context.cwd, stdin: context.stdin, stdout: context.stdout, stderr: context.stderr, now: context.now });
+      return { value: null };
+    },
+  });
   loadedCommands = true;
-  await import("./commands/index.js");
 }
 
 function usage(): string {

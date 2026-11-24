@@ -1,0 +1,11 @@
+{
+  "ok": false,
+  "exitCode": 3,
+  "errors": [
+    {
+      "code": "TN-ENV-NO-COMMIT",
+      "message": "Repository has no commits yet.",
+      "fix": "Make a first commit, then run `tenet onboard`."
+    }
+  ]
+}

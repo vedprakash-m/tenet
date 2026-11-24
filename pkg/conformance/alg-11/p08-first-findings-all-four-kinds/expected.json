@@ -1,0 +1,207 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "preflight": {
+    "revision": "123456789abcdef0123456789abcdef012345678",
+    "read_count": 6,
+    "skipped_count": 0,
+    "dirty_warning": false
+  },
+  "inventory": {
+    "schema_version": 1,
+    "revision": "123456789abcdef0123456789abcdef012345678",
+    "sources": {
+      "files": [
+        {
+          "path": ".github/CODEOWNERS",
+          "kind": "config",
+          "sha256": "0beda70922f71e16a3d71a5bafecd59727724b2b58d89b01214660a0a19dd57e",
+          "lines": 1
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "kind": "ci",
+          "sha256": "3c3039770f87fb8c5e222f63c825bd63886c98145eba87876a8e72c12f466eae",
+          "lines": 7
+        },
+        {
+          "path": "docs/architecture.md",
+          "kind": "doc",
+          "sha256": "490a126ffec5310a394056627966de3ea13ae8d82b1b2736be74a9cf65fe09ef",
+          "lines": 4
+        },
+        {
+          "path": "src/app.ts",
+          "kind": "source",
+          "sha256": "4c9a2a851c102d1e1fe2ebb20defb6a0332b9b5c431a0fd644fe21712c412c6a",
+          "lines": 1
+        },
+        {
+          "path": "tenet.yaml",
+          "kind": "config",
+          "sha256": "bf2e6da3dcd662003bad47b1988163b36f58b16b76795cfba63256fc4359d747",
+          "lines": 26
+        },
+        {
+          "path": "test/app.test.ts",
+          "kind": "test",
+          "sha256": "9298254f4816820f6e5561203e5120d0a7086a495f18b1a3842dc21f937d614f",
+          "lines": 2
+        }
+      ],
+      "skipped": []
+    },
+    "modules": [
+      {
+        "id": "src",
+        "roots": [
+          "src"
+        ],
+        "languages": [
+          "typescript"
+        ]
+      }
+    ],
+    "tests": [
+      {
+        "path": "test/app.test.ts",
+        "runner": "node:test",
+        "cases": 0
+      }
+    ],
+    "docs": [
+      {
+        "path": "docs/architecture.md",
+        "title": "Architecture",
+        "sections": [
+          "modules"
+        ],
+        "last_changed": "2025-09-15T00:00:00Z"
+      }
+    ],
+    "owners": [
+      {
+        "pattern": "/src/nonexistent/",
+        "owners": [
+          "@ghost-team"
+        ]
+      }
+    ],
+    "ci": [
+      {
+        "path": ".github/workflows/ci.yml",
+        "commands": [
+          "./scripts/custom-harness.sh"
+        ]
+      }
+    ],
+    "size": {
+      "source_lines": 1,
+      "areas": 1
+    },
+    "layout": "one-file",
+    "units": [
+      {
+        "id": "root",
+        "paths": [
+          "."
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "kind": "dead-path",
+        "path": "docs/architecture.md",
+        "message": "docs/architecture.md links missing path src/legacy/router.ts"
+      },
+      {
+        "kind": "skipped-tests",
+        "path": "test/app.test.ts",
+        "message": "1 skipped or focused test(s) in test/app.test.ts"
+      },
+      {
+        "kind": "owners-unmatched",
+        "path": ".github/CODEOWNERS",
+        "message": "CODEOWNERS pattern /src/nonexistent/ matches no tracked files"
+      },
+      {
+        "kind": "no-test-report",
+        "path": ".github/workflows/ci.yml",
+        "message": "No machine-readable test report configured"
+      }
+    ],
+    "observations": {
+      "reports": []
+    }
+  },
+  "findings": [
+    {
+      "kind": "dead-path",
+      "path": "docs/architecture.md",
+      "message": "docs/architecture.md links missing path src/legacy/router.ts"
+    },
+    {
+      "kind": "skipped-tests",
+      "path": "test/app.test.ts",
+      "message": "1 skipped or focused test(s) in test/app.test.ts"
+    },
+    {
+      "kind": "owners-unmatched",
+      "path": ".github/CODEOWNERS",
+      "message": "CODEOWNERS pattern /src/nonexistent/ matches no tracked files"
+    },
+    {
+      "kind": "no-test-report",
+      "path": ".github/workflows/ci.yml",
+      "message": "No machine-readable test report configured"
+    }
+  ],
+  "assignment": {
+    "schema_version": 1,
+    "inventory": ".tenet/onboard/inventory.json",
+    "skill": "draft-specs",
+    "project_kind": "application",
+    "views": [
+      "vision",
+      "requirements",
+      "design",
+      "experience",
+      "plan"
+    ],
+    "layout": "one-file",
+    "units": [
+      {
+        "id": "root",
+        "paths": [
+          "."
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "question_limit": 10,
+    "output": {
+      "paths": [
+        "tenet/intent.md"
+      ]
+    },
+    "rules": [
+      "no intent from code alone",
+      "every observed or documented statement cites",
+      "never resolve a conflict",
+      "never bless"
+    ]
+  }
+}

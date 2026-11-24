@@ -1,7 +1,15 @@
-# Independent CP-0044 fixtures
+# Independent Conformance Cases
 
-The round 2 reviewer authored the cases listed in the ALG-02, ALG-03, ALG-04 and ALG-14 README tables apart from CP-0044's builder, using main at `1225d8d` as the specification baseline. No CP-0044 implementation supplied their expected results.
+Cases in these folders are written from the specifications alone, before or apart from the packet's builder. A builder may run them as an oracle and may add cases of its own; it must never edit, weaken or delete these inputs, expected results, harness settings or README rows without an approved specification change. If an independent case disagrees with the contract, send it to the reviewer or the Owner.
 
-The builder may add cases. The builder must never change these independent case inputs, expected results or their README entries. If an independent case disagrees with the contract, send it to the reviewer or the Owner for resolution through the governed change process.
+Each case supplies input and an expected projection. A projection compares every field present, exact list membership and order, and exact scalar values; fields it omits are outside that case's assertion. Digest expectations are literal prefixed SHA-256 values over the explicitly normalized UTF-8 content. Git cases use synthetic snapshots. Where a field or rendering is undecided, the suite README says so and links the owning packet's questions; an expected file may be absent until they are answered.
 
-Each case supplies input and an expected JSON projection. A projection compares every field present, exact list membership and order, and exact scalar values. Extra fields omitted by the projection are outside that case's assertion. Digest expectations are literal prefixed SHA-256 values over the explicitly normalized UTF-8 content. Git cases use synthetic snapshots and have no dependency on production records.
+| Folder | Packet and subject | Written by, at | Cases | Spec questions |
+|---|---|---|---|---|
+| [alg-02/](alg-02/README.md), [alg-03/](alg-03/README.md), [alg-04/](alg-04/README.md), [alg-14/](alg-14/README.md) | `CP-0044` — parsing, anchors and flags, citations, touched requirements | round 2 reviewer, `1225d8d` | 46 | [answers-r2.md](../../tenet/packets/CP-0044-spec-ladder/escalations/answers-r2.md) |
+| [check/](check/README.md) | `CP-0009` — `tenet check` structure, front matter, citations, budgets, rules | round 3 reviewer, `1729379` | 8 positive, 6 negative | [proposals-r3.md](../../tenet/packets/CP-0009-tenet-check-structure/escalations/proposals-r3.md) |
+| [alg-10/](alg-10/README.md) | `CP-0045` — `ALG-10` context selection, `--for`, `--query`, `--budget`, MCP `tenet_context` | round 3 reviewer, `1729379` | 8 positive, 5 negative | [proposals-r3.md](../../tenet/packets/CP-0045-agent-context/escalations/proposals-r3.md) |
+| [board/](board/README.md) | `CP-0053` — `tenet board`, `--all`, `--json` | round 3 reviewer, `1729379` | 8 positive, 5 negative | [proposals-r3.md](../../tenet/packets/CP-0053-specification-board/escalations/proposals-r3.md) |
+| [alg-11/](alg-11/README.md) | `CP-0048` — `ALG-11` onboarding inventory, layout, units, findings, `assignment.json` | round 4 spec writer, `9b34628` | 8 positive, 5 negative | [proposals-r4.md](../../tenet/packets/CP-0048-onboarding/escalations/proposals-r4.md) |
+| [card/](card/README.md) | `CP-0051` — test job, recorder, proof-card JSON and rendered Markdown across `CI §10` | round 4 spec writer, `9b34628` | 8 positive, 6 negative | [proposals-r4.md](../../tenet/packets/CP-0051-proof-job-card-and-records-ref/escalations/proposals-r4.md) |
+| [install/](install/README.md) | `CP-0010` — `init`, `upgrade`, `remove`, `doctor` | round 5 reviewer, `18bc39f` | 18 positive, 8 negative | [proposals-r5.md](../../tenet/packets/CP-0010-tenet-init/escalations/proposals-r5.md) |

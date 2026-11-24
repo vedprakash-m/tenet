@@ -1,0 +1,10 @@
+{
+  "servers": {
+    "local": {
+      "command": "node",
+      "args": [
+        "tools/local.js"
+      ]
+    }
+  }
+}

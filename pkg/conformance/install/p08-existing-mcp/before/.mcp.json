@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "search": {
+      "command": "node",
+      "args": [
+        "tools/search.js"
+      ]
+    },
+    "tenet": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@vedprakash-m/tenet@0.0.9",
+        "mcp"
+      ]
+    }
+  }
+}

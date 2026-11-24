@@ -1,0 +1,176 @@
+import assert from "node:assert/strict";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { test } from "node:test";
+import { Ajv2020 } from "ajv/dist/2020.js";
+import { run } from "../../dist/cli.js";
+import { onboard } from "../../dist/onboard/assignment.js";
+import type { OnboardDeps } from "../../dist/onboard/refresh.js";
+import { tmpRepo } from "../helpers/tmpRepo.ts";
+
+const clean = { findings: [], summary: { errors: 0, warnings: 0, advises: 0 } };
+const config = `standard: 0.1.0-alpha.0
+level: observe
+specs:
+  documents:
+    - path: intent.md
+      level: L1
+`;
+
+test("refresh assigns only a changed unit and preserves drafts byte for byte", async (t) => {
+  const repo = await tmpRepo("refresh");
+  t.after(repo.cleanup);
+  await repo.write("api/service.ts", "const api = 1;\n".repeat(2100));
+  await repo.write("cli/main.ts", "const cli = 1;\n".repeat(2100));
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "sources"]);
+  const source = repo.git(["rev-parse", "HEAD"]).trim();
+  const draft = (ref: string) => `---
+tenet:
+  drafted_at_rev: ${ref}
+sections:
+  billing:
+    state: blessed
+  retries:
+    state: rejected
+---
+# Requirements
+R-18 A human edit stays.
+`;
+  await repo.write("tenet/intent.md", draft(source));
+  await repo.write("tenet.yaml", config);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "first draft"]);
+  const draftedAt = repo.git(["rev-parse", "HEAD"]).trim();
+  await repo.write("tenet/intent.md", draft(draftedAt));
+  repo.git(["add", "tenet/intent.md"]);
+  repo.git(["commit", "-qm", "record draft anchor"]);
+  const calls: string[] = [];
+  const deps: OnboardDeps = { check: async (options) => {
+    calls.push(options?.cwd ?? "");
+    return clean;
+  } };
+  const options = { cwd: repo.path, refresh: true, layout: "separate" } as const;
+  const unchanged = await onboard(options, deps);
+  assert.deepEqual(unchanged.assignment.units, []);
+
+  await repo.write("api/service.ts", "const api = 2;\n".repeat(2100));
+  repo.git(["add", "api/service.ts"]);
+  repo.git(["commit", "-qm", "change API"]);
+  const changed = await onboard(options, deps);
+  assert.deepEqual(changed.inventory.units.map(({ id }) => id), ["api", "cli"]);
+  assert.deepEqual(changed.assignment.units.map(({ id }) => id), ["api"]);
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls.map((entry) => path.resolve(entry)), [repo.path, repo.path]);
+  assert.equal(await readFile(path.join(repo.path, "tenet/intent.md"), "utf8"), draft(draftedAt));
+});
+
+test("onboard with an empty commit writes repeatable outputs and reads working policy", async (t) => {
+  const repo = await tmpRepo("empty");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "empty"]);
+  const initial = await onboard({ cwd: repo.path, inventoryOnly: true });
+  assert.equal(initial.inventory.size.source_lines, 0);
+  assert.equal(initial.preflight.dirty_warning, false);
+  const second = await onboard({ cwd: repo.path });
+  assert.deepEqual(second, initial);
+
+  await repo.write("src/service.ts", "export const ready = true;\n");
+  repo.git(["add", "src/service.ts"]);
+  repo.git(["commit", "-qm", "add source"]);
+  await repo.write("tenet.yaml", `${config}onboard:\n  exclude: [src/**]\n`);
+  const result = await onboard({ cwd: repo.path });
+  assert.deepEqual(result.inventory.sources, { files: [], skipped: [{ path: "src/service.ts", reason: "excluded" }] });
+  assert.equal(result.preflight.dirty_warning, true);
+});
+
+test("onboard recognizes Python and Go modules and scans their real tests", async (t) => {
+  const repo = await tmpRepo("languages");
+  t.after(repo.cleanup);
+  const files = {
+    "python/pyproject.toml": "[project]\nname = 'tools'\nversion = '1.0.0'\n",
+    "python/tool.py": "def add(a, b):\n    return a + b\n",
+    "python/tests/test_tool.py": "def test_add():\n    assert True\n",
+    "go/go.mod": "module example.test/tool\n",
+    "go/cmd/tool/main.go": "package main\nfunc main() {}\n",
+    "go/cmd/tool/main_test.go": "package main\nfunc TestTool(t *testing.T) { t.Skip(\"pending\") }\n",
+  };
+  for (const [file, content] of Object.entries(files)) await repo.write(file, content);
+  repo.git(["add", "-A"]);
+  repo.git(["commit", "-qm", "languages"]);
+  const result = await onboard({ cwd: repo.path });
+  assert.equal(result.assignment.project_kind, "cli");
+  assert.deepEqual(result.inventory.modules, [
+    { id: "go", roots: ["go"], languages: ["go"] },
+    { id: "python", roots: ["python"], languages: ["python"] },
+  ]);
+  assert.deepEqual(result.inventory.tests.map(({ runner, cases }) => [runner, cases]), [["go", 1], ["pytest", 1]]);
+  assert.ok(result.findings.some(({ kind }) => kind === "skipped-tests"));
+});
+
+async function cli(args: string[], cwd: string) {
+  let stdout = "";
+  let stderr = "";
+  const code = await run(args, {
+    cwd, checkEnvironment: false,
+    stdout: { write: (piece) => { stdout += piece; } },
+    stderr: { write: (piece) => { stderr += piece; } },
+  });
+  return { code, stdout, stderr };
+}
+
+test("onboard uses the public CLI, emits a schema-valid result, and declares no card flag", async (t) => {
+  const repo = await tmpRepo("onboard-cli");
+  t.after(repo.cleanup);
+  repo.git(["commit", "--allow-empty", "-qm", "empty"]);
+  const success = await cli(["onboard", "--json", "--inventory-only", "--layout", "separate", "--offline"], repo.path);
+  assert.equal(success.code, 0, success.stderr);
+  const envelope = JSON.parse(success.stdout);
+  assert.equal(envelope.command, "onboard");
+  assert.equal(envelope.result.assignment.layout, "separate");
+  const ajv = new Ajv2020({ strict: true });
+  for (const filename of ["inventory.json", "assignment.json", "results/onboard.json"]) {
+    ajv.addSchema(JSON.parse(await readFile(new URL(`../../kit/schemas/${filename}`, import.meta.url), "utf8")));
+  }
+  const conforms = ajv.getSchema("https://vedprakash-m.github.io/tenet/schemas/0.1/results/onboard.json");
+  assert.ok(conforms);
+  assert.equal(conforms(envelope.result), true, JSON.stringify(conforms.errors));
+  const human = await cli(["onboard", "--inventory-only"], repo.path);
+  assert.match(human.stdout, /Drafting sends project content/);
+  assert.match(human.stdout, /First findings: No machine-readable test report configured/);
+  assert.equal((await cli(["onboard", "--card"], repo.path)).code, 2);
+  assert.equal((await cli(["onboard", "--layout", "invalid"], repo.path)).code, 2);
+});
+
+test("onboard refuses directories outside Git and repositories with no HEAD", async (t) => {
+  const nonGit = await mkdtemp(path.join(os.tmpdir(), "tenet-onboard-"));
+  t.after(() => rm(nonGit, { recursive: true, force: true }));
+  const repo = await tmpRepo("unborn");
+  t.after(repo.cleanup);
+  for (const [cwd, code] of [[nonGit, "TN-ENV-NOT-GIT"], [repo.path, "TN-ENV-NO-COMMIT"]] as const) {
+    const result = await cli(["onboard", "--json"], cwd);
+    assert.equal(result.code, 3);
+    assert.equal(JSON.parse(result.stdout).errors[0].code, code);
+  }
+});
+
+test("generated and binary classifications precede oversize without reading excluded test declarations", async (t) => {
+  const repo = await tmpRepo("skip-precedence");
+  t.after(repo.cleanup);
+  await repo.write("large.ts", `${"x".repeat(1_100_000)} @generated\n`);
+  await repo.write("binary.ts", `\0${"x".repeat(1_100_000)}`);
+  await repo.write("secret.test.ts", 'test.skip("secret", () => {});\n');
+  await repo.write("large.txt", "x".repeat(1_100_000));
+  repo.git(["add", "-A", "-f"]);
+  repo.git(["commit", "-qm", "mixed paths"]);
+  const result = await onboard({ cwd: repo.path });
+  assert.deepEqual(result.inventory.sources.skipped, [
+    { path: "binary.ts", reason: "binary" },
+    { path: "large.ts", reason: "generated" },
+    { path: "large.txt", reason: "oversize" },
+    { path: "secret.test.ts", reason: "credentials" },
+  ]);
+  assert.deepEqual(result.inventory.tests, []);
+  assert.equal(result.findings.some(({ kind }) => kind === "skipped-tests"), false);
+});

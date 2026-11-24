@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-11-23T10:00:00Z",
+  "read": {},
+  "spec_debt": {
+    "$assert": "contains",
+    "value": [
+      {
+        "kind": "broken-citation",
+        "path": "tenet/intent.md"
+      }
+    ]
+  }
+}

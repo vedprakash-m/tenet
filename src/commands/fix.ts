@@ -1,8 +1,8 @@
-import { registerCommand } from "../core/commands.js";
+import type { CommandSpec } from "../core/commands.js";
 import { fail } from "../core/output.js";
 import { fix } from "../specs/fix.js";
 
-registerCommand({
+export const fixCommand: CommandSpec = {
   name: "fix",
   description: "Repair mechanical specification problems",
   usage: "tenet fix [--dry-run]",
@@ -18,4 +18,4 @@ registerCommand({
       }),
     };
   },
-});
+};

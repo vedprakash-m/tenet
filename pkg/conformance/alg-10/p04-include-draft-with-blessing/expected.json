@@ -1,0 +1,17 @@
+{
+  "blessed": [
+    {
+      "id": "R-1",
+      "section": "requirements",
+      "text": "Retry once.",
+      "owner": "payments",
+      "flags": []
+    }
+  ],
+  "drafts": {
+    "$assert": "size",
+    "value": 1
+  },
+  "omitted": [],
+  "truncated": false
+}

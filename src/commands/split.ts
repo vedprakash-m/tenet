@@ -1,8 +1,8 @@
-import { registerCommand } from "../core/commands.js";
+import type { CommandSpec } from "../core/commands.js";
 import { fail } from "../core/output.js";
 import { split } from "../specs/split.js";
 
-registerCommand({
+export const splitCommand: CommandSpec = {
   name: "split",
   description: "Move a specification section into a part",
   usage: "tenet split <document> <section>",
@@ -17,4 +17,4 @@ registerCommand({
     }
     return { result: await split(document, section, context.cwd) };
   },
-});
+};

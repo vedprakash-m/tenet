@@ -1,7 +1,7 @@
-import { registerCommand } from "../core/commands.js";
+import type { CommandSpec } from "../core/commands.js";
 import { check } from "../specs/check.js";
 
-registerCommand({
+export const checkCommand: CommandSpec = {
   name: "check",
   description: "Check specification structure and integrity",
   usage: "tenet check [paths...] [--pack [path]] [--ci --base <ref>]",
@@ -26,4 +26,4 @@ registerCommand({
     const value = await check(options);
     return { result: value, findings: value.findings };
   },
-});
+};

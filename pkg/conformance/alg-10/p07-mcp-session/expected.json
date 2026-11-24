@@ -1,0 +1,60 @@
+{
+  "responses": [
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "protocolVersion": "2025-06-18",
+        "capabilities": {
+          "tools": {
+            "listChanged": false
+          }
+        },
+        "serverInfo": {
+          "name": "tenet"
+        }
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "result": {
+        "content": [
+          {
+            "type": "text"
+          }
+        ],
+        "structuredContent": {
+          "blessed": [
+            {
+              "id": "R-9",
+              "text": "Keep keys off disk."
+            }
+          ],
+          "omitted": [
+            "R-1"
+          ],
+          "truncated": true
+        },
+        "isError": false
+      }
+    },
+    {
+      "jsonrpc": "2.0",
+      "id": 3,
+      "result": {}
+    }
+  ],
+  "alsoContext": {
+    "blessed": [
+      {
+        "id": "R-9",
+        "text": "Keep keys off disk."
+      }
+    ],
+    "omitted": [
+      "R-1"
+    ],
+    "truncated": true
+  }
+}

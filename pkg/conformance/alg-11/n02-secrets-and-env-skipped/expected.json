@@ -1,0 +1,153 @@
+{
+  "ok": true,
+  "exitCode": 0,
+  "preflight": {
+    "revision": "23456789abcdef0123456789abcdef0123456789",
+    "read_count": 2,
+    "skipped_count": 7,
+    "dirty_warning": false
+  },
+  "inventory": {
+    "schema_version": 1,
+    "revision": "23456789abcdef0123456789abcdef0123456789",
+    "sources": {
+      "files": [
+        {
+          "path": "src/app.ts",
+          "kind": "source",
+          "sha256": "20bd8129e0404ac58a40fcd75bc86a601c915734234e4e1f2b084e8304918594",
+          "lines": 1
+        },
+        {
+          "path": "tenet.yaml",
+          "kind": "config",
+          "sha256": "bf2e6da3dcd662003bad47b1988163b36f58b16b76795cfba63256fc4359d747",
+          "lines": 26
+        }
+      ],
+      "skipped": [
+        {
+          "path": ".env",
+          "reason": "env"
+        },
+        {
+          "path": ".env.production",
+          "reason": "env"
+        },
+        {
+          "path": "certs/private.key",
+          "reason": "credentials"
+        },
+        {
+          "path": "certs/server.pem",
+          "reason": "credentials"
+        },
+        {
+          "path": "config/jwt_secret.txt",
+          "reason": "credentials"
+        },
+        {
+          "path": "config/service-credentials.json",
+          "reason": "credentials"
+        },
+        {
+          "path": "keys/id_ed25519",
+          "reason": "credentials"
+        }
+      ]
+    },
+    "modules": [
+      {
+        "id": "src",
+        "roots": [
+          "src"
+        ],
+        "languages": [
+          "typescript"
+        ]
+      }
+    ],
+    "tests": [],
+    "docs": [],
+    "owners": [],
+    "ci": [],
+    "size": {
+      "source_lines": 1,
+      "areas": 0
+    },
+    "layout": "one-file",
+    "units": [
+      {
+        "id": "root",
+        "paths": [
+          "."
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "kind": "no-test-report",
+        "path": "tenet.yaml",
+        "message": "No machine-readable test report configured"
+      }
+    ],
+    "observations": {
+      "reports": []
+    }
+  },
+  "findings": [
+    {
+      "kind": "no-test-report",
+      "path": "tenet.yaml",
+      "message": "No machine-readable test report configured"
+    }
+  ],
+  "assignment": {
+    "schema_version": 1,
+    "inventory": ".tenet/onboard/inventory.json",
+    "skill": "draft-specs",
+    "project_kind": "application",
+    "views": [
+      "vision",
+      "requirements",
+      "design",
+      "experience",
+      "plan"
+    ],
+    "layout": "one-file",
+    "units": [
+      {
+        "id": "root",
+        "paths": [
+          "."
+        ],
+        "views": [
+          "vision",
+          "requirements",
+          "design",
+          "experience",
+          "plan"
+        ]
+      }
+    ],
+    "question_limit": 10,
+    "output": {
+      "paths": [
+        "tenet/intent.md"
+      ]
+    },
+    "rules": [
+      "no intent from code alone",
+      "every observed or documented statement cites",
+      "never resolve a conflict",
+      "never bless"
+    ]
+  }
+}

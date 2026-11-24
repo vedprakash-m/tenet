@@ -1,0 +1,10 @@
+name: Checkout CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - id: tests
+        run: npx vitest run --reporter=junit --outputFile.junit=artifacts/unit.xml
