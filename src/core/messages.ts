@@ -273,3 +273,20 @@ export function message(code: string, vars: MessageVars = {}): DiagnosticText {
   });
   return { message: substitute(template.message), fix: substitute(template.fix) };
 }
+
+export const onboardText = {
+  description: "Inspect your project and prepare a specification drafting assignment.",
+  read: "Will read: code, configuration, tests, docs, CI, owners",
+  skip: "Will skip: .env*, credentials, vendored, generated, excluded, binary, and oversized files",
+  drafting: "Drafting sends project content to your agent and its model provider.",
+  readCounts: (revision: string, read: number, skipped: number) => `Read ${read} files at ${revision} and skipped ${skipped}.`,
+  firstFindings: (findings: string) => `First findings: ${findings}`,
+  assignment: "Drafting assignment: .tenet/onboard/assignment.json",
+  deadPath: (file: string, target: string) => `${file} links missing path ${target}`,
+  skippedTests: (count: number, file: string) => `${count} skipped or focused test(s) in ${file}`,
+  ownersUnmatched: (pattern: string) => `CODEOWNERS pattern ${pattern} matches no tracked files`,
+  noTestReport: "No machine-readable test report configured",
+  invalidLayout: "choose one-file or separate for --layout",
+  unexpectedPositionals: "unexpected positional arguments",
+  refreshPending: "CP-0009 check is not wired for onboarding refresh",
+} as const;
