@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cp, mkdir, mkdtemp, readFile, readlink, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { cp, lstat, mkdir, mkdtemp, readFile, readlink, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
@@ -593,6 +593,24 @@ test("remove preserves pre-existing empty ancestor objects during JSON key resto
   await init(await optionsForStep(setup, 0));
   await remove(await optionsForStep(setup, 0));
   assert.equal(await readFile(path.join(setup.repo.path, ".mcp.json"), "utf8"), original);
+});
+
+test("remove deletes created directories but keeps pre-existing empty directories", async (t) => {
+  const created = await makeCase("p01-empty");
+  const existing = await makeCase("p01-empty");
+  t.after(async () => {
+    await dispose(created);
+    await dispose(existing);
+  });
+  await mkdir(path.join(existing.repo.path, "tenet"));
+
+  await init(created.options);
+  await remove(created.options);
+  await assert.rejects(lstat(path.join(created.repo.path, "tenet")), { code: "ENOENT" });
+
+  await init(existing.options);
+  await remove(existing.options);
+  assert.equal((await lstat(path.join(existing.repo.path, "tenet"))).isDirectory(), true);
 });
 
 test("p17 loader upgrades owned pins without changing policy", async (t) => {

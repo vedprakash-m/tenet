@@ -1,4 +1,4 @@
-import { readFile, readdir, rm } from "node:fs/promises";
+import { lstat, readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
@@ -52,6 +52,28 @@ export type ApplyPlanOptions = {
   };
   localProfileRoot?: string;
 };
+
+async function createdDirectories(cwd: string, paths: string[]): Promise<string[]> {
+  const candidates = new Set<string>();
+  for (const itemPath of paths) {
+    let directory = path.posix.dirname(itemPath.replaceAll("\\", "/"));
+    while (directory !== "." && directory !== "/") {
+      candidates.add(directory);
+      directory = path.posix.dirname(directory);
+    }
+  }
+  const created: string[] = [];
+  for (const directory of [...candidates].sort(compareUtf16)) {
+    const filename = await confine(directory, cwd).catch(() => pathError(directory));
+    try {
+      await lstat(filename);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") created.push(directory);
+      else throw error;
+    }
+  }
+  return created;
+}
 
 type FileState = {
   exists: boolean;
@@ -752,6 +774,14 @@ export async function planWriteSet(
     created: [],
     blocks: [],
     keys: [],
+    "x-created-directories": [...new Set([
+      ...(priorManifest?.["x-created-directories"] ?? []),
+      ...await createdDirectories(cwd, [
+      ...plan.created,
+      ...plan.blocks.map((block) => block.path),
+      ...plan.keys.map((key) => key.path),
+      ]),
+    ])].sort(compareUtf16),
   };
   let writeIndex = 0;
   const resolvedProfileRoots = {
