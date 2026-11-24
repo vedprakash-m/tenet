@@ -1,6 +1,7 @@
 import { readFile, readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 import { parseDocument, stringify } from "yaml";
 import { confine, writeAtomic } from "../core/fs.js";
 import { message } from "../core/messages.js";
@@ -15,6 +16,7 @@ import {
   pendingJson,
   pointerValue,
   replaceBlock,
+  setJsonPointerBytes,
   setPointer,
   sha256Bytes,
 } from "./manifest.js";
@@ -814,8 +816,14 @@ export async function planWriteSet(
       throw new Error(`No block content was planned for ${block.path}.`);
     }
     const previousMetadata = reusedBlock(priorManifest, block.path);
+    const priorCreated = priorManifest?.created.find((item) => item.path === block.path);
     const currentIsInstalled = previousMetadata !== undefined &&
       source === managed.target;
+    if (state.text === null || priorCreated) {
+      const created = { path: block.path, sha256: sha256Bytes(Buffer.from(managed.target, "utf8")) };
+      manifest.created = manifest.created.filter((item) => item.path !== block.path);
+      manifest.created.push(created);
+    }
     manifest.blocks.push({
       path: block.path,
       kind: block.kind,
@@ -839,11 +847,14 @@ export async function planWriteSet(
     const previous = pointerValue(root, key.pointer);
     const installed = mcpValue(releaseInfo.version, releaseInfo.package, false);
     setPointer(root, key.pointer, installed);
-    const content = jsonFile(root);
+    const content = state.text === null
+      ? jsonFile(root)
+      : setJsonPointerBytes(state.text, key.pointer, installed);
     const prior = reusedKey(priorManifest, key.path, key.pointer);
     const installedAlready = prior !== undefined &&
       state.text !== null &&
-      JSON.stringify(previous) === JSON.stringify(installed);
+      (JSON.stringify(previous) === JSON.stringify(prior.installed) ||
+        JSON.stringify(previous) === JSON.stringify(installed));
     const metadata: ManifestKey = {
       path: key.path,
       pointer: key.pointer,
@@ -854,14 +865,16 @@ export async function planWriteSet(
         : state.text !== null ? { previous_raw: state.text } : {}),
     };
     manifest.keys.push(metadata);
+    const contentUnchanged = state.text !== null && isDeepStrictEqual(previous, installed);
+    const finalContent = contentUnchanged ? state.text ?? content : content;
     writes.push({
       id: `key:${String(++writeIndex).padStart(3, "0")}:${key.path}:${key.pointer}`,
       kind: "key",
       path: key.path,
       pointer: key.pointer,
       before_sha256: state.sha256,
-      after_sha256: sha256Bytes(Buffer.from(content, "utf8")),
-      content,
+      after_sha256: sha256Bytes(Buffer.from(finalContent, "utf8")),
+      content: finalContent,
     });
   }
 
@@ -869,16 +882,27 @@ export async function planWriteSet(
     const filename = await validateLocalPath(key.path, options.environment?.localProfileRoot);
     const { state } = await fileForWrite(cwd, filename, true);
     const root = state.text === null ? {} : decodeJson(state.text);
-    setPointer(root, key.pointer, mcpValue(releaseInfo.version, releaseInfo.package, true));
-    const content = jsonFile(root);
+    const previous = pointerValue(root, key.pointer);
+    const installed = mcpValue(releaseInfo.version, releaseInfo.package, true);
+    setPointer(root, key.pointer, installed);
+    const content = state.text === null
+      ? jsonFile(root)
+      : setJsonPointerBytes(
+          state.text,
+          key.pointer,
+          installed,
+        );
+    const finalContent = state.text !== null && isDeepStrictEqual(previous, installed)
+      ? state.text
+      : content;
     writes.push({
       id: `local_key:${String(++writeIndex).padStart(3, "0")}:${key.host}:${key.path}:${key.pointer}`,
       kind: "local_key",
       path: filename,
       pointer: key.pointer,
       before_sha256: state.sha256,
-      after_sha256: sha256Bytes(Buffer.from(content, "utf8")),
-      content,
+      after_sha256: sha256Bytes(Buffer.from(finalContent, "utf8")),
+      content: finalContent,
     });
   }
 
@@ -986,6 +1010,7 @@ export async function applyPlan(
     version: plan.version,
     writes: plan.writes,
     manifest: plan.manifest,
+    ...(plan.upgrade ? { upgrade: structuredClone(plan.upgrade) } : {}),
   };
   const pendingPath = await confine(".tenet/manifest.pending.json", plan.cwd);
   const currentPending = await fileState(pendingPath);
@@ -1031,9 +1056,8 @@ export async function resumePendingPlan(
   options: ApplyPlanOptions = {},
 ): Promise<InitResult | null> {
   const pendingPath = await confine(".tenet/manifest.pending.json", cwd);
-  const state = await fileState(pendingPath);
-  if (!state.text) return null;
-  const pending = JSON.parse(state.text) as PendingManifest;
+  const pending = await readPendingPlan(cwd, options.localProfileRoot);
+  if (!pending) return null;
   const fallback = preflight.plan ?? {
     created: [],
     blocks: [],
@@ -1057,8 +1081,10 @@ export async function resumePendingPlan(
     },
     writes: pending.writes,
     manifest: pending.manifest,
+    ...(pending.upgrade ? { upgrade: pending.upgrade } : {}),
     ...(options.localProfileRoot ? { localProfileRoot: options.localProfileRoot } : {}),
   };
+  for (const write of pending.writes) await confinedWritePath(write, plan, pending);
   const wrote = emptyWrote();
   for (let index = 0; index < pending.writes.length; index += 1) {
     const write = pending.writes[index];
@@ -1078,4 +1104,44 @@ export async function resumePendingPlan(
   await rm(pendingPath, { force: true });
   sortWrote(wrote);
   return { plan: plan.plan, wrote, findings: [] };
+}
+
+export async function readPendingPlan(
+  cwd: string,
+  localProfileRoot?: string,
+): Promise<PendingManifest | null> {
+  const pendingPath = await confine(".tenet/manifest.pending.json", cwd);
+  const state = await fileState(pendingPath);
+  if (!state.text) return null;
+  const pending = JSON.parse(state.text) as PendingManifest;
+  const placeholder: WriteSet = {
+    cwd,
+    version: pending.version,
+    plan: {
+      created: [],
+      blocks: [],
+      keys: [],
+      local_keys: [],
+      hosts: [],
+      ci_mode: "none",
+      ci_reason: "",
+    },
+    writes: pending.writes,
+    manifest: pending.manifest,
+    ...(pending.upgrade ? { upgrade: pending.upgrade } : {}),
+    ...(localProfileRoot ? { localProfileRoot } : {}),
+  };
+  for (const item of pending.manifest.created) {
+    await confine(item.path, cwd).catch(() => pathError(item.path));
+  }
+  for (const item of pending.manifest.blocks) {
+    await confine(item.path, cwd).catch(() => pathError(item.path));
+  }
+  for (const item of pending.manifest.keys) {
+    await confine(item.path, cwd).catch(() => pathError(item.path));
+  }
+  for (const write of pending.writes) {
+    await confinedWritePath(write, placeholder, pending);
+  }
+  return pending;
 }

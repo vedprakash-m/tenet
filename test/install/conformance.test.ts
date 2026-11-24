@@ -25,7 +25,7 @@ const compile = spawnSync(process.execPath, [
 ], { encoding: "utf8", shell: false, windowsHide: true });
 assert.equal(compile.status, 0, compile.stderr || compile.stdout);
 
-const { init, planWriteSet, preflight } = await import(
+const { init, planWriteSet, preflight, remove, upgrade } = await import(
   pathToFileURL(path.join(output, "install", "index.js")).href
 );
 
@@ -46,6 +46,7 @@ type CaseArguments = {
   outsideFiles?: Record<string, string>;
   steps: Array<{
     run: string[];
+    installedVersion?: string;
     answers?: Record<string, unknown>;
     interrupt?: {
       at: string;
@@ -166,6 +167,36 @@ async function tree(root: string): Promise<Record<string, string>> {
   }
   await visit(root);
   return output;
+}
+
+async function optionsForStep(setup: CaseSetup, index: number): Promise<Record<string, unknown>> {
+  const step = setup.args.steps[index];
+  if (!step) throw new Error(`Missing step ${index + 1}.`);
+  const environment = {
+    ...(setup.options.environment as Record<string, unknown>),
+    ...(step.installedVersion
+      ? { installedVersion: step.installedVersion }
+      : {}),
+  };
+  return {
+    ...setup.options,
+    yes: step.run.includes("--yes"),
+    vendor: step.run.includes("--vendor"),
+    force: step.run.includes("--force"),
+    answers: step.answers ?? {},
+    environment,
+    check: async () => ({
+      findings: [],
+      summary: { errors: 0, warnings: 0, advises: 0 },
+    }),
+  };
+}
+
+async function applyStepEdit(setup: CaseSetup, index: number): Promise<void> {
+  const edit = setup.args.steps[index]?.beforeRun?.write;
+  for (const [relative, contents] of Object.entries(edit ?? {})) {
+    await setup.repo.write(relative, contents);
+  }
 }
 
 function findingCode(error: unknown): string | undefined {
@@ -316,6 +347,224 @@ test("p11 interruption checkpoints replay to the clean tree", async (t) => {
   }
 });
 
+test("p09 loader runs init, repeat, upgrade and byte-exact remove", async (t) => {
+  const setup = await makeCase("p09-init-repeat-upgrade-remove");
+  t.after(() => dispose(setup));
+  await init(await optionsForStep(setup, 0));
+  const installed = await tree(setup.repo.path);
+  await init(await optionsForStep(setup, 1));
+  assert.deepEqual(await tree(setup.repo.path), installed);
+  const upgraded = await upgrade(await optionsForStep(setup, 2));
+  assert.deepEqual(
+    upgraded.changed,
+    [...upgraded.changed].sort((left, right) =>
+      left.path < right.path ? -1 : left.path > right.path ? 1 : 0),
+  );
+  const result = await remove(await optionsForStep(setup, 3));
+  assert.equal(result.reminder,
+    "If you made the Tenet check required in branch protection or rulesets, remove that rule in your forge settings.");
+  assert.deepEqual(await tree(setup.repo.path), await tree(
+    path.join(casesRoot, "p09-init-repeat-upgrade-remove", "expected", "04-remove", "tree"),
+  ));
+});
+
+test("p10 loader keeps user-edited created files and owned keys", async (t) => {
+  const setup = await makeCase("p10-remove-keeps-user-edits");
+  t.after(() => dispose(setup));
+  await init(await optionsForStep(setup, 0));
+  await applyStepEdit(setup, 1);
+  const result = await remove(await optionsForStep(setup, 1));
+  assert.deepEqual(result.kept, [
+    { path: ".mcp.json", reason: "edited-by-you" },
+    { path: "tenet", reason: "spec-or-records" },
+    { path: "tenet.yaml", reason: "edited-by-you" },
+  ]);
+  assert.deepEqual(await tree(setup.repo.path), await tree(
+    path.join(casesRoot, "p10-remove-keeps-user-edits", "expected", "02-remove", "tree"),
+  ));
+});
+
+test("p12 loader upgrades shared and Windows local MCP pins", async (t) => {
+  const setup = await makeCase("p12-windows-local-host");
+  t.after(() => dispose(setup));
+  await init(await optionsForStep(setup, 0));
+  await upgrade(await optionsForStep(setup, 1));
+  for (const relative of [".mcp.json", ".vscode/mcp.json"]) {
+    const source = await readFile(path.join(setup.repo.path, relative), "utf8");
+    assert.match(source, /@vedprakash-m\/tenet@0\.1\.0-alpha\.1/);
+  }
+  const localRoot = (setup.options.environment as { localProfileRoot: string }).localProfileRoot;
+  const local = JSON.parse(await readFile(
+    path.join(localRoot, "Code", "User", "mcp.json"),
+    "utf8",
+  )) as { servers: { tenet: { args: string[] } } };
+  assert.ok(local.servers.tenet.args.includes("@vedprakash-m/tenet@0.1.0-alpha.1"));
+  assert.equal(local.servers.tenet.args[0], "/c");
+});
+
+test("p17 loader upgrades owned pins without changing policy", async (t) => {
+  const setup = await makeCase("p17-upgrade-pins-and-policy");
+  t.after(() => dispose(setup));
+  await init(await optionsForStep(setup, 0));
+  await applyStepEdit(setup, 1);
+  const policy = await readFile(path.join(setup.repo.path, "tenet.yaml"), "utf8");
+  await upgrade(await optionsForStep(setup, 1));
+  assert.equal(await readFile(path.join(setup.repo.path, "tenet.yaml"), "utf8"), policy);
+  for (const relative of [".mcp.json", ".cursor/mcp.json"]) {
+    const source = await readFile(path.join(setup.repo.path, relative), "utf8");
+    assert.match(source, /@vedprakash-m\/tenet@0\.1\.0-alpha\.1/);
+  }
+});
+
+test("p17 lexical JSON formatting survives owned pin replacement", async (t) => {
+  const setup = await makeCase("p17-upgrade-pins-and-policy");
+  t.after(() => dispose(setup));
+  await init(await optionsForStep(setup, 0));
+  const lexical = [
+    "{\r\n",
+    "\t\"mcpServers\": {\r\n",
+    "\t\t\"search\"  :  { \"command\" : \"node\", \"args\" : [\"search.js\"] },\r\n",
+    "\t\t\"tenet\": {\"command\":\"npx\",\"args\":[\"-y\",\"@vedprakash-m/tenet@0.1.0-alpha.0\",\"mcp\"]}\r\n",
+    "\t}\r\n",
+    "}\r\n",
+  ].join("");
+  await setup.repo.write(".mcp.json", lexical);
+  await upgrade(await optionsForStep(setup, 1));
+  assert.equal(
+    await readFile(path.join(setup.repo.path, ".mcp.json"), "utf8"),
+    lexical.replace("@vedprakash-m/tenet@0.1.0-alpha.0", "@vedprakash-m/tenet@0.1.0-alpha.1"),
+  );
+});
+
+test("remove deletes a newly owned MCP key without rewriting sibling JSON", async (t) => {
+  const setup = await makeCase("p10-remove-keeps-user-edits");
+  t.after(() => dispose(setup));
+  await init(await optionsForStep(setup, 0));
+  const lexical = [
+    "{\r\n",
+    "  \"mcpServers\": { \"tenet\":",
+    " {\"command\":\"npx\",\"args\":[\"-y\",\"@vedprakash-m/tenet@0.1.0-alpha.0\",\"mcp\"]},",
+    " \"owner\" : { \"command\" : \"node\" } }\r\n",
+    "}\r\n",
+  ].join("");
+  await setup.repo.write(".mcp.json", lexical);
+  const manifestPath = path.join(setup.repo.path, ".tenet", "manifest.json");
+  const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+    keys: Array<{ path: string; previous: unknown; previous_raw?: string }>;
+  };
+  const key = manifest.keys.find((item) => item.path === ".mcp.json");
+  assert.ok(key);
+  key.previous = null;
+  delete key.previous_raw;
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  await remove(await optionsForStep(setup, 1));
+  assert.equal(
+    await readFile(path.join(setup.repo.path, ".mcp.json"), "utf8"),
+    "{\r\n  \"mcpServers\": {  \"owner\" : { \"command\" : \"node\" } }\r\n}\r\n",
+  );
+});
+
+test("upgrade resumes from the original manifest and excludes pending bookkeeping", async (t) => {
+  const setup = await makeCase("p12-windows-local-host");
+  t.after(() => dispose(setup));
+  await init(await optionsForStep(setup, 0));
+  const options = await optionsForStep(setup, 1);
+  await assert.rejects(
+    upgrade({ ...options, fault: { after: "pending" } }),
+    (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+  );
+  const pending = await readFile(
+    path.join(setup.repo.path, ".tenet", "manifest.pending.json"),
+    "utf8",
+  );
+  assert.match(pending, /0\.1\.0-alpha\.1/);
+  const resumed = await upgrade(options);
+  assert.equal(resumed.from, "0.1.0-alpha.0");
+  assert.equal(resumed.to, "0.1.0-alpha.1");
+  assert.ok(resumed.changed.every((item) => item.path !== ".tenet/manifest.pending.json"));
+});
+
+test("upgrade resume returns exact uninterrupted rows after pending save", async (t) => {
+  const clean = await makeCase("p17-upgrade-pins-and-policy");
+  const interrupted = await makeCase("p17-upgrade-pins-and-policy");
+  t.after(async () => {
+    await dispose(clean);
+    await dispose(interrupted);
+  });
+  for (const setup of [clean, interrupted]) {
+    await init(await optionsForStep(setup, 0));
+    await applyStepEdit(setup, 1);
+    const owned = JSON.parse(await readFile(
+      path.join(setup.repo.path, ".mcp.json"),
+      "utf8",
+    )) as { mcpServers: Record<string, unknown> };
+    owned.mcpServers.tenet = { command: "node", args: ["owner-tenet.js"] };
+    await setup.repo.write(".mcp.json", `${JSON.stringify(owned, null, 2)}\n`);
+  }
+  const uninterrupted = await upgrade(await optionsForStep(clean, 1));
+  assert.ok(uninterrupted.changed.some((row) =>
+    row.path === "tenet.yaml" && row.action === "kept"));
+  assert.ok(uninterrupted.changed.some((row) =>
+    row.path === ".mcp.json" && row.action === "kept"));
+  const options = await optionsForStep(interrupted, 1);
+  await assert.rejects(
+    upgrade({ ...options, fault: { after: "pending" } }),
+    (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+  );
+  const pending = JSON.parse(await readFile(
+    path.join(interrupted.repo.path, ".tenet", "manifest.pending.json"),
+    "utf8",
+  )) as { upgrade?: unknown };
+  assert.deepEqual(pending.upgrade, {
+    from: uninterrupted.from,
+    to: uninterrupted.to,
+    changed: uninterrupted.changed,
+  });
+  assert.deepEqual(await upgrade(options), uninterrupted);
+});
+
+test("upgrade resume returns exact uninterrupted rows after a write", async (t) => {
+  const clean = await makeCase("p17-upgrade-pins-and-policy");
+  const interrupted = await makeCase("p17-upgrade-pins-and-policy");
+  t.after(async () => {
+    await dispose(clean);
+    await dispose(interrupted);
+  });
+  for (const setup of [clean, interrupted]) {
+    await init(await optionsForStep(setup, 0));
+    await applyStepEdit(setup, 1);
+  }
+  const uninterrupted = await upgrade(await optionsForStep(clean, 1));
+  const options = await optionsForStep(interrupted, 1);
+  await assert.rejects(
+    upgrade({ ...options, fault: { after: 1 } }),
+    (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+  );
+  assert.deepEqual(await upgrade(options), uninterrupted);
+});
+
+test("resume confines local paths before replay mutation", async (t) => {
+  const setup = await makeCase("p12-windows-local-host");
+  t.after(() => dispose(setup));
+  await init(await optionsForStep(setup, 0));
+  const options = await optionsForStep(setup, 1);
+  await assert.rejects(
+    upgrade({ ...options, fault: { after: "pending" } }),
+    (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+  );
+  const pendingPath = path.join(setup.repo.path, ".tenet", "manifest.pending.json");
+  const pending = JSON.parse(await readFile(pendingPath, "utf8")) as {
+    writes: Array<{ kind: string; path: string }>;
+  };
+  const local = pending.writes.find((write) => write.kind === "local_key");
+  assert.ok(local);
+  local.path = path.join(setup.sandbox, "outside-local.json");
+  await writeFile(pendingPath, `${JSON.stringify(pending, null, 2)}\n`);
+  const before = await tree(setup.repo.path);
+  await assert.rejects(upgrade(options), (error: unknown) => findingCode(error) === "TN-PATH-ESCAPE");
+  assert.deepEqual(await tree(setup.repo.path), before);
+});
+
 test("n04 confined planning rejects an outside symlink before any write", async (t) => {
   const setup = await makeCase("n04-init-symlink-outside");
   t.after(() => dispose(setup));
@@ -371,6 +620,41 @@ test("n05 refuses an unmanaged created workflow without leaving a pending plan",
   t.after(() => dispose(setup));
   const before = await tree(setup.repo.path);
   await assert.rejects(init(setup.options), (error: unknown) => findingCode(error) === "TN-INIT-EXISTS");
+  assert.deepEqual(await tree(setup.repo.path), before);
+});
+
+test("n03 remove rejects a recorded parent path before every write", async (t) => {
+  const setup = await makeCase("n03-remove-recorded-parent-path");
+  t.after(() => dispose(setup));
+  const before = await tree(setup.repo.path);
+  await assert.rejects(remove(setup.options), (error: unknown) => findingCode(error) === "TN-PATH-ESCAPE");
+  assert.deepEqual(await tree(setup.repo.path), before);
+  assert.equal(await readFile(path.join(setup.sandbox, "outside-sentinel.txt"), "utf8"),
+    "Keep this fixture sentinel.\n");
+});
+
+test("resume validates every pending path before applying an earlier write", async (t) => {
+  const setup = await makeCase("p11-interrupted-install-resumes");
+  t.after(() => dispose(setup));
+  await assert.rejects(
+    init({ ...setup.options, fault: { after: "pending" } }),
+    (error: unknown) => (error as { code?: string }).code === "INSTALL_INTERRUPTED",
+  );
+  const pendingPath = path.join(setup.repo.path, ".tenet", "manifest.pending.json");
+  const pending = JSON.parse(await readFile(pendingPath, "utf8")) as {
+    writes: Array<Record<string, unknown>>;
+  };
+  pending.writes.push({
+    id: "escape",
+    kind: "file",
+    path: "../outside.txt",
+    before_sha256: null,
+    after_sha256: "a".repeat(64),
+    content: "outside\n",
+  });
+  await writeFile(pendingPath, `${JSON.stringify(pending, null, 2)}\n`);
+  const before = await tree(setup.repo.path);
+  await assert.rejects(init(setup.options), (error: unknown) => findingCode(error) === "TN-PATH-ESCAPE");
   assert.deepEqual(await tree(setup.repo.path), before);
 });
 

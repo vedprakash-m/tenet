@@ -1,4 +1,5 @@
 import type { Finding } from "../core/output.js";
+import type { CheckResult } from "../specs/check.js";
 
 export type HostCapability = "skills+mcp" | "mcp" | "instructions";
 export type ProjectKind = "service" | "library" | "data" | "infrastructure" | "ml" | "other";
@@ -203,11 +204,18 @@ export type PendingWrite = {
   content?: string;
 };
 
+export type PendingUpgrade = {
+  from: string;
+  to: string;
+  changed: UpgradeChanged[];
+};
+
 export type PendingManifest = {
   schema_version: 1;
   version: string;
   writes: PendingWrite[];
   manifest: InstallManifest;
+  upgrade?: PendingUpgrade;
 };
 
 export type WriteSet = {
@@ -217,6 +225,7 @@ export type WriteSet = {
   writes: PendingWrite[];
   manifest: InstallManifest;
   localProfileRoot?: string;
+  upgrade?: PendingUpgrade;
 };
 
 export type InitWrote = {
@@ -231,4 +240,38 @@ export type InitResult = {
   wrote: InitWrote;
   findings: InstallFinding[];
   cancelled?: boolean;
+};
+
+export type UpgradeChanged = {
+  path: string;
+  action: "created" | "replaced" | "kept";
+};
+
+export type UpgradeOptions = InitOptions & {
+  check?: (options: { cwd: string; installedVersion: string }) =>
+    CheckResult | Promise<CheckResult>;
+};
+
+export type UpgradeResult = {
+  from: string;
+  to: string;
+  changed: UpgradeChanged[];
+};
+
+export type RemoveOptions = PreflightOptions;
+
+export type RemoveKept = {
+  path: string;
+  reason: "edited-by-you" | "spec-or-records";
+};
+
+export type RemoveRemoved = {
+  path: string;
+  kind: "file" | "block" | "key";
+};
+
+export type RemoveResult = {
+  removed: RemoveRemoved[];
+  kept: RemoveKept[];
+  reminder: string | null;
 };

@@ -1,5 +1,7 @@
 export { HOST_DESCRIPTORS, compareUtf16, detectHosts, hostDescriptors } from "./hosts.js";
 export { init } from "./init.js";
+export { remove } from "./remove.js";
+export { upgrade } from "./upgrade.js";
 export { applyPlan, planWriteSet } from "./writes.js";
 export { preflight, preflightInit } from "./preflight.js";
 export type {
@@ -31,7 +33,14 @@ export type {
   PreflightPrompt,
   PreflightResult,
   ProjectKind,
+  RemoveKept,
+  RemoveOptions,
+  RemoveRemoved,
+  RemoveResult,
   RunnerFact,
   RunnerKind,
+  UpgradeChanged,
+  UpgradeOptions,
+  UpgradeResult,
   WriteSet,
 } from "./types.js";

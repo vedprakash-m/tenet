@@ -57,6 +57,152 @@ export function setPointer(root: Record<string, unknown>, pointer: string, value
   current[parts.at(-1) ?? ""] = value;
 }
 
+type JsonSpan = {
+  start: number;
+  end: number;
+  members?: Map<string, { start: number; end: number; value: JsonSpan }>;
+};
+
+function jsonSpans(source: string): JsonSpan {
+  let offset = 0;
+  const skip = (): void => {
+    while (/\s/.test(source[offset] ?? "")) offset += 1;
+  };
+  const string = (): number => {
+    const start = offset;
+    if (source[offset] !== "\"") throw new SyntaxError("Expected a JSON string.");
+    offset += 1;
+    while (offset < source.length) {
+      const character = source[offset];
+      offset += 1;
+      if (character === "\\") {
+        offset += 1;
+      } else if (character === "\"") {
+        return start;
+      }
+    }
+    throw new SyntaxError("Unterminated JSON string.");
+  };
+  const value = (): JsonSpan => {
+    skip();
+    const start = offset;
+    if (source[offset] === "{") {
+      const members = new Map<string, { start: number; end: number; value: JsonSpan }>();
+      offset += 1;
+      skip();
+      if (source[offset] !== "}") {
+        for (;;) {
+          skip();
+          const keyStart = string();
+          const key = JSON.parse(source.slice(keyStart, offset)) as string;
+          skip();
+          if (source[offset] !== ":") throw new SyntaxError("Expected a JSON colon.");
+          offset += 1;
+          const member = value();
+          members.set(key, { start: keyStart, end: member.end, value: member });
+          skip();
+          if (source[offset] !== ",") break;
+          offset += 1;
+        }
+      }
+      if (source[offset] !== "}") throw new SyntaxError("Expected a JSON object end.");
+      offset += 1;
+      return { start, end: offset, members };
+    }
+    if (source[offset] === "[") {
+      offset += 1;
+      skip();
+      if (source[offset] !== "]") {
+        for (;;) {
+          value();
+          skip();
+          if (source[offset] !== ",") break;
+          offset += 1;
+        }
+      }
+      if (source[offset] !== "]") throw new SyntaxError("Expected a JSON array end.");
+      offset += 1;
+      return { start, end: offset };
+    }
+    if (source[offset] === "\"") {
+      string();
+      return { start, end: offset };
+    }
+    while (offset < source.length && !/[\s,\]}]/.test(source[offset] ?? "")) offset += 1;
+    if (offset === start) throw new SyntaxError("Expected a JSON value.");
+    return { start, end: offset };
+  };
+  const root = value();
+  skip();
+  if (offset !== source.length) throw new SyntaxError("Unexpected bytes after JSON value.");
+  return root;
+}
+
+function updateJsonSpan(
+  source: string,
+  span: JsonSpan,
+  parts: string[],
+  value: unknown,
+): string {
+  if (!span.members) throw new SyntaxError("A JSON pointer parent is not an object.");
+  const key = parts[0] ?? "";
+  const member = span.members.get(key);
+  if (parts.length === 1 && member) {
+    return `${source.slice(0, member.value.start)}${JSON.stringify(value)}${source.slice(member.value.end)}`;
+  }
+  if (parts.length > 1 && member) {
+    return updateJsonSpan(source, member.value, parts.slice(1), value);
+  }
+  let nested = value;
+  for (const part of parts.slice(1).reverse()) nested = { [part]: nested };
+  const close = span.end - 1;
+  const interior = source.slice(span.start + 1, close);
+  const trailingLength = interior.match(/\s*$/)?.[0].length ?? 0;
+  const insertion = close - trailingLength;
+  const newline = source.includes("\r\n") ? "\r\n" : "\n";
+  const closeLine = source.lastIndexOf("\n", close) + 1;
+  const closeIndent = source.slice(closeLine, close);
+  const indent = `${closeIndent}  `;
+  const separator = span.members.size > 0 ? "," : "";
+  const addition = `${separator}${newline}${indent}${JSON.stringify(key)}: ${JSON.stringify(nested)}`;
+  return `${source.slice(0, insertion)}${addition}${source.slice(insertion)}`;
+}
+
+export function setJsonPointerBytes(source: string, pointer: string, value: unknown): string {
+  const parts = pointerParts(pointer);
+  return updateJsonSpan(source, jsonSpans(source), parts, value);
+}
+
+function removeJsonSpan(
+  source: string,
+  span: JsonSpan,
+  parts: string[],
+): string {
+  if (!span.members) throw new SyntaxError("A JSON pointer parent is not an object.");
+  const key = parts[0] ?? "";
+  const member = span.members.get(key);
+  if (!member) return source;
+  if (parts.length > 1) return removeJsonSpan(source, member.value, parts.slice(1));
+  const entries = [...span.members.entries()];
+  const index = entries.findIndex(([name]) => name === key);
+  const previous = entries[index - 1]?.[1];
+  const next = entries[index + 1]?.[1];
+  let from = member.start;
+  let through = member.end;
+  if (previous) {
+    const comma = source.lastIndexOf(",", member.start);
+    if (comma >= previous.end) from = comma;
+  } else if (next) {
+    const comma = source.indexOf(",", member.end);
+    if (comma >= 0 && comma < next.start) through = comma + 1;
+  }
+  return `${source.slice(0, from)}${source.slice(through)}`;
+}
+
+export function deleteJsonPointerBytes(source: string, pointer: string): string {
+  return removeJsonSpan(source, jsonSpans(source), pointerParts(pointer));
+}
+
 export function blockMarker(kind: "markdown" | "yaml", version: string): string {
   return kind === "markdown"
     ? `<!-- tenet:begin v${version} -->`
