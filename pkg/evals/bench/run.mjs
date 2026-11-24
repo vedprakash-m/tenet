@@ -50,6 +50,11 @@ function median(values) {
   return sorted[Math.floor(sorted.length / 2)];
 }
 
+function failed(result) {
+  const output = `${result.stdout}\n${result.stderr}`;
+  return result.exit !== 0 || result.timedOut || /TN-INTERNAL|TN-SPEC|TN-SCHEMA/.test(output);
+}
+
 await rm(resultsDir, { recursive: true, force: true });
 await mkdir(resultsDir, { recursive: true });
 await mkdir(benchRoot, { recursive: true });
@@ -69,11 +74,17 @@ for (const docs of counts) {
 
   for (const commandArgs of commands) {
     const samples = [];
+    const exits = [];
+    let failedRun = false;
     for (let run = 0; run < 3; run += 1) {
       const result = await exec(process.execPath, [cli, ...commandArgs], fixture);
       samples.push(result.elapsed);
+      exits.push(result.exit);
+      if (failed(result)) failedRun = true;
     }
-    row[commandArgs[0]] = median(samples);
+    row[commandArgs[0]] = failedRun
+      ? { failed: true, exits: [...new Set(exits)] }
+      : { failed: false, seconds: median(samples), exits: [...new Set(exits)] };
   }
   table.push(row);
 }
@@ -90,15 +101,22 @@ const lines = [
 ];
 
 for (const row of table) {
-  lines.push(`| ${row.docs} | ${row.check.toFixed(3)} s | ${row.board.toFixed(3)} s | ${row.context.toFixed(3)} s | ${row.onboard.toFixed(3)} s |`);
+  const cell = (value) => value.failed
+    ? `FAILED (exit ${value.exits.join(",")})`
+    : `${value.seconds.toFixed(3)} s (exit ${value.exits.join(",")})`;
+  lines.push(`| ${row.docs} | ${cell(row.check)} | ${cell(row.board)} | ${cell(row.context)} | ${cell(row.onboard)} |`);
 }
 
 lines.push("", "## Growth: 1k to 30k markdown files", "");
 for (const command of ["check", "board", "context", "onboard"]) {
   const from = first[command];
   const to = last[command];
-  const multiple = from > 0 ? to / from : 0;
-  lines.push(`- ${command}: ${from.toFixed(3)} s to ${to.toFixed(3)} s (${multiple.toFixed(2)}x)`);
+  if (from.failed || to.failed) {
+    lines.push(`- ${command}: ${from.failed ? "FAILED" : `${from.seconds.toFixed(3)} s`} to ${to.failed ? "FAILED" : `${to.seconds.toFixed(3)} s`} (growth unavailable)`);
+  } else {
+    const multiple = from.seconds > 0 ? to.seconds / from.seconds : 0;
+    lines.push(`- ${command}: ${from.seconds.toFixed(3)} s to ${to.seconds.toFixed(3)} s (${multiple.toFixed(2)}x)`);
+  }
 }
 
 await writeFile(path.join(resultsDir, "RESULTS.md"), `${lines.join("\n")}\n`, "utf8");

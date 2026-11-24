@@ -97,3 +97,4 @@ Moved into the §2 table when `CP-0007` and `CP-0050` add their entries to `src/
 - `TN-DEC-SELF-VERIFY`: `"Actor {actor} cannot approve their own pull request at level {level}."` Fix: `"Have another owner or reviewer submit the decision."`
 - `TN-DEC-STALE`: `"Reply targets evaluation {actual}, but current evaluation is {expected}."` Fix: `"Review the latest card and reply against {expected}."`
 - `TN-RECORD-TIP`: `"Records ref tip drifted from {expected} to {actual} during board read."` Fix: `"Re-run \`tenet board --fetch\` to read a consistent snapshot."`
+- `TN-SEALED-DIRTY`: `"Sealed test job modified tracked files before completing check {check}."` Fix: `"Remove working-tree writes during CI checks and re-run."`

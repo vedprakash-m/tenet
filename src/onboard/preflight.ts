@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { git, catFileBatch, lastChangedMap } from "../core/git.js";
+import { git, catFileBatch } from "../core/git.js";
 import { message } from "../core/messages.js";
 import { fail, type Finding } from "../core/output.js";
 
@@ -112,21 +112,40 @@ async function readBlobs(cwd: string, revision: string, files: TrackedFile[], li
   return { blobs, generatedHeaders };
 }
 
-async function docDates(cwd: string, paths: string[]): Promise<Map<string, string>> {
-  const changes = await lastChangedMap(paths, { cwd });
-  const ids = [...new Set(changes.values())];
-  const commits = new Map<string, string>();
-  for (let offset = 0; offset < ids.length; offset += 128) {
-    const output = await git(["show", "-s", "--format=%H%x09%cI", ...ids.slice(offset, offset + 128)], { cwd });
-    for (const line of output.trim().split(/\r?\n/)) {
-      const [id, date] = line.split("\t");
-      if (id && date) commits.set(id, new Date(date).toISOString().replace(".000Z", "Z"));
+async function docDates(cwd: string, revision: string, paths: string[]): Promise<Map<string, string>> {
+  const dates = new Map<string, string>();
+  const pending = new Set(paths);
+  const log = ["--literal-pathspecs", "log", "--format=%x1e%H%x09%cI", "--name-only", "--no-renames", "-z"];
+  const readDates = (output: string) => {
+    let date: string | undefined;
+    let firstPath = false;
+    for (const token of output.split("\0")) {
+      const header = token.startsWith("\u001e")
+        ? /^[0-9a-f]{40,64}\t(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2}))$/.exec(token.slice(1))
+        : null;
+      if (header?.[1]) {
+        date = new Date(header[1]).toISOString().replace(".000Z", "Z");
+        firstPath = true;
+        continue;
+      }
+      // Git inserts one newline before the first filename of each commit.
+      const filename = firstPath && token.startsWith("\n") ? token.slice(1) : token;
+      firstPath = false;
+      if (date && pending.delete(filename)) dates.set(filename, date);
+      if (pending.size === 0) break;
     }
+  };
+  const stdinPaths = paths.filter((file) => !/[\r\n]/.test(file));
+  if (stdinPaths.length > 0) {
+    const input = [revision, "--", ...stdinPaths, ""].join("\n");
+    readDates(await git([...log, "--stdin"], { cwd, input }));
   }
-  return new Map([...changes].flatMap(([file, id]) => {
-    const date = commits.get(id);
-    return date ? [[file, date] as const] : [];
-  }));
+  // The log stdin protocol is line-delimited. Keep unusual paths literal and
+  // pass one at a time so the argument vector is bounded for every filename.
+  for (const file of paths) {
+    if (/[\r\n]/.test(file)) readDates(await git([...log, revision, "--", file], { cwd }));
+  }
+  return dates;
 }
 
 export async function openRepository(directory: string): Promise<RepositorySnapshot> {
@@ -146,6 +165,6 @@ export async function openRepository(directory: string): Promise<RepositorySnaps
   return {
     cwd, revision, files, dirty: status.length > 0,
     read: (selected, maxBytes) => readBlobs(cwd, revision, selected, maxBytes),
-    dates: (paths) => docDates(cwd, paths),
+    dates: (paths) => docDates(cwd, revision, paths),
   };
 }

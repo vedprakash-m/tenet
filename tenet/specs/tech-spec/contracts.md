@@ -143,7 +143,7 @@ In [evidence.md §1](evidence.md#1-evidence-payloads).
 
 ## 13. Error codes
 
-Every error carries its code, plain words and a fix (R-083). What each situation concludes on the forge, at each level, is [ci.md §10](ci.md#10-outcomes). **Structural** codes always fail `check` (exit 1); **rule** codes fail only when their rule is in `enforce` (otherwise they print as "would have blocked" and exit 0).
+Every error carries its code, plain words and a fix (R-083). What each situation concludes on the forge, at each level, is [ci.md §10](ci.md#10-outcomes). **Structural** codes always fail `check` (exit 1); **rule** codes fail only when `enforce` under `--ci --base`/gates (`observe`/`advise` advise exit 0); direct local `check` keeps `TN-CITE-*` as `error` (exit 1).
 
 Message and fix text for every code: [messages.md](messages.md).
 
@@ -152,7 +152,7 @@ Message and fix text for every code: [messages.md](messages.md).
 | `TN-USAGE-*`, `TN-USAGE-REF`, `TN-USAGE-BUDGET`, `TN-BLESS-NO-TTY` | usage | 2 |
 | `TN-ENV-NODE`, `TN-ENV-GIT`, `TN-ENV-NO-COMMIT`, `TN-ENV-NOT-GIT`, `TN-ENV-OFFLINE`, `TN-POLICY-MISSING` | environment | 3 |
 | `TN-POLICY-LOOSEN`, `TN-POLICY-INCOMPATIBLE`, `TN-POLICY-RULE`, `TN-POLICY-RULE-DECISION`, `TN-INIT-EXISTS`, `TN-BLESS-OPEN-CONFLICT`, `TN-BLESS-INFERRED` | policy refusal | 4 |
-| `TN-SCHEMA`, `TN-POLICY-SCHEMA`, `TN-BACKTEST-INCOMPLETE`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-SPEC-UNCOVERED-VISION`, `TN-KIT-EDITED`, `TN-KIT-INVALID`, `TN-KIT-MISSING`, `TN-LOCK-INVALID`, `TN-LOCK-MISSING`, `TN-EV-DUP`, `TN-EV-CYCLE`, `TN-EV-CROSS-WORK`, `TN-EV-NO-CREATE`, `TN-EV-RESOLVE`, `TN-DEC-ACTOR`, `TN-DEC-CONFLICT`, `TN-DEC-KEY-REVOKED`, `TN-DEC-SELF-VERIFY`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID`, `TN-INTERNAL` | structural | 1 |
+| `TN-SCHEMA`, `TN-POLICY-SCHEMA`, `TN-BACKTEST-INCOMPLETE`, `TN-SEALED-DIRTY`, `TN-PATH-ESCAPE`, `TN-SPEC-NO-FRONT`, `TN-SPEC-DUP-SECTION`, `TN-SPEC-DUP-ID`, `TN-SPEC-MISSING-ID`, `TN-SPEC-REQ-META`, `TN-SPEC-BLESSED-COPY`, `TN-SPEC-UNCOVERED-VISION`, `TN-KIT-EDITED`, `TN-KIT-INVALID`, `TN-KIT-MISSING`, `TN-LOCK-INVALID`, `TN-LOCK-MISSING`, `TN-EV-DUP`, `TN-EV-CYCLE`, `TN-EV-CROSS-WORK`, `TN-EV-NO-CREATE`, `TN-EV-RESOLVE`, `TN-DEC-ACTOR`, `TN-DEC-CONFLICT`, `TN-DEC-KEY-REVOKED`, `TN-DEC-SELF-VERIFY`, `TN-ACC-MISSING-ID`, `TN-ACC-DUP-ID`, `TN-INTERNAL` | structural | 1 |
 | `TN-CITE-FILE`, `TN-CITE-RANGE`, `TN-CITE-HEADING`, `TN-CITE-TEST` (rule `citations-valid`); `TN-BUDGET` (`budget`); `TN-WEAK-*` (`tests-not-weakened`); `TN-PROTECTED` (`protected-surfaces`); `TN-ACC-UNPASSED` (`acceptance-passed`); `TN-GATE-*` (the row's rule) | rule (`severity: "error"` in `enforce`, `"advise"` in `advise`) | 1 in `enforce`, else 0 |
 | `TN-REPORT-MISSING`, `TN-REPORT-MALFORMED`, `TN-RECORD-BUNDLE`, `TN-RECORD-TIP`, `TN-LOCK-MISMATCH`, `TN-POLICY-BRANCH`, `TN-POLICY-LEVEL-UNAVAILABLE`, `TN-POLICY-ALPHA0-CAP`, `TN-BUDGET-WARN`, `TN-SUBJ-DIRTY`, `TN-EV-ORPHAN`, `TN-DEC-STALE`, `TN-DEC-EXPIRED`, `TN-DEC-AMBIGUOUS` | warning, shown as degraded | 0 |
 

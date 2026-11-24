@@ -1,0 +1,9 @@
+{
+  "t1": true,
+  "t2": true,
+  "t3": true,
+  "t4": "enforced",
+  "merge_requires_status": true,
+  "stale": false,
+  "guarantee": "enforced*"
+}
