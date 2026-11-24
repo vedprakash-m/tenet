@@ -58,6 +58,8 @@ export const blessText = {
   before: (cite: string, value: string) => `Old ${cite}:\n${value}`,
   after: (cite: string, value: string) => `New ${cite}:\n${value}`,
   noLines: "(unavailable)",
+  textInForce: "Blessed text in force",
+  confirmSources: "Confirm these source changes? [y/N] ",
   summary: (value: BlessResult) => `✓ ${value.blessed} blessed · ${value.confirmed} confirmed · ${value.rejected} rejected · ${value.deferred} for later`,
   commit: (root: string) => `→ git add -- ${root} && git commit -m "Bless specifications"`,
   missingTarget: "the selected document or section was not found",
@@ -165,6 +167,8 @@ export async function blessSession(state: SessionState, io: BlessIO = {}) {
   const write = (value: string) => { output.write(`${value}\n`); };
   const lines = createInterface({ input, crlfDelay: Infinity, terminal: false });
   const iterator = lines[Symbol.asyncIterator]();
+  let terminalClosed = false;
+  lines.once("close", () => { terminalClosed = true; });
   let interrupted = false;
   const stop = () => { interrupted = true; lines.close(); };
   if (input === process.stdin) process.once("SIGINT", stop);
@@ -178,9 +182,9 @@ export async function blessSession(state: SessionState, io: BlessIO = {}) {
   const editableState = {
     ...state,
     edit: async (entry: SectionState) => {
-      lines.pause();
+      if (!terminalClosed) lines.pause();
       try { await state.edit(entry); }
-      finally { lines.resume(); }
+      finally { if (!terminalClosed) lines.resume(); }
     },
   };
   try {
@@ -195,6 +199,7 @@ export async function blessSession(state: SessionState, io: BlessIO = {}) {
           if (!current) break;
           const { doc, section } = current;
           const flags = state.flags(current);
+          if (section.text.trim()) write(section.text.trimEnd());
           const available: Action[] = flags.includes("sources-changed")
             ? ["bless", "confirm", "edit", "reject", "defer"] : ["bless", "edit", "reject", "defer"];
           const selected = await pick(ask, blessText.section(section.heading || section.slug, readingMinutes(section.text), available), [...available, "later"], write);
@@ -221,7 +226,7 @@ export async function blessSession(state: SessionState, io: BlessIO = {}) {
           }
           if (action === "confirm") {
             for (const line of await state.showAnchors(current)) write(line);
-            const approve = await pick(ask, "Confirm these source changes? [y/N] ", ["y", "n", ""], write);
+            const approve = await pick(ask, blessText.confirmSources, ["y", "n", ""], write);
             if (approve === null) { interrupted = true; break; }
             if (approve !== "y") continue;
           }
@@ -534,11 +539,13 @@ function anchorsToShow(entry: SectionState, read: ReturnType<typeof reader>): st
     const raw = copy ? read(`${copy}.anchors.json`) : null;
     if (raw) old = JSON.parse(raw);
   } catch { /* Missing historical text is displayed as unavailable. */ }
-  return Object.entries(entry.section.anchors).flatMap(([citation, digest]) => {
+  const changes = Object.entries(entry.section.anchors).flatMap(([citation, digest]) => {
     const next = anchorBlock(citation, read);
     if (next?.hash === digest) return [];
     return [blessText.before(citation, old?.[citation] ?? blessText.noLines), blessText.after(citation, next?.text ?? blessText.noLines)];
   });
+  const blessed = copy ? read(copy) : null;
+  return blessed === null ? changes : [blessText.textInForce, blessed.trimEnd(), ...changes];
 }
 
 export async function runBless(options: BlessOptions = {}, io: BlessIO = {}): Promise<{ result: BlessResult | null; findings: Finding[] }> {

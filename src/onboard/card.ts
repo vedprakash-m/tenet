@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { lstat, readFile } from "node:fs/promises";
 import { confine, writeAtomic } from "../core/fs.js";
 import { git } from "../core/git.js";
 import { message } from "../core/messages.js";
@@ -28,9 +28,10 @@ export const onboardingCardText = {
   finding: (file: string, line: number | null, words: string) => `  ! ${file}${line === null ? "" : `:${line}`} · ${words}`,
   conflicts: "Conflicts (settle these first)",
   conflict: (id: string, text: string, resolution?: string) => `  ${resolution ? "✓" : "!"} ${id} ${text}${resolution ? ` · ${resolution}` : ""}`,
-  sections: (minutes: number) => `Sections (about ${minutes} minutes)`,
+  sections: (minutes: number) => `Sections (about ${minutes} minute${minutes === 1 ? "" : "s"})`,
   section: (heading: string, count: number, origins: string, minutes: number) =>
     `  ${heading} · ${count} statement${count === 1 ? "" : "s"}${origins ? ` · ${origins}` : ""} · ${minutes} min`,
+  missingDraft: "commit a specification draft before running onboard --card",
   noSections: "  No specification sections were found.",
   checkout: (pr?: number) => `→ gh pr checkout ${pr ?? "<n>"}, then tenet bless in your terminal (or edit the files first)`,
   incompatible: "--card cannot be combined with --inventory-only, --refresh or --layout",
@@ -55,14 +56,16 @@ async function onboardFile(cwd: string, filename: string, schema: "inventory" | 
 }
 
 function sourceList(inventory: Inventory): string {
-  const namedDocs = inventory.docs.map(({ path }) => path);
-  const adrs = inventory.sources.files.filter(({ kind }) => kind === "adr").length;
+  const adrPaths = new Set(inventory.sources.files.filter(({ kind }) => kind === "adr").map(({ path }) => path));
+  const namedDocs = inventory.docs.filter(({ path }) => !adrPaths.has(path)).map(({ path }) => path);
+  const adrs = adrPaths.size;
+  const countFiles = (count: number, label: string) => `${count} ${label} file${count === 1 ? "" : "s"}`;
   const groups = [
     ...namedDocs,
     ...(adrs ? [`${adrs} ADR${adrs === 1 ? "" : "s"}`] : []),
-    `${inventory.sources.files.filter(({ kind }) => kind === "source").length} source files`,
-    `${inventory.tests.length} test files`,
-    `${inventory.sources.files.filter(({ kind }) => kind === "instructions").length} instruction files`,
+    countFiles(inventory.sources.files.filter(({ kind }) => kind === "source").length, "source"),
+    countFiles(inventory.tests.length, "test"),
+    countFiles(inventory.sources.files.filter(({ kind }) => kind === "instructions").length, "instruction"),
   ];
   const skipped = [...new Set(inventory.sources.skipped.map(({ reason }) => skipLabels[reason] ?? reason))];
   return onboardingCardText.read(groups.join(", "), skipped.join(", ") || onboardingCardText.nothing);
@@ -104,22 +107,27 @@ export async function onboardingCard(options: CardOptions = {}): Promise<string>
     .catch(() => { throw diagnostic("TN-ENV-NOT-GIT", { path: options.cwd ?? process.cwd() }); })).trimEnd();
   const head = (await git(["rev-parse", "--verify", "HEAD^{commit}"], { cwd })
     .catch(() => { throw diagnostic("TN-ENV-NO-COMMIT"); })).trim();
-  const policy = await loadPolicy({ cwd });
   const inventory = await onboardFile(cwd, inventoryPath, "inventory") as Inventory;
   const assignment = await onboardFile(cwd, assignmentPath, "assignment") as Assignment;
+  const paths = await Promise.all([...new Set(assignment.output.paths)].map(async (relative) => {
+    const filename = await confine(relative, cwd);
+    const present = await lstat(filename).then((entry) => entry.isFile(), (error: NodeJS.ErrnoException) => {
+      if (error.code === "ENOENT" || error.code === "ENOTDIR") return false;
+      throw error;
+    });
+    return { relative, filename, present };
+  }));
+  const drafts = paths.filter(({ present }) => present);
+  if (!drafts.length) throw diagnostic("TN-USAGE-ONBOARD", { command: "onboard", detail: onboardingCardText.missingDraft });
+  const policy = await loadPolicy({ cwd }).catch((error: { finding?: unknown }) => { throw error.finding ?? error; });
   const docs: ParsedDoc[] = [];
   const patches: Array<{ filename: string; original: string; next: string }> = [];
-  for (const relative of [...new Set(assignment.output.paths)]) {
+  for (const { relative, filename } of drafts) {
     const records = policy.paths.records.replaceAll("\\", "/");
     if (!relative.startsWith(`${records}/`) || !relative.endsWith(".md") || relative.startsWith(`${records}/blessed/`)) {
       throw diagnostic("TN-SCHEMA", { path: assignmentPath, schema: "assignment", pointer: "/output/paths" });
     }
-    const filename = await confine(relative, cwd);
-    const text = await readFile(filename, "utf8").catch((error: NodeJS.ErrnoException) => {
-      if (error.code === "ENOENT") return null;
-      throw error;
-    });
-    if (text === null) continue;
+    const text = await readFile(filename, "utf8");
     const parsed = parseDoc(relative, text, { prefix: policy.specs.id_prefix });
     const front = readSpecMatter(text);
     const tenet = parsed.front?.tenet as { spec?: unknown; drafted_at_rev?: unknown } | undefined;

@@ -1,23 +1,58 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://vedprakash-m.github.io/tenet/schemas/0.1/results/onboard.json",
-  "type": "object",
-  "additionalProperties": false,
-  "properties": {
-    "preflight": {
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "revision": { "type": "string", "minLength": 1 },
-        "read_count": { "type": "integer", "minimum": 0 },
-        "skipped_count": { "type": "integer", "minimum": 0 },
-        "dirty_warning": { "type": "boolean" }
+        "preflight": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "revision": {
+              "type": "string",
+              "minLength": 1
+            },
+            "read_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "skipped_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "dirty_warning": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "revision",
+            "read_count",
+            "skipped_count",
+            "dirty_warning"
+          ]
+        },
+        "inventory": {
+          "$ref": "../inventory.json"
+        },
+        "findings": {
+          "$ref": "../inventory.json#/properties/findings"
+        },
+        "assignment": {
+          "$ref": "../assignment.json"
+        }
       },
-      "required": ["revision", "read_count", "skipped_count", "dirty_warning"]
+      "required": [
+        "preflight",
+        "inventory",
+        "findings",
+        "assignment"
+      ]
     },
-    "inventory": { "$ref": "../inventory.json" },
-    "findings": { "$ref": "../inventory.json#/properties/findings" },
-    "assignment": { "$ref": "../assignment.json" }
-  },
-  "required": ["preflight", "inventory", "findings", "assignment"]
+    {
+      "type": "string",
+      "minLength": 1
+    }
+  ]
 }

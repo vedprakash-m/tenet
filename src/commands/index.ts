@@ -1,3 +1,4 @@
+export { blessCommand } from "./bless.js";
 export { boardCommand } from "./board.js";
 export { checkCommand } from "./check.js";
 export { contextCommand } from "./context.js";
