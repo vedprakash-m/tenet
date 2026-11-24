@@ -1,60 +1,99 @@
 {
   "operation": "record",
   "event": {
-    "tested_commit": "9b41d00000000000000000000000000000000000",
-    "tested_kind": "merge-candidate",
-    "head_sha": "a111111111111111111111111111111111111111",
-    "base_sha": "b222222222222222222222222222222222222222",
-    "acceptance_digest": "ecb0ca9c8c0d4ce5219b885c6e43faac874c66c2ae2ab8f2280e5da645358afa",
-    "policy_digest": "7b3e42c7cfce00603f9473cd45752863fbe3df98c055ea12b4ece6f7e8285494",
-    "check_run_ids": [
-      101
+    "kind": "workflow_run",
+    "repository": "fixture/checkout",
+    "run": {
+      "id": "101",
+      "attempt": 1,
+      "workflow": "Tenet tests",
+      "head": "a111111111111111111111111111111111111111",
+      "repository": "fixture/checkout",
+      "startedAt": "2026-11-23T10:00:00Z"
+    },
+    "pulls": [
+      1
     ],
+    "base": "b222222222222222222222222222222222222222",
     "pr_body": "Fix checkout retries.\n\n## Acceptance\nImplements: C-1\n- [AB-1] one retry after a timeout, never two",
-    "records_push": "ok"
-  },
-  "bundles": [
-    {
-      "check_id": "unit",
+    "records_push": "ok",
+    "evaluation_input": {
+      "repository": "fixture/checkout",
+      "work": "pr-1",
+      "tested_commit": "9b41d00000000000000000000000000000000000",
+      "base": "b222222222222222222222222222222222222222",
+      "acceptance_digest": "ecb0ca9c8c0d4ce5219b885c6e43faac874c66c2ae2ab8f2280e5da645358afa",
+      "implemented": [
+        {
+          "id": "C-1",
+          "blessed_digest": "sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+        }
+      ],
+      "policy_blob": "2f6390fade593f8db48ed4d8a8b946a9aa6c84d3b1e49d6c71d9694fdf878412",
+      "tenet_version": "0.1.0-alpha.0"
+    },
+    "legacy_event": {
       "tested_commit": "9b41d00000000000000000000000000000000000",
       "tested_kind": "merge-candidate",
       "head_sha": "a111111111111111111111111111111111111111",
       "base_sha": "b222222222222222222222222222222222222222",
-      "exit_code": 0,
-      "timed_out": false,
-      "teardown_failed": false,
-      "duration_ms": 420,
-      "runner": "node-test",
-      "cases": [
-        {
-          "file": "test/checkout.retry.test.ts",
-          "suite": [
-            "checkout"
-          ],
-          "name": "[AB-1] one retry after timeout",
-          "full_name": "test/checkout.retry.test.ts › checkout › [AB-1] one retry after timeout",
-          "status": "pass",
-          "duration_ms": 12,
-          "tags": [
-            "AB-1"
-          ]
-        }
+      "acceptance_digest": "ecb0ca9c8c0d4ce5219b885c6e43faac874c66c2ae2ab8f2280e5da645358afa",
+      "policy_digest": "05296d284d471c40f286a41cfe0fefd13648e319819973a82d9e778d3a77a479",
+      "check_run_ids": [
+        101
       ]
+    }
+  },
+  "bundles": [
+    {
+      "bundle": {
+        "schema_version": 1,
+        "x-repository": "fixture/checkout",
+        "run": {
+          "id": "101",
+          "attempt": 1,
+          "workflow": "Tenet tests",
+          "job": "test",
+          "index": 0
+        },
+        "pr": 1,
+        "tested": {
+          "commit": "9b41d00000000000000000000000000000000000",
+          "kind": "merge-candidate",
+          "head": "a111111111111111111111111111111111111111",
+          "base": "b222222222222222222222222222222222222222"
+        },
+        "checks": [
+          {
+            "name": "unit",
+            "exit_code": 0,
+            "outcome": "success",
+            "duration_ms": 420,
+            "report": "reports/unit.xml",
+            "report_sha256": "a1795cfa55629848e5573d4823493d77b15107683705b1c491ecd20f9baae7f2",
+            "inputs": [],
+            "x-report-kind": "junit"
+          }
+        ]
+      },
+      "files": {
+        "reports/unit.xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuites>\n  <testsuite name=\"checkout\" file=\"test/checkout.retry.test.ts\">\n    <testcase name=\"test/checkout.retry.test.ts › checkout › [AB-1] one retry after timeout\" time=\"0.012\"><properties><property name=\"tenet.case\" value=\"C-1\"/></properties></testcase>\n  </testsuite>\n</testsuites>\n"
+      }
     }
   ],
   "repo": {
     "baseFiles": {
-      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"C\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ],\n  \"ci\": {\n    \"checks\": [\n      {\n        \"id\": \"unit\",\n        \"command\": \"npm test\",\n        \"report\": \".tenet/reports/junit.xml\"\n      }\n    ]\n  }\n}\n",
-      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_by\":\"ved\",\"blessed_at\":\"2026-11-20T00:00:00Z\",\"recorded\":\"self\",\"flags\":[]}\n---\n## Requirements\n### C-1: Checkout retries\nA payment that times out is retried once, never twice. [src/checkout/retry.ts:1-10](src/checkout/retry.ts#L1-L10)\n\n### C-4: Checkout audit log\nEvery retry writes an audit entry in the same checkout folder. [src/checkout/audit.ts:1-8](src/checkout/audit.ts#L1-L8)\n",
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"C\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ],\n  \"checks\": {\n    \"unit\": {\n      \"run\": \"npm test\",\n      \"report\": \"junit\",\n      \"report_path\": \".tenet/reports/unit.xml\"\n    }\n  }\n}\n",
+      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_copy\":\"tenet/blessed/intent/requirements.md\",\"blessed_by\":\"ved\",\"blessed_at\":\"2026-11-20T00:00:00Z\",\"recorded\":\"self\",\"flags\":[]}\n---\n## Requirements\n### C-1: Checkout retries\nA payment that times out is retried once, never twice. [src/checkout/retry.ts:1-10](src/checkout/retry.ts#L1-L10)\n\n### C-4: Checkout audit log\nEvery retry writes an audit entry in the same checkout folder. [src/checkout/audit.ts:1-8](src/checkout/audit.ts#L1-L8)\n",
       "src/checkout/retry.ts": "export function retry() { return 1; }\n",
       "src/checkout/audit.ts": "export function audit() { return true; }\n"
     },
     "headFiles": {
-      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"C\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ],\n  \"ci\": {\n    \"checks\": [\n      {\n        \"id\": \"unit\",\n        \"command\": \"npm test\",\n        \"report\": \".tenet/reports/junit.xml\"\n      }\n    ]\n  }\n}\n",
-      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_by\":\"ved\",\"blessed_at\":\"2026-11-20T00:00:00Z\",\"recorded\":\"self\",\"flags\":[]}\n---\n## Requirements\n### C-1: Checkout retries\nA payment that times out is retried once, never twice. [src/checkout/retry.ts:1-10](src/checkout/retry.ts#L1-L10)\n\n### C-4: Checkout audit log\nEvery retry writes an audit entry in the same checkout folder. [src/checkout/audit.ts:1-8](src/checkout/audit.ts#L1-L8)\n",
+      "tenet.yaml": "{\n  \"standard\": \"0.1.0-alpha.0\",\n  \"kit_path\": \"kit\",\n  \"paths\": {\n    \"records\": \"tenet\"\n  },\n  \"level\": \"observe\",\n  \"specs\": {\n    \"id_prefix\": \"C\",\n    \"documents\": [\n      {\n        \"path\": \"intent.md\",\n        \"level\": \"L1\"\n      }\n    ]\n  },\n  \"owners\": [\n    {\n      \"id\": \"payments\",\n      \"name\": \"Payments\",\n      \"roles\": [\n        \"owner\"\n      ]\n    }\n  ],\n  \"checks\": {\n    \"unit\": {\n      \"run\": \"npm test\",\n      \"report\": \"junit\",\n      \"report_path\": \".tenet/reports/unit.xml\"\n    }\n  }\n}\n",
+      "tenet/intent.md": "---\ntenet: {\"spec\":1,\"doc\":\"intent\",\"level\":\"L1\",\"version\":\"0.1\",\"owner\":\"payments\"}\nsections:\n  requirements: {\"state\":\"blessed\",\"digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_digest\":\"sha256:6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b\",\"blessed_copy\":\"tenet/blessed/intent/requirements.md\",\"blessed_by\":\"ved\",\"blessed_at\":\"2026-11-20T00:00:00Z\",\"recorded\":\"self\",\"flags\":[]}\n---\n## Requirements\n### C-1: Checkout retries\nA payment that times out is retried once, never twice. [src/checkout/retry.ts:1-10](src/checkout/retry.ts#L1-L10)\n\n### C-4: Checkout audit log\nEvery retry writes an audit entry in the same checkout folder. [src/checkout/audit.ts:1-8](src/checkout/audit.ts#L1-L8)\n",
       "src/checkout/retry.ts": "export function retry() { return 1; /* tuned */ }\n",
       "src/checkout/audit.ts": "export function audit() { return true; }\n",
-      "test/checkout.retry.test.ts": "import { test } from \"node:test\";\ntest(\"[AB-1] one retry after timeout\", () => {});\n"
+      "test/checkout.retry.test.ts": "import { test } from \"node:test\";\ntest(\"[C-1] [AB-1] one retry after timeout\", () => {});\n"
     }
   }
 }
