@@ -8,7 +8,7 @@ buildVerify();
 const { renderCard, renderCheckSummary } = await import("../../dist/verify/card.js");
 const { decodeBundle } = await import("../../dist/verify/bundle.js");
 const { validate } = await import("../../dist/core/schema.js");
-const fixtures = path.join("pkg", "conformance", "cards", "r4");
+const fixtures = path.join("pkg", "conformance", "card");
 const cases = readdirSync(fixtures, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
 assert.equal(cases.length, 14);
 for (const name of cases) {
